@@ -1,7 +1,8 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
 import { lessonProgress, lessons, submissions } from "../db/schema.js";
+import { problemStepCompletion } from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -59,40 +60,61 @@ export async function reviewedPassLessonIds(
 
 export interface ReviewedProgress {
   rows: NormalizedProgressRow[];
-  /** 完了を端末の申告ではなくレビューの合格から決めたコードレッスン。 */
+  /** 完了をレビューや問題の提出から決めたレッスン。 */
   reviewedLessonIds: Set<string>;
+  problemStepLessonIds: Set<string>;
 }
 
-/** コードの完了はレビューの合格を正本にする。端末の自己申告で合格や取消を作らない。 */
+/** 現存するレッスンの進捗を返す。コードはレビュー、問題のステップは提出で完了を決める。 */
 export async function reviewedProgressRows(
   db: Db,
   userId: string,
   rows: NormalizedProgressRow[],
 ): Promise<ReviewedProgress> {
+  const existing = new Set<string>();
   const reviewed = new Set<string>();
+  const problemStepLessonIds = new Set<string>();
   const passed = new Set<string>();
   for (const ids of chunk(
     rows.map((r) => r.lessonId),
     IDS_PER_QUERY,
   )) {
-    const codeLessons = await db
-      .select({ id: lessons.id })
+    const existingLessons = await db
+      .select({
+        id: lessons.id,
+        type: lessons.type,
+        problemSubmitted: problemStepCompletion(userId, sql`lessons.id`),
+      })
       .from(lessons)
-      .where(and(inArray(lessons.id, ids), eq(lessons.type, "code")));
-    if (!codeLessons.length) continue;
-    for (const l of codeLessons) reviewed.add(l.id);
-    const ok = await reviewedPassLessonIds(
-      db,
-      userId,
-      codeLessons.map((l) => l.id),
-    );
+      .where(inArray(lessons.id, ids));
+    const codeLessonIds: string[] = [];
+    for (const row of existingLessons) {
+      existing.add(row.id);
+      if (row.type !== "code" && row.problemSubmitted === null) continue;
+      reviewed.add(row.id);
+      if (row.problemSubmitted === null) codeLessonIds.push(row.id);
+      else {
+        problemStepLessonIds.add(row.id);
+        if (row.problemSubmitted) passed.add(row.id);
+      }
+    }
+    const ok = await reviewedPassLessonIds(db, userId, codeLessonIds);
     for (const id of ok) passed.add(id);
   }
   return {
-    rows: rows.map((r) =>
-      reviewed.has(r.lessonId) ? { ...r, completed: passed.has(r.lessonId) } : r,
-    ),
+    rows: rows
+      .filter((r) => existing.has(r.lessonId))
+      .map((r) =>
+        reviewed.has(r.lessonId)
+          ? {
+              ...r,
+              completed: passed.has(r.lessonId),
+              countsTowardActivity: !problemStepLessonIds.has(r.lessonId) && r.countsTowardActivity,
+            }
+          : r,
+      ),
     reviewedLessonIds: reviewed,
+    problemStepLessonIds,
   };
 }
 

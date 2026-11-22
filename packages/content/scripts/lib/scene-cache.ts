@@ -1,10 +1,11 @@
+import type { MotionSceneProps } from "../../remotion/lib/props.js";
 import type { CodeState } from "../../src/scene-code.js";
 import { existsSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { speechOf } from "../../src/narration.js";
 import { createHash } from "node:crypto";
 import type { SceneTimeline, TextScene } from "../../src/scene-timeline.js";
-import { SCENE_TIMING } from "../../src/scene-timeline.js";
+import { SCENE_PACING, SCENE_TIMING } from "../../src/scene-timeline.js";
 import type { SceneSfxCue } from "../../src/scene-sfx.js";
 import {
   normalizeStoryboard,
@@ -17,15 +18,18 @@ export interface SceneCacheInput<
   S extends Scene | TextScene = Scene | TextScene,
   T = BoardState | ViewState | CodeState,
 > {
+  schema?: 1 | 2;
   version: number;
   board: S extends TextScene ? undefined : Board;
   start: S extends TextScene ? undefined : T;
+  figureStart?: BoardState;
   /** 使う画像・クリップ定義と動画全体の sha256。ファイルの時刻・サイズは使わない。 */
   assets?: Record<string, string>;
   scene: S;
   timing: SceneTimeline;
   /** 場面内の時刻だけを含む HTML。全体の開始時刻は描画に使わない。 */
-  html: string;
+  html?: string;
+  motion?: MotionSceneProps;
   /** 抽出したコマの一時URL。作業フォルダーの違いはキャッシュを変えない。 */
   assetRoot?: string;
   voice: string;
@@ -37,16 +41,17 @@ export interface SceneCacheInput<
 const digest = (data: string | Uint8Array): string =>
   createHash("sha256").update(data).digest("hex").slice(0, 32);
 /** 先行する音声の長さの変更だけでは、この場面のキャッシュを捨てない。 */
-export function sceneCacheHash(input: SceneCacheInput): string {
+export function sceneCacheHash({ schema, ...input }: SceneCacheInput): string {
   return digest(
     normalizeStoryboard({
       ...input,
       assetRoot: undefined,
       html: input.assetRoot
-        ? input.html.replaceAll(input.assetRoot, "file:///__scene_work__")
+        ? input.html?.replaceAll(input.assetRoot, "file:///__scene_work__")
         : input.html,
       timing: { ...input.timing, start: 0 },
       settings: SCENE_TIMING,
+      ...(schema === 2 ? { pacing: SCENE_PACING[2] } : {}),
       audio: input.audio.map((p) => digest(new Uint8Array(p.buffer, p.byteOffset, p.byteLength))),
     }),
   );
@@ -80,6 +85,7 @@ export function sceneVideoSourceHash(input: {
         ),
       ],
       timing: SCENE_TIMING,
+      ...(storyboard.schema === 2 ? { pacing: SCENE_PACING[2] } : {}),
     }),
   );
 }

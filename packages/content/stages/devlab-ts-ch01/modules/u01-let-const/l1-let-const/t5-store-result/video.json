@@ -1,0 +1,837 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "計算の式を右側に書いた 1 行を読んで、変数にどの値が入るかを言える。",
+    "stuck": "= の右に式が書いてあると、式がそのまま入るのか、いつ計算されるのかが分からない。",
+    "points": ["イコールの右側の式が先に計算され、その結果が変数に入る。"],
+    "leaveOut": [
+      "掛け算・割り算の書き方",
+      "足し算と掛け算を混ぜたときの順番",
+      "let と入れ直しの書き方",
+      "Math.floor",
+      "問1の答えのコード"
+    ]
+  },
+  "art": {
+    "pad": {
+      "prompt": "A desk calculator with a blank display, with two small price tags lying beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "slipr": {
+      "prompt": "One blank paper receipt slip with a zigzag bottom edge and a single thick placeholder line at the bottom. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "tagged": {
+      "prompt": "One closed light grey cardboard box, the same box as in the reference image, with a large blank white name tag hanging from it on a string. Object only, drawn large and centered. Light grey box, not brown. No people, no letters, no digits, no symbols."
+    },
+    "basket": {
+      "prompt": "A shopping basket holding a few grocery items. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "stock": {
+      "prompt": "A storage shelf with two rows of light grey cardboard boxes, one space empty. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "score": {
+      "prompt": "A blank test paper on a clipboard with a few check marks drawn as simple ticks. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "price": {
+      "prompt": "One closed hardcover book standing upright, with a blank price tag hanging from it on a short string. Nothing else in the image."
+    },
+    "tax": {
+      "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "total": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "calc": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "expr",
+          "label": "計算の式",
+          "art": "pad",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "計算の結果",
+          "art": "slipr",
+          "at": [3, 1]
+        },
+        {
+          "id": "v",
+          "label": "変数",
+          "art": "tagged",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "run",
+          "from": "expr",
+          "to": "result",
+          "label": "計算する"
+        },
+        {
+          "id": "put",
+          "from": "result",
+          "to": "v",
+          "label": "入れる"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tprice",
+          "label": "値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "ttax",
+          "label": "税込にする係",
+          "art": "tax",
+          "at": [3, 1]
+        },
+        {
+          "id": "ttotal",
+          "label": "税込の金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tgive",
+          "from": "tprice",
+          "to": "ttax",
+          "label": "渡す"
+        },
+        {
+          "id": "tback",
+          "from": "ttax",
+          "to": "ttotal",
+          "label": "返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "買い物の合計",
+          "art": "basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "在庫の残り",
+          "art": "stock",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "点数の合計",
+          "art": "score",
+          "at": [3, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "test-total",
+      "beats": [
+        {
+          "say": "この動画では、計算した結果に名前を付けます。"
+        },
+        {
+          "say": "国語は80点、算数は90点でした。",
+          "speech": "国語は八十点、算数は九十点でした。"
+        },
+        {
+          "say": "合計の欄には、足した結果の170点を書きます。",
+          "speech": "合計の欄には、足した結果の百七十点を書きます。"
+        },
+        {
+          "say": "欄に入るのは、式ではなく計算した結果です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "cashier",
+      "role": "example",
+      "title": "先に計算してから書く",
+      "board": "calc",
+      "beats": [
+        {
+          "say": "まず、レジの会計で考えてみましょう。",
+          "show": ["expr"],
+          "tag": {
+            "expr": "1200＋500"
+          },
+          "pulse": ["expr"]
+        },
+        {
+          "say": "最初に、この足し算を計算します。",
+          "show": ["run", "result"],
+          "travel": {
+            "along": ["run"],
+            "icon": "send"
+          },
+          "pulse": ["result"]
+        },
+        {
+          "say": "結果は、1700円です。",
+          "speech": "結果は、千七百円です。",
+          "tag": {
+            "result": "1700円"
+          }
+        },
+        {
+          "say": "この結果に、合計という名札を付けておきます。",
+          "show": ["put", "v"],
+          "tag": {
+            "v": "合計"
+          },
+          "travel": {
+            "along": ["put"],
+            "icon": "send"
+          },
+          "pulse": ["v"]
+        },
+        {
+          "say": "箱に入るのは、式ではなく計算の結果です。",
+          "pulse": ["result", "v"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "右側を先に計算する",
+      "code": [
+        "// 合計 total を作り、1200 と 500 を足した結果を入れる",
+        "const total = 1200 + 500;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "beats": [
+        {
+          "say": "この流れを、コードで書いてみます。",
+          "type": [0, 1],
+          "figure": {
+            "tag": {
+              "v": "total"
+            }
+          }
+        },
+        {
+          "say": "const total で、total という変数を作りました。",
+          "speech": "コンストトータルで、トータルという変数を作りました。",
+          "part": {
+            "line": 1,
+            "text": "const total"
+          },
+          "figure": {
+            "pulse": ["v"]
+          }
+        },
+        {
+          "say": "total は、合計という意味の英語です。",
+          "speech": "トータルは、合計という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "total",
+            "note": "合計"
+          }
+        },
+        {
+          "say": "イコールの右に、足し算の式を書きました。",
+          "part": {
+            "line": 1,
+            "text": "1200 + 500"
+          },
+          "figure": {
+            "pulse": ["expr"]
+          }
+        },
+        {
+          "say": "この右側が、先に計算されます。",
+          "figure": {
+            "travel": {
+              "along": ["run"]
+            },
+            "tag": {
+              "result": "1700"
+            },
+            "pulse": ["result"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "その結果の 1700 が、total に入る値です。",
+          "speech": "その結果の千七百が、トータルに入る値です。",
+          "part": {
+            "line": 1,
+            "text": "=",
+            "note": "入れる"
+          },
+          "figure": {
+            "travel": {
+              "along": ["put"]
+            },
+            "pulse": ["v"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "expr",
+      "kind": "code",
+      "role": "note",
+      "title": "式という言葉",
+      "code": [
+        "// 合計 total を作り、1200 と 500 を足した結果を入れる",
+        "const total = 1200 + 500;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "beats": [
+        {
+          "say": "1200 足す 500 のような書き方を、式と呼びます。",
+          "speech": "千二百足す五百のような書き方を、式と呼びます。",
+          "term": {
+            "text": "式",
+            "ruby": "しき",
+            "note": "計算のやり方を書いたもの"
+          },
+          "figure": {
+            "pulse": ["expr"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "足し算の記号は、算数と同じプラスです。",
+          "part": {
+            "line": 1,
+            "text": "+",
+            "note": "足す"
+          }
+        },
+        {
+          "say": "変数に入るのは、式そのものではありません。",
+          "figure": {
+            "pulse": ["v"]
+          }
+        },
+        {
+          "say": "入るのは、計算が済んだあとの 1700 です。",
+          "speech": "入るのは、計算が済んだあとの千七百です。",
+          "figure": {
+            "pulse": ["result"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "変数どうしを足す",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 送料 shipping を作り、500 を入れる",
+        "  const shipping = 500;",
+        "  // 合計 total を作り、足した結果を入れる",
+        "  const total = price + shipping;",
+        "  // 合計を返す",
+        "  return total;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": [0, 1, 2, 3, 8],
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "beats": [
+        {
+          "say": "前の動画の関数に、合計の変数を足してみましょう。",
+          "type": [4, 5, 6, 7],
+          "figure": {
+            "untag": ["result"],
+            "tag": {
+              "expr": "式"
+            },
+            "pulse": []
+          }
+        },
+        {
+          "say": "右側は、price 足す shipping という式です。",
+          "speech": "右側は、プライス足すシッピングという式です。",
+          "part": {
+            "line": 5,
+            "text": "price + shipping"
+          },
+          "figure": {
+            "pulse": ["expr"]
+          }
+        },
+        {
+          "say": "1200 を渡して、この関数を呼び出します。",
+          "speech": "千二百を渡して、この関数を呼び出します。",
+          "type": [9, 10]
+        },
+        {
+          "say": "price は 1200、shipping は 500 でした。",
+          "speech": "プライスは千二百、シッピングは五百でした。",
+          "focus": [1, 3],
+          "figure": {
+            "tag": {
+              "expr": "1200＋500"
+            }
+          }
+        },
+        {
+          "say": "先に計算した 1700 が、total に入ります。",
+          "speech": "先に計算した千七百が、トータルに入ります。",
+          "part": {
+            "line": 5,
+            "text": "total"
+          },
+          "figure": {
+            "travel": {
+              "along": ["run", "put"]
+            },
+            "tag": {
+              "result": "1700"
+            },
+            "pulse": ["v"]
+          }
+        },
+        {
+          "say": "return で返すのは、その total です。",
+          "speech": "リターンで返すのは、そのトータルです。",
+          "part": {
+            "line": 7,
+            "text": "return total"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 送料 shipping を作り、500 を入れる",
+        "  const shipping = 500;",
+        "  // 合計 total を作り、足した結果を入れる",
+        "  const total = price + shipping;",
+        "  // 合計を返す",
+        "  return total;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "合計の1行を、2つに分けてみましょう。",
+          "speech": "合計の一行を、二つに分けてみましょう。",
+          "focus": [5],
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "const とイコールとプラスは、決まった書き方です。",
+          "speech": "コンストとイコールとプラスは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "const"
+              },
+              {
+                "line": 5,
+                "text": "="
+              },
+              {
+                "line": 5,
+                "text": "+"
+              },
+              {
+                "line": 5,
+                "text": ";"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "total という名前は、自分で付けました。",
+          "speech": "トータルという名前は、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "total"
+              },
+              {
+                "line": 7,
+                "text": "total"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "price と shipping も、自分で決めた名前です。",
+          "speech": "プライスとシッピングも、自分で決めた名前です。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "price"
+              },
+              {
+                "line": 5,
+                "text": "price"
+              },
+              {
+                "line": 3,
+                "text": "shipping"
+              },
+              {
+                "line": 5,
+                "text": "shipping"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "total に入る値は",
+      "code": [
+        "// ペンとノートの合計を返す関数",
+        "function stationeryTotal(): number {",
+        "  // ペンの値段 pen を作り、120 を入れる",
+        "  const pen = 120;",
+        "  // ノートの値段 note を作り、180 を入れる",
+        "  const note = 180;",
+        "  // 合計 total を作り、足した結果を入れる",
+        "  const total = pen + note;",
+        "  // 合計を返す",
+        "  return total;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["expr", "run", "result", "put", "v"]
+          }
+        },
+        {
+          "say": "ペンとノートを買う関数を、用意しました。",
+          "focus": [3, 5],
+          "figure": {
+            "tag": {
+              "expr": "pen＋note",
+              "v": "total"
+            },
+            "pulse": ["expr"]
+          }
+        },
+        {
+          "say": "pen は 120、note は 180 です。",
+          "speech": "ペンは百二十、ノートは百八十です。",
+          "part": {
+            "line": 7,
+            "text": "pen + note"
+          }
+        },
+        {
+          "say": "total に入る値は、いくつでしょうか？",
+          "speech": "トータルに入る値は、いくつでしょうか？",
+          "part": {
+            "line": 7,
+            "text": "total"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "v",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["v"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// ペンとノートの合計を返す関数",
+        "function stationeryTotal(): number {",
+        "  // ペンの値段 pen を作り、120 を入れる",
+        "  const pen = 120;",
+        "  // ノートの値段 note を作り、180 を入れる",
+        "  const note = 180;",
+        "  // 合計 total を作り、足した結果を入れる",
+        "  const total = pen + note;",
+        "  // 合計を返す",
+        "  return total;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "beats": [
+        {
+          "say": "答えは、300 です。",
+          "speech": "答えは、三百です。",
+          "figure": {
+            "tag": {
+              "result": "300"
+            },
+            "mark": [
+              {
+                "on": "v",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["result", "v"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "式を値に読みかえる",
+      "code": [
+        "// ペンとノートの合計を返す関数",
+        "function stationeryTotal(): number {",
+        "  // ペンの値段 pen を作り、120 を入れる",
+        "  const pen = 120;",
+        "  // ノートの値段 note を作り、180 を入れる",
+        "  const note = 180;",
+        "  // 合計 total を作り、足した結果を入れる",
+        "  const total = pen + note;",
+        "  // 合計を返す",
+        "  return total;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "calc"
+      },
+      "beats": [
+        {
+          "say": "右側の式は、pen 足す note でした。",
+          "speech": "右側の式は、ペン足すノートでした。",
+          "part": {
+            "line": 7,
+            "text": "pen + note"
+          },
+          "figure": {
+            "pulse": ["expr"]
+          }
+        },
+        {
+          "say": "名前を値に読みかえると、120 足す 180 です。",
+          "speech": "名前を値に読みかえると、百二十足す百八十です。",
+          "focus": [3, 5],
+          "figure": {
+            "tag": {
+              "expr": "120＋180"
+            }
+          }
+        },
+        {
+          "say": "先に計算するので、結果は 300 になります。",
+          "speech": "先に計算するので、結果は三百になります。",
+          "figure": {
+            "travel": {
+              "along": ["run"]
+            },
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "この 300 が、変数の total に入る値です。",
+          "speech": "この三百が、変数のトータルに入る値です。",
+          "part": {
+            "line": 7,
+            "text": "total"
+          },
+          "figure": {
+            "travel": {
+              "along": ["put"]
+            },
+            "pulse": ["v"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "結果に名前を付ける場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "計算の結果は、あとで何度も使うことがあります。",
+          "show": ["u1"]
+        },
+        {
+          "say": "買い物の合計は、表示にも支払いにも使う値です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "在庫の残りや点数の合計も、同じように扱えます。",
+          "show": ["u2", "u3"],
+          "pulse": ["u2", "u3"]
+        },
+        {
+          "say": "結果に名前を付ければ、計算するのは一度だけです。",
+          "pulse": ["u1", "u2", "u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1でも使える",
+      "code": [
+        "// 問1 税込価格を返す（税率10%。税額の1円未満は切り捨て）",
+        "//     例: addTax(1000) → 1100",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "計算した結果は、問1でも変数に入れられます。",
+          "speech": "計算した結果は、問いちでも変数に入れられます。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "show": ["tprice", "tgive", "ttax", "tback", "ttotal"]
+          }
+        },
+        {
+          "say": "おすすめは、途中の計算結果に名前を付ける書き方です。",
+          "figure": {
+            "tag": {
+              "ttax": "結果に名前"
+            },
+            "pulse": ["ttax"]
+          }
+        },
+        {
+          "say": "何の結果かが分かる名前を、考えてみてください。",
+          "focus": [3],
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

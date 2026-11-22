@@ -13,7 +13,9 @@ import { PcHandoffButton } from "./PcHandoffButton";
  * ページのリンクをパソコンへ送るボタン (`PcHandoffButton`) に替える。
  */
 export function OpenInVscodeButton(
-  props: ({ stageId: string; lessonId: string } | { taskId: string }) & { label?: string },
+  props: ({ stageId: string; lessonId: string } | { taskId: string; problemId?: string }) & {
+    label?: string;
+  },
 ) {
   const handheld = useIsHandheld();
   const [opening, setOpening] = useState(false);
@@ -22,11 +24,7 @@ export function OpenInVscodeButton(
   const handleOpen = async () => {
     setOpening(true);
     try {
-      await openInVscode(
-        "taskId" in props
-          ? { taskId: props.taskId }
-          : { stageId: props.stageId, lessonId: props.lessonId },
-      );
+      await openInVscode(props);
     } finally {
       setOpening(false);
     }

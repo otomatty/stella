@@ -177,25 +177,20 @@ export const LearnerHome = ({
   const guidedStage =
     pickedGuidedStage?.status === "available" || guidedInProgress ? pickedGuidedStage : undefined;
   const guideStage = activeStage ?? guidedInProgress;
-  const nextLesson = useMemo(
-    () => findNextLesson(guideStage, progressMap),
-    [guideStage, progressMap],
-  );
-  /**
-   * レッスンを終えた新形式の星で、まだ合格していない課題。修了には課題のレビューの合格も
-   * 要るので、レッスンの進捗が 100% でも星はクリアにならない — 何が残っているかを札と
-   * ガイドに出す (出さないと「終えたのに次の星が開かない」に見える)。
-   */
-  const wrapupStageId =
+  // 問題のステップの状態は、通常のレッスン案内にも仕上げにも使う。
+  const taskStageId =
     backendEnabled &&
     guideStage &&
     !guideStage.completed &&
-    !nextLesson &&
     guideStage.format === 2 &&
     guideStage.lessonsCount > 0
       ? guideStage.id
       : null;
-  const wrapup = useStageWrapup(wrapupStageId);
+  const { problemLessons, wrapup } = useStageWrapup(taskStageId);
+  const nextLesson = useMemo(
+    () => findNextLesson(guideStage, progressMap, problemLessons),
+    [guideStage, progressMap, problemLessons],
+  );
 
   // 直近のつまずき: 添削で「再提出」「不合格」になった一番新しい提出。
   const recentMiss = submissions.find((s) => s.verdict === "resubmit" || s.verdict === "fail");
@@ -372,6 +367,13 @@ export const LearnerHome = ({
 
   /** その星の続き (未完了の先頭、無ければ読み返しの先頭) を開く。開けなければ詳細へ。 */
   const resumeStage = (stageId: string) => {
+    if (activeStage?.id === stageId && problemLessons.size > 0) {
+      const lessonId = nextLesson?.lesson.id ?? wrapup?.nextLesson?.id;
+      if (lessonId) {
+        onOpenLesson(activeStage, lessonId);
+        return;
+      }
+    }
     const target = startDestination(stages, stageId, progressMap);
     if (target) onOpenLesson(target.stage, target.lessonId);
     else openStage(stageId);
@@ -386,6 +388,10 @@ export const LearnerHome = ({
   const handheld = useIsHandheld();
   const openPendingTask = () => {
     if (!guideStage || !wrapup) return;
+    if (wrapup.nextLesson) {
+      onOpenLesson(guideStage, wrapup.nextLesson.id);
+      return;
+    }
     if (!handheld) {
       void openInVscode({ taskId: wrapup.task.id });
       return;
@@ -454,7 +460,9 @@ export const LearnerHome = ({
               : activeStage.lessonsCount === 0
                 ? "教材の準備中です。"
                 : "教材はすべて終わりました。課題とレビューの結果を確かめましょう。",
-          ...(!nextLesson && wrapup?.learnerTurn ? { openTask: openPendingTask } : {}),
+          ...(!nextLesson && wrapup?.learnerTurn && !wrapup.nextLesson
+            ? { openTask: openPendingTask }
+            : {}),
         }
       : null;
 

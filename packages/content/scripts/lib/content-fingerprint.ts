@@ -32,6 +32,10 @@ export const SEED_INPUT_PATHS = [
   // 新方式の素材と実行時の生成依存 (執筆用コマンドは含めない)。
   "packages/content/shots",
   "packages/content/clips",
+  "packages/content/remotion",
+  "packages/content/scripts/lib/remotion-render.ts",
+  "packages/content/scripts/lib/remotion-runtime.mjs",
+  "packages/content/src/scene-overlays.ts",
   "packages/content/scripts/build-scene-video.ts",
   "packages/content/scripts/lib/scene-cache.ts",
   "packages/content/scripts/lib/scene-encode.ts",
@@ -112,6 +116,7 @@ export const SEED_INPUT_PATHS = [
   "packages/shared/src/tasks/hash.ts",
   "packages/shared/src/tasks/help.ts",
   "packages/shared/src/tasks/manifest.ts",
+  "packages/shared/src/tasks/problem-steps.ts",
   "packages/shared/src/tasks/problems.ts",
   "packages/shared/src/tasks/run-result.ts",
   "packages/shared/src/tasks/runners.ts",

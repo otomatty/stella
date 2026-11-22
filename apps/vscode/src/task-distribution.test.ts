@@ -12,7 +12,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
-import { installTask, TaskInstallConflict } from "./task-distribution.js";
+import {
+  installTask,
+  protectedTaskFiles,
+  TaskInstallConflict,
+  unlockTaskFiles,
+} from "./task-distribution.js";
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return { ...actual, writeFile: vi.fn(actual.writeFile), rename: vi.fn(actual.rename) };
@@ -301,5 +306,99 @@ describe("固定した開始点", () => {
     );
     expect(conflict.reason).toBe("occupied");
     expect(conflict.files).toEqual([".stella/distribution.json"]);
+  });
+});
+
+describe("段階のある課題の配布", () => {
+  const manifest = {
+    ...bundle.manifest,
+    problemSteps: true as const,
+    problems: [
+      { id: "q01", title: "問1" },
+      { id: "q02", title: "問2" },
+    ],
+    submit: { files: ["src/**/*.ts"] },
+    protected: ["package.json", "tests/**"],
+  };
+  const withProblems = {
+    ...bundle,
+    manifest,
+    files: Object.fromEntries(
+      Object.entries({
+        ...Object.fromEntries(
+          Object.entries(bundle.files).map(([name, encoded]) => [
+            name,
+            Buffer.from(encoded, "base64").toString(),
+          ]),
+        ),
+        "package.json": "{}",
+        "src/q01.ts": "starter 1",
+        "tests/q01.test.ts": "test 1",
+        "src/q02.ts": "starter 2",
+        "tests/q02.test.ts": "test 2",
+        ".stella/task.json": JSON.stringify(manifest),
+      }).map(([name, contents]) => [name, Buffer.from(contents).toString("base64")]),
+    ),
+  };
+  const firstOnly = new Set(["q01"]);
+  const both = new Set(["q01", "q02"]);
+
+  it("設定・解ける問題だけを配り、解放で足す。配ったファイルの削除は衝突として示す", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, withProblems, { visibleProblems: firstOnly });
+    expect(await readdir(path.join(taskRoot, "src"))).toEqual(["q01.ts"]);
+    expect(await readdir(path.join(taskRoot, "tests"))).toEqual(["q01.test.ts"]);
+    expect(await readFile(path.join(taskRoot, "package.json"), "utf8")).toBe("{}");
+    expect(await installTask(training, withProblems, { visibleProblems: firstOnly })).toBe(
+      taskRoot,
+    );
+    const paths = ["package.json", "tests/q01.test.ts"];
+    const protection = await protectedTaskFiles(taskRoot, manifest, paths, "q01");
+    expect(protection.files).toEqual(paths);
+    expect(protection.references).toEqual([
+      expect.objectContaining({
+        path: "tests/q02.test.ts",
+        sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      }),
+    ]);
+    await writeFile(path.join(taskRoot, "src/q01.ts"), "learner answer");
+    await Promise.all([
+      unlockTaskFiles(taskRoot, withProblems, both),
+      unlockTaskFiles(taskRoot, withProblems, both),
+    ]);
+    expect(await readFile(path.join(taskRoot, "src/q01.ts"), "utf8")).toBe("learner answer");
+    expect(await readFile(path.join(taskRoot, "src/q02.ts"), "utf8")).toBe("starter 2");
+    expect(await readFile(path.join(taskRoot, "tests/q02.test.ts"), "utf8")).toBe("test 2");
+    expect(
+      (await protectedTaskFiles(taskRoot, manifest, [...paths, "tests/q02.test.ts"], "q01"))
+        .references,
+    ).toEqual([]);
+    await rm(path.join(taskRoot, "src/q02.ts"));
+    const conflict = await conflictOf(unlockTaskFiles(taskRoot, withProblems, both));
+    expect(conflict.reason).toBe("damaged");
+    expect(conflict.files).toEqual(["src/q02.ts"]);
+  });
+
+  it("あとから解放する場所の衝突を示し、学習者のファイルを保持する", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, withProblems, { visibleProblems: firstOnly });
+    await writeFile(path.join(taskRoot, "src/q02.ts"), "existing answer");
+    const conflict = await conflictOf(unlockTaskFiles(taskRoot, withProblems, both));
+    expect(conflict.reason).toBe("occupied");
+    expect(conflict.files).toContain("src/q02.ts");
+    expect(await readFile(path.join(taskRoot, "src/q02.ts"), "utf8")).toBe("existing answer");
+    expect(await readdir(path.join(taskRoot, "tests"))).toEqual(["q01.test.ts"]);
+  });
+
+  it("解放状態が分からない初回と、段階のない課題は全ファイルを配る", async () => {
+    const gated = await installTask(await root(), withProblems);
+    const { problemSteps: _, ...ordinary } = manifest;
+    const ungated = await installTask(
+      await root(),
+      { ...withProblems, manifest: ordinary },
+      { visibleProblems: firstOnly },
+    );
+    for (const taskRoot of [gated, ungated])
+      expect(await readdir(path.join(taskRoot, "src"))).toEqual(["q01.ts", "q02.ts"]);
   });
 });

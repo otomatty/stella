@@ -13,6 +13,8 @@ import {
   extensionUpgradeMessage,
   requiredExtensionVersion,
 } from "@stella/shared/tasks/extension-compat";
+import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
+import type { TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
@@ -29,6 +31,12 @@ import {
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
+import { planProblemStepProgressWrites } from "../lib/lesson-progress-write.js";
+import {
+  evaluatedProblemSteps,
+  loadProblemSteps,
+  problemStepsIfReady,
+} from "../lib/task-problem-steps.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -100,10 +108,13 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
             .where(
               and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
             );
-    const problemTasks = new Map<string, { id: string }[]>();
+    const problemTasks = new Map<string, TaskProblem[]>();
+    const gatedTaskIds = new Set<string>();
     for (const row of definitions) {
       const problems = readTaskDefinition(row.definition).problems;
-      if (problems) problemTasks.set(row.id, problems);
+      if (!problems) continue;
+      problemTasks.set(row.id, problems);
+      if (problems.some((problem) => problem.after)) gatedTaskIds.add(row.id);
     }
     const resultsByTask = new Map<
       string,
@@ -130,6 +141,14 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         resultsByTask.set(result.taskId, saved);
       }
     }
+    const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
+    const stepsByTask = new Map<string, typeof stepRows>();
+    for (const step of stepRows) {
+      const steps = stepsByTask.get(step.taskId) ?? [];
+      steps.push(step);
+      stepsByTask.set(step.taskId, steps);
+    }
+    const missingCompletions: string[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
         const p = progressByTaskId.get(task.id);
@@ -144,14 +163,33 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         };
         const problems = problemTasks.get(task.id);
         if (!problems) return base;
+        const saved = resultsByTask.get(task.id) ?? [];
         const passed = countedProblemIds(
-          resultsByTask.get(task.id) ?? [],
+          saved,
           contentHash,
           p?.status === "passed" || p?.status === "ai-passed",
         );
+        const steps = gatedTaskIds.has(task.id)
+          ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
+          : undefined;
+        const problemSteps = steps?.map(
+          ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
+            if (state === "submitted" && !stepCompleted) missingCompletions.push(stepLessonId);
+            return {
+              id: problem.id,
+              title: problem.title,
+              label: problemStepLabel(problem.title, problem.index),
+              stepLessonId,
+              afterLessonId,
+              afterTitle,
+              state,
+            };
+          },
+        );
         return {
           ...base,
-          problems_manual: (resultsByTask.get(task.id) ?? []).filter(
+          ...(problemSteps ? { problems: problemSteps } : {}),
+          problems_manual: saved.filter(
             (row) =>
               row.source === "manual" &&
               passed.has(row.problemId) &&
@@ -161,6 +199,8 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
       });
+    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+      await write;
     return c.json({ tasks: result });
   } catch (err) {
     return errorResponse(c, err);
@@ -216,12 +256,35 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
         .map((item) => [item.problemId, item.firstPassedAt]),
     );
     const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
-    return c.json({
-      problems: problems.map((problem) => {
-        const firstPassedAt = byId.get(problem.id);
-        return {
+    const steps = problems.some((problem) => problem.after)
+      ? evaluatedProblemSteps(
+          await loadProblemSteps(db, caller.id, { taskId: row.id }),
+          problems,
+          passedIds,
+        )
+      : undefined;
+    const missingCompletions =
+      steps
+        ?.filter((step) => step.state === "submitted" && !step.stepCompleted)
+        .map((step) => step.stepLessonId) ?? [];
+    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+      await write;
+    const entries = steps
+      ? steps.map(({ problem, state, stepLessonId, afterLessonId, afterTitle }) => ({
           id: problem.id,
           title: problem.title,
+          state,
+          stepLessonId,
+          afterLessonId,
+          afterTitle,
+        }))
+      : problems.map(({ id, title }) => ({ id, title }));
+    return c.json({
+      ...(steps ? { gated: true } : {}),
+      problems: entries.map((problem) => {
+        const firstPassedAt = byId.get(problem.id);
+        return {
+          ...problem,
           status: firstPassedAt ? "passed" : "not-submitted",
           firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
           source: firstPassedAt

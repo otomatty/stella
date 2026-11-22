@@ -1,0 +1,1009 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "関数を呼び出す 1 行を読んで、どの値が引数に入り、何が戻ってくるかを言える。",
+    "stuck": "関数を書けば勝手に動くと思っていて、名前の後ろのかっこと値が何を意味するのか分からない。",
+    "points": [
+      "関数は、名前の後ろのかっこに値を書いて呼び出すと動き、戻り値が呼び出した場所に返る。"
+    ],
+    "leaveOut": [
+      "戻り値を変数に入れる書き方",
+      "console.log での表示",
+      "テストの読み方",
+      "引数が 2 つ以上ある呼び出し",
+      "問1の答えのコード"
+    ]
+  },
+  "art": {
+    "orderslip": {
+      "prompt": "A hand holding up a small blank order slip on a clip, with two short placeholder lines on it. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "chef": {
+      "prompt": "A cheerful cook in a white hat stirring a large pot on a stove in a kitchen. Only the cook, the pot and the stove, drawn large and centered. No letters, no digits, no symbols."
+    },
+    "curry": {
+      "prompt": "One plate of Japanese curry and rice with a spoon beside it, steam rising. The curry sauce is a warm golden brown with small orange carrot and pale yellow potato pieces, the rice is white, the plate has a blue rim. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "groceries": {
+      "prompt": "A few grocery items standing together: a blue milk carton, a red apple and a golden-brown loaf of bread. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "bagman": {
+      "prompt": "A friendly shop clerk in an apron putting grocery items into a white plastic shopping bag at a checkout. Only the clerk and the bag, drawn large and centered. No letters, no digits, no symbols."
+    },
+    "tray": {
+      "prompt": "A small payment tray with a few coins and one blank banknote shape on it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "cartapp": {
+      "prompt": "A smartphone showing a shopping app screen with two small product squares and one wide highlighted bar at the bottom. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "tap": {
+      "prompt": "A finger pressing one large round button on a tablet screen, with small motion lines around the button. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "gears": {
+      "prompt": "Two interlocking gears of different sizes, one turning the other. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "price": {
+      "prompt": "One closed hardcover book standing upright, with a blank price tag hanging from it on a short string. Nothing else in the image."
+    },
+    "clerk": {
+      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, holding a small toy delivery truck in one hand and resting the other hand on a cardboard parcel on the counter. No people."
+    },
+    "total": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge, with three coins and one blank banknote shape lying beside it. Objects only, drawn large and centered. No people, no digits, no symbols."
+    },
+    "tax": {
+      "prompt": "The same friendly robot clerk as in the reference image (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, pressing the keys of a large desk calculator with a blank display. Only the robot, the counter and the calculator. No people, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ask",
+          "label": "注文",
+          "art": "orderslip",
+          "at": [1, 1]
+        },
+        {
+          "id": "kitchen",
+          "label": "厨房",
+          "art": "chef",
+          "at": [3, 1]
+        },
+        {
+          "id": "dish",
+          "label": "料理",
+          "art": "curry",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tell",
+          "from": "ask",
+          "to": "kitchen",
+          "label": "伝える"
+        },
+        {
+          "id": "serve",
+          "from": "kitchen",
+          "to": "dish",
+          "label": "届く"
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "price",
+          "label": "本の値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "fee",
+          "label": "送料を足す係",
+          "art": "clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "total",
+          "label": "支払う金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give",
+          "from": "price",
+          "to": "fee",
+          "label": "渡す"
+        },
+        {
+          "id": "back",
+          "from": "fee",
+          "to": "total",
+          "label": "返す"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "bag": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bin",
+          "label": "買い物の金額",
+          "art": "groceries",
+          "at": [1, 1]
+        },
+        {
+          "id": "bfn",
+          "label": "袋代を足す関数",
+          "art": "bagman",
+          "at": [3, 1]
+        },
+        {
+          "id": "bout",
+          "label": "支払う金額",
+          "art": "tray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "bgive",
+          "from": "bin",
+          "to": "bfn",
+          "label": "渡す"
+        },
+        {
+          "id": "bback",
+          "from": "bfn",
+          "to": "bout",
+          "label": "返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "合計を出すとき",
+          "art": "cartapp",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "ボタンを押すとき",
+          "art": "tap",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "関数から呼ぶ",
+          "art": "gears",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tprice",
+          "label": "値段",
+          "art": "price",
+          "at": [1, 1]
+        },
+        {
+          "id": "ttax",
+          "label": "税込にする係",
+          "art": "tax",
+          "at": [3, 1]
+        },
+        {
+          "id": "ttotal",
+          "label": "税込の金額",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tgive",
+          "from": "tprice",
+          "to": "ttax",
+          "label": "渡す"
+        },
+        {
+          "id": "tback",
+          "from": "ttax",
+          "to": "ttotal",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "call-staff",
+      "beats": [
+        {
+          "say": "この動画で学ぶのは、関数の使い方です。"
+        },
+        {
+          "say": "計算の担当は、呼ばれるまで動きません。"
+        },
+        {
+          "say": "名前を呼んで、伝票を渡してみましょう。"
+        },
+        {
+          "say": "担当が計算して、結果を返してくれました。"
+        },
+        {
+          "say": "関数も、名前で呼び出すと動きます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "role": "example",
+      "title": "注文すると料理が届く",
+      "board": "order",
+      "beats": [
+        {
+          "say": "飲食店で、カレーを注文するとします。",
+          "show": ["ask"],
+          "tag": {
+            "ask": "カレー"
+          },
+          "pulse": ["ask"]
+        },
+        {
+          "say": "注文が伝わるのは、厨房です。",
+          "show": ["tell", "kitchen"],
+          "travel": {
+            "along": ["tell"],
+            "icon": "send"
+          },
+          "pulse": ["kitchen"]
+        },
+        {
+          "say": "厨房は、注文を受けてから料理を作ります。",
+          "pulse": ["kitchen"],
+          "tag": {
+            "kitchen": "作る"
+          }
+        },
+        {
+          "say": "できあがった料理が、席に届きました。",
+          "show": ["serve", "dish"],
+          "travel": {
+            "along": ["serve"],
+            "icon": "send"
+          },
+          "pulse": ["dish"]
+        },
+        {
+          "say": "注文しなければ、厨房は何も作りません。",
+          "pulse": [],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "call",
+      "kind": "code",
+      "role": "syntax",
+      "title": "名前とかっこで呼び出す",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "最初の動画で作った関数を、使ってみましょう。",
+          "figure": {
+            "show": ["price", "give", "fee", "back", "total"]
+          }
+        },
+        {
+          "say": "関数は、書いただけでは動きません。",
+          "focus": [1, 2, 3, 4],
+          "figure": {
+            "pulse": ["fee"]
+          }
+        },
+        {
+          "say": "動かすには、関数の名前を書きます。",
+          "type": [5, 6],
+          "part": {
+            "line": 6,
+            "text": "addShipping"
+          }
+        },
+        {
+          "say": "名前の後ろのかっこに書くのは、渡す値です。",
+          "part": {
+            "line": 6,
+            "text": "(1200)"
+          },
+          "figure": {
+            "tag": {
+              "price": "1200"
+            },
+            "pulse": ["price"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "このように関数を使うことを、呼び出すと言います。",
+          "term": {
+            "text": "呼び出す",
+            "ruby": "よびだす",
+            "note": "関数を使うこと"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "kind": "code",
+      "role": "syntax",
+      "title": "渡した値のゆくえ",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "呼び出すと、1200 が引数の price に入ります。",
+          "speech": "呼び出すと、千二百が引数のプライスに入ります。",
+          "part": {
+            "line": 1,
+            "text": "price"
+          },
+          "figure": {
+            "tag": {
+              "price": "1200"
+            },
+            "travel": {
+              "along": ["give"]
+            },
+            "pulse": ["price"]
+          }
+        },
+        {
+          "say": "中では、500 を足す処理が動きました。",
+          "speech": "中では、五百を足す処理が動きました。",
+          "part": {
+            "line": 3,
+            "text": "price + 500"
+          },
+          "figure": {
+            "tag": {
+              "fee": "＋500"
+            },
+            "pulse": ["fee"]
+          }
+        },
+        {
+          "say": "結果の 1700 が、戻り値です。",
+          "speech": "結果の千七百が、戻り値です。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "tag": {
+              "total": "1700"
+            },
+            "travel": {
+              "along": ["back"]
+            },
+            "pulse": ["total"]
+          }
+        },
+        {
+          "say": "戻り値は、呼び出した場所に返ってきます。",
+          "focus": [6],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "match",
+      "kind": "code",
+      "role": "apply",
+      "title": "注文の例と見くらべる",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "order"
+      },
+      "beats": [
+        {
+          "say": "飲食店の例と、見くらべてみましょう。",
+          "figure": {
+            "show": ["ask", "tell", "kitchen", "serve", "dish"]
+          }
+        },
+        {
+          "say": "関数の名前を書くことが、注文にあたります。",
+          "part": {
+            "line": 6,
+            "text": "addShipping"
+          },
+          "figure": {
+            "pulse": ["ask"]
+          }
+        },
+        {
+          "say": "かっこの中の 1200 は、注文の内容です。",
+          "speech": "かっこの中の千二百は、注文の内容です。",
+          "part": {
+            "line": 6,
+            "text": "1200"
+          },
+          "figure": {
+            "tag": {
+              "ask": "1200"
+            }
+          }
+        },
+        {
+          "say": "関数の中身は、厨房と同じ働きをします。",
+          "focus": [1, 2, 3, 4],
+          "figure": {
+            "tag": {
+              "kitchen": "＋500"
+            },
+            "pulse": ["kitchen"]
+          }
+        },
+        {
+          "say": "届いた料理にあたるのが、戻り値の 1700 です。",
+          "speech": "届いた料理にあたるのが、戻り値の千七百です。",
+          "focus": [6],
+          "figure": {
+            "tag": {
+              "dish": "1700"
+            },
+            "travel": {
+              "along": ["tell", "serve"]
+            },
+            "pulse": ["dish"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "twice",
+      "kind": "code",
+      "role": "note",
+      "title": "何度でも呼び出せる",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);",
+        "// 800 円の本の値段を渡して、もう一度呼ぶ",
+        "addShipping(800);"
+      ],
+      "show": [0, 1, 2, 3, 4, 5, 6],
+      "panel": {
+        "kind": "figure",
+        "board": "shop"
+      },
+      "beats": [
+        {
+          "say": "関数は、何度でも呼び出せます。",
+          "focus": [6],
+          "figure": {
+            "show": ["price", "give", "fee", "back", "total"],
+            "tag": {
+              "price": "1200",
+              "fee": "＋500",
+              "total": "1700"
+            }
+          }
+        },
+        {
+          "say": "今度は、800 を渡して呼び出しました。",
+          "speech": "今度は、八百を渡して呼び出しました。",
+          "type": [7, 8],
+          "figure": {
+            "tag": {
+              "price": "800"
+            },
+            "untag": ["total"],
+            "travel": {
+              "along": ["give"]
+            },
+            "pulse": ["price"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、1300 です。",
+          "speech": "戻ってくる値は、千三百です。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "total": "1300"
+            },
+            "travel": {
+              "along": ["back"]
+            },
+            "pulse": ["total"]
+          }
+        },
+        {
+          "say": "渡す値を変えるだけで、同じ処理を使い回せます。",
+          "figure": {
+            "pulse": ["fee"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 本の値段を受け取り、支払う金額を返す関数",
+        "function addShipping(price: number): number {",
+        "  // 受け取った値段に、送料の 500 を足して返す",
+        "  return price + 500;",
+        "}",
+        "// 1200 円の本の値段を渡して、関数を呼ぶ",
+        "addShipping(1200);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "呼び出しの1行も、2つに分けてみましょう。",
+          "speech": "呼び出しの一行も、二つに分けてみましょう。",
+          "focus": [6],
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "かっことセミコロンは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 6,
+                "text": "("
+              },
+              {
+                "line": 6,
+                "text": ")"
+              },
+              {
+                "line": 6,
+                "text": ";"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "関数の名前は、作ったときと同じつづりで書きます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "addShipping"
+              },
+              {
+                "line": 6,
+                "text": "addShipping"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "自分で決めた"
+            }
+          }
+        },
+        {
+          "say": "渡す 1200 は、自分で決めた値です。",
+          "speech": "渡す千二百は、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 6,
+                "text": "1200"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "2回めに戻る値は",
+      "code": [
+        "// 買い物の金額を受け取り、レジ袋代を足して返す関数",
+        "function addBag(amount: number): number {",
+        "  // 受け取った金額に、レジ袋代の 5 を足して返す",
+        "  return amount + 5;",
+        "}",
+        "// 1回め: 100 円の買い物で呼ぶ",
+        "addBag(100);",
+        "// 2回め: 300 円の買い物で呼ぶ",
+        "addBag(300);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "bag"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["bin", "bgive", "bfn", "bback", "bout"]
+          }
+        },
+        {
+          "say": "レジ袋の代金を足す関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "addBag"
+          },
+          "figure": {
+            "pulse": ["bfn"],
+            "tag": {
+              "bfn": "＋5"
+            }
+          }
+        },
+        {
+          "say": "bag は、袋という意味の英語です。",
+          "speech": "バッグは、袋という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "Bag",
+            "note": "袋"
+          }
+        },
+        {
+          "say": "この関数を、2回呼び出します。",
+          "speech": "この関数を、二回呼び出します。",
+          "type": [5, 6, 7, 8],
+          "figure": {
+            "pulse": ["bin"]
+          }
+        },
+        {
+          "say": "2回めに戻ってくる値は、いくつでしょうか？",
+          "speech": "二回めに戻ってくる値は、いくつでしょうか？",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "bin": "300"
+            },
+            "mark": [
+              {
+                "on": "bout",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["bout"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 買い物の金額を受け取り、レジ袋代を足して返す関数",
+        "function addBag(amount: number): number {",
+        "  // 受け取った金額に、レジ袋代の 5 を足して返す",
+        "  return amount + 5;",
+        "}",
+        "// 1回め: 100 円の買い物で呼ぶ",
+        "addBag(100);",
+        "// 2回め: 300 円の買い物で呼ぶ",
+        "addBag(300);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "bag"
+      },
+      "beats": [
+        {
+          "say": "答えは、305 です。",
+          "speech": "答えは、三百五です。",
+          "figure": {
+            "tag": {
+              "bout": "305"
+            },
+            "mark": [
+              {
+                "on": "bout",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["bout"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "呼び出しごとに計算する",
+      "code": [
+        "// 買い物の金額を受け取り、レジ袋代を足して返す関数",
+        "function addBag(amount: number): number {",
+        "  // 受け取った金額に、レジ袋代の 5 を足して返す",
+        "  return amount + 5;",
+        "}",
+        "// 1回め: 100 円の買い物で呼ぶ",
+        "addBag(100);",
+        "// 2回め: 300 円の買い物で呼ぶ",
+        "addBag(300);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "bag"
+      },
+      "beats": [
+        {
+          "say": "1回めは、100 を渡して呼び出しています。",
+          "speech": "一回めは、百を渡して呼び出しています。",
+          "focus": [6],
+          "figure": {
+            "tag": {
+              "bin": "100"
+            },
+            "untag": ["bout"],
+            "pulse": ["bin"]
+          }
+        },
+        {
+          "say": "このとき戻ってくるのは、105 です。",
+          "speech": "このとき戻ってくるのは、百五です。",
+          "figure": {
+            "tag": {
+              "bout": "105"
+            },
+            "travel": {
+              "along": ["bgive", "bback"]
+            },
+            "pulse": ["bout"]
+          }
+        },
+        {
+          "say": "2回めに渡したのは、300 でした。",
+          "speech": "二回めに渡したのは、三百でした。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "bin": "300"
+            },
+            "untag": ["bout"],
+            "pulse": ["bin"]
+          }
+        },
+        {
+          "say": "300 に 5 を足すので、戻り値は 305 になります。",
+          "speech": "三百に五を足すので、戻り値は三百五になります。",
+          "part": {
+            "line": 3,
+            "text": "amount + 5"
+          },
+          "figure": {
+            "tag": {
+              "bout": "305"
+            },
+            "travel": {
+              "along": ["bgive", "bback"]
+            },
+            "pulse": ["bout"]
+          }
+        },
+        {
+          "say": "呼び出すたびに、渡した値で計算する仕組みです。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "関数を呼び出す場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "関数を呼び出すのは、その処理が必要になったときです。",
+          "show": ["u1"]
+        },
+        {
+          "say": "買い物のアプリでは、合計を出すときに呼び出します。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "ボタンを押したときに動く処理も、関数の呼び出しです。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "関数の中から、別の関数を呼び出すこともあります。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1の export を読む",
+      "code": [
+        "// 問1 税込価格を返す（税率10%。税額の1円未満は切り捨て）",
+        "//     例: addTax(1000) → 1100",
+        "export function addTax(price: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1の関数は、先頭に export が付いています。",
+          "speech": "問いちの関数は、先頭にエクスポートが付いています。",
+          "part": {
+            "line": 2,
+            "text": "export"
+          },
+          "figure": {
+            "show": ["tprice", "tgive", "ttax", "tback", "ttotal"]
+          }
+        },
+        {
+          "say": "export は、ほかのファイルから使えるようにする印です。",
+          "speech": "エクスポートは、ほかのファイルから使えるようにする印です。",
+          "part": {
+            "line": 2,
+            "text": "export",
+            "note": "外へ出す"
+          }
+        },
+        {
+          "say": "課題では、確認用のプログラムがこの関数を呼び出します。",
+          "figure": {
+            "travel": {
+              "along": ["tgive", "tback"]
+            },
+            "pulse": ["ttax"]
+          }
+        },
+        {
+          "say": "呼び出しの行を、自分で書く必要はありません。",
+          "focus": [2]
+        },
+        {
+          "say": "書くのは、波かっこの中の処理だけです。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "tag": {
+              "ttax": "ここを書く"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

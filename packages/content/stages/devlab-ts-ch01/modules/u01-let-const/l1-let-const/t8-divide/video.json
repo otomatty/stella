@@ -1,0 +1,885 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "スラッシュを使った式を読んで、割り算の結果を言える。割り切れないときは小数になると言える。",
+    "stuck": "キーボードに ÷ が無く、/ が割り算の記号だと知らない。整数どうしで割ると整数になると思っている。",
+    "points": ["割り算は、÷ ではなくスラッシュで書く。割り切れないと結果は小数になる。"],
+    "leaveOut": [
+      "切り上げ (次の動画)",
+      "余りを求める書き方",
+      "0 で割ったときの結果",
+      "引数が 2 つある関数 (あとの動画)",
+      "問2の答えのコード"
+    ]
+  },
+  "art": {
+    "cookieplate": {
+      "prompt": "One big plate piled with many round cookies. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "threeplates": {
+      "prompt": "Three small empty plates set side by side in a row. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "oneplate": {
+      "prompt": "One small plate holding a few round cookies. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "apples": {
+      "prompt": "A wooden crate full of red apples. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "twobaskets": {
+      "prompt": "Two identical empty wicker baskets side by side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "basket1": {
+      "prompt": "One wicker basket seen from the side with a cloth covering whatever is inside. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "dinnerbill": {
+      "prompt": "A restaurant table with three empty plates and one folded paper bill on a small tray in the middle. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "scores": {
+      "prompt": "Three blank test papers fanned out, each with a few placeholder lines and a circle mark, with a pencil beside them. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "car": {
+      "prompt": "A small car driving along a winding road with a round stopwatch without numbers above it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "billpaper": {
+      "prompt": "A restaurant bill on a small tray with a few thin placeholder lines, with three small simple person icons drawn as plain round heads and shoulders beside it. Objects only, drawn large and centered. No letters, no digits, no symbols."
+    },
+    "calcdesk": {
+      "prompt": "A large desk calculator with a blank display standing on a desk, with a pencil beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wallet": {
+      "prompt": "One open wallet with a blank banknote shape and two coins coming out of it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "div": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "クッキー",
+          "art": "cookieplate",
+          "at": [1, 1]
+        },
+        {
+          "id": "by",
+          "label": "3人で分ける",
+          "art": "threeplates",
+          "at": [3, 1]
+        },
+        {
+          "id": "one",
+          "label": "1人分",
+          "art": "oneplate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "d1",
+          "from": "all",
+          "to": "by",
+          "label": "割る"
+        },
+        {
+          "id": "d2",
+          "from": "by",
+          "to": "one",
+          "label": "結果"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "apple": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a1",
+          "label": "りんご",
+          "art": "apples",
+          "at": [1, 1]
+        },
+        {
+          "id": "a2",
+          "label": "2人で分ける",
+          "art": "twobaskets",
+          "at": [3, 1]
+        },
+        {
+          "id": "a3",
+          "label": "1人分",
+          "art": "basket1",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ad1",
+          "from": "a1",
+          "to": "a2",
+          "label": "割る"
+        },
+        {
+          "id": "ad2",
+          "from": "a2",
+          "to": "a3",
+          "label": "結果"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "1人分の金額",
+          "art": "dinnerbill",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "平均",
+          "art": "scores",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "速さ",
+          "art": "car",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task2": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "qin",
+          "label": "合計と人数",
+          "art": "billpaper",
+          "at": [1, 1]
+        },
+        {
+          "id": "qfn",
+          "label": "割り勘の関数",
+          "art": "calcdesk",
+          "at": [3, 1]
+        },
+        {
+          "id": "qout",
+          "label": "1人が払う金額",
+          "art": "wallet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "qgive",
+          "from": "qin",
+          "to": "qfn",
+          "label": "渡す"
+        },
+        {
+          "id": "qback",
+          "from": "qfn",
+          "to": "qout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "pizza-share",
+      "beats": [
+        {
+          "say": "この動画では、割り算の書き方を学びます。"
+        },
+        {
+          "say": "8切れのピザを分ける相手は、4人です。",
+          "speech": "はちきれのピザを分ける相手は、四人です。"
+        },
+        {
+          "say": "同じ数ずつ配ると、1人に2切れずつ渡ります。",
+          "speech": "同じ数ずつ配ると、一人にふたきれずつ渡ります。"
+        },
+        {
+          "say": "算数では、割る記号を使って計算しました。"
+        },
+        {
+          "say": "コードでは、この記号の書き方が変わります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "role": "example",
+      "title": "クッキーを3人で分ける",
+      "board": "div",
+      "beats": [
+        {
+          "say": "クッキーが、12枚あります。",
+          "speech": "クッキーが、十二枚あります。",
+          "show": ["all"],
+          "tag": {
+            "all": "12枚"
+          },
+          "pulse": ["all"]
+        },
+        {
+          "say": "これを3人で、同じ数ずつ分けるとしましょう。",
+          "speech": "これを三人で、同じ数ずつ分けるとしましょう。",
+          "show": ["d1", "by"],
+          "tag": {
+            "by": "÷3"
+          },
+          "travel": {
+            "along": ["d1"],
+            "icon": "send"
+          },
+          "pulse": ["by"]
+        },
+        {
+          "say": "12 を 3 で割った答えは、4 です。",
+          "speech": "十二をさんで割った答えは、よんです。",
+          "show": ["d2", "one"],
+          "tag": {
+            "one": "4枚"
+          },
+          "travel": {
+            "along": ["d2"],
+            "icon": "send"
+          },
+          "pulse": ["one"]
+        },
+        {
+          "say": "1人分は、4枚だと分かりました。",
+          "speech": "ひとり分は、四枚だと分かりました。",
+          "focus": ["one"]
+        },
+        {
+          "say": "同じ大きさに分けるときに使うのが、割り算です。",
+          "pause": 1,
+          "focus": ["all", "by", "one"]
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "割り算はスラッシュ",
+      "code": ["// 1 人分 each を作り、12 を 3 で割る", "const each = 12 / 3;"],
+      "panel": {
+        "kind": "figure",
+        "board": "div"
+      },
+      "beats": [
+        {
+          "say": "この計算を、コードで書いてみます。",
+          "type": [0, 1],
+          "figure": {
+            "tag": {
+              "all": "12",
+              "one": "each"
+            }
+          }
+        },
+        {
+          "say": "割り算の記号は、右上がりの斜めの線です。",
+          "part": {
+            "line": 1,
+            "text": "/",
+            "note": "割る"
+          },
+          "figure": {
+            "tag": {
+              "by": "／3"
+            },
+            "pulse": ["by"]
+          }
+        },
+        {
+          "say": "キーボードには、算数の割る記号がありません。",
+          "focus": [1]
+        },
+        {
+          "say": "代わりに使うこの記号を、スラッシュと呼びます。",
+          "term": {
+            "text": "スラッシュ",
+            "note": "割り算を表す記号 ／"
+          },
+          "pause": 1
+        },
+        {
+          "say": "each に入るのは、12 割る 3 の結果です。",
+          "speech": "イーチに入るのは、十二割るさんの結果です。",
+          "part": {
+            "line": 1,
+            "text": "12 / 3"
+          },
+          "figure": {
+            "travel": {
+              "along": ["d1", "d2"]
+            },
+            "tag": {
+              "one": "4"
+            },
+            "pulse": ["one"]
+          }
+        },
+        {
+          "say": "each は、それぞれという意味を表します。",
+          "speech": "イーチは、それぞれという意味を表します。",
+          "part": {
+            "line": 1,
+            "text": "each",
+            "note": "それぞれ"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "decimal",
+      "kind": "code",
+      "role": "note",
+      "title": "割り切れないとき",
+      "code": ["// 1 人分 each を作り、7 を 2 で割る", "const each = 7 / 2;"],
+      "show": true,
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "div"
+      },
+      "beats": [
+        {
+          "say": "割り切れない数でも、試してみましょう。",
+          "figure": {
+            "show": ["all", "d1", "by", "d2", "one"],
+            "tag": {
+              "all": "7",
+              "by": "／2"
+            },
+            "untag": ["one"],
+            "pulse": ["all"]
+          }
+        },
+        {
+          "say": "7 を 2 で割ると、答えは 3.5 です。",
+          "speech": "ななをにで割ると、答えはさんてんごです。",
+          "part": {
+            "line": 1,
+            "text": "7 / 2"
+          },
+          "figure": {
+            "tag": {
+              "one": "3.5"
+            },
+            "travel": {
+              "along": ["d1", "d2"]
+            },
+            "pulse": ["one"]
+          }
+        },
+        {
+          "say": "整数どうしの割り算でも、結果は小数になります。",
+          "figure": {
+            "pulse": ["one"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "端数が勝手に切り捨てられることは、ありません。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で割る",
+      "code": [
+        "// クッキーの枚数を受け取り、3 人で分けた 1 人分を返す関数",
+        "function shareCookies(count: number): number {",
+        "  // 1 人分 each を作り、枚数を 3 で割る",
+        "  const each = count / 3;",
+        "  // 1 人分を返す",
+        "  return each;",
+        "}",
+        "// 12 枚を渡して、関数を呼ぶ",
+        "shareCookies(12);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "div"
+      },
+      "beats": [
+        {
+          "say": "今度は、枚数を受け取る関数にしてみましょう。",
+          "type": [0, 1, 2, 3, 4, 5, 6],
+          "figure": {
+            "show": ["all", "d1", "by", "d2", "one"],
+            "tag": {
+              "all": "count",
+              "by": "／3"
+            },
+            "untag": ["one"]
+          }
+        },
+        {
+          "say": "share は、分け合うという意味の英語です。",
+          "speech": "シェアは、分け合うという意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "share",
+            "note": "分け合う"
+          }
+        },
+        {
+          "say": "受け取った枚数を、3 で割ります。",
+          "speech": "受け取った枚数を、さんで割ります。",
+          "part": {
+            "line": 3,
+            "text": "count / 3"
+          },
+          "figure": {
+            "pulse": ["by"]
+          }
+        },
+        {
+          "say": "12 を渡して、この関数を呼び出しました。",
+          "speech": "十二を渡して、この関数を呼び出しました。",
+          "type": [7, 8],
+          "figure": {
+            "tag": {
+              "all": "12"
+            },
+            "pulse": ["all"]
+          }
+        },
+        {
+          "say": "戻ってくるのは、4 です。",
+          "speech": "戻ってくるのは、よんです。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "one": "4"
+            },
+            "travel": {
+              "along": ["d1", "d2"]
+            },
+            "pulse": ["one"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// クッキーの枚数を受け取り、3 人で分けた 1 人分を返す関数",
+        "function shareCookies(count: number): number {",
+        "  // 1 人分 each を作り、枚数を 3 で割る",
+        "  const each = count / 3;",
+        "  // 1 人分を返す",
+        "  return each;",
+        "}",
+        "// 12 枚を渡して、関数を呼ぶ",
+        "shareCookies(12);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この関数も、2つに分けて見てみましょう。",
+          "speech": "この関数も、二つに分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "スラッシュは、言語で決まっている記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "/"
+              },
+              {
+                "line": 3,
+                "text": "const"
+              },
+              {
+                "line": 5,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "shareCookies と each は、自分で付けました。",
+          "speech": "シェアクッキーズとイーチは、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "shareCookies"
+              },
+              {
+                "line": 8,
+                "text": "shareCookies"
+              },
+              {
+                "line": 3,
+                "text": "each"
+              },
+              {
+                "line": 5,
+                "text": "each"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "割る数の 3 も、自分で決めた値です。",
+          "speech": "割る数のさんも、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "3"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻ってくる値はいくつ",
+      "code": [
+        "// りんごの個数を受け取り、2 人で分けた 1 人分を返す関数",
+        "function halve(count: number): number {",
+        "  // 受け取った個数を 2 で割って返す",
+        "  return count / 2;",
+        "}",
+        "// 9 個を渡して、関数を呼ぶ",
+        "halve(9);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apple"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["a1", "ad1", "a2", "ad2", "a3"]
+          }
+        },
+        {
+          "say": "りんごを2人で分ける関数を、用意しました。",
+          "speech": "りんごを二人で分ける関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "halve"
+          },
+          "figure": {
+            "tag": {
+              "a2": "／2"
+            },
+            "pulse": ["a2"]
+          }
+        },
+        {
+          "say": "halve は、半分にするという意味の英語です。",
+          "speech": "ハーブは、半分にするという意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "halve",
+            "note": "半分にする"
+          }
+        },
+        {
+          "say": "この関数に、9 を渡して呼び出します。",
+          "speech": "この関数に、きゅうを渡して呼び出します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a1": "9"
+            },
+            "pulse": ["a1"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "a3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["a3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// りんごの個数を受け取り、2 人で分けた 1 人分を返す関数",
+        "function halve(count: number): number {",
+        "  // 受け取った個数を 2 で割って返す",
+        "  return count / 2;",
+        "}",
+        "// 9 個を渡して、関数を呼ぶ",
+        "halve(9);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apple"
+      },
+      "beats": [
+        {
+          "say": "答えは、4.5 です。",
+          "speech": "答えは、よんてんごです。",
+          "figure": {
+            "tag": {
+              "a3": "4.5"
+            },
+            "mark": [
+              {
+                "on": "a3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["a3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "割り切れないと小数",
+      "code": [
+        "// りんごの個数を受け取り、2 人で分けた 1 人分を返す関数",
+        "function halve(count: number): number {",
+        "  // 受け取った個数を 2 で割って返す",
+        "  return count / 2;",
+        "}",
+        "// 9 個を渡して、関数を呼ぶ",
+        "halve(9);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apple"
+      },
+      "beats": [
+        {
+          "say": "9 が、引数の count に入ります。",
+          "speech": "きゅうが、引数のカウントに入ります。",
+          "part": {
+            "line": 1,
+            "text": "count"
+          },
+          "figure": {
+            "pulse": ["a1"]
+          }
+        },
+        {
+          "say": "中身は、count を 2 で割る処理です。",
+          "speech": "中身は、カウントをにで割る処理です。",
+          "part": {
+            "line": 3,
+            "text": "count / 2"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ad1"]
+            },
+            "pulse": ["a2"]
+          }
+        },
+        {
+          "say": "9 は、2 で割り切れません。",
+          "speech": "きゅうは、にで割り切れません。",
+          "focus": [3]
+        },
+        {
+          "say": "そのため、結果は小数の 4.5 になります。",
+          "speech": "そのため、結果は小数のよんてんごになります。",
+          "figure": {
+            "travel": {
+              "along": ["ad2"]
+            },
+            "pulse": ["a3"]
+          }
+        },
+        {
+          "say": "4 や 5 のような整数には、なりません。",
+          "speech": "よんやごのような整数には、なりません。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "割り算を使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "割り算は、同じ大きさに分ける場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "食事の代金を人数で割ると、1人分の金額です。",
+          "speech": "食事の代金を人数で割ると、ひとり分の金額です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "合計を個数で割ると、平均が求められます。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "道のりを時間で割った答えは、速さです。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問2で使う",
+      "code": [
+        "// 問2 割り勘で1人が払う金額を返す（100円単位に切り上げ）",
+        "//     例: splitBill(10000, 3) → 3400",
+        "export function splitBill(total: number, people: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task2"
+      },
+      "beats": [
+        {
+          "say": "問2では、合計を人数で割る計算が出てきます。",
+          "speech": "問にでは、合計を人数で割る計算が出てきます。",
+          "figure": {
+            "show": ["qin", "qgive", "qfn", "qback", "qout"]
+          }
+        },
+        {
+          "say": "割り算の記号は、スラッシュです。",
+          "figure": {
+            "tag": {
+              "qfn": "割り算"
+            },
+            "pulse": ["qfn"]
+          }
+        },
+        {
+          "say": "引数が2つある書き方は、あとの動画で説明します。",
+          "speech": "引数がふたつある書き方は、あとの動画で説明します。",
+          "part": {
+            "line": 2,
+            "text": "total: number, people: number"
+          },
+          "figure": {
+            "pulse": ["qin"]
+          }
+        },
+        {
+          "say": "切り上げという言葉も、次の動画で扱う内容です。",
+          "part": {
+            "line": 0,
+            "text": "切り上げ"
+          },
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

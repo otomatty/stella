@@ -2,11 +2,11 @@
  * 教材動画の読み上げ (設計書の ② 読み上げ)。プロバイダの単位 (字幕 / トピック) ごとに呼ぶ。
  *
  * プロバイダ:
- * - gemini    … Gemini 3.8 Flash TTS (既定。参考設計書と同じ interactions API)。GEMINI_API_KEY
+ * - gemini    … Gemini 3.8 Flash TTS (本番用。video:sync --remote の既定)。GEMINI_API_KEY
  * - grok      … xAI Grok TTS を Cloudflare AI Gateway (Unified Billing) 経由で。面談対策と同じ経路
  *               (apps/api/src/lib/workers-ai.ts)。CLOUDFLARE_ACCOUNT_ID / AI_GATEWAY_ID /
  *               AI_GATEWAY_CF_API_TOKEN
- * - openjtalk … ローカルの Open JTalk (`pip install pyopenjtalk-prebuilt "numpy<2"`)。
+ * - openjtalk … ローカルの既定。準備は video:tts:setup。
  *               鍵なしで本物の日本語音声を出す開発用。声質は機械的
  * - fake      … 推定長の小さな音 (鍵も Python も要らない。描画・同期・配信の確認用)
  *
@@ -14,17 +14,20 @@
  * 読み上げ文を直すと、その合成単位の音声だけを作り直す。
  */
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { estimateSpeechSeconds } from "../../src/narration.js";
 
-const here = dirname(fileURLToPath(import.meta.url));
-
 export type TtsProviderName = "gemini" | "grok" | "openjtalk" | "fake";
+
+export function logVideoTts(provider: TtsProviderName): void {
+  const note = provider === "openjtalk" ? " (ローカルの合成音声。本番の声は --tts gemini)" : "";
+  console.log(`読み上げ: ${provider}${note}`);
+}
 
 export interface VoiceConfig {
   provider: TtsProviderName;
@@ -65,7 +68,7 @@ export class RetryableError extends Error {
   }
 }
 
-/** 日次上限に達したため再試行できない失敗。 */
+/** 日次上限や残高切れで、今回の実行では API を呼び直さない失敗。 */
 export class QuotaExhaustedError extends Error {}
 
 /** Google API の割り当てエラーから、再試行の判断とログに必要な情報だけを拾う。 */
@@ -127,6 +130,18 @@ export function parseQuotaError(body: string): {
   };
 }
 
+export async function geminiCreditsError(
+  response: Response,
+  key?: string | null,
+): Promise<QuotaExhaustedError> {
+  const body = await response.text().catch(() => "");
+  const detail = key ? body.replaceAll(key, "［非表示］") : body;
+  const reason = detail ? ` (${parseQuotaError(detail).description})` : "";
+  return new QuotaExhaustedError(
+    `Gemini API の残高がありません (HTTP 402)${reason}。残高を補充するか、ローカルで動画を確かめるなら --tts openjtalk を使ってください`,
+  );
+}
+
 // 1 分あたりの回数制限が切り替わるまで待てるようにする。
 const BACKOFF_SEC = [1, 2, 4, 8, 16, 32, 64];
 
@@ -154,6 +169,8 @@ async function checkedFetch(label: string, url: string, init: RequestInit): Prom
   } catch (e) {
     throw new RetryableError(`${label}: 通信に失敗しました (${(e as Error).message})`);
   }
+  if (label === "gemini" && res.status === 402)
+    throw await geminiCreditsError(res, new Headers(init.headers).get("x-goog-api-key"));
   if (res.status === 429) {
     const quota = parseQuotaError(await res.text());
     if (quota.daily) {
@@ -328,17 +345,68 @@ function grokProvider(cfg: VoiceConfig): TtsProvider {
 
 // ---------------------------------------------------------------- openjtalk (ローカル)
 
+export const ttsVenv = fileURLToPath(new URL("../../.venv-tts", import.meta.url));
+export const openJtalkScript = fileURLToPath(new URL("../tts/openjtalk_tts.py", import.meta.url));
+export const openJtalkSetupHint = "bun run --filter=@stella/content video:tts:setup";
+
+export function venvPython(venv: string, platform: NodeJS.Platform): string {
+  return platform === "win32"
+    ? win32.join(venv, "Scripts", "python.exe")
+    : posix.join(venv, "bin", "python");
+}
+
+export const runTtsCommand = (command: string, args: string[], input?: string) =>
+  spawnSync(command, args, { input, windowsHide: true });
+
+export function findOpenJtalkPython(
+  run = runTtsCommand,
+  override = process.env.STELLA_TTS_PYTHON,
+  platform = process.platform,
+  venv = ttsVenv,
+): string {
+  for (const python of [override?.trim(), venvPython(venv, platform), "python3", "python"]) {
+    if (python && run(python, ["-c", "import pyopenjtalk"]).status === 0) return python;
+  }
+  throw new Error(
+    `Open JTalk の準備ができていません。候補の Python で pyopenjtalk を読み込めませんでした。Python 3.10〜3.13 で pyopenjtalk-plus を準備するには、${openJtalkSetupHint} を実行してください。音声なしで確かめるなら --tts fake を使ってください`,
+  );
+}
+
+let python: string | undefined;
+export function prepareOpenJtalk(): string {
+  python ??= findOpenJtalkPython();
+  return python;
+}
+
+export function isWave(bytes: Uint8Array): boolean {
+  const header = Buffer.from(bytes.subarray(0, 12));
+  return header.toString("latin1", 0, 4) === "RIFF" && header.toString("latin1", 8, 12) === "WAVE";
+}
+
+export function openJtalkErrorDetail(stderr: Buffer): string {
+  return stderr
+    .toString()
+    .split(/\r?\n/)
+    .filter(
+      (line) =>
+        !line.includes("Warning: ONNX Runtime is not installed") &&
+        !line.includes("Please install ONNX Runtime by"),
+    )
+    .join("\n")
+    .trim();
+}
+
 function openjtalkProvider(cfg: VoiceConfig): TtsProvider {
   const speed = cfg.speed ?? 1.1;
-  const script = join(here, "..", "tts", "openjtalk_tts.py");
   return {
     unit: "cue",
     identity: `openjtalk/${speed}`,
     concurrency: 4,
     nondeterministic: false,
-    synthesize(speech) {
+    async synthesize(speech) {
+      const python = prepareOpenJtalk();
       return new Promise((resolve, reject) => {
-        const child = spawn("python3", [script, String(speed)], {
+        const child = spawn(python, [openJtalkScript, String(speed)], {
           stdio: ["pipe", "pipe", "pipe"],
         });
         const out: Buffer[] = [];
@@ -346,17 +414,22 @@ function openjtalkProvider(cfg: VoiceConfig): TtsProvider {
         child.stdout.on("data", (d: Buffer) => out.push(d));
         child.stderr.on("data", (d: Buffer) => err.push(d));
         child.on("error", reject);
+        child.stdin.on("error", reject);
         child.on("close", (code) => {
           if (code !== 0) {
             reject(
               new Error(
-                `openjtalk: ${Buffer.concat(err).toString().trim().split("\n").at(-1)} ` +
-                  '(pip install pyopenjtalk-prebuilt "numpy<2" が必要です)',
+                `Open JTalk の合成に失敗しました (${openJtalkErrorDetail(Buffer.concat(err)).split("\n").at(-1) || code})。${openJtalkSetupHint} で準備を確かめてください`,
               ),
             );
             return;
           }
-          resolve({ bytes: new Uint8Array(Buffer.concat(out)), ext: "wav" });
+          const bytes = Buffer.concat(out);
+          if (!isWave(bytes)) {
+            reject(new Error("Open JTalk の出力が WAV (RIFF/WAVE) ではありません"));
+            return;
+          }
+          resolve({ bytes, ext: "wav" });
         });
         child.stdin.end(speech);
       });
@@ -471,9 +544,14 @@ async function synthesizeUncached(
   refresh: boolean,
 ): Promise<CachedTts> {
   const hash = cueHash(provider.identity, speech);
+  const localWav = /^(openjtalk|fake)\//.test(provider.identity);
   for (const ext of ["wav", "mp3"] as const) {
     const file = join(cacheDir, `${hash}.${ext}`);
-    if (!refresh && existsSync(file) && readFileSync(file).length > 0) {
+    if (refresh || !existsSync(file)) continue;
+    const bytes = readFileSync(file);
+    if (localWav && ext === "wav" && !isWave(bytes)) {
+      rmSync(file, { force: true });
+    } else if (bytes.length > 0) {
       return { file, cached: true };
     }
   }

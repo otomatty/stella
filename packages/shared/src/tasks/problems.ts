@@ -11,6 +11,7 @@ export const PROBLEM_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 export interface TaskProblem {
   id: string;
   title: string;
+  after?: string;
 }
 
 export function isProblemId(value: string): boolean {
@@ -71,9 +72,16 @@ export function readProblems(
     if (title.length === 0) {
       errors.push(`${at}.title は空でない文字列で書いてください`);
     }
-    if (isProblemId(id) && title.length > 0 && !problems.some((problem) => problem.id === id)) {
-      problems.push({ id, title });
+    const after = typeof item.after === "string" ? item.after.trim() : "";
+    if (item.after !== undefined && !after) {
+      errors.push(`${at}.after は空でないトピック ID で書いてください`);
     }
+    if (isProblemId(id) && title.length > 0 && !problems.some((problem) => problem.id === id)) {
+      problems.push({ id, title, ...(after ? { after } : {}) });
+    }
+  }
+  if (problems.some((problem) => problem.after) && problems.some((problem) => !problem.after)) {
+    errors.push("problems の after は全問に書くか、すべて省いてください");
   }
   if (errors.length > 0) return { errors };
   return { problems, errors };

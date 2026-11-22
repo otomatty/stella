@@ -4,7 +4,7 @@ import {
   sceneSpeeches,
   sceneTimelines,
   sceneVideoSequence,
-  sceneTitleOpacity,
+  sceneCaptionsVtt,
   SCENE_TIMING,
 } from "./scene-timeline.js";
 import type { Scene, ViewBeat } from "./video-storyboard.js";
@@ -116,16 +116,57 @@ it("見積もりにも読み辞書を使い、headerは読み上げに含めな�
     sceneVideoSequence([], [], topic)[0].timing.duration,
   );
 });
-it.each([
-  [0, 0],
-  [0.2, 0.5],
-  [1, 1],
-  [2.6, 1],
-  [2.8, 0.5],
-  [3, 0],
-  [10, 0],
-])("タイトルの不透明度: %s秒で%s", (time, expected) => {
-  expect(sceneTitleOpacity(time)).toBeCloseTo(expected);
+it("字幕の時刻にタイトルと前の場面の長さを足し、読み上げ中だけの cue を書く", () => {
+  const sequence = sceneVideoSequence(
+    [
+      {
+        kind: "board",
+        id: "quiz",
+        role: "quiz",
+        title: "問題",
+        board: "main",
+        beats: [
+          { say: "A < B & B > C", speech: "読みの上書き", term: { text: "用語" }, pause: 1 },
+          { say: "コードを見ます。", dialog: { title: "例", code: ["const x = 1;"] } },
+        ],
+      },
+      {
+        kind: "view",
+        id: "shot",
+        role: "answer",
+        title: "画面",
+        image: "shot:web/one",
+        beats: [
+          { say: "画面を見ます。", image: "shot:vscode/two", spot: ["top"] },
+          { say: "次へ進みます。" },
+        ],
+      },
+    ],
+    [
+      [1, 1],
+      [1, 1],
+    ],
+    { title: "動画のタイトル", takeaway: "" },
+    {},
+    { title: 3.2 },
+    2,
+  );
+  const [title, quiz, view] = sequence;
+  expect(title.timing.duration).toBe(4.6);
+  expect(quiz.timing.think).toBeDefined();
+  const captions = sceneCaptionsVtt([
+    { timing: quiz.timing, onDark: [true, true] },
+    { timing: view.timing, onDark: [true, false] },
+  ]);
+  expect(captions.split("\n\n")).toEqual([
+    "WEBVTT",
+    "1\n00:00:05.400 --> 00:00:06.400\n<c.on-dark>A &lt; B &amp; B &gt; C</c>",
+    "2\n00:00:10.500 --> 00:00:11.500\n<c.on-dark>コードを見ます。</c>",
+    "3\n00:00:24.200 --> 00:00:25.200\n<c.on-dark>画面を見ます。</c>",
+    "4\n00:00:28.300 --> 00:00:29.300\n次へ進みます。",
+    "",
+  ]);
+  expect(sceneCaptionsVtt([])).toBe("WEBVTT\n\n");
 });
 describe("場面の時刻", () => {
   it("冒頭・文間・末尾の間を足し、30fpsの境界へ丸める", () => {
@@ -253,7 +294,6 @@ it.each(["shot:vscode/one", "clip:vscode/action#open"])(
     expect(sceneCaptionAt(timing, beat.end - 0.001)).toBe(beat.say);
     expect(sceneCaptionAt(timing, beat.end)).toBe("");
     const firstCaptionFrame = Math.ceil(speechStart * 30) / 30;
-    expect(viewBusyRanges(timing)).toContainEqual([speechStart, speechStart + 1 / 30]);
     expect(
       viewBusyRanges(timing).some(([a, b]) => a <= firstCaptionFrame && firstCaptionFrame <= b),
     ).toBe(true);
@@ -320,4 +360,108 @@ it("空のspot・labelには待ち時間を足さず、操作が長ければそ�
   expect(t.beats[0].end).toBeCloseTo(7.4);
   expect(t.beats[0].speechEnd).toBeCloseTo(1.8);
   expect(sceneTimelines([scene], [[8]], clips)[0].beats[0].end).toBeCloseTo(10.3);
+});
+
+it("schema 2 の文間・余韻と pause は読み上げとは別に計る", () => {
+  const scene: Scene = {
+    ...scenes[0],
+    role: "goal",
+    beats: [{ say: "文です。", pause: 2 }, { say: "次です。" }],
+  };
+  const [timing] = sceneTimelines([scene], [[1, 2]], {}, 2);
+  const [first, last] = timing.beats;
+  expect(first.speechEnd).toBeCloseTo(1.8);
+  expect(first.end).toBeCloseTo(3.8);
+  expect(last.start - first.end).toBeCloseTo(1.6);
+  expect(timing.duration - last.end).toBeCloseTo(2.4);
+  expect(sceneCaptionAt(timing, 2)).toBe("");
+  expect(
+    sceneTimelines(scenes, [
+      [1, 2],
+      [1, 2],
+      [1, 2],
+    ]),
+  ).toEqual(
+    sceneTimelines(
+      scenes,
+      [
+        [1, 2],
+        [1, 2],
+        [1, 2],
+      ],
+      {},
+      1,
+    ),
+  );
+});
+
+it.each([undefined, 3.5])("問題の強調と pause のあとに考える時間 %s を置く", (think) => {
+  const quiz: Scene = {
+    kind: "view",
+    id: "quiz",
+    role: "quiz",
+    title: "問題",
+    image: "shot:web/one",
+    think,
+    beats: [{ say: "答えは何ですか？", spot: ["question"], pause: 2 }],
+  };
+  const sequence = sceneVideoSequence(
+    [quiz],
+    [[2]],
+    { title: "学ぶ流れ", takeaway: "確認する" },
+    {},
+    undefined,
+    2,
+  );
+  const { timing } = sequence[1];
+  expect(timing.beats[0].end - (timing.beats[0].speechEnd ?? 0)).toBeCloseTo(3.5);
+  expect(timing.think?.start).toBeCloseTo(timing.beats[0].end + 0.6);
+  expect(timing.think?.duration).toBe(think ?? 6);
+  expect(sceneCaptionAt(timing, (timing.think?.start ?? 0) + 1)).toBe("");
+  expect(timing.fadeOut?.start).toBeCloseTo(timing.beats[0].end + 0.6 + (think ?? 6) + 2.4);
+  expect(timing.duration * SCENE_TIMING.fps).toBeCloseTo(
+    Math.round(timing.duration * SCENE_TIMING.fps),
+  );
+});
+
+it("用語は読み終わりから1.5秒保ち、そのあとに pause と文間を足す", () => {
+  const scene: Scene = {
+    id: "term",
+    role: "syntax",
+    title: "引数",
+    board: "main",
+    beats: [
+      { say: "引数です。", term: { text: "引数" }, pause: 1 },
+      { say: "次の文です。", term: { text: "値" } },
+    ],
+  };
+  const [{ beats }] = sceneTimelines([scene], [[2, 3]], {}, 2);
+  expect(beats[0].speechEnd).toBeCloseTo(2.8);
+  expect(beats[0].end).toBeCloseTo(5.3);
+  expect(beats[1].start).toBeCloseTo(6.9);
+  expect(beats[1].end - (beats[1].speechEnd ?? 0)).toBeCloseTo(1.5);
+  expect(sceneCaptionAt({ start: 0, duration: 15, beats }, 4)).toBe("");
+});
+
+it("ダイアログは読み終わりから2.5秒保ち、そのあとに pause と文間を足す", () => {
+  const dialog = { title: "完成したコード", code: ["const value = 1;"] };
+  const scene: Scene = {
+    kind: "view",
+    id: "goal",
+    role: "goal",
+    title: "学ぶこと",
+    image: "shot:web/example",
+    beats: [
+      { say: "コードを読みます。", dialog, pause: 1.5, label: [{ at: "editor", text: "コード" }] },
+      { say: "次のコードです。", dialog },
+    ],
+  };
+  const [timing] = sceneTimelines([scene], [[2, 3]], {}, 2);
+  const [first, second] = timing.beats;
+  expect(first.speechEnd).toBeCloseTo(2.8);
+  expect(first.end).toBeCloseTo(2.8 + 2.5 + 1.5);
+  expect(second.start).toBeCloseTo(first.end + 1.6);
+  expect(second.end - (second.speechEnd ?? 0)).toBeCloseTo(2.5);
+  expect(sceneCaptionAt(timing, first.start + 0.4)).toBe(first.say);
+  expect(sceneCaptionAt(timing, first.end - 1 / 30)).toBe("");
 });

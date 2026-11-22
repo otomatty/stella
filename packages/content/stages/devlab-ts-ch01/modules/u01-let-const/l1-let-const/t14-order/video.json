@@ -1,0 +1,762 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "足し算と割り算・掛け算が混ざった式を読んで、どこが先に計算されるかを言える。",
+    "stuck": "式は前から順に計算されると思っていて、1 行に書いたときに結果が変わる理由が分からない。",
+    "points": [
+      "掛け算と割り算は足し算より先に計算される。先に足したいときは、合計を変数に入れてから割る。"
+    ],
+    "leaveOut": [
+      "かっこで順番を変える書き方",
+      "引き算と余りの順番",
+      "同じ強さの計算が並んだときの順番",
+      "問4の答えのコード"
+    ]
+  },
+  "art": {
+    "giftbox": {
+      "prompt": "One gift box with a ribbon bow next to a small toy delivery truck. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "twohands": {
+      "prompt": "Two open hands side by side, each holding a few coins. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "coinpile": {
+      "prompt": "One small neat pile of coins on a table. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "looseapples": {
+      "prompt": "Two red apples lying side by side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "applebags": {
+      "prompt": "Four identical clear bags in a row, each holding a few red apples. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "applecrate": {
+      "prompt": "A wooden crate full of red apples seen from above. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "testavg": {
+      "prompt": "Three blank test papers and a desk calculator with a blank display. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "receipt2": {
+      "prompt": "A blank paper receipt slip with a zigzag bottom edge and a pen lying across it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "notepad": {
+      "prompt": "An open notebook with two thick placeholder lines written on separate rows, and a pencil. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "threecards": {
+      "prompt": "Three blank cards in a row, each with one thick placeholder mark of a different length. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "calcdesk": {
+      "prompt": "A large desk calculator with a blank display standing on a desk, with a pencil beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "balance": {
+      "prompt": "A balance scale perfectly level, with identical small blocks on both pans. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "steps": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sum",
+          "label": "品物と送料",
+          "art": "giftbox",
+          "at": [1, 1]
+        },
+        {
+          "id": "half",
+          "label": "2人で割る",
+          "art": "twohands",
+          "at": [3, 1]
+        },
+        {
+          "id": "share",
+          "label": "1人分",
+          "art": "coinpile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "s1",
+          "from": "sum",
+          "to": "half",
+          "label": "合計を渡す"
+        },
+        {
+          "id": "s2",
+          "from": "half",
+          "to": "share",
+          "label": "結果"
+        }
+      ]
+    },
+    "fruit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "f1",
+          "label": "ばらのりんご",
+          "art": "looseapples",
+          "at": [1, 1]
+        },
+        {
+          "id": "f2",
+          "label": "3個入りの袋",
+          "art": "applebags",
+          "at": [3, 1]
+        },
+        {
+          "id": "f3",
+          "label": "全部の数",
+          "art": "applecrate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fa",
+          "from": "f1",
+          "to": "f2",
+          "label": "足す"
+        },
+        {
+          "id": "fb",
+          "from": "f2",
+          "to": "f3",
+          "label": "結果"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "平均",
+          "art": "testavg",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "税込の金額",
+          "art": "receipt2",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "途中の結果",
+          "art": "notepad",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task4": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "vin",
+          "label": "3つの数",
+          "art": "threecards",
+          "at": [1, 1]
+        },
+        {
+          "id": "vfn",
+          "label": "平均の関数",
+          "art": "calcdesk",
+          "at": [3, 1]
+        },
+        {
+          "id": "vout",
+          "label": "平均",
+          "art": "balance",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "vgive",
+          "from": "vin",
+          "to": "vfn",
+          "label": "渡す"
+        },
+        {
+          "id": "vback",
+          "from": "vfn",
+          "to": "vout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "shopping-order",
+      "beats": [
+        {
+          "say": "この動画で学ぶのは、計算の順番です。"
+        },
+        {
+          "say": "100円のパンを1個と、200円の牛乳を2本買います。",
+          "speech": "百円のパンを一個と、二百円の牛乳を二本買います。"
+        },
+        {
+          "say": "先に計算するのは、牛乳の2本分です。",
+          "speech": "先に計算するのは、牛乳の二本分です。"
+        },
+        {
+          "say": "その400円にパンの100円を足して、500円になります。",
+          "speech": "その四百円にパンの百円を足して、五百円になります。"
+        },
+        {
+          "say": "前から順に計算した600円は、間違いです。",
+          "speech": "前から順に計算した六百円は、間違いです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "steps",
+      "role": "example",
+      "title": "足してから割る",
+      "board": "steps",
+      "beats": [
+        {
+          "say": "品物は800円で、送料は400円です。",
+          "speech": "品物は八百円で、送料は四百円です。",
+          "show": ["sum"],
+          "tag": {
+            "sum": "800＋400"
+          },
+          "pulse": ["sum"]
+        },
+        {
+          "say": "先に2つを足すと、合計は1200円になります。",
+          "speech": "先にふたつを足すと、合計は千二百円になります。",
+          "tag": {
+            "sum": "1200円"
+          }
+        },
+        {
+          "say": "この合計を、2人で割りましょう。",
+          "speech": "この合計を、二人で割りましょう。",
+          "show": ["s1", "half"],
+          "tag": {
+            "half": "÷2"
+          },
+          "travel": {
+            "along": ["s1"],
+            "icon": "send"
+          },
+          "pulse": ["half"]
+        },
+        {
+          "say": "1人分は、600円です。",
+          "speech": "ひとり分は、六百円です。",
+          "show": ["s2", "share"],
+          "tag": {
+            "share": "600円"
+          },
+          "travel": {
+            "along": ["s2"],
+            "icon": "send"
+          },
+          "pulse": ["share"]
+        },
+        {
+          "say": "足してから割る、という順番が大切でした。",
+          "pulse": [],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "wrong",
+      "kind": "code",
+      "role": "syntax",
+      "title": "1行で書くと",
+      "code": [
+        "// 1 人分 share を作る（順番を考えていない書き方）",
+        "const share = 800 + 400 / 2;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "steps"
+      },
+      "beats": [
+        {
+          "say": "この計算を、1行で書いてみます。",
+          "speech": "この計算を、一行で書いてみます。",
+          "type": [0, 1],
+          "figure": {
+            "untag": ["sum", "half", "share"]
+          }
+        },
+        {
+          "say": "ところが、結果は 600 ではなく 1000 です。",
+          "speech": "ところが、結果は六百ではなく千です。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "tag": {
+              "share": "1000 ?"
+            },
+            "pulse": ["share"]
+          }
+        },
+        {
+          "say": "割り算が、足し算より先に計算されました。",
+          "part": {
+            "line": 1,
+            "text": "400 / 2",
+            "note": "先に計算"
+          },
+          "figure": {
+            "tag": {
+              "half": "400÷2"
+            },
+            "pulse": ["half"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "400 割る 2 の 200 に、800 を足しています。",
+          "speech": "四百割るにの二百に、八百を足しています。",
+          "part": {
+            "line": 1,
+            "text": "800 +"
+          },
+          "figure": {
+            "tag": {
+              "sum": "800＋200"
+            },
+            "pulse": ["sum"]
+          }
+        },
+        {
+          "say": "掛け算と割り算は、足し算より先に計算する決まりです。",
+          "focus": [1],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "kind": "code",
+      "role": "syntax",
+      "title": "合計を先に作る",
+      "code": [
+        "// 合計 total を作り、800 と 400 を足す",
+        "const total = 800 + 400;",
+        "// 1 人分 share を作り、合計を 2 で割る",
+        "const share = total / 2;"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "steps"
+      },
+      "beats": [
+        {
+          "say": "先に足したいときは、合計を変数に入れます。",
+          "type": [0, 1],
+          "figure": {
+            "show": ["sum", "s1", "half", "s2", "share"],
+            "untag": ["half", "share"],
+            "tag": {
+              "sum": "total"
+            },
+            "pulse": ["sum"]
+          }
+        },
+        {
+          "say": "total に入るのは、足し算の結果の 1200 です。",
+          "speech": "トータルに入るのは、足し算の結果の千二百です。",
+          "part": {
+            "line": 1,
+            "text": "800 + 400"
+          },
+          "figure": {
+            "tag": {
+              "sum": "1200"
+            }
+          }
+        },
+        {
+          "say": "次の行で、その total を 2 で割りました。",
+          "speech": "次の行で、そのトータルをにで割りました。",
+          "type": [2, 3],
+          "part": {
+            "line": 3,
+            "text": "total / 2"
+          },
+          "figure": {
+            "tag": {
+              "half": "／2"
+            },
+            "travel": {
+              "along": ["s1"]
+            },
+            "pulse": ["half"]
+          }
+        },
+        {
+          "say": "今度は、正しく 600 になります。",
+          "speech": "今度は、正しく六百になります。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "check"
+            }
+          ],
+          "figure": {
+            "tag": {
+              "share": "600"
+            },
+            "travel": {
+              "along": ["s2"]
+            },
+            "pulse": ["share"]
+          }
+        },
+        {
+          "say": "行を分ければ、計算の順番を自分で決められるのです。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で順番を決める",
+      "code": [
+        "// 品物の値段と送料を受け取り、2 人で割った 1 人分を返す関数",
+        "function giftShare(item: number, shipping: number): number {",
+        "  // 合計 total を作り、値段と送料を足す",
+        "  const total = item + shipping;",
+        "  // 合計を 2 で割って返す",
+        "  return total / 2;",
+        "}",
+        "// 800 円の品物と 400 円の送料で、関数を呼ぶ",
+        "giftShare(800, 400);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "steps"
+      },
+      "beats": [
+        {
+          "say": "この計算を、関数にしてみましょう。",
+          "type": [0, 1, 2, 3, 4, 5, 6],
+          "figure": {
+            "show": ["sum", "s1", "half", "s2", "share"],
+            "untag": ["sum", "share"],
+            "tag": {
+              "half": "／2"
+            }
+          }
+        },
+        {
+          "say": "item は、品物という意味の英語です。",
+          "speech": "アイテムは、品物という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "item",
+            "note": "品物"
+          }
+        },
+        {
+          "say": "最初の行で、値段と送料を足します。",
+          "part": {
+            "line": 3,
+            "text": "item + shipping"
+          },
+          "figure": {
+            "tag": {
+              "sum": "total"
+            },
+            "pulse": ["sum"]
+          }
+        },
+        {
+          "say": "その合計を 2 で割って、返しました。",
+          "speech": "その合計をにで割って、返しました。",
+          "part": {
+            "line": 5,
+            "text": "total / 2"
+          },
+          "figure": {
+            "travel": {
+              "along": ["s1"]
+            },
+            "pulse": ["half"]
+          }
+        },
+        {
+          "say": "800 と 400 を渡すと、戻ってくるのは 600 です。",
+          "speech": "八百と四百を渡すと、戻ってくるのは六百です。",
+          "type": [7, 8],
+          "figure": {
+            "tag": {
+              "sum": "1200",
+              "share": "600"
+            },
+            "travel": {
+              "along": ["s2"]
+            },
+            "pulse": ["share"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "apples に入る値は",
+      "code": ["// りんごの数 apples を作る", "const apples = 2 + 3 * 4;"],
+      "reset": true,
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fruit"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["f1", "fa", "f2", "fb", "f3"]
+          }
+        },
+        {
+          "say": "ばらのりんごが、2個あります。",
+          "speech": "ばらのりんごが、二個あります。",
+          "part": {
+            "line": 1,
+            "text": "2"
+          },
+          "figure": {
+            "tag": {
+              "f1": "2個"
+            },
+            "pulse": ["f1"]
+          }
+        },
+        {
+          "say": "3個入りの袋は、4つです。",
+          "speech": "三個入りの袋は、よっつです。",
+          "part": {
+            "line": 1,
+            "text": "3 * 4"
+          },
+          "figure": {
+            "tag": {
+              "f2": "3個×4袋"
+            },
+            "pulse": ["f2"]
+          }
+        },
+        {
+          "say": "全部の数を、この1行で計算しました。",
+          "speech": "全部の数を、この一行で計算しました。",
+          "focus": [1],
+          "figure": {
+            "pulse": []
+          }
+        },
+        {
+          "say": "apples に入る値は、いくつでしょうか？",
+          "speech": "アップルズに入る値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "f3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["f3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// りんごの数 apples を作る", "const apples = 2 + 3 * 4;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fruit"
+      },
+      "beats": [
+        {
+          "say": "答えは、14 です。",
+          "speech": "答えは、十四です。",
+          "figure": {
+            "tag": {
+              "f3": "14"
+            },
+            "mark": [
+              {
+                "on": "f3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["f3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "掛け算が先",
+      "code": ["// りんごの数 apples を作る", "const apples = 2 + 3 * 4;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fruit"
+      },
+      "beats": [
+        {
+          "say": "掛け算は、足し算より先に計算します。",
+          "part": {
+            "line": 1,
+            "text": "3 * 4",
+            "note": "先に計算"
+          },
+          "figure": {
+            "pulse": ["f2"]
+          }
+        },
+        {
+          "say": "3 掛ける 4 の結果は、12 です。",
+          "speech": "さん掛けるよんの結果は、十二です。",
+          "figure": {
+            "tag": {
+              "f2": "12個"
+            }
+          }
+        },
+        {
+          "say": "その 12 に、ばらの 2 を足しました。",
+          "speech": "その十二に、ばらのにを足しました。",
+          "part": {
+            "line": 1,
+            "text": "2 +"
+          },
+          "figure": {
+            "travel": {
+              "along": ["fa", "fb"]
+            },
+            "pulse": ["f3"]
+          }
+        },
+        {
+          "say": "前から順に計算した 20 には、なりません。",
+          "speech": "前から順に計算した二十には、なりません。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "順番に気を付ける場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "計算の順番は、式に記号が2種類あるときに気を付けます。",
+          "speech": "計算の順番は、式に記号が二種類あるときに気を付けます。",
+          "show": ["u1"]
+        },
+        {
+          "say": "平均は、合計を先に求めてから個数で割った値です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "税込の金額を出すときも、順番で結果が変わります。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "迷ったら、途中の結果を変数に入れるのが確実です。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問4で使う",
+      "code": [
+        "// 問4 3つの数の平均を返す",
+        "//     例: average3(1, 2, 6) → 3",
+        "export function average3(a: number, b: number, c: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task4"
+      },
+      "beats": [
+        {
+          "say": "問4では、3つの数の平均を返します。",
+          "speech": "問よんでは、みっつの数の平均を返します。",
+          "figure": {
+            "show": ["vin", "vgive", "vfn", "vback", "vout"]
+          }
+        },
+        {
+          "say": "平均は、合計を個数で割った値です。",
+          "figure": {
+            "tag": {
+              "vfn": "足してから割る"
+            },
+            "pulse": ["vfn"]
+          }
+        },
+        {
+          "say": "先に計算したいものを、変数に入れてみましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

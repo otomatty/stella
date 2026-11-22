@@ -112,7 +112,9 @@ function wrapupCopy(stage: GuideActiveStage | null): {
   if (stage?.wrapup) {
     return {
       title: `${title} の仕上げ`,
-      reason: `教材はすべて終わりました。${stage.wrapup.detail}`,
+      reason: stage.wrapup.nextLesson
+        ? stage.wrapup.detail
+        : `教材はすべて終わりました。${stage.wrapup.detail}`,
       openTask: stage.wrapup.learnerTurn,
     };
   }
@@ -292,7 +294,7 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           <>
             <Button size="full" variant="accent" className="mt-4" onClick={ctx.onOpenPendingTask}>
               <Play size={14} />
-              課題に取り組む
+              {ctx.activeStage?.wrapup?.nextLesson?.action ?? "課題に取り組む"}
             </Button>
             <Button
               size="sm"

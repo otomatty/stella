@@ -88,6 +88,8 @@ import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml, splitLessonSlides } from "./l
 import {
   QuotaExhaustedError,
   createTtsProvider,
+  logVideoTts,
+  prepareOpenJtalk,
   cueHash,
   mapPool,
   synthesizeCached,
@@ -693,6 +695,17 @@ export function validatePublishedVideoVoice(args: string[]): void {
     );
 }
 
+export function videoTtsOf(args: string[], remote = false): TtsProviderName | undefined {
+  const flag = args.indexOf("--tts");
+  if (flag >= 0) {
+    const name = args[flag + 1] as TtsProviderName;
+    if (!["gemini", "grok", "openjtalk", "fake"].includes(name))
+      throw new Error("--tts は gemini・grok・openjtalk・fake から選んでください");
+    return name;
+  }
+  return remote ? "gemini" : undefined;
+}
+
 /** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
 export async function buildVideos(
   args: string[] = [],
@@ -715,7 +728,7 @@ export async function buildVideos(
 
   validatePublishedVideoVoice(args);
 
-  const voice = loadVideoVoice(argValue("--tts") as TtsProviderName | undefined);
+  const voice = loadVideoVoice(videoTtsOf(args));
   const provider = createTtsProvider(voice);
   const { topics, invalid } = collectTopics(selectors);
   const failures: VideoFailure[] = [...invalid];
@@ -802,6 +815,8 @@ export async function buildVideos(
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
     return report.sourceHash !== sourceHash;
   });
+  if (voice.provider === "openjtalk" && (pendingScenes.length || pending.some((p) => !p.recorded)))
+    prepareOpenJtalk();
   console.log(
     `video: ${plans.length} topics with narration (generate ${pending.length}, up to date ${plans.length - pending.length}) — ${provider.identity}`,
   );
@@ -1078,6 +1093,13 @@ export async function buildVideos(
 }
 
 if (import.meta.main) {
-  const { failures } = await buildVideos(process.argv.slice(2));
-  if (failures.length > 0) process.exitCode = 1;
+  const args = process.argv.slice(2);
+  try {
+    logVideoTts(loadVideoVoice(videoTtsOf(args)).provider);
+    const { failures } = await buildVideos(args);
+    if (failures.length > 0) process.exitCode = 1;
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exitCode = 1;
+  }
 }

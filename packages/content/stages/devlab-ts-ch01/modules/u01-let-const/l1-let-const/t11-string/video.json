@@ -1,0 +1,839 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列を受け取る関数を読んで、引用符で囲んだ値が文字列で、種類が string だと言える。",
+    "stuck": "数と文字の書き分けを知らず、引用符の意味も、string という言葉も分からない。",
+    "points": ["文字は引用符で囲んで書く文字列で、種類は string。数値とは別の種類として扱う。"],
+    "leaveOut": [
+      "文字列どうしをつなぐ書き方とテンプレートリテラル",
+      "シングルクォートとバッククォート",
+      "文字数の数え方や一部分の取り出し",
+      "ほかの型の一覧",
+      "問3の答えのコード"
+    ]
+  },
+  "art": {
+    "nametag": {
+      "prompt": "One blank white name card in a clear holder with a neck strap, showing only one short placeholder line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "boxes": {
+      "prompt": "A neat stack of three small light grey cardboard parcels. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "person": {
+      "prompt": "A smiling customer shown from the chest up, wearing a blank name badge on the chest. Drawn large and centered. No letters, no digits, no symbols."
+    },
+    "envelope": {
+      "prompt": "One closed white envelope with a blank stamp shape and two short placeholder lines for the address. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "chat": {
+      "prompt": "A phone screen showing two rounded chat bubbles filled only with short placeholder lines. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "clock": {
+      "prompt": "One round wall clock with two hands and tick marks but no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "writer": {
+      "prompt": "A friendly robot clerk (white rounded body, blue accents, dark screen face with a simple smile, small antenna) behind a shop counter, writing on a blank paper with a pen. Only the robot, the counter and the paper. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "fields": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "txt",
+          "label": "文字",
+          "art": "nametag",
+          "at": [1, 1]
+        },
+        {
+          "id": "num",
+          "label": "数",
+          "art": "boxes",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "名前",
+          "art": "person",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "住所",
+          "art": "envelope",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "メッセージ",
+          "art": "chat",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task3": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tmin",
+          "label": "分の数",
+          "art": "clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "tconv",
+          "label": "文字にする関数",
+          "art": "writer",
+          "at": [3, 1]
+        },
+        {
+          "id": "ttext",
+          "label": "文字列",
+          "art": "chat",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tgive",
+          "from": "tmin",
+          "to": "tconv",
+          "label": "渡す"
+        },
+        {
+          "id": "tback",
+          "from": "tconv",
+          "to": "ttext",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "quote-marks",
+      "beats": [
+        {
+          "say": "この動画では、文字の書き方を学びます。"
+        },
+        {
+          "say": "作文で話した言葉を囲むのが、かぎかっこです。"
+        },
+        {
+          "say": "囲んだ中は、そのまま言葉として読まれます。"
+        },
+        {
+          "say": "コードの文字も、記号で囲んで書く決まりです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "fields",
+      "role": "example",
+      "title": "文字と数は別のもの",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "まず、荷物の伝票を思い浮かべてください。",
+          "show": ["txt", "num"]
+        },
+        {
+          "say": "名前の欄に入るのは、田中のような文字です。",
+          "tag": {
+            "txt": "田中"
+          },
+          "pulse": ["txt"]
+        },
+        {
+          "say": "個数の欄には、3 のような数が入ります。",
+          "speech": "個数の欄には、さんのような数が入ります。",
+          "tag": {
+            "num": "3"
+          },
+          "pulse": ["num"]
+        },
+        {
+          "say": "数は計算に使いますが、名前は計算しません。",
+          "pulse": ["txt", "num"]
+        },
+        {
+          "say": "そこで、文字と数は別の種類として扱います。",
+          "pulse": [],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quote",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字は引用符で囲む",
+      "code": [
+        "// 名前を受け取り、その名前を返す関数",
+        "function customerName(name: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return name;",
+        "}",
+        "// 田中という名前を渡して、関数を呼ぶ",
+        "customerName(\"田中\");"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "名前を受け取る関数を、用意しました。",
+          "focus": [1],
+          "figure": {
+            "untag": ["txt", "num"],
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "この関数に、田中という名前を渡します。",
+          "type": [5, 6]
+        },
+        {
+          "say": "文字は、このように引用符で囲んで書く決まりです。",
+          "part": {
+            "line": 6,
+            "text": "\"田中\""
+          },
+          "figure": {
+            "tag": {
+              "txt": "\"田中\""
+            }
+          }
+        },
+        {
+          "say": "引用符で囲んだ値を、文字列と呼びます。",
+          "term": {
+            "text": "文字列",
+            "ruby": "もじれつ",
+            "note": "引用符で囲んだ文字の値"
+          },
+          "pause": 1
+        },
+        {
+          "say": "囲む記号の名前は、ダブルクォートです。",
+          "part": {
+            "line": 6,
+            "text": "\"",
+            "note": "ダブルクォート"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "type",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字列の種類は string",
+      "code": [
+        "// 名前を受け取り、その名前を返す関数",
+        "function customerName(name: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return name;",
+        "}",
+        "// 田中という名前を渡して、関数を呼ぶ",
+        "customerName(\"田中\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "次に、引数の型注釈を見てみましょう。",
+          "part": {
+            "line": 1,
+            "text": "name: string"
+          },
+          "figure": {
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "string は、文字列を表す種類です。",
+          "speech": "ストリングは、文字列を表す種類です。",
+          "part": {
+            "line": 1,
+            "text": "string",
+            "note": "文字列"
+          },
+          "figure": {
+            "tag": {
+              "txt": "string"
+            }
+          }
+        },
+        {
+          "say": "数値を表す種類は、number でした。",
+          "speech": "数値を表す種類は、ナンバーでした。",
+          "figure": {
+            "tag": {
+              "num": "number"
+            },
+            "pulse": ["num"]
+          }
+        },
+        {
+          "say": "名前を返すので、戻り値の型も string にします。",
+          "speech": "名前を返すので、戻り値の型もストリングにします。",
+          "part": {
+            "line": 1,
+            "text": "): string"
+          },
+          "figure": {
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "name という引数の名前は、自分で付けたものです。",
+          "speech": "ネームという引数の名前は、自分で付けたものです。",
+          "part": {
+            "line": 1,
+            "text": "name",
+            "note": "名前"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "call",
+      "kind": "code",
+      "role": "apply",
+      "title": "名前を渡して呼び出す",
+      "code": [
+        "// 名前を受け取り、その名前を返す関数",
+        "function customerName(name: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return name;",
+        "}",
+        "// 田中という名前を渡して、関数を呼ぶ",
+        "customerName(\"田中\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "では、この関数を動かしてみます。",
+          "focus": [6],
+          "figure": {
+            "pulse": []
+          }
+        },
+        {
+          "say": "引数の name に入るのは、文字列の田中です。",
+          "speech": "引数のネームに入るのは、文字列の田中です。",
+          "part": {
+            "line": 1,
+            "text": "name"
+          },
+          "figure": {
+            "tag": {
+              "txt": "田中"
+            },
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "return で、name をそのまま返します。",
+          "speech": "リターンで、ネームをそのまま返します。",
+          "part": {
+            "line": 3,
+            "text": "return name"
+          }
+        },
+        {
+          "say": "呼び出した場所に戻るのは、文字列の田中です。",
+          "focus": [6],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "differ",
+      "kind": "code",
+      "role": "note",
+      "title": "数値と文字列は別の種類",
+      "code": [
+        "// 個数を受け取り、その数を返す関数",
+        "function orderCount(count: number): number {",
+        "  // 受け取った個数をそのまま返す",
+        "  return count;",
+        "}",
+        "// 数値の 3 を渡す",
+        "orderCount(3);",
+        "// 文字列の 3 を渡す間違い",
+        "orderCount(\"3\");"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "今度は、個数を受け取る関数です。",
+          "focus": [1],
+          "figure": {
+            "untag": ["txt"],
+            "pulse": ["num"]
+          }
+        },
+        {
+          "say": "数値の 3 は、そのまま渡せます。",
+          "speech": "数値のさんは、そのまま渡せます。",
+          "type": [5, 6],
+          "mark": [
+            {
+              "line": 6,
+              "kind": "check"
+            }
+          ],
+          "figure": {
+            "tag": {
+              "num": "3"
+            }
+          }
+        },
+        {
+          "say": "引用符で囲んだ 3 は、数ではなく文字列です。",
+          "speech": "引用符で囲んださんは、数ではなく文字列です。",
+          "type": [7, 8],
+          "part": {
+            "line": 8,
+            "text": "\"3\""
+          },
+          "figure": {
+            "tag": {
+              "txt": "\"3\""
+            },
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "number の引数に文字列を渡すと、エラーになります。",
+          "speech": "ナンバーの引数に文字列を渡すと、エラーになります。",
+          "mark": [
+            {
+              "line": 8,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "見た目が同じ 3 でも、種類が違えば別の値です。",
+          "speech": "見た目が同じさんでも、種類が違えば別の値です。",
+          "figure": {
+            "pulse": ["txt", "num"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 名前を受け取り、その名前を返す関数",
+        "function customerName(name: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return name;",
+        "}",
+        "// 田中という名前を渡して、関数を呼ぶ",
+        "customerName(\"田中\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "このコードも、2つに分けて見てみましょう。",
+          "speech": "このコードも、二つに分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "string と引用符は、言語で決まっている書き方です。",
+          "speech": "ストリングと引用符は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "string"
+              },
+              {
+                "line": 6,
+                "text": "\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "customerName と name は、自分で付けました。",
+          "speech": "カスタマーネームとネームは、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "customerName"
+              },
+              {
+                "line": 6,
+                "text": "customerName"
+              },
+              {
+                "line": 1,
+                "text": "name"
+              },
+              {
+                "line": 3,
+                "text": "name"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "引用符の中の田中も、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 6,
+                "text": "田中"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "エラーになるのはどちら",
+      "code": [
+        "// 都市の名前を受け取り、その名前を返す関数",
+        "function cityName(city: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return city;",
+        "}",
+        "// 文字列の大阪を渡す",
+        "cityName(\"大阪\");",
+        "// 数値の 110 を渡す",
+        "cityName(110);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["txt", "num"]
+          }
+        },
+        {
+          "say": "都市の名前を受け取る関数があります。",
+          "part": {
+            "line": 1,
+            "text": "city: string"
+          }
+        },
+        {
+          "say": "この関数を、2通りの値で呼び出しました。",
+          "speech": "この関数を、二通りの値で呼び出しました。",
+          "type": [5, 6, 7, 8],
+          "figure": {
+            "tag": {
+              "txt": "\"大阪\"",
+              "num": "110"
+            }
+          }
+        },
+        {
+          "say": "エラーになるのは、どちらでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "txt",
+                "kind": "question"
+              },
+              {
+                "on": "num",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 都市の名前を受け取り、その名前を返す関数",
+        "function cityName(city: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return city;",
+        "}",
+        "// 文字列の大阪を渡す",
+        "cityName(\"大阪\");",
+        "// 数値の 110 を渡す",
+        "cityName(110);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "エラーになるのは、110 を渡したほうです。",
+          "speech": "エラーになるのは、百十を渡したほうです。",
+          "mark": [
+            {
+              "line": 6,
+              "kind": "check"
+            },
+            {
+              "line": 8,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "txt",
+                "kind": "check"
+              },
+              {
+                "on": "num",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["num"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "型注釈と見くらべる",
+      "code": [
+        "// 都市の名前を受け取り、その名前を返す関数",
+        "function cityName(city: string): string {",
+        "  // 受け取った名前をそのまま返す",
+        "  return city;",
+        "}",
+        "// 文字列の大阪を渡す",
+        "cityName(\"大阪\");",
+        "// 数値の 110 を渡す",
+        "cityName(110);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "引数 city の型注釈は、string でした。",
+          "speech": "引数シティの型注釈は、ストリングでした。",
+          "part": {
+            "line": 1,
+            "text": "city: string"
+          },
+          "figure": {
+            "pulse": []
+          }
+        },
+        {
+          "say": "大阪は引用符で囲んであるので、文字列です。",
+          "part": {
+            "line": 6,
+            "text": "\"大阪\""
+          },
+          "figure": {
+            "pulse": ["txt"]
+          }
+        },
+        {
+          "say": "110 は囲んでいないので、数値として扱われます。",
+          "speech": "百十は囲んでいないので、数値として扱われます。",
+          "part": {
+            "line": 8,
+            "text": "110"
+          },
+          "figure": {
+            "pulse": ["num"]
+          }
+        },
+        {
+          "say": "種類が合わないので、こちらだけがエラーです。",
+          "focus": [8],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "文字列を使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "文字列は、文字を扱ういろいろな場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "お客さまの名前や住所は、どれも文字列です。",
+          "show": ["u2"],
+          "pulse": ["u1", "u2"]
+        },
+        {
+          "say": "画面に出すメッセージも、文字列で書きます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        },
+        {
+          "say": "電話番号のように計算しない数字も、文字列です。",
+          "pulse": ["u1", "u2", "u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問3で使う",
+      "code": [
+        "// 問3 分を「◯時間◯分」の文字列にする",
+        "//     例: minutesToText(125) → \"2時間5分\"",
+        "export function minutesToText(minutes: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task3"
+      },
+      "beats": [
+        {
+          "say": "問3では、文字列を返す関数を書きます。",
+          "speech": "問さんでは、文字列を返す関数を書きます。",
+          "figure": {
+            "show": ["tmin", "tgive", "tconv", "tback", "ttext"]
+          }
+        },
+        {
+          "say": "戻り値の型は、string です。",
+          "speech": "戻り値の型は、ストリングです。",
+          "part": {
+            "line": 2,
+            "text": "): string"
+          },
+          "figure": {
+            "pulse": ["ttext"]
+          }
+        },
+        {
+          "say": "分の数を受け取るので、引数の型は number にします。",
+          "speech": "分の数を受け取るので、引数の型はナンバーにします。",
+          "part": {
+            "line": 2,
+            "text": "minutes: number"
+          },
+          "figure": {
+            "pulse": ["tmin"]
+          }
+        },
+        {
+          "say": "型注釈から、何を返せばよいかを読み取りましょう。",
+          "figure": {
+            "tag": {
+              "tconv": "ここを書く"
+            },
+            "pulse": ["tconv"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

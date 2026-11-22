@@ -6,7 +6,12 @@ import { findTestLine } from "./find-test-line.js";
 import { loadTask } from "./runner/run-task.js";
 import { readTestSource, resolveDiagnosticFile } from "./task-diagnostics.js";
 import { readLastResult } from "./task-guide.js";
-import { problemForTestPath, problemSource, readProblemRun } from "./task-problems.js";
+import {
+  loadTaskProblems,
+  problemForTestPath,
+  problemSource,
+  readProblemRun,
+} from "./task-problems.js";
 import { onDidFinishTaskCheck } from "./task-run-events.js";
 import { onDidChangeTaskState } from "./task-state.js";
 import { expectedActual } from "./task-test-message.js";
@@ -222,6 +227,10 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
       if (!saved || !hasTests(result)) return;
       return enqueue(root, async (tests, active) => {
         const partial = result.problemId !== undefined;
+        if (manifest.problemSteps) {
+          const { states } = await loadTaskProblems(root, manifest, { refresh: false });
+          if (!states.some(({ id }) => id === result.problemId)) return;
+        }
         const groups = await collectTests(
           root,
           result.steps,
@@ -246,14 +255,20 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
       });
     }),
     onDidChangeTaskState((root) => {
-      if (root === undefined || controller?.items.get(root) || pending.has(root)) return;
+      if (root === undefined) return;
+      const existing = controller?.items.get(root);
+      if (existing && !manifests.get(existing)?.problemSteps) return;
+      if (pending.has(root) && !existing) return;
       return enqueue(root, async (tests, active) => {
         const loaded = await loadTask(root);
         if (!loaded.ok || !active()) return;
         const { manifest } = loaded;
         const steps: RunStepResult[] = [];
         if (manifest.problems) {
-          for (const { id } of manifest.problems) {
+          const visible = manifest.problemSteps
+            ? (await loadTaskProblems(root, manifest, { refresh: false })).states
+            : manifest.problems;
+          for (const { id } of visible) {
             const result = await readProblemRun(root, manifest.id, id);
             if (!active()) return;
             if (result && hasTests(result))
@@ -263,7 +278,11 @@ export function registerTaskTests(context: vscode.ExtensionContext): void {
           const result = await readLastResult(root, manifest.id);
           if (result && hasTests(result)) steps.push(...result.steps);
         }
-        if (steps.length === 0 || !active()) return;
+        if (!active()) return;
+        if (steps.length === 0) {
+          if (manifest.problemSteps) tests.items.delete(root);
+          return;
+        }
         const groups = await collectTests(root, steps);
         if (active()) {
           const { task } = updateItems(tests, root, manifest.title, groups, false);

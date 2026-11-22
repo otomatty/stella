@@ -3,11 +3,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import type { RunResult } from "@stella/shared/tasks/run-result";
+import { verifyTaskSubmission } from "@stella/shared/tasks/submission";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { apiRequest } from "./api.js";
 import { hashFile } from "./runner/files.js";
 import {
   chooseProblem,
   loadProblemStates,
+  loadTaskProblems,
   nextUnsubmittedProblem,
   prepareProblemConsultation,
   prepareProblemSubmission,
@@ -15,8 +18,11 @@ import {
   problemFileToOpen,
   problemForPath,
   problemWorkStatus,
+  recordProblemSubmission,
+  type ProblemResults,
   type ProblemState,
 } from "./task-problems.js";
+import { installTask, protectedTaskFiles } from "./task-distribution.js";
 import type { SubmissionNotes } from "./task-submission.js";
 
 vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => 1 }));
@@ -385,5 +391,133 @@ describe("依存", () => {
     const source = await readFile(new URL("./task-problems.ts", import.meta.url), "utf8");
     expect(source).not.toMatch(/from\s+["']vscode["']/);
     expect(source).not.toMatch(/require\(\s*["']vscode["']\s*\)/);
+  });
+});
+
+describe("問題の段階", () => {
+  const hash = "ab".repeat(32);
+  const staged: TaskManifest = {
+    ...manifest,
+    problemSteps: true,
+    problems: [
+      ...(manifest.problems ?? []),
+      { id: "q03-mult", title: "掛ける" },
+      { id: "q04-div", title: "割る" },
+    ],
+  };
+  const server: ProblemResults = {
+    gated: true,
+    passedProblems: 1,
+    totalProblems: 4,
+    taskPassed: false,
+    problems: [
+      {
+        id: "q01-add",
+        title: "足す",
+        state: "submitted",
+        status: "not-submitted",
+        firstPassedAt: null,
+      },
+      { id: "q02-sub", title: "引く", state: "open", status: "passed", firstPassedAt: null },
+      {
+        id: "q03-mult",
+        title: "掛ける",
+        state: "locked-previous",
+        status: "not-submitted",
+        firstPassedAt: null,
+      },
+      {
+        id: "q04-div",
+        title: "割る",
+        state: "locked-video",
+        afterTitle: "割り算",
+        status: "not-submitted",
+        firstPassedAt: null,
+      },
+    ],
+  };
+
+  it("サーバーの state で open と submitted を選び、ロックの理由を出す", async () => {
+    const root = await makeRoot();
+    vi.mocked(apiRequest).mockResolvedValueOnce(server);
+    const problems = await loadTaskProblems(root, staged);
+    expect(problems.states.map(({ id, status }) => [id, status])).toEqual([
+      ["q01-add", "submitted"],
+      ["q02-sub", "not-submitted"],
+    ]);
+    expect(problems.nextReason).toBe("この問題を提出すると、次の問題が出ます");
+    expect(problems.blocked.get("q04-div")).toBe("次の問題は「割り算」の動画を見ると出ます");
+    expect(problemFileToOpen(problems.states, "q01-add")).toBe("src/q01-add.ts");
+    expect(problemFileToOpen(problems.states, "q04-div")).toBe("src/q02-sub.ts");
+    expect(problemFileToOpen(problems.states.slice(0, 1), "q04-div")).toBeUndefined();
+  });
+
+  it("未配布のテストを書かずに、既存の提出照合を通せる", async () => {
+    const training = await makeRoot();
+    const sources = {
+      ".stella/task.json": JSON.stringify(staged),
+      "README.md": "# 計算",
+      "src/q01-add.ts": "export const add = 1;",
+      "tests/q01-add.test.ts": "test 1",
+      "src/q02-sub.ts": "export const sub = 1;",
+      "tests/q02-sub.test.ts": "test 2",
+    };
+    const bundle = {
+      manifest: staged,
+      contentHash: hash,
+      files: Object.fromEntries(
+        Object.entries(sources).map(([rel, content]) => [
+          rel,
+          Buffer.from(content).toString("base64"),
+        ]),
+      ),
+    };
+    const root = await installTask(training, bundle, { visibleProblems: new Set(["q01-add"]) });
+    const run = await passedRun(root, "q01-add");
+    const { references } = await protectedTaskFiles(
+      root,
+      staged,
+      ["tests/q01-add.test.ts"],
+      "q01-add",
+    );
+    run.protected.push(...references);
+    run.steps.unshift({ id: "deps", status: "skipped", label: "準備", summary: "", durationMs: 0 });
+    await mkdir(path.join(root, ".stella/problem-runs"));
+    await writeFile(path.join(root, ".stella/problem-runs/q01-add.json"), JSON.stringify(run));
+    const input = await prepareProblemSubmission(root, "q01-add", []);
+    expect((await verifyTaskSubmission(input, bundle)).check).toEqual({
+      matched: true,
+      reasons: [],
+    });
+    await expect(readFile(path.join(root, "tests/q02-sub.test.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    await writeFile(path.join(root, "tests/q01-add.test.ts"), "modified");
+    await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
+      "確認後にファイルが変わっています",
+    );
+  });
+
+  it("オフラインでは同じ版の前回の状態と手元の提出を使う", async () => {
+    const root = await makeRoot();
+    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockRejectedValueOnce(new Error("offline"));
+    await loadTaskProblems(root, staged);
+    await recordProblemSubmission(root, hash, "q02-sub");
+    const problems = await loadTaskProblems(root, staged);
+    expect(problems.states.map(({ id, status }) => [id, status])).toEqual([
+      ["q01-add", "submitted"],
+      ["q02-sub", "submitted"],
+    ]);
+    expect(problems.blocked.has("q03-mult")).toBe(true);
+  });
+
+  it("提出記録だけがある場合は提出済みを出し、どちらの記録もない場合は全部出す", async () => {
+    const root = await makeRoot();
+    vi.mocked(apiRequest)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockRejectedValueOnce(new Error("offline"));
+    expect((await loadTaskProblems(root, staged)).states).toHaveLength(4);
+    await recordProblemSubmission(root, hash, "q01-add");
+    expect((await loadTaskProblems(root, staged)).states).toEqual([state("q01-add", "submitted")]);
   });
 });

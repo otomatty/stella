@@ -174,7 +174,9 @@ function lessonNamespace(stageId: string, lessonId: string): string {
 
 /** レッスン ID はステージ内で一意。セクションをキーに含めると移動時に履歴が切れる。 */
 function lessonUuid(tenantId: string, stageId: string, lessonId: string): string {
-  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${lessonId}`);
+  const revision = progressRevisions.get(`${stageId}:${lessonId}`);
+  const key = revision === undefined ? lessonId : `${lessonId}@r${revision}`;
+  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${key}`);
 }
 
 /** 以前の section 込みキー。初回 seed で進捗を新 UUID へ付け替えるために残す。 */
@@ -200,6 +202,16 @@ const stagesToPrune: {
 
 /** 教材ファイル（packages/content/stages/<slug>/modules）から組み立てたステージと確認クイズ。 */
 const content = buildContentManifest();
+const progressRevisions = new Map<string, number>();
+for (const stage of content.stages) {
+  for (const section of stage.sections ?? []) {
+    for (const lesson of section.lessons) {
+      if (lesson.progressRevision !== undefined) {
+        progressRevisions.set(`${stage.id}:${lesson.id}`, lesson.progressRevision);
+      }
+    }
+  }
+}
 // VIDEO_MANIFEST は seed-d1.ts の process.env 経由で受け取る。
 const videoManifest: VideoManifest | null = process.env.VIDEO_MANIFEST
   ? JSON.parse(readFileSync(process.env.VIDEO_MANIFEST, "utf8"))
@@ -269,7 +281,8 @@ function emitStage(tenantId: Tenant["id"], stage: Stage) {
       emittedLessonUuids.add(newLessonUuid);
       const oldLessonUuid = legacyLessonUuid(tenantId, stage.id, section.id, lesson.id);
       lessonUuids.push(newLessonUuid);
-      if (oldLessonUuid !== newLessonUuid) {
+      // 進捗を振り直すレッスンには旧形式の進捗も引き継がない。
+      if (lesson.progressRevision === undefined && oldLessonUuid !== newLessonUuid) {
         lessonIdRemaps.push({ from: oldLessonUuid, to: newLessonUuid });
       }
       emitLesson(tenantId, stage.id, sectionUuid, j, lesson);
@@ -722,6 +735,21 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${definition}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", '"order"', "lesson_id", "variant_of"])};`,
   );
+  const steps = task.problemSteps ?? [];
+  if (steps.length > 0) {
+    const values = steps.map(
+      ({ problemId, stepLessonId, afterLessonId }, position) =>
+        `(${strLit(d.id)}, ${strLit(problemId)}, ${strLit(lessonUuid("ses", task.stageId, stepLessonId))}, ${strLit(lessonUuid("ses", task.stageId, afterLessonId))}, ${position})`,
+    );
+    lines.push(
+      `insert into task_problem_steps (task_id, problem_id, step_lesson_id, after_lesson_id, position) values ${values.join(", ")} on conflict (task_id, problem_id) ${doUpdate("task_problem_steps", ["step_lesson_id", "after_lesson_id", "position"])};`,
+    );
+  }
+  const keepSteps =
+    steps.length > 0
+      ? ` and problem_id not in (${steps.map((step) => strLit(step.problemId)).join(", ")})`
+      : "";
+  lines.push(`delete from task_problem_steps where task_id = ${strLit(d.id)}${keepSteps};`);
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
@@ -791,6 +819,10 @@ for (const [order, task] of content.tasks.entries()) {
       : `delete from task_fixed_starts where task_id = ${strLit(d.id)};`,
   );
 }
+
+lines.push(
+  "delete from task_problem_steps where task_id in (select id from tasks where active = 0);",
+);
 
 // 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。
 lines.push(

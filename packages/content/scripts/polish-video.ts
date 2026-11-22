@@ -18,16 +18,18 @@ import {
 } from "../src/video-polish.js";
 import { parseStoryboard } from "../src/video-storyboard.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { RetryableError, withRetry } from "./lib/tts.js";
+import { geminiCreditsError, RetryableError, withRetry } from "./lib/tts.js";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+// Gemini 4 Neon は 1 回の応答に 3〜4 分かかることがある。
+const GEMINI_REQUEST_TIMEOUT_MS = 600_000;
 
 function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const selection: PolishSelection = {};
   let apply = false,
     dryRun = false,
-    model = process.env.VIDEO_POLISH_MODEL || "gemini-4-argon";
+    model = process.env.VIDEO_POLISH_MODEL || "gemini-4-neon";
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--") continue;
@@ -67,7 +69,7 @@ async function generate(
         {
           method: "POST",
           headers: { "x-goog-api-key": key, "content-type": "application/json" },
-          signal: AbortSignal.timeout(120_000),
+          signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: request.system }] },
             contents: [{ role: "user", parts: [{ text: request.user }] }],
@@ -82,6 +84,7 @@ async function generate(
     } catch {
       throw new RetryableError("Gemini API との通信に失敗しました");
     }
+    if (res.status === 402) throw await geminiCreditsError(res, key);
     if (res.status === 429 || res.status >= 500) {
       const retryAfter = Number(res.headers.get("retry-after"));
       throw new RetryableError(
@@ -196,6 +199,9 @@ export async function polishVideo(args: string[]) {
     options.selection,
   );
   const guide = options.apply ? "" : readFileSync(join(contentRoot, "VIDEO_GUIDE.md"), "utf8");
+  if (!options.apply && !options.dryRun) {
+    console.info(`${options.model} で読み上げ文を校正します。数分かかることがあります。`);
+  }
   for (const { topic, title, file, source, storyboard, out, saved } of jobs) {
     const request = options.apply ? undefined : buildPolishRequest(storyboard, guide);
     if (options.dryRun && request) {

@@ -1,3 +1,5 @@
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { runInNewContext } from "node:vm";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -10,10 +12,12 @@ import {
   symlinkSync,
 } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { synthesizeSceneSfx } from "../src/scene-sfx.js";
 import { estimateSpeechSeconds } from "../src/narration.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
-import type { Scene, BoardStoryboard } from "../src/video-storyboard.js";
+import type { Scene, BoardStoryboard, VideoStoryboard } from "../src/video-storyboard.js";
 import type { TtsProvider } from "./lib/tts.js";
+import type { ScenePageWindow } from "./lib/scene-html.js";
 
 vi.mock("playwright", () => ({ chromium: { launch: vi.fn() } }));
 vi.mock("./lib/tts.js", async (original) => ({
@@ -31,7 +35,8 @@ vi.mock("./lib/ffmpeg.js", async (original) => ({
   probeDuration: vi.fn(async () => 10),
   toPosterJpeg: vi.fn(async (_source: string, out: string) => writeFileSync(out, "poster")),
 }));
-vi.mock("./lib/scene-encode.js", () => ({
+vi.mock("./lib/scene-encode.js", async (original) => ({
+  ...(await original<typeof import("./lib/scene-encode.js")>()),
   encodeScene: vi.fn(async (_page: unknown, _duration: number, _audio: string, out: string) => {
     writeFileSync(out, "clip");
     return 1;
@@ -63,9 +68,9 @@ import {
   writeNarrationWav,
   toPosterJpeg,
 } from "./lib/ffmpeg.js";
-import { encodeScene } from "./lib/scene-encode.js";
+import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { createTtsProvider, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
+import { createTtsProvider, cueHash, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
 const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
 const sample = JSON.parse(readFileSync(videoFile, "utf8")) as BoardStoryboard;
 const scene = sample.scenes[0];
@@ -377,7 +382,11 @@ describe("音声モデルと日次上限", () => {
       evaluate: vi.fn(async (callback: unknown) =>
         String(callback).includes("__overflows") ? [] : undefined,
       ),
-      screenshot: vi.fn(async ({ path }: { path: string }) => writeFileSync(path, "poster")),
+      screenshot: vi.fn(async (args: { path: string }) => {
+        const image = Buffer.from("poster");
+        if (args?.path) writeFileSync(args.path, image);
+        return image;
+      }),
     };
     const context = { newPage: vi.fn(async () => page), close: vi.fn() };
     const browser = { newContext: vi.fn(async () => context), close: vi.fn() };
@@ -386,6 +395,33 @@ describe("音声モデルと日次上限", () => {
     );
     return { root, browser, context, topics, storyboard, page };
   }
+
+  it.each([undefined, "gemini", "openjtalk", "fake"] as const)(
+    "video:scenes の読み上げ指定 %s を解決する",
+    async (tts) => {
+      const { root } = fixture();
+      const exitCode = process.exitCode;
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        vi.stubEnv("VIDEO_TTS_MODEL", "");
+        vi.mocked(createTtsProvider).mockReturnValue(provider("topic"));
+        vi.mocked(synthesizeCached).mockRejectedValueOnce(new QuotaExhaustedError("テスト用"));
+        await buildSceneVideos([
+          "fixture",
+          "--out",
+          join(root, "out"),
+          ...(tts ? ["--tts", tts] : []),
+        ]);
+        expect(createTtsProvider).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ provider: tts ?? "openjtalk" }),
+        );
+      } finally {
+        process.exitCode = exitCode;
+        error.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 
   it.each([undefined, "env-model", "cli-model"])(
     "選んだモデル %s を使い、声・話し方は保つ。上限では後続の場面・トピックを試さない",
@@ -454,6 +490,161 @@ describe("音声モデルと日次上限", () => {
       expect(screenshots).toHaveLength(
         2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 2),
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("stills ではダイアログが出ている時刻にその文を撮る", async () => {
+    const { root, page, storyboard, topics } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const dialog = { title: "完成したコード", code: ["const value = 1;"] };
+      const video: BoardStoryboard = {
+        ...storyboard,
+        schema: 2,
+        scenes: roles.map((role) => ({
+          id: role,
+          role,
+          title: "説明",
+          board: "main",
+          beats: [
+            role === "goal"
+              ? { say: "コードを見ます。", show: ["read"], dialog }
+              : { say: "読みます。", pulse: ["read"] },
+          ],
+        })),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+
+      const window = {
+        __setTime: async () => undefined,
+        __busyRanges: [],
+        __overflows: () => [],
+      } as unknown as ScenePageWindow;
+      const entry = {
+        hidden: true,
+        style: {},
+        classList: { contains: () => true },
+        querySelectorAll: () => [],
+      };
+      const overlay = { style: { opacity: "" }, children: [entry] };
+      let activePage = false;
+      page.goto.mockImplementation(async (url: string) => {
+        const html = readFileSync(fileURLToPath(url), "utf8");
+        const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, js]) =>
+          js.includes("function beatOverlayRuntime("),
+        )?.[1];
+        activePage = !!script;
+        if (!script) return;
+        window.__setTime = async () => undefined;
+        runInNewContext(script, {
+          window,
+          document: { getElementById: () => overlay },
+        });
+      });
+      page.evaluate.mockImplementation(async (callback, time?: number) => {
+        if (activePage && time !== undefined) await window.__setTime(time);
+        return String(callback).includes("__overflows") ? [] : undefined;
+      });
+      const shots: string[] = [];
+      page.screenshot.mockImplementation(async ({ path }) => {
+        if (activePage && !entry.hidden && overlay.style.opacity === "1") shots.push(path);
+        return Buffer.from("poster");
+      });
+      const out = join(root, "out");
+      await buildSceneVideos(["fixture", "--stills", "--out", out]);
+      expect(shots).toEqual([join(out, "fixture", "first", "stills", "scene-2-beat-1.png")]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["stills", "video"])("%s は figure の図解とイラストをコード場面に渡す", async (mode) => {
+    const { root, page, storyboard, topics } = fixture();
+    try {
+      const video: VideoStoryboard = {
+        ...storyboard,
+        art: { price: { prompt: "お店の値札" } },
+        boards: {
+          ...storyboard.boards,
+          shop: {
+            cols: 2,
+            rows: 1,
+            nodes: [
+              { id: "price", label: "商品の価格", at: [1, 1], art: "price" },
+              { id: "total", label: "合計", at: [2, 1], icon: "file" },
+            ],
+            links: [{ id: "to-total", from: "price", to: "total", label: "値を渡す" }],
+          },
+        },
+        scenes: [
+          storyboard.scenes[0],
+          {
+            id: "code",
+            kind: "code",
+            role: "point",
+            point: 1,
+            title: "価格のコード",
+            panel: { kind: "figure", board: "shop" },
+            code: ["const price = 1;"],
+            show: true,
+            beats: [
+              { say: "価格と合計を結びます。", figure: { show: ["price", "total", "to-total"] } },
+            ],
+          },
+          {
+            ...storyboard.scenes[2],
+            reset: true,
+            beats: [{ say: "読みます。", show: ["read"] }],
+          },
+        ],
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      mkdirSync(join(root, "assets/art"), { recursive: true });
+      const png = join(root, "assets/art/price.png");
+      const bytes = Buffer.alloc(24);
+      Buffer.from("89504e470d0a1a0a", "hex").copy(bytes);
+      bytes.writeUInt32BE(400, 16);
+      bytes.writeUInt32BE(300, 20);
+      writeFileSync(png, bytes);
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      vi.mocked(createTtsProvider).mockReturnValue(provider("cue"));
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+
+      const figurePages: string[] = [];
+      page.goto.mockImplementation(async (url: string) => {
+        const html = readFileSync(fileURLToPath(url), "utf8");
+        if (html.includes("figure-flow")) figurePages.push(html);
+      });
+      await buildSceneVideos([
+        "fixture",
+        "--out",
+        join(root, "out"),
+        ...(mode === "stills" ? ["--stills"] : ["--tts", "fake"]),
+      ]);
+      expect(figurePages.length).toBeGreaterThan(0);
+      for (const html of figurePages) {
+        expect(html).toContain("商品の価格");
+        expect(html).toContain("値を渡す");
+        expect(html).toContain(pathToFileURL(png).href);
+      }
+      if (mode === "video") expect(encodeScene).toHaveBeenCalledTimes(video.scenes.length + 1);
+      else expect(synthesizeCached).not.toHaveBeenCalled();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -528,9 +719,13 @@ describe("音声モデルと日次上限", () => {
           join(contentRoot, "dist/video-cache/scenes", report.scenes.at(-1).hash, "poster.png"),
           expect.stringContaining("poster.jpg"),
         );
-        expect(readFileSync(join(root, "out/fixture/first/captions.vtt"), "utf8")).toBe(
-          "WEBVTT\n\nNOTE 字幕は動画に焼き込み済み\n\n",
-        );
+        const out = join(root, "out/fixture/first");
+        const captions = readFileSync(join(out, "captions.vtt"), "utf8");
+        expect(captions).toMatch(/^WEBVTT\n\n1\n00:00:03.400 --> [^\n]+\n読みます。/);
+        expect(captions.match(/ --> /g)).toHaveLength(storyboard.scenes.length);
+        expect(captions).not.toContain(topics[0].title);
+        expect(existsSync(join(out, "video.captions.mp4"))).toBe(false);
+        expect(runFfmpeg).toHaveBeenCalledTimes(1);
         expect(encodeNarration).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
         const sfxWavs = vi
           .mocked(writeNarrationWav)
@@ -551,6 +746,227 @@ describe("音声モデルと日次上限", () => {
       }
     },
   );
+  it("--burn-captions は公開用の動画と字幕を保ち、字幕の PNG を重ねた確認版を作る", async () => {
+    const { root, topics, storyboard, page, browser } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const video: VideoStoryboard = {
+        ...storyboard,
+        schema: 2,
+        art: {
+          example: { prompt: "見本のイラスト", regions: { object: [0.1, 0.1, 0.2, 0.2] } },
+        },
+        scenes: roles.map((role) => {
+          const base = { id: role, role, title: "説明" };
+          if (role === "example")
+            return {
+              ...base,
+              kind: "view",
+              image: "art:example",
+              beats: [{ say: "絵に注目してください。", spot: ["object"] }],
+            };
+          return {
+            ...base,
+            kind: "board",
+            board: "main",
+            beats: [
+              role === "goal"
+                ? {
+                    say: "完成形を見ます。",
+                    show: ["read"],
+                    dialog: { title: "コードの例", code: ["const x = 1;"] },
+                  }
+                : role === "syntax"
+                  ? {
+                      say: "二つの値を比べます。",
+                      speech: "順番を確かめます。",
+                      term: { text: "比較", ruby: "ひかく" },
+                    }
+                  : { say: "要点を確かめます。", pulse: ["read"] },
+            ],
+          };
+        }),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      mkdirSync(join(root, "assets/art"), { recursive: true });
+      const image = Buffer.alloc(24);
+      Buffer.from("89504e470d0a1a0a", "hex").copy(image);
+      image.writeUInt32BE(400, 16);
+      image.writeUInt32BE(300, 20);
+      writeFileSync(join(root, "assets/art/example.png"), image);
+
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      const voice = provider("cue");
+      vi.mocked(createTtsProvider).mockReturnValue(voice);
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+      const plain = join(root, "plain");
+      const burned = join(root, "確認用's video");
+      const args = ["fixture", "--tts", "fake"];
+      await buildSceneVideos([...args, "--out", plain]);
+      expect(runFfmpeg).toHaveBeenCalledTimes(1);
+      expect(existsSync(join(plain, "fixture/first/video.captions.mp4"))).toBe(false);
+      expect(page.screenshot).not.toHaveBeenCalledWith(
+        expect.objectContaining({ omitBackground: true }),
+      );
+      const timing = () =>
+        vi
+          .mocked(writeNarrationWav)
+          .mock.calls.map(([file, duration, placements]) => [
+            file.split("/").at(-1),
+            duration,
+            placements,
+          ]);
+      const audioAndSfx = timing();
+      const speechKeys = () =>
+        vi
+          .mocked(synthesizeCached)
+          .mock.calls.map(([tts, speech]) => cueHash(tts.identity, speech));
+      const keys = speechKeys();
+      expect(keys).toContain(cueHash("fixture", "順番を確かめます。"));
+      vi.mocked(writeNarrationWav).mockClear();
+      vi.mocked(synthesizeCached).mockClear();
+
+      let track = "";
+      vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) => {
+        const file = ffmpegArgs.at(-1) ?? "";
+        const preview = ffmpegArgs.includes("-filter_complex");
+        if (preview) track = readFileSync(ffmpegArgs[7], "utf8");
+        writeFileSync(file, preview ? "preview" : "video");
+      });
+      try {
+        await buildSceneVideos([...args, "--out", burned, "--burn-captions"]);
+      } finally {
+        vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) =>
+          writeFileSync(ffmpegArgs.at(-1) ?? "", "video"),
+        );
+      }
+
+      expect(browser.newContext).toHaveBeenLastCalledWith({
+        viewport: { width: 1920, height: 1080 },
+        deviceScaleFactor: 1,
+      });
+      expect(runFfmpeg).toHaveBeenCalledTimes(3);
+      expect(runFfmpeg).toHaveBeenLastCalledWith([
+        "-i",
+        expect.stringMatching(/\/video\.mp4$/),
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        expect.stringMatching(/\/captions\.ffconcat$/),
+        "-filter_complex",
+        "[0:v:0][1:v:0]overlay[v]",
+        "-map",
+        "[v]",
+        "-map",
+        "0:a:0",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "20",
+        "-c:a",
+        "copy",
+        "-movflags",
+        "+faststart",
+        expect.stringMatching(/\/video\.captions\.mp4$/),
+      ]);
+      expect(track).toMatch(/^ffconcat version 1\.0\nfile 'caption-blank\.png'/);
+      const screenshots = page.screenshot.mock.calls.filter(([args]) => "omitBackground" in args);
+      expect(screenshots).toHaveLength(roles.length + 1);
+      for (const file of ["video.mp4", "captions.vtt"])
+        expect(readFileSync(join(burned, "fixture/first", file))).toEqual(
+          readFileSync(join(plain, "fixture/first", file)),
+        );
+      const captions = readFileSync(join(plain, "fixture/first/captions.vtt"), "utf8");
+      expect(captions.match(/<c\.on-dark>/g)).toHaveLength(3);
+      expect(captions).toContain("<c.on-dark>二つの値を比べます。</c>");
+      expect(captions).not.toContain("順番を確かめます。");
+      expect(readFileSync(join(burned, "fixture/first/video.captions.mp4"), "utf8")).toBe(
+        "preview",
+      );
+      expect(timing()).toEqual(audioAndSfx);
+      expect(speechKeys()).toEqual(keys);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 15_000);
+
+  it("schema 2 のタイトル直後と、状態が変わる文の効果音をミックスに渡す", async () => {
+    const { root, topics, storyboard } = fixture();
+    try {
+      const roles = [
+        "goal",
+        "example",
+        "syntax",
+        "apply",
+        "quiz",
+        "answer",
+        "explain",
+        "usage",
+        "next",
+      ] as const;
+      const video: BoardStoryboard = {
+        ...storyboard,
+        schema: 2,
+        scenes: roles.map((role) => ({
+          id: role,
+          role,
+          title: "説明",
+          board: "main",
+          beats: [
+            role === "goal"
+              ? { say: "読みます。", show: ["read"] }
+              : role === "answer"
+                ? { say: "正解です。", mark: [{ on: "read", kind: "check" }] }
+                : { say: "読みます。", pulse: ["read"] },
+          ],
+        })),
+      };
+      writeFileSync(join(root, "video.json"), JSON.stringify(video));
+      vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
+      vi.mocked(createTtsProvider).mockReturnValue(provider("cue"));
+      vi.mocked(decodeTrimmedPcm).mockImplementation(async () => {
+        const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
+        return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
+      });
+      await buildSceneVideos(["fixture", "--tts", "fake", "--out", join(root, "out")]);
+      const tracks = vi
+        .mocked(writeNarrationWav)
+        .mock.calls.filter(([file]) => /sfx-\d+\.wav$/.test(file))
+        .map(([, , placements]) => placements[0].pcm);
+      expect(tracks).toHaveLength(video.scenes.length + 1);
+      for (const [index, kind, at] of [
+        [0, "title", 0.1],
+        [1, "scene", 0],
+        [5, "quiz", 0],
+        [6, "correct", 0.8],
+      ] as const) {
+        const expected = synthesizeSceneSfx(kind, AUDIO_RATE);
+        const start = Math.round(at * AUDIO_RATE);
+        const actual = tracks[index].subarray(start, start + expected.length);
+        expect(actual.subarray(0, Math.min(expected.length, AUDIO_RATE * 0.8))).toEqual(
+          expected.subarray(0, Math.min(expected.length, AUDIO_RATE * 0.8)),
+        );
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("配信用の計画にもtakeawayの変更を反映する", () => {
     const { root, topics } = fixture();
     try {

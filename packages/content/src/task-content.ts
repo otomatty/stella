@@ -42,6 +42,7 @@ export interface TaskSeed {
    * 類題は null (レッスンを作らない。出題した受講者にだけ配る)。
    */
   lessonId: string | null;
+  problemSteps?: { problemId: string; stepLessonId: string; afterLessonId: string }[];
   /**
    * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題はステージの課題一覧・
    * レッスン・学習ペース・修了の判定に出さず、出題した受講者にだけ配る。
@@ -409,6 +410,8 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
       );
     const kindProblem = variantKindProblem(definition.kind);
     if (kindProblem) throw new Error(`${kindProblem}: ${definition.id}`);
+    if (definition.problems?.some((problem) => problem.after))
+      throw new Error(`類題には problems の after を書けません: ${definition.id}`);
     if (definition.fixedStart)
       throw new Error(`類題には fixedStart を書けません: ${definition.id}`);
     for (const rel of ["private/variants", "private/variant-templates", "fixed-start"])

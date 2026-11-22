@@ -59,6 +59,7 @@
     "./tasks/manifest": "./src/tasks/manifest.ts",
     "./tasks/manual-completion": "./src/tasks/manual-completion.ts",
     "./tasks/problems": "./src/tasks/problems.ts",
+    "./tasks/problem-steps": "./src/tasks/problem-steps.ts",
     "./tasks/environment": "./src/tasks/environment.ts",
     "./tasks/extension-compat": "./src/tasks/extension-compat.ts",
     "./tasks/run-result": "./src/tasks/run-result.ts",

@@ -1,0 +1,932 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "Math.ceil を使った 1 行を読んで、切り上げたあとの整数を言える。",
+    "stuck": "割り算の結果が小数になったとき、多めに数える方法を知らない。切り捨てや四捨五入との違いも分からない。",
+    "points": ["Math.ceil は、小数点以下を切り上げた整数を返す。端数があれば 1 つ上の整数になる。"],
+    "leaveOut": [
+      "四捨五入の書き方",
+      "100 円単位に切り上げる計算の手順 (課題で考える)",
+      "負の数の切り上げ",
+      "引数が 2 つある関数 (次の動画)",
+      "問2の答えのコード"
+    ]
+  },
+  "art": {
+    "halfcrate": {
+      "prompt": "Two crates full of bottles and one crate only half filled with bottles, side by side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "addcrate": {
+      "prompt": "Two hands placing one empty crate down next to other crates. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "threecrates": {
+      "prompt": "Three closed crates of bottles stacked neatly, seen from the front. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "floorball": {
+      "prompt": "A ball resting on a flat floor at the bottom of an empty room, seen from the side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "balloon": {
+      "prompt": "A balloon floating up and touching the ceiling of an empty room, seen from the side. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "group": {
+      "prompt": "A small group of people standing together waiting, drawn as simple friendly figures. Drawn large and centered. No letters, no digits, no symbols."
+    },
+    "carseat": {
+      "prompt": "One small car seen from the side with four empty seats visible through the windows. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "cars": {
+      "prompt": "Several identical small cars parked in a row, seen from the front at an angle. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "trucks": {
+      "prompt": "A delivery truck being loaded with cardboard boxes, a few boxes still on the ground. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "parking": {
+      "prompt": "A parking ticket machine next to a parked car, with a round clock without numbers above. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "coins100": {
+      "prompt": "Neat stacks of identical round coins in a row, with one extra coin beside them. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "billpaper": {
+      "prompt": "A restaurant bill on a small tray with a few thin placeholder lines, with three small simple person icons drawn as plain round heads and shoulders beside it. Objects only, drawn large and centered. No letters, no digits, no symbols."
+    },
+    "calcdesk": {
+      "prompt": "A large desk calculator with a blank display standing on a desk, with a pencil beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wallet": {
+      "prompt": "One open wallet with a blank banknote shape and two coins coming out of it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "pack": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "raw",
+          "label": "計算した箱の数",
+          "art": "halfcrate",
+          "at": [1, 1]
+        },
+        {
+          "id": "up",
+          "label": "切り上げる",
+          "art": "addcrate",
+          "at": [3, 1]
+        },
+        {
+          "id": "whole",
+          "label": "必要な箱",
+          "art": "threecrates",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "c1",
+          "from": "raw",
+          "to": "up",
+          "label": "渡す"
+        },
+        {
+          "id": "c2",
+          "from": "up",
+          "to": "whole",
+          "label": "返す"
+        }
+      ]
+    },
+    "updown": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "lo",
+          "label": "床の側",
+          "art": "floorball",
+          "at": [1, 1]
+        },
+        {
+          "id": "mid",
+          "label": "もとの数",
+          "art": "halfcrate",
+          "at": [2, 1]
+        },
+        {
+          "id": "hi",
+          "label": "天井の側",
+          "art": "balloon",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "car": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "k1",
+          "label": "人数",
+          "art": "group",
+          "at": [1, 1]
+        },
+        {
+          "id": "k2",
+          "label": "割って切り上げ",
+          "art": "carseat",
+          "at": [3, 1]
+        },
+        {
+          "id": "k3",
+          "label": "車の台数",
+          "art": "cars",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "kc1",
+          "from": "k1",
+          "to": "k2",
+          "label": "渡す"
+        },
+        {
+          "id": "kc2",
+          "from": "k2",
+          "to": "k3",
+          "label": "返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "箱やトラックの数",
+          "art": "trucks",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "駐車場の料金",
+          "art": "parking",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "100円単位",
+          "art": "coins100",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task2": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "qin",
+          "label": "合計と人数",
+          "art": "billpaper",
+          "at": [1, 1]
+        },
+        {
+          "id": "qfn",
+          "label": "割り勘の関数",
+          "art": "calcdesk",
+          "at": [3, 1]
+        },
+        {
+          "id": "qout",
+          "label": "1人が払う金額",
+          "art": "wallet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "qgive",
+          "from": "qin",
+          "to": "qfn",
+          "label": "渡す"
+        },
+        {
+          "id": "qback",
+          "from": "qfn",
+          "to": "qout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "bus-seats",
+      "beats": [
+        {
+          "say": "この動画で学ぶのは、端数を切り上げる書き方です。"
+        },
+        {
+          "say": "20人乗りのバスに、45人で乗るとします。",
+          "speech": "二十人乗りのバスに、四十五人で乗るとします。"
+        },
+        {
+          "say": "2台に乗れるのは、40人までです。",
+          "speech": "二台に乗れるのは、四十人までです。"
+        },
+        {
+          "say": "残った5人のために、もう1台を用意しましょう。",
+          "speech": "残った五人のために、もう一台を用意しましょう。"
+        },
+        {
+          "say": "端数も1つと数えるのが、切り上げです。",
+          "speech": "端数も一つと数えるのが、切り上げです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "boxes",
+      "role": "example",
+      "title": "箱はいくつ必要か",
+      "board": "pack",
+      "beats": [
+        {
+          "say": "瓶が25本あり、箱には10本ずつ入ります。",
+          "speech": "瓶が二十五本あり、箱には十本ずつ入ります。",
+          "show": ["raw"],
+          "pulse": ["raw"]
+        },
+        {
+          "say": "25 を 10 で割ると、2.5 です。",
+          "speech": "二十五を十で割ると、にてんごです。",
+          "tag": {
+            "raw": "2.5箱"
+          }
+        },
+        {
+          "say": "でも、箱を半分だけ用意することはできません。",
+          "show": ["c1", "up"],
+          "travel": {
+            "along": ["c1"],
+            "icon": "send"
+          },
+          "pulse": ["up"]
+        },
+        {
+          "say": "そこで、端数も1箱と数えて、上の整数にします。",
+          "speech": "そこで、端数もひと箱と数えて、上の整数にします。",
+          "tag": {
+            "up": "1つ上へ"
+          }
+        },
+        {
+          "say": "必要な箱は、3つだと分かりました。",
+          "speech": "必要な箱は、みっつだと分かりました。",
+          "show": ["c2", "whole"],
+          "tag": {
+            "whole": "3箱"
+          },
+          "travel": {
+            "along": ["c2"],
+            "icon": "send"
+          },
+          "pulse": ["whole"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "Math.ceil を使う",
+      "code": ["// 箱の数 boxes を作り、2.5 を切り上げる", "const boxes = Math.ceil(2.5);"],
+      "panel": {
+        "kind": "figure",
+        "board": "pack"
+      },
+      "beats": [
+        {
+          "say": "この切り上げを、コードで書いてみます。",
+          "type": [0, 1],
+          "figure": {
+            "untag": ["up"],
+            "tag": {
+              "raw": "2.5"
+            }
+          }
+        },
+        {
+          "say": "Math.ceil が、切り上げをする関数です。",
+          "speech": "マスシールが、切り上げをする関数です。",
+          "part": {
+            "line": 1,
+            "text": "Math.ceil",
+            "note": "切り上げる"
+          },
+          "figure": {
+            "pulse": ["up"]
+          }
+        },
+        {
+          "say": "かっこの中に、切り上げたい数を渡します。",
+          "part": {
+            "line": 1,
+            "text": "(2.5)"
+          },
+          "figure": {
+            "pulse": ["raw"]
+          }
+        },
+        {
+          "say": "端数を上の整数にすることが、切り上げです。",
+          "term": {
+            "text": "切り上げ",
+            "ruby": "きりあげ",
+            "note": "端数を上の整数にすること"
+          },
+          "pause": 1
+        },
+        {
+          "say": "戻ってきた 3 が、boxes に入ります。",
+          "speech": "戻ってきたさんが、ボックシズに入ります。",
+          "part": {
+            "line": 1,
+            "text": "boxes"
+          },
+          "figure": {
+            "travel": {
+              "along": ["c1", "c2"]
+            },
+            "tag": {
+              "whole": "3"
+            },
+            "pulse": ["whole"]
+          }
+        },
+        {
+          "say": "ceil は、天井という意味の英語を短くした名前です。",
+          "speech": "シールは、天井という意味の英語を短くした名前です。",
+          "part": {
+            "line": 1,
+            "text": "ceil",
+            "note": "天井"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "kind": "code",
+      "role": "note",
+      "title": "切り捨てとくらべる",
+      "code": [
+        "// 切り捨てた数 down を作る",
+        "const down = Math.floor(2.5);",
+        "// 切り上げた数 up を作る",
+        "const up = Math.ceil(2.5);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "updown"
+      },
+      "beats": [
+        {
+          "say": "切り捨ての Math.floor と、くらべてみましょう。",
+          "speech": "切り捨てのマスフロアと、くらべてみましょう。",
+          "type": [0, 1, 2, 3],
+          "figure": {
+            "show": ["mid"],
+            "tag": {
+              "mid": "2.5"
+            },
+            "pulse": ["mid"]
+          }
+        },
+        {
+          "say": "Math.floor は、2.5 を下の 2 にします。",
+          "speech": "マスフロアは、にてんごを下のににします。",
+          "part": {
+            "line": 1,
+            "text": "Math.floor(2.5)"
+          },
+          "figure": {
+            "show": ["lo"],
+            "tag": {
+              "lo": "2"
+            },
+            "pulse": ["lo"]
+          }
+        },
+        {
+          "say": "Math.ceil が返すのは、上の 3 です。",
+          "speech": "マスシールが返すのは、上のさんです。",
+          "part": {
+            "line": 3,
+            "text": "Math.ceil(2.5)"
+          },
+          "figure": {
+            "show": ["hi"],
+            "tag": {
+              "hi": "3"
+            },
+            "pulse": ["hi"]
+          }
+        },
+        {
+          "say": "もとの数が整数なら、どちらを使っても変わりません。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数の中で切り上げる",
+      "code": [
+        "// 瓶の本数を受け取り、必要な箱の数を返す関数",
+        "function countBoxes(bottles: number): number {",
+        "  // 割った数 raw を作り、本数を 10 で割る",
+        "  const raw = bottles / 10;",
+        "  // 切り上げた数を返す",
+        "  return Math.ceil(raw);",
+        "}",
+        "// 25 本を渡して、関数を呼ぶ",
+        "countBoxes(25);"
+      ],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "pack"
+      },
+      "beats": [
+        {
+          "say": "瓶の本数から箱の数を出す関数にしてみましょう。",
+          "type": [0, 1, 2, 3, 4, 5, 6],
+          "figure": {
+            "show": ["raw", "c1", "up", "c2", "whole"],
+            "untag": ["raw", "whole"]
+          }
+        },
+        {
+          "say": "bottles は、瓶という意味の英語です。",
+          "speech": "ボトルズは、瓶という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "bottles",
+            "note": "瓶"
+          }
+        },
+        {
+          "say": "本数を 10 で割った結果が、raw に入ります。",
+          "speech": "本数を十で割った結果が、ローに入ります。",
+          "part": {
+            "line": 3,
+            "text": "bottles / 10"
+          },
+          "figure": {
+            "pulse": ["raw"]
+          }
+        },
+        {
+          "say": "その raw を、Math.ceil に渡しました。",
+          "speech": "そのローを、マスシールに渡しました。",
+          "part": {
+            "line": 5,
+            "text": "Math.ceil(raw)"
+          },
+          "figure": {
+            "travel": {
+              "along": ["c1"]
+            },
+            "pulse": ["up"]
+          }
+        },
+        {
+          "say": "25 を渡すと、割り算の結果は 2.5 です。",
+          "speech": "二十五を渡すと、割り算の結果はにてんごです。",
+          "type": [7, 8],
+          "figure": {
+            "tag": {
+              "raw": "2.5"
+            },
+            "pulse": ["raw"]
+          }
+        },
+        {
+          "say": "切り上げるので、戻ってくるのは 3 になります。",
+          "speech": "切り上げるので、戻ってくるのはさんになります。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "whole": "3"
+            },
+            "travel": {
+              "along": ["c2"]
+            },
+            "pulse": ["whole"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 瓶の本数を受け取り、必要な箱の数を返す関数",
+        "function countBoxes(bottles: number): number {",
+        "  // 割った数 raw を作り、本数を 10 で割る",
+        "  const raw = bottles / 10;",
+        "  // 切り上げた数を返す",
+        "  return Math.ceil(raw);",
+        "}",
+        "// 25 本を渡して、関数を呼ぶ",
+        "countBoxes(25);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この関数も、2つに分けて見てみましょう。",
+          "speech": "この関数も、二つに分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "Math.ceil は、言語に用意された決まった書き方です。",
+          "speech": "マスシールは、言語に用意された決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "Math.ceil"
+              },
+              {
+                "line": 3,
+                "text": "/"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "countBoxes と bottles は、自分で付けました。",
+          "speech": "カウントボックシズとボトルズは、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "countBoxes"
+              },
+              {
+                "line": 8,
+                "text": "countBoxes"
+              },
+              {
+                "line": 1,
+                "text": "bottles"
+              },
+              {
+                "line": 3,
+                "text": "bottles"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "1箱に入る 10 という数も、自分で決めた値です。",
+          "speech": "ひと箱に入る十という数も、自分で決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "10"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻ってくる値はいくつ",
+      "code": [
+        "// 人数を受け取り、必要な車の台数を返す関数",
+        "function countCars(people: number): number {",
+        "  // 1 台に 4 人乗れるので、人数を 4 で割って切り上げる",
+        "  return Math.ceil(people / 4);",
+        "}",
+        "// 9 人を渡して、関数を呼ぶ",
+        "countCars(9);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "car"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["k1", "kc1", "k2", "kc2", "k3"]
+          }
+        },
+        {
+          "say": "必要な車の台数を出す関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "countCars"
+          },
+          "figure": {
+            "pulse": ["k2"]
+          }
+        },
+        {
+          "say": "1台に乗れるのは、4人です。",
+          "speech": "一台に乗れるのは、四人です。",
+          "part": {
+            "line": 3,
+            "text": "people / 4"
+          },
+          "figure": {
+            "tag": {
+              "k2": "4人乗り"
+            }
+          }
+        },
+        {
+          "say": "この関数に、9 を渡して呼び出します。",
+          "speech": "この関数に、きゅうを渡して呼び出します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "k1": "9人"
+            },
+            "pulse": ["k1"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "k3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["k3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 人数を受け取り、必要な車の台数を返す関数",
+        "function countCars(people: number): number {",
+        "  // 1 台に 4 人乗れるので、人数を 4 で割って切り上げる",
+        "  return Math.ceil(people / 4);",
+        "}",
+        "// 9 人を渡して、関数を呼ぶ",
+        "countCars(9);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "car"
+      },
+      "beats": [
+        {
+          "say": "答えは、3 です。",
+          "speech": "答えは、さんです。",
+          "figure": {
+            "tag": {
+              "k3": "3台"
+            },
+            "mark": [
+              {
+                "on": "k3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["k3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "残った人にも1台",
+      "code": [
+        "// 人数を受け取り、必要な車の台数を返す関数",
+        "function countCars(people: number): number {",
+        "  // 1 台に 4 人乗れるので、人数を 4 で割って切り上げる",
+        "  return Math.ceil(people / 4);",
+        "}",
+        "// 9 人を渡して、関数を呼ぶ",
+        "countCars(9);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "car"
+      },
+      "beats": [
+        {
+          "say": "9 を 4 で割ると、2.25 です。",
+          "speech": "きゅうをよんで割ると、にてんにーごです。",
+          "part": {
+            "line": 3,
+            "text": "people / 4"
+          },
+          "figure": {
+            "pulse": ["k1"]
+          }
+        },
+        {
+          "say": "2台では、8人までしか乗れません。",
+          "speech": "二台では、八人までしか乗れません。",
+          "figure": {
+            "pulse": ["k2"]
+          }
+        },
+        {
+          "say": "残った1人のために、もう1台が必要です。",
+          "speech": "残ったひとりのために、もう一台が必要です。",
+          "figure": {
+            "tag": {
+              "k2": "あと1人"
+            }
+          }
+        },
+        {
+          "say": "Math.ceil は、2.25 を上の 3 にします。",
+          "speech": "マスシールは、にてんにーごを上のさんにします。",
+          "part": {
+            "line": 3,
+            "text": "Math.ceil"
+          },
+          "figure": {
+            "travel": {
+              "along": ["kc2"]
+            },
+            "pulse": ["k3"]
+          }
+        },
+        {
+          "say": "四捨五入なら 2 ですが、切り上げは 3 です。",
+          "speech": "四捨五入ならにですが、切り上げはさんです。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "切り上げを使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "切り上げは、端数にも1つ分が必要な場面で使います。",
+          "speech": "切り上げは、端数にもひとつ分が必要な場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "荷物を運ぶ箱やトラックの数は、その代表です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "駐車場の料金は、1時間に満たない分も数えます。",
+          "speech": "駐車場の料金は、一時間に満たない分も数えます。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "支払いを100円単位にそろえるのも、切り上げです。",
+          "speech": "支払いを百円単位にそろえるのも、切り上げです。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問2で使う",
+      "code": [
+        "// 問2 割り勘で1人が払う金額を返す（100円単位に切り上げ）",
+        "//     例: splitBill(10000, 3) → 3400",
+        "export function splitBill(total: number, people: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task2"
+      },
+      "beats": [
+        {
+          "say": "問2には、100円単位に切り上げと書いてあります。",
+          "speech": "問にには、百円単位に切り上げと書いてあります。",
+          "part": {
+            "line": 0,
+            "text": "切り上げ"
+          },
+          "figure": {
+            "show": ["qin", "qgive", "qfn", "qback", "qout"]
+          }
+        },
+        {
+          "say": "ここで使うのが、Math.ceil です。",
+          "speech": "ここで使うのが、マスシールです。",
+          "figure": {
+            "tag": {
+              "qfn": "切り上げる"
+            },
+            "pulse": ["qfn"]
+          }
+        },
+        {
+          "say": "何を切り上げれば100円単位になるかを、考えましょう。",
+          "speech": "何を切り上げれば百円単位になるかを、考えましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

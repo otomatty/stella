@@ -9,6 +9,7 @@
 
 import type { TaskStatus, TaskSummary } from "@stella/shared/tasks/catalog";
 
+import { firstOpenProblem, problemLockReason } from "./problem-lesson";
 import { isProblemTask } from "./task-row";
 
 /** クリアに数える状態 (`task-completion.ts` と同じ)。 */
@@ -24,9 +25,11 @@ const LEARNER_TURN: ReadonlySet<TaskStatus> = new Set<TaskStatus>([
 export interface StageWrapup {
   /** 次に見る課題 (受講者の番の課題を先に、無ければレビュー待ちの課題)。 */
   task: Pick<TaskSummary, "id" | "title" | "status" | "lessonId">;
+  /** 動画と提出で順に進む課題で案内するレッスン。 */
+  nextLesson?: { id: string; action: "問題を開く" | "動画を見る" };
   /** 合格していない課題の数 (1 以上)。 */
   remaining: number;
-  /** 受講者が手を動かす番か (未提出・手元で合格・再提出)。false ならレビューの結果待ち。 */
+  /** 問題・動画・課題に進む案内を出せるか。 */
   learnerTurn: boolean;
   /** 札とガイドに出す 1〜2 文。 */
   detail: string;
@@ -78,17 +81,36 @@ export function stageWrapupOf(tasks: readonly TaskSummary[]): StageWrapup | null
   const pending = tasks.filter((task) => !PASSED.has(task.status));
   const task = pending.find((t) => LEARNER_TURN.has(t.status)) ?? pending[0];
   if (!task) return null;
+  const open = firstOpenProblem(task.problems);
+  const locked = task.problems?.find((problem) => problem.state === "locked-video");
+  const nextLesson: StageWrapup["nextLesson"] = open
+    ? { id: open.stepLessonId, action: "問題を開く" }
+    : locked
+      ? { id: locked.afterLessonId, action: "動画を見る" }
+      : undefined;
+  const allProblemsSubmitted =
+    task.problems?.length && task.problems.every((problem) => problem.state === "submitted");
+  const nextDetail = open
+    ? `次は「${open.label} ${open.title}」に取り組みましょう。`
+    : locked
+      ? `${problemLockReason(locked)}。`
+      : allProblemsSubmitted
+        ? `課題「${task.title}」の問題はすべて提出済みです。`
+        : statusSentence(task);
   const remaining = pending.length;
   const tail =
-    remaining === 1
-      ? isProblemTask(task)
-        ? "全部の問題を提出すると、このステージが完了します。"
-        : "レビューで合格すると、このステージが完了します。"
-      : `合格していない課題があと ${remaining} 件あります。すべて合格すると、このステージが完了します。`;
+    remaining === 1 && allProblemsSubmitted
+      ? ""
+      : remaining === 1
+        ? isProblemTask(task)
+          ? "全部の問題を提出すると、このステージが完了します。"
+          : "レビューで合格すると、このステージが完了します。"
+        : `合格していない課題があと ${remaining} 件あります。すべて合格すると、このステージが完了します。`;
   return {
     task: { id: task.id, title: task.title, status: task.status, lessonId: task.lessonId },
     remaining,
-    learnerTurn: LEARNER_TURN.has(task.status),
-    detail: `${statusSentence(task)}${tail}`,
+    learnerTurn: task.problems?.length ? Boolean(nextLesson) : LEARNER_TURN.has(task.status),
+    ...(nextLesson ? { nextLesson } : {}),
+    detail: `${nextDetail}${tail}`,
   };
 }

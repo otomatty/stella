@@ -41,12 +41,14 @@ import { useLessonProgress, useProgressReady } from "@/hooks/useLessonProgress";
 import { flushNow } from "@/lib/lesson-progress";
 import { useAutoplayNext } from "@/lib/autoplay-pref";
 import { cn } from "@/lib/utils";
+import { readVideoCaptions, useVideoCaptions, writeVideoCaptions } from "@/lib/video-captions";
 import {
   clusterMarkers,
   formatSeekValue,
   formatVideoTime,
   timeAtPointer,
 } from "@/lib/video-player";
+import "./VideoViewer.css";
 
 export interface VideoPlaybackState {
   currentTime: number;
@@ -258,7 +260,7 @@ export function VideoViewer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [captionsShowing, setCaptionsShowing] = useState(Boolean(captionsPath));
+  const [captionsShowing, setCaptionsShowing] = useState(readVideoCaptions);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [completedDuringPlayback, setCompletedDuringPlayback] = useState(false);
   const [speed, setSpeed] = useState<number>(1);
@@ -275,6 +277,7 @@ export function VideoViewer({
   const nextTitle = nextLessonTitle ?? "次の教材";
 
   const videoRef = useRef<FullscreenVideo | null>(null);
+  const captionsTrackRef = useRef<HTMLTrackElement>(null);
   // unmount 時は React が ref を外したあとも最後の再生位置を読めるようにする。
   const lastVideoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -290,21 +293,15 @@ export function VideoViewer({
           video.webkitDisplayingFullscreen === true,
       );
     };
-    const syncCaptions = () => {
-      setCaptionsShowing(video.textTracks[0]?.mode === "showing");
-    };
     document.addEventListener("fullscreenchange", syncFullscreen);
     video.addEventListener("webkitbeginfullscreen", syncFullscreen);
     video.addEventListener("webkitendfullscreen", syncFullscreen);
-    video.textTracks.addEventListener("change", syncCaptions);
     syncFullscreen();
-    syncCaptions();
     return () => {
       videoRef.current = null;
       document.removeEventListener("fullscreenchange", syncFullscreen);
       video.removeEventListener("webkitbeginfullscreen", syncFullscreen);
       video.removeEventListener("webkitendfullscreen", syncFullscreen);
-      video.textTracks.removeEventListener("change", syncCaptions);
     };
   }, []);
   const hasPlayedRef = useRef(false);
@@ -377,6 +374,16 @@ export function VideoViewer({
     }
   }, [videoPath]);
 
+  const captionMediaKey =
+    url && captionsPath && !hasError
+      ? JSON.stringify([lessonId, url, reloadKey, captionsPath])
+      : null;
+  const {
+    available: hasCaptions,
+    cues,
+    picture,
+  } = useVideoCaptions(videoRef, captionsTrackRef, captionMediaKey, captionsShowing);
+
   // 前回視聴位置から再開する。 メタデータ読み込みとサーバ進捗の取り込みは
   // どちらが先に終わるか決まっていないので、 両方揃った時点で 1 度だけ実行する。
   const resumePlayback = useCallback(() => {
@@ -403,13 +410,11 @@ export function VideoViewer({
     if (!v) return;
     if (Number.isFinite(v.duration) && v.duration > 0) setDuration(v.duration);
     v.playbackRate = speed;
-    const track = v.textTracks[0];
-    if (captionsPath && track?.mode === "disabled") track.mode = "showing";
     if (pendingSeek.current !== null) seekTo(pendingSeek.current);
     else resumePlayback();
     setCurrentTime(v.currentTime);
     reportPlayback(v);
-  }, [captionsPath, resumePlayback, seekTo, speed, reportPlayback]);
+  }, [resumePlayback, seekTo, speed, reportPlayback]);
 
   // メタデータが先に読み終わっていた場合は、 進捗が決着した時点で再開位置を当てる。
   useEffect(() => {
@@ -564,10 +569,9 @@ export function VideoViewer({
   }, []);
 
   const toggleCaptions = () => {
-    const track = videoRef.current?.textTracks[0];
-    if (!track) return;
-    track.mode = track.mode === "showing" ? "hidden" : "showing";
-    setCaptionsShowing(track.mode === "showing");
+    const next = !captionsShowing;
+    setCaptionsShowing(next);
+    writeVideoCaptions(next);
   };
 
   useImperativeHandle(ref, () => ({ seekTo, pause, play, getPlaybackState }), [
@@ -763,7 +767,7 @@ export function VideoViewer({
               muted={isMuted}
               preload="metadata"
               className={cn(
-                "cursor-pointer bg-black object-contain",
+                "video-viewer-media cursor-pointer bg-black object-contain",
                 isFullscreen ? "h-full w-full max-h-none" : "w-full max-h-[62vh]",
               )}
               onClick={togglePlaybackFromVideo}
@@ -784,6 +788,8 @@ export function VideoViewer({
               onError={() => setHasError(true)}
             >
               <track
+                key={captionMediaKey}
+                ref={captionsTrackRef}
                 kind="captions"
                 src={captionsPath ? getMaterialUrl(captionsPath) : undefined}
                 srcLang="ja"
@@ -791,6 +797,24 @@ export function VideoViewer({
                 default={Boolean(captionsPath)}
               />
             </video>
+            {captionsShowing && picture && cues?.length ? (
+              <div className="pointer-events-none absolute" aria-hidden="true" style={picture}>
+                <p
+                  className="absolute inset-x-[6%] bottom-[2.6%] line-clamp-2 text-center leading-[1.45] font-bold whitespace-pre-line"
+                  style={{ fontSize: picture.width * 0.0195 }}
+                >
+                  {cues.map((cue, index) => (
+                    <span
+                      key={cue.key}
+                      className={cue.onDark ? "video-caption-on-dark" : "video-caption"}
+                    >
+                      {index > 0 ? "\n" : null}
+                      {cue.text}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            ) : null}
             {showNextOverlay && canAdvance ? (
               <div className="absolute inset-0 overflow-y-auto overscroll-contain bg-black/75 text-center">
                 <div className="flex min-h-full flex-col items-center justify-center gap-1 px-2 py-1 sm:gap-3 sm:px-3 sm:py-2">
@@ -920,7 +944,7 @@ export function VideoViewer({
                     </option>
                   ))}
                 </select>
-                {captionsPath ? (
+                {hasCaptions ? (
                   <button
                     type="button"
                     aria-label={captionsShowing ? "字幕を隠す" : "字幕を表示"}

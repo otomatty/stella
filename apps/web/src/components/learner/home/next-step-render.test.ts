@@ -248,3 +248,34 @@ describe("VS Code の準備", () => {
     expect(markup).not.toContain("AI が確認中");
   });
 });
+
+describe("動画と提出で解放する課題の仕上げ", () => {
+  it.each(["問題を開く", "動画を見る"] as const)("対応するレッスンへの「%s」を出す", (action) => {
+    const guide: HomeGuide = { steps: [{ kind: "wrapup" }], idle: "empty" };
+    const detail = "次のレッスンに進みましょう。";
+    const markup = renderToStaticMarkup(
+      createElement(NextStepCard, {
+        ...handlers,
+        guide,
+        loading: false,
+        activeStage: {
+          id: "stage",
+          title: "TypeScript 入門",
+          progress: 90,
+          lessonsCount: 3,
+          wrapup: {
+            task: { id: "t", title: "計算", status: "not-started", lessonId: "l" },
+            nextLesson: { id: "next", action },
+            remaining: 1,
+            learnerTurn: true,
+            detail,
+          },
+        },
+      }),
+    );
+    expect(markup).toContain(action);
+    expect(markup).toContain(detail);
+    expect(markup).not.toContain("課題に取り組む");
+    expect(markup).not.toContain("教材はすべて終わりました");
+  });
+});

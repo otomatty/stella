@@ -10,7 +10,7 @@ import {
   type PolishLine,
   type PolishResponse,
 } from "./video-polish.js";
-import { parseStoryboard, type BoardStoryboard } from "./video-storyboard.js";
+import { parseStoryboard, type BoardStoryboard, type VideoStoryboard } from "./video-storyboard.js";
 const sample = JSON.parse(
   readFileSync(new URL("./__fixtures__/board-video.json", import.meta.url), "utf8"),
 ) as BoardStoryboard;
@@ -242,4 +242,113 @@ describe("校正の記録", () => {
       expect(result.issues.some((i) => i.path.startsWith("polish"))).toBe(true);
     }
   });
+});
+
+it("概念図の札をノードのラベルと値で説明する", () => {
+  const s = fresh();
+  s.scenes[0].beats[0].tag = { read: "3件" };
+  s.scenes[0].beats[0].untag = ["write"];
+  const { scenes } = JSON.parse(buildPolishRequest(s, "").user);
+  expect(scenes[0].lines[0].picture).toEqual(
+    expect.arrayContaining(["札: 読む=3件", "札を外す: 書く"]),
+  );
+});
+
+it("用語の表示を絵の説明に含める", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0].term = { text: "引数" };
+  const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
+  expect(scenes[0].lines[0].picture).toContain("用語の表示: 引数");
+});
+
+it("ダイアログの見出しを絵の説明に含める", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0].dialog = { title: "完成したコード", code: ["const value = 1;"] };
+  const { scenes } = JSON.parse(buildPolishRequest(sb, "").user);
+  expect(scenes[0].lines[0].picture).toContain("ダイアログ: 完成したコード");
+});
+
+it("schema 2 の pulse は続く強調として説明し、空なら外す", () => {
+  const sb = fresh();
+  sb.schema = 2;
+  sb.scenes[0].beats[0] = {
+    say: "説明します。",
+    show: ["read"],
+    pulse: ["vscode", "web"],
+  };
+  const picture = JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0]
+    .picture as string[];
+  expect(picture).toContain("強調 (続く): VS Code、Web");
+  expect(picture.join("\n")).not.toContain("脈動");
+  sb.scenes[0].beats[0].pulse = [];
+  const cleared = JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0]
+    .picture as string[];
+  expect(cleared).toContain("強調を外す");
+  expect(cleared.join("\n")).not.toContain("脈動");
+});
+
+it("コード場面の figure.pulse も強調の説明を足す", () => {
+  const kept = {
+    say: "価格を見ます。",
+    figure: { show: ["read"], focus: ["quiz"], pulse: ["read"] },
+  };
+  const cleared = { say: "強調を外します。", figure: { pulse: [] as string[] } };
+  const storyboard: VideoStoryboard = {
+    schema: 2,
+    brief: sample.brief,
+    boards: { main: sample.boards.main },
+    scenes: [
+      {
+        id: "names",
+        kind: "code",
+        role: "syntax",
+        title: "名前",
+        code: ["const price = 1;"],
+        panel: { kind: "figure", board: "main" },
+        beats: [kept, cleared],
+      },
+    ],
+  };
+  const lines = JSON.parse(buildPolishRequest(storyboard, "").user).scenes[0].lines as {
+    picture: string[];
+  }[];
+  expect(lines[0].picture).toEqual([JSON.stringify(kept), "強調: 知識問題", "強調 (続く): 読む"]);
+  expect(lines[1].picture).toEqual([JSON.stringify(cleared), "強調を外す"]);
+  const schema1: VideoStoryboard = { ...storyboard, schema: 1 };
+  const plain = JSON.parse(buildPolishRequest(schema1, "").user).scenes[0].lines[0].picture;
+  expect(plain).toBe(JSON.stringify(kept));
+});
+
+it("コードの色分けを校正の絵の説明に足す", () => {
+  const beat = {
+    say: "書き方を色分けします。",
+    classify: {
+      fixed: [
+        { line: 0, text: "function" },
+        { line: 0, text: "return" },
+      ],
+      free: [{ line: 0, text: "addShipping" }],
+    },
+  };
+  const sb: VideoStoryboard = {
+    schema: 2,
+    brief: sample.brief,
+    scenes: [
+      {
+        id: "shipping",
+        kind: "code",
+        role: "syntax",
+        title: "送料を足す",
+        code: ["function addShipping() { return 1; }"],
+        show: true,
+        beats: [beat],
+      },
+    ],
+  };
+  expect(JSON.parse(buildPolishRequest(sb, "").user).scenes[0].lines[0].picture).toEqual([
+    JSON.stringify(beat),
+    "色分け: 決まっている書き方 = function、return ／ 自分で決めるところ = addShipping",
+  ]);
 });

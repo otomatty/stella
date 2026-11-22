@@ -17,6 +17,7 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
+import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { canSubmit, type RunOutcome, type RunResult } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
@@ -54,20 +55,26 @@ import {
 } from "./task-panel.js";
 import {
   chooseProblem,
-  fetchProblemResults,
-  loadProblemStates,
+  loadTaskProblems,
   nextUnsubmittedProblem,
   prepareProblemSubmission,
   problemCountLabel,
   problemForPath,
   problemForTestPath,
   readProblemRun,
+  recordProblemSubmission,
   sendProblemConsultation,
   sendProblemSubmission,
   type ProblemState,
+  type TaskProblems,
 } from "./task-problems.js";
 import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
-import { getTaskState, refreshTaskState, registerTaskState } from "./task-state.js";
+import {
+  getTaskState,
+  notifyProblemTaskOpened,
+  refreshTaskState,
+  registerTaskState,
+} from "./task-state.js";
 import { setCurrentTask } from "./task-status.js";
 import { registerSubmissionForms, showSubmissionForm } from "./submission-form.js";
 import type { SubmissionDraft } from "./submission-form-view.js";
@@ -291,7 +298,11 @@ async function askCiRun(root: string, manifest: TaskManifest): Promise<CiRunInpu
   return { runUrl: runUrl.trim(), deployUrl: deployUrl.trim() };
 }
 
-async function runTaskCommand(output: vscode.OutputChannel, requested?: unknown): Promise<void> {
+async function runTaskCommand(
+  output: vscode.OutputChannel,
+  requested?: unknown,
+  requestedProblem?: unknown,
+): Promise<void> {
   if (running || submitting) {
     void vscode.window.showInformationMessage("いま確認しています。終わるまで待ってください");
     return;
@@ -310,7 +321,10 @@ async function runTaskCommand(output: vscode.OutputChannel, requested?: unknown)
       showTaskPanel({ kind: "invalid", root, errors: loaded.errors });
       return;
     }
-    await checkTask(output, loaded, { requested });
+    await checkTask(output, loaded, {
+      requested,
+      ...(loaded.manifest.problemSteps ? { requestedProblem } : {}),
+    });
   } finally {
     running = false;
   }
@@ -333,13 +347,26 @@ async function selectTaskProblem(
   )
     throw new Error("提出する問題がありません");
   if (!manifest.problems?.length) return undefined;
-  const server = await fetchProblemResults(manifest.id).catch(() => undefined);
-  const states = await loadProblemStates(root, manifest, server);
+  const { states, blocked, nextReason, preparationError, unprepared } = await loadTaskProblems(
+    root,
+    manifest,
+  );
+  if (manifest.problemSteps) {
+    const fromFile =
+      openPath && (problemForPath(manifest, openPath) ?? problemForTestPath(manifest, openPath));
+    const target =
+      typeof requestedProblem === "string" ? requestedProblem : fromFile ? fromFile.id : undefined;
+    const reason =
+      (target ? blocked.get(target) : undefined) ?? (states.length === 0 ? nextReason : undefined);
+    if (reason) throw new Error(reason);
+  }
   const chosen =
     requestedProblem === undefined
       ? chooseProblem(states, openPath, manifest)
       : states.find((state) => state.id === requestedProblem);
   if (requestedProblem !== undefined && !chosen) throw new Error("提出する問題がありません");
+  if (chosen && unprepared.has(chosen.id))
+    throw new Error(preparationError ?? "問題のファイルを準備できませんでした");
   return chosen ? { id: chosen.id, states } : undefined;
 }
 
@@ -575,11 +602,16 @@ async function submitTaskCommand(
     } else {
       let result: unknown;
       if (manifest.problems?.length) {
-        const server = await fetchProblemResults(manifest.id).catch(() => undefined);
-        const states = await loadProblemStates(root, manifest, server);
-        problem =
-          states.find((state) => state.id === requestedProblem) ??
-          chooseProblem(states, requestedProblemPath(root, undefined), manifest);
+        const openPath = requestedProblemPath(root, undefined);
+        if (manifest.problemSteps) {
+          const selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
+          problem = selection?.states.find(({ id }) => id === selection.id);
+        } else {
+          const { states } = await loadTaskProblems(root, manifest);
+          problem =
+            states.find((state) => state.id === requestedProblem) ??
+            chooseProblem(states, openPath, manifest);
+        }
         if (!problem) throw new Error("相談する問題がありません");
         result = await readProblemRun(root, manifest.id, problem.id);
         if (!result) throw new Error("先にこの問題を確認してください");
@@ -693,7 +725,7 @@ async function submitTaskCommand(
   }
 }
 
-/** 問題つきの課題を、説明欄なしで 1 問提出する。通ったら次の問題のファイルを開く。 */
+/** 問題つきの課題を、説明欄なしで 1 問提出して次の問題を案内する。 */
 async function submitProblemTask(
   root: string,
   manifest: TaskManifest,
@@ -703,6 +735,52 @@ async function submitProblemTask(
 ): Promise<void> {
   const response = await sendProblemSubmission(root, problemId, session);
   refreshLearningSidebar();
+  if (manifest.problemSteps) {
+    const receipt = await readDistribution(root).catch(() => undefined);
+    if (receipt?.taskId === manifest.id)
+      await recordProblemSubmission(root, receipt.contentHash, problemId);
+    if (session !== apiSession()) return;
+    void vscode.window.showInformationMessage(
+      response.taskPassed
+        ? "課題に合格しました"
+        : `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
+    );
+    const refreshed = await loadTaskProblems(root, manifest, { afterSubmission: true });
+    if (session !== apiSession()) return;
+    setCurrentTask({
+      root,
+      title: manifest.title,
+      problemProgress: refreshed.progress,
+      problemActionsAvailable: refreshed.states.some(({ id }) => !refreshed.unprepared.has(id)),
+    });
+    notifyProblemTaskOpened(root);
+    if (taskReadmeRoot() === root)
+      void renderTaskReadme(root, { reveal: false }, {}, refreshed).catch(() => undefined);
+    if (refreshed.preparationError) {
+      void vscode.window.showWarningMessage(refreshed.preparationError);
+      return;
+    }
+    const next = refreshed.states.find(
+      (state) => state.status !== "submitted" && !states.some(({ id }) => id === state.id),
+    );
+    if (next) {
+      const index = manifest.problems?.findIndex(({ id }) => id === next.id) ?? 0;
+      const label = problemStepLabel(next.title, index);
+      const open = "ファイルを開く";
+      void vscode.window
+        .showInformationMessage(`次の問題「${label} ${next.title}」が出ました`, open)
+        .then((choice) => {
+          if (choice === open && session === apiSession())
+            return openTaskFileCommand(root, next.source);
+        })
+        .then(undefined, (error: unknown) => {
+          void vscode.window.showErrorMessage(
+            error instanceof Error ? error.message : String(error),
+          );
+        });
+    }
+    return;
+  }
   setCurrentTask({
     root,
     title: manifest.title,
@@ -744,8 +822,9 @@ async function renderTaskReadme(
   root: string,
   options: { reveal?: boolean } = {},
   refresh: { forceLms?: boolean; skipLms?: boolean } = {},
+  problemSnapshot?: TaskProblems,
 ): Promise<void> {
-  const shown = (title: string, problems?: ProblemState[], taskId?: string) => {
+  const shown = (title: string, problems?: TaskProblems, taskId?: string, gated?: true) => {
     if (options.reveal === false) return;
     setCurrentTask({
       root,
@@ -753,10 +832,14 @@ async function renderTaskReadme(
       ...(taskId ? { taskId } : {}),
       ...(problems
         ? {
-            problemProgress: {
-              passed: problems.filter((item) => item.status === "submitted").length,
-              total: problems.length,
-            },
+            problemProgress: problems.progress,
+            ...(gated
+              ? {
+                  problemActionsAvailable: problems.states.some(
+                    ({ id }) => !problems.unprepared.has(id),
+                  ),
+                }
+              : {}),
           }
         : {}),
     });
@@ -774,11 +857,7 @@ async function renderTaskReadme(
   const session = apiSession();
   const [edit, problems] = await Promise.all([
     resolveEditFiles(root, manifest),
-    manifest.problems?.length
-      ? fetchProblemResults(manifest.id)
-          .catch(() => undefined)
-          .then((server) => loadProblemStates(root, manifest, server))
-      : undefined,
+    manifest.problems?.length ? (problemSnapshot ?? loadTaskProblems(root, manifest)) : undefined,
     refreshTaskState(root, manifest.id, manifest.problems ? { skipLms: true } : refresh),
   ]);
   const { lastRun, lmsStatus } = getTaskState(root, manifest.id) ?? {};
@@ -792,7 +871,14 @@ async function renderTaskReadme(
         manifest,
         edit,
         ...(lastRun ? { lastRun } : {}),
-        ...(problems ? { problems } : {}),
+        ...(problems ? { problems: problems.states, problemProgress: problems.progress } : {}),
+        ...(problems?.nextReason ? { nextProblemReason: problems.nextReason } : {}),
+        ...(problems?.preparationError
+          ? {
+              problemPreparationError: problems.preparationError,
+              unpreparedProblems: problems.unprepared,
+            }
+          : {}),
         ...(lmsStatus && !refresh.skipLms && session === apiSession()
           ? { taskStatus: lmsStatus }
           : {}),
@@ -800,7 +886,13 @@ async function renderTaskReadme(
     },
     options,
   );
-  shown(manifest.title, problems, manifest.problems ? undefined : manifest.id);
+  if (manifest.problemSteps) notifyProblemTaskOpened(root);
+  shown(
+    manifest.title,
+    problems,
+    manifest.problems ? undefined : manifest.id,
+    manifest.problemSteps,
+  );
 }
 
 /** 課題文 (README.md) を OS のタブ付きで表示する。フォルダーの信頼は問わない。 */
@@ -829,10 +921,16 @@ async function readLastProblemResult(root: string, manifest: TaskManifest, reque
       ? requestedProblemPath(root, target)
       : undefined;
   const problem = file && (problemForPath(manifest, file) ?? problemForTestPath(manifest, file));
-  if (problem) return readProblemRun(root, manifest.id, problem.id);
+  const visible = manifest.problemSteps
+    ? (await loadTaskProblems(root, manifest)).states
+    : (manifest.problems ?? []);
+  if (problem)
+    return visible.some(({ id }) => id === problem.id)
+      ? readProblemRun(root, manifest.id, problem.id)
+      : undefined;
 
   let latest: RunResult | undefined;
-  for (const { id } of manifest.problems ?? []) {
+  for (const { id } of visible) {
     const result = await readProblemRun(root, manifest.id, id);
     if (result && (!latest || Date.parse(result.startedAt) > Date.parse(latest.startedAt))) {
       latest = result;
@@ -870,6 +968,19 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
   if (typeof rel !== "string") throw new Error("開くファイルが指定されていません");
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
+  if (loaded.manifest.problemSteps) {
+    const problem = problemForPath(loaded.manifest, rel);
+    if (problem) {
+      const { blocked, unprepared, preparationError } = await loadTaskProblems(
+        root,
+        loaded.manifest,
+      );
+      const reason = blocked.get(problem.id);
+      if (reason) throw new Error(reason);
+      if (unprepared.has(problem.id))
+        throw new Error(preparationError ?? "問題のファイルを準備できませんでした");
+    }
+  }
   const { files } = await resolveEditFiles(root, loaded.manifest);
   if (!files.includes(rel)) throw new Error(`${rel} は、この課題で編集するファイルではありません`);
   // 一覧を作ってから開くまでの間にリンクへ差し替えられていないか、開く直前にも確かめる
@@ -901,8 +1012,19 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
     vscode.commands.registerCommand("stella.consultTask", (root?: string, problemId?: unknown) =>
       submitTaskCommand(output, "consult", root, problemId),
     ),
-    vscode.commands.registerCommand("stella.runTask", (root?: unknown) =>
-      runTaskCommand(output, root),
+    vscode.window.onDidChangeWindowState(({ focused }) => {
+      const root = taskReadmeRoot();
+      if (focused && root) {
+        void loadTask(root)
+          .then((loaded) => {
+            if (loaded.ok && loaded.manifest.problemSteps && taskReadmeRoot() === root)
+              return renderTaskReadme(root, { reveal: false });
+          })
+          .catch(() => undefined);
+      }
+    }),
+    vscode.commands.registerCommand("stella.runTask", (root?: unknown, problemId?: unknown) =>
+      runTaskCommand(output, root, problemId),
     ),
     vscode.commands.registerCommand("stella.diagnoseEnvironment", () => diagnoseCommand(output)),
     vscode.commands.registerCommand("stella.showRunLog", () => output.show(true)),

@@ -1,4 +1,4 @@
-import type { ClipInfo, Scene } from "./video-storyboard.js";
+import type { ClipInfo, Scene, VideoStoryboard } from "./video-storyboard.js";
 import { estimateSpeechSeconds, speechOf } from "./narration.js";
 
 export const SCENE_TIMING = {
@@ -10,6 +10,11 @@ export const SCENE_TIMING = {
   fps: 30,
   fadeOut: 0.8,
 } as const;
+export const SCENE_PACING = {
+  1: { between: SCENE_TIMING.between, tail: SCENE_TIMING.tail },
+  2: { between: 1.6, tail: 2.4, beforeThink: 0.6, defaultThink: 6, dialogHold: 2.5 },
+} as const;
+type Schema = VideoStoryboard["schema"];
 export interface TimedBeat {
   start: number;
   end: number;
@@ -23,6 +28,7 @@ export interface SceneTimeline {
   start: number;
   duration: number;
   beats: TimedBeat[];
+  think?: { start: number; duration: number };
   /** 最後の絵コンテ場面だけ、通常の余韻のあとに追加する。 */
   fadeOut?: { start: number; duration: number };
 }
@@ -55,6 +61,7 @@ export function sceneVideoSequence(
   topic: { title: string; header?: string; takeaway: string; readings?: Record<string, string> },
   clips: Record<string, ClipInfo> = {},
   textDurations?: Record<TextScene["id"], number>,
+  schema: Schema = 1,
 ): SceneVideoEntry[] {
   const title: TextScene = {
     kind: "text",
@@ -63,7 +70,7 @@ export function sceneVideoSequence(
     header: topic.header,
     duration: 2.6,
   };
-  const timings = sceneTimelines(scenes, durations, clips);
+  const timings = sceneTimelines(scenes, durations, clips, schema);
   const textTiming = (scene: TextScene): SceneTimeline => {
     const speech =
       textDurations?.[scene.id] ??
@@ -103,9 +110,41 @@ export function sceneCaptionAt(timing: SceneTimeline, time: number): string {
       ?.say ?? ""
   );
 }
-/** 場面のタイトルは冒頭の3秒だけ表示する。 */
-export function sceneTitleOpacity(time: number): number {
-  return Math.max(0, Math.min(1, time / 0.4, (3 - time) / 0.4));
+
+function vttTime(seconds: number): string {
+  const total = Math.round(seconds * 1000);
+  const hours = Math.floor(total / 3_600_000);
+  const minutes = Math.floor(total / 60_000) % 60;
+  const secs = Math.floor(total / 1000) % 60;
+  const pad = (value: number, width = 2) => String(value).padStart(width, "0");
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}.${pad(total % 1000, 3)}`;
+}
+
+/** 絵コンテの各文を、読み上げ中だけ出す字幕にする。タイトルのタイムラインは渡さない。 */
+export function sceneCaptionsVtt(
+  scenes: readonly { timing: SceneTimeline; onDark: readonly boolean[] }[],
+): string {
+  const cues = scenes
+    .flatMap(({ timing, onDark }) =>
+      timing.beats.map((beat, index) => {
+        const text = beat.say
+          .replace(/[\r\n]+/g, " ")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        return {
+          start: timing.start + (beat.speechStart ?? beat.start),
+          end: timing.start + (beat.speechEnd ?? beat.end),
+          text: onDark[index] ? `<c.on-dark>${text}</c>` : text,
+        };
+      }),
+    )
+    .sort((a, b) => a.start - b.start);
+  const blocks = cues.map(
+    ({ start, end, text }, index) =>
+      `${index + 1}\n${vttTime(start)} --> ${vttTime(end)}\n${text}\n\n`,
+  );
+  return `WEBVTT\n\n${blocks.join("")}`;
 }
 /** 別アプリの窓は入れ替え、それ以外はクロスフェード。 */
 export function viewTransition(from: string | undefined, to: string): number {
@@ -118,7 +157,9 @@ export function sceneTimelines(
   scenes: Scene[],
   durations: number[][],
   clips: Record<string, ClipInfo> = {},
+  schema: Schema = 1,
 ): SceneTimeline[] {
+  const pacing = SCENE_PACING[schema === 2 ? 2 : 1];
   let offset = 0;
   let previous: string | undefined;
   return scenes.map((scene, i) => {
@@ -159,7 +200,11 @@ export function sceneTimelines(
         }
         image = next;
       }
-      t = end + SCENE_TIMING.between;
+      if (schema === 2 && beat.term) end = Math.max(end, speechEnd + SCENE_TIMING.highlightHold);
+      if (schema === 2 && beat.dialog) end = Math.max(end, speechEnd + SCENE_PACING[2].dialogHold);
+      if (schema === 2 && typeof beat.pause === "number" && Number.isFinite(beat.pause))
+        end += beat.pause;
+      t = end + pacing.between;
       return {
         start,
         end,
@@ -169,9 +214,23 @@ export function sceneTimelines(
         ...(playback ? { clip: playback } : {}),
       };
     });
-    t += SCENE_TIMING.tail;
+    const lastBeat = beats.at(-1);
+    const think =
+      schema === 2 && scene.role === "quiz" && lastBeat
+        ? {
+            start: lastBeat.end + SCENE_PACING[2].beforeThink,
+            duration:
+              scene.kind !== "motion" &&
+              typeof scene.think === "number" &&
+              Number.isFinite(scene.think)
+                ? scene.think
+                : SCENE_PACING[2].defaultThink,
+          }
+        : undefined;
+    if (schema === 2 && lastBeat) t = think ? think.start + think.duration : lastBeat.end;
+    t += pacing.tail;
     const duration = Math.ceil((t - 1e-9) * SCENE_TIMING.fps) / SCENE_TIMING.fps;
-    const result = { start: offset, duration, beats };
+    const result = { start: offset, duration, beats, ...(think ? { think } : {}) };
     offset += duration;
     previous = image;
     return result;

@@ -1,12 +1,24 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { EventEmitter } from "node:events";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, posix, win32 } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { setupVideoTts } from "../setup-video-tts.js";
+
+vi.mock("node:child_process", async (original) => ({
+  ...(await original<typeof import("node:child_process")>()),
+  spawn: vi.fn(),
+  spawnSync: vi.fn(),
+}));
 
 import {
   createTtsProvider,
   cueHash,
+  findOpenJtalkPython,
+  openJtalkScript,
   geminiAudioField,
   grokAudioField,
   mapPool,
@@ -308,6 +320,22 @@ describe("gemini プロバイダ", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("残高切れでは再試行せず、同じプロバイダで次の文も送らない", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({ error: { message: "prepayment credits are depleted" } }, { status: 402 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const p = createTtsProvider({ provider: "gemini" });
+    for (const speech of ["最初の文", "次の文"])
+      await expect(p.synthesize(speech)).rejects.toThrow(
+        /Gemini API の残高がありません.*prepayment credits are depleted.*--tts openjtalk/,
+      );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("400 のエラーでは本文をメッセージに含める", async () => {
     vi.stubEnv("GEMINI_API_KEY", "k");
     const response = new Response("private error body", { status: 400 });
@@ -521,4 +549,236 @@ it("プロバイダごとの合成単位", () => {
   for (const provider of ["grok", "openjtalk", "fake"] as const) {
     expect(createTtsProvider({ provider }).unit).toBe("cue");
   }
+});
+
+const wave = Buffer.from(pcmToWav(new Uint8Array([1, 2]), 24_000));
+const onnxWarning =
+  "Warning: ONNX Runtime is not installed. Nani prediction will be disabled.\n" +
+  "Please install ONNX Runtime by `pip install pyopenjtalk-plus[onnxruntime]`";
+const commandResult = (status: number, stdout = Buffer.alloc(0), stderr = Buffer.alloc(0)) => ({
+  status,
+  stdout,
+  stderr,
+  pid: 1,
+  output: [null, stdout, stderr],
+  signal: null,
+});
+
+describe("Open JTalk の Python", () => {
+  it.each([
+    ["/opt/python", ["/opt/python"]],
+    ["/content/.venv-tts/bin/python", ["/opt/python", "/content/.venv-tts/bin/python"]],
+    ["python3", ["/opt/python", "/content/.venv-tts/bin/python", "python3"]],
+    ["python", ["/opt/python", "/content/.venv-tts/bin/python", "python3", "python"]],
+  ])("%s が最初に import に成功すれば選ぶ", (selected, commands) => {
+    const run = vi.fn((command: string) => commandResult(command === selected ? 0 : 1));
+    expect(findOpenJtalkPython(run, "/opt/python", "linux", "/content/.venv-tts")).toBe(selected);
+    expect(run.mock.calls).toEqual(
+      commands.map((command) => [command, ["-c", "import pyopenjtalk"]]),
+    );
+  });
+
+  it("Windows では Scripts/python.exe を探す", () => {
+    const run = vi.fn(() => commandResult(0));
+    const python = findOpenJtalkPython(run, "", "win32", "C:/教材/.venv-tts");
+    expect(python).toBe(String.raw`C:\教材\.venv-tts\Scripts\python.exe`);
+    expect(run).toHaveBeenCalledExactlyOnceWith(python, ["-c", "import pyopenjtalk"]);
+  });
+
+  it("全候補が失敗したらセットアップのコマンドと fake を案内する", () => {
+    const run = vi.fn(() => commandResult(1));
+    expect(() => findOpenJtalkPython(run, "/opt/python", "linux", "/content/.venv-tts")).toThrow(
+      /準備ができていません.*pyopenjtalk.*video:tts:setup.*--tts fake/,
+    );
+    expect(run).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("ローカルの WAV", () => {
+  function nextAudio(bytes: Buffer, status = 0, stderr = onnxWarning) {
+    vi.mocked(spawnSync).mockReturnValue(commandResult(0));
+    vi.mocked(spawn).mockImplementationOnce(() => {
+      const child = Object.assign(new EventEmitter(), {
+        stdin: Object.assign(new EventEmitter(), { end: vi.fn() }),
+        stdout: new EventEmitter(),
+        stderr: new EventEmitter(),
+      });
+      queueMicrotask(() => {
+        child.stdout.emit("data", bytes);
+        child.stderr.emit("data", Buffer.from(stderr));
+        child.emit("close", status);
+      });
+      return child as unknown as ReturnType<typeof spawn>;
+    });
+  }
+
+  it.each(["辞書のダウンロード", "RIFF0000AVI "])(
+    "Open JTalk の出力 %s を拒み、キャッシュに書かない",
+    async (output) => {
+      const dir = mkdtempSync(join(tmpdir(), "tts-wav-"));
+      try {
+        nextAudio(Buffer.from(output));
+        const provider = createTtsProvider({ provider: "openjtalk" });
+        await expect(synthesizeCached(provider, "文", dir)).rejects.toThrow("RIFF/WAVE");
+        expect(readdirSync(dir)).toEqual([]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("合成失敗時も ONNX Runtime の警告をエラーに含めない", async () => {
+    nextAudio(Buffer.alloc(0), 1, `辞書の読み込みに失敗しました\n${onnxWarning}\n`);
+    const synthesis = createTtsProvider({ provider: "openjtalk" }).synthesize("文");
+    await expect(synthesis).rejects.toThrow("辞書の読み込みに失敗しました");
+    await expect(synthesis).rejects.not.toThrow("ONNX Runtime");
+  });
+
+  it.each(["openjtalk", "fake"] as const)(
+    "%s の壊れた WAV を捨て、正しい WAV を再利用する",
+    async (name) => {
+      const dir = mkdtempSync(join(tmpdir(), "tts-wav-"));
+      try {
+        const provider = createTtsProvider({ provider: name });
+        const file = join(dir, `${cueHash(provider.identity, "文")}.wav`);
+        writeFileSync(file, "壊れたキャッシュ");
+        const synth = vi.spyOn(provider, "synthesize");
+        if (name === "openjtalk") nextAudio(wave);
+        expect(await synthesizeCached(provider, "文", dir)).toEqual({ file, cached: false });
+        expect(await synthesizeCached(provider, "文", dir)).toEqual({ file, cached: true });
+        expect(synth).toHaveBeenCalledTimes(1);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+});
+
+describe("video:tts:setup", () => {
+  it.each([
+    {
+      platform: "linux",
+      uv: true,
+      base: ["uv", "venv", "--python", ">=3.10,<3.14", "--no-python-downloads"],
+    },
+    { platform: "linux", uv: false, base: ["python3", "-m", "venv"] },
+    { platform: "linux", uv: false, base: ["python", "-m", "venv"] },
+    { platform: "linux", uv: false, base: ["python3.11", "-m", "venv"] },
+    { platform: "win32", uv: false, base: ["py", "-3.11", "-m", "venv"] },
+  ] as const)(
+    "$platform の仮想環境を作る (uv=$uv) 2 回目は済んだ手順を飛ばす",
+    ({ platform, uv, base }) => {
+      const root = mkdtempSync(join(tmpdir(), "tts-setup-"));
+      const venv = join(root, ".venv-tts");
+      let created = false;
+      let installed = false;
+      const run = vi.fn((command: string, args: string[], _input?: string) => {
+        if (args[0] === "--version") return commandResult(uv ? 0 : 1);
+        if (args.includes("venv")) {
+          mkdirSync(venv);
+          created = true;
+          return commandResult(0);
+        }
+        if (args.includes("install")) {
+          installed = true;
+          return commandResult(0);
+        }
+        if (args[0] === openJtalkScript) return commandResult(0, wave, Buffer.from(onnxWarning));
+        if (command === base[0] && (platform !== "win32" || args[0] === "-3.11"))
+          return commandResult(0);
+        if (args[1]?.includes("sys.version_info")) return commandResult(created ? 0 : 1);
+        return commandResult(installed ? 0 : 1);
+      });
+      try {
+        setupVideoTts(run, platform, venv);
+        const [command, ...args] = base;
+        expect(run).toHaveBeenCalledWith(command, [...args, venv], undefined);
+        const python = (platform === "win32" ? win32 : posix).join(
+          venv,
+          ...(platform === "win32" ? ["Scripts", "python.exe"] : ["bin", "python"]),
+        );
+        const dependencies = ["--only-binary", ":all:", "pyopenjtalk-plus"];
+        expect(run).toHaveBeenCalledWith(
+          uv ? "uv" : python,
+          uv
+            ? ["pip", "install", "--python", python, ...dependencies]
+            : ["-m", "pip", "install", "--no-input", ...dependencies],
+          undefined,
+        );
+        expect(run).toHaveBeenCalledWith(python, [openJtalkScript], "こんにちは。");
+        expect(existsSync(join(venv, ".openjtalk-ready"))).toBe(true);
+        run.mockClear();
+        setupVideoTts(run, platform, venv);
+        expect(run.mock.calls.map(([, args]) => args[0])).toEqual(["-c", "-c"]);
+        expect(run.mock.calls[1][1][1]).toContain("import pyopenjtalk");
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each(["venv", "install", "synthesis", "wav"] as const)(
+    "壊れた環境を作り直し、%s の失敗で片付けてから再実行を案内する",
+    (failure) => {
+      const root = mkdtempSync(join(tmpdir(), "tts-setup-"));
+      const venv = join(root, ".venv-tts");
+      try {
+        mkdirSync(venv);
+        writeFileSync(join(venv, ".openjtalk-ready"), "");
+        const run = vi.fn((_command: string, args: string[]) => {
+          if (args[0] === "--version") return commandResult(0);
+          if (args[0] === "venv") {
+            expect(existsSync(venv)).toBe(false);
+            mkdirSync(venv);
+            return commandResult(failure === "venv" ? 1 : 0);
+          }
+          if (args[1] === "install") return commandResult(failure === "install" ? 1 : 0);
+          if (args[0] === openJtalkScript) {
+            const stderr = Buffer.from(`原因の詳細\n${onnxWarning}\n`);
+            return commandResult(
+              failure === "synthesis" ? 1 : 0,
+              Buffer.from("不正な音声"),
+              stderr,
+            );
+          }
+          return commandResult(args[1]?.includes("import pyopenjtalk") ? 1 : 0);
+        });
+        const message = {
+          venv: "仮想環境を作れませんでした",
+          install: "pyopenjtalk-plus の wheel をインストールできませんでした",
+          synthesis: "原因の詳細",
+          wav: "WAV (RIFF/WAVE) を取得できませんでした",
+        }[failure];
+        let error: unknown;
+        try {
+          setupVideoTts(run, "linux", venv);
+        } catch (caught) {
+          error = caught;
+        }
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain(message);
+        expect((error as Error).message).toContain("video:tts:setup を再実行");
+        expect((error as Error).message).not.toContain("ONNX Runtime");
+        expect(existsSync(venv)).toBe(false);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("uv がなく Python 3.14 しか使えないなら対応する版を案内する", () => {
+    const root = mkdtempSync(join(tmpdir(), "tts-setup-"));
+    try {
+      const run = vi.fn((command: string) => commandResult(command === "python3" ? 1 : 127));
+      expect(() => setupVideoTts(run, "linux", join(root, ".venv-tts"))).toThrow(
+        "Python 3.10〜3.13",
+      );
+      expect(run).toHaveBeenCalledWith("python3", [
+        "-c",
+        expect.stringContaining("sys.version_info"),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

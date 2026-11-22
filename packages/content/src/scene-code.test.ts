@@ -210,3 +210,98 @@ describe("数直線", () => {
     }
   });
 });
+
+describe("コードの色分け", () => {
+  const fixed = { line: 0, text: "number" };
+  const free = { line: 0, text: "x" };
+  const sceneWith = (beats: CodeScene["beats"]): CodeScene => ({
+    kind: "code",
+    id: "classify",
+    role: "syntax",
+    title: "色分け",
+    code: ["x: number = 1 as number", "return x;"],
+    show: [0],
+    beats,
+  });
+
+  it("色分けだけでも動きになり、同じ文で打つ行にも指定できる", () => {
+    const scene = sceneWith([
+      { say: "型を見ます。", classify: { fixed: [fixed] } },
+      { say: "名前を見ます。", type: [1], classify: { free: [free, { ...free, line: 1 }] } },
+    ]);
+    expect(validateCodeScene({ ...scene }, "scene", 2)).toEqual([]);
+    expect(validateCodeScene({ ...scene }, "scene", 1)).toContainEqual(
+      expect.objectContaining({
+        path: "scene.beats[0].classify",
+        message: expect.stringContaining("schema 2"),
+      }),
+    );
+  });
+
+  it.each([
+    [{ fixed: [{ ...fixed, line: 2 }] }, "fixed[0].line", "存在する行"],
+    [{ free: [{ ...free, line: 1 }] }, "free[0].line", "出ている行"],
+    [{ fixed: [{ ...fixed, text: "string" }] }, "fixed[0].text", "行に存在する部分"],
+    [{ fixed: [{ ...fixed, text: "" }] }, "fixed[0].text", "空でない"],
+    [{ fixed: [{ ...fixed, text: "number\u2028" }] }, "fixed[0].text", "1行"],
+    [{ fixed: [] }, "fixed", "1〜12個"],
+    [{ free: Array.from({ length: 13 }, () => free) }, "free", "1〜12個"],
+    [{ fixed: [fixed], free: [{ ...free, text: "as number" }] }, "free[0].text", "同じ文字"],
+    [{ other: [fixed] }, "", "fixed・free"],
+    [null, "", "オブジェクト"],
+  ])("不正な色分け %j を拒む", (classify, suffix, message) => {
+    const scene = {
+      ...sceneWith([]),
+      beats: [{ say: "色分けします。", classify }],
+    };
+    expect(validateCodeScene({ ...scene }, "scene", 2)).toContainEqual(
+      expect.objectContaining({
+        path: `scene.beats[0].classify${suffix ? `.${suffix}` : ""}`,
+        message: expect.stringContaining(message),
+      }),
+    );
+  });
+
+  it("色を積み重ね、上書きし、行を消したときに捨てる", () => {
+    const scene = sceneWith([
+      { say: "型を見ます。", classify: { fixed: [fixed] } },
+      { say: "名前を見ます。", classify: { free: [free] } },
+      { say: "後ろの型の色を変えます。", classify: { free: [{ ...fixed, text: "as number" }] } },
+      { say: "行を消します。", clear: [0] },
+      { say: "もう一度書きます。", type: [0] },
+    ]);
+    expect(validateCodeScene({ ...scene }, "scene", 2)).toEqual([]);
+    const state = codeSceneState(scene);
+    const [first, second, third, cleared] = state.beats;
+    expect(state.start).not.toHaveProperty("classification");
+    expect(first.after.classification?.[0]).toMatchObject({ 3: "fixed", 17: "fixed" });
+    expect(second.after.classification?.[0]).toMatchObject({ 0: "free", 3: "fixed", 17: "fixed" });
+    expect(third.after.classification?.[0]).toMatchObject({ 0: "free", 3: "fixed", 17: "free" });
+    expect(cleared.after).not.toHaveProperty("classification");
+    expect(state.end).not.toHaveProperty("classification");
+    const next = codeSceneState(sceneWith([{ say: "別の場面です。", type: [1] }]));
+    expect(
+      [next.start, next.beats[0].after, next.end].every((s) => !Object.hasOwn(s, "classification")),
+    ).toBe(true);
+  });
+
+  it("一致は左から重ならない範囲を取り、すでに同じ色の指定は空振りにする", () => {
+    const scene = sceneWith([
+      { say: "一つ目を色分けします。", classify: { fixed: [{ line: 0, text: "aa" }] } },
+      {
+        say: "同じ色を指定します。",
+        classify: { fixed: [{ line: 0, text: "aa" }] },
+      },
+    ]);
+    scene.code = ["aaa"];
+    expect(codeSceneState(scene).beats[0].after.classification).toEqual({
+      0: { 0: "fixed", 1: "fixed" },
+    });
+    expect(validateCodeScene({ ...scene }, "scene", 2)).toEqual([
+      expect.objectContaining({
+        path: "scene.beats[1]",
+        message: expect.stringContaining("空振り"),
+      }),
+    ]);
+  });
+});

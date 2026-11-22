@@ -15,6 +15,7 @@ apps/web/public/pdfjs/
 packages/content/stages/**/slides.pptx
 packages/content/stages/**/*.diagram.png
 packages/content/dist/
+packages/content/.venv-tts/
 packages/content/**/__pycache__/
 
 # Cloudflare Workers / Pages

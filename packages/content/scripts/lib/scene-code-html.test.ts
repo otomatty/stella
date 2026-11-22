@@ -1,10 +1,11 @@
 import { runInNewContext } from "node:vm";
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { codeSceneState, type CodeScene } from "../../src/scene-code.js";
 import { sceneTimelines } from "../../src/scene-timeline.js";
+import { storyboardStates, type Board, type Scene } from "../../src/video-storyboard.js";
 import { sceneHtml, type ScenePageWindow } from "./scene-html.js";
 
-it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印・字幕と撮影区間を出す", async () => {
+it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・印と撮影区間を出す", async () => {
   const scene: CodeScene = {
     kind: "code",
     id: "names",
@@ -36,7 +37,7 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(html).toContain("hljs-keyword");
   expect(html).toContain("#16161a");
   const elements = new Map(
-    ["code", "panel", "heading", "caption", "card"].map((id) => [
+    ["code", "panel", "content"].map((id) => [
       id,
       { innerHTML: "", style: {} as Record<string, string> },
     ]),
@@ -52,7 +53,6 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(content("code")).not.toContain("1200");
   expect(content("panel")).toContain("1200 + 500");
   expect(content("panel")).toContain('class="answer" style="opacity:0"');
-  expect(content("caption")).toContain("合計を作ります。");
   await window.__setTime(timing.beats[0].start + 1.5);
   expect(content("code")).toContain("const");
   expect(content("panel")).toContain('class="answer" style="opacity:1"');
@@ -65,10 +65,9 @@ it("コードのHTMLを時刻から描き、打ち込み途中・計算途中・
   expect(content("panel")).toContain("980");
   expect(window.__busyRanges).toContainEqual([timing.beats[0].start, timing.beats[0].end + 1 / 30]);
   await window.__setTime(timing.duration);
-  expect(elements.get("card")?.style.opacity).toBe("1");
-  expect(elements.get("heading")?.style.opacity).toBeUndefined();
-  expect(html).toContain("background:#0e0e10;color:#fff");
-  expect(html).toContain("<span>要点 1</span><h2>値に名前を付ける</h2>");
+  expect(elements.get("content")?.style.opacity).toBe("1");
+  expect(html).toContain("background:#FFFFFF");
+  expect(html).not.toMatch(/id="(?:card|heading|caption)"/);
   expect(window.__overflows()).toEqual([]);
 });
 
@@ -91,6 +90,7 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
     total: 3,
   });
   let rect = { left: 120, right: 400, top: 220, bottom: 260, width: 280, height: 40 };
+  let panelBounds = { left: 100, top: 200, bottom: 680 };
   const node = { textContent: "addTax(1000) → 1100" };
   const panel = {
     id: "panel",
@@ -103,7 +103,7 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
     // 内部のレイアウト寸法が枠を超えていても、文字が枠内ならエラーにしない。
     scrollWidth: 706,
     scrollHeight: 482,
-    getBoundingClientRect: () => ({ left: 100, top: 200 }),
+    getBoundingClientRect: () => panelBounds,
   };
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -133,6 +133,8 @@ it("スクロール寸法ではなく、枠から切れる文字を検出する"
   ]);
   rect = { ...rect, right: 400, width: 280, bottom: 685, height: 465 };
   expect(window.__overflows()).toHaveLength(1);
+  panelBounds = { ...panelBounds, top: -1, bottom: 961 };
+  expect(window.__overflows()).toContain("コードと横の図が画面の上端から960pxの範囲に収まりません");
 });
 
 it.each([
@@ -285,14 +287,15 @@ it("短いコードは36pxまで拡大し、枠を内容に合わせて中央に
       timing: sceneTimelines([scene], [[3]])[0],
       index: 1,
       total: 3,
-      previous: scene,
     });
   };
   const short = render(["// 価格", "const price = 1200;", "// 送料", "const shipping = 500;"]);
   expect(short).toContain("font:400 36px/54px");
   expect(short).toContain("height:365px;padding:28px 24px");
-  expect(short).toContain("#content{display:flex;align-items:center;");
-  expect(short).toContain('<div id="card"><div id="heading"><span>つかみ</span>');
+  expect(short).toMatch(
+    /#content\{[^}]*top:480px;transform:translateY\(-50%\);[^}]*display:flex;align-items:center;/,
+  );
+  expect(short).not.toMatch(/id="(?:card|heading|caption)"/);
   expect(short).not.toContain("titleOpacity");
   const long = render(Array.from({ length: 14 }, () => "const price = 1200;"));
   const height = Number(/#code\{[^}]*height:(\d+)px/.exec(long)?.[1]);
@@ -323,7 +326,7 @@ it("callsの行を出し、コードや値に含むHTMLを実行しない", () =
     index: 1,
     total: 3,
   });
-  expect(html).toContain("<span>問題へ</span>");
+  expect(html).not.toContain("<span>問題へ</span>");
   expect(html).not.toContain("<span>まとめ</span>");
   expect(html.match(/<\/script>/g)).toHaveLength(1);
   expect(html).not.toContain("</script><img>");
@@ -358,10 +361,7 @@ it("部分の下線は最初に一致する箇所を囲み、丸い番号を付�
   const code = { innerHTML: "", children: [{ querySelector: () => source }] };
   const elements = new Map<string, unknown>([
     ["code", code],
-    ...["panel", "caption", "card", "heading"].map((id): [string, unknown] => [
-      id,
-      { innerHTML: "", style: {} },
-    ]),
+    ...["panel", "content"].map((id): [string, unknown] => [id, { innerHTML: "", style: {} }]),
   ]);
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -480,7 +480,7 @@ it("数直線の点の出現・移動・区間・矢印・目盛りの印・値�
     total: 1,
   });
   const elements = new Map(
-    ["code", "panel", "caption", "card"].map((id) => [id, { innerHTML: "", style: {} }]),
+    ["code", "panel", "content"].map((id) => [id, { innerHTML: "", style: {} }]),
   );
   const window = {} as ScenePageWindow;
   runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
@@ -716,4 +716,1006 @@ it.each([
     // 札を寄せても点そのものの座標を変えない。
     expect(panel.innerHTML).toContain(`translate(${pointX} 262)`);
   }
+});
+
+it("概念図のカード・矢印・イラストと、フェード・印・札・移動を時刻から描く", async () => {
+  const board: Board = {
+    cols: 3,
+    rows: 1,
+    nodes: [
+      { id: "total", label: "合計", at: [3, 1], icon: "file" },
+      { id: "price", label: "価格", at: [1, 1], art: "price" },
+      { id: "shipping", label: "送料", at: [2, 1], icon: "file" },
+    ],
+    links: [
+      { id: "first", from: "price", to: "shipping", label: "足す" },
+      { id: "second", from: "shipping", to: "total" },
+    ],
+  };
+  const scene: CodeScene = {
+    id: "syntax",
+    kind: "code",
+    role: "syntax",
+    title: "価格と合計",
+    code: ["const price = 1200;"],
+    show: true,
+    panel: { kind: "figure", board: "shop" },
+    beats: [
+      {
+        say: "価格を出します。",
+        figure: {
+          show: ["price", "shipping", "total", "first", "second"],
+          mark: [{ on: "price", kind: "check" }],
+          tag: { price: "1200" },
+          pulse: ["price"],
+          focus: ["price"],
+        },
+      },
+      {
+        say: "値を渡します。",
+        figure: { travel: { along: ["first", "second"] }, tag: { price: "500" } },
+      },
+      {
+        say: "札と印を外します。",
+        figure: { untag: ["price"], unmark: ["price"], hide: ["total", "second"] },
+      },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[3, 4, 3]], undefined, 2)[0];
+  const state = storyboardStates({
+    schema: 2,
+    boards: { shop: board },
+    brief: { goal: "", stuck: "", points: [], leaveOut: [] },
+    scenes: [scene],
+  })[0];
+  const url = "file:///art/price.png";
+  const html = sceneHtml({
+    board,
+    scene,
+    state,
+    timing,
+    index: 1,
+    total: 3,
+    images: { "art:price": { url, width: 400, height: 300, regions: {} } },
+  });
+  expect(html).toContain(url);
+  const label = {
+    textContent: "長いラベル",
+    classList: { contains: () => false },
+    dataset: {},
+  };
+  const card = {
+    style: { opacity: "1" },
+    offsetHeight: 170,
+    clientTop: 3,
+    getBoundingClientRect: () => ({ left: 0, right: 300, top: 0, bottom: 170, height: 170 }),
+    querySelectorAll: () => [label],
+    querySelector: () => label,
+  };
+  const panel = {
+    innerHTML: "",
+    querySelectorAll: (selector: string) => (selector === ".figure-node" ? [card] : []),
+  };
+  let textRight = 310;
+  const window = {} as ScenePageWindow;
+  runInNewContext(/<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "", {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : { innerHTML: "", style: {} }),
+      querySelectorAll: () => [],
+      createTreeWalker: () => {
+        let unread = true;
+        return {
+          currentNode: label,
+          nextNode: () => {
+            const result = unread;
+            unread = false;
+            return result;
+          },
+        };
+      },
+      createRange: () => ({
+        selectNodeContents: () => undefined,
+        getClientRects: () => [
+          { left: 160, right: textRight, top: 65, bottom: 105, width: textRight - 160, height: 40 },
+        ],
+      }),
+    },
+  });
+  const markup = () => panel.innerHTML;
+  expect(markup()).toContain('data-id="price" style="height:170px;opacity:0');
+  expect(markup()).toContain(`<img src="${url}" alt="">`);
+  expect(markup().indexOf('data-id="price"')).toBeLessThan(markup().indexOf('data-id="shipping"'));
+  expect(markup().indexOf('data-id="shipping"')).toBeLessThan(markup().indexOf('data-id="total"'));
+  expect(markup()).toContain('<span class="figure-arrow-label">足す</span>');
+  expect(window.__overflows()).toContain("図のカード「長いラベル」のラベルが収まりません");
+  textRight = 296;
+  expect(window.__overflows()).toEqual([]);
+  expect(
+    window.__busyRanges.some(
+      ([from, to]) => from <= timing.beats[1].start && to > timing.beats[1].end,
+    ),
+  ).toBe(true);
+  const [first, second, third] = timing.beats;
+  await window.__setTime(first.start + 0.3);
+  expect(markup()).toMatch(
+    /data-id="price"[^>]*opacity:0\.6\d*;transform:scale\(1\.045\);border-color:#E62F9A;background:rgba/,
+  );
+  expect(markup()).toMatch(/data-mark="check" style="transform:scale\(0\./);
+  expect(markup()).toContain(">1200</span>");
+  await window.__setTime(first.end);
+  expect(markup()).toContain('data-id="shipping" style="height:170px;opacity:1');
+  expect(markup()).toContain('data-mark="check" style="transform:scale(1)"');
+
+  await window.__setTime(second.start + 0.1);
+  expect(markup()).toContain(">1200</span>");
+  expect(markup()).not.toContain('class="figure-traveler"');
+  await window.__setTime(second.start + 1);
+  expect(markup()).not.toContain(">1200</span>");
+  expect(markup()).toContain('class="figure-tag" style="opacity:1;transform:scale(1)">500');
+  expect(markup()).toMatch(/足す<\/span><span class="figure-traveler"/);
+  await window.__setTime(second.start + 2);
+  expect(markup()).not.toContain('class="figure-traveler"');
+  await window.__setTime(second.start + 3);
+  expect(markup()).toContain('class="figure-traveler"');
+  expect(markup()).not.toMatch(/足す<\/span><span class="figure-traveler"/);
+
+  await window.__setTime(third.start + 0.1);
+  expect(markup()).toMatch(/data-id="total"[^>]*opacity:0\.6/);
+  expect(markup()).toContain(">500</span>");
+  expect(markup()).not.toContain('data-mark="check"');
+  await window.__setTime(third.start + 0.4);
+  expect(markup()).toContain('data-id="total" style="height:170px;opacity:0');
+  expect(markup()).not.toContain('class="figure-tag"');
+});
+
+it("レッスン型はコードの前後をカットにし、冒頭だけ背景からフェードする", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "next",
+    role: "next",
+    title: "課題のコード",
+    code: ["const value = 1;"],
+    show: true,
+    beats: [{ say: "最初のコードです。" }],
+  };
+  const board = { cols: 1, rows: 1, nodes: [] };
+  const [timing] = sceneTimelines([scene], [[2]], {}, 2);
+  const input = {
+    scene,
+    board,
+    timing,
+    state: codeSceneState(scene),
+    index: 3,
+    total: 4,
+    previousFrame: "data:image/png;base64,YQ==",
+  };
+  const legacy = sceneHtml({ ...input, schema: 1 });
+  const cut = sceneHtml({ ...input, schema: 2 });
+  expect(legacy).toContain("previous-code-frame");
+  expect(cut).not.toContain(input.previousFrame);
+  expect(cut).not.toContain("previous-code-frame");
+  expect(cut).not.toContain('id="code-opening"');
+  const boardScene = {
+    id: "board",
+    role: "next",
+    title: "図",
+    board: "main",
+    beats: [{ say: "最初に見るものです。" }],
+  } satisfies Scene;
+  const viewScene = {
+    id: "view",
+    kind: "view",
+    role: "next",
+    title: "図",
+    image: "art:example",
+    beats: [{ say: "最初に見るものです。" }],
+  } satisfies Scene;
+  for (const scene of [boardScene, viewScene]) {
+    const [state] = storyboardStates({
+      schema: 2,
+      brief: { goal: "図", stuck: "図", points: ["図"], leaveOut: [] },
+      boards: { main: board },
+      scenes: [scene],
+    });
+    const frame = sceneHtml({ ...input, scene, state, schema: 2 });
+    expect(frame).not.toContain(input.previousFrame);
+    expect(frame).not.toContain("previous-code-frame");
+  }
+
+  for (const [html, schema, opening] of [
+    [legacy, 1, false],
+    [cut, 2, false],
+    [sceneHtml({ ...input, schema: 2, fadeFromBackground: true }), 2, true],
+  ] as const) {
+    const elements = new Map(
+      ["code", "panel", "content", "previous-code-frame", ...(opening ? ["code-opening"] : [])].map(
+        (id) => [id, { innerHTML: "", style: {} as Record<string, string> }],
+      ),
+    );
+    const window = {} as ScenePageWindow;
+    const vm = {
+      window,
+      document: { getElementById: (id: string) => elements.get(id), querySelectorAll: () => [] },
+    };
+    for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+      runInNewContext(script, vm);
+    await window.__setTime(0);
+    expect(elements.get("content")?.style.opacity).toBe(schema === 1 ? "0" : "1");
+    expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "1" : undefined);
+    await window.__setTime(0.2);
+    if (schema === 1) {
+      expect(elements.get("previous-code-frame")?.style.opacity).toBe("0.5");
+      expect(elements.get("content")?.style.opacity).toBe("0.5");
+    } else expect(elements.get("content")?.style.opacity).toBe("1");
+    await window.__setTime(0.4);
+    expect(elements.get("code-opening")?.style.opacity).toBe(opening ? "0" : undefined);
+  }
+});
+
+it("意味の吹き出しはフリガナなしで出て番号を消し、次の文で消える", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "name",
+    role: "point",
+    point: 1,
+    title: "関数を作る",
+    code: ["function add() {}"],
+    show: true,
+    beats: [
+      { say: "足すという意味です。", part: { line: 0, text: "add", note: "足す" } },
+      { say: "次の文です。", part: { line: 0, text: "add" } },
+    ],
+  };
+  const [timing] = sceneTimelines([scene], [[2, 2]]);
+  const html = sceneHtml({
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 2,
+    total: 3,
+  });
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, script]) =>
+    script.includes("function partNoteRuntime("),
+  )?.[1];
+  if (!script) throw new Error("吹き出しの描画処理がありません");
+  let numbered = true;
+  let below = false;
+  let drawn = false;
+  let top = 28;
+  let nextText = "";
+  const line = { nextElementSibling: { querySelector: () => ({ textContent: nextText }) } };
+  const span = {
+    getBoundingClientRect: () => ({ left: 930, right: 1000, top, bottom: top + 36 }),
+    closest: () => line,
+    classList: {
+      remove: (name: string) => {
+        if (name === "numbered") numbered = false;
+      },
+    },
+  };
+  const bubble = {
+    className: "",
+    innerHTML: "",
+    offsetWidth: 140,
+    offsetHeight: 44,
+    style: { setProperty: () => undefined } as Record<string, string | ((name: string) => void)>,
+    classList: {
+      toggle: (name: string, value: boolean) => {
+        if (name === "below") below = value;
+      },
+    },
+  };
+  const code = {
+    clientWidth: 1010,
+    clientHeight: 365,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    querySelector: () => span,
+    append: () => {
+      drawn = true;
+    },
+  };
+  const window = {
+    __busyRanges: [],
+    __setTime: async () => {
+      drawn = false;
+      numbered = true;
+    },
+  };
+  const document = { getElementById: () => code, createElement: () => bubble };
+  runInNewContext(script, { window, document });
+  const [first, next] = timing.beats;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(window.__busyRanges).toEqual([[first.start, first.start + 0.3]]);
+  expect(drawn).toBe(true);
+  expect(numbered).toBe(false);
+  expect(below).toBe(true);
+  expect(bubble.style.left).toBe("862px");
+  expect(Number(bubble.style.opacity)).toBeCloseTo(1);
+  expect(bubble.style.transform).toBe("translateY(0px)");
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.15);
+  expect(Number(/translateY\(([^)]+)px\)/.exec(String(bubble.style.transform))?.[1])).toBeCloseTo(
+    -1.5,
+  );
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(bubble.innerHTML).toBe("足す");
+  expect(html).toContain("font:700 30px/1.2");
+  top = 100;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(true);
+  expect(bubble.style.top).toBe("146px");
+  nextText = "return 1;";
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(false);
+  expect(bubble.style.top).toBe("46px");
+  top = 28;
+  await (window as unknown as ScenePageWindow).__setTime(first.start + 0.3);
+  expect(below).toBe(true);
+  await (window as unknown as ScenePageWindow).__setTime(next.start);
+  expect(drawn).toBe(false);
+  expect(numbered).toBe(true);
+});
+
+it("170pxの3枚のfigureで6字のラベルと5字の札に横幅を渡す", async () => {
+  const ids = ["first", "second", "third"];
+  const board: Board = {
+    cols: 3,
+    rows: 1,
+    nodes: ids.map((id, index) => ({
+      id,
+      label: "税込にする係",
+      icon: "file",
+      at: [index + 1, 1],
+    })),
+  };
+  const withTags = Object.fromEntries(ids.map((id) => [id, "ここを書く"]));
+  const scene: CodeScene = {
+    kind: "code",
+    id: "width",
+    role: "syntax",
+    title: "札とラベル",
+    code: ["const x = 1;"],
+    show: true,
+    panel: { kind: "figure", board: "main" },
+    beats: [
+      { say: "カードを出します。", figure: { show: ids } },
+      { say: "札を付けます。", figure: { tag: withTags, pulse: ids } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[2, 2]], undefined, 2)[0];
+  const state = storyboardStates({
+    schema: 2,
+    boards: { main: board },
+    brief: { goal: "", stuck: "", points: [], leaveOut: [] },
+    scenes: [scene],
+  })[0];
+  const html = sceneHtml({
+    schema: 2,
+    scene,
+    state,
+    timing,
+    board,
+    index: 2,
+    total: 3,
+  });
+
+  const panel = { innerHTML: "", querySelectorAll: () => [] };
+  const elements = new Map(["code", "content"].map((id) => [id, { innerHTML: "", style: {} }]));
+  const window = {} as ScenePageWindow;
+  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
+  runInNewContext(script ?? "", {
+    window,
+    document: {
+      getElementById: (id: string) => (id === "panel" ? panel : elements.get(id)),
+      querySelectorAll: () => [],
+    },
+  });
+  expect(html).not.toMatch(/<ruby>|<rt[ >]|ruby-fit/);
+  expect(html).toMatch(/\.figure-art\{[^}]*min-width:var\(--art-min\)/);
+  expect(html).toMatch(/\.figure-label\{[^}]*min-width:max-content[^}]*white-space:nowrap/);
+
+  // ラベルと札は全角32pxで見積もる。
+  // パネル幅はカード1800pxから左右24px・コード1010px・列間36pxを引いたもの。
+  const available = 1800 - 48 - 1010 - 36 - 32 - 32 - 6 - 32 - 40;
+  for (const offset of [0.15, 0.3, 0.8]) {
+    await window.__setTime(timing.beats[1].start + offset);
+    expect(panel.innerHTML.match(/height:170px/g)).toHaveLength(3);
+    expect(panel.innerHTML.match(/>税込にする係<\/div>/g)).toHaveLength(3);
+    expect(panel.innerHTML.match(/>ここを書く<\/span>/g)).toHaveLength(3);
+    const arts = [
+      ...panel.innerHTML.matchAll(/class="figure-art" style="width:([\d.]+)px;--art-min:(\d+)px"/g),
+    ];
+    expect(arts).toHaveLength(3);
+    for (const [, preferred, minimum] of arts) {
+      const textWidth = (6 + 5) * 32;
+      expect(Number(preferred) + textWidth).toBeGreaterThan(available);
+      expect(Number(minimum) + textWidth).toBeLessThanOrEqual(available);
+    }
+  }
+});
+
+describe("schema 2 の図は等倍までフェードし、強調を枠で続ける", () => {
+  const board: Board = {
+    cols: 2,
+    rows: 1,
+    nodes: [
+      { id: "price", label: "価格", icon: "file", at: [1, 1] },
+      { id: "shipping", label: "送料", icon: "file", at: [2, 1] },
+    ],
+    links: [{ id: "add", from: "price", to: "shipping", label: "足す" }],
+  };
+  const brief = { goal: "図", stuck: "図", points: ["図"], leaveOut: [] };
+
+  function codeScene(id: string, beats: CodeScene["beats"], reset?: boolean): CodeScene {
+    return {
+      kind: "code",
+      id,
+      role: "point",
+      point: 1,
+      title: "価格",
+      code: ["const price = 1200;"],
+      show: true,
+      panel: { kind: "figure", board: "main" },
+      ...(reset === undefined ? {} : { reset }),
+      beats,
+    };
+  }
+
+  function open(scenes: CodeScene[], index = 0) {
+    const timelines = sceneTimelines(
+      scenes,
+      scenes.map((scene) => scene.beats.map(() => 2)),
+      {},
+      2,
+    );
+    const state = storyboardStates({
+      schema: 2,
+      brief,
+      boards: { main: board },
+      scenes,
+    })[index];
+    const html = sceneHtml({
+      schema: 2,
+      board,
+      scene: scenes[index],
+      state,
+      timing: timelines[index],
+      index,
+      total: scenes.length,
+    });
+    const panel = { innerHTML: "", querySelectorAll: () => [] as never[] };
+    const elements = new Map(["code", "content"].map((id) => [id, { innerHTML: "", style: {} }]));
+    const window = {} as ScenePageWindow;
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+    runInNewContext(script, {
+      window,
+      document: {
+        getElementById: (id: string) => (id === "panel" ? panel : elements.get(id)),
+        querySelectorAll: () => [],
+      },
+    });
+    const markup = () => panel.innerHTML;
+    return { window, timing: timelines[index], markup };
+  }
+
+  function card(html: string, id: string): string {
+    const found = new RegExp(`data-id="${id}" style="([^"]*)"`).exec(html);
+    if (!found) throw new Error(`カードがありません: ${id}`);
+    return found[1];
+  }
+  function prop(style: string, name: string): string {
+    return new RegExp(`(?:^|;)${name}:([^;]*)`).exec(style)?.[1] ?? "";
+  }
+  function scaleOf(style: string): number {
+    return Number(/scale\(([^)]+)\)/.exec(prop(style, "transform"))?.[1]);
+  }
+  function mark(html: string): { kind: string; style: string } | undefined {
+    const found = /data-mark="([^"]+)" style="([^"]*)"/.exec(html);
+    return found ? { kind: found[1], style: found[2] } : undefined;
+  }
+  function tag(html: string): { style: string; text: string } | undefined {
+    const found = /class="figure-tag" style="([^"]*)">([^<]*)</.exec(html);
+    return found ? { style: found[1], text: found[2] } : undefined;
+  }
+  function accent(html: string): number {
+    const found = /stroke="#E62F9A" stroke-opacity="([^"]+)"/.exec(html);
+    if (!found) throw new Error("矢印の強調がありません");
+    return Number(found[1]);
+  }
+
+  it("カード・印・札は 0.94 から 1 へ向かい、枠が続く", async () => {
+    const view = open([
+      codeScene("main", [
+        {
+          say: "出します。",
+          figure: {
+            show: ["price", "shipping", "add"],
+            mark: [{ on: "price", kind: "check" }],
+            tag: { price: "1200" },
+          },
+        },
+        { say: "価格を強調します。", figure: { pulse: ["price", "add"] } },
+        { say: "送料を見ます。", figure: { focus: ["shipping"] } },
+        { say: "送料へ替えます。", figure: { pulse: ["shipping"] } },
+        { say: "外します。", figure: { pulse: [] } },
+        { say: "価格に戻します。", figure: { pulse: ["price"] } },
+        { say: "価格を隠します。", figure: { hide: ["price"] } },
+      ]),
+    ]);
+    const [show, pulse, focus, next, clear, again, hide] = view.timing.beats;
+    await view.window.__setTime(0);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+
+    const scales: number[] = [];
+    const opacities: number[] = [];
+    for (const offset of [0, 0.125, 0.25, 0.375, 0.5]) {
+      await view.window.__setTime(show.start + offset);
+      const style = card(view.markup(), "price");
+      const scale = scaleOf(style);
+      const opacity = Number(prop(style, "opacity"));
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      scales.push(scale);
+      opacities.push(opacity);
+    }
+    expect(scales[0]).toBeCloseTo(0.94);
+    expect(opacities[2]).toBeCloseTo(0.875);
+    expect(scales[2]).toBeCloseTo(0.9925);
+    expect(scales.at(-1)).toBeCloseTo(1);
+    expect(opacities.at(-1)).toBeCloseTo(1);
+    for (let i = 1; i < scales.length; i++) {
+      expect(scales[i]).toBeGreaterThanOrEqual(scales[i - 1]);
+      expect(opacities[i]).toBeGreaterThanOrEqual(opacities[i - 1]);
+    }
+
+    const markScales: number[] = [];
+    for (const offset of [0, 0.175, 0.35]) {
+      await view.window.__setTime(show.start + offset);
+      const shown = mark(view.markup());
+      if (!shown) throw new Error("印がありません");
+      expect(shown.kind).toBe("check");
+      const scale = scaleOf(shown.style);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      markScales.push(scale);
+    }
+    expect(markScales[0]).toBeCloseTo(0.94);
+    expect(markScales.at(-1)).toBeCloseTo(1);
+    expect(markScales[1]).toBeGreaterThan(markScales[0]);
+
+    const tagScales: number[] = [];
+    for (const offset of [0, 0.175, 0.35]) {
+      await view.window.__setTime(show.start + offset);
+      const shown = tag(view.markup());
+      if (shown?.text !== "1200") throw new Error("札がありません");
+      const scale = scaleOf(shown.style);
+      expect(scale).toBeGreaterThanOrEqual(0.94);
+      expect(scale).toBeLessThanOrEqual(1);
+      tagScales.push(scale);
+    }
+    expect(tagScales[0]).toBeCloseTo(0.94);
+    expect(tagScales.at(-1)).toBeCloseTo(1);
+    expect(tagScales[1]).toBeGreaterThan(tagScales[0]);
+
+    await view.window.__setTime(pulse.start + 0.1);
+    expect(
+      Number(
+        /rgba\(230,47,154,([^)]+)\)/.exec(prop(card(view.markup(), "price"), "border-color"))?.[1],
+      ),
+    ).toBeCloseTo(0.5);
+    expect(prop(card(view.markup(), "price"), "background")).toBe("white");
+    await view.window.__setTime(pulse.start + 0.3);
+    const emphasized = card(view.markup(), "price");
+    expect(scaleOf(emphasized)).toBe(1);
+    expect(emphasized).not.toContain("scale(1.045)");
+    expect(prop(emphasized, "border-width")).toBe("4px");
+    expect(prop(emphasized, "border-color")).toBe("#E62F9A");
+    expect(prop(emphasized, "background")).toBe("white");
+    expect(view.markup()).toContain('stroke="#5C5C66" stroke-width="3"');
+    expect(accent(view.markup())).toBe(1);
+    await view.window.__setTime(pulse.end + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    expect(accent(view.markup())).toBe(1);
+
+    await view.window.__setTime(focus.start + 0.3);
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#E62F9A");
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    expect(accent(view.markup())).toBe(0);
+    expect(view.window.__busyRanges).toContainEqual([focus.end, focus.end + 0.2]);
+    await view.window.__setTime(focus.end + 0.25);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#DDDDE2");
+    expect(accent(view.markup())).toBe(1);
+
+    await view.window.__setTime(next.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#E62F9A");
+    expect(accent(view.markup())).toBe(0);
+    await view.window.__setTime(clear.start + 0.3);
+    expect(prop(card(view.markup(), "shipping"), "border-color")).toBe("#DDDDE2");
+    await view.window.__setTime(again.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#E62F9A");
+    await view.window.__setTime(hide.start + 0.3);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+  });
+
+  it("場面の頭では枠が外れ、引き継いだ印は最初から等倍", async () => {
+    const scenes = [
+      codeScene("main", [
+        {
+          say: "出します。",
+          figure: { show: ["price"], mark: [{ on: "price", kind: "check" }] },
+        },
+        { say: "強調します。", figure: { pulse: ["price"] } },
+      ]),
+      codeScene("next", [{ say: "続きです。" }], false),
+    ];
+    const view = open(scenes, 1);
+    await view.window.__setTime(0);
+    expect(prop(card(view.markup(), "price"), "border-color")).toBe("#DDDDE2");
+    const shown = mark(view.markup());
+    expect(shown?.kind).toBe("check");
+    expect(scaleOf(shown?.style ?? "")).toBe(1);
+    expect(prop(shown?.style ?? "", "opacity")).toBe("1");
+  });
+
+  it("札の入れ替えは消してから小さめに出る", async () => {
+    const view = open([
+      codeScene("main", [
+        { say: "出します。", figure: { show: ["price"], tag: { price: "1200" } } },
+        { say: "替えます。", figure: { tag: { price: "500" } } },
+      ]),
+    ]);
+    const change = view.timing.beats[1];
+    await view.window.__setTime(change.start + 0.1);
+    const fading = tag(view.markup());
+    expect(fading?.text).toBe("1200");
+    expect(scaleOf(fading?.style ?? "")).toBe(1);
+    expect(Number(prop(fading?.style ?? "", "opacity"))).toBeLessThan(1);
+    await view.window.__setTime(change.start + 0.2);
+    const next = tag(view.markup());
+    expect(next?.text).toBe("500");
+    expect(scaleOf(next?.style ?? "")).toBeGreaterThanOrEqual(0.94);
+    expect(scaleOf(next?.style ?? "")).toBeLessThan(1);
+  });
+});
+
+it("schema 2 の吹き出しは 0.94 から等倍へフェードする", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "name",
+    role: "point",
+    point: 1,
+    title: "関数を作る",
+    code: ["function add() {}"],
+    show: true,
+    beats: [{ say: "足すという意味です。", part: { line: 0, text: "add", note: "足す" } }],
+  };
+  const [timing] = sceneTimelines([scene], [[2]], {}, 2);
+  const html = sceneHtml({
+    schema: 2,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 0,
+    total: 1,
+  });
+  const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find(([, item]) =>
+    item.includes("function partNoteRuntime("),
+  )?.[1];
+  if (!script) throw new Error("吹き出しの描画処理がありません");
+  expect(script).toContain(",true");
+  const style = {
+    transform: "",
+    opacity: "",
+    transformOrigin: "",
+    setProperty: () => undefined,
+  };
+  const bubble = {
+    className: "",
+    innerHTML: "",
+    offsetWidth: 140,
+    offsetHeight: 44,
+    style,
+    classList: { toggle: () => undefined },
+  };
+  const span = {
+    getBoundingClientRect: () => ({ left: 930, right: 1000, top: 28, bottom: 64 }),
+    closest: () => ({ nextElementSibling: { querySelector: () => ({ textContent: "" }) } }),
+    classList: { remove: () => undefined },
+  };
+  const code = {
+    clientWidth: 1010,
+    clientHeight: 365,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    querySelector: () => span,
+    append: () => undefined,
+  };
+  const window = { __busyRanges: [] as [number, number][], __setTime: async () => undefined };
+  runInNewContext(script, {
+    window,
+    document: { getElementById: () => code, createElement: () => bubble },
+  });
+  const start = timing.beats[0].start;
+  const scales: number[] = [];
+  for (const offset of [0, 0.15, 0.3]) {
+    await (window as unknown as ScenePageWindow).__setTime(start + offset);
+    const scale = Number(/scale\(([^)]+)\)/.exec(bubble.style.transform)?.[1]);
+    expect(scale).toBeGreaterThanOrEqual(0.94);
+    expect(scale).toBeLessThanOrEqual(1);
+    scales.push(scale);
+  }
+  expect(scales[0]).toBeCloseTo(0.94);
+  expect(scales[1]).toBeCloseTo(0.9925);
+  expect(scales[2]).toBe(1);
+  expect(bubble.style.transformOrigin).toBe("center");
+  expect(Number(bubble.style.opacity)).toBeCloseTo(1);
+});
+
+it.each([1, 2] as const)("schema %i の下線・行の強調・丸い番号・吹き出しを描く", async (schema) => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "part",
+    role: "syntax",
+    title: "名前",
+    code: ["function add() {}", "add();"],
+    show: true,
+    beats: [
+      { say: "関数です。", part: { line: 0, text: "function" } },
+      { say: "名前を見ます。", focus: [1], part: { line: 0, text: "add", note: "足す" } },
+      { say: "ここまでですね。" },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[2, 2, 2]], undefined, schema)[0];
+  const html = sceneHtml({
+    schema,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 1,
+    total: 3,
+  });
+  expect(html).not.toContain("classification-legend");
+  let numbered = false;
+  let bubble = "";
+  let markup = "";
+  const span = {
+    getBoundingClientRect: () => ({ left: 25, right: 80, top: 30, bottom: 66 }),
+    closest: () => null,
+    classList: {
+      remove: () => {
+        numbered = false;
+      },
+    },
+  };
+  const code = {
+    children: [{ querySelector: () => ({}) }],
+    set innerHTML(html: string) {
+      markup = html;
+      numbered = false;
+      bubble = "";
+    },
+    querySelector: (selector: string) => (selector === ".part" || numbered ? span : null),
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    clientWidth: 1010,
+    clientHeight: 365,
+    append: (note: { innerHTML: string }) => {
+      bubble = note.innerHTML;
+    },
+  };
+  const window = {} as ScenePageWindow;
+  const scripts = {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      getElementById: (id: string) => (id === "code" ? code : { innerHTML: "", style: {} }),
+      createTreeWalker: () => {
+        let visited = false;
+        return {
+          currentNode: { length: scene.code[0].length },
+          nextNode: () => {
+            if (visited) return false;
+            visited = true;
+            return true;
+          },
+        };
+      },
+      createRange: () => ({
+        setStart: () => undefined,
+        setEnd: () => undefined,
+        surroundContents: () => undefined,
+      }),
+      createElement: (tag: string) =>
+        tag === "span"
+          ? {
+              classList: {
+                add: () => {
+                  numbered = true;
+                },
+              },
+            }
+          : {
+              offsetWidth: 80,
+              offsetHeight: 40,
+              classList: { toggle: () => undefined },
+              style: { setProperty: () => undefined },
+            },
+    },
+  };
+  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+    runInNewContext(script, scripts);
+  const opacities = () =>
+    Array.from(markup.matchAll(/class="line" style="opacity:([^"]+)"/g), (match) =>
+      Number(match[1]),
+    );
+  await window.__setTime(timing.beats[0].start);
+  expect(opacities()).toEqual([1, schema === 2 ? 0.38 : 1]);
+  expect(numbered).toBe(schema === 1);
+  expect(bubble).toBe("");
+  await window.__setTime(timing.beats[1].start - 0.1);
+  expect(opacities()).toEqual([1, schema === 2 ? 0.38 : 1]);
+  await window.__setTime(timing.beats[1].start + 0.3);
+  expect(opacities()).toEqual([0.38, 1]);
+  expect(numbered).toBe(false);
+  expect(bubble).toBe("足す");
+  await window.__setTime(timing.beats[2].start);
+  expect(opacities()).toEqual([1, 1]);
+});
+
+it("色の地と凡例の不透明度を時刻から求め、打った文字の範囲にだけ地を敷く", async () => {
+  const scene: CodeScene = {
+    kind: "code",
+    id: "classify",
+    role: "syntax",
+    title: "色分け",
+    code: ["x: number = 1 as number"],
+    beats: [
+      { say: "書きます。", type: [0] },
+      { say: "型を見ます。", classify: { fixed: [{ line: 0, text: "number" }] } },
+      { say: "名前を見ます。", classify: { free: [{ line: 0, text: "x" }] } },
+      { say: "行を消します。", clear: [0] },
+      { say: "型を書きます。", type: [0], classify: { fixed: [{ line: 0, text: "number" }] } },
+    ],
+  };
+  const timing = sceneTimelines([scene], [[4, 4, 4, 4, 4]], undefined, 2)[0];
+  const input = {
+    schema: 2 as const,
+    scene,
+    timing,
+    state: codeSceneState(scene),
+    board: { cols: 1, rows: 1, nodes: [] },
+    index: 1,
+    total: 3,
+  };
+  const html = sceneHtml(input);
+  const plain = { ...scene, beats: scene.beats.map(({ classify: _classify, ...beat }) => beat) };
+  const plainHtml = sceneHtml({ ...input, scene: plain, state: codeSceneState(plain) });
+  expect(plainHtml).not.toContain("classification");
+  expect(html).toContain("rgba(59,130,246,0.38);--classification-line:#60A5FA");
+  expect(html).toContain("rgba(245,158,11,0.38);--classification-line:#FBBF24");
+  const height = (source: string) => Number(/#code\{[^}]*height:(\d+)px/.exec(source)?.[1]);
+  expect(height(html) - height(plainHtml)).toBe(64);
+  let markup = "";
+  let legend = "";
+  let legendRight = 900;
+  const bounds = { left: 0, top: 0, right: 1010, bottom: 429 };
+  const legendBounds = {
+    children: [
+      { getBoundingClientRect: () => ({ ...bounds, top: 381, bottom: 409, right: legendRight }) },
+    ],
+    contains: () => true,
+    getBoundingClientRect: () => ({ ...bounds, top: 381, bottom: 409 }),
+  };
+  const fills: { className: string; style: Record<string, string> }[] = [];
+  const source = {
+    get textContent() {
+      return /class="source">(.*?)<\/span><\/div>/.exec(markup)?.[1].replace(/<[^>]+>/g, "") ?? "";
+    },
+  };
+  const row = {
+    querySelector: () => source,
+    prepend: (fill: (typeof fills)[number]) => fills.push(fill),
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+  };
+  const code = {
+    children: [row],
+    set innerHTML(html: string) {
+      markup = html;
+      fills.length = 0;
+      legend = "";
+    },
+    insertAdjacentHTML: (_position: string, html: string) => {
+      legend = html;
+    },
+    querySelector: () => legendBounds,
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => bounds,
+  };
+  let start = 0;
+  let end = 0;
+  const window = {} as ScenePageWindow;
+  const scripts = {
+    window,
+    NodeFilter: { SHOW_TEXT: 4 },
+    document: {
+      querySelectorAll: () => [],
+      getElementById: (id: string) =>
+        id === "code" ? code : { innerHTML: "", style: {}, getBoundingClientRect: () => bounds },
+      createTreeWalker: () => {
+        let visited = false;
+        return {
+          currentNode: { length: source.textContent.length },
+          nextNode: () => {
+            if (visited) return false;
+            visited = true;
+            return true;
+          },
+        };
+      },
+      createRange: () => ({
+        setStart: (_node: unknown, offset: number) => {
+          start = offset;
+        },
+        setEnd: (_node: unknown, offset: number) => {
+          end = offset;
+        },
+        getBoundingClientRect: () => ({
+          left: start * 10,
+          top: 2,
+          width: (end - start) * 10,
+          height: 32,
+        }),
+      }),
+      createElement: () => ({ className: "", style: {} }),
+    },
+  };
+  for (const [, script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g))
+    runInNewContext(script, scripts);
+  const [typed, fixed, free, cleared, retyped] = timing.beats;
+  const legendOpacity = () => Number(/opacity:([^"]+)/.exec(legend)?.[1]);
+  await window.__setTime(typed.end);
+  const before = markup;
+  expect(legendOpacity()).toBe(0);
+  expect(fills).toEqual([]);
+  expect(legend).toContain("言語で決まっている書き方");
+  expect(legend).toContain("自分で決めるところ");
+  await window.__setTime(fixed.start);
+  expect(legendOpacity()).toBe(0);
+  expect(fills.map(({ style }) => Number(style.opacity))).toEqual([0, 0]);
+  await window.__setTime(fixed.start + 0.15);
+  expect(legendOpacity()).toBeCloseTo(0.5);
+  expect(markup).toBe(before);
+  expect(fills.map(({ className, style }) => [className, style.left, style.width])).toEqual([
+    ["classification-fill classification-fixed", "30px", "60px"],
+    ["classification-fill classification-fixed", "170px", "60px"],
+  ]);
+  for (const { style } of fills) {
+    expect(Number(style.opacity)).toBeCloseTo(0.5);
+    expect(style.transform).toBeUndefined();
+  }
+  await window.__setTime(fixed.start + 0.301);
+  expect(legendOpacity()).toBe(1);
+  expect(fills.map(({ style }) => Number(style.opacity))).toEqual([1, 1]);
+  await window.__setTime(free.start + 0.15);
+  expect(markup).toBe(before);
+  expect(fills[0].className).toBe("classification-fill classification-free");
+  expect(Number(fills[0].style.opacity)).toBeCloseTo(0.5);
+  expect(fills.slice(1).map(({ style }) => Number(style.opacity))).toEqual([1, 1]);
+  await window.__setTime(cleared.start);
+  expect(fills).toEqual([]);
+  expect(legendOpacity()).toBe(1);
+  await window.__setTime(retyped.start + 0.31);
+  expect(source.textContent).toBe("x: nu");
+  expect(fills.map(({ style }) => style.width)).toEqual(["20px"]);
+  await window.__setTime(0);
+  expect(legendOpacity()).toBe(0);
+  expect(window.__busyRanges).toContainEqual([fixed.start, fixed.start + 0.3]);
+  expect(window.__busyRanges).toContainEqual([free.start, free.start + 0.3]);
+  expect(window.__overflows()).toEqual([]);
+  legendRight = 1011;
+  expect(window.__overflows()).toContain("コードの場面で色分けまたは凡例が枠に収まっていません");
 });

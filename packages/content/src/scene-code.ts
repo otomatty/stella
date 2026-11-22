@@ -1,12 +1,21 @@
 import type { SceneTimeline } from "./scene-timeline.js";
-import type { Issue } from "./video-storyboard.js";
+import type {
+  BoardMotion,
+  Issue,
+  NarratedBeat,
+  SceneRole,
+  SceneState,
+} from "./video-storyboard.js";
 
-export interface CodeBeat {
-  say: string;
-  speech?: string;
+type CodeCategory = "fixed" | "free";
+const CODE_CATEGORIES = ["fixed", "free"] as const;
+type CodeClassification = Record<number, Record<number, CodeCategory>>;
+
+export interface CodeBeat extends NarratedBeat {
   type?: number[];
   focus?: number[];
-  part?: { line: number; text: string };
+  part?: { line: number; text: string; note?: string };
+  classify?: Partial<Record<CodeCategory, { line: number; text: string }[]>>;
   set?: Record<string, string>;
   calc?: { on: string; expr: string; result: string };
   plot?: { at: number; label: string };
@@ -16,16 +25,20 @@ export interface CodeBeat {
   row?: number[];
   mark?: { line: number; kind: "cross" | "check" }[];
   clear?: number[];
+  figure?: Omit<BoardMotion, "zoom">;
 }
 export interface CodeScene {
   kind: "code";
   id: string;
-  role: "hook" | "point" | "recap";
+  role: SceneRole;
+  think?: number;
   point?: number;
   title: string;
   code: string[];
-  show?: boolean;
+  show?: boolean | number[];
+  reset?: boolean;
   panel?:
+    | { kind: "figure"; board: string }
     | { kind: "values"; items: string[] }
     | { kind: "numberLine"; from: number; to: number; items?: string[] }
     | { kind: "calls"; rows: { call: string; result: string; note?: string }[] };
@@ -36,6 +49,7 @@ export interface CodeState {
   values: Record<string, string>;
   rows: number[];
   marks: Record<number, "cross" | "check">;
+  classification?: CodeClassification;
   numberLine?: {
     point?: { at: number; label: string };
     range?: [number, number];
@@ -48,10 +62,34 @@ export interface CodeSceneState {
   start: CodeState;
   beats: { before: CodeState; after: CodeState }[];
   end: CodeState;
+  figure?: SceneState;
 }
-export function codeSceneState(scene: CodeScene): CodeSceneState {
+
+/** DOM の Range と同じ UTF-16 の位置で、左から重ならない一致を取る。 */
+function* matchingCodeOffsets(line: string, text: string) {
+  for (
+    let offset = line.indexOf(text);
+    offset !== -1;
+    offset = line.indexOf(text, offset + text.length)
+  )
+    for (let i = offset; i < offset + text.length; i++) yield i;
+}
+
+export function addsCodeClassification({ before, after }: CodeSceneState["beats"][number]) {
+  return Object.entries(after.classification ?? {}).some(([line, offsets]) =>
+    Object.entries(offsets).some(
+      ([offset, kind]) => before.classification?.[Number(line)]?.[Number(offset)] !== kind,
+    ),
+  );
+}
+
+export function codeSceneState(scene: CodeScene, figure?: SceneState): CodeSceneState {
   const start: CodeState = {
-    visible: scene.show ? scene.code.map((_, i) => i) : [],
+    visible: Array.isArray(scene.show)
+      ? [...scene.show].sort((a, b) => a - b)
+      : scene.show
+        ? scene.code.map((_, i) => i)
+        : [],
     values: {},
     rows: [],
     marks: {},
@@ -64,10 +102,21 @@ export function codeSceneState(scene: CodeScene): CodeSceneState {
     for (const line of beat.clear ?? []) {
       current.visible = current.visible.filter((n) => n !== line);
       delete current.marks[line];
+      if (current.classification) delete current.classification[line];
     }
     current.visible = [...new Set([...current.visible, ...(beat.type ?? [])])].sort(
       (a, b) => a - b,
     );
+    for (const kind of CODE_CATEGORIES)
+      for (const { line, text } of beat.classify?.[kind] ?? []) {
+        for (const offset of matchingCodeOffsets(scene.code[line], text)) {
+          current.classification ??= {};
+          current.classification[line] ??= {};
+          current.classification[line][offset] = kind;
+        }
+      }
+    if (current.classification && !Object.keys(current.classification).length)
+      delete current.classification;
     current.values = { ...current.values, ...beat.set };
     if (beat.calc) current.values = { ...current.values, [beat.calc.on]: beat.calc.result };
     current.rows = [...new Set([...current.rows, ...(beat.row ?? [])])].sort((a, b) => a - b);
@@ -88,14 +137,39 @@ export function codeSceneState(scene: CodeScene): CodeSceneState {
     for (const mark of beat.mark ?? []) current.marks[mark.line] = mark.kind;
     return { before, after: structuredClone(current) };
   });
-  return { kind: "code", start, beats, end: structuredClone(current) };
+  return {
+    kind: "code",
+    start,
+    beats,
+    end: structuredClone(current),
+    ...(figure ? { figure } : {}),
+  };
 }
 /** ASCII は半角、それ以外は全角として数える。 */
 export function codeLineWidth(text: string): number {
   return Array.from(text).reduce((n, c) => n + (/[\x20-\x7e\uff61-\uff9f]/u.test(c) ? 0.5 : 1), 0);
 }
+export function validateCodeLines(code: unknown[], path: string, lineBreak = /[\r\n\t]/u): Issue[] {
+  const issues: Issue[] = [];
+  code.forEach((line, i) => {
+    const at = `${path}[${i}]`;
+    if (typeof line !== "string" || lineBreak.test(line))
+      issues.push({
+        level: "error",
+        path: at,
+        message: "1行の文字列にしてください（字下げは空白）",
+      });
+    else if (codeLineWidth(line) > 40)
+      issues.push({ level: "error", path: at, message: "全角換算40字以内にしてください" });
+  });
+  return issues;
+}
 /** 不正な形は状態計算に渡さず、JSON の誤りをまとめて報告する。 */
-export function validateCodeScene(input: Record<string, unknown>, path: string): Issue[] {
+export function validateCodeScene(
+  input: Record<string, unknown>,
+  path: string,
+  schema: 1 | 2 = 1,
+): Issue[] {
   const issues: Issue[] = [];
   const error = (p: string, message: string) => issues.push({ level: "error", path: p, message });
   const obj = (v: unknown): v is Record<string, unknown> =>
@@ -113,19 +187,13 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
     return v;
   };
   const code = list(input.code, `${path}.code`);
-  code.forEach((v, i) => {
-    if (typeof v !== "string" || /[\r\n\t]/u.test(v))
-      error(`${path}.code[${i}]`, "1行の文字列にしてください（字下げは空白）");
-    else if (codeLineWidth(v) > 40) error(`${path}.code[${i}]`, "全角換算40字以内にしてください");
-  });
-  if (input.show !== undefined && typeof input.show !== "boolean")
-    error(`${path}.show`, "真偽値にしてください");
+  issues.push(...validateCodeLines(code, `${path}.code`));
   const panel = obj(input.panel) ? input.panel : undefined;
   const names = new Set<string>();
   let rowCount = 0;
   if (input.panel !== undefined) {
-    if (!panel || !["values", "calls", "numberLine"].includes(String(panel.kind)))
-      error(`${path}.panel`, "values・calls・numberLineのパネルにしてください");
+    if (!panel || !["values", "calls", "numberLine", "figure"].includes(String(panel.kind)))
+      error(`${path}.panel`, "values・calls・numberLine・figureのパネルにしてください");
     else if (panel.kind === "values" || panel.kind === "numberLine") {
       if (panel.kind === "numberLine") {
         if (
@@ -148,6 +216,8 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
           names.add(v);
         }
       }
+    } else if (panel.kind === "figure") {
+      text(panel.board, `${path}.panel.board`);
     } else {
       const rows = list(panel.rows, `${path}.panel.rows`);
       rowCount = rows.length;
@@ -167,6 +237,20 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
     if (!Number.isInteger(v) || Number(v) < 0 || Number(v) >= count)
       error(p, "存在する行の0始まりの番号にしてください");
   };
+  if (Array.isArray(input.show)) {
+    input.show.forEach((v, i) => {
+      line(v, `${path}.show[${i}]`);
+    });
+    if (new Set(input.show).size !== input.show.length)
+      error(`${path}.show`, "番号が重複しています");
+  } else if (input.show !== undefined && typeof input.show !== "boolean") {
+    error(`${path}.show`, "真偽値か行番号の配列にしてください");
+  }
+  if (input.reset !== undefined) {
+    if (panel?.kind !== "figure")
+      error(`${path}.reset`, "reset は figure パネルだけに指定できます");
+    else if (typeof input.reset !== "boolean") error(`${path}.reset`, "真偽値にしてください");
+  }
   const box = (v: unknown, p: string) => {
     if (
       (panel?.kind !== "values" && panel?.kind !== "numberLine") ||
@@ -176,6 +260,9 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       error(p, "values・numberLineパネルの存在する箱の名前にしてください");
   };
   if (!Array.isArray(input.beats)) return issues;
+  const visible = new Set(
+    Array.isArray(input.show) ? input.show : input.show === true ? code.map((_, i) => i) : [],
+  );
   let plotted = false;
   const position = (v: unknown, p: string, integer = false) => {
     if (
@@ -190,6 +277,8 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
   input.beats.forEach((b, i) => {
     if (!obj(b)) return;
     const p = `${path}.beats[${i}]`;
+    if (b.figure !== undefined && panel?.kind !== "figure")
+      error(`${p}.figure`, "figure は figure パネルだけに指定できます");
     for (const key of ["plot", "range", "snap", "tick"] as const) {
       const value = b[key];
       if (value === undefined) continue;
@@ -236,11 +325,72 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       });
       if (new Set(values).size !== values.length) error(`${p}.${key}`, "番号が重複しています");
     }
+    if (Array.isArray(b.clear)) for (const n of b.clear) visible.delete(n);
+    if (Array.isArray(b.type)) for (const n of b.type) visible.add(n);
+    if (b.classify !== undefined) {
+      const q = `${p}.classify`;
+      if (schema !== 2) error(q, "classify は schema 2 のコードの場面だけに指定できます");
+      else if (
+        !obj(b.classify) ||
+        (b.classify.fixed === undefined && b.classify.free === undefined)
+      )
+        error(q, "fixed・free のいずれかを持つオブジェクトにしてください");
+      else {
+        const fixed = new Map<number, Set<number>>();
+        for (const kind of CODE_CATEGORIES) {
+          if (b.classify[kind] === undefined) continue;
+          list(b.classify[kind], `${q}.${kind}`, 12).forEach((item, j) => {
+            const at = `${q}.${kind}[${j}]`;
+            if (!obj(item)) {
+              error(at, "オブジェクトにしてください");
+              return;
+            }
+            line(item.line, `${at}.line`);
+            if (
+              typeof item.text !== "string" ||
+              !item.text.length ||
+              /[\r\n\t\u0085\u2028\u2029]/u.test(item.text)
+            ) {
+              error(`${at}.text`, "空でない1行の文字列にしてください");
+              return;
+            }
+            if (typeof item.line !== "number") return;
+            const source = code[item.line];
+            if (typeof source !== "string") return;
+            if (!visible.has(item.line))
+              error(`${at}.line`, "色分けは出ている行に指定してください");
+            if (!source.includes(item.text)) {
+              error(`${at}.text`, "行に存在する部分を指定してください");
+              return;
+            }
+            const offsets = matchingCodeOffsets(source, item.text);
+            if (kind === "fixed") {
+              const seen = fixed.get(item.line) ?? new Set<number>();
+              for (const offset of offsets) seen.add(offset);
+              fixed.set(item.line, seen);
+            } else {
+              const seen = fixed.get(item.line);
+              if ([...offsets].some((offset) => seen?.has(offset)))
+                error(`${at}.text`, "同じ文字に fixed と free を指定できません");
+            }
+          });
+        }
+      }
+    }
     if (b.part !== undefined) {
       if (!obj(b.part)) error(`${p}.part`, "オブジェクトにしてください");
       else {
         line(b.part.line, `${p}.part.line`);
         text(b.part.text, `${p}.part.text`);
+        const note = b.part.note;
+        if (
+          note !== undefined &&
+          (typeof note !== "string" ||
+            !note.trim() ||
+            /[\r\n\t\u0085\u2028\u2029]/u.test(note) ||
+            Array.from(note).length > 8)
+        )
+          error(`${p}.part.note`, "空でない1行の文字列（8字以内）にしてください");
         if (
           typeof b.part.text === "string" &&
           typeof code[Number(b.part.line)] === "string" &&
@@ -285,6 +435,18 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       `${path}.code`,
       "コメントと空行だけのコードの場面です。操作は実画面（view）、関係や流れ、ルールは概念図（board）で見せてください",
     );
+  if (scene.panel?.kind !== "figure") issues.push(...validateCodeMotion(scene, path));
+  return issues;
+}
+
+/** figure では引き継いだ図の状態も使って、文ごとの動きを確かめる。 */
+export function validateCodeMotion(
+  scene: CodeScene,
+  path: string,
+  figureChanged: boolean[] = [],
+): Issue[] {
+  const issues: Issue[] = [];
+  const error = (path: string, message: string) => issues.push({ level: "error", path, message });
   const states = codeSceneState(scene);
   scene.beats.forEach((beat, i) => {
     const p = `${path}.beats[${i}]`,
@@ -315,7 +477,10 @@ export function validateCodeScene(input: Record<string, unknown>, path: string):
       JSON.stringify(visualState(before)) === JSON.stringify(visualState(after)) &&
       !focusChanged &&
       !partChanged &&
-      !beat.calc
+      !beat.calc &&
+      !beat.term &&
+      !beat.dialog &&
+      !figureChanged[i]
     )
       error(p, "絵が変わる動きを指定してください（空振りです）");
   });

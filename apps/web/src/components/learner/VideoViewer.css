@@ -1,0 +1,36 @@
+.video-caption {
+  color: #0e0e10;
+  text-shadow:
+    0 0 0.1em #fff,
+    0 0 0.22em #fff,
+    0 0 0.5em rgba(255, 255, 255, 0.9),
+    0 0 0.9em rgba(255, 255, 255, 0.6);
+}
+
+.video-caption-on-dark {
+  color: #fff;
+  text-shadow:
+    0 0.05em 0.1em rgba(0, 0, 0, 0.8),
+    0 0 0.26em rgba(0, 0, 0, 0.65),
+    0 0 0.6em rgba(0, 0, 0, 0.4);
+}
+
+.video-viewer-media::cue {
+  background-color: transparent;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #0e0e10;
+  text-shadow:
+    0 0 0.1em #fff,
+    0 0 0.22em #fff,
+    0 0 0.5em rgba(255, 255, 255, 0.9),
+    0 0 0.9em rgba(255, 255, 255, 0.6);
+}
+
+.video-viewer-media::cue(.on-dark) {
+  color: #fff;
+  text-shadow:
+    0 0.05em 0.1em rgba(0, 0, 0, 0.8),
+    0 0 0.26em rgba(0, 0, 0, 0.65),
+    0 0 0.6em rgba(0, 0, 0, 0.4);
+}

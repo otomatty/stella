@@ -125,7 +125,12 @@ export function parseTaskDefinition(
   environment: EnvironmentRequirement,
 ): TaskDefinition {
   const value = object(raw, "task.json");
-  const parsed = parseTaskManifest({ ...value, schemaVersion: 1, environment });
+  const parsed = parseTaskManifest({
+    ...value,
+    schemaVersion: 1,
+    environment,
+    problemSteps: undefined,
+  });
   if (!parsed.ok) throw new Error(parsed.errors.join("\n"));
   if (parsed.manifest.id.split("/").length !== 3)
     throw new Error("id: <ステージ>/<単元>/<課題> が必要です");
@@ -285,6 +290,9 @@ export function toRuntimeManifest(
     ...(task.static ? { static: task.static } : {}),
     // CI と公開の課題が指定するワークフロー。API が提出の実行と照らし合わせる (07 §5.5)。
     ...(task.ci ? { ci: task.ci } : {}),
-    ...(task.problems && task.problems.length > 0 ? { problems: task.problems } : {}),
+    ...(task.problems?.length
+      ? { problems: task.problems.map(({ id, title }) => ({ id, title })) }
+      : {}),
+    ...(task.problems?.some((problem) => problem.after) ? { problemSteps: true } : {}),
   };
 }

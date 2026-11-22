@@ -289,7 +289,9 @@ async function handleExtensionUri(
         await openWebForConnect();
         return;
       }
-      await openDistributedTask(context, taskId);
+      const problem = q.get("problem");
+      if (problem) await openDistributedTask(context, taskId, problem);
+      else await openDistributedTask(context, taskId);
     } catch (err) {
       if (err instanceof AuthExpiredError) {
         await openWebForConnect();

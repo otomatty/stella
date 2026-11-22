@@ -11,6 +11,7 @@ export interface SlidesFrontMatter {
   id: string;
   title: string;
   header?: string;
+  progressRevision?: number;
   takeaway: string;
   introduces: string[];
   requires: string[];
@@ -52,12 +53,24 @@ export function parseSlides(source: string): SlidesFrontMatter {
     if (!fields.has(key)) throw new Error(`front-matter に ${key} がありません`);
   }
 
+  const revisionField = fields.get("progressRevision")?.trim();
+  const progressRevision = revisionField === undefined ? undefined : Number(revisionField);
+  if (
+    progressRevision !== undefined &&
+    (!/^\d+$/.test(revisionField ?? "") ||
+      !Number.isSafeInteger(progressRevision) ||
+      progressRevision < 2)
+  ) {
+    throw new Error("progressRevision は 2 以上の整数にしてください");
+  }
+
   const sourceRefs = readSourceRefs(source);
   return {
     ...(sourceRefs === undefined ? {} : { sourceRefs }),
     id: unquote(fields.get("id") ?? ""),
     title: unquote(fields.get("title") ?? ""),
     ...(fields.has("header") ? { header: unquote(fields.get("header") ?? "") } : {}),
+    ...(progressRevision === undefined ? {} : { progressRevision }),
     takeaway: unquote(fields.get("takeaway") ?? ""),
     introduces: parseList(fields.get("introduces") ?? "[]"),
     requires: parseList(fields.get("requires") ?? "[]"),

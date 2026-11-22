@@ -645,6 +645,29 @@ export const taskProblemResults = sqliteTable(
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.taskId, t.problemId] }) }),
 );
 
+/** 動画のあとに置く問題のステップ。教材のレッスン順を課題ごとに持ちます。 */
+export const taskProblemSteps = sqliteTable(
+  "task_problem_steps",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    problemId: text("problem_id").notNull(),
+    stepLessonId: text("step_lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    afterLessonId: text("after_lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.taskId, t.problemId] }),
+    stepLessonIdx: index("task_problem_steps_step_lesson_idx").on(t.stepLessonId),
+    afterLessonIdx: index("task_problem_steps_after_lesson_idx").on(t.afterLessonId),
+  }),
+);
+
 /**
  * 手元の確認の要約 (#38)。受講者・課題ごとに 1 行の回数だけを持つ。
  * 実行ごとの履歴・コード・メッセージは持たない (07 §6.5)。版が変わると連続の失敗を数え直す。

@@ -24,6 +24,7 @@ export interface PendingTaskOpen {
   id: string;
   trainingRoot: string;
   taskRoot: string;
+  problem?: string;
   at: number;
 }
 
@@ -38,12 +39,13 @@ function errorCode(error: unknown): unknown {
 
 export function readPendingTaskOpen(value: unknown, now = Date.now()): PendingTaskOpen | undefined {
   if (!value || typeof value !== "object") return undefined;
-  const { id, trainingRoot, taskRoot, at } = value as Record<string, unknown>;
+  const { id, trainingRoot, taskRoot, problem, at } = value as Record<string, unknown>;
   if (
     typeof id !== "string" ||
     !id ||
     typeof trainingRoot !== "string" ||
     typeof taskRoot !== "string" ||
+    (problem !== undefined && typeof problem !== "string") ||
     typeof at !== "number" ||
     !path.isAbsolute(trainingRoot) ||
     !isInside(trainingRoot, taskRoot) ||
@@ -51,7 +53,7 @@ export function readPendingTaskOpen(value: unknown, now = Date.now()): PendingTa
     at > now + 60_000
   )
     return undefined;
-  return { id, trainingRoot, taskRoot, at };
+  return { id, trainingRoot, taskRoot, at, ...(problem === undefined ? {} : { problem }) };
 }
 
 async function readPendingFile(file: string, now: number): Promise<PendingTaskOpen | undefined> {
@@ -72,7 +74,7 @@ async function readPendingFile(file: string, now: number): Promise<PendingTaskOp
 /** 開く課題を控える。前の控えは新しい控えで置き換える (最後に押した課題を開く)。 */
 export async function savePendingTaskOpen(
   dir: string,
-  target: { trainingRoot: string; taskRoot: string },
+  target: Pick<PendingTaskOpen, "trainingRoot" | "taskRoot" | "problem">,
   now = Date.now(),
 ): Promise<PendingTaskOpen> {
   await mkdir(dir, { recursive: true });

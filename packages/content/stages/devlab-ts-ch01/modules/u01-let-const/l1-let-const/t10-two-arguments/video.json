@@ -1,0 +1,878 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "引数が 2 つある関数と、その呼び出しを読んで、どの値がどの引数に入るかを言える。",
+    "stuck": "かっこの中にカンマで区切った引数が並ぶと、どこまでが 1 つの引数か分からない。渡した値がどちらに入るかも分からない。",
+    "points": ["引数はカンマで区切って 2 つ以上受け取れ、渡した順番のとおりに入る。"],
+    "leaveOut": [
+      "引数の既定値や省略",
+      "引数ごとに型が違う例の詳しい説明",
+      "戻り値を 2 つ返す方法",
+      "問2・問4の答えのコード"
+    ]
+  },
+  "art": {
+    "ticketpad": {
+      "prompt": "One blank train ticket next to a small round counter dial with tick marks but no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "vendor": {
+      "prompt": "A train ticket vending machine seen from the front, with a blank screen and a ticket slot. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "paycoins": {
+      "prompt": "A few coins and one blank banknote shape fanned out on a small tray. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "candyjar": {
+      "prompt": "A glass jar full of wrapped candies with four small empty dishes beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "scoop": {
+      "prompt": "A hand holding a small scoop full of wrapped candies over a jar. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "candydish": {
+      "prompt": "One small dish holding a few wrapped candies. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "cartitems": {
+      "prompt": "Several identical boxes in a shopping basket with one blank price tag. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "floorplan": {
+      "prompt": "A simple rectangular room floor plan seen from above with a measuring tape along two sides. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "threetests": {
+      "prompt": "Three blank test papers side by side, each with a circle mark, and a pencil. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "billpaper": {
+      "prompt": "A restaurant bill on a small tray with a few thin placeholder lines, with three small simple person icons drawn as plain round heads and shoulders beside it. Objects only, drawn large and centered. No letters, no digits, no symbols."
+    },
+    "calcdesk": {
+      "prompt": "A large desk calculator with a blank display standing on a desk, with a pencil beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "wallet": {
+      "prompt": "One open wallet with a blank banknote shape and two coins coming out of it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "two": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "in",
+          "label": "料金と枚数",
+          "art": "ticketpad",
+          "at": [1, 1]
+        },
+        {
+          "id": "fn",
+          "label": "合計を出す関数",
+          "art": "vendor",
+          "at": [3, 1]
+        },
+        {
+          "id": "out",
+          "label": "合計の金額",
+          "art": "paycoins",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give",
+          "from": "in",
+          "to": "fn",
+          "label": "渡す"
+        },
+        {
+          "id": "back",
+          "from": "fn",
+          "to": "out",
+          "label": "返す"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "candy": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "k1",
+          "label": "あめと人数",
+          "art": "candyjar",
+          "at": [1, 1]
+        },
+        {
+          "id": "k2",
+          "label": "分ける関数",
+          "art": "scoop",
+          "at": [3, 1]
+        },
+        {
+          "id": "k3",
+          "label": "1人分",
+          "art": "candydish",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "kg",
+          "from": "k1",
+          "to": "k2",
+          "label": "渡す"
+        },
+        {
+          "id": "kb",
+          "from": "k2",
+          "to": "k3",
+          "label": "返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "値段と個数",
+          "art": "cartitems",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "縦と横",
+          "art": "floorplan",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "3つの点数",
+          "art": "threetests",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task2": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "qin",
+          "label": "合計と人数",
+          "art": "billpaper",
+          "at": [1, 1]
+        },
+        {
+          "id": "qfn",
+          "label": "割り勘の関数",
+          "art": "calcdesk",
+          "at": [3, 1]
+        },
+        {
+          "id": "qout",
+          "label": "1人が払う金額",
+          "art": "wallet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "qgive",
+          "from": "qin",
+          "to": "qfn",
+          "label": "渡す"
+        },
+        {
+          "id": "qback",
+          "from": "qfn",
+          "to": "qout",
+          "label": "返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "route-search",
+      "beats": [
+        {
+          "say": "この動画では、値を2つ受け取る関数を学びます。",
+          "speech": "この動画では、値を二つ受け取る関数を学びます。"
+        },
+        {
+          "say": "乗り換え案内に入れるのは、出発の駅です。"
+        },
+        {
+          "say": "到着の駅も入れないと、調べられません。"
+        },
+        {
+          "say": "2つがそろうと、時間と料金が出てきます。",
+          "speech": "二つがそろうと、時間と料金が出てきます。"
+        },
+        {
+          "say": "関数が受け取る値も、1つとは限りません。",
+          "speech": "関数が受け取る値も、一つとは限りません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "ticket",
+      "role": "example",
+      "title": "料金と枚数を伝える",
+      "board": "two",
+      "beats": [
+        {
+          "say": "切符の料金は、1枚200円です。",
+          "speech": "切符の料金は、一枚二百円です。",
+          "show": ["in"],
+          "tag": {
+            "in": "200円"
+          },
+          "pulse": ["in"]
+        },
+        {
+          "say": "この切符を、3枚買うとしましょう。",
+          "speech": "この切符を、三枚買うとしましょう。",
+          "tag": {
+            "in": "200円と3枚"
+          }
+        },
+        {
+          "say": "券売機には、料金と枚数の両方を伝えます。",
+          "show": ["give", "fn"],
+          "travel": {
+            "along": ["give"],
+            "icon": "send"
+          },
+          "pulse": ["fn"]
+        },
+        {
+          "say": "どちらか1つだけでは、合計を計算できません。",
+          "speech": "どちらかひとつだけでは、合計を計算できません。",
+          "pulse": ["in"]
+        },
+        {
+          "say": "合計の600円が、表示されました。",
+          "speech": "合計の六百円が、表示されました。",
+          "show": ["back", "out"],
+          "tag": {
+            "out": "600円"
+          },
+          "travel": {
+            "along": ["back"],
+            "icon": "send"
+          },
+          "pulse": ["out"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "kind": "code",
+      "role": "syntax",
+      "title": "引数をカンマで区切る",
+      "code": [
+        "// 料金と枚数を受け取り、合計の金額を返す関数",
+        "function ticketTotal(fare: number, count: number): number {",
+        "  // 料金に枚数を掛けて返す",
+        "  return fare * count;",
+        "}"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "two"
+      },
+      "beats": [
+        {
+          "say": "2つの値を受け取る関数を、書いてみます。",
+          "speech": "ふたつの値を受け取る関数を、書いてみます。",
+          "type": [0, 1, 4],
+          "figure": {
+            "untag": ["in", "out"]
+          }
+        },
+        {
+          "say": "かっこの中に並んでいるのは、2つの引数です。",
+          "speech": "かっこの中に並んでいるのは、ふたつの引数です。",
+          "part": {
+            "line": 1,
+            "text": "(fare: number, count: number)"
+          },
+          "figure": {
+            "pulse": ["in"]
+          }
+        },
+        {
+          "say": "引数と引数の間は、カンマで区切ります。",
+          "term": {
+            "text": "カンマ",
+            "note": "引数を区切る記号 ,"
+          },
+          "part": {
+            "line": 1,
+            "text": ",",
+            "note": "区切り"
+          },
+          "pause": 1
+        },
+        {
+          "say": "1つめの fare は、料金という意味の英語です。",
+          "speech": "ひとつめのフェアは、料金という意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "fare",
+            "note": "料金"
+          },
+          "figure": {
+            "tag": {
+              "in": "fare"
+            }
+          }
+        },
+        {
+          "say": "2つめの count で、枚数を受け取ります。",
+          "speech": "ふたつめのカウントで、枚数を受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "count",
+            "note": "枚数"
+          },
+          "figure": {
+            "tag": {
+              "in": "2つの引数"
+            }
+          }
+        },
+        {
+          "say": "どちらの引数にも、型注釈を書く決まりです。",
+          "focus": [1],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "kind": "code",
+      "role": "syntax",
+      "title": "中身で両方を使う",
+      "code": [
+        "// 料金と枚数を受け取り、合計の金額を返す関数",
+        "function ticketTotal(fare: number, count: number): number {",
+        "  // 料金に枚数を掛けて返す",
+        "  return fare * count;",
+        "}"
+      ],
+      "show": [0, 1, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "two"
+      },
+      "beats": [
+        {
+          "say": "中身では、2つの引数を両方使えます。",
+          "speech": "中身では、ふたつの引数を両方使えます。",
+          "type": [2, 3],
+          "figure": {
+            "pulse": ["fn"]
+          }
+        },
+        {
+          "say": "ここでは、料金に枚数を掛けました。",
+          "part": {
+            "line": 3,
+            "text": "fare * count"
+          },
+          "figure": {
+            "tag": {
+              "fn": "掛ける"
+            }
+          }
+        },
+        {
+          "say": "戻り値は1つなので、後ろの型注釈も1つです。",
+          "speech": "戻り値はひとつなので、後ろの型注釈もひとつです。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          },
+          "figure": {
+            "pulse": ["out"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "call",
+      "kind": "code",
+      "role": "apply",
+      "title": "2つの値を渡して呼び出す",
+      "code": [
+        "// 料金と枚数を受け取り、合計の金額を返す関数",
+        "function ticketTotal(fare: number, count: number): number {",
+        "  // 料金に枚数を掛けて返す",
+        "  return fare * count;",
+        "}",
+        "// 200 円の切符を 3 枚で、関数を呼ぶ",
+        "ticketTotal(200, 3);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "two"
+      },
+      "beats": [
+        {
+          "say": "では、券売機の例をこの関数で動かしてみましょう。",
+          "type": [5, 6],
+          "figure": {
+            "pulse": []
+          }
+        },
+        {
+          "say": "呼び出すときも、渡す値をカンマで区切ります。",
+          "part": {
+            "line": 6,
+            "text": "(200, 3)"
+          },
+          "figure": {
+            "tag": {
+              "in": "200, 3"
+            },
+            "pulse": ["in"]
+          }
+        },
+        {
+          "say": "1つめの 200 が入る先は、引数の fare です。",
+          "speech": "ひとつめの二百が入る先は、引数のフェアです。",
+          "part": {
+            "line": 1,
+            "text": "fare"
+          }
+        },
+        {
+          "say": "2つめの 3 は、count に入ります。",
+          "speech": "ふたつめのさんは、カウントに入ります。",
+          "part": {
+            "line": 1,
+            "text": "count"
+          }
+        },
+        {
+          "say": "渡した順番のとおりに、引数へ入る決まりです。",
+          "focus": [1, 6],
+          "figure": {
+            "travel": {
+              "along": ["give"]
+            }
+          }
+        },
+        {
+          "say": "200 掛ける 3 で、600 が戻ってきました。",
+          "speech": "二百掛けるさんで、六百が戻ってきました。",
+          "focus": [6],
+          "figure": {
+            "tag": {
+              "out": "600"
+            },
+            "travel": {
+              "along": ["back"]
+            },
+            "pulse": ["out"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と名前",
+      "code": [
+        "// 料金と枚数を受け取り、合計の金額を返す関数",
+        "function ticketTotal(fare: number, count: number): number {",
+        "  // 料金に枚数を掛けて返す",
+        "  return fare * count;",
+        "}",
+        "// 200 円の切符を 3 枚で、関数を呼ぶ",
+        "ticketTotal(200, 3);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この関数も、2つに分けて見てみましょう。",
+          "speech": "この関数も、二つに分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "カンマは、言語で決まっている記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ","
+              },
+              {
+                "line": 6,
+                "text": ","
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"],
+            "tag": {
+              "pfixed": "変えられない"
+            }
+          }
+        },
+        {
+          "say": "fare と count は、自分で付けました。",
+          "speech": "フェアとカウントは、自分で付けました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "fare"
+              },
+              {
+                "line": 1,
+                "text": "count"
+              },
+              {
+                "line": 3,
+                "text": "fare"
+              },
+              {
+                "line": 3,
+                "text": "count"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"],
+            "tag": {
+              "pfree": "変えてよい"
+            }
+          }
+        },
+        {
+          "say": "引数をいくつにするかも、自分で決められます。",
+          "focus": [1],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻ってくる値はいくつ",
+      "code": [
+        "// あめの数と人数を受け取り、1 人分の数を返す関数",
+        "function candyEach(candies: number, people: number): number {",
+        "  // あめの数を人数で割って返す",
+        "  return candies / people;",
+        "}",
+        "// あめ 20 個を 4 人で分ける",
+        "candyEach(20, 4);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "reset": true,
+      "panel": {
+        "kind": "figure",
+        "board": "candy"
+      },
+      "think": 8,
+      "beats": [
+        {
+          "say": "ここで問題です。",
+          "figure": {
+            "show": ["k1", "kg", "k2", "kb", "k3"]
+          }
+        },
+        {
+          "say": "あめを分ける関数を、用意しました。",
+          "part": {
+            "line": 1,
+            "text": "candyEach"
+          },
+          "figure": {
+            "pulse": ["k2"]
+          }
+        },
+        {
+          "say": "candies は、あめという意味の英語です。",
+          "speech": "キャンディーズは、あめという意味の英語です。",
+          "part": {
+            "line": 1,
+            "text": "candies",
+            "note": "あめ"
+          }
+        },
+        {
+          "say": "この関数に、20 と 4 を渡して呼び出します。",
+          "speech": "この関数に、二十とよんを渡して呼び出します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "k1": "20, 4"
+            },
+            "pulse": ["k1"]
+          }
+        },
+        {
+          "say": "戻ってくる値は、いくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "k3",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["k3"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// あめの数と人数を受け取り、1 人分の数を返す関数",
+        "function candyEach(candies: number, people: number): number {",
+        "  // あめの数を人数で割って返す",
+        "  return candies / people;",
+        "}",
+        "// あめ 20 個を 4 人で分ける",
+        "candyEach(20, 4);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "candy"
+      },
+      "beats": [
+        {
+          "say": "答えは、5 です。",
+          "speech": "答えは、ごです。",
+          "figure": {
+            "tag": {
+              "k3": "5"
+            },
+            "mark": [
+              {
+                "on": "k3",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["k3"]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "渡した順番に入る",
+      "code": [
+        "// あめの数と人数を受け取り、1 人分の数を返す関数",
+        "function candyEach(candies: number, people: number): number {",
+        "  // あめの数を人数で割って返す",
+        "  return candies / people;",
+        "}",
+        "// あめ 20 個を 4 人で分ける",
+        "candyEach(20, 4);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "candy"
+      },
+      "beats": [
+        {
+          "say": "1つめの 20 は、引数の candies に入ります。",
+          "speech": "ひとつめの二十は、引数のキャンディーズに入ります。",
+          "part": {
+            "line": 1,
+            "text": "candies"
+          },
+          "figure": {
+            "pulse": ["k1"]
+          }
+        },
+        {
+          "say": "2つめの 4 が入るのは、people です。",
+          "speech": "ふたつめのよんが入るのは、ピープルです。",
+          "part": {
+            "line": 1,
+            "text": "people"
+          }
+        },
+        {
+          "say": "中身は、candies を people で割る処理でした。",
+          "speech": "中身は、キャンディーズをピープルで割る処理でした。",
+          "part": {
+            "line": 3,
+            "text": "candies / people"
+          },
+          "figure": {
+            "travel": {
+              "along": ["kg"]
+            },
+            "pulse": ["k2"]
+          }
+        },
+        {
+          "say": "20 割る 4 なので、戻り値は 5 になります。",
+          "speech": "二十割るよんなので、戻り値はごになります。",
+          "figure": {
+            "travel": {
+              "along": ["kb"]
+            },
+            "pulse": ["k3"]
+          }
+        },
+        {
+          "say": "渡す順番を間違えると、正しい答えになりません。",
+          "focus": [6],
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "引数が2つ以上の場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "引数が2つ以上の関数は、いろいろな場面で使います。",
+          "speech": "引数がふたつ以上の関数は、いろいろな場面で使います。",
+          "show": ["u1"]
+        },
+        {
+          "say": "値段と個数から金額を出すのは、その代表です。",
+          "pulse": ["u1"]
+        },
+        {
+          "say": "縦と横の長さがあれば、広さを計算できます。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "3つの点数から平均を出すときは、引数も3つです。",
+          "speech": "みっつの点数から平均を出すときは、引数もみっつです。",
+          "show": ["u3"],
+          "pulse": ["u3"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問2の引数を読む",
+      "code": [
+        "// 問2 割り勘で1人が払う金額を返す（100円単位に切り上げ）",
+        "//     例: splitBill(10000, 3) → 3400",
+        "export function splitBill(total: number, people: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task2"
+      },
+      "beats": [
+        {
+          "say": "問2の関数は、引数を2つ受け取ります。",
+          "speech": "問にの関数は、引数をふたつ受け取ります。",
+          "part": {
+            "line": 2,
+            "text": "(total: number, people: number)"
+          },
+          "figure": {
+            "show": ["qin", "qgive", "qfn", "qback", "qout"]
+          }
+        },
+        {
+          "say": "1つめの total は、合計という意味です。",
+          "speech": "ひとつめのトータルは、合計という意味です。",
+          "part": {
+            "line": 2,
+            "text": "total",
+            "note": "合計"
+          },
+          "figure": {
+            "pulse": ["qin"]
+          }
+        },
+        {
+          "say": "2つめの people で、人数を受け取ります。",
+          "speech": "ふたつめのピープルで、人数を受け取ります。",
+          "part": {
+            "line": 2,
+            "text": "people",
+            "note": "人数"
+          }
+        },
+        {
+          "say": "問4の関数が受け取る引数は、3つです。",
+          "speech": "問よんの関数が受け取る引数は、みっつです。",
+          "focus": [2]
+        },
+        {
+          "say": "何を受け取る関数なのかを、最初に確かめましょう。",
+          "figure": {
+            "pulse": []
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

@@ -15,7 +15,12 @@ import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
-import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
+import {
+  fetchProblemResults,
+  loadProblemStates,
+  loadTaskProblems,
+  problemCountLabel,
+} from "./task-problems.js";
 import {
   getTaskState,
   notifyProblemTaskOpened,
@@ -30,6 +35,7 @@ export interface CurrentTask {
   taskId?: string;
   /** 問題つきの課題の、提出済みと全部の件数。 */
   problemProgress?: { passed: number; total: number };
+  problemActionsAvailable?: boolean;
 }
 
 let current: CurrentTask | undefined;
@@ -134,7 +140,8 @@ function render(): void {
   } else {
     progressItem.hide();
   }
-  if (renderState(stateItem, current)) submitItem.hide();
+  if (renderState(stateItem, current) || current.problemActionsAvailable === false)
+    submitItem.hide();
   else submitItem.show();
   readmeItem.show();
 }
@@ -164,7 +171,14 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
     if (ticket !== generation) return;
     const title = loaded.ok ? loaded.manifest.title : path.basename(root);
     let problemProgress: CurrentTask["problemProgress"];
-    if (loaded.ok && loaded.manifest.problems?.length) {
+    let problemActionsAvailable: boolean | undefined;
+    if (loaded.ok && loaded.manifest.problemSteps) {
+      const problems = await loadTaskProblems(root, loaded.manifest);
+      if (ticket !== generation) return;
+      problemProgress = problems.progress;
+      problemActionsAvailable = problems.states.some(({ id }) => !problems.unprepared.has(id));
+      notifyProblemTaskOpened(root);
+    } else if (loaded.ok && loaded.manifest.problems?.length) {
       notifyProblemTaskOpened(root);
       try {
         const states = await loadProblemStates(
@@ -186,6 +200,7 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
       title,
       ...(loaded.ok && !loaded.manifest.problems ? { taskId: loaded.manifest.id } : {}),
       ...(problemProgress ? { problemProgress } : {}),
+      ...(problemActionsAvailable === undefined ? {} : { problemActionsAvailable }),
     };
   }
   render();
@@ -230,6 +245,24 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
       if (root === undefined || root === current?.root) render();
     }),
     onDidChangeAuth(() => void refreshCurrentTask()),
+    vscode.window.onDidChangeWindowState(({ focused }) => {
+      const task = current;
+      if (!focused || task?.problemActionsAvailable === undefined) return;
+      const ticket = generation;
+      void loadTask(task.root)
+        .then(async (loaded) => {
+          if (!loaded.ok || !loaded.manifest.problemSteps || ticket !== generation) return;
+          const problems = await loadTaskProblems(task.root, loaded.manifest);
+          if (ticket !== generation) return;
+          setCurrentTask({
+            ...task,
+            problemProgress: problems.progress,
+            problemActionsAvailable: problems.states.some(({ id }) => !problems.unprepared.has(id)),
+          });
+          notifyProblemTaskOpened(task.root);
+        })
+        .catch(() => undefined);
+    }),
     vscode.window.onDidChangeActiveTextEditor((editor) => followEditor(editor)),
     vscode.workspace.onDidChangeWorkspaceFolders(() =>
       followEditor(vscode.window.activeTextEditor),

@@ -81,7 +81,7 @@ export function storyboardVideoScenes(
     let start: typeof state.start | undefined;
     if (state.kind === "view") {
       if (state.start.lastFrame) start = state.start;
-    } else if (state.kind !== "code") {
+    } else if (state.kind !== "code" && state.kind !== "motion") {
       const { visible, marks, zoom } = state.start;
       if (visible.length || Object.keys(marks).length || zoom !== "all") start = state.start;
     }

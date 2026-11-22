@@ -1,5 +1,5 @@
 {
-  "provider": "gemini",
+  "provider": "openjtalk",
   "gemini": {
     "model": "gemini-3.8-flash-tts",
     "voice": "Charon",

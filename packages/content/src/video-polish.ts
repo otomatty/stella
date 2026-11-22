@@ -8,6 +8,8 @@ import {
   type ViewSceneState,
   type Beat,
   type Board,
+  type BoardMotion,
+  type CodeScene,
   type Issue,
   type VideoStoryboard,
 } from "./video-storyboard.js";
@@ -120,7 +122,7 @@ function viewPicture(image: string, beat: ViewBeat): string[] {
     ...(beat.click ? [`押す: ${beat.click}`] : []),
   ];
 }
-function pictureOf(board: Board, beat: Beat): string[] {
+function pictureOf(board: Board, beat: BoardMotion, schema: 1 | 2 = 1): string[] {
   const nodeLabel = (id: string) => board.nodes.find((n) => n.id === id)?.label ?? "不明なノード";
   const linkLabel = (id: string) => {
     const link = board.links?.find((l) => l.id === id);
@@ -137,11 +139,18 @@ function pictureOf(board: Board, beat: Beat): string[] {
     ["show", "出す"],
     ["hide", "隠す"],
     ["focus", "強調"],
-    ["pulse", "脈動"],
+    ["pulse", schema === 2 ? "強調 (続く)" : "脈動"],
     ["unmark", "印を消す"],
   ] as const) {
+    if (key === "pulse" && schema === 2 && beat.pulse?.length === 0) {
+      actions.push("強調を外す");
+      continue;
+    }
     if (beat[key]?.length) actions.push(`${verb}: ${beat[key].map(label).join("、")}`);
   }
+  for (const [id, value] of Object.entries(beat.tag ?? {}))
+    actions.push(`札: ${nodeLabel(id)}=${value}`);
+  if (beat.untag?.length) actions.push(`札を外す: ${beat.untag.map(nodeLabel).join("、")}`);
   for (const m of beat.mark ?? []) actions.push(`印: ${label(m.on)} に ${m.kind}`);
   if (beat.travel) {
     const links = beat.travel.along.map((id) => board.links?.find((l) => l.id === id));
@@ -152,6 +161,30 @@ function pictureOf(board: Board, beat: Beat): string[] {
   if (beat.zoom)
     actions.push(`寄る: ${beat.zoom === "all" ? "全体" : beat.zoom.map(label).join("、")}`);
   return actions;
+}
+function codeBeatPicture(
+  scene: CodeScene,
+  beat: CodeScene["beats"][number],
+  boards: Record<string, Board>,
+  schema: 1 | 2,
+): string | string[] {
+  const base = JSON.stringify(beat);
+  if (schema !== 2) return base;
+  const lines: string[] = [];
+  const figure = beat.figure;
+  if (scene.panel?.kind === "figure" && figure?.pulse !== undefined) {
+    const board = boards[scene.panel.board];
+    if (board) lines.push(...pictureOf(board, figure, 2).filter((line) => line.startsWith("強調")));
+  }
+  if (beat.classify) {
+    const { fixed, free } = beat.classify;
+    const categories = [
+      ...(fixed ? [`決まっている書き方 = ${fixed.map(({ text }) => text).join("、")}`] : []),
+      ...(free ? [`自分で決めるところ = ${free.map(({ text }) => text).join("、")}`] : []),
+    ];
+    lines.push(`色分け: ${categories.join(" ／ ")}`);
+  }
+  return lines.length ? [base, ...lines] : base;
 }
 export function buildPolishRequest(storyboard: VideoStoryboard, guideText: string) {
   const system = `あなたは未経験者向け研修動画の台本の校正者です。次のガイド全文に従ってください。\n\n${guideText}\n\n見る観点:
@@ -179,12 +212,27 @@ kinds は上記6種類から選び、reason は日本語にしてください。
         lines: scene.beats.map((beat, i) => ({
           id: `${scene.id}#${i + 1}`,
           say: beat.say,
-          picture:
-            scene.kind === "view"
-              ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
-              : scene.kind === "code"
-                ? JSON.stringify(beat)
-                : pictureOf(boards[scene.board], beat as Beat),
+          picture: (() => {
+            const picture =
+              scene.kind === "view"
+                ? viewPicture((states[si] as ViewSceneState).beats[i].after.image, beat as ViewBeat)
+                : scene.kind === "code"
+                  ? codeBeatPicture(
+                      scene,
+                      beat as CodeScene["beats"][number],
+                      boards,
+                      storyboard.schema,
+                    )
+                  : scene.kind === "motion"
+                    ? `動くイラスト: ${scene.motion}`
+                    : pictureOf(boards[scene.board], beat as Beat, storyboard.schema);
+            if (!beat.term && !beat.dialog) return picture;
+            return [
+              ...(typeof picture === "string" ? [picture] : picture),
+              ...(beat.term ? [`用語の表示: ${beat.term.text}`] : []),
+              ...(beat.dialog ? [`ダイアログ: ${beat.dialog.title}`] : []),
+            ];
+          })(),
         })),
       })),
     },

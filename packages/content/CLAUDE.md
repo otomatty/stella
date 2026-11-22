@@ -102,9 +102,9 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 ### 教材動画 (生成と配信)
 
-**説明の優先順位**は実際の操作のキャプチャ → 概念図のアニメーション → コードブロック → テキストです。上で見せられる内容は上の手段を使い、新しいスライド版は作りません (2026-11-19、オーナー決定)。使い分けは [VIDEO_GUIDE.md の「何を映すか」](VIDEO_GUIDE.md#何を映すか) を参照してください。
+**説明の優先順位**は実際の画面のキャプチャ → 概念図・イラストのアニメーションです (2026-11-20、オーナー決定)。書き方・考え方を教える動画はレッスン型 (schema 2) にし、動画 1 本で要点を 1 つだけ扱います。コードやテキストだけの場面は作らず、コードは概念図と並べます。詳しくは [VIDEO_GUIDE.md の「何を映すか」](VIDEO_GUIDE.md#何を映すか) と [「レッスン型の動画 (schema 2)」](VIDEO_GUIDE.md#レッスン型の動画-schema-2) を参照してください。読み上げ文は丁寧な説明にし、最初のイラストは動画ごとにその具体例が伝わる絵にします (2026-11-21、オーナー決定)。
 
-**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Argon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は動画に焼き込み、`captions.vtt` は空にします。以下は旧方式の説明です。
+**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (Gemini 4 Neon) で磨きます。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は `captions.vtt` に文ごとの読み上げ時刻で書き、プレイヤーが動画に重ねます。画面が暗い文には `<c.on-dark>` を付けます。動くイラストの場面 (`motion`) は Remotion と GSAP で描きます。`video:studio` で動きを確かめられます。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
@@ -113,8 +113,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
 - 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
-- 生成だけの確認: `bun run content:video -- dev-env-basics --tts fake` → `dist/video/`。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。`fake` は音声の代わりに仮の音を作ります。日本語の音声を鍵なしで確かめる場合は `--tts openjtalk` と `pip install pyopenjtalk-prebuilt "numpy<2"` を使います
-- 配信: `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2)。本物の音声は `--tts gemini` (`GEMINI_API_KEY`)、本番 R2 は `--remote`。R2 の資格情報・公開バケットは PDF と同じです
+- 手元では最初に `bun run --filter=@stella/content video:tts:setup` を 1 回実行します。Python 3.10〜3.13 と `pyopenjtalk-plus` の wheel を使います。`video:scenes`・`content:video`・ローカルの `video:sync` は、`--tts` を省くと Open JTalk で日本語の音声を合成します。`bun run content:video -- dev-env-basics` の出力先は `dist/video/` です。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。読み上げなしで描画を確かめるには `--tts fake` を指定すると仮の音で作れます
+- 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。R2 の資格情報・公開バケットは PDF と同じです
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です

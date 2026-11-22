@@ -1,5 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
+import type { TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
 import { verifyTaskSubmission, type TaskSubmissionInput } from "@stella/shared/tasks/submission";
 import type { Db } from "../db/client.js";
@@ -15,6 +16,8 @@ import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { withResourceLock } from "./resource-lock.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
+import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
+import { evaluatedProblemSteps, loadProblemSteps } from "./task-problem-steps.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
 
 /** 問題の提出の応答。課題の提出行とは別。 */
@@ -47,7 +50,7 @@ export function countedProblemIds(
 }
 
 export interface TaskDefinitionView {
-  problems: { id: string; title: string }[] | null;
+  problems: TaskProblem[] | null;
   assesses: string[];
 }
 
@@ -66,7 +69,7 @@ export function readTaskDefinition(definition: string): TaskDefinitionView {
     : [];
   if (!Array.isArray(record.problems) || record.problems.length === 0)
     return { problems: null, assesses };
-  const problems: { id: string; title: string }[] = [];
+  const problems: TaskProblem[] = [];
   const seen = new Set<string>();
   for (const item of record.problems) {
     if (!item || typeof item !== "object") continue;
@@ -74,7 +77,8 @@ export function readTaskDefinition(definition: string): TaskDefinitionView {
     const title = "title" in item && typeof item.title === "string" ? item.title.trim() : "";
     if (!id || !title || seen.has(id)) continue;
     seen.add(id);
-    problems.push({ id, title });
+    const after = "after" in item && typeof item.after === "string" ? item.after : "";
+    problems.push({ id, title, ...(after ? { after } : {}) });
   }
   return { problems: problems.length > 0 ? problems : null, assesses };
 }
@@ -179,6 +183,23 @@ export async function submitTaskProblem(
         progress?.status === "ai-passed" ||
         passedSubmissions.length > 0;
       const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed);
+      let stepLessonId: string | undefined;
+      if (bundle.manifest.problemSteps) {
+        const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
+        const step = evaluatedProblemSteps(rows, currentProblems, passedIds).find(
+          (row) => row.problemId === problemId,
+        );
+        if (!step)
+          throw new ApiError("問題の準備中です。少し待ってからもう一度開いてください。", 503);
+        if (step.state === "locked-video")
+          throw new ApiError(
+            `この問題はまだ解けません。先に${step.afterTitle}の動画を見てください。`,
+            409,
+          );
+        if (step.state === "locked-previous")
+          throw new ApiError("この問題はまだ解けません。先に前の問題を提出してください。", 409);
+        stepLessonId = step.stepLessonId;
+      }
       passedIds.add(problemId);
       const passedProblems = currentProblems.filter((problem) => passedIds.has(problem.id)).length;
       const totalProblems = currentProblems.length;
@@ -238,6 +259,8 @@ export async function submitTaskProblem(
             setWhere: sql`${taskProgress.status} not in ('passed', 'ai-passed')`,
           }),
       ];
+      if (stepLessonId)
+        writes.push(...planProblemStepProgressWrites(db, caller.id, [stepLessonId], now));
       const replacesManualPass =
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual") &&

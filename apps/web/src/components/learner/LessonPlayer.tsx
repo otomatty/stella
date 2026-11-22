@@ -1,5 +1,6 @@
 import {
   lazy,
+  type ReactNode,
   Suspense,
   useCallback,
   useContext,
@@ -53,6 +54,12 @@ import {
 } from "@/hooks/useLessonProgress";
 import { useStageTasks } from "@/hooks/useStageTasks";
 import { lessonSubmissionTarget } from "@/lib/lesson-submissions";
+import {
+  firstOpenProblem,
+  type ProblemLesson,
+  problemLessonsById,
+  problemLockReason,
+} from "@/lib/problem-lesson";
 import { useVideoLessonComments } from "@/hooks/useLessonComments";
 import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
@@ -62,7 +69,7 @@ import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
 import { CodeLessonHandoff } from "./CodeLessonHandoff";
-import { TaskLessonHandoff } from "./TaskLessonHandoff";
+import { ProblemLessonHandoff, TaskLessonHandoff } from "./TaskLessonHandoff";
 import { SubmissionHistory } from "./SubmissionHistory";
 import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
 import { QuizPlayer } from "./QuizPlayer";
@@ -112,7 +119,9 @@ export const LessonPlayer = ({
   );
   const [tabSelection, setTabSelection] = useState<{ key: string; tab: string }>();
   const shell = useContext(AppShellContext);
-  const stageTasks = useStageTasks(stage.id, stage.format === 2 && isBackendConfigured());
+  const tasksEnabled = stage.format === 2 && isBackendConfigured();
+  const stageTasks = useStageTasks(stage.id, tasksEnabled, true);
+  const problemLessons = useMemo(() => problemLessonsById(stageTasks), [stageTasks]);
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -126,8 +135,10 @@ export const LessonPlayer = ({
   const progressMap = useLessonProgressMap();
 
   const completedLessonCount = useMemo(
-    () => allLessons.filter((l) => resolveLessonStatus(l, progressMap) === "done").length,
-    [allLessons, progressMap],
+    () =>
+      allLessons.filter((l) => resolveLessonStatus(l, progressMap, problemLessons) === "done")
+        .length,
+    [allLessons, progressMap, problemLessons],
   );
   const progressPercent = allLessons.length
     ? Math.round((completedLessonCount / allLessons.length) * 100)
@@ -147,6 +158,9 @@ export const LessonPlayer = ({
   } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled);
 
   const lessonId = lessonObj?.id ?? "";
+  const problemLesson = problemLessons.get(lessonId);
+  // 課題一覧が取れるまで、問題のステップかもしれないテキストの完了を送らない。
+  const trackTextProgress = !problemLesson && (!tasksEnabled || stageTasks != null);
   const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
   const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
   const video = useVideoLessonComments(
@@ -217,13 +231,18 @@ export const LessonPlayer = ({
 
   // 滞在時間を学習時間として積む。 動画レッスンは VideoViewer が実再生秒数を記録するので除外
   // (両方が同じ watched_sec を書くと二重計上になる)。
-  useStudyTime(lessonObj?.id ?? "", Boolean(lessonObj) && lessonObj?.type !== "video");
+  useStudyTime(
+    lessonId,
+    Boolean(lessonObj) &&
+      lessonObj?.type !== "video" &&
+      (lessonObj?.type !== "text" || trackTextProgress),
+  );
 
   // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 locked はスキップして
   // 手前 / 先の解禁レッスンを探す。 無ければ null で、 ナビは端の表示になる。
   const neighbors = useMemo(
-    () => resolveLessonNeighbors(stage, activeLesson, progressMap),
-    [stage, activeLesson, progressMap],
+    () => resolveLessonNeighbors(stage, activeLesson, progressMap, problemLessons),
+    [stage, activeLesson, progressMap, problemLessons],
   );
 
   /**
@@ -259,13 +278,17 @@ export const LessonPlayer = ({
    * 同じ扱いに揃える。
    */
   const progressReady = useProgressReady();
-  const activeCompleted = activeLesson ? progressMap[activeLesson]?.completed === true : false;
+  const activeCompleted = problemLesson
+    ? problemLesson.problem.state === "submitted"
+    : progressMap[activeLesson]?.completed === true;
+  const completionReady =
+    progressReady && (lessonObj?.type !== "text" || !tasksEnabled || stageTasks != null);
   const completionWatchRef = useRef<{ lessonId: string; wasCompleted: boolean } | null>(null);
   const [justCompleted, setJustCompleted] = useState(false);
   const [calloutDismissed, setCalloutDismissed] = useState(false);
 
   useEffect(() => {
-    if (!activeLesson || !progressReady) {
+    if (!activeLesson || !completionReady) {
       // 基準を取れないうちは監視しない。 決着後に取り直せるよう捨てておく。
       completionWatchRef.current = null;
       return;
@@ -277,7 +300,7 @@ export const LessonPlayer = ({
       return;
     }
     if (activeCompleted && !completionWatchRef.current.wasCompleted) setJustCompleted(true);
-  }, [activeLesson, activeCompleted, progressReady]);
+  }, [activeLesson, activeCompleted, completionReady]);
 
   const showCompleteCallout = justCompleted && !calloutDismissed;
 
@@ -295,7 +318,8 @@ export const LessonPlayer = ({
     return <div className="p-10 text-sm text-ink-3">このステージには教材がありません。</div>;
   }
 
-  const taskId = stageTasks?.find((task) => task.lessonId === lessonObj.id)?.id ?? null;
+  const task = stageTasks?.find((task) => task.lessonId === lessonObj.id);
+  const taskId = task?.id ?? null;
   const submissionTarget = lessonSubmissionTarget({
     format: stage.format,
     lesson: lessonObj,
@@ -331,6 +355,7 @@ export const LessonPlayer = ({
             sections={sections}
             progressPercent={progressPercent}
             progressMap={progressMap}
+            problemLessons={problemLessons}
             activeLesson={activeLesson}
             onSelectLesson={goToLesson}
             onBackToStage={handleBackToStage}
@@ -388,6 +413,7 @@ export const LessonPlayer = ({
               sections={sections}
               progressPercent={progressPercent}
               progressMap={progressMap}
+              problemLessons={problemLessons}
               activeLesson={activeLesson}
               onSelectLesson={(lessonId) => {
                 goToLesson(lessonId);
@@ -508,7 +534,12 @@ export const LessonPlayer = ({
                       </span>
                     ) : null}
                   </div>
-                  {stage.format === 2 && isText ? <TaskLessonHandoff taskId={taskId} /> : null}
+                  {stage.format === 2 && isText && !problemLesson ? (
+                    <TaskLessonHandoff
+                      taskId={taskId}
+                      problemId={firstOpenProblem(task?.problems)?.id}
+                    />
+                  ) : null}
                 </div>
               </div>
 
@@ -585,7 +616,13 @@ export const LessonPlayer = ({
                         onSubmitted={handleMarkComplete}
                       />
                     ) : isText ? (
-                      <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                      <LessonReadable
+                        lesson={lessonObj}
+                        onComplete={trackTextProgress ? handleMarkComplete : undefined}
+                        afterContent={
+                          problemLesson ? <ProblemLessonHandoff {...problemLesson} /> : null
+                        }
+                      />
                     ) : isSlides && lessonObj.markdown ? (
                       <MarkdownSlides
                         key={lessonObj.id}
@@ -658,6 +695,7 @@ const LessonToc = ({
   sections,
   progressPercent,
   progressMap,
+  problemLessons,
   activeLesson,
   onSelectLesson,
   onBackToStage,
@@ -666,6 +704,7 @@ const LessonToc = ({
   sections: Section[];
   progressPercent: number;
   progressMap: LessonProgressMap;
+  problemLessons: ReadonlyMap<string, ProblemLesson>;
   activeLesson: string;
   onSelectLesson: (lessonId: string) => void;
   onBackToStage: () => void;
@@ -690,7 +729,7 @@ const LessonToc = ({
 
     {sections.map((s) => {
       const doneCount = s.lessons.filter(
-        (l) => resolveLessonStatus(l, progressMap) === "done",
+        (l) => resolveLessonStatus(l, progressMap, problemLessons) === "done",
       ).length;
       return (
         <div key={s.id} className="py-2.5">
@@ -702,7 +741,8 @@ const LessonToc = ({
           </div>
           {s.lessons.map((l) => {
             const isActive = l.id === activeLesson;
-            const status = resolveLessonStatus(l, progressMap);
+            const status = resolveLessonStatus(l, progressMap, problemLessons);
+            const lockReason = problemLockReason(problemLessons.get(l.id)?.problem);
             return (
               <button
                 type="button"
@@ -725,7 +765,7 @@ const LessonToc = ({
                 )}
               >
                 <span className="shrink-0 mt-0.5 text-ink-3">
-                  {isActive ? (
+                  {isActive && (status === "todo" || !problemLessons.has(l.id)) ? (
                     <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
                   ) : (
                     <LessonStatusIcon status={status} />
@@ -743,6 +783,9 @@ const LessonToc = ({
                       </>
                     ) : null}
                   </div>
+                  {lockReason ? (
+                    <div className="mt-1 text-[11px] font-normal text-ink-3">{lockReason}</div>
+                  ) : null}
                 </div>
               </button>
             );
@@ -826,18 +869,27 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
  * とする。 開いた時点で進捗行も作る (作らないと、 完了ボタンを押すまでサイドバーで
  * 「読みかけ」に見えず、 「続きから」の遷移先もこのレッスンを飛ばしてしまう)。
  */
-const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: () => void }) => {
+const LessonReadable = ({
+  lesson,
+  onComplete,
+  afterContent,
+}: {
+  lesson: Lesson;
+  onComplete?: () => void;
+  afterContent?: ReactNode;
+}) => {
   const { entry, markVisited } = useLessonProgress(lesson.id);
   const endRef = useRef<HTMLDivElement>(null);
   const isCompleted = entry?.completed === true;
 
+  const trackProgress = Boolean(onComplete);
   useEffect(() => {
-    markVisited();
-  }, [markVisited]);
+    if (trackProgress) markVisited();
+  }, [markVisited, trackProgress]);
 
   useEffect(() => {
     const el = endRef.current;
-    if (!el || isCompleted || !lesson.markdown) return;
+    if (!el || !onComplete || isCompleted || !lesson.markdown) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) onComplete();
     });
@@ -857,20 +909,24 @@ const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
       )}
 
       <div ref={endRef} aria-hidden="true" />
-      <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-        <div className="flex-1" />
-        {isCompleted ? (
-          <span className="inline-flex items-center gap-1 text-success text-[12px]">
-            <Check size={13} aria-hidden="true" />
-            完了済み
-          </span>
-        ) : (
-          <Button variant="accent" onClick={onComplete}>
-            <Check size={13} aria-hidden="true" />
-            完了にする
-          </Button>
-        )}
-      </div>
+      {onComplete ? (
+        <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+          <div className="flex-1" />
+          {isCompleted ? (
+            <span className="inline-flex items-center gap-1 text-success text-[12px]">
+              <Check size={13} aria-hidden="true" />
+              完了済み
+            </span>
+          ) : (
+            <Button variant="accent" onClick={onComplete}>
+              <Check size={13} aria-hidden="true" />
+              完了にする
+            </Button>
+          )}
+        </div>
+      ) : (
+        afterContent
+      )}
     </div>
   );
 };

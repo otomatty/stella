@@ -121,8 +121,9 @@ function migratedDb(): DatabaseSync {
   db.exec("pragma foreign_keys = off");
   for (const name of readdirSync(migrations)
     .filter((n) => n.endsWith(".sql"))
-    .sort())
+    .sort()) {
     db.exec(readFileSync(join(migrations, name), "utf8"));
+  }
   db.exec("pragma foreign_keys = on");
   return db;
 }
@@ -406,6 +407,54 @@ describe("seed の書き込み行数", () => {
     });
     // fixtures / problems を丸ごと in-process で読み込むので既定の 5s では足りない。
   }, 120_000);
+
+  it(
+    "進捗の版を付けた動画4本だけ UUID が変わり、再 seed が旧動画と進捗を片付ける",
+    async () => {
+      const stageSlug = "devlab-ts-ch01";
+      const topics = ["1-1-1", "1-1-2", "1-1-3", "1-1-4"];
+      const uuid = (key: string) => stableUuid(`lesson:ses:${stageSlug}:${key}`);
+      const oldIds = topics.map(uuid);
+      const newIds = topics.map((topic) => uuid(`${topic}@r2`));
+      const baseline = await exportSql((manifest) => {
+        const stage = manifest.stages.find((entry) => entry.id === stageSlug);
+        for (const lesson of stage?.sections?.flatMap((section) => section.lessons) ?? []) {
+          if (topics.includes(lesson.id)) delete lesson.progressRevision;
+        }
+      });
+
+      const db = migratedDb();
+      try {
+        apply(db, baseline);
+        const lessonIds = () =>
+          new Set(
+            db
+              .prepare("select id from lessons")
+              .all()
+              .map((row) => row.id),
+          );
+        const before = lessonIds();
+        for (const id of oldIds) expect(before.has(id)).toBe(true);
+        const progressIds = [...oldIds, uuid("1-1-5"), lessonId];
+        const insert = db.prepare(
+          "insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at) values (?, 'ses', 'seed-learner', ?, 1, 1) on conflict (user_id, lesson_id) do update set completed = 1",
+        );
+        for (const id of progressIds) insert.run(id, id);
+        apply(db, sql);
+        const after = lessonIds();
+        expect([...before].filter((id) => !after.has(id)).sort()).toEqual(oldIds.sort());
+        expect([...after].filter((id) => !before.has(id)).sort()).toEqual(newIds.sort());
+        const completed = db.prepare(
+          "select completed from lesson_progress where user_id = 'seed-learner' and lesson_id = ?",
+        );
+        for (const id of [...oldIds, ...newIds]) expect(completed.get(id)).toBeUndefined();
+        for (const id of progressIds.slice(4)) expect(completed.get(id)?.completed).toBe(1);
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
 
   it("どの文も D1 の 1 文の上限に収まる (Node の課題は lockfile を配るので配布一式が大きい)", () => {
     const statements = splitSqlStatements(sql);

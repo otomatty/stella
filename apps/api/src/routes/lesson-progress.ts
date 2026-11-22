@@ -80,7 +80,7 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
 
     // 不正行の除去と同一 lesson_id の集約 (SQLite の upsert は 1 文で同じ行を 2 度
     // 更新できないため、 重複を残すとリクエストごと失敗する)。
-    const { rows, reviewedLessonIds } = await reviewedProgressRows(
+    const { rows, reviewedLessonIds, problemStepLessonIds } = await reviewedProgressRows(
       db,
       caller.id,
       normalizeProgressRows(inputs),
@@ -88,7 +88,7 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
     if (rows.length === 0) return c.json({ ok: true, written: 0 });
     assertProgressSyncSize(rows.length);
 
-    // レビューの合格が無いので未完了に揃えたコードレッスンのうち、 いま完了で保存されて
+    // 合格や提出が無いので未完了に揃えたレッスンのうち、いま完了で保存されて
     // いるもの (= レビュー必須になる前に自己申告で完了した行)。 この同期で完了が外れうる。
     const completedBefore = await storedCompletedLessonIds(
       db,
@@ -96,7 +96,7 @@ lessonProgressRoute.post("/api/lesson-progress", async (c) => {
       rows.filter((r) => reviewedLessonIds.has(r.lessonId) && !r.completed).map((r) => r.lessonId),
     );
 
-    await executeLessonProgressWrites(db, caller.id, rows);
+    await executeLessonProgressWrites(db, caller.id, rows, problemStepLessonIds);
 
     // 実際に完了が外れた (LWW で勝った) レッスンのステージは、 添削の verdict 訂正と
     // 同じく修了条件を再判定し、 満たさなくなった自動発行の修了証と completed の

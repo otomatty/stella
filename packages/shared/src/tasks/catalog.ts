@@ -1,3 +1,4 @@
+import type { TaskProblemStepSummary } from "./problem-steps.js";
 import {
   isSafeRelativePattern,
   parseTaskManifest,
@@ -40,6 +41,8 @@ export interface TaskSummary {
   lessonId: string | null;
   /** 問題つきの課題だけ。今の版の問題数。 */
   problems_total?: number;
+  /** 動画と提出で順に出す問題。レッスン一覧の順で返す。 */
+  problems?: TaskProblemStepSummary[];
   /** 問題つきの課題だけ。提出済みの問題数。 */
   problems_passed?: number;
   /** 済みに数える問題のうち、管理者が手で済みにした数。 */

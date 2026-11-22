@@ -1,70 +1,70 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-typescriptbook-functions-function-declaration]
+sourceRefs: [SRC-typescriptbook-functions-function-declaration]
 id: 1-1-1
-title: 問題の読み方
-takeaway: "関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。"
-introduces: ["関数", "引数", "戻り値", "return", "型注釈", "number", "export", "function", "文字列"]
+progressRevision: 2
+title: 関数のしくみ
+takeaway: "関数は、値を受け取り、決まった処理をして、値を返すまとまりです。"
+introduces: ["関数", "引数", "戻り値", "return", "function"]
 requires: []
 header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-1 問題の読み方
+# 1-1-1 関数のしくみ
 
-<!-- ノート: 問題の読み方を、コードと値の動きで確かめます。 -->
+<!-- ノート: 関数のしくみを、身近な例とコードで確かめます。 -->
 
 ---
 
-# 注文数をどこで受け取る？
+# 送料はだれが足す？
 
-注文した数を、コードで確かめたいとき。
+ネットのお店で本を買うと、値段に送料が足されます。
 
-どこが入力で、どこが出力でしょうか。
+この決まった計算を、コードではどう書くのでしょうか。
 
-<!-- ノート: 関数の外側には、受け取るものと返すものの決まりがあります。ここでは答えをまだ示しません。 -->
+<!-- ノート: 値段を受け取り、送料を足して、支払う金額を返す流れを問いにします。答えはまだ言いません。 -->
 
 ---
 
 # 覚えること
 
-関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。
+関数は、値を受け取り、決まった処理をして、値を返すまとまりです。
 
 引数は受け取る値、戻り値は返す値です。
 
-<!-- ノート: function は関数を作る印、export は別のファイルから使えるようにする印です。quantity は引数の名前です。型注釈は値の種類を示します。かっこの中の number は入力、後ろの number は出力の型です。return は値を返して関数を終えます。 -->
+<!-- ノート: function は関数を作る印で、その後ろが自分で付けた名前です。かっこの中の price が引数で、受け取る値に付けた名前です。波かっこの間に処理を書き、return が右の値を返します。コロンと number は次のトピックで扱います。 -->
 
 ---
 
-# 書き方を読む
+# 送料を足す関数を読む
 
 ```ts
-// 注文数を受け取り、その数を返す関数を作る
-export function confirmedQuantity(quantity: number): number {
-  // 受け取った数を返す
-  return quantity;
-  // 関数の中身はここまで
+// 本の値段を受け取り、支払う金額を返す関数
+function addShipping(price: number): number {
+  // 受け取った値段に、送料の 500 を足して返す
+  return price + 500;
 }
 ```
 
-<!-- ノート: function は関数を作る印、export は別のファイルから使えるようにする印です。quantity は引数の名前です。型注釈は値の種類を示します。かっこの中の number は入力、後ろの number は出力の型です。return は値を返して関数を終えます。 -->
+<!-- ノート: function は関数を作る印で、その後ろが自分で付けた名前です。かっこの中の price が引数で、受け取る値に付けた名前です。波かっこの間に処理を書き、return が右の値を返します。コロンと number は次のトピックで扱います。 -->
 
 ---
 
-# よくある間違い
+# 名前は自分で決める
 
-数値の `3` と、文字列の `"3"` は別の値です。
+`function` と `return` は、言語で決まっている書き方です。
 
-数値の引数に文字列を渡すと、型のエラーになります。
+`addShipping` と `price` は、書く人が自分で付けた名前です。何をする関数かが分かる名前にします。
 
-参考: [サバイバルTypeScript: 型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)・[サバイバルTypeScript: 関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。説明と例は教材用に独自作成しています。
+参考: サバイバルTypeScript [関数宣言](https://typescriptbook.jp/reference/functions/function-declaration)。説明と例は教材用に独自作成しています。
 
-<!-- ノート: confirmedQuantity(3) は 3 を返します。問題は関数の中だけを書きます。問1のテストは addTax(1000) が1100、addTax(980) が1078、addTax(5) が5です。外側の名前や型を変えず、return を書いてみましょう。 -->
+<!-- ノート: add は足す、shipping は送料、price は値段という意味の英語です。足す数の 500 も、書く人が決めた値です。 -->
 
 ---
 
 <!-- _class: summary -->
 # まとめ
 
-関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。
+関数は、値を受け取り、決まった処理をして、値を返すまとまりです。
 
-<!-- ノート: 関数の形とテストの値を読むと、中に書く処理の入口と出口が分かります。 -->
+<!-- ノート: 関数は、値を受け取り、決まった処理をして、値を返すまとまりです。 -->

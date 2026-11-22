@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { TaskStatus, TaskSummary } from "@stella/shared/tasks/catalog";
 
+import type { ProblemStepState, TaskProblemStepSummary } from "@stella/shared/tasks/problem-steps";
+
 import { stageWrapupOf } from "./stage-wrapup";
 
 const task = (id: string, status: TaskStatus, over: Partial<TaskSummary> = {}): TaskSummary => ({
@@ -96,5 +98,59 @@ describe("stageWrapupOf", () => {
     expect(working?.detail).not.toContain("レビューで合格");
     expect(waiting?.detail).not.toContain("レビューで合格");
     expect(fresh?.detail).not.toContain("レビューで合格");
+  });
+});
+
+describe("動画と提出で解放する課題の仕上げ", () => {
+  const step = (id: string, state: ProblemStepState): TaskProblemStepSummary => ({
+    id,
+    state,
+    label: "問1",
+    title: "税込価格を返す",
+    stepLessonId: `step-${id}`,
+    afterLessonId: `video-${id}`,
+    afterTitle: "関数の返り値",
+  });
+
+  it("並び順で先頭の解ける問題を、未視聴の動画より先に案内する", () => {
+    const wrapup = stageWrapupOf([
+      task("a", "not-started", {
+        problems_total: 4,
+        problems: [
+          step("done", "submitted"),
+          step("locked", "locked-video"),
+          step("first", "open"),
+          step("second", "open"),
+        ],
+      }),
+    ]);
+    expect(wrapup).toMatchObject({
+      learnerTurn: true,
+      nextLesson: { id: "step-first", action: "問題を開く" },
+    });
+    expect(wrapup?.detail).toContain("問1 税込価格を返す");
+  });
+
+  it("解ける問題がなければ、その原因の動画を案内する", () => {
+    const wrapup = stageWrapupOf([
+      task("a", "not-started", {
+        problems_total: 2,
+        problems: [step("earlier", "locked-video"), step("later", "locked-previous")],
+      }),
+    ]);
+    expect(wrapup).toMatchObject({
+      learnerTurn: true,
+      nextLesson: { id: "video-earlier", action: "動画を見る" },
+    });
+    expect(wrapup?.detail).toContain("「関数の返り値」の動画を見ると解けます");
+  });
+
+  it("解ける問題も未視聴の動画もなければ課題の起動を案内しない", () => {
+    const wrapup = stageWrapupOf([
+      task("a", "not-started", { problems: [step("done", "submitted")] }),
+    ]);
+    expect(wrapup?.learnerTurn).toBe(false);
+    expect(wrapup?.nextLesson).toBeUndefined();
+    expect(wrapup?.detail).toContain("すべて提出済み");
   });
 });
