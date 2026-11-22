@@ -90,8 +90,11 @@ export function readProblems(
 }
 
 // ponytail: 正規表現なのでコメントの中の import も拾う。控えるファイルが増えるだけで、見落としにはならない。
-const RELATIVE_IMPORT =
-  /\b(?:import\s+(?:[^'";]*?\s+from\s*)?|export\s+[^'";]*?\s+from\s*|(?:import|require)\s*\(\s*)(["'])(\.{1,2}\/[^"'\r\n]+)\1/g;
+const FROM = String.raw`from(?:\s|/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//[^\r\n]*(?:\r\n?|\n))*`;
+const RELATIVE_IMPORT = new RegExp(
+  String.raw`\b(?:import\s+(?:[^'";]*?\s+${FROM})?|export\s+[^'";]*?\s+${FROM}|(?:import|require)\s*\(\s*)(["'])(\.{1,2}/[^"'\r\n]+)\1`,
+  "g",
+);
 
 export function relativeImportSpecifiers(code: string): string[] {
   return Array.from(code.matchAll(RELATIVE_IMPORT), (match) => match[2] ?? "");
@@ -112,9 +115,14 @@ export function resolveRelativeImport(
     } else parts.push(segment);
   }
   const path = parts.join("/");
-  return [path, `${path}.ts`, `${path}.tsx`, path.replace(/\.js$/, ".ts"), `${path}/index.ts`].find(
-    (candidate) => files.has(candidate),
-  );
+  return [
+    path,
+    `${path}.ts`,
+    `${path}.tsx`,
+    path.replace(/\.js$/, ".ts"),
+    `${path}/index.ts`,
+    `${path}/index.tsx`,
+  ].find((candidate) => files.has(candidate));
 }
 
 const explanationFiles = new Set([

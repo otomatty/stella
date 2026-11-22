@@ -93,6 +93,61 @@ describe("合格に数える問題", () => {
     ).toEqual(new Set(["q01-add", "q02-sub"]));
   });
 
+  it("共有ファイルをたどり、各参照元を提出した版の指紋も比べる", () => {
+    const files = new Set([
+      "src/q1.ts",
+      "src/q2.ts",
+      "src/q3.ts",
+      "helpers/bridge.ts",
+      "helpers/cycle.ts",
+    ]);
+    const owners = new Map(["q1", "q2", "q3"].map((id) => [`src/${id}.ts`, id]));
+    const distributedCode = {
+      "helpers/bridge.ts": btoa('import "./cycle"; export { value } from "../src/q2";'),
+      "helpers/cycle.ts": btoa('import "./bridge";'),
+    };
+    const revision = (q3: string) => ({
+      files,
+      owners,
+      distributedCode,
+      hashes: { q1: "same1", q2: "same2", q3 },
+    });
+    const versions = new Map([
+      ["v1", revision("a")],
+      ["v2", revision("a")],
+      [CURRENT, revision("a")],
+    ]);
+    const saved = [
+      {
+        problemId: "q1",
+        contentHash: "v1",
+        path: "src/q1.ts",
+        code: 'import "../helpers/bridge";',
+        source: "tests",
+      },
+      {
+        problemId: "q2",
+        contentHash: "v2",
+        path: "src/q2.ts",
+        code: 'import "./q3";',
+        source: "tests",
+      },
+      {
+        problemId: "q3",
+        contentHash: CURRENT,
+        path: "src/q3.ts",
+        code: "export {};",
+        source: "tests",
+      },
+    ] as const;
+    expect(countedProblemIds(saved, CURRENT, false, versions)).toEqual(new Set(["q1", "q2", "q3"]));
+    expect(countedProblemIds([saved[0], saved[2]], CURRENT, false, versions)).toEqual(
+      new Set(["q3"]),
+    );
+    versions.set("v2", revision("changed"));
+    expect(countedProblemIds(saved, CURRENT, false, versions)).toEqual(new Set(["q3"]));
+  });
+
   it("合格済みの課題は前の版の結果も数える", () => {
     expect(countedProblemIds(rows, CURRENT, true)).toEqual(new Set(["q01-add", "q02-sub"]));
   });
@@ -676,6 +731,51 @@ describe("問題の提出", () => {
       ]);
       expect(await db.select().from(certificates)).toHaveLength(1);
       expect(await db.select().from(skillEvidence)).toHaveLength(source === "manual" ? 0 : 1);
+    },
+  );
+
+  it.each(["problem-results", "for-stage"] as const)(
+    "%s は引き継ぎの確定直前に手動完了を取り消しても、最新の件数を返す",
+    async (endpoint) => {
+      const problems = [...PROBLEMS, THIRD_PROBLEM];
+      await useOriginalProblems(problems);
+      expect((await manual(["q01-add"])).status).toBe(200);
+      expect((await post(await problemInput(CURRENT, problems, "q02-sub"))).status).toBe(201);
+      await replaceProblems(PROBLEMS);
+      const review = taskSubmission.reviewTaskSubmission;
+      const finalize = vi
+        .spyOn(taskSubmission, "reviewTaskSubmission")
+        .mockImplementationOnce(async (...args) => {
+          expect((await manual(["q01-add"], true)).status).toBe(200);
+          expect(await db.select().from(submissions)).toEqual([]);
+          return review(...args);
+        });
+      try {
+        const response =
+          endpoint === "problem-results"
+            ? await problemResults()
+            : await request(app(), env, "/api/tasks/for-stage/stage", { token });
+        expect(response.status, await response.clone().text()).toBe(200);
+        const body = await response.json();
+        if (endpoint === "problem-results") {
+          expect(body).toMatchObject({
+            taskPassed: false,
+            passedProblems: 1,
+            problems: [
+              { id: "q01-add", status: "not-submitted" },
+              { id: "q02-sub", status: "passed" },
+            ],
+          });
+        } else {
+          expect(body).toMatchObject({
+            tasks: [{ id: TASK_ID, status: "local-passed", problems_passed: 1 }, {}],
+          });
+        }
+        expect(finalize).toHaveBeenCalledTimes(1);
+        expect(await db.select().from(submissions)).toEqual([]);
+      } finally {
+        finalize.mockRestore();
+      }
     },
   );
 

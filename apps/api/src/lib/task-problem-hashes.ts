@@ -17,6 +17,7 @@ type ProblemHashes = Readonly<Record<string, string>>;
 interface ProblemPaths {
   files: ReadonlySet<string>;
   owners: ReadonlyMap<string, string>;
+  distributedCode?: Readonly<Record<string, string>>;
 }
 interface ProblemRevision extends ProblemPaths {
   hashes: ProblemHashes;
@@ -31,6 +32,8 @@ export interface SavedProblemResult {
   path?: string | null;
   code?: string | null;
   historicalDependencies?: readonly string[] | null;
+  /** 連携 API は現行版のコードを読まず、提出時に控えた依存だけを使う。 */
+  currentDependencies?: readonly string[] | null;
 }
 
 function problemPaths(files: Iterable<string>, problemIds: Iterable<string>): ProblemPaths {
@@ -53,31 +56,57 @@ function directProblemDependencies(
 ): string[] | null {
   if (!revision.files.has(path) || comparisons.some((other) => !other.files.has(path))) return null;
   const dependencies = new Set<string>();
-  for (const specifier of specifiers) {
-    const resolved = resolveRelativeImport(path, specifier, revision.files);
-    if (
-      !resolved ||
-      comparisons.some(
-        (other) =>
-          resolveRelativeImport(path, specifier, other.files) !== resolved ||
-          other.owners.get(resolved) !== revision.owners.get(resolved),
+  const visited = new Set([path]);
+  const pending = [{ path, specifiers }];
+  for (const entry of pending) {
+    for (const specifier of entry.specifiers) {
+      const resolved = resolveRelativeImport(entry.path, specifier, revision.files);
+      if (
+        !resolved ||
+        comparisons.some(
+          (other) =>
+            resolveRelativeImport(entry.path, specifier, other.files) !== resolved ||
+            other.owners.get(resolved) !== revision.owners.get(resolved),
+        )
       )
-    )
-      return null;
-    const owner = revision.owners.get(resolved);
-    if (owner && owner !== revision.owners.get(path)) dependencies.add(owner);
+        return null;
+      const owner = revision.owners.get(resolved);
+      if (owner) {
+        if (owner !== revision.owners.get(path)) dependencies.add(owner);
+        continue;
+      }
+      if (visited.has(resolved) || !isDistributedScript(resolved)) continue;
+      visited.add(resolved);
+      const encoded = revision.distributedCode?.[resolved];
+      if (encoded === undefined) return null;
+      try {
+        const text = new TextDecoder().decode(
+          Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0)),
+        );
+        pending.push({ path: resolved, specifiers: relativeImportSpecifiers(text) });
+      } catch {
+        return null;
+      }
+    }
   }
   return [...dependencies].sort();
+}
+
+function isDistributedScript(path: string) {
+  return /\.[cm]?[jt]sx?$/.test(path);
 }
 
 export function submittedProblemDependencies(bundle: TaskBundle, path: string, code: string) {
   return directProblemDependencies(
     path,
     path.endsWith(".ts") ? relativeImportSpecifiers(code) : [],
-    problemPaths(
-      Object.keys(bundle.files),
-      (bundle.manifest.problems ?? []).map((problem) => problem.id),
-    ),
+    {
+      ...problemPaths(
+        Object.keys(bundle.files),
+        (bundle.manifest.problems ?? []).map((problem) => problem.id),
+      ),
+      distributedCode: bundle.files,
+    },
   );
 }
 
@@ -121,11 +150,13 @@ export function countableProblemResults<T extends SavedProblemResult>(
     const visited = new Set([row.problemId]);
     for (const result of pending) {
       if (result.source === "manual") return false;
-      let dependencies = result.historicalDependencies;
+      const submittedRevision = revisions?.get(result.contentHash);
+      if (!submittedRevision) return false;
+      let dependencies =
+        result.historicalDependencies ??
+        (result.contentHash === currentHash ? result.currentDependencies : null);
       if (dependencies == null) {
         if (result.path == null || result.code == null) return false;
-        const submittedRevision = revisions?.get(result.contentHash);
-        if (!submittedRevision) return false;
         let specifiers = imports.get(result);
         if (!specifiers) {
           specifiers = result.path.endsWith(".ts") ? relativeImportSpecifiers(result.code) : [];
@@ -138,14 +169,15 @@ export function countableProblemResults<T extends SavedProblemResult>(
         if (dependencies === null) return false;
       }
       for (const dependency of dependencies) {
-        if (visited.has(dependency)) continue;
         const submitted = byId.get(dependency);
         if (
           !submitted ||
           !sameProblemHash(dependency, current, original) ||
+          !sameProblemHash(dependency, current, submittedRevision) ||
           !sameProblemHash(dependency, current, revisions?.get(submitted.contentHash))
         )
           return false;
+        if (visited.has(dependency)) continue;
         visited.add(dependency);
         pending.push(submitted);
       }
@@ -225,12 +257,17 @@ export async function loadProblemRevisionHashes(
     definition: string | null;
     bundle: string | null;
     paths: string;
+    scripts: string;
   }>(sql`
     select r.task_id, r.content_hash, r.problem_hashes,
       case when r.problem_hashes is null then r.definition end definition,
       case when r.problem_hashes is null then r.bundle end bundle,
       (select json_group_array(f.key)
-       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f) paths
+       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f) paths,
+      (select json_group_object(f.key, f.value)
+       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f
+       where f.key glob '*.[jt]s' or f.key glob '*.[jt]sx'
+          or f.key glob '*.[cm][jt]s' or f.key glob '*.[cm][jt]sx') scripts
     from json_each(${JSON.stringify(keys)}) k
     join task_revisions r on r.task_id = json_extract(k.value, '$[0]')
       and r.content_hash = json_extract(k.value, '$[1]')
@@ -249,6 +286,7 @@ export async function loadProblemRevisionHashes(
     if (!hashes) continue;
     cache.get(row.task_id)?.set(row.content_hash, {
       hashes,
+      distributedCode: JSON.parse(row.scripts) as Record<string, string>,
       ...problemPaths(JSON.parse(row.paths) as string[], Object.keys(hashes)),
     });
     if (row.problem_hashes === null) {

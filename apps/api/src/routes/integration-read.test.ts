@@ -324,6 +324,55 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       }
     },
   );
+  it("連携の集計は上限を超える旧版コードを数えず、現行版の依存は保存済みIDでたどる", async () => {
+    const db = getDb(env);
+    const taskId = "task-stage";
+    const definition = JSON.stringify({
+      problems: [
+        { id: "q1", title: "問1" },
+        { id: "q2", title: "問2" },
+      ],
+    });
+    const bundle = JSON.stringify({ files: { "src/q1.ts": "", "src/q2.ts": "" } });
+    const problemHashes = JSON.stringify({ q1: "a".repeat(64), q2: "b".repeat(64) });
+    const revisions = ["old", "current"].map((contentHash) => ({
+      taskId,
+      contentHash,
+      definition,
+      bundle,
+      problemHashes,
+    }));
+    await db.insert(taskRevisions).values(revisions);
+    sqlite.sqlite.exec(`
+      update task_progress set status='local-passed' where user_id='inside' and task_id='task-stage';
+      update task_problem_results set source='tests', path='src/q1.ts', code='import "./q2";'
+        where user_id='inside' and task_id='task-stage' and problem_id='q1';
+      update task_problem_results set source='tests', path='src/q2.ts', content_hash='current',
+        code='import "./missing";', problem_dependencies='[]'
+        where user_id='inside' and task_id='task-stage' and problem_id='q2';
+    `);
+    const expectCount = async (count: number) => {
+      const current = (await progress()).members[0]?.stages[0]?.units[0]?.tasks[0];
+      expect(current?.problems?.passed).toBe(count);
+      const last = (await events()).events
+        .filter((event) => event.type === "problems_passed")
+        .at(-1);
+      expect(last).toMatchObject({ problemsPassed: count });
+    };
+    await expectCount(2);
+    sqlite.sqlite
+      .prepare(`
+      update task_problem_results set code=?
+      where user_id='inside' and task_id='task-stage' and problem_id='q1'
+    `)
+      .run(`import "./q2"; /* ${"字".repeat(22_000)} */`);
+    await expectCount(1);
+    sqlite.sqlite.exec(
+      "update task_progress set status='passed' where user_id='inside' and task_id='task-stage'",
+    );
+    await expectCount(2);
+  });
+
   it("段の自動修了を取り消して再修了しても、締切時点の修了日時を保つ", async () => {
     const db = getDb(env);
     await db.insert(profiles).values({ id: "teacher", displayName: "架空の管理者", role: "admin" });

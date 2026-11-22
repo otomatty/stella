@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { evaluateSkillMap, isRevealOneAtATimeIsland } from "@stella/shared/skill-map/evaluate";
 import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
@@ -60,6 +60,8 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     return true;
   });
   if (visibleGrants.length === 0) return { stages: [] };
+  const stageIds = JSON.stringify(visibleGrants.map((grant) => grant.stage_id));
+  const displayedStage = sql`${sections.stageId} in (select value from json_each(${stageIds}))`;
   const taskRows = await db
     .select({
       stageId: sections.stageId,
@@ -70,10 +72,6 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .innerJoin(
-      stageGrants,
-      and(eq(stageGrants.stageId, sections.stageId), eq(stageGrants.profileId, caller.id)),
-    )
     .leftJoin(
       taskRevisions,
       and(eq(taskRevisions.taskId, tasks.id), eq(taskRevisions.contentHash, tasks.contentHash)),
@@ -82,7 +80,7 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
       taskProgress,
       and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, caller.id)),
     )
-    .where(and(eq(tasks.active, true), isNull(tasks.variantOf)));
+    .where(and(displayedStage, eq(tasks.active, true), isNull(tasks.variantOf)));
   const results = await db
     .select({
       taskId: taskProblemResults.taskId,
@@ -95,12 +93,9 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     .from(taskProblemResults)
     .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .innerJoin(
-      stageGrants,
-      and(eq(stageGrants.stageId, sections.stageId), eq(stageGrants.profileId, caller.id)),
-    )
     .where(
       and(
+        displayedStage,
         eq(taskProblemResults.userId, caller.id),
         eq(tasks.active, true),
         isNull(tasks.variantOf),

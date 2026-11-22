@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import type {
   IntegrationProgress,
   IntegrationEvent,
@@ -56,6 +56,7 @@ interface ProblemRow {
   path: string | null;
   code: string | null;
   dependenciesJson?: string | null;
+  currentDependenciesJson?: string | null;
 }
 function problemSummary(
   definition: string,
@@ -73,6 +74,7 @@ function problemSummary(
     rows.map((row) => ({
       ...row,
       historicalDependencies: readProblemDependencies(row.dependenciesJson ?? null),
+      currentDependencies: readProblemDependencies(row.currentDependenciesJson ?? null),
     })),
     hash,
     taskPassed,
@@ -84,6 +86,36 @@ function problemSummary(
   }
   return { total: problems.length, passed: sources.size, sources: [...new Set(sources.values())] };
 }
+
+// 1 問の受付上限に合わせ、連携 API の 1 ページにもコードの総量の上限を設ける。
+const MAX_PROBLEM_CODE_BYTES = 64 * 1024;
+const MAX_PAGE_CODE_BYTES = 4 * 1024 * 1024;
+const storedCodeBytes = sql`length(cast(r.code as blob))`;
+
+function problemCodeBytes(needed: SQL) {
+  return sql`case when ${needed} then
+    case when ${storedCodeBytes} <= ${MAX_PROBLEM_CODE_BYTES} then ${storedCodeBytes} end
+  end`;
+}
+
+function boundedProblemResults(candidates: SQL) {
+  return sql`select b.user_id,b.task_id,b.problemId,b.contentHash,b.source,b.firstPassedAt,
+      b.dependenciesJson,b.currentDependenciesJson,r.path,r.code
+    from (
+      select c.*,sum(c.codeBytes) over (
+        order by c.user_id,c.task_id,c.problemId,c.contentHash rows unbounded preceding
+      ) totalCodeBytes
+      from (${candidates}) c
+    ) b
+    left join task_problem_results r on b.codeBytes is not null
+      and b.totalCodeBytes <= ${MAX_PAGE_CODE_BYTES} and r.rowid=b.resultRowId
+    order by case when b.sequence<>0 then b.firstPassedAt end desc,b.sequence desc,b.problemId`;
+}
+const liveProblemCandidate = sql`r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,
+  r.source,r.first_passed_at firstPassedAt,0 sequence,null dependenciesJson,
+  case when r.content_hash=t.content_hash then r.problem_dependencies end currentDependenciesJson,
+  r.rowid resultRowId,
+  ${problemCodeBytes(sql`r.source='tests' and r.content_hash<>t.content_hash and coalesce(tp.status,'') not in ('passed','ai-passed')`)} codeBytes`;
 
 /** 固定回数のクエリ。各クエリで同じメンバーページとグループのステージを結合する。 */
 export async function readIntegrationProgress(
@@ -119,6 +151,24 @@ export async function readIntegrationProgress(
     sql`select p.*, ${at === null ? lastLearningDate(sql`p.id`) : sql`null`} last_active from (${page}) p`,
   );
   const stageRows = await db.all<{ id: string; slug: string }>(sql`${scope} order by s.slug,s.id`);
+  const historicalPasses = sql`with history as (
+            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,e.submission_attempt,e.seq,
+              sum(case when e.type='task_pass_revoked' then 1 else 0 end) over (
+                partition by e.user_id,e.task_id,e.submission_id order by e.occurred_at,e.seq
+              ) pass_period
+            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+            where e.type in ('task_passed','task_pass_revoked') and e.occurred_at <= ${at}
+          ), decisions as (
+            select *,min(case when type='task_passed' then reviewed_at end) over (
+                partition by user_id,task_id,id,pass_period
+              ) first_passed_at,
+              row_number() over (partition by user_id,task_id,id order by reviewed_at desc,seq desc) position
+            from history
+          ), remaining as (
+            select *,min(first_passed_at) over (partition by user_id,task_id) task_passed_at,
+              row_number() over (partition by user_id,task_id order by submission_attempt desc,id) chosen
+            from decisions where position=1 and type='task_passed'
+          ) select user_id,task_id,id,source,task_passed_at reviewed_at,type from remaining where chosen=1`;
   const [enrolled, taskRows, progress, passes, problems, more] = await Promise.all([
     db.all<{
       user_id: string;
@@ -167,36 +217,32 @@ export async function readIntegrationProgress(
     }>(
       at === null
         ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
-        : sql`with history as (
-            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,e.submission_attempt,e.seq,
-              sum(case when e.type='task_pass_revoked' then 1 else 0 end) over (
-                partition by e.user_id,e.task_id,e.submission_id order by e.occurred_at,e.seq
-              ) pass_period
-            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type in ('task_passed','task_pass_revoked') and e.occurred_at <= ${at}
-          ), decisions as (
-            select *,min(case when type='task_passed' then reviewed_at end) over (
-                partition by user_id,task_id,id,pass_period
-              ) first_passed_at,
-              row_number() over (partition by user_id,task_id,id order by reviewed_at desc,seq desc) position
-            from history
-          ), remaining as (
-            select *,min(first_passed_at) over (partition by user_id,task_id) task_passed_at,
-              row_number() over (partition by user_id,task_id order by submission_attempt desc,id) chosen
-            from decisions where position=1 and type='task_passed'
-          ) select user_id,task_id,id,source,task_passed_at reviewed_at,type from remaining where chosen=1`,
+        : historicalPasses,
     ),
     db.all<ProblemRow & { user_id: string; task_id: string }>(
-      at === null
-        ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt,r.path,r.code from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
-        : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,r.path,r.code,h.dependenciesJson from (
-            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,e.problem_dependencies dependenciesJson,
-              row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
-            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
-          ) h left join task_problem_results r on r.user_id=h.user_id and r.task_id=h.task_id
+      boundedProblemResults(
+        at === null
+          ? sql`select ${liveProblemCandidate}
+            from task_problem_results r join (${page}) p on p.id=r.user_id
+            join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id
+            left join task_progress tp on tp.user_id=r.user_id and tp.task_id=r.task_id
+            where t.active=1 and t.variant_of is null`
+          : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,h.sequence,
+              h.dependenciesJson,null currentDependenciesJson,r.rowid resultRowId,
+              ${problemCodeBytes(sql`r.rowid is not null`)} codeBytes
+            from (
+              select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,e.problem_dependencies dependenciesJson,
+                row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
+              from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+              where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
+            ) h
+            join tasks t on t.id=h.task_id
+            left join (${historicalPasses}) hp on hp.user_id=h.user_id and hp.task_id=h.task_id
+            left join task_problem_results r on r.user_id=h.user_id and r.task_id=h.task_id
+              and h.source='tests' and h.contentHash<>t.content_hash and hp.user_id is null
               and h.dependenciesJson is null and r.problem_id=h.problemId and r.content_hash=h.contentHash and r.updated_at <= ${at}
-            where h.position=1 and h.type='problem_passed' order by h.firstPassedAt desc,h.sequence desc`,
+            where h.position=1 and h.type='problem_passed' and t.active=1 and t.variant_of is null`,
+      ),
     ),
     db.all<{ id: string }>(
       sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
@@ -327,7 +373,7 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       throw new ApiError("Invalid cursor", 400);
     sequence = p[2];
   }
-  const rows = await db.all<{
+  type EventRow = {
     id: string;
     type: IntegrationEvent["type"];
     time: number;
@@ -343,7 +389,9 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     definition: string | null;
     content_hash: string | null;
     status: string | null;
-  }>(sql`with
+  };
+  type ResultRow = ProblemRow & { user_id: string; task_id: string };
+  const rows = await db.all<(EventRow & { event_row: 1 }) | (ResultRow & { event_row: 0 })>(sql`with
     members as (select m.profile_id,m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
     scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
@@ -356,29 +404,36 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       union all
       select json_array(type,user_id,task_id,occurred_at,min(seq),max(seq)),case when type='problem_passed' then 'problems_passed' else 'problems_revoked' end,occurred_at,max(seq),user_id,external_id,slug,task_id,null,null,count(distinct problem_id),null from numbered where type in ('problem_passed','problem_pass_revoked') group by group_number,type,user_id,task_id,occurred_at
     ),
-    page as (select * from events order by seq limit 501)
-    select page.*, t.definition,t.content_hash,tp.status
-    from page left join tasks t on t.id=page.task_id left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id order by page.seq`);
-  const page = rows.slice(0, 500);
-  const keys = new Set(
-    page
-      .filter((row) => row.type === "problems_passed" || row.type === "problems_revoked")
-      .map((row) => JSON.stringify([row.user_id, row.task_id])),
-  );
-  const results = keys.size
-    ? await db.all<ProblemRow & { key: string }>(sql`
-    select k.value key, r.problem_id problemId, r.content_hash contentHash, r.source,
-      r.first_passed_at firstPassedAt, r.path, r.code
-    from json_each(${JSON.stringify([...keys].map((key) => JSON.parse(key)))}) k
-    join task_problem_results r on r.user_id = json_extract(k.value, '$[0]')
-      and r.task_id = json_extract(k.value, '$[1]')
-  `)
-    : [];
+    page as (select * from events order by seq limit 501),
+    targets as (
+      select distinct user_id,task_id
+      from (select * from page order by seq limit 500)
+      where type in ('problems_passed','problems_revoked')
+    ),
+    problem_rows as (
+      ${boundedProblemResults(sql`select ${liveProblemCandidate}
+        from targets k join task_problem_results r on r.user_id=k.user_id and r.task_id=k.task_id
+        join tasks t on t.id=r.task_id
+        left join task_progress tp on tp.user_id=r.user_id and tp.task_id=r.task_id`)}
+    )
+    select 1 event_row,page.*,t.definition,t.content_hash,tp.status,
+      null problemId,null contentHash,null firstPassedAt,null dependenciesJson,null currentDependenciesJson,null path,null code
+    from page left join tasks t on t.id=page.task_id
+      left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id
+    union all
+    select 0,null,null,null,null,user_id,null,null,task_id,source,null,null,null,null,null,null,
+      problemId,contentHash,firstPassedAt,dependenciesJson,currentDependenciesJson,path,code
+    from problem_rows
+    order by seq`);
+  const eventRows = rows.filter((row) => row.event_row === 1);
+  const page = eventRows.slice(0, 500);
   const byKey = new Map<string, ProblemRow[]>();
-  for (const row of results) {
-    const saved = byKey.get(row.key) ?? [];
+  for (const row of rows) {
+    if (row.event_row === 1) continue;
+    const key = JSON.stringify([row.user_id, row.task_id]);
+    const saved = byKey.get(key) ?? [];
     saved.push(row);
-    byKey.set(row.key, saved);
+    byKey.set(key, saved);
   }
   const problemRows = page.map(
     (row) => byKey.get(JSON.stringify([row.user_id, row.task_id])) ?? [],
@@ -428,6 +483,6 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
   return {
     events,
     next: last ? encodePosition(["events-v2", groupId, last.seq]) : (after ?? null),
-    hasMore: rows.length > 500,
+    hasMore: eventRows.length > 500,
   };
 }

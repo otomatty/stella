@@ -1,4 +1,4 @@
-import { type Handler, Hono } from "hono";
+import { type Context, type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   loadProblemRevisionHashes,
@@ -52,7 +52,10 @@ import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
 
-tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
+async function stageTaskList(
+  c: Context<{ Bindings: Env }, "/api/tasks/for-stage/:stageId">,
+  finalize: boolean,
+): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
     const stageId = c.req.param("stageId");
@@ -226,6 +229,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
         if (
+          finalize &&
           status !== "passed" &&
           status !== "ai-passed" &&
           p?.status !== "resubmit" &&
@@ -245,8 +249,11 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
     ))
       await write;
     let completedTask = false;
+    let refresh = false;
     for (const { summary, contentHash } of possibleCompletions) {
-      if (await completeCarriedProblemTask(db, caller, summary.id, contentHash)) {
+      const completion = await completeCarriedProblemTask(db, caller, summary.id, contentHash);
+      if (completion === "refresh") refresh = true;
+      else if (completion) {
         summary.status = "passed";
         completedTask = true;
       }
@@ -259,16 +266,17 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         ip: clientIp(c),
       });
     }
-    return c.json({ tasks: result });
+    return refresh ? stageTaskList(c, false) : c.json({ tasks: result });
   } catch (err) {
     return errorResponse(c, err);
   }
-});
+}
+tasksRoute.get("/api/tasks/for-stage/:stageId", (c) => stageTaskList(c, true));
 
 /**
  * 問題つきの課題の、本人の問題の状態。一覧は今の版の problems。問題の無い課題は 404。
  */
-tasksRoute.get("/api/tasks/problem-results", async (c) => {
+async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
     const taskId = c.req.query("taskId") ?? "";
@@ -323,6 +331,7 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
     );
     const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
     if (
+      finalize &&
       !taskPassed &&
       progress?.status !== "resubmit" &&
       passedProblems === problems.length &&
@@ -330,7 +339,9 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
         (result) => passedIds.has(result.problemId) && result.contentHash !== row.contentHash,
       )
     ) {
-      taskPassed = await completeCarriedProblemTask(db, caller, row.id, row.contentHash);
+      const completion = await completeCarriedProblemTask(db, caller, row.id, row.contentHash);
+      if (completion === "refresh") return problemResults(c, false);
+      taskPassed = completion;
       if (taskPassed) {
         await autoCompleteStagesIfMet(db, {
           actor: caller,
@@ -392,7 +403,8 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
   } catch (err) {
     return errorResponse(c, err);
   }
-});
+}
+tasksRoute.get("/api/tasks/problem-results", (c) => problemResults(c, true));
 
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・

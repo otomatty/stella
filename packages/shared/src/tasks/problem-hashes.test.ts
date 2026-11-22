@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { TaskManifest } from "./manifest.js";
-import { problemFingerprints } from "./problems.js";
+import {
+  problemFingerprints,
+  relativeImportSpecifiers,
+  resolveRelativeImport,
+} from "./problems.js";
 
 const definition = {
   runner: "ts-test",
@@ -98,6 +102,20 @@ describe("問題の指紋", () => {
     expect(changed.q4).toBe(original.q4);
   });
 
+  it("共有ファイルを経由して問題の指紋を含める", async () => {
+    const withBridge = {
+      ...files,
+      "src/q1.ts": btoa('import "./shared/bridge";'),
+      "src/shared/bridge/index.tsx": btoa('export { value } from "../../q2";'),
+    };
+    const before = await problemFingerprints(definition, withBridge);
+    const after = await problemFingerprints(definition, {
+      ...withBridge,
+      "tests/q2.test.ts": btoa("changed test"),
+    });
+    expect(after.q1).not.toBe(before.q1);
+  });
+
   it("問題の題名と実行手順を指紋に含める", async () => {
     const original = await problemFingerprints(definition, files);
     const renamed = await problemFingerprints(
@@ -120,5 +138,29 @@ describe("問題の指紋", () => {
       files,
     );
     expect(differentChecks.q1).not.toBe(original.q1);
+  });
+});
+
+describe("相対 import", () => {
+  it("from の後ろのブロックコメントと行コメントを読み飛ばす", () => {
+    expect(
+      relativeImportSpecifiers(
+        [
+          'import { a } from /* "dummy" */ "./q2";',
+          'export { b } from // "./dummy"',
+          '  "../q3";',
+          'import { c } from "./q4";',
+        ].join("\n"),
+      ),
+    ).toEqual(["./q2", "../q3", "./q4"]);
+  });
+
+  it("index.tsx に解決し、index.ts や明示のファイルを先に選ぶ", () => {
+    const tsx = "src/bridge/index.tsx";
+    const ts = "src/bridge/index.ts";
+    const direct = "src/bridge.tsx";
+    expect(resolveRelativeImport("src/q1.ts", "./bridge", new Set([tsx]))).toBe(tsx);
+    expect(resolveRelativeImport("src/q1.ts", "./bridge", new Set([tsx, ts]))).toBe(ts);
+    expect(resolveRelativeImport("src/q1.ts", "./bridge", new Set([tsx, ts, direct]))).toBe(direct);
   });
 });

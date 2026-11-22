@@ -269,7 +269,7 @@ export async function completeCarriedProblemTask(
   caller: Caller,
   taskId: string,
   expectedHash: string,
-): Promise<boolean> {
+): Promise<boolean | "refresh"> {
   const locked = await withResourceLock(
     db,
     taskSubmissionLockId(caller.id, taskId),
@@ -387,8 +387,14 @@ export async function completeCarriedProblemTask(
   );
   if (!locked.ran) return false;
   if (locked.value.completionId) {
-    await reviewTaskSubmission(db, caller, locked.value.completionId, "pass", "", "tests");
-    return true;
+    try {
+      await reviewTaskSubmission(db, caller, locked.value.completionId, "pass", "", "tests");
+      return true;
+    } catch (error) {
+      // 手動の済みが取り消されると、確定前の提出が削除される。
+      if (error instanceof ApiError && error.status === 404) return "refresh";
+      throw error;
+    }
   }
   return locked.value.passed;
 }
