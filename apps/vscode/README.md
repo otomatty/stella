@@ -145,7 +145,7 @@ bun run package
 
 Marketplace の説明は `MARKETPLACE.md`（受講者向け）。この `README.md` は開発者向けで、`--readme-path` で差し替えるため `.vscodeignore` で外している。
 
-公開は GitHub Actions が行う。`apps/vscode` の変更が main に入ると、`release-vscode.yml` が検証のあと VSIX を GitHub Release に添付し、その版が Marketplace に無ければ `vsce publish --oidc --packagePath` で公開する。認証は OpenID Connect の Trusted Publishing で、PAT はリポジトリに置かない。vsce が使うグローバルな PAT は 2026-12-01 に Azure DevOps から廃止される。同じ版は `--skip-duplicate` で飛ばし、Release の VSIX だけを上書きする。新しい版を出すときは `package.json` の `version` を上げる。
+公開は GitHub Actions が行う。`apps/vscode` の変更が main に入ると、`release-vscode.yml` が検証のあと VSIX を GitHub Release に添付し、その版が Marketplace に無ければ `vsce publish --oidc --packagePath` で公開する。認証は OpenID Connect の Trusted Publishing で、PAT はリポジトリに置かない。vsce が使うグローバルな PAT は 2026-12-01 に Azure DevOps から廃止される。同じ版の再 push では Release の VSIX だけを差し替え、本文を保持する。Marketplace に掲載済みなら `--skip-duplicate` で公開を飛ばす。新しい版を出すときは `package.json` の `version` を上げ、同じ PR で `CHANGELOG.md` にその版の節を足す。
 
 **初回だけ:**
 
