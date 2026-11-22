@@ -326,6 +326,31 @@ describe("buildTaskHelpHtml", () => {
     expect(html).toContain("index.html:1-2");
     expect(html).toContain("&lt;x&gt;");
   });
+
+  it("AI の再提出の補足は見出しとエスケープした本文を出す", () => {
+    const html = buildTaskHelpHtml({
+      help: help({ status: "resubmit", latestSubmission: { id: "s1", attempt: 2 } }),
+      root: "/work/q01",
+      review: {
+        attempt: 2,
+        submitted_at: "2026-10-05T00:00:00Z",
+        verdict: "resubmit",
+        review_notes: "",
+        ai_suggestions: [],
+        ai_feedback: {
+          verdict: "resubmit",
+          message: "",
+          goodPoints: [],
+          nextSteps: [],
+          findings: [],
+          notes: ["<b>段落を分ける</b>", "文を短くする"],
+        },
+      },
+    });
+    expect(html).toContain(
+      "<p>あわせて直すと良いところ</p><ul><li>&lt;b&gt;段落を分ける&lt;/b&gt;</li><li>文を短くする</li></ul>",
+    );
+  });
 });
 
 describe("課題パネルのコマンド", () => {

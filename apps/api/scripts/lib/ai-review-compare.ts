@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { AI_REVIEW_THRESHOLD_VERSION } from "@stella/shared/review/ai-review";
+import { AI_REVIEW_THRESHOLD_VERSION, isEvidenceKind } from "@stella/shared/review/ai-review";
 import { eq } from "drizzle-orm";
 import type { Db } from "../../src/db/client.js";
 import { submissions } from "../../src/db/schema.js";
@@ -13,7 +13,7 @@ import {
   MAX_REVIEW_INPUT_CHARS,
 } from "../../src/lib/ai-review-prompt.js";
 import type { AiReviewProvider } from "../../src/lib/ai-review-provider.js";
-import { submissionForcedReasons } from "../../src/lib/ai-review.js";
+import { consecutiveAiResubmits, submissionForcedReasons } from "../../src/lib/ai-review.js";
 import type { EvalExample } from "./ai-review-eval.js";
 
 export function parseCompareArgs(args: string[]) {
@@ -45,6 +45,7 @@ export interface PreparedComparison {
   prompt: ReturnType<typeof buildAiReviewPrompt>;
   loaded: LoadedMaterial;
   forced: Awaited<ReturnType<typeof submissionForcedReasons>>;
+  priorAiResubmits: number;
 }
 
 /** 読み出しと API 呼び出しを分ける。dry-run でも同じ教材の版と入力上限を検査する。 */
@@ -63,7 +64,15 @@ export async function prepareComparison(
   if ("failure" in loaded) return { skipped: loaded.failure };
   const prompt = buildAiReviewPrompt(loaded.material);
   if (prompt.variableChars > MAX_REVIEW_INPUT_CHARS) return { skipped: "too-large" };
-  return { example, prompt, loaded, forced: await submissionForcedReasons(db, row) };
+  return {
+    example,
+    prompt,
+    loaded,
+    forced: await submissionForcedReasons(db, row),
+    priorAiResubmits: isEvidenceKind(row.taskKind ?? "basic")
+      ? 0
+      : await consecutiveAiResubmits(db, row),
+  };
 }
 
 /** 合否・進捗・キューへ書かずに、本番と同じ通信と判定を当てる。自動再試行はしない。 */
@@ -75,6 +84,7 @@ export async function compareReview(env: Env, input: PreparedComparison): Promis
     forced: input.forced,
     output: call.ok ? call.output : null,
     lines: input.prompt.lines,
+    priorAiResubmits: input.priorAiResubmits,
   });
   return {
     ...input.example,

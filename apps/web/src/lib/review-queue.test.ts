@@ -4,6 +4,7 @@ import {
   formatWaiting,
   isAiChecking,
   isAiPassed,
+  isAiResubmitted,
   needsHumanReview,
   passByLabel,
   queueGroupOf,
@@ -49,6 +50,20 @@ describe("人が見る提出", () => {
     expect(isAiPassed({ ...passed, verdict: "resubmit", reviewSource: "human" })).toBe(false);
     expect(isAiPassed({ ...passed, taskId: undefined })).toBe(false);
   });
+  it("AI の再提出は合格に含めず、人が覆すまで事後確認の対象にする", () => {
+    const resubmit = submission({
+      id: "resubmit",
+      taskId: "t",
+      verdict: "resubmit",
+      reviewSource: "ai",
+    });
+    expect(isAiResubmitted(resubmit)).toBe(true);
+    expect(isAiPassed(resubmit)).toBe(false);
+    expect(passByLabel(resubmit)).toBeNull();
+    expect(isAiResubmitted({ ...resubmit, reviewSource: "human" })).toBe(false);
+    expect(isAiResubmitted({ ...resubmit, verdict: "pass" })).toBe(false);
+  });
+
   it("テストで確定した提出は AI の合格に入れない", () => {
     const byTests = submission({
       id: "tests",

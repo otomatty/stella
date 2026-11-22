@@ -847,6 +847,93 @@ describe("課題文のパネル・ステータスバー・エディターの右�
     expect(buildTaskGuideHtml({ ...readGuide(), os: "windows" })).not.toContain("レビューの所見");
   });
 
+  it.each([{ openGuide: true }, { openGuide: false }])(
+    "手元で合格しても再提出なら相談を送れる ($openGuide)",
+    async ({ openGuide }) => {
+      const { root } = await trainingTask();
+      await writeDistribution(root);
+      await run("stella.runTask", root);
+      if (openGuide) {
+        apiRequest.mockResolvedValueOnce({ status: "resubmit" });
+        await run("stella.showTaskReadme", root);
+        expect(readGuide()).toHaveProperty("taskStatus", "resubmit");
+      }
+      apiRequest.mockResolvedValueOnce({ status: "resubmit" });
+      await run("stella.consultTask", root);
+      expect(apiRequest.mock.calls.filter(([url]) => url === helpEndpoint)).toHaveLength(
+        openGuide ? 2 : 1,
+      );
+      expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: "consult" }),
+        expect.anything(),
+      );
+      const { sendTaskSubmission } =
+        await vi.importActual<typeof import("./task-submission.js")>("./task-submission.js");
+      vscodeMock.sendTaskSubmission.mockImplementationOnce(sendTaskSubmission);
+      apiRequest
+        .mockResolvedValueOnce({
+          bundle: { manifest: staticTask, files: {}, contentHash: "ab".repeat(32) },
+        })
+        .mockResolvedValueOnce({ row: { id: "consultation", attempt: 2 } });
+      const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1];
+      await actions.submit({ explanation: "再提出の理由を確認したいです。" });
+      expect(apiRequest).toHaveBeenCalledWith(
+        "/api/submissions",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.objectContaining({
+            mode: "consult",
+            localResult: expect.objectContaining({ outcome: "passed" }),
+            support: [expect.objectContaining({ kind: "instructor" })],
+          }),
+        }),
+      );
+    },
+  );
+
+  it.each(["passed", "offline"])(
+    "手元で合格し、再提出の状態が取れなければ相談を開かない (%s)",
+    async (status) => {
+      const { root } = await trainingTask();
+      await writeDistribution(root);
+      await run("stella.runTask", root);
+      if (status === "offline") apiRequest.mockRejectedValueOnce(new Error("offline"));
+      else apiRequest.mockResolvedValueOnce({ status });
+      await run("stella.consultTask", root);
+      expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+      expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+        "手元の確認が通っています。「提出」を使ってください",
+      );
+    },
+  );
+
+  it.each(["resubmit", "passed"])(
+    "手元で合格した課題の相談はキャッシュの submitted に代えて最新の %s で判定する",
+    async (status) => {
+      const { root } = await trainingTask();
+      await writeDistribution(root);
+      await run("stella.runTask", root);
+      apiRequest.mockResolvedValueOnce({ status: "submitted" });
+      await run("stella.showTaskReadme", root);
+      expect(readGuide()).toHaveProperty("taskStatus", "submitted");
+
+      apiRequest.mockResolvedValueOnce({ status });
+      await run("stella.consultTask", root);
+      expect(apiRequest.mock.calls.filter(([url]) => url === helpEndpoint)).toHaveLength(2);
+      if (status === "resubmit") {
+        expect(vscodeMock.showSubmissionForm).toHaveBeenCalledWith(
+          expect.objectContaining({ mode: "consult" }),
+          expect.anything(),
+        );
+      } else {
+        expect(vscodeMock.showSubmissionForm).not.toHaveBeenCalled();
+        expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+          "手元の確認が通っています。「提出」を使ってください",
+        );
+      }
+    },
+  );
+
   it("明示的に課題文を開くと 30 秒以内でも状態を取得し直す", async () => {
     const { root } = await trainingTask();
     await writeDistribution(root);

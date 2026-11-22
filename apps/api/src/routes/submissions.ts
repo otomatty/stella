@@ -8,7 +8,7 @@
  * 添削確定 (reviewed_at が初めて設定) で受講者へ review_completed 通知を生成する。
  *
  * 返却形は旧 PostgREST 埋め込み (`profiles!student_id(...)`) に合わせ、
- * `profiles: { display_name, initials }` をネストしてフロントのマッパーを無変更に保つ。
+ * 投稿者の表示名・イニシャル・アバターを `profiles` にまとめる。
  */
 
 import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
@@ -18,7 +18,7 @@ import { isGradingSummary, parseGradingSummary } from "@stella/shared/review/gra
 import type { GradingSummary } from "@stella/shared/review/types";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { and, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 
 import { aiReviews, notifications, profiles, sections, tasks, submissions } from "../db/schema.js";
@@ -31,6 +31,7 @@ import {
   requireReturning,
 } from "../lib/authz.js";
 import { learnerOrUnknown } from "../lib/learner-scope.js";
+import { googleAvatarUrl } from "../lib/auth-users.js";
 import { clientIp } from "../lib/audit.js";
 import { noteSubmissionStumble } from "../lib/discovery-stumble.js";
 import { withResourceLock } from "../lib/resource-lock.js";
@@ -60,11 +61,20 @@ import {
   submittedRouteReasons,
 } from "../lib/review-desk.js";
 import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
+import { loadSubmissionReference } from "../lib/submission-reference.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
 submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
 
 type SubmissionSelect = typeof submissions.$inferSelect;
+
+const authorColumns = {
+  display_name: profiles.displayName,
+  initials: profiles.initials,
+  avatar_url: profiles.avatarUrl,
+};
+
+type AuthorProfile = Awaited<ReturnType<typeof profileFor>>;
 
 /**
  * 一覧に載せない、提出 1 件ごとの記録 (提出時の課題・実行結果・修正記録・支援・照合結果)。
@@ -94,7 +104,7 @@ type SubmissionSummary = Omit<
  */
 function toSummaryRow(
   s: SubmissionSummary,
-  profile: { display_name: string; initials: string | null } | null,
+  profile: AuthorProfile,
   revealDrafts = false,
   aiReviewReady = false,
 ) {
@@ -139,14 +149,14 @@ function toSummaryRow(
     // 新形式の提出の AI 一次レビューが記録済みか (staff だけ)。旧形式の `ai_ready` と並べて数える。
     ai_review_ready: revealDrafts && aiReviewReady,
     submitted_at: s.submittedAt.toISOString(),
-    profiles: profile,
+    profiles: profile && { ...profile, avatar_url: googleAvatarUrl(profile.avatar_url) },
   };
 }
 
 /** 提出 1 件を返す応答の形。一覧の形に提出ごとの記録を足す。 */
 function toRow(
   s: SubmissionSelect,
-  profile: { display_name: string; initials: string | null } | null,
+  profile: AuthorProfile,
   revealDrafts = false,
   aiReviewReady = false,
 ) {
@@ -196,17 +206,14 @@ function toQueueFields(s: SubmissionSummary, q: QueueColumns) {
   };
 }
 
-async function profileFor(
-  db: Db,
-  studentId: string | null,
-): Promise<{ display_name: string; initials: string | null } | null> {
+async function profileFor(db: Db, studentId: string | null) {
   if (!studentId) return null;
-  const rows = await db
-    .select({ display_name: profiles.displayName, initials: profiles.initials })
+  const [profile] = await db
+    .select(authorColumns)
     .from(profiles)
     .where(eq(profiles.id, studentId))
     .limit(1);
-  return rows[0] ?? null;
+  return profile ?? null;
 }
 
 /**
@@ -243,6 +250,7 @@ submissionsRoute.get("/api/submissions", async (c) => {
     const rows = await db
       .select({
         ...summaryColumns,
+        author: authorColumns,
         aiReviewReady: aiReviewReadyColumn,
         routeReasons: latestAi.routeReasons,
         aiConfidence: latestAi.confidence,
@@ -253,32 +261,16 @@ submissionsRoute.get("/api/submissions", async (c) => {
         taskPattern: tasks.pattern,
       })
       .from(submissions)
+      .leftJoin(profiles, eq(profiles.id, submissions.studentId))
       .leftJoin(latestAi, isLatestAi)
       .leftJoin(tasks, eq(tasks.id, submissions.taskId))
       .leftJoin(sections, eq(sections.id, tasks.sectionId))
       .where(learnerOrUnknown(submissions.studentId))
       .orderBy(desc(submissions.submittedAt));
 
-    // 投稿者プロフィールを 1 クエリでまとめて引く (N+1 回避)。
-    const studentIds = [...new Set(rows.map((r) => r.studentId).filter((x): x is string => !!x))];
-    const profMap = new Map<string, { display_name: string; initials: string | null }>();
-    if (studentIds.length > 0) {
-      const profileRows = await db
-        .select({ id: profiles.id, displayName: profiles.displayName, initials: profiles.initials })
-        .from(profiles)
-        .where(inArray(profiles.id, studentIds));
-      for (const p of profileRows) {
-        profMap.set(p.id, { display_name: p.displayName, initials: p.initials });
-      }
-    }
     return c.json({
       rows: rows.map((r) => ({
-        ...toSummaryRow(
-          r,
-          r.studentId ? (profMap.get(r.studentId) ?? null) : null,
-          true,
-          r.aiReviewReady,
-        ),
+        ...toSummaryRow(r, r.author, true, r.aiReviewReady),
         ...toQueueFields(r, r),
       })),
     });
@@ -438,6 +430,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       throw new ApiError("提出データの JSON が不正です", 400);
     }
     if (raw && typeof raw === "object" && "taskId" in raw) {
+      const profile = await profileFor(db, caller.id);
       const created = await createTaskSubmission(db, caller, c.env, raw);
       // 問題の提出はテストの記録だけを返し、AI の待ち行列には積まない。
       if (isProblemSubmissionResult(created)) return c.json(created, 201);
@@ -453,10 +446,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       } catch {
         // ExecutionContext の無い環境 (テスト) では cron の処理に任せる。
       }
-      return c.json(
-        { row: toRow(created, { display_name: caller.name, initials: caller.name.slice(0, 2) }) },
-        201,
-      );
+      return c.json({ row: toRow(created, profile) }, 201);
     }
     const body = raw as {
       lessonId?: string | null;
@@ -499,7 +489,7 @@ submissionsRoute.post("/api/submissions", async (c) => {
       gradingSummary: parseGradingSummary(body.gradingSummary),
       explanation: typeof body.explanation === "string" ? body.explanation.trim() : null,
     };
-    const profile = { display_name: caller.name, initials: caller.name.slice(0, 2).toUpperCase() };
+    const profile = await profileFor(db, caller.id);
 
     // 「上書き → 無ければ新規作成」を、 競合で 1 行も確保できなかったときだけやり直す。
     //
@@ -614,6 +604,20 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
       });
     }
     return c.json({ row: detail });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** staff: 提出時の解答例とレビューの観点を取得。 */
+submissionsRoute.get("/api/submissions/:id/reference", async (c) => {
+  c.header("Cache-Control", "no-store");
+  try {
+    const { caller, db } = await getCaller(c);
+    requireAdmin(caller);
+    const reference = await loadSubmissionReference(db, c.req.param("id"));
+    if (!reference) throw new ApiError("対象の提出が見つかりません", 404);
+    return c.json(reference);
   } catch (err) {
     return errorResponse(c, err);
   }

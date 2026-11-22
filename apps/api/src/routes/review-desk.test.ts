@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db/client.js";
 import {
   aiReviewOverrides,
+  aiReviews,
   certificates,
   codingRules,
   discoveryRequests,
@@ -278,7 +279,109 @@ describe("講師のレビュー画面 (#34、実 SQLite)", () => {
     });
   });
 
-  describe("AI が合格にした提出の事後確認", () => {
+  describe("AI が判定した提出の事後確認", () => {
+    it("AI の再提出は専用の絞り込みに出し、確認・コメント・合格への変更を記録する", async () => {
+      await db
+        .insert(lessonProgress)
+        .values({ userId: "learner", lessonId: "reading", completed: true });
+      const output = aiOutput();
+      complete.mockResolvedValue(
+        answer({
+          ...output,
+          rubric: output.rubric.map((item) =>
+            item.id === "heading" ? { ...item, result: "unmet" } : item,
+          ),
+        }),
+      );
+      const id = await submit();
+      expect(await runAi()).toEqual(["applied"]);
+      expect(await row(id)).toMatchObject({
+        verdict: "resubmit",
+        reviewSource: "ai",
+        aiReviewStatus: "confirmed",
+      });
+      const pass = await aiPassed("learner2", "medium");
+      await db
+        .update(aiReviews)
+        .set({ proposedVerdict: null })
+        .where(eq(aiReviews.submissionId, pass));
+
+      const list = async (query = "") => {
+        const response = await call(`/api/review-desk/ai-passed${query}`, "teacher");
+        expect(response.status).toBe(200);
+        return (await json<{ rows: AiPassedRow[] }>(response)).rows;
+      };
+      expect((await list()).map((r) => r.submissionId)).toEqual([pass]);
+      expect((await list("?verdict=resubmit")).map((r) => r.submissionId)).toEqual([id]);
+      expect((await call("/api/review-desk/ai-passed?verdict=fail", "teacher")).status).toBe(400);
+
+      expect((await check(id, "confirm")).status).toBe(200);
+      expect((await check(id, "comment", "書き方を確認しました")).status).toBe(200);
+      expect(await row(id)).toMatchObject({ verdict: "resubmit", reviewSource: "ai" });
+      expect(await list("?verdict=resubmit&state=unchecked")).toEqual([]);
+      const response = await check(id, "overturn", "この見出しで要件を満たしています");
+      expect(response.status, await response.clone().text()).toBe(200);
+      expect(await row(id)).toMatchObject({
+        verdict: "pass",
+        reviewSource: "human",
+        reviewerId: "teacher",
+      });
+      const checks = await db
+        .select()
+        .from(submissionChecks)
+        .where(eq(submissionChecks.submissionId, id));
+      expect(checks.map((record) => record.result).sort()).toEqual([
+        "commented",
+        "confirmed",
+        "overturned",
+      ]);
+      const [override] = await db.select().from(aiReviewOverrides);
+      expect(override).toMatchObject({
+        source: "post-check",
+        aiVerdict: "resubmit",
+        humanVerdict: "pass",
+      });
+      const [progress] = await db
+        .select()
+        .from(taskProgress)
+        .where(eq(taskProgress.userId, "learner"));
+      expect(progress).toMatchObject({ status: "passed" });
+      expect(progress?.passedAt).not.toBeNull();
+      expect(
+        await db.select().from(skillEvidence).where(eq(skillEvidence.submissionId, id)),
+      ).toEqual([expect.objectContaining({ userId: "learner", skillId: "html" })]);
+      expect(
+        await db.select().from(certificates).where(eq(certificates.userId, "learner")),
+      ).toHaveLength(1);
+      const notices = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, "learner"));
+      expect(notices).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "review_completed",
+            body: "合格しました。 おめでとうございます。",
+            payload: expect.objectContaining({ submission_id: id, verdict: "pass" }),
+          }),
+        ]),
+      );
+      expect((await list("?verdict=resubmit&state=checked"))[0]).toMatchObject({
+        submissionId: id,
+        verdict: "pass",
+        checkCount: 3,
+      });
+      // 集計が使う履歴上の AI 判定は、人が合格に覆した後も再提出。
+      await db
+        .update(aiReviews)
+        .set({ confidence: "medium" })
+        .where(eq(aiReviews.submissionId, id));
+      const metrics = await json<ReviewMetrics>(await call("/api/review-desk/metrics", "teacher"));
+      expect(metrics.practiceMedium).toEqual([expect.objectContaining({ aiPassed: 1 })]);
+      expect((await check(id, "overturn", "もう一度")).status).toBe(409);
+      expect((await check(id, "confirm")).status).toBe(409);
+    });
+
     it("確認済みにした記録を残し、staff の詳細にだけ返す", async () => {
       const id = await aiPassed();
       const response = await check(id, "confirm");

@@ -278,7 +278,8 @@ function main() {
   const edited = fields.submit.files.map((file) => `\`${file}\``).join("、");
   writeFileSync(
     join(taskDir, "README.md"),
-    `# ${title.trim()}\n\n入力、出力、制約、例を書きます。受講者が編集するファイルは ${edited} です。\n`,
+    `# ${title.trim()}\n\n入力、出力、制約、例を書きます。受講者が編集するファイルは ${edited} です。\n\n` +
+      "<!-- 執筆者向け。AI が「満たさない」を付けたときの直し方は task.json の review.rubric の項目に guide として書けます。問題点に行番号やファイル名を入れず、NG / OK は課題と別の題材で、解答例を写さずに書きます。 -->\n",
   );
   writeFileSync(join(taskDir, "hints.md"), hintsMarkdown(support.hintLevels));
   mkdirSync(join(taskDir, "private", "variants"), { recursive: true });

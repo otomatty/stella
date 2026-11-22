@@ -64,3 +64,30 @@ export const AvatarFallback = React.forwardRef<
   );
 });
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
+
+interface UserAvatarProps {
+  src?: string | null;
+  fallback: React.ReactNode;
+  title?: string;
+  size?: AvatarProps["size"];
+  tone?: React.ComponentProps<typeof AvatarFallback>["tone"];
+  fallbackClassName?: string;
+}
+
+export function UserAvatar({
+  src,
+  fallback,
+  title,
+  size,
+  tone,
+  fallbackClassName,
+}: UserAvatarProps) {
+  return (
+    <Avatar size={size} title={title} aria-hidden="true">
+      {src ? <AvatarImage src={src} alt="" referrerPolicy="no-referrer" /> : null}
+      <AvatarFallback tone={tone} className={fallbackClassName}>
+        {fallback}
+      </AvatarFallback>
+    </Avatar>
+  );
+}

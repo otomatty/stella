@@ -94,6 +94,7 @@ export interface CommentMention {
 
 export interface CommentAuthor extends CommentMention {
   role: "admin" | "student";
+  avatar_url?: string | null;
   is_self: boolean;
 }
 

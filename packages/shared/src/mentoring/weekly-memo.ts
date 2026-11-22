@@ -31,7 +31,7 @@ export const STUMBLE_SIGNAL_LABELS: Record<StumbleSignal, string> = {
   "local-failures": "同じ課題で手元の失敗が続く",
   idle: "学習が止まる",
   "assessment-b": "確認Bに落ちる",
-  "review-escalations": "人に回る提出が続く",
+  "review-escalations": "人に回した・AI が再提出にした提出が続く",
   "hints-exhausted": "ヒントを最後まで開く",
 };
 
@@ -85,9 +85,11 @@ export interface MentorMemoMaterial {
   support: Partial<Record<SupportRecordKind, number>>;
   reviews: {
     aiConfirmed: number;
+    /** 旧版のメモには無い。 */
+    aiResubmitted?: number;
     aiEscalated: number;
     escalationReasons: Partial<Record<RouteReason, number>>;
-    /** 人に回った判定で「満たさない」「判断できない」だった必須項目 (最大 5 件)。 */
+    /** 人に回った判定で「満たさない」「判断できない」、または AI の再提出で「満たさない」だった必須項目 (最大 5 件)。 */
     unmetCriteria: { criterion: string; count: number }[];
     humanPass: number;
     humanResubmit: number;
@@ -240,7 +242,7 @@ export function materialFacts(m: MentorMemoMaterial): string[] {
   const r = m.reviews;
   const reasons = listCounts(r.escalationReasons, ROUTE_REASON_LABELS);
   facts.push(
-    `レビュー: AI で合格 ${r.aiConfirmed} · 人に回った ${r.aiEscalated}${reasons ? ` (${reasons})` : ""} · 管理者の合格判定 ${r.humanPass} · 管理者の再提出判定 ${r.humanResubmit}`,
+    `レビュー: AI で合格 ${r.aiConfirmed} · AI が再提出にした ${r.aiResubmitted ?? 0} · 人に回った ${r.aiEscalated}${reasons ? ` (${reasons})` : ""} · 管理者の合格判定 ${r.humanPass} · 管理者の再提出判定 ${r.humanResubmit}`,
   );
   if (r.unmetCriteria.length)
     facts.push(
@@ -279,6 +281,7 @@ export function buildFallbackMemo(m: MentorMemoMaterial): MentorMemoOutput {
       ? "この週は学習の記録がありませんでした。"
       : `この週は${m.activity.activeDays}日学習し、課題に${m.passedTaskCount}件合格しました。`;
   const stumbles = sum(m.stumbles);
+  const aiResubmitted = m.reviews.aiResubmitted ?? 0;
   const reasons: Record<MemoAction, string> = {
     pace: "目安との差が週の学習時間を超えています。週の時間や開始日を相談してください。",
     message:
@@ -299,7 +302,7 @@ export function buildFallbackMemo(m: MentorMemoMaterial): MentorMemoOutput {
       "先週もよく進めていますね。この調子で続けましょう。困ったことがあれば、いつでも相談してください。",
   };
   return {
-    summary: `${pace}${activity}${stumbles > 0 ? `つまずきの知らせが${stumbles}件ありました。` : ""}`,
+    summary: `${pace}${activity}${stumbles > 0 ? `つまずきの知らせが${stumbles}件ありました。` : ""}${aiResubmitted > 0 ? `AI が再提出にした提出が${aiResubmitted}件ありました。` : ""}`,
     observations: materialFacts(m).slice(0, 6),
     suggestedAction: action,
     actionReason: reasons[action],

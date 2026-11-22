@@ -11,6 +11,7 @@ import type {
   RubricCriterion,
   ReviewVerdict,
   Submission,
+  SubmissionReference,
   SubmissionStatus,
   ReviewPriority,
   ReviewAvatarTone,
@@ -80,7 +81,7 @@ interface SubmissionRow {
   debugging_record?: Submission["debuggingRecord"];
   support_log?: Submission["supportLog"];
   files?: { path: string; content: string }[];
-  profiles?: { display_name: string; initials: string | null } | null;
+  profiles?: { display_name: string; initials: string | null; avatar_url?: string | null } | null;
   ai_review_status?: Submission["aiReviewStatus"];
   ai_review_ready?: boolean;
   review_source?: Submission["reviewSource"];
@@ -114,6 +115,7 @@ function rowToSubmission(row: SubmissionRow): Submission {
     studentId: row.student_id,
     studentName: name,
     studentInitials: initials,
+    studentAvatarUrl: profile?.avatar_url,
     avatarTone: toneFromStudentId(row.student_id),
     stageTitle: row.stage_title,
     sectionTitle: row.section_title ?? undefined,
@@ -173,6 +175,22 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
     `/api/submissions/${encodeURIComponent(id)}`,
   );
   return rowToSubmission(row);
+}
+
+/** staff: 解答例とレビューの観点。submittedAt は詳細と同じミリ秒で受け取る。 */
+export async function fetchSubmissionReference(id: string): Promise<SubmissionReference> {
+  return apiFetch<SubmissionReference>(`/api/submissions/${encodeURIComponent(id)}/reference`);
+}
+
+export function referenceForSubmission(
+  reference: SubmissionReference | undefined,
+  submittedAt: number | undefined,
+): SubmissionReference | undefined {
+  if (!reference?.available) return reference;
+  if (submittedAt === undefined) return undefined;
+  return reference.submittedAt === submittedAt
+    ? reference
+    : { available: false, reason: "提出が更新されました。開き直してください" };
 }
 
 /** staff: 提出物一覧 (新着順)。 認可はサーバ側 (admin)。 */

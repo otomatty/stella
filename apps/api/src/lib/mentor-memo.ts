@@ -28,7 +28,7 @@ import {
   STUMBLE_SIGNALS,
   type StumbleSignal,
 } from "@stella/shared/mentoring/weekly-memo";
-import type { RouteReason } from "@stella/shared/review/ai-review";
+import { aiConfirmedVerdict, type RouteReason } from "@stella/shared/review/ai-review";
 import { addStudyDays, studyDateStartMs, toStudyDate } from "@stella/shared/study/activity";
 import { studyWeekStart } from "@stella/shared/study/pace";
 import { helpSupportKind } from "@stella/shared/tasks/help";
@@ -399,6 +399,7 @@ export async function collectMemoMaterial(
       .select({
         submissionId: aiReviews.submissionId,
         outcome: aiReviews.outcome,
+        proposedVerdict: aiReviews.proposedVerdict,
         reasons: aiReviews.routeReasons,
         results: aiReviews.rubricResults,
       })
@@ -512,17 +513,25 @@ export async function collectMemoMaterial(
   const escalationReasons: Partial<Record<RouteReason, number>> = {};
   const unmet = new Map<string, number>();
   let aiConfirmed = 0;
+  let aiResubmitted = 0;
   let aiEscalated = 0;
   for (const r of bySubmission.values()) {
-    if (r.outcome === "confirmed") {
+    const verdict = aiConfirmedVerdict(r);
+    if (verdict === "pass") {
       aiConfirmed++;
       continue;
     }
-    aiEscalated++;
-    for (const reason of r.reasons)
-      escalationReasons[reason] = (escalationReasons[reason] ?? 0) + 1;
+    if (verdict === "resubmit") aiResubmitted++;
+    else {
+      aiEscalated++;
+      for (const reason of r.reasons)
+        escalationReasons[reason] = (escalationReasons[reason] ?? 0) + 1;
+    }
     for (const item of r.results)
-      if (item.required && item.result !== "met") {
+      if (
+        item.required &&
+        (verdict === "resubmit" ? item.result === "unmet" : item.result !== "met")
+      ) {
         const criterion = item.criterion.slice(0, 120);
         unmet.set(criterion, (unmet.get(criterion) ?? 0) + 1);
       }
@@ -555,6 +564,7 @@ export async function collectMemoMaterial(
     support,
     reviews: {
       aiConfirmed,
+      aiResubmitted,
       aiEscalated,
       escalationReasons,
       unmetCriteria: [...unmet]

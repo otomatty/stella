@@ -16,8 +16,8 @@ import { CommentTemplatePicker } from "./CommentTemplatePicker";
 
 interface PostCheckPanelProps {
   submissionId: string;
-  /** 今も AI の合格のままか (覆したあとは記録だけを出す)。 */
-  aiPassed: boolean;
+  /** 今の AI の判定。覆したあとは記録だけを出す。 */
+  aiVerdict: "pass" | "resubmit" | null;
   checks: SubmissionCheckRecord[] | undefined;
   stageId: string | null | undefined;
   pattern: string | null | undefined;
@@ -25,22 +25,21 @@ interface PostCheckPanelProps {
   onChanged: (action: CheckAction) => Promise<void> | void;
 }
 
-const ACTION_DONE: Record<CheckAction, string> = {
+const ACTION_DONE: Record<Exclude<CheckAction, "overturn">, string> = {
   confirm: "確認済みにしました",
   comment: "コメントを足し、受講者に知らせました",
-  overturn: "再提出に覆し、理由を受講者に知らせました",
 };
 
 const RESULT_VARIANT = { confirmed: "success", commented: "info", overturned: "danger" } as const;
 
 /**
- * AI が合格にした提出の事後確認 (#34、07 §6.4 の 6)。期間は限らない。
+ * AI が判定した提出の事後確認 (#34、07 §6.4 の 6)。期間は限らない。
  * 人ができるのは 3 つ: 確認済みにする / 判定を変えずにコメントを足す (受講者へ通知) /
- * 再提出に覆す (合格とスキルの証拠を取り消し、理由を受講者へ通知)。確認の記録は残る。
+ * 合格または再提出に覆す。確認の記録は残る。
  */
 export function PostCheckPanel({
   submissionId,
-  aiPassed,
+  aiVerdict,
   checks,
   stageId,
   pattern,
@@ -49,6 +48,7 @@ export function PostCheckPanel({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<CheckAction | null>(null);
 
+  const overturnLabel = aiVerdict === "resubmit" ? "合格に覆す" : "再提出に覆す";
   const act = async (action: CheckAction) => {
     if (busy) return;
     if (action !== "confirm" && !text.trim()) {
@@ -58,7 +58,13 @@ export function PostCheckPanel({
     setBusy(action);
     try {
       await checkSubmission(submissionId, action, text);
-      toast.success(ACTION_DONE[action]);
+      toast.success(
+        action === "overturn"
+          ? aiVerdict === "resubmit"
+            ? "合格に覆し、受講者に知らせました"
+            : "再提出に覆し、理由を受講者に知らせました"
+          : ACTION_DONE[action],
+      );
       setText("");
       await onChanged(action);
     } catch (err) {
@@ -70,11 +76,13 @@ export function PostCheckPanel({
 
   return (
     <div className="text-[12.5px] leading-relaxed">
-      <p className="text-ink-3 mb-3">
-        AI
-        が合格にした提出です。いつでも確認できます。覆すと、この提出の合格とスキルの証拠を取り消し、
-        理由を受講者に知らせます (同じ課題の後の合格は残ります)。
-      </p>
+      {aiVerdict ? (
+        <p className="text-ink-3 mb-3">
+          {aiVerdict === "pass"
+            ? "覆すと、この提出の合格とスキルの証拠を取り消し、理由を受講者に知らせます。"
+            : "合格に覆すと、進捗とスキルの証拠に反映し、受講者に知らせます。"}
+        </p>
+      ) : null}
       <section className="mb-4">
         <h3 className="text-[11.5px] font-semibold text-ink-3 mb-1">確認の記録</h3>
         {checks === undefined ? (
@@ -98,7 +106,7 @@ export function PostCheckPanel({
           </ul>
         )}
       </section>
-      {aiPassed ? (
+      {aiVerdict ? (
         <>
           <CommentTemplatePicker
             stageId={stageId}
@@ -132,14 +140,12 @@ export function PostCheckPanel({
               disabled={busy !== null}
             >
               <RotateCcw size={13} />
-              再提出に覆す
+              {overturnLabel}
             </Button>
           </div>
         </>
       ) : (
-        <p className="text-ink-3">
-          この提出はもう AI の合格ではないため、事後確認の操作はできません。
-        </p>
+        <p className="text-ink-3">現在は管理者の判定が適用されています。</p>
       )}
     </div>
   );

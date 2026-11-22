@@ -17,7 +17,7 @@ import { Loader2, Save } from "@/lib/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { LearningPacePanel } from "@/components/learner/LearningPacePanel";
 import { LearningPaceManager } from "@/components/instructor/LearningPaceManager";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -119,13 +119,7 @@ const AccountCard = ({ profile, backendEnabled, onProfileUpdated }: AccountCardP
         ) : null}
 
         <div className="flex items-center gap-3 mb-5">
-          <Avatar size="lg">
-            {profile?.avatar_url ? (
-              // referrerPolicy: googleusercontent は Referer 付きだと 403 を返すことがある。
-              <AvatarImage src={profile.avatar_url} alt="" referrerPolicy="no-referrer" />
-            ) : null}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+          <UserAvatar size="lg" src={profile?.avatar_url} fallback={initials} />
           <div className="min-w-0 text-[12.5px] text-ink-3">
             <div>{profile?.email ?? "—"}</div>
             <div>{profile ? (ROLE_LABELS[profile.role] ?? profile.role) : ""}</div>

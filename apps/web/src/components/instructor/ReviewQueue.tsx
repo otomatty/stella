@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -47,7 +47,6 @@ import {
   sortQueue,
   testsPassedRows,
 } from "@/lib/review-queue";
-import type { AvatarTone } from "@/data/types";
 import { AiPassedList } from "./AiPassedList";
 import { ReviewMetricsPanel } from "./ReviewMetricsPanel";
 import { TaskBoardPanel } from "./TaskBoardPanel";
@@ -66,7 +65,7 @@ type GroupFilter = "all" | ReviewQueueGroup | "ai-checking";
  *
  * - 人に回した提出: 人に回した理由で分け、待ち時間・理由で並べる。行から開いて 1 回の
  *   操作で確定する。同じ課題の提出を並べて見て、共通のつまずきを全体への補足・発見教材に回す。
- * - AI が合格にした提出: いつでも確認できる (確認済み・コメント・覆す)。
+ * - AI が判定した提出: いつでも確認できる (確認済み・コメント・覆す)。
  * - テストで合格した提出: 受け取った提出から、テストで確定した行を新しい順に読む。判定は変えない。
  * - 見直しの数字: しきい値の月次見直しに使う割合。
  * - 類題の在庫: コードの復習の類題が足りないパターンと、在庫切れで待っている受講者 (#39)。
@@ -138,7 +137,7 @@ export const ReviewQueue = ({
           {backendEnabled ? (
             <>
               <TabsTrigger value="ai-passed" icon={<CheckCheck />}>
-                AI が合格にした提出
+                AI が判定した提出
               </TabsTrigger>
               <TabsTrigger value="tests-passed" icon={<ClipboardList />}>
                 テストで合格した提出
@@ -333,11 +332,7 @@ export const ReviewQueue = ({
                         <TableRow key={r.id} interactive onClick={() => open(r.id)}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Avatar size="sm">
-                                <AvatarFallback tone={r.avatarTone as AvatarTone}>
-                                  {r.studentInitials}
-                                </AvatarFallback>
-                              </Avatar>
+                              <QueueAvatar submission={r} />
                               <span className="font-medium">{r.studentName}</span>
                             </div>
                           </TableCell>
@@ -368,11 +363,12 @@ export const ReviewQueue = ({
 
 function QueueAvatar({ submission }: { submission: Submission }) {
   return (
-    <Avatar size="sm">
-      <AvatarFallback tone={submission.avatarTone as AvatarTone}>
-        {submission.studentInitials}
-      </AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      size="sm"
+      src={submission.studentAvatarUrl}
+      fallback={submission.studentInitials}
+      tone={submission.avatarTone}
+    />
   );
 }
 

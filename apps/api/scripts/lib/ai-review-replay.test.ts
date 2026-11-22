@@ -5,7 +5,7 @@ import type {
 } from "@anthropic-ai/sdk/resources/messages/messages.js";
 import type { AiReviewOutput } from "@stella/shared/review/ai-review";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../../src/db/client.js";
 import {
@@ -61,6 +61,8 @@ import {
   replayCustomId,
   replayPrepareCommand,
   subjectsOf,
+  submitReplay,
+  summarizeReplay,
 } from "./ai-review-replay.js";
 
 vi.mock("../../src/lib/anthropic-complete.js", async (importOriginal) => {
@@ -241,6 +243,43 @@ describe("候補と引数", () => {
       ["aaaa"],
       ["bbbb"],
     ]);
+  });
+});
+
+it("当て直しは、危ない取りこぼしと厳しすぎた再提出を別々に数える", () => {
+  const trial = (
+    proposedVerdict: "pass" | "resubmit" | null,
+    humanVerdict: "pass" | "resubmit" | "fail",
+  ) => ({
+    taskId: "task",
+    taskKind: "basic",
+    humanVerdict,
+    decision: {
+      outcome: "confirmed" as const,
+      confidence: "high",
+      routeReasons: [],
+      proposedVerdict,
+      failure: null,
+    },
+    usage: null,
+  });
+  expect(
+    summarizeReplay(
+      { label: "候補", model: MODEL, promptVersion: "p", thresholdVersion: "t" },
+      [
+        trial(null, "fail"),
+        trial("pass", "pass"),
+        trial("resubmit", "resubmit"),
+        trial("resubmit", "pass"),
+      ],
+      null,
+    ),
+  ).toMatchObject({
+    confirmed: 4,
+    riskyConfirmed: 1,
+    riskyConfirmedRate: 0.5,
+    strictResubmits: 1,
+    strictResubmitRate: 0.5,
   });
 });
 
@@ -555,10 +594,11 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     const unmet = await reviewed("resubmit");
     const order = [pass, unmet];
     const batches = fakeBatches({
-      // 候補 0: 1 件目は AI で確定 (人は再提出 = 危ない取りこぼし)、2 件目は必須項目を満たさない。
+      // 候補 0: 1 件目は AI で合格 (人は再提出)、2 件目は必須項目を満たさず確信度が中なので人に回る。
       [replayCustomId(0, 0)]: succeeded(aiOutput()),
       [replayCustomId(0, 1)]: succeeded(
         aiOutput({
+          confidence: "medium",
           rubric: [
             {
               id: "CR-SCOPE-01",
@@ -666,6 +706,7 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     });
     const markdown = formatReplayReport(report);
     expect(markdown).toContain("| 本番の記録 |");
+    expect(markdown).toContain("| 厳しすぎた再提出 |");
     expect(markdown).toContain(
       `| ${MODEL}@${AI_REVIEW_PROMPT_VERSION} | ${MODEL} | ${AI_REVIEW_PROMPT_VERSION} | 2 | 0 | 2 | 50.0% | 50.0% (1) | 100.0% (1) | 0 |`,
     );
@@ -674,6 +715,50 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     const saved2 = JSON.stringify(report);
     for (const secret of [STUDENT, STUDENT_NAME, STUDENT_EMAIL, "hello", "提出を確認しました"])
       expect(saved2).not.toContain(secret);
+  });
+
+  it("対象より前に AI の再提出が 2 回続いたら、当て直しでも人に回す", async () => {
+    const first = await reviewed("resubmit");
+    const second = await reviewed("resubmit");
+    const target = await reviewed("resubmit");
+    const later = await reviewed("resubmit");
+    await db
+      .update(submissions)
+      .set({ reviewSource: "ai", verdict: "resubmit" })
+      .where(inArray(submissions.id, [first, second, later]));
+
+    const subjects = subjectsOf(examples()).filter((subject) => subject.submissionId === target);
+    const candidate = [parseCandidate(MODEL, MODEL)];
+    const prepared = await prepareReplay({ db, env }, subjects, candidate);
+    expect(prepared.items.map((item) => item.judge.priorAiResubmits)).toEqual([2]);
+
+    const output = aiOutput();
+    output.rubric = output.rubric.map((item) =>
+      item.id === "heading" ? { ...item, result: "unmet", note: "見出しがありません" } : item,
+    );
+    const { api } = fakeBatches({ [replayCustomId(0, 0)]: succeeded(output) });
+    const state = await submitReplay(api, prepared, candidate, {
+      createdAt: "2026-10-06T00:00:00Z",
+      source: "local",
+    });
+    const saved = JSON.stringify(state);
+    const collected = await collectReplay(api, JSON.parse(saved) as ReplayState);
+    if (collected.status !== "ended") throw new Error("回収できていない");
+    expect(collected.report.rows[0]?.candidates[0]?.decision).toMatchObject({
+      outcome: "escalated",
+      routeReasons: ["rubric-unmet", "ai-resubmit-repeated"],
+    });
+
+    const legacy = JSON.stringify(state, (key, value) =>
+      key === "priorAiResubmits" ? undefined : value,
+    );
+    const collectedLegacy = await collectReplay(api, JSON.parse(legacy) as ReplayState);
+    if (collectedLegacy.status !== "ended") throw new Error("回収できていない");
+    expect(collectedLegacy.report.rows[0]?.candidates[0]?.decision).toMatchObject({
+      outcome: "confirmed",
+      proposedVerdict: "resubmit",
+      routeReasons: [],
+    });
   });
 
   it("Batch の投入が途中で止まったら、作れた Batch を状態に残して止め、回収できる", async () => {

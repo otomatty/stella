@@ -34,10 +34,11 @@ function formatDate(iso: string | null): string {
 }
 
 /**
- * AI が合格にした提出の事後確認の一覧 (#34、07 §6.4 の 6)。期間は限らない。
+ * AI が判定した提出の事後確認の一覧 (#34、07 §6.4 の 6)。期間は限らない。
  * ステージ・課題・受講者・確信度・日付で絞り込め、既定では確信度が「中」を先に並べる。
  */
 export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
+  const [verdict, setVerdict] = useState<"pass" | "resubmit">("pass");
   const [state, setState] = useState<AiPassedState>("unchecked");
   const [stageId, setStageId] = useState("");
   const [taskId, setTaskId] = useState("");
@@ -77,6 +78,7 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
     fetchAiPassed(
       {
         state,
+        verdict,
         ...(stageId ? { stageId } : {}),
         ...(taskId ? { taskId } : {}),
         ...(learnerId ? { learnerId } : {}),
@@ -94,11 +96,27 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
           setError(err instanceof Error ? err.message : "一覧を読み込めませんでした");
       });
     return () => controller.abort();
-  }, [state, stageId, taskId, learnerId, confidence, from, to]);
+  }, [verdict, state, stageId, taskId, learnerId, confidence, from, to]);
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 mb-3">
+        <fieldset className="flex items-center gap-1.5 border-0 p-0 m-0">
+          <legend className="sr-only">AI の判定</legend>
+          {(["pass", "resubmit"] as const).map((value) => (
+            <Chip
+              key={value}
+              active={verdict === value}
+              onClick={() => {
+                if (verdict === value) return;
+                setResult(null);
+                setVerdict(value);
+              }}
+            >
+              {value === "pass" ? "合格" : "再提出"}
+            </Chip>
+          ))}
+        </fieldset>
         <fieldset className="flex items-center gap-1.5 border-0 p-0 m-0">
           <legend className="sr-only">確認の状態</legend>
           {AI_PASSED_STATES.map((s) => (
@@ -164,10 +182,10 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
           <option value="high">高</option>
         </NativeSelect>
         <label className="flex items-center gap-1 text-[12px] text-ink-3">
-          AI 合格日
+          AI 判定日
           <input
             type="date"
-            aria-label="AI 合格日 (から)"
+            aria-label="AI 判定日 (から)"
             value={from}
             max={to || undefined}
             onChange={(e) => setFrom(e.target.value)}
@@ -176,7 +194,7 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
           〜
           <input
             type="date"
-            aria-label="AI 合格日 (まで)"
+            aria-label="AI 判定日 (まで)"
             value={to}
             min={from || undefined}
             onChange={(e) => setTo(e.target.value)}
@@ -192,7 +210,7 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
               <TableHead>確信度</TableHead>
               <TableHead>受講者</TableHead>
               <TableHead>課題</TableHead>
-              <TableHead>AI 合格日</TableHead>
+              <TableHead>AI 判定日</TableHead>
               <TableHead>確認</TableHead>
               <TableHead />
             </TableRow>
@@ -207,7 +225,7 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
             ) : result.rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-ink-3 py-10">
-                  条件に合う AI の合格はありません
+                  条件に合う提出はありません
                 </TableCell>
               </TableRow>
             ) : (
@@ -229,7 +247,7 @@ export function AiPassedList({ submissions, onOpen }: AiPassedListProps) {
                   </TableCell>
                   <TableCell className="text-ink-3">{formatDate(r.aiPassedAt)}</TableCell>
                   <TableCell>
-                    {r.verdict !== "pass" ? (
+                    {r.verdict !== verdict ? (
                       <Badge variant="danger">覆した</Badge>
                     ) : r.lastCheck ? (
                       <Badge variant="success">

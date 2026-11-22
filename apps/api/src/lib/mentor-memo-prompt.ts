@@ -30,7 +30,7 @@ const INSTRUCTIONS = `あなたは STELLA (Web 開発の研修) で、担当講�
 - stumbles: その週に担当講師へ送ったつまずきの知らせ (local-failures = 同じ課題で手元の失敗が続く、idle = 学習が止まる、assessment-b = 確認Bに落ちる、review-escalations = 人に回る提出が続く、hints-exhausted = 合格前にヒントを最後の段まで開いた)。ヒントを開くのは支援の記録で、罰ではありません。行き詰まっているかもしれない合図として読みます。
 - failureStreaks: 今も続いている手元の失敗。
 - support: その週の支援 (hint = ヒント、solution = 解答の表示、fixed-start = 固定した開始点、instructor = 講師の実装支援、ai-answer = AI の解答生成、consult = 講師への相談)。
-- reviews: その週の AI の一次レビュー (aiConfirmed = AI で合格、aiEscalated = 講師の確認に回った) と回った理由、満たせなかった必須項目、講師の判定 (humanPass・humanResubmit)。
+- reviews: その週の AI の一次レビュー (aiConfirmed = AI で合格、aiResubmitted = AI が再提出にした、aiEscalated = 講師の確認に回った) と回った理由、満たせなかった必須項目、講師の判定 (humanPass・humanResubmit)。
 
 # 書くもの
 - summary: その週の様子を 2〜3 文で。予定との差、進んだこと、気になることの順に書きます。
