@@ -426,7 +426,7 @@ export function taskSubmissionLockId(studentId: string, taskId: string) {
 /**
  * AI のレビュー結果をこの提出に当ててよいか。課題のロックの中で読んだ行で決める。
  * 人が先に確定した提出・同じ課題の新しい提出がある試行には、遅れて届いた AI の結果を当てない
- * (人の判定が勝つ)。人に回す条件に当たる提出は、AI が合格にしない。
+ * (人の判定が勝つ)。人に回す条件に当たる提出は、AI が確定しない。
  */
 async function assertAiApplicable(
   db: Db,
@@ -440,7 +440,7 @@ async function assertAiApplicable(
     throw new AiReviewNotApplicable();
   if (outcome === "confirmed") {
     // 人に回す条件は、AI の結果を記録したあとに届いた支援の記録も含めて当てる直前に確かめ直す。
-    // 当たれば合格にせず、呼び出し側が「人に回す」に切り替える (確認待ちのまま残さない)。
+    // 当たれば呼び出し側が「人に回す」に切り替える (確認待ちのまま残さない)。
     const forced = forcedHumanReasons({
       kind: row.taskKind,
       mode: row.submissionMode,
@@ -723,7 +723,7 @@ export async function reviewTaskSubmission(
     }
     if (source === "ai") {
       try {
-        if (verdict !== "pass") throw new AiReviewNotApplicable();
+        if (verdict === "fail") throw new AiReviewNotApplicable();
         await assertAiApplicable(db, row, "confirmed");
       } catch (e) {
         if (e instanceof AiReviewNotApplicable && options.aiReviewId)
@@ -851,6 +851,9 @@ export async function reviewTaskSubmission(
       );
     // 通知は課題のロックの中で読んだ保存前の行から決め、判定と同じ batch で書く。
     const notice = reviewNotification(row, verdict);
+    if (notice && source === "ai" && verdict === "resubmit") {
+      notice.body = "書き方を直すと合格です。直すところを確認してください。";
+    }
     if (notice && overturned) {
       // 覆したときは理由を知らせる (07 §6.4 の 6)。
       const reason = notes.trim();

@@ -14,7 +14,8 @@ import type { MachineCheck, SupportEvent } from "../tasks/submission.js";
  * しきい値の版。表 (`MIN_CONFIDENCE`) と人に回す条件を変えたら上げる。
  * レビュー結果ごとに記録し、人の判定との一致率を版ごとに比べる (07 §13)。
  */
-export const AI_REVIEW_THRESHOLD_VERSION = "2026-11-19.1";
+export const AI_REVIEW_THRESHOLD_VERSION = "2026-11-22.1";
+export const MAX_CONSECUTIVE_AI_RESUBMITS = 2;
 
 export const RUBRIC_RESULTS = ["met", "unmet", "undetermined"] as const;
 export type RubricResult = (typeof RUBRIC_RESULTS)[number];
@@ -283,6 +284,7 @@ export interface ReviewRubricItem {
   id: string;
   criterion: string;
   required: boolean;
+  guide?: RubricGuide;
   /** コーディング規則の項目なら true。 */
   rule: boolean;
 }
@@ -304,6 +306,7 @@ export const ROUTE_REASONS = [
   "ai-unavailable",
   "no-rubric",
   "rubric-unmet",
+  "ai-resubmit-repeated",
   "rubric-undetermined",
   "test-fitting",
   "low-confidence",
@@ -321,6 +324,7 @@ export const ROUTE_REASON_LABELS: Record<RouteReason, string> = {
   "ai-unavailable": "AI が判定できなかった",
   "no-rubric": "課題に必須の評価項目がない",
   "rubric-unmet": "必須項目に「満たさない」がある",
+  "ai-resubmit-repeated": "同じ課題で AI の再提出が 2 回続いた",
   "rubric-undetermined": "必須項目に「判断できない」がある",
   "test-fitting": "テストの入力・期待値に合わせた決め打ちの疑いがある",
   "low-confidence": "確信度がしきい値に届かない",
@@ -436,11 +440,7 @@ function validEvidence(evidence: EvidenceRef[], lines: LineCounts): EvidenceRef[
   return evidence.filter((e) => isValidLocation(e, lines));
 }
 
-export interface NormalizedRubricResult extends AiRubricResult {
-  criterion: string;
-  required: boolean;
-  rule: boolean;
-}
+export interface NormalizedRubricResult extends AiRubricResult, ReviewRubricItem {}
 
 /**
  * 課題の項目に AI の結果を当てる。AI が返さなかった項目と 2 回以上返した項目は「判断できない」、
@@ -460,6 +460,7 @@ export function normalizeRubricResults(
       criterion: item.criterion,
       required: item.required,
       rule: item.rule,
+      ...(item.guide ? { guide: item.guide } : {}),
       result: found?.result ?? "undetermined",
       evidence: found ? validEvidence(found.evidence, lines) : [],
       note: found?.note ?? "",
@@ -496,8 +497,10 @@ export interface RoutingInput {
   /** AI が判定できなかったときは null。 */
   output: AiReviewOutput | null;
   lines: LineCounts;
-  /** 返信が解答例と重なり、人に回すと決めたとき true (確認A・B)。 */
+  /** 返信が解答例と重なり、人に回すと決めたとき true。 */
   leakEscalates: boolean;
+  /** 直前に続いた AI の再提出の回数。 */
+  priorAiResubmits?: number;
 }
 export interface RoutingDecision {
   outcome: "confirmed" | "escalated";
@@ -505,6 +508,8 @@ export interface RoutingDecision {
   confidence: Confidence | null;
   results: NormalizedRubricResult[];
   proposedVerdict: "pass" | "resubmit" | null;
+  /** AI で確定する判定。人に回すときは null。 */
+  verdict: "pass" | "resubmit" | null;
   /**
    * AI の所見ごとに、箇所が提出に実在するか (`output.findings` と同じ並び)。
    * 受講者に見せるのは true のものだけ。AI の原文は記録にそのまま残す。
@@ -516,6 +521,7 @@ export interface RoutingDecision {
  * 人に回すかどうかを決める (07 §6.3)。
  *
  * - 基礎・接続・自力・修正 (練習): 確信度が高・中で必須項目をすべて満たせば AI で確定
+ * - 練習の必須項目に根拠付きの違反だけがあり、確信度が高なら再提出で確定。2 回続いたら人に回す
  * - 統合・確認A・確認B: 確信度が高で必須項目をすべて満たせば AI で確定
  * - それ以外と、AI の判定によらず人に回す条件に当たったものは人に回す
  */
@@ -554,13 +560,28 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
       reasons.add("misplaced-finding");
   }
   if (input.leakEscalates) reasons.add("solution-leak");
+  const proposed = proposedVerdict(results);
+  if (
+    input.output &&
+    !isEvidenceKind(input.kind) &&
+    confidence === "high" &&
+    proposed === "resubmit" &&
+    reasons.size === 1 &&
+    reasons.has("rubric-unmet")
+  ) {
+    // 実効の確信度が高なら、すべての必須項目に実在する根拠がある。
+    if ((input.priorAiResubmits ?? 0) >= MAX_CONSECUTIVE_AI_RESUBMITS)
+      reasons.add("ai-resubmit-repeated");
+    else reasons.delete("rubric-unmet");
+  }
   const ordered = ROUTE_REASONS.filter((r) => reasons.has(r));
   return {
     outcome: ordered.length === 0 ? "confirmed" : "escalated",
     reasons: ordered,
     confidence,
     results,
-    proposedVerdict: input.output ? proposedVerdict(results) : null,
+    proposedVerdict: proposed,
+    verdict: ordered.length === 0 ? proposed : null,
     findingsValid,
   };
 }
@@ -572,7 +593,7 @@ export function decideRouting(input: RoutingInput): RoutingDecision {
 export type AiReviewStatus = "queued" | "confirmed" | "escalated" | "superseded" | "human";
 export const AI_REVIEW_STATUS_LABELS: Record<AiReviewStatus, string> = {
   queued: "AI が確認中",
-  confirmed: "AI で合格",
+  confirmed: "AI で確定",
   escalated: "管理者の確認待ち",
   superseded: "新しい提出に置き換え",
   human: "管理者が先に確定",
@@ -603,9 +624,21 @@ export interface AiReviewRecord {
   createdAt: string;
 }
 
+export interface LearnerRubricItem {
+  id: string;
+  /** 受講者向けの見出し。guide.title、無ければ criterion。 */
+  label: string;
+  criterion: string;
+  required: boolean;
+  result: RubricResult;
+  guide: RubricGuide | null;
+}
+
 /** AI で確定した提出の、受講者に見せる所見と返信。 */
 export interface LearnerAiFeedback extends AiLearnerReply {
   findings: AiFinding[];
+  verdict?: "pass" | "resubmit";
+  rubric?: LearnerRubricItem[];
 }
 
 /** 受講者への返信を、総評 (`review_notes`) に入れる文に整える。 */
@@ -616,4 +649,38 @@ export function formatLearnerReply(reply: AiLearnerReply): string {
   if (reply.nextSteps.length > 0)
     parts.push(["次に試すこと", ...reply.nextSteps.map((p) => `- ${p}`)].join("\n"));
   return parts.filter(Boolean).join("\n\n");
+}
+
+/** AI の再提出では、教材の直し方と照合済みの良かった点を総評に載せる。 */
+export function formatAiResubmitNotes(feedback: LearnerAiFeedback): string {
+  const rubric = feedback.rubric ?? [];
+  const unmet = rubric.filter((item) => item.required && item.result === "unmet");
+  const met = rubric.filter((item) => item.result === "met");
+  const summary =
+    unmet.length === 1
+      ? "動きは合っています。書き方を 1 点直すと合格です。"
+      : "動きは合っています。書き方を直すと合格です。";
+  const sections = [summary];
+  if (unmet.length > 0) {
+    const fixes = unmet.map(({ label, criterion, guide }) => {
+      if (!guide) return `- ${criterion}`;
+      const lines = [`- ${label}: ${guide.problem} ${guide.why}`];
+      if (guide.example) {
+        const { context, ng, ok } = guide.example;
+        const indent = (code: string) => code.split("\n").map((line) => `    ${line}`);
+        lines.push(`  NG (${context}):`, ...indent(ng), "  OK:", ...indent(ok));
+      }
+      return lines.join("\n");
+    });
+    sections.push(["直すところ", ...fixes].join("\n"));
+  }
+  if (met.length > 0)
+    sections.push(["できていること", ...met.map((item) => `- ${item.label}`)].join("\n"));
+  const goodPoints = formatLearnerReply({
+    message: "",
+    goodPoints: feedback.goodPoints,
+    nextSteps: [],
+  });
+  if (goodPoints) sections.push(goodPoints);
+  return sections.join("\n\n");
 }

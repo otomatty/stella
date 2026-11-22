@@ -35,7 +35,7 @@ interface TaskDefinitionReview {
   title?: string;
   review?: {
     rules?: { id: string; required: boolean }[];
-    rubric?: { id: string; criterion: string; required: boolean }[];
+    rubric?: Omit<ReviewRubricItem, "rule">[];
     escalateWhen?: string[];
   };
 }

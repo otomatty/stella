@@ -555,10 +555,11 @@ describe("提出に当て直す (実 SQLite / R2)", () => {
     const unmet = await reviewed("resubmit");
     const order = [pass, unmet];
     const batches = fakeBatches({
-      // 候補 0: 1 件目は AI で確定 (人は再提出 = 危ない取りこぼし)、2 件目は必須項目を満たさない。
+      // 候補 0: 1 件目は AI で合格 (人は再提出)、2 件目は必須項目を満たさず確信度が中なので人に回る。
       [replayCustomId(0, 0)]: succeeded(aiOutput()),
       [replayCustomId(0, 1)]: succeeded(
         aiOutput({
+          confidence: "medium",
           rubric: [
             {
               id: "CR-SCOPE-01",

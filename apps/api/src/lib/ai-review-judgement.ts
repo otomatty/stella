@@ -10,6 +10,7 @@ import {
   type ReviewRubricItem,
   type RouteReason,
   type RoutingDecision,
+  type RoutingInput,
 } from "@stella/shared/review/ai-review";
 import { checkSolutionLeak, type SolutionLeakResult } from "@stella/shared/review/solution-leak";
 import type { LoadedMaterial } from "./ai-review-material.js";
@@ -61,6 +62,7 @@ export function judgeAiReview(input: {
   /** AI が判定できなかったときは null。 */
   output: AiReviewOutput | null;
   lines: LineCounts;
+  priorAiResubmits?: number;
 }): AiReviewJudgement {
   const { kind, material, output } = input;
   // 受講者に見せうる文 (返信と所見のコメント) を解答例と照合する。
@@ -83,16 +85,20 @@ export function judgeAiReview(input: {
         })
       : null;
   const leaked = (leak?.hits.length ?? 0) > 0;
-  const decision = decideRouting({
+  const routing: RoutingInput = {
     kind,
     rubric: material?.rubric ?? [],
     escalateWhen: material?.escalateWhen ?? [],
     forced: input.forced,
     output,
     lines: input.lines,
-    // 確認A・B (と統合) は返信が重なったら人に回す。練習は返信だけを差し替えて確定してよい。
+    priorAiResubmits: input.priorAiResubmits ?? 0,
     leakEscalates: leaked && strict,
-  });
+  };
+  let decision = decideRouting(routing);
+  // 練習の合格ではこれまでどおり文を差し替え、再提出の判定案では人に回す理由にする。
+  if (leaked && !strict && decision.proposedVerdict === "resubmit")
+    decision = decideRouting({ ...routing, leakEscalates: true });
   let learnerReply: LearnerAiFeedback | null = null;
   if (output) {
     const replyCount =
@@ -103,13 +109,32 @@ export function judgeAiReview(input: {
     const findings: AiFinding[] = output.findings.filter(
       (_, i) => decision.findingsValid[i] === true && !(leak?.hits ?? []).includes(replyCount + i),
     );
-    learnerReply = { ...(replyLeaked ? SAFE_REPLY : output.learnerReply), findings };
+    learnerReply = {
+      ...(replyLeaked ? SAFE_REPLY : output.learnerReply),
+      findings,
+      ...(decision.verdict ? { verdict: decision.verdict } : {}),
+      rubric: decision.results.map(({ id, criterion, required, result, guide }) => ({
+        id,
+        label: guide?.title ?? criterion,
+        criterion,
+        required,
+        result,
+        guide: guide ?? null,
+      })),
+    };
   }
   return {
     decision,
     leak,
     leakCheck: leak
-      ? { ...leak, action: !leaked ? "none" : strict ? "escalate" : "sanitize" }
+      ? {
+          ...leak,
+          action: !leaked
+            ? "none"
+            : decision.reasons.includes("solution-leak")
+              ? "escalate"
+              : "sanitize",
+        }
       : null,
     learnerReply,
   };

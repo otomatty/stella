@@ -47,6 +47,7 @@ const GROUP_OF_REASON: Record<RouteReason, Exclude<ReviewQueueGroup, "legacy">> 
   // 課題に必須の評価項目が無いと、AI は合否を出せない。
   "no-rubric": "ai-failed",
   "rubric-unmet": "rule",
+  "ai-resubmit-repeated": "rule",
   "task-condition": "rule",
   // 確認A・Bで使ってはいけない支援を使った (課題の決まりの違反)。
   "unallowed-support": "rule",

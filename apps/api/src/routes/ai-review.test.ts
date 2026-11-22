@@ -19,6 +19,7 @@ import {
   skillEvidence,
   skills,
   stages,
+  submissionReviews,
   submissions,
   taskPrivate,
   taskPrivateVersions,
@@ -36,6 +37,7 @@ import {
 } from "../lib/ai-review-queue.js";
 import { completeJsonSchema } from "../lib/anthropic-complete.js";
 import { completeOpenAiReview } from "../lib/ai-review-openai.js";
+import { consecutiveAiResubmits } from "../lib/ai-review.js";
 import { ReviewProviderError } from "../lib/ai-review-provider.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -53,6 +55,11 @@ const openAiComplete = vi.mocked(completeOpenAiReview);
 const SOLUTION =
   '<!doctype html><html><head><title>課題</title></head><body><main><h1 class="page-title">はじめてのページ</h1><p class="lead">保存して表示を確かめます</p></main></body></html>\n';
 const LEAKY = '`<h1 class="page-title">はじめてのページ</h1><p class="lead">` と書くと完成です。';
+const HEADING_GUIDE = {
+  title: "内容が伝わる見出し",
+  problem: "見出しから本文の内容が伝わりません。",
+  why: "見出しは読む箇所を選ぶ目印になります。",
+};
 
 function aiOutput(over: Partial<AiReviewOutput> = {}): AiReviewOutput {
   const evidence = [{ file: "index.html", startLine: 1, endLine: 1 }];
@@ -73,6 +80,11 @@ function aiOutput(over: Partial<AiReviewOutput> = {}): AiReviewOutput {
     },
     ...over,
   };
+}
+function unmetHeading() {
+  const output = aiOutput();
+  output.rubric[1].result = "unmet";
+  return output;
 }
 function answer(output: unknown, stopReason: "end_turn" | "refusal" | "max_tokens" = "end_turn") {
   return {
@@ -199,7 +211,14 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
     ]);
     await seedTask("basic", {
       rules: [{ id: "CR-SCOPE-01", required: true }],
-      rubric: [{ id: "heading", criterion: "見出しが内容を表している", required: true }],
+      rubric: [
+        {
+          id: "heading",
+          criterion: "見出しが内容を表している",
+          required: true,
+          guide: HEADING_GUIDE,
+        },
+      ],
       escalateWhen: [],
     });
     token = await signAccessToken("test-secret", "learner", "test@example.com");
@@ -357,6 +376,140 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       outcome: "confirmed",
       findings: expect.arrayContaining([expect.objectContaining({ file: "index.html" })]),
     });
+    // verdict を保存していなかった時期の返信も、提出の判定を補って返す。
+    const { message, goodPoints, nextSteps } = aiOutput().learnerReply;
+    await db
+      .update(aiReviews)
+      .set({ learnerReply: { message, goodPoints, nextSteps, findings: [] } });
+    expect((await detail(row.id, token)).ai_feedback).toMatchObject({ verdict: "pass" });
+  });
+
+  it("AI の再提出を確定し、進捗・通知・受講者向けの直し方に反映する", async () => {
+    complete.mockResolvedValue(answer(unmetHeading()));
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
+    expect(saved).toMatchObject({
+      verdict: "resubmit",
+      status: "resubmit",
+      reviewSource: "ai",
+      aiReviewStatus: "confirmed",
+      reviewerId: null,
+    });
+    expect(saved.reviewNotes).toContain("書き方を 1 点直すと合格です。");
+    expect(saved.reviewNotes).toContain(
+      `- ${HEADING_GUIDE.title}: ${HEADING_GUIDE.problem} ${HEADING_GUIDE.why}`,
+    );
+    expect(await progress()).toBe("resubmit");
+    expect(await db.select().from(skillEvidence)).toHaveLength(0);
+    expect(await db.select().from(certificates)).toHaveLength(0);
+    expect(await db.select().from(submissionReviews)).toMatchObject([
+      { submissionId: row.id, verdict: "resubmit", source: "ai", notes: saved.reviewNotes },
+    ]);
+    expect(
+      await db.select().from(notifications).where(eq(notifications.type, "review_completed")),
+    ).toMatchObject([
+      {
+        userId: "learner",
+        title: `${fixture.bundle.manifest.title} のレビューが完了しました`,
+        body: "書き方を直すと合格です。直すところを確認してください。",
+        payload: { submission_id: row.id, verdict: "resubmit", status: "resubmit" },
+      },
+    ]);
+    expect(await reviews()).toMatchObject([
+      {
+        outcome: "confirmed",
+        proposedVerdict: "resubmit",
+        routeReasons: [],
+        disposition: "applied",
+      },
+    ]);
+    expect((await detail(row.id, token)).ai_feedback).toMatchObject({ verdict: "resubmit" });
+    const [review] = await reviews();
+    expect(review.learnerReply?.rubric).toEqual([
+      {
+        id: "CR-SCOPE-01",
+        label: "課題で求めていない処理・要素を残していない。",
+        criterion: "課題で求めていない処理・要素を残していない。",
+        result: "met",
+        required: true,
+        guide: null,
+      },
+      {
+        id: "heading",
+        label: HEADING_GUIDE.title,
+        criterion: "見出しが内容を表している",
+        result: "unmet",
+        required: true,
+        guide: HEADING_GUIDE,
+      },
+    ]);
+    expect((await detail(row.id, token)).ai_feedback).toEqual(review.learnerReply);
+  });
+
+  it("判定なしの置き換えを飛ばして AI の再提出を数え、人の判定で続きが切れる", async () => {
+    complete.mockResolvedValue(answer(unmetHeading()));
+    const first = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const replaced = await submit();
+    const second = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const third = await submit();
+    const submissionOf = async (id: string) =>
+      (await db.select().from(submissions).where(eq(submissions.id, id)))[0];
+    expect(await submissionOf(first.id)).toMatchObject({ verdict: "resubmit", reviewSource: "ai" });
+    expect(await submissionOf(replaced.id)).toMatchObject({
+      verdict: null,
+      aiReviewStatus: "superseded",
+    });
+    expect(await submissionOf(second.id)).toMatchObject({
+      verdict: "resubmit",
+      reviewSource: "ai",
+    });
+    expect(await consecutiveAiResubmits(db, await submissionOf(third.id))).toBe(2);
+    expect(await run()).toEqual(["applied"]);
+    const escalated = (await reviews()).find((review) => review.submissionId === third.id);
+    expect(escalated).toMatchObject({
+      outcome: "escalated",
+      routeReasons: ["rubric-unmet", "ai-resubmit-repeated"],
+    });
+    expect(escalated?.learnerReply).not.toHaveProperty("verdict");
+    expect(await progress()).toBe("instructor-pending");
+    expect((await detail(third.id, token)).ai_feedback).toBeNull();
+
+    const { app } = mountTestApp(env, submissionsRoute);
+    const response = await request(app, env, `/api/submissions/${third.id}`, {
+      method: "PATCH",
+      token: instructorToken,
+      body: JSON.stringify({ verdict: "resubmit" }),
+    });
+    expect(response.status, await response.clone().text()).toBe(200);
+    const fourth = await submit();
+    expect(await consecutiveAiResubmits(db, await submissionOf(fourth.id))).toBe(0);
+    expect(await run()).toEqual(["applied"]);
+    expect(await submissionOf(fourth.id)).toMatchObject({
+      verdict: "resubmit",
+      reviewSource: "ai",
+    });
+  });
+
+  it("練習でも再提出案の返信が解答例と重なれば、人に回して所見を隠す", async () => {
+    complete.mockResolvedValue(
+      answer({
+        ...unmetHeading(),
+        learnerReply: { message: LEAKY, goodPoints: [], nextSteps: [] },
+      }),
+    );
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    expect(await reviews()).toMatchObject([
+      {
+        outcome: "escalated",
+        routeReasons: ["rubric-unmet", "solution-leak"],
+        leakCheck: { action: "escalate" },
+      },
+    ]);
+    expect((await detail(row.id, token)).ai_feedback).toBeNull();
   });
 
   it("キャッシュが効く順に入力を並べ、構造化出力の形を固定する", async () => {
@@ -461,7 +614,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       confidence: "high",
       proposedVerdict: "pass",
       promptVersion: "2026-11-19.1",
-      thresholdVersion: "2026-11-19.1",
+      thresholdVersion: "2026-11-22.1",
     });
     expect(await progress()).toBe("instructor-pending");
     expect((await detail(row.id, token)).ai_feedback).toBeNull();

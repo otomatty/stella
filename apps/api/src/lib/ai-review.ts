@@ -13,13 +13,15 @@
 
 import {
   AI_REVIEW_THRESHOLD_VERSION,
+  formatAiResubmitNotes,
   formatLearnerReply,
   forcedHumanReasons,
+  isEvidenceKind,
   ROUTE_REASONS,
   type RouteReason,
   type LearnerAiFeedback,
 } from "@stella/shared/review/ai-review";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, lt } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { aiReviews, sections, submissions, tasks } from "../db/schema.js";
 import type { Env } from "../env.js";
@@ -62,6 +64,36 @@ export async function submissionForcedReasons(db: Db, row: SubmissionRow): Promi
     support: row.supportLog ?? null,
     recordedSupport: await assessmentRecordedSupport(db, row),
   });
+}
+
+/** 判定なしで置き換わった試行を除き、直前に続いた AI の再提出を数える。 */
+export async function consecutiveAiResubmits(
+  db: Db,
+  row: Pick<SubmissionRow, "studentId" | "taskId" | "attempt">,
+): Promise<number> {
+  if (!row.studentId || !row.taskId) return 0;
+  const previous = await db
+    .select({
+      verdict: submissions.verdict,
+      reviewSource: submissions.reviewSource,
+      aiReviewStatus: submissions.aiReviewStatus,
+    })
+    .from(submissions)
+    .where(
+      and(
+        eq(submissions.studentId, row.studentId),
+        eq(submissions.taskId, row.taskId),
+        lt(submissions.attempt, row.attempt),
+      ),
+    )
+    .orderBy(desc(submissions.attempt));
+  let count = 0;
+  for (const submission of previous) {
+    if (submission.verdict === null && submission.aiReviewStatus === "superseded") continue;
+    if (submission.reviewSource !== "ai" || submission.verdict !== "resubmit") break;
+    count++;
+  }
+  return count;
 }
 
 export type AiReviewRun =
@@ -121,6 +153,7 @@ export async function runAiReview(
     forced,
     output,
     lines: prompt?.lines ?? new Map(),
+    priorAiResubmits: output && !isEvidenceKind(kind) ? await consecutiveAiResubmits(db, row) : 0,
   });
   const [inserted] = await db
     .insert(aiReviews)
@@ -157,8 +190,8 @@ export async function runAiReview(
 export type AiReviewApply = "applied" | "superseded" | "busy";
 
 /**
- * 記録した AI の結果を提出に当てる。AI で確定なら人の合格と同じ確定処理 (進捗・スキルの証拠・
- * 通知・確認Bの定着) を通し、ステージの修了も判定する。人に回すなら「講師の確認待ち」にする。
+ * 記録した AI の結果を提出に当てる。AI で確定なら進捗・スキルの証拠・通知を更新し、
+ * 合格ならステージの修了も判定する。人に回すなら「管理者の確認待ち」にする。
  */
 export async function applyAiReview(
   db: Db,
@@ -181,18 +214,21 @@ export async function applyAiReview(
       await escalateTaskSubmission(db, row.id, review.id, waitMs);
       return "applied";
     }
-    // 監査ログの実行者は受講者本人 (役割は system)。合格を確定した講師はいない。
+    // 監査ログの実行者は受講者本人 (役割は system)。
     const system: Caller = {
       id: row.studentId,
       role: "student",
       name: "AI の一次レビュー",
       email: null,
     };
-    const notes = review.learnerReply ? formatLearnerReply(review.learnerReply) : "";
-    await reviewTaskSubmission(db, system, row.id, "pass", notes, "ai", {
+    const verdict = review.proposedVerdict === "resubmit" ? "resubmit" : "pass";
+    const formatNotes = verdict === "resubmit" ? formatAiResubmitNotes : formatLearnerReply;
+    const notes = review.learnerReply ? formatNotes(review.learnerReply) : "";
+    await reviewTaskSubmission(db, system, row.id, verdict, notes, "ai", {
       aiReviewId: review.id,
       waitMs,
     });
+    if (verdict === "resubmit") return "applied";
     const [task] = await db
       .select({ stageId: sections.stageId })
       .from(tasks)
@@ -215,6 +251,7 @@ export async function applyAiReview(
         .update(aiReviews)
         .set({
           outcome: "escalated",
+          learnerReply: review.learnerReply ? { ...review.learnerReply, verdict: undefined } : null,
           routeReasons: ROUTE_REASONS.filter(
             (r) => review.routeReasons.includes(r) || e.reasons.includes(r),
           ),
@@ -324,7 +361,12 @@ export async function learnerAiFeedback(
   db: Db,
   row: Pick<SubmissionRow, "id" | "verdict" | "reviewSource" | "aiReviewStatus">,
 ): Promise<LearnerAiFeedback | null> {
-  if (row.verdict !== "pass" || row.reviewSource !== "ai" || row.aiReviewStatus !== "confirmed")
+  const { verdict } = row;
+  if (
+    (verdict !== "pass" && verdict !== "resubmit") ||
+    row.reviewSource !== "ai" ||
+    row.aiReviewStatus !== "confirmed"
+  )
     return null;
   const [applied] = await db
     .select({ learnerReply: aiReviews.learnerReply })
@@ -338,5 +380,6 @@ export async function learnerAiFeedback(
     )
     .orderBy(desc(aiReviews.createdAt))
     .limit(1);
-  return applied?.learnerReply ?? null;
+  const reply = applied?.learnerReply;
+  return reply ? { ...reply, verdict: reply.verdict ?? verdict } : null;
 }
