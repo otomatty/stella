@@ -1,17 +1,28 @@
 import type { ComponentType } from "react";
 import { AgeFloor, ageFloorText } from "./age-floor";
+import { AllergyLabel, allergyLabelText } from "./allergy-label";
+import { BankInterest, bankInterestText } from "./bank-interest";
 import { Beads, beadsText } from "./beads";
 import { BusSeats, busSeatsText } from "./bus-seats";
 import { CallStaff, callStaffText } from "./call-staff";
 import { CandyRest, candyRestText } from "./candy-rest";
 import { Contacts, contactsText } from "./contacts";
+import { CookieSplit, cookieSplitText } from "./cookie-split";
+import { DigitBlocks, digitBlocksText } from "./digit-blocks";
+import { DigitalClock, digitalClockText } from "./digital-clock";
+import { DrinkWater, drinkWaterText } from "./drink-water";
+import { Elevator, elevatorText } from "./elevator";
 import { EntryForm, entryFormText } from "./entry-form";
 import { FoldPaper, foldPaperText } from "./fold-paper";
+import { FreeShipping, freeShippingText } from "./free-shipping";
 import { FruitCount, fruitCountText } from "./fruit-count";
+import { HeightCompare, heightCompareText } from "./height-compare";
 import { JumpRope, jumpRopeText } from "./jump-rope";
 import { Laps, lapsText } from "./laps";
 import { LetterCards, letterCardsText } from "./letter-cards";
 import type { MotionId } from "./manifest";
+import { MemberCard, memberCardText } from "./member-card";
+import { NumberTag, numberTagText } from "./number-tag";
 import { OnigiriTimes, onigiriTimesText } from "./onigiri-times";
 import { PiggyBank, piggyBankText } from "./piggy-bank";
 import { PizzaShare, pizzaShareText } from "./pizza-share";
@@ -22,7 +33,10 @@ import { RouteSearch, routeSearchText } from "./route-search";
 import { Scoreboard, scoreboardText } from "./scoreboard";
 import { ShoppingOrder, shoppingOrderText } from "./shopping-order";
 import { StackPlates, stackPlatesText } from "./stack-plates";
+import { Stairs, stairsText } from "./stairs";
 import { TestTotal, testTotalText } from "./test-total";
+import { TileSquares, tileSquaresText } from "./tile-squares";
+import { UmbrellaChoice, umbrellaChoiceText } from "./umbrella-choice";
 import { VendingChange, vendingText } from "./vending-change";
 
 export type MotionProps = {
@@ -55,4 +69,18 @@ export const motionComponents = {
   "letter-cards": { Component: LetterCards, text: letterCardsText },
   "fruit-count": { Component: FruitCount, text: fruitCountText },
   "stack-plates": { Component: StackPlates, text: stackPlatesText },
+  "drink-water": { Component: DrinkWater, text: drinkWaterText },
+  "digit-blocks": { Component: DigitBlocks, text: digitBlocksText },
+  "umbrella-choice": { Component: UmbrellaChoice, text: umbrellaChoiceText },
+  "cookie-split": { Component: CookieSplit, text: cookieSplitText },
+  "number-tag": { Component: NumberTag, text: numberTagText },
+  "bank-interest": { Component: BankInterest, text: bankInterestText },
+  "height-compare": { Component: HeightCompare, text: heightCompareText },
+  "member-card": { Component: MemberCard, text: memberCardText },
+  "free-shipping": { Component: FreeShipping, text: freeShippingText },
+  "allergy-label": { Component: AllergyLabel, text: allergyLabelText },
+  elevator: { Component: Elevator, text: elevatorText },
+  "tile-squares": { Component: TileSquares, text: tileSquaresText },
+  stairs: { Component: Stairs, text: stairsText },
+  "digital-clock": { Component: DigitalClock, text: digitalClockText },
 } satisfies Record<MotionId, { Component: ComponentType<MotionProps>; text: string }>;

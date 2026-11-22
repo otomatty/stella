@@ -23,6 +23,20 @@ export const MOTIONS = {
   "letter-cards": { title: "文字のカード", beats: 4, seconds: [2.5, 4.5, 3.5, 5.0] },
   "fruit-count": { title: "りんごだけ数える", beats: 4, seconds: [2.5, 4.1, 4.3, 3.5] },
   "stack-plates": { title: "お皿を重ねる", beats: 4, seconds: [2.5, 4.0, 4.0, 3.3] },
+  "drink-water": { title: "コップの水", beats: 4, seconds: [2.5, 3.6, 3.6, 4.1] },
+  "digit-blocks": { title: "数字のブロック", beats: 4, seconds: [2.5, 4.1, 4.8, 4.5] },
+  "umbrella-choice": { title: "天気と持ち物", beats: 4, seconds: [2.5, 3.0, 4.5, 5.5] },
+  "cookie-split": { title: "クッキーを3人で分ける", beats: 4, seconds: [2.5, 4.7, 4.5, 4.5] },
+  "number-tag": { title: "番号を名札に書く", beats: 4, seconds: [2.5, 3.1, 4.0, 4.0] },
+  "bank-interest": { title: "通帳と利息", beats: 4, seconds: [2.5, 4.5, 4.8, 5.0] },
+  "height-compare": { title: "背の高さを比べる", beats: 4, seconds: [2.5, 3.8, 4.7, 4.3] },
+  "member-card": { title: "会員かどうか", beats: 4, seconds: [2.5, 4.7, 5.5, 4.5] },
+  "free-shipping": { title: "送料無料の条件", beats: 4, seconds: [2.5, 4.3, 3.8, 5.0] },
+  "allergy-label": { title: "原材料に卵があるか", beats: 4, seconds: [2.5, 4.5, 4.1, 4.0] },
+  elevator: { title: "1階まで下りる", beats: 4, seconds: [2.5, 4.3, 3.6, 4.0] },
+  "tile-squares": { title: "板から正方形を切り取る", beats: 5, seconds: [2.5, 4.7, 4.7, 4.5, 5.2] },
+  stairs: { title: "階段の上り方", beats: 4, seconds: [2.5, 3.5, 4.7, 4.7] },
+  "digital-clock": { title: "時計の桁をそろえる", beats: 4, seconds: [2.5, 4.7, 4.0, 4.5] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;
