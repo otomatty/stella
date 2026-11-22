@@ -590,3 +590,29 @@ describe("stripLeadingTitle", () => {
     );
   });
 });
+
+it("段階がある課題の進め方は解ける問題だけを出し、次の動画を案内する", () => {
+  const manifest: TaskManifest = {
+    ...nodeManifest,
+    problemSteps: true,
+    problems: [
+      { id: "q01", title: "最初の問題" },
+      { id: "q02", title: "まだ見せない題" },
+    ],
+  };
+  const shared = guide({ manifest, problemProgress: { passed: 0, total: 2 } });
+  const nextProblemReason = "次の問題は「変数と定数」の動画を見ると出ます";
+  const waiting = buildTaskGuideHtml({ ...shared, problems: [], nextProblemReason });
+  expect(waiting).toContain(nextProblemReason);
+  expect(waiting).not.toContain("全部の問題を提出しました");
+  expect(waiting).not.toContain("command:stella.submitTask");
+  const open = buildTaskGuideHtml({
+    ...shared,
+    problems: [{ id: "q01", title: "最初の問題", source: "src/q01.ts", status: "not-submitted" }],
+    nextProblemReason,
+  });
+  expect(open).toContain("最初の問題");
+  expect(open).not.toContain("まだ見せない題");
+  expect(open).not.toContain("src/q02.ts");
+  expect(commandArgs(open, "stella.submitTask")).toEqual([[shared.root, "q01"]]);
+});

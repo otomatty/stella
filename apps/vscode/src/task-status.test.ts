@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   folders: [] as string[],
   activeFile: undefined as string | undefined,
   items: [] as FakeItem[],
+  focusListener: undefined as ((state: { focused: boolean }) => void) | undefined,
   editorListener: undefined as ((editor: unknown) => Promise<void>) | undefined,
   executeCommand: vi.fn(),
 }));
@@ -48,6 +49,14 @@ vi.mock("vscode", () => ({
   },
   StatusBarAlignment: { Left: 1 },
   window: {
+    onDidChangeWindowState: (listener: (event: { focused: boolean }) => void) => {
+      state.focusListener = listener;
+      return {
+        dispose: () => {
+          state.focusListener = undefined;
+        },
+      };
+    },
     get activeTextEditor() {
       return state.activeFile
         ? { document: { uri: { scheme: "file", fsPath: state.activeFile } } }
@@ -164,6 +173,39 @@ describe("ステータスバーの課題のボタン", () => {
     });
     expect(inTask()).toEqual(["setContext", "stella.inTask", true]);
     expect(state.items[2]?.visible).toBe(false);
+  });
+
+  it("段階がある課題では問題が解放されるまで提出を隠し、ウィンドウに戻ると更新する", async () => {
+    await writeFile(
+      path.join(root, ".stella/task.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        id: taskId,
+        title: "計算",
+        kind: "basic",
+        runner: "node-test",
+        problemSteps: true,
+        problems: [{ id: "q01", title: "問1" }],
+        submit: { files: ["src/**/*.ts"] },
+        checks: { lint: false, format: false },
+      }),
+    );
+    let watched = false;
+    apiRequest.mockImplementation(async () => ({
+      gated: true,
+      passedProblems: 0,
+      totalProblems: 1,
+      taskPassed: false,
+      problems: [{ id: "q01", state: watched ? "open" : "locked-video" }],
+    }));
+    state.activeFile = path.join(root, "index.html");
+    registerTaskStatus(context);
+    await state.editorListener?.(editor(state.activeFile));
+    expect(state.items[0]?.visible).toBe(false);
+    expect(state.items[1]?.visible).toBe(true);
+    watched = true;
+    state.focusListener?.({ focused: true });
+    await vi.waitFor(() => expect(state.items[0]?.visible).toBe(true));
   });
 
   it("問題つきの課題は保存済みの結果の読み込みを知らせ、提出済みの件数を出す", async () => {

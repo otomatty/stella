@@ -422,6 +422,52 @@ describe("課題のテストビュー", () => {
     expect(children(items.get(root)).map((item) => item.label)).toEqual([sampleFile]);
   });
 
+  it("段階がある課題では解ける問題と提出済みの問題のテスト結果だけを復元する", async () => {
+    await savePrevious(
+      problemRun("q01", [testCase("提出済み", "tests/q01.test.ts")]),
+      problemRun("q02", [testCase("解ける", "tests/q02.test.ts")]),
+      problemRun("q03", [testCase("まだ出さない", "tests/q03.test.ts")]),
+    );
+    const contentHash = "ab".repeat(32);
+    const problems = ["q01", "q02", "q03"].map((id) => ({ id, title: id }));
+    await writeFile(
+      path.join(root, ".stella/task.json"),
+      JSON.stringify({
+        ...manifest,
+        problemSteps: true,
+        problems,
+      }),
+    );
+    await writeFile(
+      path.join(root, ".stella/distribution.json"),
+      JSON.stringify({
+        taskId: manifest.id,
+        contentHash,
+      }),
+    );
+    await writeFile(
+      path.join(root, ".stella/problem-steps.json"),
+      JSON.stringify({
+        contentHash,
+        server: {
+          gated: true,
+          totalProblems: 3,
+          passedProblems: 1,
+          taskPassed: false,
+          problems: problems.map((item, index) => ({
+            ...item,
+            state: ["submitted", "open", "locked-video"][index],
+          })),
+        },
+      }),
+    );
+    await state.taskChanged?.(root);
+    expect(children(items.get(root)).map((item) => item.label)).toEqual([
+      "q01.test.ts",
+      "q02.test.ts",
+    ]);
+  });
+
   it("保存済みの問題を合わせて復元し、全体で 500 件まで項目を用意する", async () => {
     await savePrevious(
       problemRun(

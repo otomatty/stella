@@ -94,11 +94,15 @@ it("課題コマンドと学習ガイドに同じ認証ストアを渡す", () =
   expect(vi.mocked(registerTaskCommands).mock.lastCall?.[1]).toBe(auth);
 });
 
-function dispatch(code?: string): void {
+function dispatch(code?: string, problem?: string): void {
   if (!state.handler) throw new Error("URI handler not registered");
   state.handler.handleUri({
     path: "/task",
-    query: new URLSearchParams({ taskId, ...(code ? { code } : {}) }).toString(),
+    query: new URLSearchParams({
+      taskId,
+      ...(code ? { code } : {}),
+      ...(problem ? { problem } : {}),
+    }).toString(),
   });
 }
 
@@ -161,6 +165,15 @@ describe("task URI の接続導線", () => {
     expect(headers.get("Authorization")).toBe("Bearer saved-token");
     expect(state.openExternal).not.toHaveBeenCalled();
     expect(state.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("task URI の問題 ID を課題を開く処理へ渡す", async () => {
+    state.secrets.set("stella.accessToken", "saved-token");
+    state.fetch.mockResolvedValue(Response.json({}));
+    dispatch(undefined, "q02");
+    await vi.waitFor(() =>
+      expect(state.openTask).toHaveBeenCalledWith(expect.anything(), taskId, "q02"),
+    );
   });
 
   it("拡張の版を取得できなければ版の申告を省いて呼ぶ", async () => {

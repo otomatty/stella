@@ -35,6 +35,7 @@ import {
   writeProblemRun,
   writeStateFile,
 } from "./files.js";
+import { protectedTaskFiles } from "../task-distribution.js";
 import { buildPlan } from "./plans.js";
 import { childEnv, type ProcessOutcome, type ProcessSpec, runProcess } from "./process.js";
 import { type CiRunInput, type StepContext, type StepDefinition, TIMEOUTS } from "./steps.js";
@@ -189,6 +190,7 @@ export async function importedEditableFiles(
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
+  problemId?: string,
   problemSource?: string,
 ): Promise<{
   step: RunStepResult;
@@ -221,7 +223,7 @@ async function collectFiles(
         unmatched: submitAll.files.includes(problemSource) ? [] : [problemSource],
       }
     : submitAll;
-  const prot = matchPatterns(listed, manifest.protected);
+  const prot = await protectedTaskFiles(root, manifest, listed, problemId);
   const problems: string[] = [];
   const missing: string[] = [];
   if (submit.unmatched.length > 0) {
@@ -253,7 +255,10 @@ async function collectFiles(
     const withinLimits =
       (!sizes.tooMany || !countLimited) && !sizes.totalTooLarge && sizes.problems.length === 0;
     if (withinLimits) files = await hashFiles(root, submit.files, LIMITS.fileBytes);
-    protectedFiles = await hashFiles(root, prot.files, LIMITS.protectedFileBytes);
+    protectedFiles = [
+      ...(await hashFiles(root, prot.files, LIMITS.protectedFileBytes)),
+      ...prot.references,
+    ];
     if (problemSource && files.length > 0) {
       const paths = await importedEditableFiles(root, problemSource, submitAll.files);
       imported = await hashFiles(root, paths, LIMITS.fileBytes);
@@ -451,7 +456,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   let protectedFiles: HashedFile[] = [];
   let imported: HashedFile[] = [];
   if (!options.signal?.aborted) {
-    const collected = await collectFiles(root, manifest, selected.problem?.source);
+    const collected = await collectFiles(root, manifest, options.problem, selected.problem?.source);
     if (collected) {
       steps.push(collected.step);
       files = collected.files;

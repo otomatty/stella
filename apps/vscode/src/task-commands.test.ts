@@ -71,6 +71,7 @@ vi.mock("vscode", () => ({
   env: { openExternal: vscodeMock.openExternal },
   ViewColumn: { One: 1, Two: 2 },
   window: {
+    onDidChangeWindowState: () => ({ dispose: () => undefined }),
     showTextDocument: vscodeMock.showTextDocument,
     get activeTextEditor() {
       return state.activeFile
@@ -1161,12 +1162,16 @@ describe("問題つきの課題", () => {
   async function problemRoot(
     source = "export const add = 1;\n",
     outcome: "passed" | "failed" = "passed",
+    staged = false,
   ): Promise<string> {
-    const root = await makeTask(problemTask, {
-      "src/q01-add.ts": source,
-      "src/q02-sub.ts": "export const sub = 1;\n",
-      "README.md": "# 計算",
-    });
+    const root = await makeTask(
+      { ...problemTask, ...(staged ? { problemSteps: true } : {}) },
+      {
+        "src/q01-add.ts": source,
+        "src/q02-sub.ts": "export const sub = 1;\n",
+        "README.md": "# 計算",
+      },
+    );
     const hashed = await hashFile(root, "src/q01-add.ts");
     const taskJson = await hashFile(root, ".stella/task.json");
     const run = {
@@ -1303,6 +1308,85 @@ describe("問題つきの課題", () => {
     expect(body.body.problemId).toBe("q01-add");
     expect(body.body.files.map((file) => file.path)).toEqual(["src/q01-add.ts"]);
     expect(body.body.explanation).toBe("");
+  });
+
+  it("未解放の問題は確認と提出を手元で止め、同じ理由を表示する", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    apiRequest.mockResolvedValue({
+      gated: true,
+      passedProblems: 0,
+      totalProblems: 2,
+      taskPassed: false,
+      problems: [
+        { id: "q01-add", state: "open" },
+        { id: "q02-sub", state: "locked-video", afterTitle: "引き算" },
+      ],
+    });
+    const reason = "次の問題は「引き算」の動画を見ると出ます";
+    await run("stella.runTask", root, "q02-sub");
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining(reason));
+    expect(runTask).not.toHaveBeenCalled();
+    await run("stella.submitTask", root, "q02-sub");
+    expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(reason);
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+  });
+
+  it("提出後の更新で解放された問題を知らせ、選ぶと開く", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    let submitted = false;
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") {
+        submitted = true;
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      return {
+        gated: true,
+        passedProblems: submitted ? 1 : 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: submitted ? "submitted" : "open" },
+          { id: "q02-sub", state: submitted ? "open" : "locked-previous" },
+        ],
+      };
+    });
+    vscodeMock.showInformationMessage.mockImplementation(async (...args: string[]) => args[1]);
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      "次の問題「問2 引く」が出ました",
+      "ファイルを開く",
+    );
+    await vi.waitFor(() =>
+      expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
+        "vscode.open",
+        { scheme: "file", fsPath: path.join(root, "src/q02-sub.ts") },
+        { viewColumn: 1, preview: false },
+      ),
+    );
+    expect(
+      JSON.parse(await readFile(path.join(root, ".stella/submitted-q01-add.json"), "utf8")),
+    ).toEqual({ contentHash: "ab".repeat(32) });
+  });
+
+  it("API の提出拒否の理由をそのまま表示する", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    const reason = "この問題はまだ解けません。先に前の問題を提出してください。";
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") throw new Error(reason);
+      return {
+        gated: true,
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: "open" },
+          { id: "q02-sub", state: "locked-video" },
+        ],
+      };
+    });
+    await run("stella.submitTask", root);
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(reason);
+    expect(vscodeMock.showInformationMessage).not.toHaveBeenCalled();
   });
 
   it("提出する問題の引数を、開いている別の問題のファイルより優先する", async () => {
