@@ -17,27 +17,35 @@ import { FoldPaper, foldPaperText } from "./fold-paper";
 import { FreeShipping, freeShippingText } from "./free-shipping";
 import { FruitCount, fruitCountText } from "./fruit-count";
 import { HeightCompare, heightCompareText } from "./height-compare";
+import { HeightGate, heightGateText } from "./height-gate";
 import { JumpRope, jumpRopeText } from "./jump-rope";
 import { Laps, lapsText } from "./laps";
 import { LetterCards, letterCardsText } from "./letter-cards";
+import { LetterIndex, letterIndexText } from "./letter-index";
 import type { MotionId } from "./manifest";
 import { MemberCard, memberCardText } from "./member-card";
 import { NumberTag, numberTagText } from "./number-tag";
 import { OnigiriTimes, onigiriTimesText } from "./onigiri-times";
+import { ParkingSlots, parkingSlotsText } from "./parking-slots";
+import { PasswordCount, passwordCountText } from "./password-count";
 import { PiggyBank, piggyBankText } from "./piggy-bank";
 import { PizzaShare, pizzaShareText } from "./pizza-share";
 import { PlatformSign, platformSignText } from "./platform-sign";
+import { PriceComma, priceCommaText } from "./price-comma";
 import { QuoteMarks, quoteMarksText } from "./quote-marks";
 import { RocketCountdown, rocketCountdownText } from "./rocket-countdown";
 import { RouteSearch, routeSearchText } from "./route-search";
 import { Scoreboard, scoreboardText } from "./scoreboard";
+import { ShopSign, shopSignText } from "./shop-sign";
 import { ShoppingOrder, shoppingOrderText } from "./shopping-order";
 import { StackPlates, stackPlatesText } from "./stack-plates";
 import { Stairs, stairsText } from "./stairs";
+import { StampRepeat, stampRepeatText } from "./stamp-repeat";
 import { TestTotal, testTotalText } from "./test-total";
 import { TileSquares, tileSquaresText } from "./tile-squares";
 import { UmbrellaChoice, umbrellaChoiceText } from "./umbrella-choice";
 import { VendingChange, vendingText } from "./vending-change";
+import { VendingOutput, vendingOutputText } from "./vending-output";
 
 export type MotionProps = {
   beats: { start: number; end: number }[];
@@ -83,4 +91,12 @@ export const motionComponents = {
   "tile-squares": { Component: TileSquares, text: tileSquaresText },
   stairs: { Component: Stairs, text: stairsText },
   "digital-clock": { Component: DigitalClock, text: digitalClockText },
+  "parking-slots": { Component: ParkingSlots, text: parkingSlotsText },
+  "vending-output": { Component: VendingOutput, text: vendingOutputText },
+  "height-gate": { Component: HeightGate, text: heightGateText },
+  "stamp-repeat": { Component: StampRepeat, text: stampRepeatText },
+  "letter-index": { Component: LetterIndex, text: letterIndexText },
+  "price-comma": { Component: PriceComma, text: priceCommaText },
+  "password-count": { Component: PasswordCount, text: passwordCountText },
+  "shop-sign": { Component: ShopSign, text: shopSignText },
 } satisfies Record<MotionId, { Component: ComponentType<MotionProps>; text: string }>;

@@ -37,6 +37,14 @@ export const MOTIONS = {
   "tile-squares": { title: "板から正方形を切り取る", beats: 5, seconds: [2.5, 4.7, 4.7, 4.5, 5.2] },
   stairs: { title: "階段の上り方", beats: 4, seconds: [2.5, 3.5, 4.7, 4.7] },
   "digital-clock": { title: "時計の桁をそろえる", beats: 4, seconds: [2.5, 4.7, 4.0, 4.5] },
+  "parking-slots": { title: "駐車場の区画", beats: 4, seconds: [2.5, 4.5, 3.5, 4.0] },
+  "vending-output": { title: "自動販売機の取り出し口", beats: 4, seconds: [2.5, 4.5, 3.6, 4.1] },
+  "height-gate": { title: "乗り物の身長制限", beats: 4, seconds: [2.5, 5.0, 4.3, 4.8] },
+  "stamp-repeat": { title: "星のスタンプ", beats: 4, seconds: [2.5, 4.3, 3.5, 4.5] },
+  "letter-index": { title: "文字カードの番号", beats: 4, seconds: [2.5, 5.0, 4.3, 3.3] },
+  "price-comma": { title: "値札のカンマ", beats: 4, seconds: [2.5, 4.0, 4.7, 6.0] },
+  "password-count": { title: "パスワードの文字数", beats: 4, seconds: [2.5, 4.0, 4.3, 3.8] },
+  "shop-sign": { title: "お店の看板", beats: 4, seconds: [2.5, 4.5, 4.3, 5.0] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;
