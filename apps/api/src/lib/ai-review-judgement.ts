@@ -7,6 +7,7 @@ import {
   isEvidenceKind,
   type LearnerAiFeedback,
   type LineCounts,
+  optionalFindingComments,
   type ReviewRubricItem,
   type RouteReason,
   type RoutingDecision,
@@ -111,7 +112,9 @@ export function judgeAiReview(input: {
     );
     learnerReply = {
       ...(replyLeaked ? SAFE_REPLY : output.learnerReply),
-      findings,
+      ...(decision.verdict === "resubmit"
+        ? { findings: [], notes: optionalFindingComments(findings) }
+        : { findings }),
       ...(decision.verdict ? { verdict: decision.verdict } : {}),
       rubric: decision.results.map(({ id, criterion, required, result, guide }) => ({
         id,

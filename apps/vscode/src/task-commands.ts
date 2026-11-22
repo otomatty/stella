@@ -535,6 +535,7 @@ async function submitTaskCommand(
     if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
     let { manifest } = loaded;
     let problem: ProblemState | undefined;
+    let resubmitTaskId: string | undefined;
     if (mode === "submit") {
       const openPath = requestedProblemPath(root, requestedRoot);
       let selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
@@ -591,7 +592,14 @@ async function submitTaskCommand(
       }
       if (!isRunResult(result) || result.taskId !== manifest.id)
         throw new Error("先にこの課題を確認してください");
-      if (canSubmit(result)) throw new Error("手元の確認が通っています。「提出」を使ってください");
+      if (canSubmit(result)) {
+        if (!manifest.problems?.length) {
+          await refreshTaskState(root, manifest.id);
+          if (session === apiSession() && getTaskState(root, manifest.id)?.lmsStatus === "resubmit")
+            resubmitTaskId = manifest.id;
+        }
+        if (!resubmitTaskId) throw new Error("手元の確認が通っています。「提出」を使ってください");
+      }
     }
     const saved = await readSubmissionNotes(root);
     const notesFor = async (draft: SubmissionDraft) => {
@@ -639,7 +647,7 @@ async function submitTaskCommand(
             });
           try {
             if (problem) await sendProblemConsultation(root, problem.id, notes, session);
-            else await sendTaskSubmission(root, mode, notes, session);
+            else await sendTaskSubmission(root, mode, notes, session, resubmitTaskId);
           } catch (error) {
             if (!(error instanceof AuthSessionChanged)) throw error;
             void vscode.window.showWarningMessage(SUBMISSION_SESSION_CHANGED);

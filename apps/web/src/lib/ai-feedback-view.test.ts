@@ -115,6 +115,11 @@ describe("buildAiFeedbackView", () => {
     });
   });
 
+  it("合格では次に試すことを表示データに残す", () => {
+    const view = buildAiFeedbackView(feedback({ verdict: "pass", rubric: [met] }), "pass");
+    expect(view?.nextSteps).toEqual(["次の手順"]);
+  });
+
   it("任意の未達と必須の未達を区別し、判断できない項目は一覧に出さない", () => {
     const view = buildAiFeedbackView(feedback(), "resubmit");
     expect(view?.checklist).toEqual([
@@ -150,6 +155,22 @@ describe("buildAiFeedbackView", () => {
     const view = buildAiFeedbackView(feedback({ verdict: undefined, rubric: [met] }), "pass");
     expect(view?.conclusion).toBe("合格です。");
   });
+
+  it.each([{ notes: ["本文だけの補足"] }, { notes: [] }])(
+    "補足があれば所見より優先する (%j)",
+    ({ notes }) => {
+      const view = buildAiFeedbackView(
+        feedback({
+          notes,
+          findings: [
+            { file: "index.html", startLine: 1, endLine: 2, severity: "info", comment: "古い所見" },
+          ],
+        }),
+        "resubmit",
+      );
+      expect(view?.optionalComments).toEqual(notes);
+    },
+  );
 
   it("評価項目のない古い合格記録は従来の表示に戻す", () => {
     expect(

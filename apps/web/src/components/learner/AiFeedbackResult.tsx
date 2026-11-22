@@ -173,6 +173,18 @@ export function AiFeedbackResult({ view, taskId }: { view: AiFeedbackView; taskI
           </ul>
         </Card>
       )}
+      {view.nextSteps && view.nextSteps.length > 0 && (
+        <Card className={cardStyle}>
+          <h2 className="text-base font-semibold">次に試すこと</h2>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-ink-2">
+            {view.nextSteps.map((step) => (
+              <li key={step} className="whitespace-pre-wrap">
+                {step}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </>
   );
 }

@@ -17,6 +17,7 @@ import {
   formatLearnerReply,
   forcedHumanReasons,
   isEvidenceKind,
+  optionalFindingComments,
   ROUTE_REASONS,
   type RouteReason,
   type LearnerAiFeedback,
@@ -381,5 +382,13 @@ export async function learnerAiFeedback(
     .orderBy(desc(aiReviews.createdAt))
     .limit(1);
   const reply = applied?.learnerReply;
-  return reply ? { ...reply, verdict: reply.verdict ?? verdict } : null;
+  if (!reply) return null;
+  if (verdict === "resubmit")
+    return {
+      ...reply,
+      verdict,
+      findings: [],
+      notes: reply.notes ?? optionalFindingComments(reply.findings),
+    };
+  return { ...reply, verdict: reply.verdict ?? verdict };
 }

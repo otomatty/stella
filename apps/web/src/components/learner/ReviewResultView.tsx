@@ -166,7 +166,7 @@ export function ReviewResultView({
 
         <footer className="text-sm leading-relaxed text-ink-2">
           このレビューは AI が行いました。内容に納得できないときは、人に確認を頼めます。 VS Code
-          の結果のパネルから管理者に相談できます。
+          の課題文の「進め方」から管理者に相談できます。
         </footer>
       </div>
     );

@@ -11,6 +11,7 @@ import {
   formatAiResubmitNotes,
   formatLearnerReply,
   normalizeRubricResults,
+  optionalFindingComments,
   parseAiReviewOutput,
   type ReviewRubricItem,
   type RubricResult,
@@ -28,6 +29,17 @@ const lines = new Map([
   ["#explanation", 2],
 ]);
 const evidence = [{ file: "index.html", startLine: 1, endLine: 3 }];
+
+it("補足にする所見から minor と info の本文だけを取り出す", () => {
+  const [location] = evidence;
+  expect(
+    optionalFindingComments([
+      { ...location, severity: "major", comment: "重大な所見" },
+      { ...location, severity: "minor", comment: "軽い所見" },
+      { ...location, severity: "info", comment: "参考の所見" },
+    ]),
+  ).toEqual(["軽い所見", "参考の所見"]);
+});
 
 function output(
   results: Record<string, RubricResult>,

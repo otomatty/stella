@@ -645,8 +645,16 @@ export interface LearnerRubricItem {
 /** AI で確定した提出の、受講者に見せる所見と返信。 */
 export interface LearnerAiFeedback extends AiLearnerReply {
   findings: AiFinding[];
+  /** 合否に関係しない補足の本文。 */
+  notes?: string[];
   verdict?: "pass" | "resubmit";
   rubric?: LearnerRubricItem[];
+}
+
+export function optionalFindingComments(findings: readonly AiFinding[]): string[] {
+  return findings
+    .filter(({ severity }) => severity === "minor" || severity === "info")
+    .map(({ comment }) => comment);
 }
 
 /** 受講者への返信を、総評 (`review_notes`) に入れる文に整える。 */

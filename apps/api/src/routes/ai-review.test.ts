@@ -385,7 +385,12 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
   });
 
   it("AI の再提出を確定し、進捗・通知・受講者向けの直し方に反映する", async () => {
-    complete.mockResolvedValue(answer(unmetHeading()));
+    const output = unmetHeading();
+    output.findings.push(
+      { file: "index.html", startLine: 1, endLine: 1, severity: "minor", comment: "段落の補足" },
+      { file: "missing.html", startLine: 1, endLine: 1, severity: "info", comment: "範囲外の所見" },
+    );
+    complete.mockResolvedValue(answer(output));
     const row = await submit();
     expect(await run()).toEqual(["applied"]);
     const [saved] = await db.select().from(submissions).where(eq(submissions.id, row.id));
@@ -424,8 +429,15 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
         disposition: "applied",
       },
     ]);
-    expect((await detail(row.id, token)).ai_feedback).toMatchObject({ verdict: "resubmit" });
+    const expectedFeedback = {
+      verdict: "resubmit",
+      findings: [],
+      notes: ["本文が短めです", "段落の補足"],
+    };
+    expect((await detail(row.id, token)).ai_feedback).toMatchObject(expectedFeedback);
     const [review] = await reviews();
+    expect(review.findings).toEqual(output.findings);
+    expect(review.learnerReply).toMatchObject(expectedFeedback);
     expect(review.learnerReply?.rubric).toEqual([
       {
         id: "CR-SCOPE-01",
@@ -445,6 +457,34 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       },
     ]);
     expect((await detail(row.id, token)).ai_feedback).toEqual(review.learnerReply);
+  });
+
+  it("保存済みの再提出の所見から補足の本文だけを返す", async () => {
+    const output = unmetHeading();
+    complete.mockResolvedValue(answer(output));
+    const row = await submit();
+    expect(await run()).toEqual(["applied"]);
+    const legacyReply = {
+      ...output.learnerReply,
+      findings: [
+        ...output.findings,
+        {
+          file: "index.html",
+          startLine: 1,
+          endLine: 1,
+          severity: "major" as const,
+          comment: "重大な所見",
+        },
+      ],
+    };
+    await db.update(aiReviews).set({ learnerReply: legacyReply });
+    expect((await detail(row.id, token)).ai_feedback).toEqual({
+      ...output.learnerReply,
+      verdict: "resubmit",
+      findings: [],
+      notes: ["本文が短めです"],
+    });
+    expect((await reviews())[0].learnerReply).toEqual(legacyReply);
   });
 
   it("判定なしの置き換えを飛ばして AI の再提出を数え、人の判定で続きが切れる", async () => {

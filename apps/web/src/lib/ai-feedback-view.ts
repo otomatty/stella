@@ -1,4 +1,8 @@
-import type { LearnerAiFeedback, LearnerRubricItem } from "@stella/shared/review/ai-review";
+import {
+  type LearnerAiFeedback,
+  type LearnerRubricItem,
+  optionalFindingComments,
+} from "@stella/shared/review/ai-review";
 import type { Submission } from "@stella/shared/review/types";
 
 type ChecklistStatus = "met" | "required-fix" | "optional-fix";
@@ -38,9 +42,7 @@ export function buildAiFeedbackView(
     if (status === "optional-fix") optionalItems.push({ id, label });
   }
 
-  const optionalComments = feedback.findings
-    .filter(({ severity }) => severity === "minor" || severity === "info")
-    .map(({ comment }) => comment);
+  const optionalComments = feedback.notes ?? optionalFindingComments(feedback.findings);
 
   const resubmit = verdict === "resubmit";
   const fixCount = fixes.length;
@@ -61,6 +63,7 @@ export function buildAiFeedbackView(
     optionalComments: [...new Set(optionalComments)],
     message: resubmit ? "" : feedback.message,
     goodPoints: [...new Set(feedback.goodPoints)],
+    ...(!resubmit ? { nextSteps: [...new Set(feedback.nextSteps)] } : {}),
   };
 }
 
