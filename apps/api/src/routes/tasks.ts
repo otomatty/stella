@@ -170,11 +170,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           p?.status === "passed" || p?.status === "ai-passed",
         );
         const steps = gatedTaskIds.has(task.id)
-          ? problemStepsIfReady(
-              stepsByTask.get(task.id) ?? [],
-              problems,
-              countedProblemIds(saved, contentHash, false),
-            )
+          ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
           : undefined;
         const problemSteps = steps?.map(
           ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
@@ -264,7 +260,7 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
       ? evaluatedProblemSteps(
           await loadProblemSteps(db, caller.id, { taskId: row.id }),
           problems,
-          countedProblemIds(saved, row.contentHash, false),
+          passedIds,
         )
       : undefined;
     const missingCompletions =

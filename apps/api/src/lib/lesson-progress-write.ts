@@ -46,13 +46,15 @@ export function assertProgressSyncSize(count: number): void {
   }
 }
 
-/** ステップなら今の版の提出の有無を返す。それ以外のレッスンは null。 */
+/** ステップの提出を確認する。課題の合格後は旧版の提出も数える。それ以外のレッスンは null。 */
 export function problemStepCompletion(userId: string | SQL, lessonId: string | SQL) {
   return sql<boolean | null>`(
     select exists (
       select 1 from task_problem_results r
-      inner join tasks t on t.id = p.task_id and t.content_hash = r.content_hash
+      inner join tasks t on t.id = p.task_id
+      left join task_progress tp on tp.user_id = r.user_id and tp.task_id = r.task_id
       where r.user_id = ${userId} and r.task_id = p.task_id and r.problem_id = p.problem_id
+        and (t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed'))
     )
     from task_problem_steps p
     where p.step_lesson_id = ${lessonId}

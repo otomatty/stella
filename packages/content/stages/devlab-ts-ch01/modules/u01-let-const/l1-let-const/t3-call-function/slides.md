@@ -1,6 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-functions-function-declaration]
 id: 1-1-3
+progressRevision: 2
 title: 関数を呼び出す
 takeaway: "関数は、名前の後ろのかっこに値を書いて呼び出すと動きます。"
 introduces: ["呼び出す", "export"]

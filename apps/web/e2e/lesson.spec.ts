@@ -62,7 +62,7 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   );
   await expect(tocRow).toBeDisabled();
   await expect(tocRow).toContainText("の動画を見ると解けます");
-  if ((await tocButton.getAttribute("aria-expanded")) === "true") {
+  if (usesTocDrawer) {
     await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
   }
 

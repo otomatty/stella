@@ -1,7 +1,7 @@
-import { and, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
-import { lessonProgress, lessons, submissions, taskProblemSteps } from "../db/schema.js";
+import { lessonProgress, lessons, submissions } from "../db/schema.js";
 import { problemStepCompletion } from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
 
@@ -65,12 +65,13 @@ export interface ReviewedProgress {
   problemStepLessonIds: Set<string>;
 }
 
-/** コードはレビュー、問題のステップは提出の有無で完了を決める。 */
+/** 現存するレッスンの進捗を返す。コードはレビュー、問題のステップは提出で完了を決める。 */
 export async function reviewedProgressRows(
   db: Db,
   userId: string,
   rows: NormalizedProgressRow[],
 ): Promise<ReviewedProgress> {
+  const existing = new Set<string>();
   const reviewed = new Set<string>();
   const problemStepLessonIds = new Set<string>();
   const passed = new Set<string>();
@@ -78,21 +79,18 @@ export async function reviewedProgressRows(
     rows.map((r) => r.lessonId),
     IDS_PER_QUERY,
   )) {
-    const serverReviewed = await db
+    const existingLessons = await db
       .select({
         id: lessons.id,
+        type: lessons.type,
         problemSubmitted: problemStepCompletion(userId, sql`lessons.id`),
       })
       .from(lessons)
-      .leftJoin(taskProblemSteps, eq(taskProblemSteps.stepLessonId, lessons.id))
-      .where(
-        and(
-          inArray(lessons.id, ids),
-          or(eq(lessons.type, "code"), isNotNull(taskProblemSteps.stepLessonId)),
-        ),
-      );
+      .where(inArray(lessons.id, ids));
     const codeLessonIds: string[] = [];
-    for (const row of serverReviewed) {
+    for (const row of existingLessons) {
+      existing.add(row.id);
+      if (row.type !== "code" && row.problemSubmitted === null) continue;
       reviewed.add(row.id);
       if (row.problemSubmitted === null) codeLessonIds.push(row.id);
       else {
@@ -104,15 +102,17 @@ export async function reviewedProgressRows(
     for (const id of ok) passed.add(id);
   }
   return {
-    rows: rows.map((r) =>
-      reviewed.has(r.lessonId)
-        ? {
-            ...r,
-            completed: passed.has(r.lessonId),
-            countsTowardActivity: !problemStepLessonIds.has(r.lessonId) && r.countsTowardActivity,
-          }
-        : r,
-    ),
+    rows: rows
+      .filter((r) => existing.has(r.lessonId))
+      .map((r) =>
+        reviewed.has(r.lessonId)
+          ? {
+              ...r,
+              completed: passed.has(r.lessonId),
+              countsTowardActivity: !problemStepLessonIds.has(r.lessonId) && r.countsTowardActivity,
+            }
+          : r,
+      ),
     reviewedLessonIds: reviewed,
     problemStepLessonIds,
   };

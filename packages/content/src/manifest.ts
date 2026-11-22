@@ -601,6 +601,7 @@ function buildOneStage(
         const slidesContentId = `${lessonDir}/${topicDir}/slides.md`;
         lessons.push({
           id: fm.id,
+          ...(fm.progressRevision === undefined ? {} : { progressRevision: fm.progressRevision }),
           title: fm.title,
           type: "slides",
           hasNarration:

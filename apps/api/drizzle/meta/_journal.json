@@ -631,13 +631,6 @@
       "when": 1795046400008,
       "tag": "0092_task_problem_steps",
       "breakpoints": true
-    },
-    {
-      "idx": 91,
-      "version": "6",
-      "when": 1795046400009,
-      "tag": "0093_reset_devlab_ch01_video_progress",
-      "breakpoints": true
     }
   ]
 }

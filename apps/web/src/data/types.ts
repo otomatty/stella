@@ -33,6 +33,8 @@ export interface User {
 export interface Lesson {
   /** 教材の台本の有無。seed が動画の保持・解除を判断する。 */
   hasNarration?: boolean;
+  /** 教材で進捗を振り直す版。seed のレッスン UUID に使う。 */
+  progressRevision?: number;
   id: string;
   title: string;
   type: LessonType;

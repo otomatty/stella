@@ -524,6 +524,79 @@ describe("問題の提出", () => {
     expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 3 });
   });
 
+  it.each([true, false])(
+    "旧版の提出は課題の合格済み状態 (%s) に応じてステップと完了に反映される",
+    async (passed) => {
+      const input = await gatedInput(await setupProblemSteps());
+      expect((await manual(passed ? undefined : ["q02-sub"])).status).toBe(200);
+      await db.update(taskProblemResults).set({ contentHash: "old" });
+      await db.update(taskProgress).set({ contentHash: "old" });
+      await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, "step-sub"));
+      await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, "step-add"));
+      if (!passed) {
+        await db
+          .update(lessonProgress)
+          .set({ completed: true })
+          .where(eq(lessonProgress.lessonId, "video"));
+      }
+
+      const problems = passed
+        ? [{ state: "submitted" }, { state: "submitted" }]
+        : [{ state: "open" }, { state: "locked-previous" }];
+      const stage = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+      expect(stage.status).toBe(200);
+      const stageTasks = ((await stage.json()) as { tasks: { id: string }[] }).tasks;
+      expect(stageTasks.find(({ id }) => id === TASK_ID)).toMatchObject({
+        problems_passed: passed ? 2 : 0,
+        problems,
+      });
+      const results = await problemResults();
+      expect(results.status).toBe(200);
+      expect(await results.json()).toMatchObject({ problems });
+      expect(await stepProgress("step-sub")).toEqual(
+        passed ? expect.objectContaining({ completed: true }) : undefined,
+      );
+
+      // ブラウザの値と逆でも、完了はサーバーの提出と課題の合格状態から決まる。
+      const synced = await request(app(), env, "/api/lesson-progress", {
+        method: "POST",
+        token,
+        body: JSON.stringify({
+          rows: ["step-sub", "step-add"].map((lesson_id) => ({
+            lesson_id,
+            completed: !passed,
+            updated_at: "2099-01-01T00:00:00Z",
+          })),
+        }),
+      });
+      expect(synced.status).toBe(200);
+      expect(await stepProgress("step-sub")).toMatchObject({ completed: passed });
+      expect(await stepProgress("step-add")).toMatchObject({ completed: passed });
+
+      expect((await post(input)).status).toBe(passed ? 201 : 409);
+    },
+  );
+
+  it("進捗同期は削除済みレッスンの行を捨て、現存するレッスンの行を保存する", async () => {
+    await setupProblemSteps();
+    const synced = await request(app(), env, "/api/lesson-progress", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        rows: ["removed-video", "video"].map((lesson_id) => ({
+          lesson_id,
+          completed: true,
+          watched_sec: 60,
+          updated_at: "2099-01-01T00:00:00Z",
+        })),
+      }),
+    });
+    expect(synced.status).toBe(200);
+    expect(await synced.json()).toMatchObject({ ok: true, written: 1 });
+    expect(await stepProgress("removed-video")).toBeUndefined();
+    expect(await stepProgress("video")).toMatchObject({ completed: true, watchedSec: 60 });
+  });
+
   it.each(["for-stage", "problem-results"] as const)(
     "%s は今の版の提出済みステップの完了だけを補い、再読込で書き直さない",
     async (endpoint) => {

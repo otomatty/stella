@@ -1,6 +1,7 @@
 ---
 sourceRefs: [SRC-typescriptbook-functions-function-declaration]
 id: 1-1-1
+progressRevision: 2
 title: 関数のしくみ
 takeaway: "関数は、値を受け取り、決まった処理をして、値を返すまとまりです。"
 introduces: ["関数", "引数", "戻り値", "return", "function"]

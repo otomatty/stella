@@ -8,7 +8,23 @@ import {
 import { SKILL_MAP_ISLAND_CATEGORIES } from "../../shared/src/skill-map/islands.js";
 import { describe, expect, it } from "vitest";
 import { buildContentManifest, collectStageThumbnails } from "./manifest.js";
+import { parseSlides } from "./parse-slides.js";
 import { LEARNING_PROGRAM_SLUGS } from "../../shared/src/study/pace.js";
+
+describe("スライドの進捗の版", () => {
+  function source(revision: string) {
+    return `---\nid: 1-1-1\ntitle: 動画\ntakeaway: 要点\n${revision}---\n# 動画\n`;
+  }
+
+  it("指定された整数を読み、指定がなければ従来のままにする", () => {
+    expect(parseSlides(source("progressRevision: 2\n")).progressRevision).toBe(2);
+    expect(parseSlides(source("")).progressRevision).toBeUndefined();
+  });
+
+  it.each(["", "0", "1", "-2", "2.5", '"2"', "text"])("%j を拒否する", (value) => {
+    expect(() => parseSlides(source(`progressRevision: ${value}\n`))).toThrow("2 以上の整数");
+  });
+});
 
 describe("buildContentManifest", () => {
   const { stages, quizzes, tasks } = buildContentManifest();
