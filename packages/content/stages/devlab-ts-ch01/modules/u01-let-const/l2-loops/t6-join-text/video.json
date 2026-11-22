@@ -1,0 +1,668 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "足して入れ直す記号を文字列に使い、後ろにつながる順番を読める。",
+    "stuck": "足して入れ直す記号が、文字列にも使えることを知らない。",
+    "points": ["文字列も += で後ろにつないでいけます。"],
+    "leaveOut": ["文字列の前につなぐ順番", "問7の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "An empty blue necklace cord bent into a shallow arc. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "Two hands threading a violet bead onto the right end of a thin blue cord. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A blue cord holding three round beads of different colors in a row. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "trail": {
+      "prompt": "Three numbered-looking but completely blank signposts aligned on a curving path. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "receipt": {
+      "prompt": "A blank paper receipt and a small violet receipt printer. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "空の糸",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "ビーズを通す",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "つないだ順",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "ビーズの並び",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "案内の順番",
+          "art": "trail",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "明細の文章",
+          "art": "receipt",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "始めの数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "発射までの文",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "beads",
+      "beats": [
+        {
+          "say": "この動画では、文字列をつないでいく書き方を学びます。"
+        },
+        {
+          "say": "ネックレスは、ビーズを1つずつ糸に通して作るものです。",
+          "speech": "ネックレスは、ビーズを一つずつ糸に通して作るものです。"
+        },
+        {
+          "say": "通した順に、後ろへ並んでいきました。"
+        },
+        {
+          "say": "文字列も、プラスイコールで後ろにつなげます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "糸にビーズを通す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "まず、ビーズのない糸を用意します。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "空"
+          }
+        },
+        {
+          "say": "青いビーズを通してみましょう。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "青"
+          }
+        },
+        {
+          "say": "次に紫を通したら、青の後ろに並びました。",
+          "tag": {
+            "step": "青、紫"
+          }
+        },
+        {
+          "say": "あとから通したものは、いつも右端です。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "通した順"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "プラスイコールで後ろにつなぐ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 文字列の後ろに「あ」をつなぐ",
+        "text += \"あ\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初は、引用符の間に何も書きません。",
+          "part": {
+            "line": 1,
+            "text": "\"\"",
+            "note": "空の文字列"
+          },
+          "figure": {
+            "tag": {
+              "start": "空"
+            }
+          }
+        },
+        {
+          "say": "文字列をつなぐことが、文字列の連結です。",
+          "term": {
+            "text": "文字列の連結",
+            "note": "文字列をつなぐ",
+            "ruby": "もじれつのれんけつ"
+          },
+          "pause": 1
+        },
+        {
+          "say": "プラスイコールの右に、つなぐ文字を書きます。",
+          "part": {
+            "line": 3,
+            "text": "\"あ\""
+          },
+          "figure": {
+            "tag": {
+              "step": "あ"
+            }
+          }
+        },
+        {
+          "say": "空の文字列につないだ結果は、あという文字です。",
+          "part": {
+            "line": 3,
+            "text": "+="
+          },
+          "figure": {
+            "tag": {
+              "result": "あ"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "数と空白を順番につなぐ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 三から一まで一ずつ減らす",
+        "for (let i = 3; i >= 1; i--) {",
+        "  // 番号と空白を今の文字列の後ろにつなぐ",
+        "  text += `${i} `;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "今度も、空の文字列から始めましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "tag": {
+              "result": "空"
+            }
+          }
+        },
+        {
+          "say": "三から、一つずつ番号を減らします。",
+          "part": {
+            "line": 3,
+            "text": "i--"
+          },
+          "figure": {
+            "tag": {
+              "start": "3から1"
+            }
+          }
+        },
+        {
+          "say": "番号のあとに、空白を一つ入れました。",
+          "part": {
+            "line": 5,
+            "text": "`${i} `"
+          },
+          "figure": {
+            "tag": {
+              "step": "数と空白"
+            }
+          }
+        },
+        {
+          "say": "そこまでの文字列の後ろに、順につなぎます。",
+          "figure": {
+            "tag": {
+              "step": "3、2、1",
+              "result": "3 2 1 "
+            }
+          }
+        },
+        {
+          "say": "一のあとに残る空白も、確かめましょう。",
+          "part": {
+            "line": 5,
+            "text": "+="
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 文字列の後ろに「あ」をつなぐ",
+        "text += \"あ\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けて見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": "="
+              },
+              {
+                "line": 3,
+                "text": "+="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一つの色は、この例に合わせて自分で決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "text"
+              },
+              {
+                "line": 1,
+                "text": "\"\""
+              },
+              {
+                "line": 3,
+                "text": "text"
+              },
+              {
+                "line": 3,
+                "text": "\"あ\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "二つの文字をつなぐと",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 最初の文字を後ろにつなぐ",
+        "text += \"a\";",
+        "// 次の文字を後ろにつなぐ",
+        "text += \"b\";"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "空の文字列に、先に a、次に b をつなぎます。",
+          "speech": "空の文字列に、先にエー、次にビーをつなぎます。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "完成した文字列は何でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 最初の文字を後ろにつなぐ",
+        "text += \"a\";",
+        "// 次の文字を後ろにつなぐ",
+        "text += \"b\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、ab です。",
+          "speech": "答えは、エービーです。",
+          "figure": {
+            "tag": {
+              "result": "ab"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "書いた順に後ろへつなぐ",
+      "code": [
+        "// つなぐ先に空の文字列を入れる",
+        "let text = \"\";",
+        "// 最初の文字を後ろにつなぐ",
+        "text += \"a\";",
+        "// 次の文字を後ろにつなぐ",
+        "text += \"b\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "空の文字列には、まだ何も入っていません。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "tag": {
+              "start": "空"
+            }
+          }
+        },
+        {
+          "say": "最初につないだ a は、先頭に来ます。",
+          "speech": "最初につないだエーは、先頭に来ます。",
+          "part": {
+            "line": 3,
+            "text": "\"a\""
+          },
+          "figure": {
+            "tag": {
+              "step": "a"
+            }
+          }
+        },
+        {
+          "say": "次の b は、a の後ろに入りました。",
+          "speech": "次のビーは、エーの後ろに入りました。",
+          "part": {
+            "line": 5,
+            "text": "\"b\""
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "二文字の間に、空白はありません。",
+          "figure": {
+            "tag": {
+              "step": "空白なし"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "ビーズのように、あとから来たものを後ろにつなぎます。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "場所を並べた案内文にも、使える書き方です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "明細では、項目の後ろに次の項目を足していきます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問7で使う",
+      "code": [
+        "// 問7 n から 1 まで数えて、最後に「発射」を付けた文字列を返す",
+        "//     例: countDown(3) → \"3, 2, 1, 発射\"",
+        "export function countDown(n: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問7では、数えた数字をつないで、最後に発射を付けます。",
+          "speech": "問ななでは、数えた数字をつないで、最後に発射を付けます。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "引数 n は、最初に数える値です。",
+          "speech": "引数エヌは、最初に数える値です。",
+          "part": {
+            "line": 2,
+            "text": "n: number"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "最後の数字と発射の間も、コンマと空白を入れましょう。",
+          "figure": {
+            "tag": {
+              "result": "区切りを確認"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "132d6297ed9473fc8677fec93d24f2b784595b1d2d5de24dcfc517d2686eb697"
+  }
+}

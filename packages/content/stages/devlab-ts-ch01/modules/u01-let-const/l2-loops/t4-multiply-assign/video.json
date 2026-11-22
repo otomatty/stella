@@ -1,0 +1,719 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "アスタリスクイコールの行を読んで、掛け算を重ねた結果を言える。",
+    "stuck": "足し算と同じように、掛け算もゼロから始めようとしている。",
+    "points": ["*= は掛けて入れ直します。掛け算を重ねるときは 1 から始めます。"],
+    "leaveOut": ["指定した回数の数え方", "問6の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A single flat sheet of light grey paper viewed from an oblique angle. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "Hands folding a pale violet sheet of paper in half. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A cutaway side view of neatly stacked folded paper layers with blue and violet edges. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "boxes": {
+      "prompt": "Two identical trays each holding an orderly group of small blue boxes. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "cells": {
+      "prompt": "A simple microscope slide with round violet cells in pairs. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の枚数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "半分に折る",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "重なった枚数",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "紙の重なり",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "箱の組み合わせ",
+          "art": "boxes",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "細胞の数",
+          "art": "cells",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最後の数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "階乗",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "fold-paper",
+      "beats": [
+        {
+          "say": "この動画では、掛けて入れ直す書き方を学びます。"
+        },
+        {
+          "say": "紙を半分に折ると、重なった枚数は2倍です。",
+          "speech": "紙を半分に折ると、重なった枚数は二倍です。"
+        },
+        {
+          "say": "1枚から始めて、2枚、4枚、8枚と増えました。",
+          "speech": "一枚から始めて、二枚、四枚、八枚と増えました。"
+        },
+        {
+          "say": "今の値に掛けて入れ直すのが、アスタリスクイコールです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "紙の重なりを数える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "折る前は、紙が一枚です。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "1枚"
+          }
+        },
+        {
+          "say": "半分に折ると、二枚分になりました。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "2枚"
+          }
+        },
+        {
+          "say": "次に折ると、二枚分がさらに二倍になります。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "4枚"
+          }
+        },
+        {
+          "say": "折るたびに、そのときの枚数を使って数えましょう。",
+          "pulse": ["step"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "アスタリスクイコールで掛ける",
+      "code": [
+        "// 最初の枚数を入れる",
+        "let result = 1;",
+        "// 重なった枚数を二倍にする",
+        "result *= 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初は、一枚分を変数に入れます。",
+          "part": {
+            "line": 1,
+            "text": "result",
+            "note": "結果"
+          },
+          "figure": {
+            "tag": {
+              "start": "1"
+            }
+          }
+        },
+        {
+          "say": "掛けて入れ直す記号は、アスタリスクイコールです。",
+          "term": {
+            "text": "*=",
+            "note": "掛けて入れ直す"
+          },
+          "pause": 1
+        },
+        {
+          "say": "右の数が、何倍にするかを表します。",
+          "part": {
+            "line": 3,
+            "text": "2"
+          },
+          "figure": {
+            "tag": {
+              "step": "2倍"
+            }
+          }
+        },
+        {
+          "say": "掛けたあとの二枚分を、同じ変数に入れました。",
+          "part": {
+            "line": 3,
+            "text": "result"
+          },
+          "figure": {
+            "tag": {
+              "result": "2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "note-1",
+      "kind": "code",
+      "role": "note",
+      "title": "ゼロを最初に入れた場合",
+      "code": [
+        "// 最初の枚数をゼロにする",
+        "let result = 0;",
+        "// 重なった枚数を二倍にする",
+        "result *= 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "試しに、最初の値をゼロにします。",
+          "part": {
+            "line": 1,
+            "text": "0"
+          },
+          "figure": {
+            "tag": {
+              "start": "0"
+            }
+          }
+        },
+        {
+          "say": "ゼロを二倍にしても、答えはゼロです。",
+          "part": {
+            "line": 3,
+            "text": "*= 2"
+          },
+          "figure": {
+            "tag": {
+              "step": "0 × 2"
+            }
+          }
+        },
+        {
+          "say": "その先も、何を掛けてもゼロから変わりません。",
+          "figure": {
+            "tag": {
+              "result": "0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "一から四まで掛ける",
+      "code": [
+        "// 掛け算の結果を一から始める",
+        "let result = 1;",
+        "// 一から四まで一ずつ進む",
+        "for (let i = 1; i <= 4; i++) {",
+        "  // 今の結果に番号を掛ける",
+        "  result *= i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "掛け算を始める前に、一を入れます。",
+          "part": {
+            "line": 1,
+            "text": "1"
+          },
+          "figure": {
+            "tag": {
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "今度は、くり返すたびに掛ける数を変えましょう。",
+          "part": {
+            "line": 3,
+            "text": "i++"
+          },
+          "figure": {
+            "tag": {
+              "start": "1から4"
+            }
+          }
+        },
+        {
+          "say": "一を掛けても、最初の値はそのままです。",
+          "part": {
+            "line": 5,
+            "text": "*= i"
+          },
+          "figure": {
+            "tag": {
+              "step": "1を掛ける"
+            }
+          }
+        },
+        {
+          "say": "次に二、三と掛けると、結果は六になります。",
+          "figure": {
+            "tag": {
+              "step": "3を掛ける",
+              "result": "6"
+            }
+          }
+        },
+        {
+          "say": "最後に四を掛けて、二十四になりました。",
+          "figure": {
+            "tag": {
+              "step": "4を掛ける",
+              "result": "24"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 最初の枚数を入れる",
+        "let result = 1;",
+        "// 重なった枚数を二倍にする",
+        "result *= 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": "="
+              },
+              {
+                "line": 3,
+                "text": "*="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色は、自分で決める部分を表します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "result"
+              },
+              {
+                "line": 1,
+                "text": "1"
+              },
+              {
+                "line": 3,
+                "text": "result"
+              },
+              {
+                "line": 3,
+                "text": "2"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "一から三まで掛けると",
+      "code": [
+        "// 掛け算の結果を一から始める",
+        "let result = 1;",
+        "// 一から三まで一ずつ進む",
+        "for (let i = 1; i <= 3; i++) {",
+        "  // 今の結果に番号を掛ける",
+        "  result *= i;",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "掛ける数の最後を、三に変えました。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "最後の値はいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 掛け算の結果を一から始める",
+        "let result = 1;",
+        "// 一から三まで一ずつ進む",
+        "for (let i = 1; i <= 3; i++) {",
+        "  // 今の結果に番号を掛ける",
+        "  result *= i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、六です。",
+          "figure": {
+            "tag": {
+              "result": "6"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "前の結果を次の掛け算に使う",
+      "code": [
+        "// 掛け算の結果を一から始める",
+        "let result = 1;",
+        "// 一から三まで一ずつ進む",
+        "for (let i = 1; i <= 3; i++) {",
+        "  // 今の結果に番号を掛ける",
+        "  result *= i;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初の値は、一です。",
+          "part": {
+            "line": 1,
+            "text": "1"
+          },
+          "figure": {
+            "tag": {
+              "start": "1"
+            }
+          }
+        },
+        {
+          "say": "一と二を順に掛けると、二になりました。",
+          "figure": {
+            "tag": {
+              "step": "2"
+            }
+          }
+        },
+        {
+          "say": "三周目は、その二に三を掛けます。",
+          "part": {
+            "line": 5,
+            "text": "*= i"
+          },
+          "figure": {
+            "tag": {
+              "step": "2 × 3"
+            }
+          }
+        },
+        {
+          "say": "四は条件に合わないので、六で終わりです。",
+          "part": {
+            "line": 3,
+            "text": "i <= 3"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "紙を折るたびに、重なった枚数を倍にします。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "箱の組み合わせを数えるときにも、掛け算の出番です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "細胞が分かれて増えるときも、同じ計算を使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問6で使う",
+      "code": [
+        "// 問6 n の階乗（1 × 2 × … × n）を返す。0 の階乗は 1",
+        "//     例: factorial(5) → 120",
+        "export function factorial(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問6では、1からnまでを掛けた階乗を返します。",
+          "speech": "問ろくでは、一からエヌまでを掛けた階乗を返します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "0 の階乗は 1 です。",
+          "speech": "ゼロの階乗は一です。",
+          "part": {
+            "line": 0,
+            "text": "0 の階乗は 1"
+          },
+          "figure": {
+            "tag": {
+              "start": "0"
+            }
+          }
+        },
+        {
+          "say": "引数を受け取ったとき、どこまで掛けるか考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "n: number"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7c76ccd822f78236be5110352f84e0b098ebdf820c939556b03e48106553bbb4"
+  }
+}

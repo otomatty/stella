@@ -1,0 +1,708 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "let で作った変数を読んで、入れ直したあとの値を言える。",
+    "stuck": "const の変数しか知らず、値を変えたいときにどう書くのか分からない。",
+    "points": ["let で作った変数は、あとから値を入れ直せます。"],
+    "leaveOut": ["足して入れ直す短い書き方", "くり返し"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A tabletop electronic sports scoreboard with a single blank display and blue casing. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A hand holding an eraser above a small violet dry erase board. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "A bright blue sports scoreboard with a blank display and a small magenta victory pennant. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "saldo": {
+      "prompt": "A violet wallet open with a few metallic coins inside. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "laps": {
+      "prompt": "A small hand tally counter with a blank window. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の得点",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "書き直す",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "今の得点",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "試合の得点",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "口座の残高",
+          "art": "saldo",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "実行した回数",
+          "art": "laps",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最後の数",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "合計",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "scoreboard",
+      "beats": [
+        {
+          "say": "この動画では、値を入れ直せる変数を学びます。"
+        },
+        {
+          "say": "試合で点が入るたびに書き直すのが、得点板の数字です。"
+        },
+        {
+          "say": "横の名札にあるチーム名は、試合の間ずっと変わりません。"
+        },
+        {
+          "say": "書き直せる箱と、書き直せない箱を使い分けます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "得点を書き直す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "試合の始めは、得点をゼロにします。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "0"
+          }
+        },
+        {
+          "say": "点が入ったら、得点板を書き直しましょう。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"]
+        },
+        {
+          "say": "同じ得点板に、3点と書きました。",
+          "speech": "同じ得点板に、三点と書きました。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "3"
+          }
+        },
+        {
+          "say": "これから見る得点は、新しく書いた値です。",
+          "pulse": ["start"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "let で作り、値を入れ直す",
+      "code": [
+        "// 得点を入れ直せる変数として作る",
+        "let score = 0;",
+        "// 得点に新しい値を入れ直す",
+        "score = 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "let を付けて、得点を入れる変数を作ります。",
+          "speech": "レットを付けて、得点を入れる変数を作ります。",
+          "part": {
+            "line": 1,
+            "text": "let"
+          },
+          "figure": {
+            "tag": {
+              "start": "0"
+            }
+          }
+        },
+        {
+          "say": "あとから値を入れ直すことが、再代入です。",
+          "term": {
+            "text": "再代入",
+            "note": "値を入れ直すこと",
+            "ruby": "さいだいにゅう"
+          },
+          "pause": 1
+        },
+        {
+          "say": "再代入するときは、最初に名前だけを書きます。",
+          "part": {
+            "line": 3,
+            "text": "score",
+            "note": "得点"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "右側の 3 が、同じ変数に入りました。",
+          "speech": "右側の三が、同じ変数に入りました。",
+          "part": {
+            "line": 3,
+            "text": "3"
+          },
+          "figure": {
+            "tag": {
+              "result": "3"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "note-1",
+      "kind": "code",
+      "role": "note",
+      "title": "const の値は入れ直せない",
+      "code": [
+        "// 得点を入れ直せない変数として作る",
+        "const score = 0;",
+        "// 入れ直そうとすると型のエラーになる",
+        "score = 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "const で作った変数は、値を入れ直せません。",
+          "speech": "コンストで作った変数は、値を入れ直せません。",
+          "part": {
+            "line": 1,
+            "text": "const"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "この行で、エラーになります。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "tag": {
+              "step": "エラー"
+            }
+          }
+        },
+        {
+          "say": "入れ直す予定があるときは、最初の行を見直しましょう。",
+          "figure": {
+            "tag": {
+              "start": "宣言を確認"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "関数で金額を入れ直す",
+      "code": [
+        "// 値段を受け取り、手数料込みの金額を返す関数を作る",
+        "function addFee(price: number): number {",
+        "  // 金額を入れ直せる変数として作る",
+        "  let amount = price;",
+        "  // 金額に手数料を足して入れ直す",
+        "  amount = amount + 100;",
+        "  // 手数料込みの金額を返す",
+        "  return amount;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "関数で、元の値段を受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "price",
+            "note": "値段"
+          },
+          "figure": {
+            "tag": {
+              "start": "500"
+            }
+          }
+        },
+        {
+          "say": "受け取った 500 円を、金額の変数に入れましょう。",
+          "speech": "受け取った五百円を、金額の変数に入れましょう。",
+          "part": {
+            "line": 3,
+            "text": "amount",
+            "note": "金額"
+          },
+          "figure": {
+            "tag": {
+              "step": "500"
+            }
+          }
+        },
+        {
+          "say": "右側を先に計算するので、足し算の結果は 600 円です。",
+          "speech": "右側を先に計算するので、足し算の結果は六百円です。",
+          "part": {
+            "line": 5,
+            "text": "amount + 100"
+          },
+          "figure": {
+            "tag": {
+              "step": "600"
+            }
+          }
+        },
+        {
+          "say": "計算した値が、左側の変数に入ります。",
+          "part": {
+            "line": 5,
+            "text": "amount"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "関数から、手数料込みの 600 円を返しました。",
+          "speech": "関数から、手数料込みの六百円を返しました。",
+          "part": {
+            "line": 7,
+            "text": "return amount"
+          },
+          "figure": {
+            "tag": {
+              "result": "600"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 得点を入れ直せる変数として作る",
+        "let score = 0;",
+        "// 得点に新しい値を入れ直す",
+        "score = 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": "="
+              },
+              {
+                "line": 3,
+                "text": "="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一つの色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "score"
+              },
+              {
+                "line": 1,
+                "text": "0"
+              },
+              {
+                "line": 3,
+                "text": "score"
+              },
+              {
+                "line": 3,
+                "text": "3"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "在庫に入っている値は",
+      "code": [
+        "// 在庫を入れ直せる変数として作る",
+        "let stock = 10;",
+        "// 在庫に新しい値を入れ直す",
+        "stock = 20;"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "在庫の変数を作って、値を入れ直しました。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "最後の在庫はいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 在庫を入れ直せる変数として作る",
+        "let stock = 10;",
+        "// 在庫に新しい値を入れ直す",
+        "stock = 20;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは 20 です。",
+          "speech": "答えは二十です。",
+          "figure": {
+            "tag": {
+              "result": "20"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "同じ変数の値を入れ直す",
+      "code": [
+        "// 在庫を入れ直せる変数として作る",
+        "let stock = 10;",
+        "// 在庫に新しい値を入れ直す",
+        "stock = 20;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初に、在庫を 10 にします。",
+          "speech": "最初に、在庫を十にします。",
+          "part": {
+            "line": 1,
+            "text": "10"
+          },
+          "figure": {
+            "tag": {
+              "start": "10"
+            }
+          }
+        },
+        {
+          "say": "次に、同じ変数に 20 を入れました。",
+          "speech": "次に、同じ変数に二十を入れました。",
+          "part": {
+            "line": 3,
+            "text": "20"
+          },
+          "figure": {
+            "tag": {
+              "step": "20"
+            }
+          }
+        },
+        {
+          "say": "いま在庫を見ると、新しい値が入っています。",
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "試合の得点は、点が入ったら更新します。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "口座の残高も、入出金のたびに変わる値です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "実行した回数にも、入れ直せる変数を使いましょう。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問5で使う",
+      "code": [
+        "// 問5 1から n までの合計を返す（for 文で足していく）",
+        "//     例: sumTo(10) → 55",
+        "export function sumTo(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問5では、1から順に足した合計を返します。",
+          "speech": "問ごでは、一から順に足した合計を返します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "足すたびに変わるのは、合計の値です。",
+          "part": {
+            "line": 2,
+            "text": "sumTo"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "合計を入れる変数は、let で作りましょう。",
+          "speech": "合計を入れる変数は、レットで作りましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b9aecc90c83530d37f3fc844cb464ef4c50adbf8818f87c08edea1ef658eeec5"
+  }
+}

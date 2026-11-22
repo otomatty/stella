@@ -1,0 +1,570 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数を文字列にする書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "数と文字列の見た目が似ていて違いに気づきにくい。",
+    "points": ["String() で、数を文字列に変えられます。"],
+    "leaveOut": ["問12の解答コード"]
+  },
+  "art": {
+    "ticket-roll": {
+      "prompt": "A small ticket dispenser releasing a blank violet ticket. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "badge-writer": {
+      "prompt": "A hand writing on a white name badge with a pen. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "badge-ready": {
+      "prompt": "One blank white name badge with a neat blue border. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受付番号",
+          "art": "ticket-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "書き写す",
+          "art": "badge-writer",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "文字の番号",
+          "art": "badge-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "変える数",
+          "art": "ticket-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "文字列",
+          "art": "badge-writer",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "表示",
+          "art": "badge-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受付番号",
+          "art": "ticket-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "文字列の戻り値",
+          "art": "badge-writer",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受け取る数",
+          "art": "ticket-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "倍数の条件",
+          "art": "badge-writer",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "文字列",
+          "art": "badge-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "number-tag",
+      "beats": [
+        {
+          "say": "この動画では、数を文字列に変える方法を学びます。"
+        },
+        {
+          "say": "受付の番号は、計算に使う数です。"
+        },
+        {
+          "say": "名札に書くときは、文字として書き写します。"
+        },
+        {
+          "say": "数を文字列にするのが、String です。",
+          "speech": "数を文字列にするのが、ストリング です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "番号の扱いは同じ？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "受付で番号を受け取ります。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "7"
+          }
+        },
+        {
+          "say": "名札の番号は、文字としての扱いです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "書き写す"
+          }
+        },
+        {
+          "say": "見た目が同じでも、値の種類は変わります。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "\"7\""
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "String で文字にする",
+      "code": ["// 番号を文字列にする", "const label = String(7);"],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "数を文字列に変える関数が、String です。",
+          "part": {
+            "line": 1,
+            "text": "String"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "数を文字列に変える関数が、ストリングです。",
+          "term": {
+            "text": "String()",
+            "note": "数を文字列に変える",
+            "ruby": "ストリング"
+          },
+          "type": [0, 1]
+        },
+        {
+          "say": "かっこの中に、変えたい数を渡します。",
+          "part": {
+            "line": 1,
+            "text": "(7)"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "できた文字列が、戻ってくる値です。",
+          "part": {
+            "line": 1,
+            "text": "label"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": ["// 文字列にして番をつなげる", "const sign = String(7) + \"番\";"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "7 を文字列に変えます。",
+          "part": {
+            "line": 1,
+            "text": "String(7)"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "\"7\""
+            }
+          },
+          "speech": "七 を文字列に変えます。"
+        },
+        {
+          "say": "後ろに足すのは、番の文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"番\""
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "番"
+            }
+          }
+        },
+        {
+          "say": "表示用の文字列ができました。",
+          "part": {
+            "line": 1,
+            "text": "sign"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "7番"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": ["// 番号を文字列にする", "const label = String(7);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "String"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "label"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 番号を表示用の文字列にする", "const sign = String(3) + \"番\";"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "どんな文字列ができるでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "+"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 番号を表示用の文字列にする", "const sign = String(3) + \"番\";"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは「3番」です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "3番"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは「三番」です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 番号を表示用の文字列にする", "const sign = String(3) + \"番\";"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "最初に数の 3 を渡します。",
+          "part": {
+            "line": 1,
+            "text": "(3)"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "3"
+            }
+          },
+          "speech": "最初に数の三を渡します。"
+        },
+        {
+          "say": "戻ってくるのは、文字列の 3 です。",
+          "part": {
+            "line": 1,
+            "text": "String"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "\"3\""
+            }
+          },
+          "speech": "戻ってくるのは、文字列の 三 です。"
+        },
+        {
+          "say": "そこに番がつながりました。",
+          "part": {
+            "line": 1,
+            "text": "\"番\""
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "3番"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "受付番号を名札に書くときに使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "戻り値の型が string の関数にも使える書き方です。",
+          "show": ["card1"],
+          "pulse": ["card1"],
+          "speech": "戻り値の型がストリングの関数にも使える書き方です。"
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12で使う",
+      "code": [
+        "//     例: fizzBuzz(15) → \"FizzBuzz\"",
+        "export function fizzBuzz(n: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問12では、結果を文字列で返す決まりです。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十二では、結果を文字列で返す決まりです。"
+        },
+        {
+          "say": "倍数に当てはまらない数は、文字列に変えます。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b1258e39165e3395d0dfdf57d48c5f586aeea88420b559b6146134d0bbb72637"
+  }
+}

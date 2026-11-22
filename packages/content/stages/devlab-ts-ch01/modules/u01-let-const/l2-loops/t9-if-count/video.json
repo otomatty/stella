@@ -1,0 +1,713 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "イフと等しいかを調べる記号を読み、数が増える回を見分けられる。",
+    "stuck": "取り出したすべての文字を数えてしまい、目的の文字だけを数えられない。",
+    "points": ["if と === で、条件に合うときだけ処理できます。"],
+    "leaveOut": ["条件に合わないときの別の処理", "問9の答えのコード"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A small woven basket with red apples, orange mandarins and yellow bananas in natural colors. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A hand holding a single natural red apple above a wicker basket. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "Two natural red apples grouped on a pale grey plate with a mandarin set off to one side. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "search": {
+      "prompt": "A blue magnifying glass over a row of blank violet cards. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "stockroom": {
+      "prompt": "A small blue stockroom shelf with matching plain violet cartons grouped on one side. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "取り出した物",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "りんごか",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "りんごの数",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "果物の仕分け",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "文字を探す",
+          "art": "search",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "指定商品の在庫",
+          "art": "stockroom",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "文字列と探す文字",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "合う回数",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "fruit-count",
+      "beats": [
+        {
+          "say": "この動画では、条件に合うときだけ処理する書き方を学びます。"
+        },
+        {
+          "say": "かごの果物から、りんごだけを数える場面です。"
+        },
+        {
+          "say": "りんごなら数を増やし、ほかの果物は数えません。"
+        },
+        {
+          "say": "合うときだけ動かすのが、if です。",
+          "speech": "合うときだけ動かすのが、イフです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "かごからりんごを数える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "かごから、果物を一つ取ります。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "りんご"
+          }
+        },
+        {
+          "say": "りんごなので、数えましょう。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "りんご"
+          }
+        },
+        {
+          "say": "最初のりんごで、個数は一になりました。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "1"
+          }
+        },
+        {
+          "say": "次のみかんは、りんごの数に入れません。",
+          "tag": {
+            "start": "みかん",
+            "step": "数えない"
+          }
+        },
+        {
+          "say": "次がりんごなら、個数を二に増やします。",
+          "tag": {
+            "start": "りんご",
+            "result": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "等しいときだけ中身を実行する",
+      "code": [
+        "// 合う文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 取り出した文字を用意する",
+        "const c = \"a\";",
+        "// 取り出した文字がエーと等しいか調べる",
+        "if (c === \"a\") {",
+        "  // 合うときに個数を一つ増やす",
+        "  count++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "条件に合うときだけ処理するのが、if です。",
+          "speech": "条件に合うときだけ処理するのが、イフです。",
+          "term": {
+            "text": "if",
+            "note": "条件に合うときだけ"
+          },
+          "pause": 1
+        },
+        {
+          "say": "かっこの中に、調べたい条件を書きます。",
+          "part": {
+            "line": 5,
+            "text": "(c === \"a\")"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "イコール三つは、等しいかを調べる記号です。",
+          "term": {
+            "text": "===",
+            "note": "等しいか調べる"
+          },
+          "pause": 1
+        },
+        {
+          "say": "条件が true なら、波かっこの中を実行します。",
+          "speech": "条件がトゥルーなら、波かっこの中を実行します。",
+          "part": {
+            "line": 7,
+            "text": "count++"
+          },
+          "figure": {
+            "tag": {
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "条件が false なら、中の処理は実行しません。",
+          "speech": "条件がフォールスなら、中の処理は実行しません。",
+          "part": {
+            "line": 5,
+            "text": "==="
+          },
+          "figure": {
+            "tag": {
+              "step": "合わないとき"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "エヌだけを数えてみる",
+      "code": [
+        "// 合った文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"banana\") {",
+        "  // 取り出した文字がエヌと等しいか調べる",
+        "  if (c === \"n\") {",
+        "    // 合うときに個数を一つ増やす",
+        "    count++;",
+        "  }",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "今度は、バナナの英字を順に取り出します。",
+          "part": {
+            "line": 3,
+            "text": "\"banana\""
+          },
+          "figure": {
+            "tag": {
+              "start": "banana"
+            }
+          }
+        },
+        {
+          "say": "最初の二文字は、エヌと等しくありません。",
+          "part": {
+            "line": 5,
+            "text": "=== \"n\""
+          },
+          "figure": {
+            "tag": {
+              "step": "b、a",
+              "result": "0"
+            }
+          }
+        },
+        {
+          "say": "三文字目はエヌなので、個数は一です。",
+          "part": {
+            "line": 7,
+            "text": "count++"
+          },
+          "figure": {
+            "tag": {
+              "step": "n",
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "その次はエーなので、数は変わりません。",
+          "figure": {
+            "tag": {
+              "step": "a"
+            }
+          }
+        },
+        {
+          "say": "五文字目で、エヌがもう一度出てきました。",
+          "figure": {
+            "tag": {
+              "step": "n",
+              "result": "2"
+            }
+          }
+        },
+        {
+          "say": "最後のエーは数に入れず、二で終わります。",
+          "figure": {
+            "tag": {
+              "step": "a"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 合う文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 取り出した文字を用意する",
+        "const c = \"a\";",
+        "// 取り出した文字がエーと等しいか調べる",
+        "if (c === \"a\") {",
+        "  // 合うときに個数を一つ増やす",
+        "  count++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色で分けてみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "if"
+              },
+              {
+                "line": 5,
+                "text": "==="
+              },
+              {
+                "line": 7,
+                "text": "++"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色の部分は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "c"
+              },
+              {
+                "line": 5,
+                "text": "\"a\""
+              },
+              {
+                "line": 7,
+                "text": "count"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "イーは何個ある",
+      "code": [
+        "// 合った文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"level\") {",
+        "  // 取り出した文字がイーと等しいか調べる",
+        "  if (c === \"e\") {",
+        "    // 合うときに個数を一つ増やす",
+        "    count++;",
+        "  }",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "レベルという英字の列から、イーを探します。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "条件に合う文字は、いくつあるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 合った文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"level\") {",
+        "  // 取り出した文字がイーと等しいか調べる",
+        "  if (c === \"e\") {",
+        "    // 合うときに個数を一つ増やす",
+        "    count++;",
+        "  }",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、二つです。",
+          "figure": {
+            "tag": {
+              "result": "2"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "合った回だけ増やす",
+      "code": [
+        "// 合った文字の個数をゼロから始める",
+        "let count = 0;",
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"level\") {",
+        "  // 取り出した文字がイーと等しいか調べる",
+        "  if (c === \"e\") {",
+        "    // 合うときに個数を一つ増やす",
+        "    count++;",
+        "  }",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初のエルでは、条件に合いません。",
+          "part": {
+            "line": 5,
+            "text": "=== \"e\""
+          },
+          "figure": {
+            "tag": {
+              "start": "l"
+            }
+          }
+        },
+        {
+          "say": "二文字目のイーで、最初の一つを数えました。",
+          "figure": {
+            "tag": {
+              "step": "1個目"
+            }
+          }
+        },
+        {
+          "say": "三文字目のブイは、数えずに次へ進みます。",
+          "figure": {
+            "tag": {
+              "start": "v"
+            }
+          }
+        },
+        {
+          "say": "四文字目のイーで、個数は二です。",
+          "part": {
+            "line": 7,
+            "text": "count++"
+          },
+          "figure": {
+            "tag": {
+              "step": "2個目"
+            }
+          }
+        },
+        {
+          "say": "最後のエルでは個数が変わらず、二で終わりました。",
+          "figure": {
+            "tag": {
+              "start": "l"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "果物なら、選んだ種類だけを数えます。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "決まった文字が出てくる回数を調べるときも、この考え方です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "指定した商品だけの在庫を数えるときにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問9で使う",
+      "code": [
+        "// 問9 text の中に char が何回出てくるかを返す（for-of で1文字ずつ見る）",
+        "//     例: countChar(\"banana\", \"a\") → 3",
+        "export function countChar(text: string, char: string): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問9では、text の中に char が何回出てくるかを返します。",
+          "speech": "問きゅうでは、テキストの中にキャラが何回出てくるかを返します。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "比べる値は、二つ目の引数です。",
+          "part": {
+            "line": 2,
+            "text": "char: string"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "条件に合う回だけを数えましょう。",
+          "figure": {
+            "tag": {
+              "result": "合う回だけ"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "698310447cd847babacb73f6cddd8087764f09548daf96f9aea608004da5a000"
+  }
+}

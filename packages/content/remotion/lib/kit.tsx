@@ -45,7 +45,15 @@ export function stageMotion(t: gsap.core.Timeline) {
   /** 札の枠を太くして目立たせる。 */
   const emphasize = (id: string, at: number) =>
     t.to(`#${id}-box`, { attr: { "stroke-width": 9 }, duration: 0.2 }, at);
-  return { show, draw, emphasize };
+  /** 場面の最初に、主な絵を少し下から出す。 */
+  const rise = (sel: string, at: number) =>
+    t.fromTo(
+      sel,
+      { opacity: 0, y: 28, scale: 0.94, transformOrigin: "50% 50%" },
+      { opacity: 1, y: 0, scale: 1, ...IN },
+      at,
+    );
+  return { show, draw, emphasize, rise };
 }
 
 /** 注目させる札 (白地にピンクの枠)。 */

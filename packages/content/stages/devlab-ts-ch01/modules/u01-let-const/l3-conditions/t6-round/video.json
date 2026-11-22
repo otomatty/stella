@@ -1,0 +1,592 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "四捨五入する書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "端数の扱いを、切り捨てと混同しやすい。",
+    "points": ["Math.round は、小数点以下を四捨五入して整数にします。"],
+    "leaveOut": ["問13の解答コード"]
+  },
+  "art": {
+    "passbook": {
+      "prompt": "An open bank passbook with blank ruled spaces and a single coin. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "small-coin": {
+      "prompt": "One full coin next to a small wedge cut from a second coin. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "coin-pile": {
+      "prompt": "A compact pile of plain silver coins. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "計算した金額",
+          "art": "passbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "円未満の端数",
+          "art": "small-coin",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "整数の金額",
+          "art": "coin-pile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "丸める数",
+          "art": "passbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "小数部分",
+          "art": "small-coin",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "整数",
+          "art": "coin-pile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "円単位の表示",
+          "art": "passbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "途中の計算",
+          "art": "small-coin",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "最初の金額",
+          "art": "passbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "毎年の利息",
+          "art": "small-coin",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "最後の金額",
+          "art": "coin-pile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "bank-interest",
+      "beats": [
+        {
+          "say": "この動画では、四捨五入の書き方を学びます。"
+        },
+        {
+          "say": "預けたお金は、毎年利息が付いて増えていくのです。"
+        },
+        {
+          "say": "計算すると、1円より小さい端数が出ることがあります。",
+          "speech": "計算すると、一円より小さい端数が出ることがあります。"
+        },
+        {
+          "say": "最後に整数へまとめるのが、Math.round です。",
+          "speech": "最後に整数へまとめるのが、マスラウンド です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "円未満の利息はどうする？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "利息の計算で、円未満の小数が出ることがあります。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "端数あり"
+          }
+        },
+        {
+          "say": "端数も、次の年の計算に必要です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "残す"
+          }
+        },
+        {
+          "say": "円単位にそろえるのは、最後にします。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "整数"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "四捨五入の関数",
+      "code": [
+        "// 2.4を四捨五入する",
+        "const low = Math.round(2.4);",
+        "// 2.5を四捨五入する",
+        "const high = Math.round(2.5);"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "四捨五入に使うのが、Math.round です。",
+          "part": {
+            "line": 1,
+            "text": "Math.round"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "四捨五入に使うのが、マスラウンド です。",
+          "term": {
+            "text": "Math.round",
+            "note": "四捨五入して整数にする",
+            "ruby": "マスラウンド"
+          },
+          "type": [0, 1, 2, 3]
+        },
+        {
+          "say": "かっこの中に四捨五入する数を書きます。",
+          "part": {
+            "line": 1,
+            "text": "(2.4)"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "戻ってくるのは、整数の値です。",
+          "part": {
+            "line": 3,
+            "text": "high"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 2.4を四捨五入する",
+        "const low = Math.round(2.4);",
+        "// 2.5を四捨五入する",
+        "const high = Math.round(2.5);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "2.4 に近い整数は 2 です。",
+          "part": {
+            "line": 1,
+            "text": "(2.4)"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "2"
+            }
+          },
+          "speech": "二点四 に近い整数は 二 です。"
+        },
+        {
+          "say": "2.5 は 2 と 3 のちょうど中間にあります。",
+          "part": {
+            "line": 3,
+            "text": "(2.5)"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "2.5"
+            }
+          },
+          "speech": "二点五 は 二 と 三 のちょうど中間にあります。"
+        },
+        {
+          "say": "ここでは中間の値を大きいほうに丸める決まりです。",
+          "part": {
+            "line": 3,
+            "text": "Math.round"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "3"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 2.4を四捨五入する",
+        "const low = Math.round(2.4);",
+        "// 2.5を四捨五入する",
+        "const high = Math.round(2.5);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Math.round"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前になります。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "low"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 7.6を四捨五入する", "const rounded = Math.round(7.6);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "四捨五入すると、いくつになるでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "7.6"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 7.6を四捨五入する", "const rounded = Math.round(7.6);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは 8 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "8"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは 八 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 7.6を四捨五入する", "const rounded = Math.round(7.6);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "小数部分は 0.6 です。",
+          "part": {
+            "line": 1,
+            "text": "7.6"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "0.6"
+            }
+          },
+          "speech": "小数部分は ゼロ点六 です。"
+        },
+        {
+          "say": "0.5 以上なので、大きいほうに丸めます。",
+          "part": {
+            "line": 1,
+            "text": "Math.round"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "8"
+            }
+          },
+          "speech": "ゼロ点五 以上なので、大きいほうに丸めます。"
+        },
+        {
+          "say": "Math.floor なら、結果は 7 です。",
+          "part": {
+            "line": 1,
+            "text": "rounded"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "7"
+            }
+          },
+          "speech": "マスフロアなら、結果は七です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "小数の金額を円単位で表示できます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "計算の途中では端数を残すのが大切です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問13で使う",
+      "code": [
+        "//     例: compound(10000, 10, 2) → 12100",
+        "export function compound(",
+        "  principal: number,",
+        "  rate: number,",
+        "  years: number,",
+        "): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問13では、最後に金額を四捨五入します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十三では、最後に金額を四捨五入します。"
+        },
+        {
+          "say": "for で、年ごとに利息を足す問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 4,
+            "text": "years"
+          },
+          "speech": "フォー で、年ごとに利息を足す問題です。"
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "5e4f4d6becb6ce8dd70d9522a73522f46b7eb0ebd19fbf7c3e62fd29722a399a"
+  }
+}

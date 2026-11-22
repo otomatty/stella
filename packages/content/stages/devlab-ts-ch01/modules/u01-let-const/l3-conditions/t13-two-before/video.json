@@ -1,0 +1,662 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "二つの値をずらしながら、次の値を作る手順を説明できる。",
+    "stuck": "二つの値のうち、何を先に更新すべきか迷いやすい。",
+    "points": ["2 つの変数をずらしながら更新すると、前の 2 つから次の値を作れます。"],
+    "leaveOut": ["問19の解答コード"]
+  },
+  "art": {
+    "stairs-two-back": {
+      "prompt": "A small blue two step staircase viewed from the side. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "stairs-one-back": {
+      "prompt": "One violet stair tread standing above two light grey treads. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "stairs-new-step": {
+      "prompt": "A blue staircase with its top tread highlighted in magenta. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "二つ前の段",
+          "art": "stairs-two-back",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "一つ前の段",
+          "art": "stairs-one-back",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "次の段",
+          "art": "stairs-new-step",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "二つ前",
+          "art": "stairs-two-back",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "一つ前",
+          "art": "stairs-one-back",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "次の値",
+          "art": "stairs-new-step",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "直前の二つ",
+          "art": "stairs-two-back",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "必要な値を残す",
+          "art": "stairs-one-back",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "欲しい位置",
+          "art": "stairs-two-back",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "前の二つ",
+          "art": "stairs-one-back",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "求める値",
+          "art": "stairs-new-step",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "stairs",
+      "beats": [
+        {
+          "say": "この動画では、前の2つの値から次を作る方法を学びます。",
+          "speech": "この動画では、前の二つの値から次を作る方法を学びます。"
+        },
+        {
+          "say": "階段を1段か2段ずつ上る方法は、何通りでしょうか。",
+          "speech": "階段を一段か二段ずつ上る方法は、何通りでしょうか。"
+        },
+        {
+          "say": "ある段への上り方は、前の2段への上り方の合計です。",
+          "speech": "ある段への上り方は、前の二段への上り方の合計です。"
+        },
+        {
+          "say": "2つの変数をずらしながら、次の値を作っていきます。",
+          "speech": "二つの変数をずらしながら、次の値を作っていきます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "次の段へは何通り？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "一段ずつでも、二段ずつでも上れます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "1段か2段"
+          }
+        },
+        {
+          "say": "最後の一歩は、手前の二段のどちらかからです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "前の二段"
+          }
+        },
+        {
+          "say": "その二段への上り方を足すと、次の段の数になります。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "足す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "合計を先に控える",
+      "code": [
+        "// 二つ前の段への上り方の数を入れる",
+        "let prev = 3;",
+        "// 一つ前の段への上り方の数を入れる",
+        "let curr = 5;",
+        "// 次の段への上り方を合計する",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 計算した次の値を一つ前に入れる",
+        "curr = next;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "入れ直す前に、二つの値を足します。",
+          "part": {
+            "line": 5,
+            "text": "prev + curr"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "type": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        },
+        {
+          "say": "一つ前の値を二つ前へずらすのが先です。",
+          "part": {
+            "line": 7,
+            "text": "prev = curr"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "最後に、計算した値を入れます。",
+          "part": {
+            "line": 9,
+            "text": "curr = next"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 二つ前の段への上り方の数を入れる",
+        "let prev = 3;",
+        "// 一つ前の段への上り方の数を入れる",
+        "let curr = 5;",
+        "// 次の段への上り方を合計する",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 計算した次の値を一つ前に入れる",
+        "curr = next;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "ここでは、二つ前の段へは 3 通りです。",
+          "part": {
+            "line": 1,
+            "text": "3"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "3"
+            }
+          },
+          "speech": "ここでは、二つ前の段へは 三 通りです。"
+        },
+        {
+          "say": "一つ前の段へは 5 通りあります。",
+          "part": {
+            "line": 3,
+            "text": "5"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "5"
+            }
+          },
+          "speech": "一つ前の段へは 五 通りあります。"
+        },
+        {
+          "say": "足してみると、次の段は 8 通りと分かりました。",
+          "part": {
+            "line": 5,
+            "text": "prev + curr"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "8"
+            }
+          },
+          "speech": "足してみると、次の段は八通りと分かりました。"
+        },
+        {
+          "say": "次に使う二つの値は、5 と 8 です。",
+          "part": {
+            "line": 9,
+            "text": "curr = next"
+          },
+          "figure": {
+            "pulse": ["card0", "card1"],
+            "tag": {
+              "card0": "5",
+              "card1": "8"
+            }
+          },
+          "speech": "次に使う二つの値は、五 と 八 です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 二つ前の段への上り方の数を入れる",
+        "let prev = 3;",
+        "// 一つ前の段への上り方の数を入れる",
+        "let curr = 5;",
+        "// 次の段への上り方を合計する",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 計算した次の値を一つ前に入れる",
+        "curr = next;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "const"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "next"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 二つ前の値を入れる",
+        "let prev = 2;",
+        "// 一つ前の値を入れる",
+        "let curr = 3;",
+        "// 二つの値の合計を控える",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 合計を一つ前に入れる",
+        "curr = next;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "一回進めると、どの二つの値が残るでしょうか。",
+          "part": {
+            "line": 5,
+            "text": "prev + curr"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 二つ前の値を入れる",
+        "let prev = 2;",
+        "// 一つ前の値を入れる",
+        "let curr = 3;",
+        "// 二つの値の合計を控える",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 合計を一つ前に入れる",
+        "curr = next;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "順に、3 と 5 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "3 と 5"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "順に、三 と 五 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 二つ前の値を入れる",
+        "let prev = 2;",
+        "// 一つ前の値を入れる",
+        "let curr = 3;",
+        "// 二つの値の合計を控える",
+        "const next = prev + curr;",
+        "// 一つ前の値を二つ前にずらす",
+        "prev = curr;",
+        "// 合計を一つ前に入れる",
+        "curr = next;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "2 と 3 を足して 5 を作ります。",
+          "part": {
+            "line": 5,
+            "text": "prev + curr"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "5"
+            }
+          },
+          "speech": "二 と 三 を足して 五 を作ります。"
+        },
+        {
+          "say": "元の一つ前の値は 3 でした。",
+          "part": {
+            "line": 7,
+            "text": "prev = curr"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "3"
+            }
+          },
+          "speech": "元の一つ前の値は 三 でした。"
+        },
+        {
+          "say": "新しい一つ前には、足して作った 5 が入ります。",
+          "part": {
+            "line": 9,
+            "text": "curr = next"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "5"
+            }
+          },
+          "speech": "新しい一つ前には、足して作った 五 が入ります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "直前の二つの値で次が決まる処理に使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "毎回必要なのは、手元の二つの値です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問19で使う",
+      "code": [
+        "//     例: fibonacci(10) → 55",
+        "export function fibonacci(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問19では、フィボナッチ数列の n 番目を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十九では、フィボナッチ数列のエヌ 番目を返します。"
+        },
+        {
+          "say": "0 番目と 1 番目の値が決まっている問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          },
+          "speech": "ゼロ番目と一番目の値が決まっている問題です。"
+        },
+        {
+          "say": "くり返しを始める前の値を考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "61790eb1ae0ea677d9fcf94f7ad748e9a1ed08bcd3b071a23b6c56f361d2feb2"
+  }
+}

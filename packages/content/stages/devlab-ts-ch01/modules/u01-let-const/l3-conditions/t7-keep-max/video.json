@@ -1,0 +1,678 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "大きいほうを残す書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "比べるたびに何を残せばよいか分からない。",
+    "points": ["比べて大きいほうを変数に残していくと、最大値が求まります。"],
+    "leaveOut": ["問14の解答コード"]
+  },
+  "art": {
+    "height-first": {
+      "prompt": "A learner in a violet sweater standing beside a blank height chart. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "height-second": {
+      "prompt": "A taller learner in a blue sweater standing upright. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "height-winner": {
+      "prompt": "One tall learner standing on a low podium. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "最初の身長",
+          "art": "height-first",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "比べる身長",
+          "art": "height-second",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "いまの最大",
+          "art": "height-winner",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "比べる数",
+          "art": "height-first",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "更新の条件",
+          "art": "height-second",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "残る候補",
+          "art": "height-winner",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "最高点",
+          "art": "height-first",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "負の値も比較",
+          "art": "height-second",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受け取る数",
+          "art": "height-first",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "今の候補",
+          "art": "height-second",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "最大値",
+          "art": "height-winner",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "height-compare",
+      "beats": [
+        {
+          "say": "この動画では、いちばん大きい値を見つける方法を学びます。"
+        },
+        {
+          "say": "3人の背の高さを、順番に比べましょう。",
+          "speech": "三人の背の高さを、順番に比べましょう。"
+        },
+        {
+          "say": "今まででいちばん高い人より高ければ、その人に入れ替えます。"
+        },
+        {
+          "say": "大きいほうを変数に残すのが、最大値を求める方法です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "今いちばん高いのは？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "最初の人の身長を控えます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "152"
+          }
+        },
+        {
+          "say": "次の人のほうが高いか、比べてみましょう。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "168"
+          }
+        },
+        {
+          "say": "高いほうの身長に控え直しました。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "168"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "今の候補と比べる",
+      "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
+        "// 最初の値を最大値の候補にする",
+        "let max = first;",
+        "// 次の値のほうが大きいか調べる",
+        "if (second > max) {",
+        "  // 大きいほうを残す",
+        "  max = second;",
+        "}"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "二人分の身長を受け取った場面です。",
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "part": {
+            "line": 1,
+            "text": "first",
+            "note": "一人目の身長"
+          }
+        },
+        {
+          "say": "最初の値を、比べるときの基準にします。",
+          "part": {
+            "line": 5,
+            "text": "first"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "次の値が、今の基準より大きいかが条件です。",
+          "part": {
+            "line": 7,
+            "text": "second > max"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "条件が合うときだけ、新しい値を残します。",
+          "part": {
+            "line": 9,
+            "text": "max = second"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ],
+      "show": true
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
+        "// 最初の値を最大値の候補にする",
+        "let max = first;",
+        "// 次の値のほうが大きいか調べる",
+        "if (second > max) {",
+        "  // 大きいほうを残す",
+        "  max = second;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初の身長は 152 です。",
+          "part": {
+            "line": 1,
+            "text": "152"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "152"
+            }
+          },
+          "speech": "最初の身長は 百五十二 です。"
+        },
+        {
+          "say": "次の身長は 168 なので、条件に合います。",
+          "part": {
+            "line": 7,
+            "text": "second > max"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "168"
+            }
+          },
+          "speech": "次の身長は 百六十八 なので、条件に合います。"
+        },
+        {
+          "say": "更新すると、最大の候補は 168 になりました。",
+          "part": {
+            "line": 9,
+            "text": "max = second"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "168"
+            }
+          },
+          "speech": "更新すると、最大の候補は 百六十八 になりました。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
+        "// 最初の値を最大値の候補にする",
+        "let max = first;",
+        "// 次の値のほうが大きいか調べる",
+        "if (second > max) {",
+        "  // 大きいほうを残す",
+        "  max = second;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "let"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "max"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 最初の値を最大の候補にする",
+        "let max = 4;",
+        "// 9が今の候補より大きいか調べる",
+        "if (9 > max) {",
+        "  // 候補を9に更新する",
+        "  max = 9;",
+        "}",
+        "// 7が今の候補より大きいか調べる",
+        "if (7 > max) {",
+        "  // 候補を7に更新する",
+        "  max = 7;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "この手順のあと、何が残るでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "4"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 最初の値を最大の候補にする",
+        "let max = 4;",
+        "// 9が今の候補より大きいか調べる",
+        "if (9 > max) {",
+        "  // 候補を9に更新する",
+        "  max = 9;",
+        "}",
+        "// 7が今の候補より大きいか調べる",
+        "if (7 > max) {",
+        "  // 候補を7に更新する",
+        "  max = 7;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは 9 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "9"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは 九 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 最初の値を最大の候補にする",
+        "let max = 4;",
+        "// 9が今の候補より大きいか調べる",
+        "if (9 > max) {",
+        "  // 候補を9に更新する",
+        "  max = 9;",
+        "}",
+        "// 7が今の候補より大きいか調べる",
+        "if (7 > max) {",
+        "  // 候補を7に更新する",
+        "  max = 7;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "最初の候補は 4 です。",
+          "part": {
+            "line": 1,
+            "text": "4"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "4"
+            }
+          },
+          "speech": "最初の候補は 四 です。"
+        },
+        {
+          "say": "9 のほうが大きいので、候補を入れ替えます。",
+          "part": {
+            "line": 5,
+            "text": "9"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "9"
+            }
+          },
+          "speech": "九 のほうが大きいので、候補を入れ替えます。"
+        },
+        {
+          "say": "7 は 9 より大きくありません。",
+          "part": {
+            "line": 8,
+            "text": "7 > max"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "false"
+            }
+          },
+          "speech": "七 は 九 より大きくありません。"
+        },
+        {
+          "say": "最後の更新はしないので、9 が残ります。",
+          "part": {
+            "line": 10,
+            "text": "max = 7"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "9"
+            }
+          },
+          "speech": "最後の更新はしないので、九が残ります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "手元の記録から最高点を探すときに使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "負の値を比べるときも、最初の値が基準です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問14で使う",
+      "code": [
+        "//     例: maxOf3(3, 9, 2) → 9",
+        "export function maxOf3(a: number, b: number, c: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問14では、3つの数から最大値を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十四では、三つの数から最大値を返します。"
+        },
+        {
+          "say": "Math.max を使わず、一つずつ比べる問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "a: number, b: number, c: number"
+          },
+          "speech": "マスマックスを使わず、一つずつ比べる問題です。"
+        },
+        {
+          "say": "変数に残っている値と、次の値を比べましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f0e84128567458a50a46ac4ec3346426c51b7a2d322480cd71b37d4e4b8d5a11"
+  }
+}

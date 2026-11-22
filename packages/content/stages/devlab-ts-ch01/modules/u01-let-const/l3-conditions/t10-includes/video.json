@@ -1,0 +1,634 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "含まれるかを調べる書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "どこから何を探すかをコードにできない。",
+    "points": [".includes() で、文字列に文字が含まれるかを調べられます。"],
+    "leaveOut": ["問16の解答コード"]
+  },
+  "art": {
+    "ingredients-box": {
+      "prompt": "A small snack box with a blank ingredient panel. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "label-lens": {
+      "prompt": "A large magnifying glass over a blank ingredient strip. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "ingredient-egg": {
+      "prompt": "One natural light brown egg beside a small blank label. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "原材料の表示",
+          "art": "ingredients-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "探す文字",
+          "art": "label-lens",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "見つけた文字",
+          "art": "ingredient-egg",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "探す範囲",
+          "art": "ingredients-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "探す文字",
+          "art": "label-lens",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "検索の結果",
+          "art": "ingredient-egg",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 1,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "名前の一部",
+          "art": "ingredients-box",
+          "at": [1, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受け取る文字列",
+          "art": "ingredients-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "一文字ずつ",
+          "art": "label-lens",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "母音の数",
+          "art": "ingredient-egg",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "allergy-label",
+      "beats": [
+        {
+          "say": "この動画では、文字が含まれるかを調べる方法を学びます。"
+        },
+        {
+          "say": "お菓子の原材料に、卵が入っているかを確かめましょう。"
+        },
+        {
+          "say": "表示の文字を見て、含まれていれば注意します。"
+        },
+        {
+          "say": "含まれるかを調べるのが、インクルーズです。",
+          "speech": "含まれるかを調べるのが、インクルーズです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "表示に卵はある？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "箱の表示から、材料の名前を探します。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "原材料"
+          }
+        },
+        {
+          "say": "探しているのは、卵の文字です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "卵"
+          }
+        },
+        {
+          "say": "見つかると、含まれることが分かります。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字列から探す",
+      "code": [
+        "// 原材料に卵の文字があるか調べる",
+        "const found = \"小麦、卵、砂糖\".includes(\"卵\");"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "インクルーズは、文字が含まれるかを調べます。",
+          "part": {
+            "line": 1,
+            "text": ".includes"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "type": [0, 1]
+        },
+        {
+          "say": "点の左側が、探す範囲です。",
+          "part": {
+            "line": 1,
+            "text": "\"小麦、卵、砂糖\"",
+            "note": "探す範囲"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "かっこの中に、探す文字を渡します。",
+          "part": {
+            "line": 1,
+            "text": "(\"卵\")",
+            "note": "探す文字"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 原材料に乳の文字があるか調べる",
+        "const found = \"小麦、卵、砂糖\".includes(\"乳\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "今度は、乳という文字を探します。",
+          "part": {
+            "line": 1,
+            "text": "\"乳\""
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "乳"
+            }
+          }
+        },
+        {
+          "say": "表示に乳という文字はありません。",
+          "part": {
+            "line": 1,
+            "text": "\"小麦、卵、砂糖\""
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "未発見"
+            }
+          }
+        },
+        {
+          "say": "戻ってくる値は false です。",
+          "part": {
+            "line": 1,
+            "text": "found"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "false"
+            }
+          },
+          "speech": "戻ってくる値は フォルス です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "one-letter",
+      "kind": "code",
+      "role": "note",
+      "title": "一文字だけを渡す",
+      "code": [
+        "// 調べたい文字を用意する",
+        "const c = \"e\";",
+        "// 母音を並べた文字列から探す",
+        "const found = \"aeiou\".includes(c);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "かっこの中には、変数も渡せます。",
+          "part": {
+            "line": 3,
+            "text": "(c)",
+            "note": "探す文字"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "変数 c"
+            }
+          }
+        },
+        {
+          "say": "探す範囲は、母音を並べた文字列です。",
+          "part": {
+            "line": 3,
+            "text": "\"aeiou\"",
+            "note": "探す範囲"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "母音の並び"
+            }
+          }
+        },
+        {
+          "say": "イーが含まれるので、結果は true になります。",
+          "speech": "イーが含まれるので、結果はトゥルーになります。",
+          "part": {
+            "line": 1,
+            "text": "\"e\""
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 原材料に卵の文字があるか調べる",
+        "const found = \"小麦、卵、砂糖\".includes(\"卵\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ".includes"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で名前を決められます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "found"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 文字列の中にピーがあるか調べる", "const found = \"apple\".includes(\"p\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "この文字列に、ピーは含まれるでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "\"p\""
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 文字列の中にピーがあるか調べる", "const found = \"apple\".includes(\"p\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは true です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "true"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは トゥルー です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 文字列の中にピーがあるか調べる", "const found = \"apple\".includes(\"p\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "探す範囲は、アップルという文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"apple\""
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "apple"
+            }
+          }
+        },
+        {
+          "say": "その中に、ピーが見つかります。",
+          "part": {
+            "line": 1,
+            "text": "\"p\""
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "p"
+            }
+          }
+        },
+        {
+          "say": "何回出てくるかは返しません。",
+          "part": {
+            "line": 1,
+            "text": ".includes"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "名前に探したい文字が含まれるかを確かめられます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "大文字と小文字は、それぞれ別の文字です。",
+          "tag": {
+            "card0": "大文字と小文字"
+          }
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問16で使う",
+      "code": [
+        "//     例: countVowels(\"education\") → 5",
+        "export function countVowels(text: string): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問16では、英字の文字列にある母音の数を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十六では、英字の文字列にある母音の数を返します。"
+        },
+        {
+          "say": "for-of で一文字ずつ取り出せるのが手がかりです。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          },
+          "speech": "フォーオブ で一文字ずつ取り出せるのが手がかりです。"
+        },
+        {
+          "say": "取り出した文字が母音の並びにあるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bc7309039c3a307b1758912f7e2ce3a742a4c5285090e023cafc67b34bf14c4c"
+  }
+}

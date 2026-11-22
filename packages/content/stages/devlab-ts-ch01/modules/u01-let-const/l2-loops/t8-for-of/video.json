@@ -1,0 +1,724 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "フォーオブで文字列を読むとき、取り出す順番と回数を言える。",
+    "stuck": "数で周を管理する書き方で、文字も一つずつ取り出そうとしている。",
+    "points": ["for-of は、文字列から 1 文字ずつ取り出してくり返します。"],
+    "leaveOut": ["配列での使い方", "条件に合う文字だけを数える書き方"]
+  },
+  "art": {
+    "start": {
+      "prompt": "A pair of plain rectangular blue and violet flash cards lying side by side. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "step": {
+      "prompt": "A hand picking up the leftmost of two plain flash cards. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "result": {
+      "prompt": "An empty violet card holder beside two flash cards neatly set down. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "word": {
+      "prompt": "A row of blank paper cards arranged on a blue tabletop. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "codecard": {
+      "prompt": "A small violet parcel with a blank rectangular shipping card. Draw the subject large and centered. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "文字列",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "取り出す文字",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "取り出し終わり",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pfixed",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "pfree",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "最初の値",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "step",
+          "label": "途中の値",
+          "art": "step",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "答え",
+          "art": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "step"
+        },
+        {
+          "id": "flow2",
+          "from": "step",
+          "to": "result"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "u1",
+          "label": "文字の数",
+          "art": "result",
+          "at": [1, 1]
+        },
+        {
+          "id": "u2",
+          "label": "名前の文字",
+          "art": "word",
+          "at": [2, 1]
+        },
+        {
+          "id": "u3",
+          "label": "荷物の番号",
+          "art": "codecard",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "文字列",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "文字を数える",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    },
+    "task-reverse": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "元の文字列",
+          "art": "start",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "文字を並べる",
+          "art": "result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "flow1",
+          "from": "start",
+          "to": "result"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "letter-cards",
+      "beats": [
+        {
+          "say": "この動画では、文字列から1文字ずつ取り出す書き方を学びます。",
+          "speech": "この動画では、文字列から一文字ずつ取り出す書き方を学びます。"
+        },
+        {
+          "say": "ねこ、という言葉を、カードに1文字ずつ書きました。",
+          "speech": "ねこ、という言葉を、カードに一文字ずつ書きました。"
+        },
+        {
+          "say": "左から順に、1枚ずつ手に取ります。",
+          "speech": "左から順に、一枚ずつ手に取ります。"
+        },
+        {
+          "say": "文字列から1文字ずつ取り出すのが、for-of です。",
+          "speech": "文字列から一文字ずつ取り出すのが、フォーオブです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "文字のカードを取る",
+      "board": "example",
+      "beats": [
+        {
+          "say": "文字列を、横に並んだカードで考えます。",
+          "show": ["start"],
+          "pulse": ["start"],
+          "tag": {
+            "start": "ねこ"
+          }
+        },
+        {
+          "say": "左端から取ると、最初は「ね」です。",
+          "show": ["step", "flow1"],
+          "pulse": ["step"],
+          "tag": {
+            "step": "ね"
+          }
+        },
+        {
+          "say": "残りから取ると、今度は「こ」になりました。",
+          "tag": {
+            "step": "こ"
+          }
+        },
+        {
+          "say": "もうカードがないので、そこで終わります。",
+          "show": ["result", "flow2"],
+          "pulse": ["result"],
+          "tag": {
+            "result": "残りなし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "for-of で取り出す",
+      "code": [
+        "// 「ねこ」から一文字ずつ取り出す",
+        "for (const c of \"ねこ\") {",
+        "  // 取り出した文字を表示する",
+        "  console.log(c);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "一文字ずつ取り出す書き方が、for-of です。",
+          "speech": "一文字ずつ取り出す書き方が、フォーオブです。",
+          "term": {
+            "text": "for-of",
+            "note": "一文字ずつ取り出す"
+          },
+          "pause": 1
+        },
+        {
+          "say": "of の右に、取り出したい文字列を書きます。",
+          "speech": "オブの右に、取り出したい文字列を書きます。",
+          "part": {
+            "line": 1,
+            "text": "\"ねこ\""
+          },
+          "figure": {
+            "tag": {
+              "start": "ねこ"
+            }
+          }
+        },
+        {
+          "say": "取り出した文字には、自分で名前を付けましょう。",
+          "part": {
+            "line": 1,
+            "text": "c of",
+            "note": "c は文字"
+          },
+          "figure": {
+            "pulse": ["step"]
+          }
+        },
+        {
+          "say": "一周ごとに、その回の変数ができる仕組みです。",
+          "part": {
+            "line": 1,
+            "text": "const c"
+          },
+          "figure": {
+            "tag": {
+              "step": "ね → こ"
+            }
+          }
+        },
+        {
+          "say": "くり返しの中では、取り出した文字を使えます。",
+          "part": {
+            "line": 3,
+            "text": "console.log(c)"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "取り出した文字の数を数える",
+      "code": [
+        "// 文字の数をゼロから始める",
+        "let count = 0;",
+        "// 「ねこ」から一文字ずつ取り出す",
+        "for (const c of \"ねこ\") {",
+        "  // 一文字取り出すたびに個数を増やす",
+        "  count++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "文字の数を、最初はゼロにしておきましょう。",
+          "part": {
+            "line": 1,
+            "text": "count",
+            "note": "個数"
+          },
+          "figure": {
+            "tag": {
+              "result": "0"
+            }
+          }
+        },
+        {
+          "say": "「ね」を取り出すと、個数を一つ増やします。",
+          "part": {
+            "line": 5,
+            "text": "count++"
+          },
+          "figure": {
+            "tag": {
+              "step": "ね",
+              "result": "1"
+            }
+          }
+        },
+        {
+          "say": "「こ」を取り出して、個数は二になりました。",
+          "figure": {
+            "tag": {
+              "step": "こ",
+              "result": "2"
+            }
+          }
+        },
+        {
+          "say": "文字がなくなったら、くり返しの終わりです。",
+          "part": {
+            "line": 3,
+            "text": "\"ねこ\""
+          },
+          "figure": {
+            "tag": {
+              "start": "残りなし"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める値",
+      "code": [
+        "// 「ねこ」から一文字ずつ取り出す",
+        "for (const c of \"ねこ\") {",
+        "  // 取り出した文字を表示する",
+        "  console.log(c);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "今のコードを、色分けして見てみましょう。",
+          "figure": {
+            "show": ["pfixed", "pfree"]
+          }
+        },
+        {
+          "say": "最初の色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "for"
+              },
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " of "
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfixed"]
+          }
+        },
+        {
+          "say": "もう一方の色は、この例に合わせて決めました。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": " c"
+              },
+              {
+                "line": 1,
+                "text": "\"ねこ\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["pfree"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "英字の列でくり返す回数は",
+      "code": [
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"abc\") {",
+        "  // 取り出した文字を表示する",
+        "  console.log(c);",
+        "}"
+      ],
+      "show": true,
+      "reset": true,
+      "think": 8,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "この文字列を、左から一文字ずつ取り出します。",
+          "figure": {
+            "show": ["start", "step", "result", "flow1", "flow2"]
+          }
+        },
+        {
+          "say": "全部で何回くり返すでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "result",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"abc\") {",
+        "  // 取り出した文字を表示する",
+        "  console.log(c);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは、三回です。",
+          "figure": {
+            "tag": {
+              "result": "3回"
+            },
+            "mark": [
+              {
+                "on": "result",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "一文字で一回くり返す",
+      "code": [
+        "// 英字の列から一文字ずつ取り出す",
+        "for (const c of \"abc\") {",
+        "  // 取り出した文字を表示する",
+        "  console.log(c);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初に取り出すのは、a です。",
+          "speech": "最初に取り出すのは、エーです。",
+          "part": {
+            "line": 1,
+            "text": "\"abc\""
+          },
+          "figure": {
+            "tag": {
+              "step": "a"
+            }
+          }
+        },
+        {
+          "say": "二回目には、b が変数に入ります。",
+          "speech": "二回目には、ビーが変数に入ります。",
+          "part": {
+            "line": 1,
+            "text": "c of"
+          },
+          "figure": {
+            "tag": {
+              "step": "b"
+            }
+          }
+        },
+        {
+          "say": "最後に c を取り出して、三回になりました。",
+          "speech": "最後にシーを取り出して、三回になりました。",
+          "figure": {
+            "tag": {
+              "step": "c",
+              "result": "3回"
+            }
+          }
+        },
+        {
+          "say": "空の文字列なら、くり返しません。",
+          "figure": {
+            "tag": {
+              "start": "空なら0回"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "文字の数は、取り出した回数で数えられます。",
+          "show": ["u1"],
+          "pulse": ["u1"]
+        },
+        {
+          "say": "名前に含まれる文字を、順に確かめるときにも使える書き方です。",
+          "show": ["u2"],
+          "pulse": ["u2"]
+        },
+        {
+          "say": "荷物の番号を、一文字ずつ読むことにも使えます。",
+          "show": ["u3"],
+          "pulse": ["u3"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問9で使う",
+      "code": [
+        "// 問9 text の中に char が何回出てくるかを返す（for-of で1文字ずつ見る）",
+        "//     例: countChar(\"banana\", \"a\") → 3",
+        "export function countChar(text: string, char: string): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問9では、指定された文字が何回出てくるかを数えます。",
+          "speech": "問きゅうでは、指定された文字が何回出てくるかを数えます。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "文字を取り出すもとは、最初の引数です。",
+          "part": {
+            "line": 2,
+            "text": "text: string"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        },
+        {
+          "say": "文字列を先頭から、一文字ずつ確かめましょう。",
+          "part": {
+            "line": 3,
+            "text": "// ここに書く"
+          },
+          "figure": {
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "next-reverse",
+      "kind": "code",
+      "role": "next",
+      "title": "問10で使う",
+      "code": [
+        "// 問10 文字列を逆順にして返す（for-of で1文字ずつ前に足していく）",
+        "//     例: reverseText(\"abc\") → \"cba\"",
+        "export function reverseText(text: string): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task-reverse"
+      },
+      "beats": [
+        {
+          "say": "問10では、文字列を逆の順番に並べます。",
+          "speech": "問じゅうでは、文字列を逆の順番に並べます。",
+          "figure": {
+            "show": ["start", "result", "flow1"]
+          }
+        },
+        {
+          "say": "ここでも、受け取った文字列を一文字ずつ取り出しましょう。",
+          "part": {
+            "line": 2,
+            "text": "text: string"
+          },
+          "figure": {
+            "pulse": ["start"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "12ce1a8b436277a73df962cef38cb1d284a44ea2b91135134a8969e34000323e"
+  }
+}
