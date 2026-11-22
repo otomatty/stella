@@ -1,0 +1,747 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.length で、文字数が分かります。かっこは付けません。",
+    "stuck": "投稿欄には、入力できる文字の上限があります。いま入力されている文字は、いくつあるでしょうか。",
+    "points": ["文字列.length で、文字数が分かります。かっこは付けません。"],
+    "leaveOut": ["絵文字などの長さの数え方"]
+  },
+  "art": {
+    "editfield": {
+      "prompt": "A purple password field with a few round dots on a small laptop screen. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "lengthcounter": {
+      "prompt": "A light grey mechanical counter with blank rotating panels. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "lengthvalid": {
+      "prompt": "A password input field with one blue indicator lamp illuminated nearby. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "postbox": {
+      "prompt": "A small blue compose window with an empty text box and a round blank button. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "ordernumber": {
+      "prompt": "A plain order ticket beside a brown shipping box. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "requiredfield": {
+      "prompt": "A short blank form with one violet-highlighted input rectangle. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "tasktext": {
+      "prompt": "A blank rectangular card with a single broad violet placeholder bar. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "displaycounter": {
+      "prompt": "A small violet tally counter with a blank inset panel. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "displaybadge": {
+      "prompt": "A blue screen with two distinctly separated placeholder bars. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "displaytiles": {
+      "prompt": "Two groups of compact light-grey tiles separated by a visible gap. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力する欄",
+          "art": "editfield",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "今の文字数",
+          "art": "lengthcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "入力欄の表示",
+          "art": "lengthvalid",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "editfield",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "文字を数える",
+          "art": "lengthcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "文字数",
+          "art": "lengthvalid",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "投稿の入力欄",
+          "art": "postbox",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "注文番号",
+          "art": "ordernumber",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "必須の入力欄",
+          "art": "requiredfield",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "tasktext",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "文字数を確認",
+          "art": "displaycounter",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "表示する名前",
+          "art": "displaybadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数えた文字",
+          "art": "displaytiles",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "文字数",
+          "art": "displaycounter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "password-count",
+      "beats": [
+        {
+          "say": "この動画では、文字数を調べる方法を学びます。"
+        },
+        {
+          "say": "パスワードの決まりは、8文字以上です。",
+          "speech": "パスワードの決まりは、はちもじ以上です。"
+        },
+        {
+          "say": "1文字入力するたびに、下の数が増えていきます。",
+          "speech": "ひともじ入力するたびに、下の数が増えていきます。"
+        },
+        {
+          "pause": 1,
+          "say": "文字数を調べるのが、length です。",
+          "speech": "文字数を調べるのが、レングスです。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "入力した文字を数える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "パスワードの欄に、文字を入れました。",
+          "show": ["a"],
+          "tag": {
+            "a": "●●●●"
+          }
+        },
+        {
+          "say": "入力した文字がいくつあるか数えます。",
+          "show": ["b", "ab"],
+          "tag": {
+            "b": "4 文字"
+          }
+        },
+        {
+          "say": "欄の下に出すのは、いま数えた文字数です。",
+          "show": ["c", "bc"],
+          "travel": {
+            "along": ["bc"]
+          },
+          "tag": {
+            "c": "4 文字"
+          }
+        },
+        {
+          "pause": 1,
+          "say": "もう一文字入れると、表示も増えました。",
+          "tag": {
+            "a": "●●●●●",
+            "c": "5 文字"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字数を調べる",
+      "code": [
+        "// 注文番号を用意する",
+        "const orderCode = \"XP7486\";",
+        "// 注文番号の文字数を数える",
+        "const orderSize = orderCode.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字の数を持っているのが、length です。",
+          "speech": "文字の数を持っているのが、レングスです。",
+          "term": {
+            "text": "length",
+            "ruby": "レングス",
+            "note": "文字列の長さ"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "文字列の後ろに、点を書きます。",
+          "part": {
+            "line": 3,
+            "text": "orderCode."
+          },
+          "figure": {
+            "tag": {
+              "a": "XP7486"
+            }
+          }
+        },
+        {
+          "say": "その次に、length と書きましょう。",
+          "speech": "その次に、レングスと書きましょう。",
+          "part": {
+            "line": 3,
+            "text": ".length"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "文字数を読むだけなので、かっこは要りません。",
+          "figure": {
+            "tag": {
+              "b": "かっこなし"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 注文番号を用意する",
+        "const orderCode = \"XP7486\";",
+        "// 注文番号の文字数を数える",
+        "const orderSize = orderCode.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "点と length のつづりは、決まった書き方です。",
+          "speech": "点とレングスのつづりは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": ".length"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "どの文字列を調べるかと、変数の名前は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "orderSize"
+              },
+              {
+                "line": 1,
+                "text": "\"XP7486\""
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mistake",
+      "kind": "code",
+      "role": "note",
+      "title": "かっこを付けたとき",
+      "code": [
+        "// 注文番号を用意する",
+        "const orderCode = \"XP7486\";",
+        "// 文字数にかっこを付けてしまった例",
+        "const orderSize = orderCode.length();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字数にかっこを付けた例を見ましょう。",
+          "part": {
+            "line": 3,
+            "text": "()"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "length が持っているのは、文字数の数値です。",
+          "speech": "レングスが持っているのは、文字数の数値です。",
+          "part": {
+            "line": 3,
+            "text": ".length"
+          },
+          "figure": {
+            "tag": {
+              "c": "6"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "数値は呼び出せないので、エラーになります。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 注文番号を用意する",
+        "const orderCode = \"XP7486\";",
+        "// 注文番号の文字数を数える",
+        "const orderSize = orderCode.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "注文番号の長さを調べましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"XP7486\"",
+            "note": "注文番号"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "XP7486"
+            }
+          }
+        },
+        {
+          "say": "この番号は、英字と数字を合わせて六文字です。",
+          "part": {
+            "line": 3,
+            "text": ".length"
+          },
+          "figure": {
+            "tag": {
+              "c": "6"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "文字数を、orderSize に入れます。",
+          "speech": "文字数を、オーダーサイズに入れます。",
+          "part": {
+            "line": 3,
+            "text": "orderSize",
+            "note": "注文番号の長さ"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "文字数に空白を含める？",
+      "code": ["// 表示名の文字数を数える", "const displaySize = \"Sky Blue\".length;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "画面に表示する名前には、空白が入っています。",
+          "part": {
+            "line": 1,
+            "text": "\"Sky Blue\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "Sky Blue"
+            }
+          }
+        },
+        {
+          "say": "空白は、二つの単語の間です。",
+          "part": {
+            "line": 1,
+            "text": "Sky Blue"
+          },
+          "figure": {
+            "tag": {
+              "b": "空白あり"
+            }
+          }
+        },
+        {
+          "say": "この名前は、何文字でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 表示名の文字数を数える", "const displaySize = \"Sky Blue\".length;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "答えは、八文字です。",
+          "figure": {
+            "tag": {
+              "c": "8"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "空白も文字数に入る",
+      "code": ["// 表示名の文字数を数える", "const displaySize = \"Sky Blue\".length;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初の単語は、三文字です。",
+          "part": {
+            "line": 1,
+            "text": "Sky"
+          },
+          "figure": {
+            "tag": {
+              "b": "3 文字"
+            }
+          }
+        },
+        {
+          "say": "間にある空白も、一文字として数えます。",
+          "figure": {
+            "tag": {
+              "b": "3＋1"
+            }
+          }
+        },
+        {
+          "say": "残りの単語は、四文字でした。",
+          "part": {
+            "line": 1,
+            "text": "Blue"
+          },
+          "figure": {
+            "tag": {
+              "b": "3＋1＋4"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "すべて合わせた八が、この文字列の長さです。",
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            },
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "投稿欄では、入力の上限を超えていないか調べます。",
+          "show": ["a"]
+        },
+        {
+          "say": "注文番号の長さが合っているかも、確かめられる例です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "必ず入力する欄が空かどうかも、文字数を見ましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問13 で使う",
+      "code": [
+        "// 問13 text の文字数が length より多ければ true を返す",
+        "//     例: isLongerThan(\"hello\", 3) → true",
+        "export function isLongerThan() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問13では、文字列と基準になる数を受け取ります。",
+          "speech": "といじゅうさんでは、文字列と基準になる数を受け取ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "比べる前に必要なのは、受け取った文字列の長さです。",
+          "part": {
+            "line": 1,
+            "text": "\"hello\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "文字を数える書き方を、ここで使いましょう。",
+          "part": {
+            "line": 2,
+            "text": "{}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

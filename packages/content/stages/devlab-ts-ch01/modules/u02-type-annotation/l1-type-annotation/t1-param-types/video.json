@@ -1,0 +1,774 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "引数の名前の後ろに、コロンと型を書きます。",
+    "stuck": "受付の案内文を作るには、名前を関数に渡します。渡せる値の種類は、どこに書けばよいでしょうか。",
+    "points": ["引数の名前の後ろに、コロンと型を書きます。"],
+    "leaveOut": ["型が合わないときの詳しいエラー表示"]
+  },
+  "art": {
+    "parkcar": {
+      "prompt": "A compact blue car viewed from above. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "carbay": {
+      "prompt": "An overhead view of a wide parking bay with a compact blue car parked neatly inside. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "bikebay": {
+      "prompt": "An overhead view of a narrow parking bay with a small violet motorcycle parked inside. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "reception": {
+      "prompt": "A small reception desk with a blank badge resting on top. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stockboxes": {
+      "prompt": "A few small cardboard cartons stacked on a warehouse shelf. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "notifytoggle": {
+      "prompt": "A smartphone showing a single toggle switch beside a simple bell silhouette. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "tasknumbers": {
+      "prompt": "Two small piles of coins set side by side. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "taskbrackets": {
+      "prompt": "Two blank rounded slots in a small violet form. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "taskbadge": {
+      "prompt": "A plain blank name badge with a rounded clip. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "車",
+          "art": "parkcar",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "車用の区画",
+          "art": "carbay",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "バイク用の区画",
+          "art": "bikebay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "渡す値",
+          "art": "parkcar",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "引数の名前",
+          "art": "name",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "受け取る型",
+          "art": "carbay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受付の名前",
+          "art": "reception",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "商品の個数",
+          "art": "stockboxes",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "通知の設定",
+          "art": "notifytoggle",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "渡す数",
+          "art": "tasknumbers",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "引数のかっこ",
+          "art": "taskbrackets",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "渡す値",
+          "art": "taskbadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "引数の名前",
+          "art": "name",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "引数の型",
+          "art": "rule",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "parking-slots",
+      "beats": [
+        {
+          "say": "この動画では、引数に型を書く方法を学びます。"
+        },
+        {
+          "say": "駐車場の区画にあるのは、車用とバイク用の印です。"
+        },
+        {
+          "say": "車は、車用の区画にだけ止められます。"
+        },
+        {
+          "pause": 1,
+          "say": "引数に付けるのも、受け取る値の種類の印です。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "区画に止められる車",
+      "board": "example",
+      "beats": [
+        {
+          "say": "駐車場に、車がやってきました。",
+          "show": ["a"]
+        },
+        {
+          "say": "車が止められるのは、こちらの広い区画です。",
+          "show": ["b", "ab"],
+          "travel": {
+            "along": ["ab"]
+          }
+        },
+        {
+          "say": "バイク用の区画には、車を止められません。",
+          "show": ["c"],
+          "mark": [
+            {
+              "on": "c",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "pause": 1,
+          "say": "区画の印で、どちらに止められるかが分かります。",
+          "pulse": ["b", "c"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "引数に型を書く",
+      "code": [
+        "// 名前を受け取って、歓迎の文を返す関数",
+        "function welcome(name: string) {",
+        "  // 受け取った名前を歓迎の文に埋め込んで返す",
+        "  return `ようこそ、${name}！`;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "かっこの中に、引数の名前と型を書きます。",
+          "part": {
+            "line": 1,
+            "text": "name: string"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "name は名前を表す英語です。",
+          "speech": "ネームは名前を表す英語です。",
+          "part": {
+            "line": 1,
+            "text": "name",
+            "note": "名前"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "名前に続けて、コロンを書きましょう。",
+          "part": {
+            "line": 1,
+            "text": ":"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "string は、文字列を受け取るという型注釈です。",
+          "speech": "ストリングは、文字列を受け取るという型注釈です。",
+          "part": {
+            "line": 1,
+            "text": "string"
+          },
+          "figure": {
+            "tag": {
+              "c": "string"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 名前を受け取って、歓迎の文を返す関数",
+        "function welcome(name: string) {",
+        "  // 受け取った名前を歓迎の文に埋め込んで返す",
+        "  return `ようこそ、${name}！`;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "コロンと型のつづりは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ": string"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "関数名と引数名は、書く人が付けます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "welcome"
+              },
+              {
+                "line": 1,
+                "text": "name"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mistake",
+      "kind": "code",
+      "role": "note",
+      "title": "引数の型を書き忘れたとき",
+      "code": [
+        "// 名前を受け取る関数を、引数の型を書かずに作る",
+        "function welcome(name) {",
+        "  // 名前を埋め込んだ歓迎の文を返す",
+        "  return `ようこそ、${name}！`;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "引数の名前だけを書いた例を見ましょう。",
+          "part": {
+            "line": 1,
+            "text": "name"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "型を省くと、ここでは引数が暗黙に any になります。",
+          "speech": "型を省くと、ここでは引数が暗黙にエニーになります。",
+          "term": {
+            "text": "any",
+            "ruby": "エニー",
+            "note": "値の種類を問わない型"
+          },
+          "figure": {
+            "tag": {
+              "c": "any"
+            }
+          }
+        },
+        {
+          "say": "この課題では、暗黙に any になるとエラーです。",
+          "speech": "この課題では、暗黙にエニーになるとエラーです。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "受け取る値の種類を、引数の名前の後ろに書きましょう。",
+          "part": {
+            "line": 1,
+            "text": "(name)"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 名前を受け取って、歓迎の文を返す関数",
+        "function welcome(name: string) {",
+        "  // 受け取った名前を歓迎の文に埋め込んで返す",
+        "  return `ようこそ、${name}！`;",
+        "}",
+        "// 名前を渡して、歓迎の文を作る",
+        "welcome(\"ミオ\");"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "受付で名前を受け取り、歓迎の文を作りましょう。",
+          "part": {
+            "line": 1,
+            "text": "welcome",
+            "note": "歓迎する"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "渡す「ミオ」は文字列です。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a": "ミオ"
+            }
+          }
+        },
+        {
+          "say": "引数に名前が入り、その名前を文の中に埋め込みます。",
+          "part": {
+            "line": 3,
+            "text": "${name}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            },
+            "tag": {
+              "b": "ミオ"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "名前に合った歓迎の文ができました。",
+          "part": {
+            "line": 3,
+            "text": "ようこそ"
+          },
+          "figure": {
+            "tag": {
+              "c": "文字列"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "題名に数値を渡せる？",
+      "code": [
+        "// 本の題名を受け取って、案内文を返す関数",
+        "function bookNotice(title: string) {",
+        "  // 題名を案内文に埋め込んで返す",
+        "  return `新刊：${title}`;",
+        "}",
+        "// 題名の代わりに数値を渡す",
+        "bookNotice(67);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "本の題名を受け取る関数を作りました。",
+          "part": {
+            "line": 1,
+            "text": "title",
+            "note": "題名"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "題名の代わりに、数値の 67 を渡します。",
+          "speech": "題名の代わりに、数値のろくじゅうななを渡します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a": "67"
+            }
+          }
+        },
+        {
+          "say": "この呼び出しは、型の確認を通るでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 本の題名を受け取って、案内文を返す関数",
+        "function bookNotice(title: string) {",
+        "  // 題名を案内文に埋め込んで返す",
+        "  return `新刊：${title}`;",
+        "}",
+        "// 題名の代わりに数値を渡す",
+        "bookNotice(67);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "型の確認で、エラーになります。",
+          "mark": [
+            {
+              "line": 6,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "受け取れる値の種類",
+      "code": [
+        "// 本の題名を受け取って、案内文を返す関数",
+        "function bookNotice(title: string) {",
+        "  // 題名を案内文に埋め込んで返す",
+        "  return `新刊：${title}`;",
+        "}",
+        "// 題名の代わりに数値を渡す",
+        "bookNotice(67);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "引数の string は、文字列を受け取る印です。",
+          "speech": "引数のストリングは、文字列を受け取る印です。",
+          "part": {
+            "line": 1,
+            "text": "string"
+          },
+          "figure": {
+            "tag": {
+              "c": "string"
+            }
+          }
+        },
+        {
+          "say": "渡した 67 は数値なので、型が合いません。",
+          "speech": "渡したろくじゅうななは数値なので、型が合いません。",
+          "part": {
+            "line": 6,
+            "text": "67"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "本の題名を文字列で渡せば、この型に合います。",
+          "figure": {
+            "tag": {
+              "a": "青い鳥"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "受付で集める名前には、文字列の型を使います。",
+          "show": ["a"]
+        },
+        {
+          "say": "在庫を更新するとき、商品の個数は数値です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "通知するかどうかも、引数の型で表せます。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1 で使う",
+      "code": [
+        "// 問1 a から b を引いた数を返す",
+        "//     例: subtract(5, 3) → 2",
+        "export function subtract() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1では、引き算に使う数を受け取ります。",
+          "speech": "といいちでは、引き算に使う数を受け取ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "渡す値の数と順番は、呼び出し例のとおりです。",
+          "part": {
+            "line": 1,
+            "text": "subtract(5, 3)"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "かっこの中に、受け取る値の種類を書きましょう。",
+          "part": {
+            "line": 2,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        }
+      ]
+    }
+  ]
+}

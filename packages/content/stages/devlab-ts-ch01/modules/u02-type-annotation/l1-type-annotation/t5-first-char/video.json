@@ -1,0 +1,707 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列[0] で、最初の1文字を取り出せます。番号は 0 から数えます。",
+    "stuck": "利用者の名前の先頭を、画面の小さな印に表示します。長さの違う名前から、同じ位置の文字をどう取り出すでしょうか。",
+    "points": ["文字列[0] で、最初の1文字を取り出せます。番号は 0 から数えます。"],
+    "leaveOut": ["番号が文字列の範囲を外れたときの扱い"]
+  },
+  "art": {
+    "cardrow": {
+      "prompt": "A neat horizontal row of four equally sized blank square cards alternating soft blue and grey. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "cardcounter": {
+      "prompt": "A violet pointer just below the leftmost of a row of four blank square cards. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "cardlift": {
+      "prompt": "A single blue square card raised above a row of low grey square cards. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "locationtab": {
+      "prompt": "A simple map pin next to a blank tab on a file divider. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "avatartile": {
+      "prompt": "A round profile badge with a small blank tile where a monogram would go. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "filing": {
+      "prompt": "A row of upright folders divided by blank blue sorting tabs. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "taskbadge": {
+      "prompt": "A plain blank name badge with a rounded clip. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stationcard": {
+      "prompt": "A blue train station sign with a blank recessed center. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stationcounter": {
+      "prompt": "Three blank blue tiles in a row with a small pointer beneath the rightmost tile. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stationtile": {
+      "prompt": "A single violet square tile raised on a pale blue base. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "文字の並び",
+          "art": "cardrow",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "カードの番号",
+          "art": "cardcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "選んだカード",
+          "art": "cardlift",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "cardrow",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "選ぶ番号",
+          "art": "cardcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "取り出した文字",
+          "art": "cardlift",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "地名の見出し",
+          "art": "locationtab",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "利用者の印",
+          "art": "avatartile",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "棚の分類",
+          "art": "filing",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る名前",
+          "art": "taskbadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す一文字",
+          "art": "cardlift",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "行き先",
+          "art": "stationcard",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "選ぶ番号",
+          "art": "stationcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "選んだ文字",
+          "art": "stationtile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "letter-index",
+      "beats": [
+        {
+          "say": "この動画では、最初の1文字を取り出す方法を学びます。",
+          "speech": "この動画では、最初のひともじを取り出す方法を学びます。"
+        },
+        {
+          "say": "Taro という名前を、1文字ずつカードに書きました。",
+          "speech": "タロウという名前を、ひともじずつカードに書きました。"
+        },
+        {
+          "say": "左から順に、0、1、2、3 と番号を付けます。",
+          "speech": "左から順に、ゼロ、いち、に、さんと番号を付けます。"
+        },
+        {
+          "pause": 1,
+          "say": "0番のカードが、最初の1文字です。",
+          "speech": "ゼロばんのカードが、最初のひともじです。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "カードを左から数える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "文字を一枚ずつ、左から順に並べました。",
+          "show": ["a"]
+        },
+        {
+          "say": "いちばん左のカードは、0番です。",
+          "speech": "いちばん左のカードは、ゼロばんです。",
+          "show": ["b", "ab"],
+          "tag": {
+            "b": "0 番"
+          }
+        },
+        {
+          "say": "となりのカードに移ると、番号は一つ増えます。",
+          "tag": {
+            "b": "1 番"
+          },
+          "pulse": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "最初のカードを選ぶために、0番へ戻りましょう。",
+          "speech": "最初のカードを選ぶために、ゼロばんへ戻りましょう。",
+          "show": ["c", "bc"],
+          "tag": {
+            "b": "0 番"
+          },
+          "travel": {
+            "along": ["bc"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "最初の1文字を取り出す",
+      "code": [
+        "// 都市名を用意する",
+        "const city = \"神戸\";",
+        "// 都市名の最初の文字を取り出す",
+        "const cityMark = city[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字の位置を表す番号を、添字と呼びます。",
+          "term": {
+            "text": "添字",
+            "ruby": "そえじ",
+            "note": "文字の位置を表す番号"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "番号を書く場所は、文字列の後ろです。",
+          "part": {
+            "line": 1,
+            "text": "\"神戸\"",
+            "note": "都市名"
+          },
+          "figure": {
+            "tag": {
+              "a": "神戸"
+            }
+          }
+        },
+        {
+          "say": "角かっこを書き、その中に番号を入れましょう。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "0 は、最初の位置を表します。",
+          "speech": "ゼロは、最初の位置を表します。",
+          "part": {
+            "line": 3,
+            "text": "0"
+          },
+          "figure": {
+            "tag": {
+              "b": "0 番"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 都市名を用意する",
+        "const city = \"神戸\";",
+        "// 都市名の最初の文字を取り出す",
+        "const cityMark = city[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "番号を囲む角かっこは、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "["
+              },
+              {
+                "line": 3,
+                "text": "]"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "どの文字列のどの番号を選ぶかは、自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "cityMark"
+              },
+              {
+                "line": 1,
+                "text": "\"神戸\""
+              },
+              {
+                "line": 3,
+                "text": "0"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 都市名を用意する",
+        "const city = \"神戸\";",
+        "// 都市名の最初の文字を取り出す",
+        "const cityMark = city[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "都市名の神戸を、左から見てみましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"神戸\"",
+            "note": "都市名"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "神戸"
+            }
+          }
+        },
+        {
+          "say": "角かっこの 0 で、最初の文字を選びます。",
+          "speech": "角かっこのゼロで、最初の文字を選びます。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            },
+            "tag": {
+              "b": "0 番"
+            }
+          }
+        },
+        {
+          "say": "取り出した文字は、神です。",
+          "figure": {
+            "tag": {
+              "c": "神"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "その一文字を、cityMark に入れました。",
+          "speech": "そのひともじを、シティマークに入れました。",
+          "part": {
+            "line": 3,
+            "text": "cityMark",
+            "note": "都市の印"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "最後の文字はどこにある？",
+      "code": ["// 行き先から指定した位置の文字を取る", "const placeMark = \"松本駅\"[2];"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、文字が三つ並んでいます。",
+          "part": {
+            "line": 1,
+            "text": "\"松本駅\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "松本駅"
+            }
+          }
+        },
+        {
+          "say": "角かっこに 2 を書きました。",
+          "speech": "角かっこに、にを書きました。",
+          "part": {
+            "line": 1,
+            "text": "[2]"
+          },
+          "figure": {
+            "tag": {
+              "b": "2 番"
+            }
+          }
+        },
+        {
+          "say": "取り出せるのは、どの文字でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 行き先から指定した位置の文字を取る", "const placeMark = \"松本駅\"[2];"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "答えは、駅です。",
+          "figure": {
+            "tag": {
+              "c": "駅"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "最後の番号は文字数より一つ小さい",
+      "code": ["// 行き先から指定した位置の文字を取る", "const placeMark = \"松本駅\"[2];"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初の「松」は、0番です。",
+          "speech": "最初の「まつ」は、ゼロばんです。",
+          "part": {
+            "line": 1,
+            "text": "松"
+          },
+          "figure": {
+            "tag": {
+              "b": "0 番"
+            }
+          }
+        },
+        {
+          "say": "次の「本」に移ると、1番になります。",
+          "speech": "次の「もと」に移ると、いちばんになります。",
+          "part": {
+            "line": 1,
+            "text": "本"
+          },
+          "figure": {
+            "tag": {
+              "b": "1 番"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "最後の「駅」は、文字数より一つ小さい番号です。",
+          "part": {
+            "line": 1,
+            "text": "駅"
+          },
+          "figure": {
+            "tag": {
+              "b": "2 番"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "地名で一覧を作るとき、先頭を見出しに使えます。",
+          "show": ["a"]
+        },
+        {
+          "say": "名前の一文字を使った、利用者の印も身近な例です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "書類を先頭の文字で分けるときにも、取り出しましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問10 で使う",
+      "code": [
+        "// 問10 名前の最初の1文字を返す",
+        "//     例: initial(\"Taro\") → \"T\"",
+        "export function initial() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問10では、引数で名前を受け取ります。",
+          "speech": "といじゅうでは、引数で名前を受け取ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例の右にあるのが、名前の先頭の文字です。",
+          "part": {
+            "line": 1,
+            "text": "→ \"T\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "先頭を選ぶ番号を、思い出してみましょう。",
+          "part": {
+            "line": 2,
+            "text": "{}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
+sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-values-types-variables-number, SRC-mdn-js-comparison-20261119, SRC-typescriptbook-values-types-variables-boolean]
 ---
 
 ## 知識問題
@@ -20,17 +20,17 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
 
 </details>
 
-### Q2. `"ORD-451".slice(0, 3)` の結果はどれですか？
+### Q2. `"ORD-451"[0]` の結果はどれですか？
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
-- A. `"ORD"`
-- B. `"ORD-"`
-- C. `"RD-"`
+- A. `"O"`
+- B. `"R"`
+- C. `"ORD"`
 
 <details>
 <summary>解答</summary>
 
-**A** — 0・1・2 番目を取り出します。終わりの 3 番目は含みません。
+**A** — 添字は 0 から数えます。0 番は先頭の一文字です。
 
 </details>
 
@@ -53,12 +53,12 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
 - A. `"◎".repeat(2)` は `"◎◎"`
 - B. `"ab-7".toUpperCase()` は `"AB-7"`
 - C. `(12000).toLocaleString("ja-JP")` は数値の `12000`
-- D. `true && false` は `false`
+- D. `52 >= 48` は `true`
 
 <details>
 <summary>解答</summary>
 
-**A, B, D** — repeat は繰り返し、toUpperCase は大文字化です。toLocaleString の結果は文字列の "12,000" です。二つの条件は両方が真の場合だけ真になります。
+**A, B, D** — repeat は繰り返し、toUpperCase は大文字化です。toLocaleString の結果は文字列の "12,000" です。52 は 48 以上なので、比べた結果は true です。
 
 </details>
 

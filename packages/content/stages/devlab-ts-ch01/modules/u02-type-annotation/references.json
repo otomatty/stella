@@ -1,37 +1,100 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u02-type-annotation@4",
-  "contentHash": "645b0953a673dedf3cd62e2eb0caf0059f61fd6e66eb817b4a222d7cb327ca4b",
+  "unitId": "devlab-ts-ch01/u02-type-annotation@5",
+  "contentHash": "313c65d4dd30fd6780d6dded256748150cd4464becdf63cab4f9f7eef2260466",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-type-annotation/doc.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "型注釈、比較の結果、数値の表示、文字列の扱いの背景。説明、例、問題ごとのヒントは教材用に作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-type-annotation/t1-write-types/slides.md",
+      "contentId": "l1-type-annotation/t1-param-types/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "「引数に型を書く」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-type-annotation/t2-string-tools/slides.md",
+      "contentId": "l1-type-annotation/t2-return-type/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "「戻り値に型を書く」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t3-return-compare/slides.md",
+      "sourceRefs": [
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-typescriptbook-values-types-variables-boolean"
+      ],
+      "usedFor": "「比べた結果を返す」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t4-repeat/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "「文字列をくり返す」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t5-first-char/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "「最初の1文字を取り出す」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t6-locale-string/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "「3桁ごとに区切る」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t7-length/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "「文字数を調べる」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-annotation/t8-upper-case/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "「大文字にする」で扱う書き方の背景。説明、例、図、動画内の問題は教材用に作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
       "contentId": "l1-type-annotation/knowledge.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-annotation"],
-      "usedFor": "型注釈の理解の自己確認用の独自問題。",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-values-types-variables-string",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-mdn-js-comparison-20261119",
+        "SRC-typescriptbook-values-types-variables-boolean"
+      ],
+      "usedFor": "型注釈、比較の結果、数値の表示、文字列の扱いを確かめる教材独自の問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

@@ -1,0 +1,749 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "比べた結果は true か false なので、そのまま boolean として返せます。",
+    "stuck": "受付で測った身長をもとに、乗り物に乗れるかどうかを知らせます。比べた結果を関数で渡すには、どう書けばよいでしょうか。",
+    "points": ["比べた結果は true か false なので、そのまま boolean として返せます。"],
+    "leaveOut": ["比較する条件を複数つなぐ書き方"]
+  },
+  "art": {
+    "heightkid": {
+      "prompt": "A young adult standing straight beside a blue measuring post with subtle unlabeled tick marks. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "heightpost": {
+      "prompt": "A violet measuring post with one prominent horizontal marker and no numerals. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "ridegate": {
+      "prompt": "A small amusement ride entrance with a blue safety gate and a simple violet ride seat behind it. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "seatrow": {
+      "prompt": "Two simple seats beside one empty seat in an auditorium row. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stockcheck": {
+      "prompt": "A low warehouse shelf with two remaining plain cardboard cartons. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "deadline": {
+      "prompt": "A desk calendar beside a plain round clock with no numerals. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "taskage": {
+      "prompt": "A blank identification card with a faceless blue portrait silhouette. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "timesignal": {
+      "prompt": "A simple round indicator lamp on a small stand. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "timeclock": {
+      "prompt": "A round wall clock with two hands and unlabeled tick marks. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "timelimit": {
+      "prompt": "A desk timer with a blank inset display and one violet button. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "測った身長",
+          "art": "heightkid",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "身長の基準",
+          "art": "heightpost",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "乗車の判定",
+          "art": "ridegate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "測った身長",
+          "art": "heightkid",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "基準と比べる",
+          "art": "heightpost",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "乗車の判定",
+          "art": "ridegate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "席を予約",
+          "art": "seatrow",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "在庫の確認",
+          "art": "stockcheck",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "提出の締切",
+          "art": "deadline",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る年齢",
+          "art": "taskage",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "比べた結果",
+          "art": "timesignal",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "残り時間",
+          "art": "timeclock",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "時間の基準",
+          "art": "timelimit",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "余裕の判定",
+          "art": "timesignal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "height-gate",
+      "beats": [
+        {
+          "say": "この動画では、比べた結果を返す方法を学びます。"
+        },
+        {
+          "say": "この乗り物に乗れるのは、身長が120センチ以上の人だけです。",
+          "speech": "この乗り物に乗れるのは、身長が百二十センチ以上の人だけです。"
+        },
+        {
+          "say": "背の高さを測ると、乗れるかどうかが決まります。"
+        },
+        {
+          "pause": 1,
+          "say": "比べた結果は、true か false で返せる値です。",
+          "speech": "比べた結果は、トゥルーかフォールスで返せる値です。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "乗り物に乗れるか",
+      "board": "example",
+      "beats": [
+        {
+          "say": "乗り物の入り口で、身長を測りました。",
+          "show": ["a"],
+          "tag": {
+            "a": "138 cm"
+          }
+        },
+        {
+          "say": "ここでの基準は、120センチです。",
+          "speech": "ここでの基準は、百二十センチです。",
+          "show": ["b", "ab"],
+          "tag": {
+            "b": "120 cm"
+          }
+        },
+        {
+          "say": "基準以上なので、この人は乗れます。",
+          "show": ["c", "bc"],
+          "mark": [
+            {
+              "on": "c",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "pause": 1,
+          "say": "基準に届かない場合は、乗れません。",
+          "tag": {
+            "a": "116 cm"
+          },
+          "mark": [
+            {
+              "on": "c",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "比べた結果を返す",
+      "code": [
+        "// 身長から、乗り物に乗れるかを返す関数",
+        "function canRide(height: number): boolean {",
+        "  // 身長が基準以上かを比べた結果を返す",
+        "  return height >= 120;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "乗れるかどうかは、boolean の値です。",
+          "speech": "乗れるかどうかは、ブーリアンの値です。",
+          "part": {
+            "line": 1,
+            "text": "boolean"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "身長が基準以上かを、ここで比べます。",
+          "part": {
+            "line": 3,
+            "text": "height >= 120"
+          },
+          "figure": {
+            "tag": {
+              "b": "120 cm"
+            }
+          }
+        },
+        {
+          "say": "比べた結果が、true か false です。",
+          "speech": "比べた結果が、トゥルーかフォールスです。",
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "その式を、return の後ろに置きましょう。",
+          "speech": "その式を、リターンの後ろに置きましょう。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 身長から、乗り物に乗れるかを返す関数",
+        "function canRide(height: number): boolean {",
+        "  // 身長が基準以上かを比べた結果を返す",
+        "  return height >= 120;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "型のつづりや、値を比べる記号は決まっています。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "boolean"
+              },
+              {
+                "line": 3,
+                "text": "return"
+              },
+              {
+                "line": 3,
+                "text": ">="
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "引数などの名前と、比べる基準は自分で決める部分です。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "canRide"
+              },
+              {
+                "line": 1,
+                "text": "height"
+              },
+              {
+                "line": 3,
+                "text": "120"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 身長から、乗り物に乗れるかを返す関数",
+        "function canRide(height: number): boolean {",
+        "  // 身長が基準以上かを比べた結果を返す",
+        "  return height >= 120;",
+        "}",
+        "// 測った身長を渡して、乗れるか調べる",
+        "canRide(138);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "乗れるかを調べる関数を呼び出しましょう。",
+          "part": {
+            "line": 1,
+            "text": "canRide",
+            "note": "乗れるか"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "測った身長の 138 を渡します。",
+          "speech": "測った身長の百三十八を渡します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a": "138 cm"
+            }
+          }
+        },
+        {
+          "say": "138 は基準を超えた値です。",
+          "speech": "百三十八は基準を超えた値です。",
+          "part": {
+            "line": 3,
+            "text": ">= 120"
+          },
+          "figure": {
+            "tag": {
+              "b": "120 cm"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "比べた結果の true が戻りました。",
+          "speech": "比べた結果のトゥルーが戻りました。",
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            },
+            "tag": {
+              "c": "true"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "残り時間に余裕はある？",
+      "code": [
+        "// 残り時間に余裕があるかを調べる関数",
+        "function hasTime(minutes: number): boolean {",
+        "  // 残り時間が基準以上かを調べて返す",
+        "  return minutes >= 42;",
+        "}",
+        "// 残り時間を渡す",
+        "hasTime(41);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "残り時間に余裕があるかを調べます。",
+          "part": {
+            "line": 1,
+            "text": "hasTime",
+            "note": "時間がある"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "基準は 42 分です。",
+          "speech": "基準はよんじゅうにふんです。",
+          "part": {
+            "line": 3,
+            "text": "42"
+          },
+          "figure": {
+            "tag": {
+              "b": "42 分"
+            }
+          }
+        },
+        {
+          "say": "残り時間として、41 分を渡しました。",
+          "speech": "残り時間として、よんじゅういっぷんを渡しました。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a": "41 分"
+            }
+          }
+        },
+        {
+          "say": "関数から戻る値は、何でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 残り時間に余裕があるかを調べる関数",
+        "function hasTime(minutes: number): boolean {",
+        "  // 残り時間が基準以上かを調べて返す",
+        "  return minutes >= 42;",
+        "}",
+        "// 残り時間を渡す",
+        "hasTime(41);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "答えは false です。",
+          "speech": "答えはフォールスです。",
+          "figure": {
+            "tag": {
+              "c": "false"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "比べた結果をそのまま返す",
+      "code": [
+        "// 残り時間に余裕があるかを調べる関数",
+        "function hasTime(minutes: number): boolean {",
+        "  // 残り時間が基準以上かを調べて返す",
+        "  return minutes >= 42;",
+        "}",
+        "// 残り時間を渡す",
+        "hasTime(41);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "41 は 42 より小さい値です。",
+          "speech": "よんじゅういちは、よんじゅうにより小さい値です。",
+          "part": {
+            "line": 3,
+            "text": "minutes >= 42"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        },
+        {
+          "say": "以上という条件を満たしません。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "その結果が、return で呼び出した場所に戻ります。",
+          "speech": "その結果が、リターンで呼び出した場所に戻ります。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "if で真と偽を別々に返すより短い書き方です。",
+          "speech": "イフで真と偽を別々に返すより短い書き方です。",
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "空席が希望の数以上かを調べると、予約に使えます。",
+          "show": ["a"]
+        },
+        {
+          "say": "在庫が発注の基準に届いているかも、同じ考え方です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "締切まで時間があるかも、比べた結果で知らせましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問3 で使う",
+      "code": [
+        "// 問3 18歳以上なら true を返す",
+        "//     例: isAdult(18) → true",
+        "export function isAdult() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問3では、年齢が基準以上かを調べます。",
+          "speech": "といさんでは、年齢が基準以上かを調べます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例の右にある値は、年齢を比べた結果です。",
+          "part": {
+            "line": 1,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "比べた結果を、そのまま返してみましょう。",
+          "part": {
+            "line": 2,
+            "text": "{}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

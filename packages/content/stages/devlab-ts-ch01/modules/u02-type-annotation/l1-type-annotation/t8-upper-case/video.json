@@ -1,0 +1,693 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": ".toUpperCase() で、英字を大文字にできます。",
+    "stuck": "棚の番号を見やすく表示します。入力された英字に小文字が混じっているとき、表示をどうそろえればよいでしょうか。",
+    "points": [".toUpperCase() で、英字を大文字にできます。"],
+    "leaveOut": ["英字以外の大文字変換"]
+  },
+  "art": {
+    "smallshopboard": {
+      "prompt": "A freestanding shop sign with a thin short placeholder bar in the middle. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "shopbrush": {
+      "prompt": "A small paintbrush leaving a broad purple stroke on a blank sign. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "boldshopboard": {
+      "prompt": "A freestanding shop sign with a thick bold violet placeholder bar. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "storefront": {
+      "prompt": "A simple shop facade with a violet awning and a blank hanging sign. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "productbadge": {
+      "prompt": "A blank rounded hang tag suspended from a plain cardboard carton. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "matching": {
+      "prompt": "Two blue input rectangles with matching placeholder blocks side by side. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "tasktext": {
+      "prompt": "A blank rectangular card with a single broad violet placeholder bar. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "shelfcode": {
+      "prompt": "A shelf edge with a blank blue label outlined by its molded plastic holder. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "lettertile": {
+      "prompt": "Two purple tiles showing contrasting abstract strokes, one thin and one bold. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "codebadge": {
+      "prompt": "A neatly aligned violet shelf tag with a broad blank central band. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の表示",
+          "art": "smallshopboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "書き直す",
+          "art": "shopbrush",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "変えた表示",
+          "art": "boldshopboard",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "smallshopboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "大文字にする",
+          "art": "shopbrush",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "変えた文字列",
+          "art": "boldshopboard",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "店頭の看板",
+          "art": "storefront",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "商品のコード",
+          "art": "productbadge",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "入力の照合",
+          "art": "matching",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "tasktext",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "大文字にした文",
+          "art": "boldshopboard",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "棚の番号",
+          "art": "shelfcode",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "変わるところ",
+          "art": "lettertile",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "変えた結果",
+          "art": "codebadge",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "shop-sign",
+      "beats": [
+        {
+          "say": "この動画では、英字を大文字にする方法を学びます。"
+        },
+        {
+          "say": "お店の看板に、小文字で open と書きました。",
+          "speech": "お店の看板に、小文字でオープンと書きました。"
+        },
+        {
+          "say": "遠くからも読めるように、大文字に書き直します。"
+        },
+        {
+          "pause": 1,
+          "say": "英字を大文字にするのが、toUpperCase です。",
+          "speech": "英字を大文字にするのが、トゥーアッパーケースです。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "看板の文字をそろえる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "お店の入り口に、営業中の看板を出しました。",
+          "show": ["a"],
+          "tag": {
+            "a": "open"
+          }
+        },
+        {
+          "say": "表示をそろえるために、小文字を大文字にします。",
+          "show": ["b", "ab"],
+          "travel": {
+            "along": ["ab"]
+          }
+        },
+        {
+          "say": "看板は、大文字だけの表示になりました。",
+          "show": ["c", "bc"],
+          "tag": {
+            "c": "OPEN"
+          }
+        },
+        {
+          "pause": 1,
+          "say": "看板で伝える意味は変わりません。",
+          "pulse": ["a", "c"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "大文字にする",
+      "code": [
+        "// 看板に使う文字列を用意する",
+        "const sign = \"open\";",
+        "// 看板に使う英字を大文字にする",
+        "const signText = sign.toUpperCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "大文字に変えるメソッドが、toUpperCase です。",
+          "speech": "大文字に変えるメソッドが、トゥーアッパーケースです。",
+          "part": {
+            "line": 3,
+            "text": "toUpperCase"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "変えたい文字列の後ろに、点を書きます。",
+          "part": {
+            "line": 3,
+            "text": "sign."
+          },
+          "figure": {
+            "tag": {
+              "a": "open"
+            }
+          }
+        },
+        {
+          "say": "アッパーケースは、英語で大文字のことです。",
+          "part": {
+            "line": 3,
+            "text": "UpperCase"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "最後に、空のかっこを書きましょう。",
+          "part": {
+            "line": 3,
+            "text": "()"
+          },
+          "figure": {
+            "tag": {
+              "c": "OPEN"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 看板に使う文字列を用意する",
+        "const sign = \"open\";",
+        "// 看板に使う英字を大文字にする",
+        "const signText = sign.toUpperCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "メソッド名と、最後のかっこは決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": ".toUpperCase"
+              },
+              {
+                "line": 3,
+                "text": "()"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "元の文字列や変数の名前は、自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "signText"
+              },
+              {
+                "line": 1,
+                "text": "\"open\""
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 看板に使う文字列を用意する",
+        "const sign = \"open\";",
+        "// 看板に使う英字を大文字にする",
+        "const signText = sign.toUpperCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "看板に出す「open」を大文字にしましょう。",
+          "speech": "看板に出す「オープン」を大文字にしましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"open\"",
+            "note": "看板"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "open"
+            }
+          }
+        },
+        {
+          "say": "小文字が順に、大文字に置き換わります。",
+          "part": {
+            "line": 3,
+            "text": "toUpperCase"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        },
+        {
+          "say": "できたのは、大文字の「OPEN」です。",
+          "speech": "できたのは、大文字の「オープン」です。",
+          "figure": {
+            "tag": {
+              "c": "OPEN"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "この文字列を、signText に入れました。",
+          "speech": "この文字列を、サインテキストに入れました。",
+          "part": {
+            "line": 3,
+            "text": "signText",
+            "note": "看板の文"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "数字や記号も変わる？",
+      "code": ["// 整理番号の英字を大文字にそろえる", "const shelfCode = \"Qa-86\".toUpperCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "棚の番号には、小文字と大文字が混ざっています。",
+          "part": {
+            "line": 1,
+            "text": "\"Qa-86\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "Qa-86"
+            }
+          }
+        },
+        {
+          "say": "英字の後ろには、記号と数字もありました。",
+          "part": {
+            "line": 1,
+            "text": "-86"
+          },
+          "figure": {
+            "tag": {
+              "b": "記号と数字"
+            }
+          }
+        },
+        {
+          "say": "変えたあとの文字列は、どうなるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 整理番号の英字を大文字にそろえる", "const shelfCode = \"Qa-86\".toUpperCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "答えは「QA-86」です。",
+          "speech": "答えは、キューエー、ハイフン、はちろくです。",
+          "figure": {
+            "tag": {
+              "c": "QA-86"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "小文字の英字だけが変わる",
+      "code": ["// 整理番号の英字を大文字にそろえる", "const shelfCode = \"Qa-86\".toUpperCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "変わったのは、小文字の a だけです。",
+          "speech": "変わったのは、小文字のエーだけです。",
+          "part": {
+            "line": 1,
+            "text": "a"
+          },
+          "figure": {
+            "tag": {
+              "b": "a → A"
+            }
+          }
+        },
+        {
+          "say": "最初から大文字の Q は変わりません。",
+          "speech": "最初から大文字のキューは変わりません。",
+          "part": {
+            "line": 1,
+            "text": "Q"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "後ろの記号と数字も、同じ形で残ります。",
+          "part": {
+            "line": 1,
+            "text": "-86"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "店頭の看板では、大文字にそろえた表示を作れます。",
+          "show": ["a"]
+        },
+        {
+          "say": "商品のコードの表記をそろえるのも、同じ使い方です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "入力を比べる前に、両方を大文字へそろえましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問18 で使う",
+      "code": [
+        "// 問18 英字を大文字にして、最後に「!」を付ける",
+        "//     例: shout(\"hello\") → \"HELLO!\"",
+        "export function shout() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問18では、受け取った文字列の英字を大文字にします。",
+          "speech": "といじゅうはちでは、受け取った文字列の英字を大文字にします。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例では、その後ろに感嘆符が付いた形です。",
+          "part": {
+            "line": 1,
+            "text": "!"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "まずは、大文字にする部分から考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "{}"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

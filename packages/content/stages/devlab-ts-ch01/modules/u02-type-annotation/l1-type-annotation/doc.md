@@ -1,589 +1,244 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
+sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation, SRC-mdn-js-comparison-20261119, SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-values-types-variables-number]
 ---
 
 # レッスン2-1 型注釈
 
 ## このレッスンの目標
 
-- [ ] 引数と戻り値に型注釈を書ける
-- [ ] 文字列の道具と条件の組合せの結果を説明できる
+- [ ] 引数と戻り値に自分で型注釈を書ける
+- [ ] 値を比べた結果を、そのまま関数から返せる
+- [ ] 文字列を加工し、数値を表示用の文字列に変えられる
 
-## 2-1-1 型注釈を自分で書く
+## 2-1-1 引数に型を書く
 
-> **引数は名前の後ろ、戻り値はかっこの後ろに型を書きます。**
+> **引数の名前の後ろに、コロンと型を書きます。**
 
-型は値の種類です。型注釈は、使える値の種類をコードに書く印です。
-q01 では書いてあった型注釈を、ここから自分で書きます。
-配送のラベルには文字の宛先と数の日数が必要です。
-引数は `名前: 型` をカンマで区切ります。
-戻り値は閉じかっこの後ろに `: 型` を書きます。
+型注釈は、値の種類をコードに書く印です。たとえば受付の名前は文字列なので、引数を `name: string` と書きます。引数が複数あるときは、それぞれに型を書いてカンマで区切ります。
 
 ```ts
-// 関数 shippingLabel を作る。文字列 city と数値 days を受け取り、文字列を返す
-function shippingLabel(city: string, days: number): string {
-  // city と days を埋め込んだ「◯まで◯日」の文字列を返す
-  return `${city}まで${days}日`;
-  // 関数の中身はここまで
+// 名前を受け取って、歓迎の文を返す関数
+function welcome(name: string) {
+  // 受け取った名前を歓迎の文に埋め込んで返す
+  return `ようこそ、${name}！`;
 }
-// 関数を呼び、返された文字列を表示する
-console.log(shippingLabel("名古屋", 3));
-// 結果: "名古屋まで3日"
+// 結果を画面に表示する
+console.log(welcome("ミオ"));
+// => "ようこそ、ミオ！"
 ```
 
-`string` は文字列、`number` は数値です。
-`shippingLabel("名古屋", 3)` は、宛先、日数の順に渡します。
-引数の名前は自由ですが、数・順番・型は問題の例とそろえます。
+この課題の設定では、型を書かずに引数を宣言すると、引数が暗黙に `any`（どんな種類の値も許す型）になってエラーが出ます。
 
-はい・いいえを表す値は `true` と `false` です。
-これを返す関数の戻り値の型は `boolean` と書きます。
+## 2-1-2 戻り値に型を書く
+
+> **引数のかっこの後ろに、コロンと戻り値の型を書きます。**
+
+戻り値の型は、引数を囲む閉じかっこ `)` と、関数の中身を始める `{` の間に書きます。税額のように計算した数値を返すなら、閉じかっこの後ろに `: number` を書きます。
 
 ```ts
-// 関数 isFreeShipping を作る。数値 total を受け取り、真偽値を返す
-function isFreeShipping(total: number): boolean {
-  // total が5000以上かどうかを返す
-  return total >= 5000;
-  // 関数の中身はここまで
+// 税抜価格を受け取って、税額を返す関数
+function tax(price: number): number {
+  // 値段に税率を掛けて返す
+  return price * 0.08;
 }
-// 無料になる場合とならない場合を表示する
-console.log(isFreeShipping(6000), isFreeShipping(3000));
-// 結果: true false
+// 結果を画面に表示する
+console.log(tax(250));
+// => 20
 ```
 
-よくある間違いは、数値の代わりに文字列を渡すことです。
-`shippingLabel("名古屋", "3")` は実行前の型の確認でエラーになります。
-順番を逆にした `shippingLabel(3, "名古屋")` もエラーです。
-引数の型を書かない場合も、この課題の設定ではエラーになります。
+## 2-1-3 比べた結果を返す
 
-参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)。説明と例は教材用に独自作成しています。
+> **比べた結果は true か false なので、そのまま boolean として返せます。**
 
-## 2-1-2 文字列の道具
-
-> **文字列の長さや一部を調べ、加工や条件の組合せに使えます。**
-
-文字列には、長さを調べたり表示を作ったりする道具があります。
-メソッドは値の後ろに付けて呼ぶ道具です。
-`.length` は文字数を表す値で、かっこを付けません。
-`.slice(始め, 終わり)` は、一部を取り出します。
-番号は 0 から数え、終わりに指定した番号の文字は含めません。
-終わりを省くと、最後まで取り出します。
+式を比べると、条件を満たせば `true`、満たさなければ `false` になります。この値の型は `boolean` です。比べる式を `return` の後ろに置けば、`if` でそれぞれの値を返すより短く書けます。
 
 ```ts
-// 商品コード code を作り、"TKY-0012" を入れる
-const code = "TKY-0012";
-// 文字数 size を作り、code の文字数を入れる
-const size = code.length;
-// 地域 area を作り、0番目から3番目の前までの文字列を入れる
-const area = code.slice(0, 3);
-// 番号 serial を作り、4番目から最後までの文字列を入れる
-const serial = code.slice(4);
-// 文字数と取り出した部分を表示する
-console.log(size, area, serial);
-// 結果: 8 "TKY" "0012"
-```
-
-よくある間違いは `code.length()` と書くことです。
-メソッドではないので、型のエラーになります。
-`slice(0, 3)` は 0・1・2 番目の 3 文字です。
-3 番目のハイフンまで取ると考えないようにします。
-文字数は空の文字列なら 0 です。
-絵文字などは、見た目の 1 文字と数え方が異なることがあります。
-
-`.repeat(回数)` は文字列を指定回数つなげます。
-`.toUpperCase()` は英字を大文字にします。
-数字や記号は変わらず、もとの文字列も変わりません。
-
-```ts
-// 評価 rating を作り、星を4回つなげた文字列を入れる
-const rating = "★".repeat(4);
-// 空の表示 empty を作り、星を0回つなげた文字列を入れる
-const empty = "★".repeat(0);
-// 商品コード itemCode を作り、"abc-12" を入れる
-const itemCode = "abc-12";
-// upper を作り、大文字にした文字列を入れる
-const upper = itemCode.toUpperCase();
-// 繰り返しと変換の結果を表示する
-console.log(rating, empty, upper, itemCode);
-// 結果: "★★★★" "" "ABC-12" "abc-12"
-```
-
-数の `.toLocaleString("ja-JP")` は、日本の書き方の文字列を作ります。
-3 桁ごとのカンマを付けた売上の表示に使えます。
-`"ja-JP"` は地域の指定です。省くと環境の設定で表示が変わります。
-
-```ts
-// 売上 sales を作り、2500000 を入れる
-const sales = 2500000;
-// 表示 text を作り、日本の書き方で区切った文字列を入れる
-const text = sales.toLocaleString("ja-JP");
-// 表示用の文字列を表示する
-console.log(text);
-// 結果: "2,500,000"
-```
-
-よくある間違いは、この結果を数値と思うことです。
-計算する数と、画面に出す文字列を分けて扱います。
-
-`&&` は「かつ」です。二つの条件が両方 `true` のときだけ `true` になります。
-在庫があり、支払済みなら出荷する、といった判定に使います。
-
-```ts
-// 関数 canShip を作り、数値 stock と真偽値 isPaid を受け取る
-function canShip(stock: number, isPaid: boolean): boolean {
-  // 在庫が0より大きく、かつ支払済みかどうかを返す
-  return stock > 0 && isPaid;
-  // 関数の中身はここまで
+// 身長から、乗り物に乗れるかを返す関数
+function canRide(height: number): boolean {
+  // 身長が基準以上かを比べた結果を返す
+  return height >= 120;
 }
-// 両方が真の場合と、片方が偽の場合を表示する
-console.log(canShip(3, true), canShip(0, true), canShip(3, false));
-// 結果: true false false
+// 結果を画面に表示する
+console.log(canRide(138));
+// => true
 ```
 
-よくある間違いは、範囲を `1 <= value <= 10` と書くことです。
-これは型のエラーです。二つの比較を `&&` でつなぎます。
+「以上」は基準と同じ値も含みます。この例では、ちょうど 120 センチでも `true` を返します。
 
-参考: サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)。説明と例は教材用に独自作成しています。
+## 2-1-4 文字列をくり返す
+
+> **.repeat(回数) で、同じ文字列を回数だけ並べられます。**
+
+文字列の後ろに点、`repeat`、かっこを書きます。かっこの中が並べる回数です。元の文字列に空白があれば一緒に並びます。回数が 0 のときは、空の文字列になります。
+
+```ts
+// くり返す音を用意する
+const sound = "ぽん";
+// 音の「ぽん」を続けて並べる
+const echo = sound.repeat(4);
+// 結果を画面に表示する
+console.log(echo);
+// => "ぽんぽんぽんぽん"
+```
+
+## 2-1-5 最初の1文字を取り出す
+
+> **文字列[0] で、最初の1文字を取り出せます。番号は 0 から数えます。**
+
+文字の位置を表す番号を添字と呼びます。先頭の添字は 0 です。左から一文字進むたびに番号が一つ増えるので、最後の添字は文字数から 1 を引いた数になります。
+
+```ts
+// 都市名を用意する
+const city = "神戸";
+// 都市名の最初の文字を取り出す
+const cityMark = city[0];
+// 結果を画面に表示する
+console.log(cityMark);
+// => "神"
+```
+
+## 2-1-6 3桁ごとに区切る
+
+> **数.toLocaleString() で、3桁ごとにカンマを入れた文字列になります。**
+
+数値の表示を整えるメソッドです。日本向けの表示では、右から 3 桁ずつカンマで区切ります。かっこを空にすると実行環境の既定の地域に合わせるので、日本向けにそろえる場合は `"ja-JP"` を渡します。結果は文字列です。
+
+```ts
+// 表示する金額を数値で用意する
+const amount = 76840;
+// 日本向けの表示で金額を文字列にする
+const amountText = amount.toLocaleString("ja-JP");
+// 結果を画面に表示する
+console.log(amountText);
+// => "76,840"
+```
+
+## 2-1-7 文字数を調べる
+
+> **文字列.length で、文字数が分かります。かっこは付けません。**
+
+文字列の後ろに `.length` を付けると、文字数を数値で取り出せます。空白も数に含まれます。かっこを付けると数値を呼び出そうとしてエラーになります。
+
+```ts
+// 注文番号を用意する
+const orderCode = "XP7486";
+// 注文番号の文字数を数える
+const orderSize = orderCode.length;
+// 結果を画面に表示する
+console.log(orderSize);
+// => 6
+```
+
+## 2-1-8 大文字にする
+
+> **.toUpperCase() で、英字を大文字にできます。**
+
+文字列の後ろに `.toUpperCase()` を付けると、英字を大文字にした文字列ができます。大文字の英字や数字、記号はそのまま残ります。元の文字列が入っている変数の値は変わりません。
+
+```ts
+// 看板に使う文字列を用意する
+const sign = "open";
+// 看板に使う英字を大文字にする
+const signText = sign.toUpperCase();
+// 結果を画面に表示する
+console.log(signText);
+// => "OPEN"
+```
 
 ## もっと知りたい人へ
 
-- サバイバルTypeScript [型注釈](https://typescriptbook.jp/reference/values-types-variables/type-annotation)
-- [知識問題](knowledge.md)で理解を確かめてから、この単元の「01章 q02 型注釈」に取り組みます。
+- [サバイバルTypeScript: 型注釈 (type-annotation)](https://typescriptbook.jp/reference/values-types-variables/type-annotation)
+- [Expressions and operators](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_operators#comparison_operators)
+- [サバイバルTypeScript: boolean型 (boolean)](https://typescriptbook.jp/reference/values-types-variables/boolean)
+- [サバイバルTypeScript: string型 (string)](https://typescriptbook.jp/reference/values-types-variables/string)
+- [サバイバルTypeScript: number型 (number)](https://typescriptbook.jp/reference/values-types-variables/number)
+
+[知識問題](knowledge.md)で理解を確かめてから、この単元の「01章 q02 型注釈」に取り組みます。
 
 ## 問題ごとのヒント
 
-ヒントは書き方ガイドの日本語の骨組みです。中の処理を自分でコードに直します。
+各問の呼び出し例から、引数の数と順番を読み取ります。渡す値と返す値の種類を確かめてから、型注釈を書きましょう。
 
-### 問 1 a から b を引いた数を返す
+### 問 1 二つの数の引き算
 
-**テストで確かめる値**
+先に渡す数が引かれる数です。引いた結果がマイナスになる場合も確かめます。
 
-- `subtract(5, 3)` → `2`
-- `subtract(0, 7)` → `-7`（マイナスになることもある）
+### 問 2 名前に「さん」を付ける
 
-**ヒント 1 日本語の手順**
+受け取った名前をテンプレートリテラルに埋め込み、そのすぐ後ろに「さん」を置きます。
 
-```ts
-// 関数 subtract を作る。数値 a と数値 b を受け取り、数値を返す
-export function subtract() {
-  // a から b を引いた数を返す
-}
-```
+### 問 3 年齢を比べる
 
-**ヒント 2 コードへの直し方**
+「以上」は基準と同じ年齢も含みます。比べた結果の型を戻り値の型に選びます。
 
-1 行目の「◯ を受け取り」はかっこの中の引数に、「数値を返す」はかっこの後ろの `: number` になります。問1 のサンプルの `shippingLabel` と同じ形です。「引く」は `-` です。
+### 問 4 同じ文字列を回数分並べる
 
-### 問 2 名前の後ろに「さん」を付ける
+受け取った文字列に、くり返しのメソッドを使います。回数が 0 のときの戻り値も考えます。
 
-**テストで確かめる値**
+### 問 5 長方形の面積を求める
 
-- `honorific("山田")` → `"山田さん"`
-- `honorific("Taro")` → `"Taroさん"`
+長方形の横と縦の長さを掛けます。片方が 0 のときも同じ計算です。
 
-**ヒント 1 日本語の手順**
+### 問 6 姓と名をつなぐ
 
-```ts
-// 関数 honorific を作る。文字列 name を受け取り、文字列を返す
-export function honorific() {
-  // name の後ろに "さん" をつなげた文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「文字列 name を受け取り」は `name: string`、「文字列を返す」は `: string` です。つなげた文字列は、テンプレートリテラル（q01 の問3）で作ります。
-
-### 問 3 18 歳以上なら true を返す
-
-**テストで確かめる値**
-
-- `isAdult(18)` → `true`（ちょうど 18 歳も含む）
-- `isAdult(17)` → `false`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 isAdult を作る。数値 age を受け取り、true か false を返す
-export function isAdult() {
-  // age が 18 以上かどうか（true か false）を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-問1 のサンプルの `isFreeShipping` と同じ形です。「true か false を返す」は `: boolean`、「以上」は `>=` です。比べた結果をそのまま返すので、`if` は要りません。
-
-### 問 4 text を times 回つなげた文字列を返す
-
-**テストで確かめる値**
-
-- `repeatText("ab", 3)` → `"ababab"`
-- `repeatText("x", 0)` → `""`（0 回なら空の文字列）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 repeatText を作る。文字列 text と数値 times を受け取り、文字列を返す
-export function repeatText() {
-  // text を times 回つなげた文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「◯ を ◯ 回つなげた文字列」は `.repeat()` です。問4 のサンプルの `rating` の行と同じ形です。q01 のように `for` 文で書いてもかまいません。
-
-### 問 5 長方形の面積を返す
-
-**テストで確かめる値**
-
-- `rectangleArea(3, 4)` → `12`
-- `rectangleArea(10, 0)` → `0`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 rectangleArea を作る。数値 width と数値 height を受け取り、数値を返す
-export function rectangleArea() {
-  // width と height を掛けた数を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-掛け算は `*` です。引数の名前は自由ですが、`width` と `height` のように中身が分かる名前にします。
-
-### 問 6 姓と名を半角スペースでつなぐ
-
-**テストで確かめる値**
-
-- `fullName("山田", "太郎")` → `"山田 太郎"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 fullName を作る。文字列 lastName と文字列 firstName を受け取り、文字列を返す
-export function fullName() {
-  // lastName と firstName を半角スペースでつないだ文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-テンプレートリテラルの中に、2 つの `${ }` を並べ、その間に半角スペースを書きます。
+テンプレートリテラルに姓と名を順に埋め込み、間に半角スペースを一つ置きます。
 
 ### 問 7 摂氏を華氏に変える
 
-**テストで確かめる値**
+課題文の式を掛け算、割り算、足し算の順に読みます。整形すると、最初の掛け算にかっこが付くことがあります。
 
-- `celsiusToFahrenheit(100)` → `212`（水が沸騰する温度）
-- `celsiusToFahrenheit(0)` → `32`（水が凍る温度）
+### 問 8 偶数かどうかを調べる
 
-**ヒント 1 日本語の手順**
+2 で割った余りを調べます。0 のときも偶数になることを確かめます。
 
-```ts
-// 関数 celsiusToFahrenheit を作る。数値 celsius を受け取り、数値を返す
-export function celsiusToFahrenheit() {
-  // celsius × 9 ÷ 5 + 32 を返す
-}
-```
+### 問 9 時刻であいさつを変える
 
-**ヒント 2 コードへの直し方**
+12 時より前かどうかを `if` で調べます。どちらの文にも名前を埋め込みます。ちょうど 12 時は「こんにちは」の側です。
 
-× は `*`、÷ は `/` です。掛け算と割り算は足し算より先に計算されるので、そのまま並べれば式のとおりになります。整形（Prettier）は、`*` と `/` が並ぶところにかっこを付けた形を求めます。保存して整形すると、`(celsius * 9) / 5 + 32` の形になります。計算の結果は同じです。
+### 問 10 名前の最初の文字を取り出す
 
-### 問 8 偶数なら true を返す
+添字は左から 0 で数え始めます。名前の先頭を表す番号を角かっこの中に書きます。
 
-**テストで確かめる値**
+### 問 11 値引きした価格を求める
 
-- `isEven(4)` → `true`
-- `isEven(7)` → `false`
-- `isEven(0)` → `true`
+100 パーセントから値引き率を引くと、支払う割合が分かります。その割合で計算した価格の、1 円未満を切り捨てます。
 
-**ヒント 1 日本語の手順**
+### 問 12 金額をカンマ区切りで表示する
 
-```ts
-// 関数 isEven を作る。数値 n を受け取り、true か false を返す
-export function isEven() {
-  // n を 2 で割った余りが 0 と等しいかどうか（true か false）を返す
-}
-```
+まず、数値を日本向けの表示にします。できた文字列の後ろに「円」を付けます。
 
-**ヒント 2 コードへの直し方**
+### 問 13 文字列が基準より長いか調べる
 
-「割った余り」は `%`、「等しい」は `===` です。q01 の問12 で出た「3 で割った余りが 0」と同じ形の式を、そのまま返します。
+文字列の `.length` で得た文字数を、引数で受け取る基準と比べます。「より多い」ので、同じ数のときは条件を満たしません。
 
-### 問 9 時刻によってあいさつを変える
+### 問 14 半分の数を求める
 
-**テストで確かめる値**
+2 で割ります。割り切れない場合も、その結果を数値のまま返します。
 
-- `greet("山田", 9)` → `"おはよう、山田さん"`
-- `greet("佐藤", 12)` → `"こんにちは、佐藤さん"`（ちょうど 12 時は「こんにちは」）
+### 問 15 ラベルに件数を付ける
 
-**ヒント 1 日本語の手順**
+ラベルと件数をテンプレートリテラルに埋め込みます。括弧の全角・半角も、呼び出し例の表示に合わせます。
 
-```ts
-// 関数 greet を作る。文字列 name と数値 hour を受け取り、文字列を返す
-export function greet() {
-  // もし hour が 12 より小さいなら
-  //   name を埋め込んだ「おはよう、◯さん」を返す
-  // name を埋め込んだ「こんにちは、◯さん」を返す
-}
-```
+### 問 16 数が範囲内か調べる
 
-**ヒント 2 コードへの直し方**
-
-`return` を実行すると、その場で関数が終わります。`if` の中で返したときは、後ろの行は実行されません。そのため、最後の行は `if` の外にそのまま書けます。「より小さい」は `<` です。
-
-### 問 10 名前の最初の 1 文字を返す
-
-**テストで確かめる値**
-
-- `initial("Taro")` → `"T"`
-- `initial("山田")` → `"山"`（日本語も 1 文字）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 initial を作る。文字列 name を受け取り、文字列を返す
-export function initial() {
-  // name の 0 番目から 1 番目の前までを取り出した文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-問10 のサンプルの `area` の行と同じ形で、数だけが違います。「0 番目から 1 番目の前まで」は、先頭の 1 文字です。
-
-### 問 11 percentOff パーセント引きの価格を返す
-
-**テストで確かめる値**
-
-- `discountPrice(1000, 15)` → `850`
-- `discountPrice(999, 10)` → `899`（899.1 円を切り捨て）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 discountPrice を作る。数値 price と数値 percentOff を受け取り、数値を返す
-export function discountPrice() {
-  // price × (100 - percentOff) ÷ 100 を切り捨てた数を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「100 - percentOff」を先に計算するために、かっこで囲みます。切り捨ては `Math.floor()`（q01 の問1）です。
-
-### 問 12 金額を 3 桁ごとのカンマ区切りにし、「円」を付ける
-
-**テストで確かめる値**
-
-- `formatYen(1234)` → `"1,234円"`
-- `formatYen(1000000)` → `"1,000,000円"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 formatYen を作る。数値 amount を受け取り、文字列を返す
-export function formatYen() {
-  // amount を 3 桁ごとのカンマ区切りにした文字列の後ろに "円" をつなげて返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「3 桁ごとのカンマ区切りにした文字列」は、問12 のサンプルの `text` の行と同じ形です。メソッドはテンプレートリテラルの `${ }` の中でも呼べます（q01 の問20）。
-
-### 問 13 text の文字数が length より多ければ true を返す
-
-**テストで確かめる値**
-
-- `isLongerThan("hello", 3)` → `true`（5 文字は 3 より多い）
-- `isLongerThan("hi", 2)` → `false`（2 文字は 2 と同じ）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 isLongerThan を作る。文字列 text と数値 length を受け取り、true か false を返す
-export function isLongerThan() {
-  // text の文字数が length より大きいかどうか（true か false）を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「text の文字数」は `text.length`、「より大きい」は `>` です。引数の名前 `length` と、文字数の `.length` は別のものです。
-
-### 問 14 半分の数を返す
-
-**テストで確かめる値**
-
-- `half(7)` → `3.5`
-- `half(-4)` → `-2`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 half を作る。数値 n を受け取り、数値を返す
-export function half() {
-  // n ÷ 2 を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-÷ は `/` です。割り切れないときは小数になります（q01 の問2）。
-
-### 問 15 ラベルの後ろに件数を「（◯件）」の形で付ける
-
-**テストで確かめる値**
-
-- `labelWithCount("メッセージ", 3)` → `"メッセージ（3件）"`
-- `labelWithCount("通知", 0)` → `"通知（0件）"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 labelWithCount を作る。文字列 label と数値 count を受け取り、文字列を返す
-export function labelWithCount() {
-  // label と count を埋め込んだ「◯（◯件）」の文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-q01 の問3 と同じく、テンプレートリテラルで作ります。数値の `count` は、埋め込むと文字に変わります。
-
-### 問 16 value が min 以上 max 以下なら true を返す
-
-**テストで確かめる値**
-
-- `isBetween(5, 1, 10)` → `true`
-- `isBetween(10, 1, 10)` → `true`（ちょうど max も含む）
-- `isBetween(11, 1, 10)` → `false`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 isBetween を作る。数値 value と数値 min と数値 max を受け取り、true か false を返す
-export function isBetween() {
-  // value が min 以上、かつ value が max 以下かどうか（true か false）を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「かつ」は `&&`、「以上」は `>=`、「以下」は `<=` です。問16 のサンプルの `canShip` と同じく、比べる式を 2 つ `&&` でつなぎます。
+下限以上と上限以下の二つを比べ、`&&` でつなぎます。どちらの境目も範囲に含みます。
 
 ### 問 17 秒を分に変える
 
-**テストで確かめる値**
+1 分の秒数で割り、小数点以下を `Math.floor()` で切り捨てます。
 
-- `secondsToMinutes(150)` → `2`（2 分 30 秒の 30 秒を切り捨て）
-- `secondsToMinutes(59)` → `0`
+### 問 18 大文字にして感嘆符を付ける
 
-**ヒント 1 日本語の手順**
+大文字に変えるメソッドを使い、その結果に感嘆符をつなぎます。
 
-```ts
-// 関数 secondsToMinutes を作る。数値 seconds を受け取り、数値を返す
-export function secondsToMinutes() {
-  // seconds ÷ 60 を切り捨てた数を返す
-}
-```
+### 問 19 年齢と免許を確かめる
 
-**ヒント 2 コードへの直し方**
+年齢を比べた結果と、免許の有無を表す引数を組み合わせます。免許の有無は真偽値としてそのまま使えます。
 
-q01 の問3 の「時間」を求める行と同じ形です。切り捨ては `Math.floor()` です。
+### 問 20 記号を並べる
 
-### 問 18 英字を大文字にして、最後に「!」を付ける
+問 4 と同じく、受け取った回数に合わせて同じ文字列を並べます。
 
-**テストで確かめる値**
+### 応用 金額の表示とメンバーの紹介文
 
-- `shout("hello")` → `"HELLO!"`
-- `shout("Agora")` → `"AGORA!"`（大文字はそのまま）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 shout を作る。文字列 text を受け取り、文字列を返す
-export function shout() {
-  // text を大文字にした文字列の後ろに "!" をつなげて返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-「大文字にした文字列」は、問18 のサンプルの `upper` の行と同じ `.toUpperCase()` です。テンプレートリテラルの `${ }` の中で呼べます。
-
-### 問 19 18 歳以上で、免許を持っていれば true を返す
-
-**テストで確かめる値**
-
-- `canDrive(20, true)` → `true`
-- `canDrive(20, false)` → `false`（免許がない）
-- `canDrive(17, true)` → `false`（18 歳より下）
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 canDrive を作る。数値 age と true か false の hasLicense を受け取り、true か false を返す
-export function canDrive() {
-  // age が 18 以上、かつ hasLicense が true かどうかを返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-問16 のサンプルの `canShip` と同じ形です。「true か false の hasLicense」は `hasLicense: boolean` です。「hasLicense が true」は `hasLicense` とだけ書きます（q01 の問15）。
-
-### 問 20 char を width 個並べた文字列を返す
-
-**テストで確かめる値**
-
-- `line("=", 5)` → `"====="`
-- `line("-", 1)` → `"-"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 line を作る。文字列 char と数値 width を受け取り、文字列を返す
-export function line() {
-  // char を width 回つなげた文字列を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-問4 と同じく `.repeat()` を使います。
-
-### 応用（総合） 金額の表示と、メンバーの紹介文を作る
-
-**テストで確かめる値**
-
-- `formatPrice(1200, "円")` → `"1,200円"`
-- `formatPrice(1234567, "円")` → `"1,234,567円"`
-- `formatPrice(500, "ドル")` → `"500ドル"`（単位は引数で変わる）
-- `formatPrice(0, "円")` → `"0円"`
-- `describeMember("佐藤", 28, true)` → `"佐藤（28歳・リーダー）"`
-- `describeMember("鈴木", 31, false)` → `"鈴木（31歳）"`
-
-**ヒント 1 日本語の手順**
-
-```ts
-// 関数 formatPrice を作る。数値 price と文字列 unit を受け取り、文字列を返す
-export function formatPrice() {
-  // price を 3 桁ごとのカンマ区切りにした文字列の後ろに unit をつなげて返す
-}
-
-// 関数 describeMember を作る。文字列 name と数値 age と true か false の isLeader を受け取り、文字列を返す
-export function describeMember() {
-  // もし isLeader が true なら
-  //   name と age を埋め込んだ「◯（◯歳・リーダー）」を返す
-  // name と age を埋め込んだ「◯（◯歳）」を返す
-}
-```
-
-**ヒント 2 コードへの直し方**
-
-`formatPrice` は問12 と同じ形で、「円」の代わりに `unit` を埋め込みます。`describeMember` は問9 と同じく、`if` の中で `return` します。「isLeader が true」は `isLeader` とだけ書きます。
+金額の表示では、問 12 と同じように数値を文字列にします。単位は引数で受け取ります。紹介文では、名前と年齢を文に埋め込み、リーダーかどうかで末尾の表示を変えます。
