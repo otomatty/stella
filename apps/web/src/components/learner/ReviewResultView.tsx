@@ -2,7 +2,7 @@ import { manualCompletionUrl } from "@/lib/manual-completion";
 import { useEffect, useState } from "react";
 import { AI_REVIEW_STATUS_LABELS, FINDING_SEVERITY_LABELS } from "@stella/shared/review/ai-review";
 import type { Submission } from "@stella/shared/review/types";
-import { ChevronLeft } from "@/lib/icons";
+import { ChevronDown, ChevronLeft } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { fetchSubmissionById } from "@/lib/submissions-api";
 import { formatSubmittedAt } from "@/lib/submissions-store";
 import { isBackendConfigured } from "@/lib/backend";
 import { passByLabel } from "@/lib/review-queue";
+import { buildAiFeedbackView } from "@/lib/ai-feedback-view";
+import { AiFeedbackBadge, AiFeedbackResult } from "./AiFeedbackResult";
 
 interface ReviewResultViewProps {
   staff?: boolean;
@@ -122,6 +124,54 @@ export function ReviewResultView({
       </div>
     );
 
+  const feedback = submission.aiFeedback ?? null;
+  const aiView = feedback && !staff ? buildAiFeedbackView(feedback, submission.verdict) : null;
+  if (aiView) {
+    return (
+      <div
+        data-testid="submission-result"
+        className="mx-auto w-full min-w-0 max-w-[880px] space-y-5 wrap-anywhere"
+      >
+        <button
+          type="button"
+          onClick={() => setPage(back.page)}
+          className="inline-flex min-h-11 items-center gap-1 text-sm text-ink-2 hover:text-foreground hover:underline"
+        >
+          <ChevronLeft size={14} className="shrink-0" aria-hidden="true" />
+          {back.label}
+        </button>
+
+        <header className="flex flex-wrap items-start gap-3">
+          <div className="min-w-0 flex-1 basis-60">
+            <h1 className="text-[26px] leading-tight font-semibold tracking-tight">
+              {submission.assignmentTitle}
+            </h1>
+            <p className="mt-1 text-sm text-ink-2">
+              {submission.stageTitle} · {submission.attempt}回目の提出 · AI が確認しました
+            </p>
+          </div>
+          <AiFeedbackBadge resubmit={aiView.resubmit} />
+        </header>
+
+        <AiFeedbackResult view={aiView} taskId={submission.taskId} />
+        <StaffComments comments={submission.staffComments} />
+
+        <details className="group overflow-hidden rounded-xl border border-border bg-card">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 text-sm font-semibold hover:bg-sunken [&::-webkit-details-marker]:hidden">
+            提出したコードをすべて見る
+            <ChevronDown size={16} className="shrink-0 group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <SubmittedCode lines={submission.codeLines} />
+        </details>
+
+        <footer className="text-sm leading-relaxed text-ink-2">
+          このレビューは AI が行いました。内容に納得できないときは、人に確認を頼めます。 VS Code
+          の結果のパネルから管理者に相談できます。
+        </footer>
+      </div>
+    );
+  }
+
   const meta = submission.verdict ? verdictMeta[submission.verdict] : null;
   // サーバーは講師が採用した指摘だけを返す。古い応答に備えて画面でも採用済みだけに絞る。
   const suggestions = submission.aiSuggestions.filter((suggestion) => suggestion.adopted === true);
@@ -131,7 +181,6 @@ export function ReviewResultView({
       ? AI_REVIEW_STATUS_LABELS[submission.aiReviewStatus]
       : "レビュー待ち";
   const passLabel = passByLabel(submission);
-  const feedback = submission.aiFeedback ?? null;
 
   return (
     <div data-testid="submission-result" className="max-w-5xl mx-auto">
@@ -226,27 +275,7 @@ export function ReviewResultView({
             </Card>
           )}
 
-          {submission.staffComments && submission.staffComments.length > 0 ? (
-            // AI で合格した提出に、講師があとから足したコメント (判定は変わらない、#34)。
-            <Card>
-              <CardHeader>
-                <CardTitle>管理者からのコメント</CardTitle>
-              </CardHeader>
-              <CardContent className="text-[13px] leading-relaxed text-ink-2">
-                {submission.staffComments.map((c) => (
-                  <div
-                    key={`${c.createdAt}:${c.comment}`}
-                    className="py-2 border-b border-border last:border-b-0"
-                  >
-                    <p className="whitespace-pre-wrap">{c.comment}</p>
-                    <p className="text-[11.5px] text-ink-3 mt-1">
-                      {new Date(c.createdAt).toLocaleDateString("ja-JP")}
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
+          <StaffComments comments={submission.staffComments} />
 
           <Card>
             <CardHeader>
@@ -306,19 +335,49 @@ export function ReviewResultView({
           <CardHeader>
             <CardTitle>提出コード</CardTitle>
           </CardHeader>
-          <pre className="overflow-auto p-4 bg-sunken text-[12px] leading-relaxed font-mono">
-            {submission.codeLines.map((line, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
-              <span key={index} className="block">
-                <span className="inline-block w-8 mr-3 text-right text-ink-4 select-none">
-                  {index + 1}
-                </span>
-                {line || " "}
-              </span>
-            ))}
-          </pre>
+          <SubmittedCode lines={submission.codeLines} />
         </Card>
       </div>
     </div>
+  );
+}
+
+function StaffComments({ comments }: { comments: Submission["staffComments"] }) {
+  if (!comments?.length) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>管理者からのコメント</CardTitle>
+      </CardHeader>
+      <CardContent className="text-[13px] leading-relaxed text-ink-2">
+        {comments.map((c) => (
+          <div
+            key={`${c.createdAt}:${c.comment}`}
+            className="py-2 border-b border-border last:border-b-0"
+          >
+            <p className="whitespace-pre-wrap">{c.comment}</p>
+            <p className="text-[11.5px] text-ink-3 mt-1">
+              {new Date(c.createdAt).toLocaleDateString("ja-JP")}
+            </p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SubmittedCode({ lines }: { lines: Submission["codeLines"] }) {
+  return (
+    <pre className="overflow-auto p-4 bg-sunken text-[12px] leading-relaxed font-mono">
+      {lines.map((line, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: 行番号が同一性
+        <span key={index} className="block">
+          <span className="inline-block w-8 mr-3 text-right text-ink-4 select-none">
+            {index + 1}
+          </span>
+          {line || " "}
+        </span>
+      ))}
+    </pre>
   );
 }

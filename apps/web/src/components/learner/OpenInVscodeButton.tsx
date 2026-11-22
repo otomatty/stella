@@ -13,7 +13,7 @@ import { PcHandoffButton } from "./PcHandoffButton";
  * ページのリンクをパソコンへ送るボタン (`PcHandoffButton`) に替える。
  */
 export function OpenInVscodeButton(
-  props: { stageId: string; lessonId: string } | { taskId: string },
+  props: ({ stageId: string; lessonId: string } | { taskId: string }) & { label?: string },
 ) {
   const handheld = useIsHandheld();
   const [opening, setOpening] = useState(false);
@@ -41,7 +41,7 @@ export function OpenInVscodeButton(
       disabled={opening}
     >
       {opening ? <Loader2 size={14} className="animate-spin" /> : <Code size={14} />}
-      VS Code で開く
+      {props.label ?? "VS Code で開く"}
     </Button>
   );
 }
