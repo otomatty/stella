@@ -79,12 +79,12 @@ it("uses both product names and adds the VSIX instructions to the extension rele
   expect(releaseProductName("vscode")).toBe("VS Code 拡張");
   const args = { summary: "概要", section: "### 追加\n- 変更", commitSha: "abc123" };
   const details = "<details><summary>CHANGELOG の全文</summary>\n\n### 追加\n- 変更\n\n</details>";
-  const commit = "commit abc123 からビルド。";
+  const commit = "この版を最初に公開したコミット: abc123";
   const vsix =
     "Marketplace から自動で更新されます。手動で入れる場合は .vsix をダウンロードし、VS Code の「Extensions: Install from VSIX...」でインストールしてください。";
   expect(buildReleaseBody({ ...args, product: "web" })).toBe(`概要\n\n${details}\n\n${commit}`);
   expect(buildReleaseBody({ ...args, product: "vscode" })).toBe(
-    `概要\n\n${details}\n\n${vsix}\n\n${commit}`,
+    `概要\n\n${details}\n\n${vsix}\n\n${commit}。同じ版で .vsix を差し替えた場合、ビルド元のコミットは添付ファイルの名前に付いています。`,
   );
 });
 

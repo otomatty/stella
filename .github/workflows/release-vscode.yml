@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
-      created: ${{ steps.create.outputs.created }}
+      queue: ${{ steps.announcement.outputs.queue }}
     steps:
       # ビルドと変更履歴の読み取りに同じコミットを使う。
       - uses: actions/checkout@v7
@@ -55,7 +55,7 @@ jobs:
           bun run build
           bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
-      # 手動で採番した版からタグと通知に載せる URL を決める。
+      # 手動で採番した版からタグを決める。
       - name: Read version
         id: meta
         run: |
@@ -83,7 +83,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.meta.outputs.tag }}
-        run: gh release upload "$TAG" apps/vscode/*.vsix --clobber
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          gh release upload "$TAG" \
+            "apps/vscode/stella-lms-${VERSION}.vsix#stella-lms-${VERSION}.vsix（commit ${GITHUB_SHA::7}）" \
+            --clobber
 
       # 初回だけ本文と通知に使う要約を用意する。
       - name: Prepare release notes
@@ -95,26 +99,40 @@ jobs:
           bun run release:notes prepare --product vscode --version "$VERSION" \
             --changelog apps/vscode/CHANGELOG.md --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/release"
 
-      # ビルドしたコミットからタグを切り、本文と VSIX を公開する。
+      # 本文と VSIX を公開し、Marketplace 公開前の要約も同時に添付する。
       - name: Create release
-        id: create
         if: steps.release.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          gh release create "$TAG" apps/vscode/*.vsix --target "$GITHUB_SHA" \
+          cp "$RUNNER_TEMP/release/release-summary.json" "$RUNNER_TEMP/release/release-summary.pending.json"
+          gh release create "$TAG" \
+            "apps/vscode/stella-lms-${VERSION}.vsix#stella-lms-${VERSION}.vsix（commit ${GITHUB_SHA::7}）" \
+            "$RUNNER_TEMP/release/release-summary.pending.json" --target "$GITHUB_SHA" \
             --title "VS Code 拡張 $TAG" --notes-file "$RUNNER_TEMP/release/release-body.md"
-          echo "created=true" >> "$GITHUB_OUTPUT"
 
-      # Marketplace 公開後の通知でも、本文と同じ要約を使う。
-      - name: Save release summary
-        if: steps.create.outputs.created == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-summary
-          path: ${{ runner.temp }}/release/release-summary.json
-          if-no-files-found: error
+      # 再実行は Release の添付から再開する。0.10.1 以前には pending がなく、通知の対象外。
+      - name: Check whether to queue the announcement
+        id: announcement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.release.outputs.exists }}
+        run: |
+          if [[ "$RELEASE_EXISTS" == 'false' ]]; then
+            echo "queue=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          if grep -Fxq 'release-summary.pending.json' <<< "$assets" &&
+            ! grep -Fxq 'release-summary.json' <<< "$assets" &&
+            ! grep -Fxq 'release-announced.json' <<< "$assets"; then
+            echo "queue=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "queue=false" >> "$GITHUB_OUTPUT"
+          fi
 
   # 公開だけが OIDC トークンを要求できる。bun install や build と同じジョブに置くと、
   # それらの処理からも Trusted Publishing のトークンを取れてしまう。
@@ -153,20 +171,19 @@ jobs:
   # Marketplace に公開できた版だけを翌朝のお知らせに載せる。
   queue-announcement:
     needs: [release, publish]
-    if: needs.release.outputs.created == 'true'
+    if: needs.release.outputs.queue == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download release summary
-        uses: actions/download-artifact@v7
-        with:
-          name: release-summary
-          path: ${{ runner.temp }}/release
-
       - name: Attach release summary
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.release.outputs.version }}
-        run: gh release upload "vscode-v${VERSION}" "$RUNNER_TEMP/release/release-summary.json" --clobber
+        run: |
+          tag="vscode-v${VERSION}"
+          dir="$RUNNER_TEMP/release"
+          gh release download "$tag" --pattern release-summary.pending.json --dir "$dir"
+          mv "$dir/release-summary.pending.json" "$dir/release-summary.json"
+          gh release upload "$tag" "$dir/release-summary.json" --clobber

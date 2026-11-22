@@ -88,7 +88,12 @@ export function buildReleaseBody(args: {
       "Marketplace から自動で更新されます。手動で入れる場合は .vsix をダウンロードし、VS Code の「Extensions: Install from VSIX...」でインストールしてください。",
     );
   }
-  parts.push(`commit ${args.commitSha} からビルド。`);
+  const firstCommit = `この版を最初に公開したコミット: ${args.commitSha}`;
+  parts.push(
+    args.product === "vscode"
+      ? `${firstCommit}。同じ版で .vsix を差し替えた場合、ビルド元のコミットは添付ファイルの名前に付いています。`
+      : firstCommit,
+  );
   return parts.join("\n\n");
 }
 

@@ -65,7 +65,11 @@ describe("prepare", () => {
       `${section}\n\n<details><summary>CHANGELOG の全文</summary>\n\n${section}\n\n</details>`,
     );
     expect(body).toContain("Extensions: Install from VSIX...");
-    expect(body).toMatch(/commit abc123 からビルド。$/);
+    expect(
+      body.endsWith(
+        "\n\nこの版を最初に公開したコミット: abc123。同じ版で .vsix を差し替えた場合、ビルド元のコミットは添付ファイルの名前に付いています。",
+      ),
+    ).toBe(true);
     expect(summaryPath).toBe(join("dist", "release-summary.json"));
     expect(JSON.parse(summary)).toEqual({
       product: "vscode",
@@ -178,7 +182,7 @@ describe("digest", () => {
     expect(deps.fetch).toHaveBeenCalledExactlyOnceWith(`${api}?per_page=100&page=1`, { headers });
   });
 
-  it("skips marked, draft, prerelease and unrelated releases and warns about bad summaries", async () => {
+  it("skips ineligible releases and pending-only summaries and warns about bad summaries", async () => {
     const deps = configuredDeps();
     const marked = release(1);
     marked.assets.push({ id: 2001, name: markerName });
@@ -194,6 +198,10 @@ describe("digest", () => {
           release(7, "web-v1.1.0"),
           release(8),
           release(9),
+          {
+            ...release(10, "vscode-v0.11.0"),
+            assets: [{ id: 1010, name: "release-summary.pending.json" }],
+          },
         ]),
       )
       .mockResolvedValueOnce(Response.json(summary))
