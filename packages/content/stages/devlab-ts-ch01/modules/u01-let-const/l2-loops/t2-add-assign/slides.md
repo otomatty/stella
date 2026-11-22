@@ -2,6 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number]
 id: 1-2-2
 title: 足して入れ直す
+progressRevision: 2
 takeaway: "+= は足して入れ直し、++ は 1 増やします。"
 introduces: ["+=", "++"]
 requires: ["let", "再代入", "足し算", "変数"]

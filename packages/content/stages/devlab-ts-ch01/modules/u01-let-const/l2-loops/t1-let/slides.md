@@ -2,6 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const]
 id: 1-2-1
 title: 入れ直せる変数
+progressRevision: 2
 takeaway: "let で作った変数は、あとから値を入れ直せます。"
 introduces: ["let", "再代入"]
 requires: ["const", "変数", "代入", "足し算", "関数", "引数", "型注釈", "number", "return"]

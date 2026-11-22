@@ -2,6 +2,7 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-statements-for-of, SRC-typescriptbook-values-types-variables-boolean]
 id: 1-2-3
 title: for でくり返す
+progressRevision: 2
 takeaway: "for は、始め・続ける条件・進め方を決めて、同じ処理をくり返します。"
 introduces: ["for", "<=", "true", "false"]
 requires: ["let", "+=", "++", "変数", "足し算", "整数", "引数", "関数", "export", "number", "return"]
