@@ -175,6 +175,10 @@ function reviewHtml(help: TaskHelpResponse, review: LearnerSubmissionView | null
         parts.push(
           `<ul>${feedback.findings.map((f) => `<li><span class="badge">${FINDING_SEVERITY_LABELS[f.severity]}</span> <code>${escapeHtml(`${f.file}:${f.startLine}-${f.endLine}`)}</code> ${escapeHtml(f.comment)}</li>`).join("")}</ul>`,
         );
+      if (feedback.notes && feedback.notes.length > 0)
+        parts.push(
+          `<p>あわせて直すと良いところ</p><ul>${feedback.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>`,
+        );
     }
   }
   parts.push("</section>");

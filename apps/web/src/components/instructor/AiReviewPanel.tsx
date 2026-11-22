@@ -5,6 +5,7 @@ import {
   type AiReviewRecord,
   type AiReviewStatus,
   CONFIDENCE_LABELS,
+  type EvidenceRef,
   FINDING_SEVERITY_LABELS,
   formatLearnerReply,
   RUBRIC_RESULT_LABELS,
@@ -13,10 +14,13 @@ import {
 import { AlertTriangle, Loader2, Sparkles } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { evidenceLineLabel, evidenceTarget } from "@/lib/review-evidence";
 
 interface AiReviewPanelProps {
   status: AiReviewStatus | null | undefined;
   review: AiReviewRecord | null | undefined;
+  fileLineCounts: ReadonlyMap<string, number>;
+  onJumpToEvidence: (target: EvidenceRef) => void;
   /** 返信案を総評へ入れる。 */
   onUseReply: (text: string) => void;
   /** 所見を総評へ入れて直す (再提出にするとき、#34)。 */
@@ -30,6 +34,8 @@ interface AiReviewPanelProps {
 export const AiReviewPanel = ({
   status,
   review,
+  fileLineCounts,
+  onJumpToEvidence,
   onUseReply,
   onUseFindings,
 }: AiReviewPanelProps) => {
@@ -45,14 +51,16 @@ export const AiReviewPanel = ({
   }
   const reply = review.learnerReply;
   const leaked = (review.leakCheck?.hits.length ?? 0) > 0;
+  const confirmed = review.outcome === "confirmed";
+  const passed = confirmed && review.proposedVerdict !== "resubmit";
   return (
     <div className="text-[12.5px] leading-relaxed">
       <div className="flex flex-wrap items-center gap-1.5 mb-3">
-        <Badge variant={review.outcome === "confirmed" ? "success" : "warning"}>
+        <Badge variant={passed ? "success" : "warning"}>
           <Sparkles size={10} />
-          {review.outcome === "confirmed" ? "AI で確定" : "人に回した"}
+          {confirmed ? (passed ? "AI で合格" : "AI で再提出") : "人に回した"}
         </Badge>
-        {status ? <Badge>{AI_REVIEW_STATUS_LABELS[status]}</Badge> : null}
+        {status && status !== "confirmed" ? <Badge>{AI_REVIEW_STATUS_LABELS[status]}</Badge> : null}
         {review.confidence ? <Badge>確信度 {CONFIDENCE_LABELS[review.confidence]}</Badge> : null}
         {review.proposedVerdict ? (
           <Badge>判定案 {review.proposedVerdict === "pass" ? "合格" : "再提出"}</Badge>
@@ -95,10 +103,37 @@ export const AiReviewPanel = ({
               <p className="mt-0.5">{item.criterion}</p>
               {item.note ? <p className="text-ink-3">{item.note}</p> : null}
               {item.evidence.length > 0 ? (
-                <p className="text-ink-3 font-mono text-[11px]">
-                  根拠:{" "}
-                  {item.evidence.map((e) => `${e.file}:${e.startLine}-${e.endLine}`).join(", ")}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-ink-3 text-[11px]">
+                  <span>根拠:</span>
+                  {item.evidence.map((e, index) => {
+                    const target = evidenceTarget(e, fileLineCounts);
+                    const location = `${e.file}:${e.startLine}-${e.endLine}`;
+                    const label = evidenceLineLabel(e);
+                    return target ? (
+                      <Button
+                        // biome-ignore lint/suspicious/noArrayIndexKey: 同じ箇所が根拠に複数回現れることがある
+                        key={`${location}:${index}`}
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        className="min-h-8"
+                        title={location}
+                        aria-label={`${e.file} ${label}`}
+                        onClick={() => onJumpToEvidence(target)}
+                      >
+                        {label}
+                      </Button>
+                    ) : (
+                      <span
+                        // biome-ignore lint/suspicious/noArrayIndexKey: 同じ箇所が根拠に複数回現れることがある
+                        key={`${location}:${index}`}
+                        className="break-all font-mono"
+                      >
+                        {location}
+                      </span>
+                    );
+                  })}
+                </div>
               ) : null}
             </div>
           ))}

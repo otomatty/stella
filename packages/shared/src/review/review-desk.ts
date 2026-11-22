@@ -2,7 +2,7 @@
  * 講師のレビュー画面 (Issue #34、docs/curriculum/07 §6.3・§6.4) の共有の定義。
  *
  * - 人に回した提出のキューを、人に回した理由で分ける (`reviewQueueGroup`)。
- * - AI が合格にした提出の事後確認 (確認済み・コメント・覆した) の語彙。
+ * - AI が判定した提出の事後確認 (確認済み・コメント・覆した) の語彙。
  * - しきい値の月次見直しに使う数字の形と、目立たせる境目。しきい値そのものは自動で変えない。
  *
  * web と api の両方から読むので、実行時の依存を持たない。
@@ -47,6 +47,7 @@ const GROUP_OF_REASON: Record<RouteReason, Exclude<ReviewQueueGroup, "legacy">> 
   // 課題に必須の評価項目が無いと、AI は合否を出せない。
   "no-rubric": "ai-failed",
   "rubric-unmet": "rule",
+  "ai-resubmit-repeated": "rule",
   "task-condition": "rule",
   // 確認A・Bで使ってはいけない支援を使った (課題の決まりの違反)。
   "unallowed-support": "rule",
@@ -97,7 +98,7 @@ export function compareQueueItems(sort: ReviewQueueSort) {
 }
 
 // ---------------------------------------------------------------
-// AI が合格にした提出の事後確認 (07 §6.4 の 6)
+// AI が判定した提出の事後確認 (07 §6.4 の 6)
 // ---------------------------------------------------------------
 
 /** 確認の結果。覆したあとも記録は残す。 */
@@ -146,7 +147,7 @@ export const AI_PASSED_STATE_LABELS: Record<AiPassedState, string> = {
   all: "すべて",
 };
 
-/** AI が合格にした提出の一覧の 1 行。 */
+/** AI が判定した提出の一覧の 1 行。 */
 export interface AiPassedRow {
   submissionId: string;
   studentId: string | null;
@@ -157,17 +158,17 @@ export interface AiPassedRow {
   taskTitle: string;
   taskKind: string | null;
   confidence: Confidence | null;
-  /** AI の合格を当てた日時。 */
+  /** AI の判定を当てた日時。 */
   aiPassedAt: string | null;
   submittedAt: string;
-  /** 今の判定。覆したあとは resubmit。 */
+  /** 今の判定。指定した AI の判定と異なる場合は覆されている。 */
   verdict: "pass" | "resubmit" | "fail" | null;
   checkCount: number;
   lastCheck: { result: CheckResult; reviewerName: string | null; createdAt: string } | null;
 }
 
 /**
- * 一覧の既定の並び。確信度が「中」を先に、その中は AI が合格にした日時の新しい順 (07 §6.4 の 6)。
+ * 一覧の既定の並び。確信度が「中」を先に、その中は AI が判定した日時の新しい順 (07 §6.4 の 6)。
  * サーバーの SQL と同じ並びを画面でも使う (絞り込みの切り替えで並びが揺れないように)。
  */
 export function compareAiPassed(a: AiPassedRow, b: AiPassedRow): number {

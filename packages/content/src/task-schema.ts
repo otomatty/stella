@@ -5,7 +5,8 @@ import {
 } from "../../shared/src/tasks/manifest.js";
 import type { TaskProblem } from "../../shared/src/tasks/problems.js";
 import type { EnvironmentRequirement } from "../../shared/src/tasks/environment.js";
-import { ESCALATE_WHEN } from "../../shared/src/review/ai-review.js";
+import { ESCALATE_WHEN, type RubricGuide } from "../../shared/src/review/ai-review.js";
+import { parseRubricGuide } from "../../shared/src/review/rubric-guide.js";
 import {
   SOLUTION_UNLOCKS,
   TASK_HELP_POLICIES,
@@ -45,7 +46,7 @@ export interface TaskDefinition {
      * (定義を変えずに課題の内容ハッシュを保つため)。
      */
     rules?: { id: string; required: boolean }[];
-    rubric: { id: string; criterion: string; required: boolean }[];
+    rubric: { id: string; criterion: string; required: boolean; guide?: RubricGuide }[];
     escalateWhen: string[];
   };
   /**
@@ -131,7 +132,7 @@ export function parseTaskDefinition(
   const submit = object(value.submit, "submit");
   const problemTask = parsed.manifest.problems !== undefined;
   let rules: { id: string; required: boolean }[] | undefined;
-  let rubric: { id: string; criterion: string; required: boolean }[];
+  let rubric: TaskDefinition["review"]["rubric"];
   let escalateWhen: string[];
   if (value.review === undefined) {
     if (!problemTask) throw new Error("review: オブジェクトが必要です");
@@ -149,10 +150,14 @@ export function parseTaskDefinition(
         throw new Error(
           `rubric.criterion: 尺度や問いではなく、当否を決められる文で書いてください: ${criterion}`,
         );
+      const id = text(row.id, "rubric.id");
       return {
-        id: text(row.id, "rubric.id"),
+        id,
         criterion,
         required: boolean(row.required, "rubric.required"),
+        ...(row.guide === undefined
+          ? {}
+          : { guide: parseRubricGuide(row.guide, `review.rubric[${id}].guide`) }),
       };
     });
     if (new Set(rubric.map((r) => r.id)).size !== rubric.length)

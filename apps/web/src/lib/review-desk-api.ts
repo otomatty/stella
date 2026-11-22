@@ -25,6 +25,7 @@ export interface AiPassedQuery {
   from?: string;
   to?: string;
   state?: AiPassedState;
+  verdict?: "pass" | "resubmit";
 }
 
 function queryString(params: Record<string, string | undefined>): string {
@@ -34,7 +35,7 @@ function queryString(params: Record<string, string | undefined>): string {
   return text ? `?${text}` : "";
 }
 
-/** AI が合格にした提出の一覧 (確信度が中を先に)。 */
+/** AI が判定した提出の一覧 (確信度が中を先に)。 */
 export async function fetchAiPassed(
   query: AiPassedQuery,
   signal?: AbortSignal,
@@ -48,12 +49,13 @@ export async function fetchAiPassed(
       from: query.from,
       to: query.to,
       state: query.state,
+      verdict: query.verdict,
     })}`,
     signal ? { signal } : {},
   );
 }
 
-/** 確認済みにする・コメントを足す・再提出に覆す。 */
+/** 確認済みにする・コメントを足す・覆す。 */
 export async function checkSubmission(
   submissionId: string,
   action: CheckAction,

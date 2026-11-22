@@ -1,8 +1,8 @@
 /**
  * 講師のレビュー画面のデータ (Issue #34、docs/curriculum/07 §6.3・§6.4)。
  *
- * - AI が合格にした提出の事後確認: 一覧 (ステージ・課題・受講者・確信度・日付で絞り込み、既定は
- *   確信度が「中」を先に) と、人ができる 3 つの操作 (確認済み・コメント・再提出に覆す)。
+ * - AI が判定した提出の事後確認: 一覧 (ステージ・課題・受講者・確信度・日付で絞り込み、既定は
+ *   確信度が「中」を先に) と、人ができる 3 つの操作 (確認済み・コメント・覆す)。
  * - しきい値の月次見直しに使う数字。数字を出すだけで、しきい値は自動では変えない。
  * - 同じ課題の提出を並べて見るための集計と、共通のつまずきの発見教材への回送。
  * - コメント集 (パターンごとのよくある違反と定型コメント)。
@@ -60,7 +60,7 @@ import { ApiError, type Caller } from "./authz.js";
 import { upsertDiscoveryRequest } from "./discovery-data.js";
 import { learnerOrUnknown } from "./learner-scope.js";
 import { withResourceLock } from "./resource-lock.js";
-import { reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
+import { autoCompleteStagesIfMet, reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
 
 const reviewer = alias(profiles, "reviewer");
@@ -168,14 +168,13 @@ export async function staffCommentsOf(db: Db, submissionId: string): Promise<Sta
 }
 
 /**
- * AI が合格にした提出への、人の 3 つの操作 (07 §6.4 の 6)。
+ * AI が判定した提出への、人の 3 つの操作 (07 §6.4 の 6)。
  *
  * - confirm: 確認済みにする (添えたメモは講師の間の記録で、受講者には返さない)。
  * - comment: 判定を変えずにコメントを足し、受講者へ通知する。
- * - overturn: 再提出に覆す。人の確定と同じ処理 (`reviewTaskSubmission`) で、この提出の合格と
- *   スキルの証拠だけを取り消し、理由を受講者へ通知する。修了の自動発行も条件が崩れれば戻す。
+ * - overturn: 合格は再提出に、再提出は合格に覆す。人の確定と同じ処理 (`reviewTaskSubmission`) を使う。
  *
- * どれも課題のロックの中で「AI の合格のまま」かを確かめる (先に覆された提出には足さない)。
+ * どれも課題のロックの中で「AI の判定のまま」かを確かめる。
  */
 export async function checkAiPassedSubmission(
   db: Db,
@@ -188,13 +187,15 @@ export async function checkAiPassedSubmission(
     .select({
       studentId: submissions.studentId,
       taskId: submissions.taskId,
+      verdict: submissions.verdict,
+      reviewSource: submissions.reviewSource,
     })
     .from(submissions)
     .where(eq(submissions.id, submissionId))
     .limit(1);
   if (!initial) throw new ApiError("対象の提出が見つかりません", 404);
   if (!initial.taskId || !initial.studentId)
-    throw new ApiError("AI が合格にした課題の提出だけを確認できます", 400);
+    throw new ApiError("AI が判定した課題の提出だけを確認できます", 400);
   const comment = input.comment.trim();
   if (comment.length > MAX_CHECK_COMMENT)
     throw new ApiError(`コメントは ${MAX_CHECK_COMMENT} 文字以内にしてください`, 400);
@@ -205,17 +206,24 @@ export async function checkAiPassedSubmission(
     );
 
   if (input.action === "overturn") {
-    await reviewTaskSubmission(db, caller, submissionId, "resubmit", comment, "human", {
-      requireAiPass: true,
+    if (
+      initial.reviewSource !== "ai" ||
+      (initial.verdict !== "pass" && initial.verdict !== "resubmit")
+    )
+      throw new ApiError(
+        "この提出はもう AI の判定のままではありません。提出を開き直してください",
+        409,
+      );
+    const verdict = initial.verdict === "pass" ? "resubmit" : "pass";
+    await reviewTaskSubmission(db, caller, submissionId, verdict, comment, "human", {
+      requireAiVerdict: initial.verdict,
     });
     const task = await taskStage(db, initial.taskId);
-    if (task)
-      await reclaimAutoCertificatesIfUnmet(db, {
-        actor: caller,
-        userId: initial.studentId,
-        stageIds: [task.stageId],
-        ip,
-      });
+    if (task) {
+      const completion = { actor: caller, userId: initial.studentId, stageIds: [task.stageId], ip };
+      if (verdict === "pass") await autoCompleteStagesIfMet(db, completion);
+      else await reclaimAutoCertificatesIfUnmet(db, completion);
+    }
     return submissionChecksOf(db, submissionId);
   }
 
@@ -234,8 +242,11 @@ export async function checkAiPassedSubmission(
         .from(submissions)
         .where(eq(submissions.id, submissionId))
         .limit(1);
-      if (row?.verdict !== "pass" || row.reviewSource !== "ai")
-        throw new ApiError("この提出はもう AI の合格ではありません。提出を開き直してください", 409);
+      if (row?.reviewSource !== "ai" || (row.verdict !== "pass" && row.verdict !== "resubmit"))
+        throw new ApiError(
+          "この提出はもう AI の判定のままではありません。提出を開き直してください",
+          409,
+        );
       const [review] = await db
         .select({ id: aiReviews.id })
         .from(aiReviews)
@@ -284,7 +295,7 @@ export async function checkAiPassedSubmission(
 }
 
 // ---------------------------------------------------------------
-// AI が合格にした提出の一覧
+// AI が判定した提出の一覧
 // ---------------------------------------------------------------
 
 export interface AiPassedFilters {
@@ -292,7 +303,8 @@ export interface AiPassedFilters {
   taskId?: string;
   learnerId?: string;
   confidence?: "high" | "medium";
-  /** AI が合格にした日 (学習日 = JST、両端を含む)。 */
+  verdict?: "pass" | "resubmit";
+  /** AI が判定した日 (学習日 = JST、両端を含む)。 */
   from?: string;
   to?: string;
   state: AiPassedState;
@@ -303,7 +315,9 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 一覧の絞り込みを検証する。 */
 export function parseAiPassedFilters(query: Record<string, string | undefined>): AiPassedFilters {
-  const { stageId, taskId, learnerId, confidence, from, to, state, limit } = query;
+  const { stageId, taskId, learnerId, confidence, from, to, state, limit, verdict } = query;
+  if (verdict !== undefined && verdict !== "pass" && verdict !== "resubmit")
+    throw new ApiError("verdict には pass か resubmit を指定してください", 400);
   if (confidence !== undefined && confidence !== "high" && confidence !== "medium")
     throw new ApiError("confidence には high か medium を指定してください", 400);
   if (state !== undefined && state !== "unchecked" && state !== "checked" && state !== "all")
@@ -321,6 +335,7 @@ export function parseAiPassedFilters(query: Record<string, string | undefined>):
     ...(confidence ? { confidence } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
+    verdict: verdict ?? "pass",
     state: state ?? "all",
     limit: size,
   };
@@ -333,8 +348,8 @@ const lastCheck = (column: "result" | "created_at") =>
   );
 
 /**
- * staff: AI が合格にした提出の一覧。期間は限らない (07 §6.4 の 6)。
- * 確信度が「中」を先に、その中は AI が合格にした日時の新しい順に並べる。覆した提出も残す
+ * staff: AI が判定した提出の一覧。期間は限らない (07 §6.4 の 6)。
+ * 確信度が「中」を先に、その中は AI が判定した日時の新しい順に並べる。覆した提出も残す
  * (今の判定と確認の記録で見分ける)。
  */
 export async function listAiPassed(
@@ -344,6 +359,7 @@ export async function listAiPassed(
   const conditions: (SQL | undefined)[] = [
     learnerOrUnknown(submissions.studentId),
     eq(submissions.aiReviewStatus, "confirmed"),
+    sql`coalesce(${aiReviews.proposedVerdict}, 'pass') = ${filters.verdict ?? "pass"}`,
     filters.stageId ? eq(stages.id, filters.stageId) : undefined,
     filters.taskId ? eq(submissions.taskId, filters.taskId) : undefined,
     filters.learnerId ? eq(submissions.studentId, filters.learnerId) : undefined,
@@ -504,6 +520,7 @@ export async function reviewMetrics(
         learnerOrUnknown(submissions.studentId),
         eq(aiReviews.outcome, "confirmed"),
         eq(aiReviews.disposition, "applied"),
+        sql`coalesce(${aiReviews.proposedVerdict}, 'pass') = 'pass'`,
         eq(aiReviews.confidence, "medium"),
         inArray(aiReviews.taskKind, [...PRACTICE_KINDS]),
         gte(aiReviews.appliedAt, since),

@@ -88,6 +88,10 @@ modules/<unit>/
 
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
+
+  `review.rubric` の各項目には、AI が「満たさない」を付けたときに受講者に見せる `guide` を任意で書けます。`title` は「〜する」の形の短い見出し（40文字以内）、`problem` は提出の問題点をファイル名や行番号を挙げずに述べる1文（200文字以内）、`why` は問題になる理由（400文字以内）です。
+
+  任意の `example` は、課題と別の題材を `context`（60文字以内）に書き、同じ題材で直す前の `ng` と直した後の `ok` を比べます。コードはそれぞれ1〜20行、1行120文字以内です。解答例のコードを写さないでください。`content:check` は類題も含めて `problem`・`why`・`ng`・`ok` を `private/solution/` と照合します。
 - コーディング規則の正本は [coding-rules.md](coding-rules.md) (プログラム共通) と `stages/<slug>/coding-rules.md` (ステージの追加分) です。課題が指せるのは共通の規則と自分のステージの規則だけで、導入より前の課題では必須にできません。後のステージでも使う規則は共通の規則に書きます。書式は coding-rules.md の冒頭を参照してください。
 - `support`: `hintLevels`（ヒントの段数）と `solutionUnlock`（取り組み中に解答例を開ける条件）。解答を「隠す」より「出す順番」を決める項目で、種別ごとに書ける値が決まっています（07 §8。判定は `@stella/shared/tasks/help` の `TASK_HELP_POLICIES`）。
 

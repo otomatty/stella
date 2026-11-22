@@ -37,6 +37,13 @@ export function isAiPassed(s: Pick<Submission, "verdict" | "reviewSource" | "tas
   return Boolean(s.taskId) && s.verdict === "pass" && s.reviewSource === "ai";
 }
 
+/** AI が再提出にした提出か (覆したものは含まない)。 */
+export function isAiResubmitted(
+  s: Pick<Submission, "verdict" | "reviewSource" | "taskId">,
+): boolean {
+  return Boolean(s.taskId) && s.verdict === "resubmit" && s.reviewSource === "ai";
+}
+
 /** テストで合格した提出。新しい順に並べる。元の配列は変えない。 */
 export function testsPassedRows(rows: readonly Submission[]): Submission[] {
   return rows

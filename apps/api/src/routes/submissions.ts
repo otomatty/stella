@@ -61,6 +61,7 @@ import {
   submittedRouteReasons,
 } from "../lib/review-desk.js";
 import { AI_REVIEW_TIMEOUTS, processAiReviewQueue } from "../lib/ai-review-queue.js";
+import { loadSubmissionReference } from "../lib/submission-reference.js";
 
 export const submissionsRoute = new Hono<{ Bindings: Env }>();
 submissionsRoute.use("/api/submissions", bodyLimit({ maxSize: 9 * 1024 * 1024 }));
@@ -603,6 +604,20 @@ submissionsRoute.get("/api/submissions/:id", async (c) => {
       });
     }
     return c.json({ row: detail });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** staff: 提出時の解答例とレビューの観点を取得。 */
+submissionsRoute.get("/api/submissions/:id/reference", async (c) => {
+  c.header("Cache-Control", "no-store");
+  try {
+    const { caller, db } = await getCaller(c);
+    requireAdmin(caller);
+    const reference = await loadSubmissionReference(db, c.req.param("id"));
+    if (!reference) throw new ApiError("対象の提出が見つかりません", 404);
+    return c.json(reference);
   } catch (err) {
     return errorResponse(c, err);
   }

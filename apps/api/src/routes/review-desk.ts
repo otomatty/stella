@@ -1,8 +1,8 @@
 /**
  * 講師のレビュー画面の API (Issue #34、docs/curriculum/07 §6.3・§6.4)。staff (講師・管理者) だけ。
  *
- *   GET    /api/review-desk/ai-passed            AI が合格にした提出の一覧 (事後確認)
- *   POST   /api/submissions/:id/checks           確認済み・コメント・再提出に覆す
+ *   GET    /api/review-desk/ai-passed            AI が判定した提出の一覧 (事後確認、verdict=pass / resubmit)
+ *   POST   /api/submissions/:id/checks           確認済み・コメント・覆す
  *   GET    /api/review-desk/metrics?days=30      しきい値の月次見直しに使う数字
  *   GET    /api/review-desk/task-board?taskId=   同じ課題の提出を並べて見る
  *   POST   /api/review-desk/task-board/discovery 共通のつまずきを発見教材に回す

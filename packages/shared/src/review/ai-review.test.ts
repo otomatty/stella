@@ -8,12 +8,15 @@ import {
   decideRouting,
   effectiveConfidence,
   forcedHumanReasons,
+  formatAiResubmitNotes,
   formatLearnerReply,
   normalizeRubricResults,
+  optionalFindingComments,
   parseAiReviewOutput,
   type ReviewRubricItem,
   type RubricResult,
   RUBRIC_RESULTS,
+  type RouteReason,
 } from "./ai-review.js";
 
 const rubric: ReviewRubricItem[] = [
@@ -26,6 +29,17 @@ const lines = new Map([
   ["#explanation", 2],
 ]);
 const evidence = [{ file: "index.html", startLine: 1, endLine: 3 }];
+
+it("補足にする所見から minor と info の本文だけを取り出す", () => {
+  const [location] = evidence;
+  expect(
+    optionalFindingComments([
+      { ...location, severity: "major", comment: "重大な所見" },
+      { ...location, severity: "minor", comment: "軽い所見" },
+      { ...location, severity: "info", comment: "参考の所見" },
+    ]),
+  ).toEqual(["軽い所見", "参考の所見"]);
+});
 
 function output(
   results: Record<string, RubricResult>,
@@ -71,18 +85,25 @@ describe("人に回すかどうかのしきい値 (07 §6.3)", () => {
       for (const a of RUBRIC_RESULTS) {
         for (const b of RUBRIC_RESULTS) {
           const allMet = a === "met" && b === "met";
+          const hasUnmet = a === "unmet" || b === "unmet";
+          const hasUndetermined = a === "undetermined" || b === "undetermined";
           const enough = practice.includes(kind) ? confidence !== "low" : confidence === "high";
-          const expected = allMet && enough ? "confirmed" : "escalated";
+          const resubmit =
+            practice.includes(kind) && confidence === "high" && hasUnmet && !hasUndetermined;
+          const verdict = resubmit ? "resubmit" : allMet && enough ? "pass" : null;
+          const expected = verdict ? "confirmed" : "escalated";
           it(`${kind} / 確信度 ${confidence} / 必須 ${a}・${b} → ${expected}`, () => {
             const decision = route(
               kind,
               output({ "CR-NAME-01": a, heading: b, extra: "unmet" }, confidence),
             );
             expect(decision.outcome).toBe(expected);
-            if (a === "unmet" || b === "unmet") expect(decision.reasons).toContain("rubric-unmet");
-            if (a === "undetermined" || b === "undetermined")
-              expect(decision.reasons).toContain("rubric-undetermined");
-            if (!enough) expect(decision.reasons).toContain("low-confidence");
+            expect(decision.verdict).toBe(verdict);
+            expect(decision.reasons).toEqual([
+              ...(hasUnmet && !resubmit ? ["rubric-unmet"] : []),
+              ...(hasUndetermined ? ["rubric-undetermined"] : []),
+              ...(!enough ? ["low-confidence"] : []),
+            ]);
           });
         }
       }
@@ -126,6 +147,61 @@ describe("人に回すかどうかのしきい値 (07 §6.3)", () => {
       leakEscalates: false,
     });
     expect(decision.reasons).toEqual(["no-rubric"]);
+  });
+});
+
+describe("練習の AI 再提出", () => {
+  const unmet = output({ "CR-NAME-01": "unmet", heading: "met", extra: "unmet" }, "high");
+  it.each([undefined, 0, 1])("直前の AI 再提出が %s なら再提出で確定する", (count) => {
+    expect(
+      route("basic", unmet, count === undefined ? {} : { priorAiResubmits: count }),
+    ).toMatchObject({
+      outcome: "confirmed",
+      verdict: "resubmit",
+      reasons: [],
+    });
+  });
+  it("AI 再提出が 2 回続いたら人に回すが、合格には影響しない", () => {
+    const prior = { priorAiResubmits: 2 };
+    expect(route("basic", unmet, prior)).toMatchObject({
+      outcome: "escalated",
+      verdict: null,
+      reasons: ["rubric-unmet", "ai-resubmit-repeated"],
+    });
+    expect(
+      route("basic", output({ "CR-NAME-01": "met", heading: "met" }, "high"), prior),
+    ).toMatchObject({ outcome: "confirmed", verdict: "pass", reasons: [] });
+  });
+  it("提出に実在する根拠がない必須の違反は人に回す", () => {
+    expect(route("basic", unmet, { lines: new Map([["index.html", 2]]) })).toMatchObject({
+      outcome: "escalated",
+      verdict: null,
+      confidence: "low",
+      reasons: ["rubric-unmet", "low-confidence"],
+    });
+  });
+  it.each([
+    [{ forced: ["consult"] }, ["consult", "rubric-unmet"]],
+    [{ escalateWhen: ["optional-unmet"] }, ["rubric-unmet", "task-condition"]],
+    [{ leakEscalates: true }, ["rubric-unmet", "solution-leak"]],
+  ] satisfies [Partial<Parameters<typeof decideRouting>[0]>, RouteReason[]][])(
+    "%j に当たる必須の違反は人に回す",
+    (options, reasons) => {
+      expect(route("basic", unmet, options)).toMatchObject({
+        outcome: "escalated",
+        verdict: null,
+        reasons,
+      });
+    },
+  );
+  it("決め打ちの疑いもあれば人に回す", () => {
+    expect(
+      route("basic", { ...unmet, testFitting: { ...unmet.testFitting, suspected: true } }),
+    ).toMatchObject({
+      outcome: "escalated",
+      verdict: null,
+      reasons: ["rubric-unmet", "test-fitting"],
+    });
   });
 });
 
@@ -197,6 +273,7 @@ describe("AI の判定によらず人に回す", () => {
       outcome: "escalated",
       reasons: ["ai-unavailable"],
       proposedVerdict: null,
+      verdict: null,
     });
   });
   it("提出の時点で分かる条件 (照合・支援・相談)", () => {
@@ -385,4 +462,92 @@ it("受講者への返信を総評の文に整える", () => {
       nextSteps: ["段落も足す"],
     }),
   ).toBe("合格です。\n\n良かった点\n- 見出しが明確\n\n次に試すこと\n- 段落も足す");
+});
+
+describe("AI 再提出の総評", () => {
+  const feedback = {
+    message: "総評には含めない文",
+    nextSteps: ["総評には含めない提案"],
+    goodPoints: ["変数名に意味がある"],
+    findings: [],
+  };
+  const fix = {
+    id: "conditional",
+    label: "真偽値を直接返す",
+    criterion: "比較式をそのまま返している",
+    required: true,
+    result: "unmet" as const,
+    guide: {
+      title: "真偽値を直接返す",
+      problem: "条件分岐で真偽値を返しています。",
+      why: "比較式は真偽値になります。",
+      example: {
+        context: "成年かどうか",
+        ng: "if (age >= 18) {\n  return true;\n}\nreturn false;",
+        ok: "return age >= 18;",
+      },
+    },
+  };
+  it("必須の直し方と満たした項目、良かった点だけを並べる", () => {
+    expect(
+      formatAiResubmitNotes({
+        ...feedback,
+        rubric: [
+          fix,
+          { ...fix, id: "optional", required: false },
+          { ...fix, id: "name", label: "意味のある名前", result: "met", guide: null },
+        ],
+      }),
+    ).toBe(
+      [
+        "テストは通っています。必須の項目を 1 点直すと合格です。",
+        "",
+        "直すところ",
+        "- 真偽値を直接返す: 条件分岐で真偽値を返しています。 比較式は真偽値になります。",
+        "  NG (成年かどうか):",
+        "    if (age >= 18) {",
+        "      return true;",
+        "    }",
+        "    return false;",
+        "  OK:",
+        "    return age >= 18;",
+        "",
+        "できていること",
+        "- 意味のある名前",
+        "",
+        "良かった点",
+        "- 変数名に意味がある",
+      ].join("\n"),
+    );
+  });
+  it("直し方の教材が無ければ評価基準を並べ、空の節を省く", () => {
+    expect(
+      formatAiResubmitNotes({
+        ...feedback,
+        goodPoints: [],
+        rubric: [
+          { ...fix, guide: null },
+          { ...fix, id: "name", criterion: "変数名が意味を表している", guide: null },
+        ],
+      }),
+    ).toBe(
+      [
+        "テストは通っています。必須の項目を 2 点直すと合格です。",
+        "",
+        "直すところ",
+        "- 比較式をそのまま返している",
+        "- 変数名が意味を表している",
+      ].join("\n"),
+    );
+  });
+
+  it("必須の未達がないときは件数を出さない", () => {
+    expect(
+      formatAiResubmitNotes({
+        ...feedback,
+        goodPoints: [],
+        rubric: [{ ...fix, required: false }],
+      }),
+    ).toBe("テストは通っています。必須の項目を直すと合格です。");
+  });
 });

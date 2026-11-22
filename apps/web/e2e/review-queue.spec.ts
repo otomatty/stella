@@ -8,7 +8,7 @@ test("管理者のレビュー画面にタブと提出が出る", async ({ page 
   await expect(page.getByRole("heading", { name: "レビュー", exact: true })).toBeVisible();
   const queue = page.getByRole("tab", { name: /^人に回した提出/ });
   await expect(queue).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tab", { name: "AI が合格にした提出" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "AI が判定した提出" })).toBeVisible();
 
   const panel = page.getByRole("tabpanel", { name: /^人に回した提出/ });
   await expect(panel.getByText("console.log で文字を出す", { exact: true })).toBeVisible();

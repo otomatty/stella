@@ -75,11 +75,12 @@ export async function prepareTaskSubmission(
   mode: "submit" | "consult",
   notes: SubmissionNotes,
   bundle: TaskBundle,
+  resubmitTaskId?: string,
 ): Promise<TaskSubmissionInput> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
   if (bundle.manifest.id !== loaded.manifest.id) throw new Error("課題の配布データが一致しません");
-  return { ...(await prepareLocalTaskSubmission(loaded, mode)), ...notes };
+  return { ...(await prepareLocalTaskSubmission(loaded, mode, resubmitTaskId)), ...notes };
 }
 
 export const SUBMIT_AGAIN = "保存して、もう一度「提出する」を押してください";
@@ -88,6 +89,7 @@ export const SUBMIT_AGAIN = "保存して、もう一度「提出する」を押
 export async function prepareLocalTaskSubmission(
   loaded: Extract<LoadedTask, { ok: true }>,
   mode: "submit" | "consult",
+  resubmitTaskId?: string,
 ): Promise<Omit<TaskSubmissionInput, keyof SubmissionNotes>> {
   const { root } = loaded;
   const raw = JSON.parse(
@@ -98,7 +100,7 @@ export async function prepareLocalTaskSubmission(
   const result: RunResult = raw;
   if (mode === "submit" && !canSubmit(result))
     throw new Error("手元の確認がすべて通ってから提出してください");
-  if (mode === "consult" && canSubmit(result))
+  if (mode === "consult" && canSubmit(result) && resubmitTaskId !== loaded.manifest.id)
     throw new Error("手元の確認が通っています。「提出」を使ってください");
   const listed = await listFiles(root);
   const paths = matchPatterns(listed, loaded.manifest.submit.files).files;
@@ -157,6 +159,7 @@ export async function sendTaskSubmission(
   mode: "submit" | "consult",
   notes: SubmissionNotes,
   session = apiSession(),
+  resubmitTaskId?: string,
 ): Promise<{ id: string; attempt: number }> {
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
@@ -164,7 +167,7 @@ export async function sendTaskSubmission(
     session,
   });
   const bundle = parsePublicTaskBundle(response.bundle);
-  const body = await prepareTaskSubmission(root, mode, notes, bundle);
+  const body = await prepareTaskSubmission(root, mode, notes, bundle, resubmitTaskId);
   const result = await apiRequest<{ row: { id: string; attempt: number } }>("/api/submissions", {
     method: "POST",
     body,

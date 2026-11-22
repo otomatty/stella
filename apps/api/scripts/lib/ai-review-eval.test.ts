@@ -88,6 +88,22 @@ describe("人の判定との一致率", () => {
     const table = formatAgreementTable([a, b].filter((x) => x !== undefined));
     expect(table).toContain("| model-a | p1 | t1 | 4 | 3 | 66.7% | 50.0% | 100.0% | 0.0% | 1 |");
   });
+  it("AI の合格と再提出で覆した率の母数を分け、古い確定は合格として数える", () => {
+    const results = summarizeAgreement(
+      [
+        row({ proposed_verdict: null, human_verdict: "fail" }),
+        row({ proposed_verdict: "resubmit", human_verdict: "resubmit" }),
+        row({ proposed_verdict: "resubmit", human_verdict: "pass" }),
+      ].map(toExample),
+    );
+    expect(results[0]).toMatchObject({
+      confirmedOverturned: 1,
+      strictResubmits: 1,
+      strictResubmitRate: 0.5,
+    });
+    expect(formatAgreementTable(results)).toContain("50.0% (1)");
+  });
+
   it("統合・確認の「中」は練習の目安に数えない", () => {
     const [summary] = summarizeAgreement(
       [row({ task_kind: "assessment-a", confidence: "medium", human_verdict: "fail" })].map(
@@ -108,7 +124,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
         db.insert(tenants).values({ id: "ses", name: "テスト" }),
         db.insert(profiles).values({ id: "teacher", displayName: "講師", role: "admin" }),
         db.insert(submissions).values(
-          ["same-time", "checked", "unreviewed", "overturned"].map((id) => ({
+          ["same-time", "checked", "checked-resubmit", "unreviewed", "overturned"].map((id) => ({
             id,
             stageTitle: "ステージ",
             assignmentTitle: "課題",
@@ -145,6 +161,7 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
           .values([
             review("same-time", "escalated"),
             review("checked", "confirmed"),
+            { ...review("checked-resubmit", "confirmed"), proposedVerdict: "resubmit" },
             review("unreviewed", "confirmed"),
             review("overturned", "confirmed"),
           ]),
@@ -160,16 +177,18 @@ describe("評価用データの取り出し (EVAL_SOURCE_SQL)", () => {
         db.insert(submissionChecks).values([
           { submissionId: "checked", result: "confirmed", createdAt: at },
           { submissionId: "checked", result: "commented", createdAt: at },
+          { submissionId: "checked-resubmit", result: "commented", createdAt: at },
           { submissionId: "overturned", result: "confirmed", createdAt: at },
           { submissionId: "overturned", result: "overturned", createdAt: at },
         ]),
       ]);
       const rows = database.sqlite.prepare(EVAL_SOURCE_SQL).all() as unknown as EvalSourceRow[];
       const bySubmission = new Map(rows.map((r) => [r.submission_id, r.human_verdict]));
-      expect(rows).toHaveLength(3);
+      expect(rows).toHaveLength(4);
       expect(rows.filter((r) => r.submission_id === "same-time")).toHaveLength(1);
       // 人のレビューが無く、事後確認で確認済みにした AI の合格は合格とみなす (AI の判定の行は除く)。
       expect(bySubmission.get("checked")).toBe("pass");
+      expect(bySubmission.get("checked-resubmit")).toBe("resubmit");
       // 人が覆したら、事後確認の「確認済み」より人の判定を使う。
       expect(bySubmission.get("overturned")).toBe("resubmit");
       expect(bySubmission.has("unreviewed")).toBe(false);

@@ -24,6 +24,7 @@ import type {
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/messages/messages.js";
 import {
   AI_FAILURE_LABELS,
+  aiConfirmedVerdict,
   AI_REVIEW_THRESHOLD_VERSION,
   type AiFailure,
   isEvidenceKind,
@@ -38,6 +39,7 @@ import { submissions } from "../../src/db/schema.js";
 import type { Env } from "../../src/env.js";
 import {
   type AiReviewJudgeMaterial,
+  consecutiveAiResubmits,
   interpretAiCompletion,
   judgeAiReview,
   judgeMaterialOf,
@@ -242,6 +244,7 @@ export interface ReplayJudgeContext {
   kind: string;
   material: AiReviewJudgeMaterial;
   forced: RouteReason[];
+  priorAiResubmits: number;
   /** 根拠に使えるファイルと記録の行数 (`BuiltReviewPrompt.lines`)。 */
   lines: [string, number][];
 }
@@ -290,14 +293,16 @@ async function prepareOne(
   const large = built.find((b) => b.prompt.variableChars > MAX_REVIEW_INPUT_CHARS);
   if (large)
     return { subject, failure: "too-large", detail: `${large.prompt.variableChars} chars` };
+  const kind = row.taskKind ?? "basic";
   return {
     subject,
     judge: {
-      kind: row.taskKind ?? "basic",
+      kind,
       material: judgeMaterialOf(loaded),
       // 人に回す条件は今の記録で当てる。本番も AI の結果を当てる直前に、後から届いた支援の
       // 記録を含めて確かめ直す (`assertAiApplicable`) ので、本番の最終的な扱いと同じになる。
       forced: await submissionForcedReasons(deps.db, row),
+      priorAiResubmits: isEvidenceKind(kind) ? 0 : await consecutiveAiResubmits(deps.db, row),
       lines: [...(built[0]?.prompt.lines ?? new Map<string, number>())],
     },
     requests: built.map((b) => b.params),
@@ -718,6 +723,8 @@ export function judgeBatchResult(
     forced: judge.forced,
     output,
     lines: new Map(judge.lines),
+    // 回数を保存する前の state.json は 0 として判定する。
+    priorAiResubmits: judge.priorAiResubmits ?? 0,
   });
   return {
     decision: {
@@ -801,9 +808,12 @@ export interface ReplaySummary {
   confirmed: number;
   /** AI で確定にした割合。 */
   confirmedRate: number | null;
-  /** AI で確定にしたうち、人が再提出・不合格にした件数 (危ない取りこぼし)。 */
+  /** AI が合格にしたうち、人が再提出・不合格にした件数 (危ない取りこぼし)。 */
   riskyConfirmed: number;
   riskyConfirmedRate: number | null;
+  /** AI が再提出にしたうち、人が合格にした件数と割合。 */
+  strictResubmits: number;
+  strictResubmitRate: number | null;
   /** AI が判定できなかった件数 (拒否・形の誤りなど。人に回る)。 */
   aiFailures: number;
   /** 人に回した理由ごとの件数と、そのうち人が合格にした件数。 */
@@ -851,8 +861,11 @@ export function summarizeReplay(
   const judged = compared.filter((r) => r.decision.proposedVerdict !== null);
   const agreed = judged.filter((r) => (r.decision.proposedVerdict === "pass") === passed(r));
   const confirmed = compared.filter((r) => r.decision.outcome === "confirmed");
-  const risky = confirmed.filter((r) => !passed(r));
-  const practiceMedium = confirmed.filter(
+  const confirmedPasses = confirmed.filter((r) => aiConfirmedVerdict(r.decision) === "pass");
+  const resubmitted = confirmed.filter((r) => aiConfirmedVerdict(r.decision) === "resubmit");
+  const risky = confirmedPasses.filter((r) => !passed(r));
+  const strict = resubmitted.filter(passed).length;
+  const practiceMedium = confirmedPasses.filter(
     (r) => !isEvidenceKind(r.taskKind) && r.decision.confidence === "medium",
   );
   const escalated = compared.filter((r) => r.decision.outcome === "escalated");
@@ -891,7 +904,9 @@ export function summarizeReplay(
     confirmed: confirmed.length,
     confirmedRate: ratio(confirmed.length, compared.length),
     riskyConfirmed: risky.length,
-    riskyConfirmedRate: ratio(risky.length, confirmed.length),
+    riskyConfirmedRate: ratio(risky.length, confirmedPasses.length),
+    strictResubmits: strict,
+    strictResubmitRate: ratio(strict, resubmitted.length),
     aiFailures: compared.filter((r) => r.decision.failure !== null).length,
     reasons,
     practiceMediumOverturned: ratio(
@@ -999,7 +1014,7 @@ export function formatReplayReport(report: ReplayReport): string {
     `## リプレイの結果 (提出 ${report.submissions} 件、しきい値 ${report.thresholdVersion})`,
     "",
     "比べる数字は、人がレビューした提出に候補を当て直した判定と人の判定の突き合わせ。",
-    "危ない取りこぼし = AI で確定にしたうち人が再提出・不合格にしたもの。太字は §6.3 の見直しの境目を超えた値。",
+    "危ない取りこぼし = AI が合格にしたうち人が再提出・不合格にしたもの。厳しすぎた再提出 = AI が再提出にしたうち人が合格にしたもの。太字は §6.3 の見直しの境目を超えた値。",
     ...(report.submission.complete
       ? []
       : [
@@ -1007,13 +1022,13 @@ export function formatReplayReport(report: ReplayReport): string {
           `**投入が途中で止まった結果です** (投入 ${report.submission.submittedRequests} / ${report.submission.totalRequests} 件)。未投入の要求は「呼び出しの失敗」に数え、母数から外しています。`,
         ]),
     "",
-    "| 候補 | モデル | 指示 | 件数 | 呼び出しの失敗 | 判定案 | 一致率 | AI で確定 | 危ない取りこぼし | AI 判定不能 | 練習・中を覆した | 人に回して合格 | 人に回す割合 3 割超の課題 | 入力 / キャッシュ読み / 出力トークン | 費用 (Batch) |",
-    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| 候補 | モデル | 指示 | 件数 | 呼び出しの失敗 | 判定案 | 一致率 | AI で確定 | 危ない取りこぼし | AI 判定不能 | 練習・中を覆した | 人に回して合格 | 人に回す割合 3 割超の課題 | 入力 / キャッシュ読み / 出力トークン | 費用 (Batch) | 厳しすぎた再提出 |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ...s.map((x) => {
       const used = x.usage
         ? `${tokens(x.usage.inputTokens + x.usage.cacheCreationInputTokens)} / ${tokens(x.usage.cacheReadInputTokens)} / ${tokens(x.usage.outputTokens)}`
         : "-";
-      return `| ${x.label} | ${x.model} | ${x.promptVersion} | ${x.examples} | ${x.callErrors} | ${x.judged} | ${percent(x.agreement)} | ${percent(x.confirmedRate)} (${x.confirmed}) | ${percent(x.riskyConfirmedRate)} (${x.riskyConfirmed}) | ${x.aiFailures} | ${flagged(x.practiceMediumOverturned, REVIEW_METRIC_ALERTS.practiceMediumOverturned)} | ${flagged(x.escalatedHumanPassed, REVIEW_METRIC_ALERTS.escalatedPassedAsIs)} | ${x.tasksOverEscalation.length} | ${used} | ${x.cost === null ? "-" : `$${x.cost.toFixed(2)}`} |`;
+      return `| ${x.label} | ${x.model} | ${x.promptVersion} | ${x.examples} | ${x.callErrors} | ${x.judged} | ${percent(x.agreement)} | ${percent(x.confirmedRate)} (${x.confirmed}) | ${percent(x.riskyConfirmedRate)} (${x.riskyConfirmed}) | ${x.aiFailures} | ${flagged(x.practiceMediumOverturned, REVIEW_METRIC_ALERTS.practiceMediumOverturned)} | ${flagged(x.escalatedHumanPassed, REVIEW_METRIC_ALERTS.escalatedPassedAsIs)} | ${x.tasksOverEscalation.length} | ${used} | ${x.cost === null ? "-" : `$${x.cost.toFixed(2)}`} | ${percent(x.strictResubmitRate)} (${x.strictResubmits}) |`;
     }),
     "",
     "### 人に回した理由の内訳 (件数。括弧は人がそのまま合格にした件数)",
