@@ -172,7 +172,7 @@ interface SkillTreeProps {
    */
   celebrate?: boolean;
   /**
-   * 島タイトルの 2 行目に ` · ` で足す文言。null か空なら「星雲 · n ステージ」だけ。
+   * 管理画面で島タイトルの「N ステージ」に ` · ` で足す文言。
    */
   islandCaption?: (key: string) => string | null;
   /** 本土の見出し。既定は「開発スキル」。 */

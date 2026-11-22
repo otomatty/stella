@@ -24,8 +24,6 @@ import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { nebulaCaption } from "@/components/learner/tree/nebula-caption";
-
 import { Button } from "@/components/ui/button";
 import type { Stage } from "@/data/types";
 import { useGuidedStages } from "@/hooks/useGuidedStages";
@@ -148,7 +146,6 @@ export const LearnerHome = ({
   useEffect(() => {
     if (courseKey !== visibleCourseKey) closeCourse();
   }, [courseKey, visibleCourseKey, closeCourse]);
-  const islandCaption = useCallback((key: string) => nebulaCaption(key, nodes), [nodes]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const stageById = useMemo(() => {
     const map = new Map(stages.map((s) => [s.id, s]));
@@ -575,7 +572,6 @@ export const LearnerHome = ({
           <SkillTree
             overview
             nodes={nodes}
-            islandCaption={islandCaption}
             selectedIslandKey={visibleCourseKey}
             onSelectIsland={setCourseKey}
             showSelectedIslandPrerequisite={false}
@@ -676,7 +672,6 @@ export const LearnerHome = ({
         {showViewToggle && homeView === "lanes" ? (
           <SkillLanes
             nodes={nodes}
-            islandCaption={islandCaption}
             activeStageId={serverActiveStageId}
             revealDev={revealDev}
             activeInfo={activeInfo}

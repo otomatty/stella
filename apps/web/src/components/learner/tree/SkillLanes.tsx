@@ -18,7 +18,6 @@ interface SkillLanesProps {
   activeStageId: string | null;
   revealDev: boolean;
   activeInfo: ActiveStarInfo | null;
-  islandCaption?: (key: string) => string | null;
   insetLeft: number;
   onResumeStage: (stageId: string) => void;
   onStartStage: (stageId: string) => void;
@@ -32,7 +31,6 @@ export function SkillLanes({
   activeStageId,
   revealDev,
   activeInfo,
-  islandCaption,
   insetLeft,
   onShowInTree,
   className,
@@ -61,7 +59,6 @@ export function SkillLanes({
           const accent = routeAccentOf(lane.key);
           const nebula = accent ?? "203 213 225";
           const theme = lane.stars[0]?.theme;
-          const caption = islandCaption?.(lane.key);
           return (
             <section key={lane.key} aria-label={lane.key} className="relative isolate">
               {lane.kind === "nebula" ? (
@@ -86,7 +83,11 @@ export function SkillLanes({
                 />
                 <h2 className="text-sm font-bold">{lane.key}</h2>
                 <span className="text-[11.5px] text-ink-3">
-                  {lane.kind === "nebula" ? caption : theme !== lane.key ? theme : null}
+                  {lane.kind === "nebula"
+                    ? `${lane.stars.length} ステージ`
+                    : theme !== lane.key
+                      ? theme
+                      : null}
                 </span>
                 {lane.hasMore ? (
                   <span className="ml-auto text-[11px] text-ink-3">
