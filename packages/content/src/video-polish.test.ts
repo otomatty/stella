@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   applyPolish,
   buildPolishRequest,
+  excerptPolishGuide,
   judgeRewrites,
   parsePolishResponse,
   polishResponseSchema,
   sayHash,
-  type PolishLine,
   type PolishResponse,
 } from "./video-polish.js";
 import { parseStoryboard, type BoardStoryboard, type VideoStoryboard } from "./video-storyboard.js";
@@ -15,17 +15,23 @@ const sample = JSON.parse(
   readFileSync(new URL("./__fixtures__/board-video.json", import.meta.url), "utf8"),
 ) as BoardStoryboard;
 const fresh = () => structuredClone(sample);
+const guide = readFileSync(new URL("../VIDEO_GUIDE.md", import.meta.url), "utf8");
+const guideHeadings = [
+  "## 書く順番",
+  "## レッスン型の動画 (schema 2)",
+  "## 読み上げ 1 文 (`beats`) のルール",
+];
 function responseFor(sb = sample): PolishResponse {
   return {
     summary: "簡潔な台本です。画面と言葉がそろっています。",
-    lines: sb.scenes.flatMap((s) =>
-      s.beats.map((_, i) => ({
-        id: `${s.id}#${i + 1}`,
-        verdict: "keep" as const,
+    lines: [
+      {
+        id: `${sb.scenes[0].id}#1`,
+        verdict: "cut",
         kinds: [],
-        reason: "修正不要です",
-      })),
-    ),
+        reason: "絵を見れば分かります",
+      },
+    ],
     missing: [],
     offPoint: [],
   };
@@ -42,7 +48,22 @@ function rewrite(text: string, sb = fresh()) {
   return { sb, response, judgments: judgeRewrites(sb, response) };
 }
 describe("台本校正の要求", () => {
-  it("ガイド全文・6観点・制約と、設計・ラベル・各文の動きを渡す", () => {
+  it("ガイドの抜粋は指定の3節と役割表を含み、表の後の説明・小見出し・効果音を除く", () => {
+    const excerpt = excerptPolishGuide(guide);
+    expect(excerpt.match(/^## .+$/gm)).toEqual(guideHeadings);
+    for (const text of ["`leaveOut`", "| `next` |", "声に出して読み"])
+      expect(excerpt).toContain(text);
+    for (const text of ["####", "### ", "効果音", "## 素材を作る", "9〜18 場面"])
+      expect(excerpt).not.toContain(text);
+  });
+  it.each(guideHeadings)("ガイドに %s が無ければエラーにする", (heading) => {
+    expect(() => excerptPolishGuide(guide.replace(heading, "## 別の見出し"))).toThrow(heading);
+  });
+  it("効果音の表より後ろに読み上げのルールがあれば残す", () => {
+    const updated = guide.replace("## 素材を作る", "- 読み上げの追加ルール\n\n## 素材を作る");
+    expect(excerptPolishGuide(updated)).toContain("- 読み上げの追加ルール");
+  });
+  it("ガイドの抜粋・6観点・制約と、設計・ラベル・各文の動きを渡す", () => {
     const sb = fresh();
     sb.scenes[0].beats[0] = {
       say: "説明します。",
@@ -55,8 +76,13 @@ describe("台本校正の要求", () => {
       travel: { along: ["write-check", "check-submit"] },
       zoom: ["vscode"],
     };
-    const request = buildPolishRequest(sb, "ガイドの全文\n末尾です");
-    expect(request.system).toContain("ガイドの全文\n末尾です");
+    const excerpt = excerptPolishGuide(guide);
+    const request = buildPolishRequest(sb, excerpt);
+    expect(request.system).toContain(
+      `次のガイドの抜粋に従ってください。\n\n${excerpt}\n\n見る観点:`,
+    );
+    expect(request.user).not.toContain(guideHeadings[0]);
+    expect(request.system).toContain("直す提案がある文だけ");
     for (const term of [
       "unnatural",
       "wordy",
@@ -66,7 +92,6 @@ describe("台本校正の要求", () => {
       "off-point",
       "意味を変えず",
       "40字",
-      "keep",
       "ラベル",
     ])
       expect(request.system).toContain(term);
@@ -88,25 +113,23 @@ describe("台本校正の要求", () => {
   it("スキーマはGeminiの大文字型とenumを使う", () => {
     expect(polishResponseSchema.type).toBe("OBJECT");
     expect(polishResponseSchema.properties.lines.items.properties.verdict.enum).toEqual([
-      "keep",
       "rewrite",
       "cut",
     ]);
   });
 });
 describe("校正応答の検証", () => {
-  it("全idの正常応答を受け付ける", () => {
+  it("提案のあるidだけの応答を受け付ける", () => {
     const response = responseFor();
     expect(parsePolishResponse(response, sample)).toEqual({ response, issues: [] });
   });
-  it("足りないidは警告しkeepを補う", () => {
-    const response = responseFor(),
-      missing = response.lines.pop() as PolishLine;
-    const parsed = parsePolishResponse(response, sample);
-    expect(parsed.issues).toEqual([
-      expect.objectContaining({ level: "warning", path: missing.id }),
-    ]);
-    expect(parsed.response?.lines.at(-1)).toMatchObject({ id: missing.id, verdict: "keep" });
+  it("空の提案を受け付け、返らないidはkeepとして扱う", () => {
+    const response = { ...responseFor(), lines: [] };
+    expect(parsePolishResponse(response, sample)).toEqual({ response, issues: [] });
+    const judgments = judgeRewrites(sample, response);
+    expect(judgments).toHaveLength(sample.scenes.flatMap((s) => s.beats).length);
+    expect(judgments.every((j) => j.verdict === "keep" && !j.accepted)).toBe(true);
+    expect(applyPolish(sample, judgments)).toEqual(sample);
   });
   it("知らないid・重複id・rewrite欠落を拒む", () => {
     for (const change of [
@@ -143,6 +166,7 @@ describe("校正応答の検証", () => {
       ...[
         null,
         { id: "hook#1", verdict: "oops", kinds: ["other"], reason: 2 },
+        { ...responseFor().lines[0], verdict: "keep" },
         { ...responseFor().lines[0], rewrite: 12 },
         { ...responseFor().lines[0], kinds: "wordy" },
       ].map((line) => ({ ...responseFor(), lines: [line] })),
