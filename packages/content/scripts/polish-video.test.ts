@@ -87,6 +87,25 @@ afterEach(() => {
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe("video:polish の取得と保存済みの案の反映", () => {
+  it.each([
+    { env: undefined, args: [], model: "gemini-4-neon" },
+    { env: "env-model", args: [], model: "env-model" },
+    { env: "env-model", args: ["--model", "cli-model"], model: "cli-model" },
+  ])("$model で校正を始め、通信を600秒で打ち切る", async ({ env, args, model }) => {
+    vi.stubEnv("VIDEO_POLISH_MODEL", env);
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    await polishVideo(["fixture", ...args]);
+    expect(console.info).toHaveBeenNthCalledWith(
+      1,
+      `${model} で読み上げ文を校正します。数分かかることがあります。`,
+    );
+    expect(timeout).toHaveBeenCalledExactlyOnceWith(600_000);
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      expect.objectContaining({ signal: timeout.mock.results[0].value }),
+    );
+  });
+
   it("残高切れでは本文の理由を示し、再試行しない", async () => {
     fetchMock.mockResolvedValueOnce(
       Response.json({ error: { message: "prepayment credits are depleted" } }, { status: 402 }),
@@ -98,17 +117,18 @@ describe("video:polish の取得と保存済みの案の反映", () => {
   });
 
   it("取得時は本文を保ちハッシュを保存し、反映時はAPIを呼ばず読んだ案を反映する", async () => {
-    await polishVideo(["fixture", "--model", "chosen-model"]);
+    await polishVideo(["fixture", "--model", "gemini-4-argon"]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(readVideo().scenes).toEqual(sample.scenes);
     const saved = readFileSync(report, "utf8");
     expect(readReport()).toMatchObject({
       sayHash: sayHash(sample),
-      model: "chosen-model",
+      model: "gemini-4-argon",
       response,
     });
     expect(readFileSync(report.replace(/\.json$/, ".md"), "utf8")).toContain(response.summary);
     fetchMock.mockClear();
+    vi.mocked(console.info).mockClear();
     vi.stubEnv("GEMINI_API_KEY", "");
     // 次の応答が違っても、反映には保存済みの案だけを使う。
     response.lines[0].rewrite = "別の案です。";
@@ -117,7 +137,7 @@ describe("video:polish の取得と保存済みの案の反映", () => {
     const result = readVideo();
     expect(result.scenes[0].beats[0].say).toBe("学ぶ場所を見てみましょう。");
     expect(result.scenes[0].beats[1].say).toBe("学ぶ順番を見てみましょう。");
-    expect(result.polish).toEqual({ model: "chosen-model", sayHash: sayHash(result) });
+    expect(result.polish).toEqual({ model: "gemini-4-argon", sayHash: sayHash(result) });
     expect(readFileSync(report, "utf8")).toBe(saved);
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
     expect(execFileSync).toHaveBeenCalledTimes(2);
@@ -127,6 +147,7 @@ describe("video:polish の取得と保存済みの案の反映", () => {
       { cwd: repoRoot, shell: false, stdio: "pipe" },
     );
     expect(console.warn).not.toHaveBeenCalled();
+    expect(console.info).toHaveBeenCalledTimes(1);
     expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("反映しました"));
   });
   for (const [name, failure] of [
@@ -238,6 +259,7 @@ describe("video:polish の取得と保存済みの案の反映", () => {
     await polishVideo(["fixture", "--dry-run"]);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(execFileSync).not.toHaveBeenCalled();
+    expect(console.info).toHaveBeenCalledTimes(1);
     expect(console.info).toHaveBeenLastCalledWith(expect.stringContaining("SYSTEM"));
     expect(readFileSync(video, "utf8")).toBe(source);
     await polishVideo(["fixture"]);
