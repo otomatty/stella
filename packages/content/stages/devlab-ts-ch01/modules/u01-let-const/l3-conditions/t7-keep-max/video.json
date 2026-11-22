@@ -242,6 +242,10 @@
       "role": "syntax",
       "title": "今の候補と比べる",
       "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
         "// 最初の値を最大値の候補にする",
         "let max = first;",
         "// 次の値のほうが大きいか調べる",
@@ -259,23 +263,27 @@
           "say": "二人分の身長を受け取った場面です。",
           "figure": {
             "pulse": ["card0"]
+          },
+          "part": {
+            "line": 1,
+            "text": "first",
+            "note": "一人目の身長"
           }
         },
         {
           "say": "最初の値を、比べるときの基準にします。",
           "part": {
-            "line": 1,
+            "line": 5,
             "text": "first"
           },
           "figure": {
             "pulse": ["card0"]
-          },
-          "type": [0, 1, 2, 3, 4, 5, 6]
+          }
         },
         {
           "say": "次の値が、今の基準より大きいかが条件です。",
           "part": {
-            "line": 3,
+            "line": 7,
             "text": "second > max"
           },
           "figure": {
@@ -285,14 +293,15 @@
         {
           "say": "条件が合うときだけ、新しい値を残します。",
           "part": {
-            "line": 5,
+            "line": 9,
             "text": "max = second"
           },
           "figure": {
             "pulse": ["card2"]
           }
         }
-      ]
+      ],
+      "show": true
     },
     {
       "id": "apply",
@@ -300,6 +309,10 @@
       "role": "apply",
       "title": "値の動きをたどる",
       "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
         "// 最初の値を最大値の候補にする",
         "let max = first;",
         "// 次の値のほうが大きいか調べる",
@@ -318,7 +331,7 @@
           "say": "最初の身長は 152 です。",
           "part": {
             "line": 1,
-            "text": "max"
+            "text": "152"
           },
           "figure": {
             "pulse": ["card0"],
@@ -331,7 +344,7 @@
         {
           "say": "次の身長は 168 なので、条件に合います。",
           "part": {
-            "line": 3,
+            "line": 7,
             "text": "second > max"
           },
           "figure": {
@@ -345,7 +358,7 @@
         {
           "say": "更新すると、最大の候補は 168 になりました。",
           "part": {
-            "line": 5,
+            "line": 9,
             "text": "max = second"
           },
           "figure": {
@@ -365,6 +378,10 @@
       "role": "note",
       "title": "書き方と名前を見分ける",
       "code": [
+        "// 一人目の身長を用意する",
+        "const first = 152;",
+        "// 二人目の身長を用意する",
+        "const second = 168;",
         "// 最初の値を最大値の候補にする",
         "let max = first;",
         "// 次の値のほうが大きいか調べる",
@@ -384,7 +401,7 @@
           "classify": {
             "fixed": [
               {
-                "line": 1,
+                "line": 5,
                 "text": "let"
               }
             ]
@@ -399,7 +416,7 @@
           "classify": {
             "free": [
               {
-                "line": 1,
+                "line": 5,
                 "text": "max"
               }
             ]

@@ -243,6 +243,10 @@
       "role": "syntax",
       "title": "条件を縦棒でつなぐ",
       "code": [
+        "// 買い物の金額が3000円以上かどうかを入れる",
+        "const a = false;",
+        "// 会員かどうかを入れる",
+        "const b = true;",
         "// 条件がどちらか一方でも成り立つか調べる",
         "if (a || b) {",
         "  // 利用できると表示する",
@@ -258,12 +262,17 @@
           "say": "それぞれの条件を、別々に用意した例です。",
           "figure": {
             "pulse": ["card0"]
+          },
+          "part": {
+            "line": 1,
+            "text": "a",
+            "note": "金額の条件"
           }
         },
         {
           "say": "縦棒二本で、二つの条件をつなぎます。",
           "part": {
-            "line": 1,
+            "line": 5,
             "text": "||"
           },
           "figure": {
@@ -273,13 +282,12 @@
             "text": "||",
             "note": "どちらかの条件が合う",
             "ruby": "オア"
-          },
-          "type": [0, 1, 2, 3, 4]
+          }
         },
         {
           "say": "左側が、一つ目の条件です。",
           "part": {
-            "line": 1,
+            "line": 5,
             "text": "a ||",
             "note": "左の条件"
           },
@@ -290,7 +298,7 @@
         {
           "say": "右側が合うだけでも、中の処理に進みます。",
           "part": {
-            "line": 1,
+            "line": 5,
             "text": "|| b",
             "note": "右の条件"
           },
@@ -298,14 +306,25 @@
             "pulse": ["card2"]
           }
         }
-      ]
+      ],
+      "show": true
     },
     {
       "id": "apply",
       "kind": "code",
       "role": "apply",
       "title": "値の動きをたどる",
-      "code": ["// どちらかの条件で利用できるか調べる", "const canEnter = true || false;"],
+      "code": [
+        "// 買い物の金額が3000円以上かどうかを入れる",
+        "const a = false;",
+        "// 会員かどうかを入れる",
+        "const b = true;",
+        "// 条件がどちらか一方でも成り立つか調べる",
+        "if (a || b) {",
+        "  // 利用できると表示する",
+        "  console.log(\"利用できます\");",
+        "}"
+      ],
       "show": true,
       "panel": {
         "kind": "figure",
@@ -313,37 +332,37 @@
       },
       "beats": [
         {
-          "say": "左の条件には当てはまります。",
-          "part": {
-            "line": 1,
-            "text": "true"
-          },
-          "figure": {
-            "pulse": ["card0"],
-            "tag": {
-              "card0": "true"
-            }
-          }
-        },
-        {
-          "say": "右の条件は false です。",
+          "say": "左の金額の条件には当てはまりません。",
           "part": {
             "line": 1,
             "text": "false"
           },
           "figure": {
-            "pulse": ["card1"],
+            "pulse": ["card0"],
             "tag": {
-              "card1": "false"
+              "card0": "false"
             }
-          },
-          "speech": "右の条件は フォルス です。"
+          }
         },
         {
-          "say": "片方が合うので、結果は true になります。",
+          "say": "右の会員の条件は true です。",
           "part": {
-            "line": 1,
-            "text": "canEnter"
+            "line": 3,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "true"
+            }
+          },
+          "speech": "右の会員の条件はトゥルーです。"
+        },
+        {
+          "say": "右側の条件が合うので、中の処理に進みます。",
+          "part": {
+            "line": 7,
+            "text": "console.log(\"利用できます\")"
           },
           "figure": {
             "pulse": ["card2"],
@@ -351,8 +370,7 @@
               "card2": "true"
             }
           },
-          "pause": 1,
-          "speech": "片方が合うので、結果はトゥルーになります。"
+          "pause": 1
         }
       ]
     },
@@ -362,6 +380,10 @@
       "role": "note",
       "title": "書き方と名前を見分ける",
       "code": [
+        "// 買い物の金額が3000円以上かどうかを入れる",
+        "const a = false;",
+        "// 会員かどうかを入れる",
+        "const b = true;",
         "// 条件がどちらか一方でも成り立つか調べる",
         "if (a || b) {",
         "  // 利用できると表示する",
@@ -379,7 +401,7 @@
           "classify": {
             "fixed": [
               {
-                "line": 1,
+                "line": 5,
                 "text": "if"
               }
             ]
@@ -394,7 +416,7 @@
           "classify": {
             "free": [
               {
-                "line": 1,
+                "line": 5,
                 "text": "a"
               }
             ]
