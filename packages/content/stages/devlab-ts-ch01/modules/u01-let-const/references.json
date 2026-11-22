@@ -1,75 +1,9 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u01-let-const@9",
-  "contentHash": "5b8317624da18ba2f9078a2bae356d378786635ee44307b6e666b2c13fbe542e",
+  "unitId": "devlab-ts-ch01/u01-let-const@10",
+  "contentHash": "6bbfdad679dadd9fb03c0050dba96bcce01a53579d225b98462c341baf5fae65",
   "environmentRef": "ts-test-01@1",
   "uses": [
-    {
-      "contentId": "l1-let-const/t5-name-values/slides.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-number"
-      ],
-      "usedFor": "const による変数宣言の概念を参照。箱と名札の例、イラストを使った図解、送料に名前を付けるサンプル、コードの色分け、動画内の問題と解説、台本は教材用に独自作成。課題で最初に見るコード（問1の関数の形）を示す。課題の解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/t6-store-result/slides.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-number"
-      ],
-      "usedFor": "const による変数宣言と数値の計算の概念を参照。レジの会計の例・イラストを使った図解・合計を変数に入れるサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/t7-multiply/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "数値の計算の概念を参照。同じ本を何冊か買う例・イラストを使った図解・掛け算のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/t8-floor/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "数値と小数の概念を参照。お店のポイントの例・イラストを使った図解・Math.floor のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/doc.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-values-types-variables-type-annotation",
-        "SRC-typescriptbook-functions-function-declaration",
-        "SRC-typescriptbook-values-types-variables-number",
-        "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-string"
-      ],
-      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/knowledge.md",
-      "sourceRefs": [
-        "SRC-typescriptbook-values-types-variables-type-annotation",
-        "SRC-typescriptbook-functions-function-declaration",
-        "SRC-typescriptbook-values-types-variables-number",
-        "SRC-typescriptbook-values-types-variables-let-and-const",
-        "SRC-typescriptbook-values-types-variables-string"
-      ],
-      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・知識問題5問・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
     {
       "contentId": "l1-let-const/t1-read-problem/slides.md",
       "sourceRefs": ["SRC-typescriptbook-functions-function-declaration"],
@@ -98,7 +32,69 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t4-string/slides.md",
+      "contentId": "l1-let-const/t4-name-values/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const による変数宣言の概念を参照。箱と名札の例、イラストを使った図解、送料に名前を付けるサンプル、コードの色分け、動画内の問題と解説、台本は教材用に独自作成。課題で最初に見るコード（問1の関数の形）を示す。課題の解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t5-store-result/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-number"
+      ],
+      "usedFor": "const による変数宣言と数値の計算の概念を参照。レジの会計の例・イラストを使った図解・合計を変数に入れるサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t6-multiply/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値の計算の概念を参照。同じ本を何冊か買う例・イラストを使った図解・掛け算のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t7-floor/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値と小数の概念を参照。お店のポイントの例・イラストを使った図解・Math.floor のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問1の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t8-divide/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値の計算の概念を参照。クッキーを分ける例・イラストを使った図解・割り算のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t9-ceil/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "数値と小数の概念を参照。瓶を箱に詰める例・イラストを使った図解・Math.ceil のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t10-two-arguments/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-functions-function-declaration"],
+      "usedFor": "関数宣言と引数の概念を参照。券売機の料金と枚数の例・イラストを使った図解・引数が 2 つある関数のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-let-const/t11-string/slides.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-string",
         "SRC-typescriptbook-values-types-variables-type-annotation"
@@ -109,31 +105,23 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t9-divide/slides.md",
+      "contentId": "l1-let-const/t12-remainder/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "数値の計算の概念を参照。クッキーを分ける例・イラストを使った図解・割り算のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
+      "usedFor": "数値の計算の概念を参照。卵をパックに詰める例・イラストを使った図解・余りを求めるサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問3の関数の形) は見せるが、解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t10-ceil/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "数値と小数の概念を参照。瓶を箱に詰める例・イラストを使った図解・Math.ceil のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
+      "contentId": "l1-let-const/t13-template-literal/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "文字列とテンプレートリテラルの概念を参照。お店からの通知文の例・イラストを使った図解・値を埋め込むサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問3の関数の形) は見せるが、解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t11-two-arguments/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-functions-function-declaration"],
-      "usedFor": "関数宣言と引数の概念を参照。券売機の料金と枚数の例・イラストを使った図解・引数が 2 つある関数のサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問2の関数の形) は見せるが、解答コードは示さない",
-      "authorship": "original",
-      "reuse": "concept-reference",
-      "reviewStatus": "draft"
-    },
-    {
-      "contentId": "l1-let-const/t12-order/slides.md",
+      "contentId": "l1-let-const/t14-order/slides.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-number",
         "SRC-typescriptbook-values-types-variables-let-and-const"
@@ -144,17 +132,29 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t13-remainder/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "数値の計算の概念を参照。卵をパックに詰める例・イラストを使った図解・余りを求めるサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問3の関数の形) は見せるが、解答コードは示さない",
+      "contentId": "l1-let-const/doc.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-functions-function-declaration",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-let-const/t14-template-literal/slides.md",
-      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "文字列とテンプレートリテラルの概念を参照。お店からの通知文の例・イラストを使った図解・値を埋め込むサンプル・色分け・動画内の問題と解説・台本は教材用に独自作成。課題の最初のコード (問3の関数の形) は見せるが、解答コードは示さない",
+      "contentId": "l1-let-const/knowledge.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-type-annotation",
+        "SRC-typescriptbook-functions-function-declaration",
+        "SRC-typescriptbook-values-types-variables-number",
+        "SRC-typescriptbook-values-types-variables-let-and-const",
+        "SRC-typescriptbook-values-types-variables-string"
+      ],
+      "usedFor": "関数の形と型注釈、const、数値の計算と文字列の概念を参照。説明・業務のサンプル・知識問題5問・丸めの補足は教材用に独自作成。課題の解答コードは示さない",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-let-and-const, SRC-typescriptbook-values-types-variables-number]
-id: 1-1-6
+id: 1-1-5
 title: 計算した結果を入れる
 takeaway: "イコールの右側が先に計算され、その結果が変数に入ります。"
 introduces: ["式", "足し算"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-6 計算した結果を入れる
+# 1-1-5 計算した結果を入れる
 
 <!-- ノート: 計算した結果を入れるを、身近な例とコードで確かめます。 -->
 

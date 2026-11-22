@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-functions-function-declaration]
-id: 1-1-11
+id: 1-1-10
 title: 引数を2つ受け取る
 takeaway: "引数は、カンマで区切って2つ以上受け取れます。"
 introduces: ["カンマ"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-11 引数を2つ受け取る
+# 1-1-10 引数を2つ受け取る
 
 <!-- ノート: 引数を2つ受け取るを、身近な例とコードで確かめます。 -->
 

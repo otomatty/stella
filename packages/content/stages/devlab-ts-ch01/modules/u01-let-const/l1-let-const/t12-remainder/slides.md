@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-1-13
+id: 1-1-12
 title: 余りの求め方
 takeaway: "割り算の余りは、パーセントという記号で求めます。"
 introduces: ["余り", "%"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-13 余りの求め方
+# 1-1-12 余りの求め方
 
 <!-- ノート: 余りの求め方を、身近な例とコードで確かめます。 -->
 

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string, SRC-typescriptbook-values-types-variables-type-annotation]
-id: 1-1-4
+id: 1-1-11
 title: 文字列の書き方
 takeaway: "文字は引用符で囲んで書き、その種類を string と呼びます。"
 introduces: ["文字列", "string", "引用符"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-4 文字列の書き方
+# 1-1-11 文字列の書き方
 
 <!-- ノート: 文字列の書き方を、身近な例とコードで確かめます。 -->
 

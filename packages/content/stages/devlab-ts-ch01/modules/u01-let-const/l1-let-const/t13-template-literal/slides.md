@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-string]
-id: 1-1-14
+id: 1-1-13
 title: 文字列に値を埋め込む
 takeaway: "テンプレートリテラルを使うと、文字列の中に値を埋め込めます。"
 introduces: ["テンプレートリテラル", "バッククォート", "lint"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-14 文字列に値を埋め込む
+# 1-1-13 文字列に値を埋め込む
 
 <!-- ノート: 文字列に値を埋め込むを、身近な例とコードで確かめます。 -->
 

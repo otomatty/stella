@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number, SRC-typescriptbook-values-types-variables-let-and-const]
-id: 1-1-12
+id: 1-1-14
 title: 計算の順番
 takeaway: "掛け算と割り算は、足し算より先に計算されます。"
 introduces: ["計算の順番"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-12 計算の順番
+# 1-1-14 計算の順番
 
 <!-- ノート: 計算の順番を、身近な例とコードで確かめます。 -->
 

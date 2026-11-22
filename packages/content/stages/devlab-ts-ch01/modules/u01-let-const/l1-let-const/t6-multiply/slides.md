@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-1-7
+id: 1-1-6
 title: 掛け算の書き方
 takeaway: "掛け算は、アスタリスクという記号で書きます。"
 introduces: ["掛け算", "アスタリスク"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-7 掛け算の書き方
+# 1-1-6 掛け算の書き方
 
 <!-- ノート: 掛け算の書き方を、身近な例とコードで確かめます。 -->
 

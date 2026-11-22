@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-1-10
+id: 1-1-9
 title: 小数点以下を切り上げる
 takeaway: "Math.ceil を使うと、小数点以下を切り上げた整数になります。"
 introduces: ["Math.ceil", "切り上げ"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-10 小数点以下を切り上げる
+# 1-1-9 小数点以下を切り上げる
 
 <!-- ノート: 小数点以下を切り上げるを、身近な例とコードで確かめます。 -->
 

@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-1-8
+id: 1-1-7
 title: 小数点以下を切り捨てる
 takeaway: "Math.floor を使うと、小数点以下を切り捨てた整数になります。"
 introduces: ["Math.floor", "切り捨て", "整数", "小数"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-8 小数点以下を切り捨てる
+# 1-1-7 小数点以下を切り捨てる
 
 <!-- ノート: 小数点以下を切り捨てるを、身近な例とコードで確かめます。 -->
 

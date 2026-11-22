@@ -1,6 +1,6 @@
 ---
 sourceRefs: [SRC-typescriptbook-values-types-variables-number]
-id: 1-1-9
+id: 1-1-8
 title: 割り算の書き方
 takeaway: "割り算は、スラッシュという記号で書きます。"
 introduces: ["割り算", "スラッシュ"]
@@ -9,7 +9,7 @@ header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
-# 1-1-9 割り算の書き方
+# 1-1-8 割り算の書き方
 
 <!-- ノート: 割り算の書き方を、身近な例とコードで確かめます。 -->
 
