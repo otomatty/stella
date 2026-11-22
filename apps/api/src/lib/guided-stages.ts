@@ -16,6 +16,7 @@ import {
 import type { Caller } from "./authz.js";
 import { loadSkillMapSource } from "./skill-map-data.js";
 import { guidanceColumns } from "./stage-grant-guidance.js";
+import { loadProblemRevisionHashes } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 /** 割り当ての件数によらず、ステージ・課題・問題をそれぞれまとめて読む。 */
@@ -108,6 +109,15 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     list.push(row);
     resultsByTask.set(row.taskId, list);
   }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    taskRows.map((row) => ({
+      taskId: row.id,
+      currentHash: row.hash,
+      rows: resultsByTask.get(row.id) ?? [],
+      taskPassed: row.status === "passed" || row.status === "ai-passed",
+    })),
+  );
   const progress = new Map<
     string,
     { tasks: number; passedTasks: number; problems: number; passedProblems: number }
@@ -123,7 +133,12 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     entry.tasks++;
     if (passed) entry.passedTasks++;
     const problems = readTaskDefinition(row.definition ?? "{}").problems ?? [];
-    const counted = countedProblemIds(resultsByTask.get(row.id) ?? [], row.hash, passed);
+    const counted = countedProblemIds(
+      resultsByTask.get(row.id) ?? [],
+      row.hash,
+      passed,
+      hashes.get(row.id),
+    );
     entry.problems += problems.length;
     entry.passedProblems += problems.filter((problem) => counted.has(problem.id)).length;
     progress.set(row.stageId, entry);

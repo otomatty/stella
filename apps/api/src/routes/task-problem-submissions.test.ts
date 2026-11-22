@@ -69,8 +69,23 @@ describe("合格に数える問題", () => {
     { problemId: "q02-sub", contentHash: CURRENT },
   ] as const;
 
-  it("未合格の課題は今の版だけを数え、重複させない", () => {
+  it("前の版の指紋がなければ今の版を数え、重複させない", () => {
     expect(countedProblemIds(rows, CURRENT, false)).toEqual(new Set(["q02-sub"]));
+  });
+
+  it("未合格の課題には指紋が一致する前の版の問題だけを引き継ぐ", () => {
+    const hashes = new Map([
+      [CURRENT, { "q01-add": "a", q03: "b" }],
+      ["old", { "q01-add": "a", q03: "c" }],
+    ]);
+    expect(
+      countedProblemIds(
+        [...rows, { problemId: "q03", contentHash: "old" }],
+        CURRENT,
+        false,
+        hashes,
+      ),
+    ).toEqual(new Set(["q01-add", "q02-sub"]));
   });
 
   it("合格済みの課題は前の版の結果も数える", () => {
@@ -381,6 +396,157 @@ describe("問題の提出", () => {
     );
     return input;
   }
+
+  it.each(["after", "test", "broken"] as const)(
+    "旧版の提出を問題ごとに照合する (%s)",
+    async (change) => {
+      const problems = [
+        ...PROBLEMS,
+        { id: "q03-mul", title: "掛ける" },
+        { id: "q04-div", title: "割る" },
+      ];
+      const old = await problemBundle(CURRENT, problems);
+      const currentHash = "b".repeat(64);
+      const current = await problemBundle(
+        currentHash,
+        problems,
+        true,
+        change === "test" ? "q02-sub" : undefined,
+      );
+      await db.batch([
+        db
+          .update(tasks)
+          .set({ definition: JSON.stringify(old.definition), bundle: JSON.stringify(old.bundle) })
+          .where(eq(tasks.id, TASK_ID)),
+        db
+          .update(taskRevisions)
+          .set({ definition: JSON.stringify(old.definition), bundle: JSON.stringify(old.bundle) })
+          .where(eq(taskRevisions.taskId, TASK_ID)),
+      ]);
+      for (const problem of problems.slice(0, 3)) {
+        const response = await post(await problemInput(CURRENT, problems, problem.id));
+        expect(response.status, await response.clone().text()).toBe(201);
+      }
+      const version = {
+        definition: JSON.stringify(current.definition),
+        bundle: JSON.stringify(current.bundle),
+      };
+      await db.batch([
+        db.insert(taskRevisions).values({ taskId: TASK_ID, contentHash: currentHash, ...version }),
+        db
+          .update(tasks)
+          .set({ contentHash: currentHash, ...version })
+          .where(eq(tasks.id, TASK_ID)),
+        db.insert(lessons).values([
+          { id: "video", sectionId: "unit", title: "計算の動画", type: "slides", order: 0 },
+          ...problems.map((problem, i) => ({
+            id: `step-${i}`,
+            sectionId: "unit",
+            title: problem.title,
+            type: "text" as const,
+            order: i + 1,
+          })),
+        ]),
+        db.insert(taskProblemSteps).values(
+          problems.map((problem, i) => ({
+            taskId: TASK_ID,
+            problemId: problem.id,
+            stepLessonId: `step-${i}`,
+            afterLessonId: "video",
+            position: i,
+          })),
+        ),
+        db.insert(lessonProgress).values({ userId: "learner", lessonId: "video", completed: true }),
+        // 教材更新前に完了フラグがあっても、最新の提出判定で数え直す。
+        db
+          .insert(lessonProgress)
+          .values({ userId: "learner", lessonId: "step-1", completed: true }),
+      ]);
+      if (change === "broken") {
+        await db
+          .update(taskRevisions)
+          .set({ bundle: "{" })
+          .where(eq(taskRevisions.contentHash, CURRENT));
+      }
+      expect(
+        (await db.select().from(taskRevisions).where(eq(taskRevisions.contentHash, CURRENT)))[0]
+          .problemHashes,
+      ).toBeNull();
+      // 問題一覧を開く前でも、修了の集計には旧版から引き継いだステップが入る。
+      const completion = await request(app(), env, "/api/certificates/completion/stage", { token });
+      expect(completion.status, await completion.clone().text()).toBe(200);
+      expect(await completion.json()).toMatchObject({
+        completion: { completed_lessons: change === "after" ? 4 : change === "test" ? 3 : 1 },
+      });
+      const revisions = await db
+        .select()
+        .from(taskRevisions)
+        .where(eq(taskRevisions.taskId, TASK_ID));
+      const previousHashes = revisions.find((row) => row.contentHash === CURRENT)?.problemHashes;
+      const currentHashes = revisions.find((row) => row.contentHash === currentHash)?.problemHashes;
+      if (change === "after")
+        expect(JSON.parse(previousHashes ?? "null")).toEqual(JSON.parse(currentHashes ?? "null"));
+      else if (change === "test") {
+        const previous = JSON.parse(previousHashes ?? "null");
+        const updated = JSON.parse(currentHashes ?? "null");
+        expect(Object.keys(previous).filter((id) => previous[id] !== updated[id])).toEqual([
+          "q02-sub",
+        ]);
+      } else expect(previousHashes).toBeNull();
+      const progress = await request(app(), env, "/api/lesson-progress", { token });
+      expect(progress.status).toBe(200);
+      const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(progress);
+      expect(rows.find((row) => row.lesson_id === "step-1")?.completed).toBe(change === "after");
+      expect(rows.find((row) => row.lesson_id === "step-2")?.completed).toBe(
+        change === "broken" ? undefined : true,
+      );
+      const query = vi.spyOn(database.binding, "prepare");
+      try {
+        const result = await problemResults();
+        expect(result.status, await result.clone().text()).toBe(200);
+        const states =
+          change === "after"
+            ? ["submitted", "submitted", "submitted", "open"]
+            : change === "test"
+              ? ["submitted", "open", "submitted", "open"]
+              : ["open", "locked-previous", "locked-previous", "locked-previous"];
+        const count = states.filter((state) => state === "submitted").length;
+        expect(await result.json()).toMatchObject({
+          problems: states.map((state) => ({ state })),
+          passedProblems: count,
+          taskPassed: false,
+        });
+        const list = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+        expect(list.status, await list.clone().text()).toBe(200);
+        expect(await list.json()).toMatchObject({
+          tasks: [
+            { id: TASK_ID, problems: states.map((state) => ({ state })), problems_passed: count },
+            {},
+          ],
+        });
+        expect((await stepProgress("step-1"))?.completed).toBe(change === "after");
+        if (change !== "broken") {
+          const reads = query.mock.calls.filter(
+            ([sql]) => sql.includes("from json_each(") && sql.includes("join task_revisions r"),
+          );
+          expect(reads).toHaveLength(2);
+          expect(query.mock.calls.some(([sql]) => sql.startsWith('update "task_revisions"'))).toBe(
+            false,
+          );
+        }
+      } finally {
+        query.mockRestore();
+      }
+      expect((await post(await problemInput(CURRENT, problems, "q04-div"))).status).toBe(409);
+      if (change === "after") {
+        const response = await post(
+          await problemInput(currentHash, problems, "q04-div", undefined, current),
+        );
+        expect(response.status, await response.clone().text()).toBe(201);
+        expect(await response.json()).toMatchObject({ passedProblems: 4, taskPassed: true });
+      }
+    },
+  );
 
   it("動画と直前の問題の提出で解放し、管理者の引き継ぎも数える", async () => {
     const input = await gatedInput(await setupProblemSteps());
@@ -1993,6 +2159,7 @@ async function problemBundle(
   contentHash: string,
   problems: { id: string; title: string }[],
   gated = false,
+  changedTest?: string,
 ) {
   const manifest: TaskManifest = {
     schemaVersion: 1,
@@ -2016,7 +2183,8 @@ async function problemBundle(
   };
   const protectedFiles = [];
   for (const problem of problems) {
-    const test = `test("${problem.id}", () => {});\n`;
+    const test = `test("${problem.id}", () => {${problem.id === changedTest ? " expect(true).toBe(true); " : ""}});\n`;
+    files[`src/${problem.id}.ts`] = Buffer.from("export const value = 0;\n").toString("base64");
     const bytes = encoder.encode(test);
     files[`tests/${problem.id}.test.ts`] = Buffer.from(test).toString("base64");
     protectedFiles.push({
@@ -2027,6 +2195,7 @@ async function problemBundle(
   }
   const bundle: TaskBundle = { manifest: parsed.manifest, contentHash, files };
   const definition = {
+    runner: manifest.runner,
     submit: { explanation: true, debuggingRecord: true },
     skills: { assesses: ["calc"] },
     problems: gated ? problems.map((problem) => ({ ...problem, after: "video" })) : problems,
@@ -2039,8 +2208,9 @@ async function problemInput(
   problems: { id: string; title: string }[],
   problemId: string,
   source = "export const value = 1;\n",
+  bundle?: Awaited<ReturnType<typeof problemBundle>>,
 ): Promise<TaskSubmissionInput> {
-  const built = await problemBundle(contentHash, problems);
+  const built = bundle ?? (await problemBundle(contentHash, problems));
   const bytes = new TextEncoder().encode(source);
   const path = `src/${problemId}.ts`;
   const hashed = { path, sha256: await hashBytes(bytes), bytes: bytes.length };

@@ -17,6 +17,11 @@ import type { Db } from "../db/client.js";
 import { lessonProgress } from "../db/schema.js";
 import { ApiError } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
+import {
+  loadProblemRevisionHashes,
+  problemResultCounts,
+  type ProblemHashCache,
+} from "./task-problem-hashes.js";
 import { buildStudyActivityIncrement } from "./study-activity.js";
 
 /** D1 の Worker 1 呼び出しあたりのクエリ上限 (有料プラン)。 batch の各文が 1 カウント。 */
@@ -46,19 +51,72 @@ export function assertProgressSyncSize(count: number): void {
   }
 }
 
-/** ステップの提出を確認する。課題の合格後は旧版の提出も数える。それ以外のレッスンは null。 */
+/** 提出の書き込みと同じ SQL 内で、書き込み後の状態から完了を確かめる。 */
 export function problemStepCompletion(userId: string | SQL, lessonId: string | SQL) {
   return sql<boolean | null>`(
     select exists (
       select 1 from task_problem_results r
       inner join tasks t on t.id = p.task_id
       left join task_progress tp on tp.user_id = r.user_id and tp.task_id = r.task_id
+      left join task_revisions current on current.task_id = t.id and current.content_hash = t.content_hash
+      left join task_revisions previous on previous.task_id = r.task_id and previous.content_hash = r.content_hash
       where r.user_id = ${userId} and r.task_id = p.task_id and r.problem_id = p.problem_id
-        and (t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed'))
+        and (
+          t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed')
+          or exists (
+            select 1 from json_each(case when json_valid(current.problem_hashes) then case when json_type(current.problem_hashes) = 'object' then current.problem_hashes end end) c
+            join json_each(case when json_valid(previous.problem_hashes) then case when json_type(previous.problem_hashes) = 'object' then previous.problem_hashes end end) v
+              on v.key = c.key and v.value = c.value
+            where c.key = p.problem_id and c.type = 'text'
+              and length(c.value) = 64 and c.value not glob '*[^0-9a-f]*'
+          )
+        )
     )
     from task_problem_steps p
     where p.step_lesson_id = ${lessonId}
   )`;
+}
+
+export function isProblemStepLesson(lessonId: SQL) {
+  return sql<number>`exists (select 1 from task_problem_steps p where p.step_lesson_id = ${lessonId})`;
+}
+
+/** 問題のステップは保存済みの完了フラグより、現在数えられる提出を優先する。 */
+export async function loadCompletedProblemSteps(
+  db: Db,
+  userIds: readonly string[],
+  lessonIds?: readonly string[],
+  cache?: ProblemHashCache,
+) {
+  if (userIds.length === 0 || lessonIds?.length === 0) return [];
+  const rows = await db.all<{
+    userId: string;
+    lessonId: string;
+    taskId: string;
+    problemId: string;
+    contentHash: string;
+    currentHash: string;
+    status: string | null;
+    updatedAt: number;
+  }>(sql`
+    select r.user_id userId, p.step_lesson_id lessonId, r.task_id taskId, r.problem_id problemId,
+      r.content_hash contentHash, t.content_hash currentHash, tp.status, r.updated_at updatedAt
+    from task_problem_steps p
+    join tasks t on t.id = p.task_id
+    join task_problem_results r on r.task_id = p.task_id and r.problem_id = p.problem_id
+    left join task_progress tp on tp.task_id = r.task_id and tp.user_id = r.user_id
+    where r.user_id in (select value from json_each(${JSON.stringify(userIds)}))
+      ${lessonIds ? sql`and p.step_lesson_id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``}
+  `);
+  const scopes = rows.map((row) => ({
+    ...row,
+    rows: [row],
+    taskPassed: row.status === "passed" || row.status === "ai-passed",
+  }));
+  const hashes = await loadProblemRevisionHashes(db, scopes, cache);
+  return scopes.filter((row) =>
+    problemResultCounts(row, row.currentHash, row.taskPassed, hashes.get(row.taskId)),
+  );
 }
 
 /** 問題結果の書き込みと同じ batch に追加できる、完了フラグだけの差分 upsert。 */

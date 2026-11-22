@@ -3,7 +3,9 @@
  * パスは ID からこの関数だけで決める。課題ごとにパスは書かない。
  */
 
-import type { RunnerPlanKind } from "./runners.js";
+import { sha256Hex } from "./hash.js";
+import type { TaskManifest } from "./manifest.js";
+import { RUNNERS, type RunnerPlanKind } from "./runners.js";
 
 /** `^[a-z0-9][a-z0-9-]*$`。`..`・空白・`-p:` はここに当たらない。 */
 export const PROBLEM_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
@@ -85,4 +87,59 @@ export function readProblems(
   }
   if (errors.length > 0) return { errors };
   return { problems, errors };
+}
+
+const explanationFiles = new Set([
+  "readme.md",
+  "hints.md",
+  "explanation.md",
+  "review.md",
+  ".stella/task.json",
+]);
+
+type ProblemHashDefinition = Pick<TaskManifest, "runner" | "problems" | "checks" | "environment">;
+
+/** 配布時の base64 を使い、実行に関わるファイルをパス順に並べて版をまたいで比べる。 */
+export async function problemFingerprints(
+  definition: ProblemHashDefinition,
+  files: Readonly<Record<string, string>>,
+): Promise<Record<string, string>> {
+  if (!definition.problems?.length) return {};
+  const plan = RUNNERS[definition.runner].plan;
+  const problems = definition.problems.map(({ id, title }) => {
+    const paths = problemFiles(plan, id);
+    if (!paths) throw new Error(`問題のファイル名が不正です: ${id}`);
+    return { id, title, paths: [paths.source, paths.test] };
+  });
+  const ownedPaths = new Set(problems.flatMap((problem) => problem.paths));
+  const sharedFiles = Object.keys(files)
+    .sort()
+    .filter((path) => !ownedPaths.has(path) && !explanationFiles.has(path.toLowerCase()))
+    .map((path) => [path, files[path]]);
+  const dotnet = plan === "dotnet" ? definition.environment?.dotnet : undefined;
+  const encoder = new TextEncoder();
+  const sharedHash = await sha256Hex(
+    encoder.encode(
+      JSON.stringify([
+        definition.runner,
+        definition.checks.lint,
+        definition.checks.format,
+        [dotnet?.min, dotnet?.maxMajor, dotnet?.majors],
+        sharedFiles,
+      ]),
+    ),
+  );
+  return Object.fromEntries(
+    await Promise.all(
+      problems.map(async ({ id, title, paths }) => {
+        const problem = paths.map((path) => {
+          if (!Object.hasOwn(files, path))
+            throw new Error(`問題の配布ファイルがありません: ${path}`);
+          return [path, files[path]];
+        });
+        const hash = await sha256Hex(encoder.encode(JSON.stringify([sharedHash, title, problem])));
+        return [id, hash];
+      }),
+    ),
+  );
 }

@@ -17,6 +17,11 @@ import { withResourceLock } from "./resource-lock.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
+import {
+  loadTaskProblemHashes,
+  problemResultCounts,
+  type ProblemRevisionHashes,
+} from "./task-problem-hashes.js";
 import { evaluatedProblemSteps, loadProblemSteps } from "./task-problem-steps.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
 
@@ -34,18 +39,17 @@ export function isProblemSubmissionResult<T extends { id: string }>(
   return !("id" in value);
 }
 
-/**
- * 合格に数える問題。今の版で提出したものだけ (前の版のテストは今の要件を確かめていない)。
- * 合格済みの課題は教材が変わっても合格のままなので、今までの提出を数える。
- * ponytail: 版が変わると全問出し直し。問題ごとのテストのハッシュを比べれば、変わった問題だけにできる。
- */
+/** 合格済みなら全版、未合格なら今の版と、指紋が一致する前の版の問題を数える。 */
 export function countedProblemIds(
   rows: readonly { problemId: string; contentHash: string }[],
   currentHash: string,
   taskPassed: boolean,
+  revisions?: ProblemRevisionHashes,
 ): Set<string> {
   return new Set(
-    rows.filter((row) => taskPassed || row.contentHash === currentHash).map((row) => row.problemId),
+    rows
+      .filter((row) => problemResultCounts(row, currentHash, taskPassed, revisions))
+      .map((row) => row.problemId),
   );
 }
 
@@ -97,9 +101,17 @@ type ProblemTask = {
   privateFiles: string | null;
 };
 
+export function assertCurrentProblemSubmission(contentHash: string, currentHash: string) {
+  if (contentHash !== currentHash)
+    throw new ApiError(
+      "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
+      409,
+    );
+}
+
 /**
  * 問題つきの課題の提出。照合に落ちたら何も書かない。AI の待ち行列には積まない。
- * 今の版の問題が全部そろって、まだ合格していなければ、課題の提出を 1 行作って
+ * 数える問題が全部そろって、まだ合格していなければ、課題の提出を 1 行作って
  * ロックの外で `tests` として確定する (同じロックを取り直す)。
  */
 export async function submitTaskProblem(
@@ -110,11 +122,7 @@ export async function submitTaskProblem(
   bundle: TaskBundle,
 ): Promise<ProblemSubmissionResult> {
   if (!input.problemId) throw new ApiError("拡張を更新してください", 400);
-  if (input.contentHash !== task.contentHash)
-    throw new ApiError(
-      "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
-      409,
-    );
+  assertCurrentProblemSubmission(input.contentHash, task.contentHash);
   const problemId = input.problemId;
   let verified: Awaited<ReturnType<typeof verifyTaskSubmission>>;
   try {
@@ -182,7 +190,16 @@ export async function submitTaskProblem(
         progress?.status === "passed" ||
         progress?.status === "ai-passed" ||
         passedSubmissions.length > 0;
-      const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed);
+      const canReplaceManualPass =
+        passedSubmissions.length > 0 &&
+        passedSubmissions.every((row) => row.reviewSource === "manual");
+      const hashes = await loadTaskProblemHashes(db, {
+        taskId: task.id,
+        currentHash: task.contentHash,
+        rows: saved,
+        taskPassed: taskAlreadyPassed && !canReplaceManualPass,
+      });
+      const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed, hashes);
       let stepLessonId: string | undefined;
       if (bundle.manifest.problemSteps) {
         const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
@@ -261,19 +278,17 @@ export async function submitTaskProblem(
       ];
       if (stepLessonId)
         writes.push(...planProblemStepProgressWrites(db, caller.id, [stepLessonId], now));
+      const personalIds = canReplaceManualPass
+        ? countedProblemIds(
+            saved.filter((row) => row.source === "tests"),
+            task.contentHash,
+            false,
+            hashes,
+          )
+        : undefined;
       const replacesManualPass =
-        passedSubmissions.length > 0 &&
-        passedSubmissions.every((row) => row.reviewSource === "manual") &&
-        currentProblems.every(
-          (problem) =>
-            problem.id === problemId ||
-            saved.some(
-              (row) =>
-                row.problemId === problem.id &&
-                row.source === "tests" &&
-                row.contentHash === task.contentHash,
-            ),
-        );
+        personalIds &&
+        currentProblems.every((problem) => problem.id === problemId || personalIds.has(problem.id));
       if (complete && (!taskAlreadyPassed || replacesManualPass)) {
         const [pending] = await db
           .select({ id: submissions.id })

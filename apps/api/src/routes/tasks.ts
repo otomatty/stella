@@ -1,5 +1,6 @@
 import { type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { loadProblemRevisionHashes, loadTaskProblemHashes } from "../lib/task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
@@ -141,6 +142,18 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         resultsByTask.set(result.taskId, saved);
       }
     }
+    const hashes = await loadProblemRevisionHashes(
+      db,
+      rows.map((row) => {
+        const status = progressByTaskId.get(row.id)?.status;
+        return {
+          taskId: row.id,
+          currentHash: row.contentHash,
+          rows: resultsByTask.get(row.id) ?? [],
+          taskPassed: status === "passed" || status === "ai-passed",
+        };
+      }),
+    );
     const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
     const stepsByTask = new Map<string, typeof stepRows>();
     for (const step of stepRows) {
@@ -148,7 +161,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       steps.push(step);
       stepsByTask.set(step.taskId, steps);
     }
-    const missingCompletions: string[] = [];
+    const changedCompletions: string[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
         const p = progressByTaskId.get(task.id);
@@ -168,13 +181,15 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           saved,
           contentHash,
           p?.status === "passed" || p?.status === "ai-passed",
+          hashes.get(task.id),
         );
         const steps = gatedTaskIds.has(task.id)
           ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
           : undefined;
         const problemSteps = steps?.map(
           ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
-            if (state === "submitted" && !stepCompleted) missingCompletions.push(stepLessonId);
+            if ((state === "submitted") !== Boolean(stepCompleted))
+              changedCompletions.push(stepLessonId);
             return {
               id: problem.id,
               title: problem.title,
@@ -199,7 +214,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
       });
-    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+    for (const write of planProblemStepProgressWrites(db, caller.id, changedCompletions))
       await write;
     return c.json({ tasks: result });
   } catch (err) {
@@ -249,7 +264,13 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
       .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
       .limit(1);
     const taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
-    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed);
+    const hashes = await loadTaskProblemHashes(db, {
+      taskId: row.id,
+      currentHash: row.contentHash,
+      rows: saved,
+      taskPassed,
+    });
+    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed, hashes);
     const byId = new Map(
       saved
         .filter((item) => passedIds.has(item.problemId))
@@ -263,11 +284,11 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
           passedIds,
         )
       : undefined;
-    const missingCompletions =
+    const changedCompletions =
       steps
-        ?.filter((step) => step.state === "submitted" && !step.stepCompleted)
+        ?.filter((step) => (step.state === "submitted") !== Boolean(step.stepCompleted))
         .map((step) => step.stepLessonId) ?? [];
-    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+    for (const write of planProblemStepProgressWrites(db, caller.id, changedCompletions))
       await write;
     const entries = steps
       ? steps.map(({ problem, state, stepLessonId, afterLessonId, afterTitle }) => ({

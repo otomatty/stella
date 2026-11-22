@@ -21,6 +21,7 @@ import {
 import { ApiError, type Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { auditLogInsert } from "./audit.js";
+import { loadProblemRevisionHashes, loadTaskProblemHashes } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 import { recomputeTaskProgress, resetPassedAt, taskSubmissionLockId } from "./task-submission.js";
 import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
@@ -164,13 +165,22 @@ export async function readManualCompletion(
       savedByTask.set(row.taskId, rows);
     }
   }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    scope.taskRows.map(({ task }) => ({
+      taskId: task.id,
+      currentHash: task.contentHash,
+      rows: savedByTask.get(task.id) ?? [],
+      taskPassed: passByTask.has(task.id),
+    })),
+  );
   for (const { task } of scope.taskRows) {
     const progress = progressByTask.get(task.id);
     const pass = passByTask.get(task.id);
     const saved = savedByTask.get(task.id) ?? [];
     const problems = readTaskDefinition(task.definition).problems ?? [];
     const currentProblemIds = new Set(problems.map((problem) => problem.id));
-    const counted = countedProblemIds(saved, task.contentHash, Boolean(pass));
+    const counted = countedProblemIds(saved, task.contentHash, Boolean(pass), hashes.get(task.id));
     result.units
       .find((unit) => unit.id === task.sectionId)
       ?.tasks.push({
@@ -282,7 +292,13 @@ export async function writeManualCompletion(
           const taskPassed =
             passes.length > 0 || progress?.status === "passed" || progress?.status === "ai-passed";
           const writes: BatchItem<"sqlite">[] = [];
-          const counted = countedProblemIds(saved, task.contentHash, taskPassed);
+          const hashes = await loadTaskProblemHashes(db, {
+            taskId: task.id,
+            currentHash: task.contentHash,
+            rows: saved,
+            taskPassed: taskPassed && !revoke,
+          });
+          const counted = countedProblemIds(saved, task.contentHash, taskPassed, hashes);
           let problemCount = 0;
           let touchedProblems: ReadonlySet<string>;
           if (revoke) {
@@ -338,6 +354,7 @@ export async function writeManualCompletion(
               saved.filter((row) => !removedIds.has(row.problemId)),
               task.contentHash,
               false,
+              hashes,
             );
             const cancelsCompletion =
               !personalPass &&

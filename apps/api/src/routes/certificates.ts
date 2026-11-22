@@ -1,4 +1,5 @@
 import { integrationGroupFilter } from "../lib/integrations.js";
+import type { ProblemHashCache } from "../lib/task-problem-hashes.js";
 import { manualCompletionCounts, taskCompletionCounts } from "../lib/task-completion.js";
 /**
  * 修了判定 / 成績台帳 / 修了証 API
@@ -10,7 +11,7 @@ import { manualCompletionCounts, taskCompletionCounts } from "../lib/task-comple
  */
 
 import { Hono } from "hono";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb } from "../db/client.js";
 import {
@@ -37,6 +38,7 @@ import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "../lib/enrollment-bulk.js";
 import { learnerOnly } from "../lib/learner-scope.js";
+import { isProblemStepLesson, loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
 import { passCountsForLesson } from "../lib/reviewed-progress.js";
 import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
@@ -139,13 +141,18 @@ async function batchComputeCompletions(
   db: Db,
   stage: typeof stages.$inferSelect,
   userIds: string[],
+  cache: ProblemHashCache,
 ): Promise<Map<string, StageCompletion>> {
   const result = new Map<string, StageCompletion>();
   if (userIds.length === 0) return result;
   const stageId = stage.id;
 
   const lessonRows = await db
-    .select({ id: lessons.id, type: lessons.type })
+    .select({
+      id: lessons.id,
+      type: lessons.type,
+      problemStep: isProblemStepLesson(sql`lessons.id`),
+    })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
     .where(eq(sections.stageId, stageId));
@@ -179,6 +186,7 @@ async function batchComputeCompletions(
         .where(
           and(
             eq(lessonProgress.completed, true),
+            sql`not ${isProblemStepLesson(sql`lessons.id`)}`,
             inArray(lessonProgress.userId, userIdChunk),
             eq(sections.stageId, stageId),
           ),
@@ -234,6 +242,14 @@ async function batchComputeCompletions(
     }
     return m;
   };
+  progressRows.push(
+    ...(await loadCompletedProblemSteps(
+      db,
+      userIds,
+      lessonRows.filter((row) => row.problemStep).map((row) => row.id),
+      cache,
+    )),
+  );
   const doneByUser = setBy(
     progressRows,
     (r) => r.userId,
@@ -379,16 +395,10 @@ certificatesRoute.get("/api/certificates/gradebook/:stageId", async (c) => {
 
     // 受講者ごとに computeStageCompletion を呼ぶと N+1 になり Workers の subrequest
     // 上限を超え得るため、 全受講者分を一定回数のクエリで一括集計する。
-    const completions = await batchComputeCompletions(
-      db,
-      stage,
-      enrolled.map((e) => e.userId),
-    );
-    const manualCounts = await manualCompletionCounts(
-      db,
-      stageId,
-      enrolled.map((e) => e.userId),
-    );
+    const cache: ProblemHashCache = new Map();
+    const userIds = enrolled.map((e) => e.userId);
+    const completions = await batchComputeCompletions(db, stage, userIds, cache);
+    const manualCounts = await manualCompletionCounts(db, stageId, userIds, cache);
     const rows: GradebookEntry[] = enrolled.map((e) => ({
       user_id: e.userId,
       display_name: e.displayName,

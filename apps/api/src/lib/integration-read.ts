@@ -7,7 +7,12 @@ import type {
 import type { Db } from "../db/client.js";
 import { lastLearningDate } from "./last-learning-date.js";
 import { ApiError } from "./authz.js";
-import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
+import {
+  loadProblemRevisionHashes,
+  problemResultCounts,
+  type ProblemRevisionHashes,
+} from "./task-problem-hashes.js";
+import { readTaskDefinition } from "./task-problem-submission.js";
 
 export function encodePosition(value: unknown): string {
   return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
@@ -48,16 +53,28 @@ interface ProblemRow {
   source: "tests" | "manual";
   firstPassedAt: number;
 }
-function problemSummary(definition: string, hash: string, rows: ProblemRow[], taskPassed: boolean) {
+function problemSummary(
+  definition: string,
+  hash: string,
+  rows: ProblemRow[],
+  taskPassed: boolean,
+  revisions?: ProblemRevisionHashes,
+) {
   const problems = readTaskDefinition(definition).problems;
   if (!problems) return undefined;
-  const counted = countedProblemIds(rows, hash, taskPassed);
-  const current = new Set(problems.filter((p) => counted.has(p.id)).map((p) => p.id));
-  return {
-    total: problems.length,
-    passed: current.size,
-    sources: [...new Set(rows.filter((r) => current.has(r.problemId)).map((r) => r.source))],
-  };
+  const current = new Set(problems.map((p) => p.id));
+  const sources = new Map<string, ProblemRow["source"]>();
+  // 履歴は新しい順。数える版の中で各問題のいちばん新しい出所だけを使う。
+  for (const row of rows) {
+    if (
+      current.has(row.problemId) &&
+      !sources.has(row.problemId) &&
+      problemResultCounts(row, hash, taskPassed, revisions)
+    ) {
+      sources.set(row.problemId, row.source);
+    }
+  }
+  return { total: problems.length, passed: sources.size, sources: [...new Set(sources.values())] };
 }
 
 /** 固定回数のクエリ。各クエリで同じメンバーページとグループのステージを結合する。 */
@@ -188,6 +205,26 @@ export async function readIntegrationProgress(
     list.push(r);
     problemMap.set(k, list);
   }
+  const tasksById = new Map(taskRows.map((task) => [task.id, task]));
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    problems.flatMap((row) => {
+      const task = tasksById.get(row.task_id);
+      if (!task) return [];
+      const k = key(row.user_id, row.task_id);
+      return [
+        {
+          taskId: task.id,
+          currentHash: task.content_hash,
+          rows: [row],
+          taskPassed:
+            at === null
+              ? passed(progressMap.get(k)?.status ?? null)
+              : passMap.get(k)?.type === "task_passed",
+        },
+      ];
+    }),
+  );
   return {
     members: members.map((member) => ({
       id: member.id,
@@ -210,19 +247,6 @@ export async function readIntegrationProgress(
             tp = progressMap.get(k),
             pass = passMap.get(k);
           const isPassed = at === null ? passed(tp?.status ?? null) : pass?.type === "task_passed";
-          // 履歴は版ごとに最新を取得済み。確定合格の保持という既存の数え方を守り、
-          // 数える版の中で各問題のいちばん新しい出所だけを使う。
-          const seenProblems = new Set<string>();
-          const problemRows = (problemMap.get(k) ?? []).filter((row) => {
-            if (at === null) return true;
-            if (
-              (!isPassed && row.contentHash !== task.content_hash) ||
-              seenProblems.has(row.problemId)
-            )
-              return false;
-            seenProblems.add(row.problemId);
-            return true;
-          });
           unit.tasks.push({
             id: task.id,
             title: task.title,
@@ -244,7 +268,13 @@ export async function readIntegrationProgress(
             ...(pass?.id && (at === null || isPassed)
               ? { submissionUrl: `/submissions/${encodeURIComponent(pass.id)}` }
               : {}),
-            problems: problemSummary(task.definition, task.content_hash, problemRows, isPassed),
+            problems: problemSummary(
+              task.definition,
+              task.content_hash,
+              problemMap.get(k) ?? [],
+              isPassed,
+              hashes.get(task.id),
+            ),
           });
         }
         return {
@@ -322,7 +352,27 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       coalesce((select json_group_array(json_object('problemId',r.problem_id,'contentHash',r.content_hash,'source',r.source,'firstPassedAt',r.first_passed_at)) from task_problem_results r where r.user_id=page.user_id and r.task_id=page.task_id),'[]') problems
     from page left join tasks t on t.id=page.task_id left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id order by page.seq`);
   const page = rows.slice(0, 500);
-  const events: IntegrationEvent[] = page.map((r) => ({
+  const problemRows = page.map((row) =>
+    row.type === "problems_passed" || row.type === "problems_revoked"
+      ? (JSON.parse(row.problems) as ProblemRow[])
+      : [],
+  );
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    page.flatMap((row, index) =>
+      row.task_id && row.content_hash
+        ? [
+            {
+              taskId: row.task_id,
+              currentHash: row.content_hash,
+              rows: problemRows[index],
+              taskPassed: passed(row.status),
+            },
+          ]
+        : [],
+    ),
+  );
+  const events: IntegrationEvent[] = page.map((r, index) => ({
     id: r.id,
     type: r.type,
     occurredAt: new Date(r.time).toISOString(),
@@ -342,8 +392,9 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
             problemSummary(
               r.definition ?? "{}",
               r.content_hash ?? "",
-              JSON.parse(r.problems) as ProblemRow[],
+              problemRows[index],
               passed(r.status),
+              hashes.get(r.task_id ?? ""),
             )?.passed ?? 0,
         }),
   }));

@@ -1,5 +1,10 @@
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "../db/client.js";
+import {
+  loadProblemRevisionHashes,
+  problemResultCounts,
+  type ProblemHashCache,
+} from "./task-problem-hashes.js";
 import { readTaskDefinition } from "./task-problem-submission.js";
 import { sections, tasks, taskProgress, submissions, taskProblemResults } from "../db/schema.js";
 import { chunk } from "./enrollment-bulk.js";
@@ -85,7 +90,12 @@ export async function taskCountsForUser(
 }
 
 /** 進捗として数えている現行の問題と、残っている手動合格の数。日々の活動とは区別する。 */
-export async function manualCompletionCounts(db: Db, stageId: string, userIds: string[]) {
+export async function manualCompletionCounts(
+  db: Db,
+  stageId: string,
+  userIds: string[],
+  cache?: ProblemHashCache,
+) {
   const out = new Map<string, { manual_tasks: number; manual_problems: number }>();
   if (userIds.length === 0) return out;
   // 大きな定義を問題の行に繰り返し載せず、利用者の分割より前に課題ごとに一度だけ解析する。
@@ -103,6 +113,7 @@ export async function manualCompletionCounts(db: Db, stageId: string, userIds: s
       },
     ]),
   );
+  const manualProblems = [];
   for (const users of chunk(userIds, 50)) {
     const rows = await db
       .select({ userId: submissions.studentId, taskId: submissions.taskId })
@@ -130,7 +141,7 @@ export async function manualCompletionCounts(db: Db, stageId: string, userIds: s
         userId: taskProblemResults.userId,
         taskId: taskProblemResults.taskId,
         problemId: taskProblemResults.problemId,
-        hash: taskProblemResults.contentHash,
+        contentHash: taskProblemResults.contentHash,
         status: taskProgress.status,
       })
       .from(taskProblemResults)
@@ -149,14 +160,39 @@ export async function manualCompletionCounts(db: Db, stageId: string, userIds: s
           eq(taskProblemResults.source, "manual"),
         ),
       );
-    for (const row of problems) {
+    manualProblems.push(...problems);
+  }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    manualProblems.flatMap((row) => {
       const current = currentByTask.get(row.taskId);
-      if (!current?.problemIds.has(row.problemId)) continue;
-      if (row.hash !== current.hash && row.status !== "passed" && row.status !== "ai-passed")
-        continue;
-      const entry = out.get(row.userId);
-      if (entry) entry.manual_problems++;
-    }
+      return current?.problemIds.has(row.problemId)
+        ? [
+            {
+              taskId: row.taskId,
+              currentHash: current.hash,
+              rows: [row],
+              taskPassed: row.status === "passed" || row.status === "ai-passed",
+            },
+          ]
+        : [];
+    }),
+    cache,
+  );
+  for (const row of manualProblems) {
+    const current = currentByTask.get(row.taskId);
+    if (!current?.problemIds.has(row.problemId)) continue;
+    if (
+      !problemResultCounts(
+        row,
+        current.hash,
+        row.status === "passed" || row.status === "ai-passed",
+        hashes.get(row.taskId),
+      )
+    )
+      continue;
+    const entry = out.get(row.userId);
+    if (entry) entry.manual_problems++;
   }
   return out;
 }

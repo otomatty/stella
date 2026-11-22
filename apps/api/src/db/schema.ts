@@ -408,6 +408,7 @@ export const taskRevisions = sqliteTable(
      * 記録する前の版は null (分からないので素材を出さない) (0054)。
      */
     privateHash: text("private_hash"),
+    problemHashes: text("problem_hashes"),
   },
   (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
 );
