@@ -1,0 +1,31 @@
+name: Release announcement
+
+on:
+  schedule:
+    # GitHub の定時実行は数分〜十数分遅れることがあるため、日本時間 7:50 に起動する。
+    - cron: "50 22 * * *"
+  # 今すぐ送るときに使う。既存のリリース系ワークフローでは任意の ref から
+  # Release を作れてしまうため手動起動を置いていない。こちらは main だけで動き、Release は作らない。
+  workflow_dispatch:
+
+jobs:
+  announce:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-announce
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Send release digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+        run: bun run release:notes digest
