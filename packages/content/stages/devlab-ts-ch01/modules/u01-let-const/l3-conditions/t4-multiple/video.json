@@ -1,0 +1,617 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "割り切れるかを調べる書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "割り切れる条件と、両方を確かめる記号が結び付かない。",
+    "points": ["余りが 0 なら割り切れます。&& で 2 つの条件を両方確かめます。"],
+    "leaveOut": ["問12の解答コード"]
+  },
+  "art": {
+    "cookie-stack": {
+      "prompt": "A small stack of golden chocolate chip cookies. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "cookie-plates": {
+      "prompt": "Three white plates each holding four golden chocolate chip cookies. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "cookie-surplus": {
+      "prompt": "One empty white cookie plate viewed from above. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "全部の枚数",
+          "art": "cookie-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "同じ枚数ずつ",
+          "art": "cookie-plates",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "余った枚数",
+          "art": "cookie-surplus",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "左の余り",
+          "art": "cookie-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "右の余り",
+          "art": "cookie-plates",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "両方の結果",
+          "art": "cookie-surplus",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "箱に詰める",
+          "art": "cookie-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "両方の条件",
+          "art": "cookie-plates",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受け取る数",
+          "art": "cookie-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "倍数の条件",
+          "art": "cookie-plates",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "文字列",
+          "art": "cookie-surplus",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "cookie-split",
+      "beats": [
+        {
+          "say": "この動画では、割り切れるかを調べる方法を学びます。"
+        },
+        {
+          "say": "12枚のクッキーを、3人で分けると余りは0枚です。",
+          "speech": "十二枚のクッキーを、三人で分けると余りはゼロ枚です。"
+        },
+        {
+          "say": "余りが0なら、ちょうど割り切れたことになります。",
+          "speech": "余りがゼロなら、ちょうど割り切れたことになります。"
+        },
+        {
+          "say": "両方を確かめるには、アンド記号が2つ必要です。",
+          "speech": "両方を確かめるには、アンド記号が二つ必要です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "余りは出る？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "クッキーを分ける前は 12 枚です。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "12枚"
+          },
+          "speech": "クッキーを分ける前は 十二 枚です。"
+        },
+        {
+          "say": "3 人に同じ枚数を配ります。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "4枚ずつ"
+          },
+          "speech": "三 人に同じ枚数を配ります。"
+        },
+        {
+          "say": "同じ数が入り、余りは 0 枚でした。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "0枚"
+          },
+          "speech": "同じ数が入り、余りは ゼロ 枚でした。"
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "割り切れる条件をつなぐ",
+      "code": [
+        "// 分ける前の枚数を入れる",
+        "const n = 12;",
+        "// 3で割り切れるか調べる",
+        "const exact = n % 3 === 0;",
+        "// 3と4の両方で割り切れるか調べる",
+        "const both = n % 3 === 0 && n % 4 === 0;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "3 で割った余りを求めます。",
+          "part": {
+            "line": 3,
+            "text": "% 3"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "三 で割った余りを求めます。",
+          "type": [0, 1, 2, 3, 4, 5]
+        },
+        {
+          "say": "余りが 0 なら割り切れたという意味です。",
+          "part": {
+            "line": 3,
+            "text": "=== 0"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "speech": "余りが ゼロ なら割り切れたという意味です。"
+        },
+        {
+          "say": "アンド記号を二つ並べて、条件をつなげます。",
+          "part": {
+            "line": 5,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "term": {
+            "text": "&&",
+            "note": "両方の条件が合う",
+            "ruby": "アンド"
+          }
+        },
+        {
+          "say": "両方が true なら、全体も true です。",
+          "part": {
+            "line": 5,
+            "text": "n % 4 === 0"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "両方が トゥルー なら、全体も トゥルー です。"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 分ける前の枚数を入れる",
+        "const n = 12;",
+        "// 3で割り切れるか調べる",
+        "const exact = n % 3 === 0;",
+        "// 3と4の両方で割り切れるか調べる",
+        "const both = n % 3 === 0 && n % 4 === 0;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "12 を 3 で割ると、余りは 0 です。",
+          "part": {
+            "line": 5,
+            "text": "n % 3 === 0"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "余り 0"
+            }
+          },
+          "speech": "十二 を 三 で割ると、余りは ゼロ です。"
+        },
+        {
+          "say": "12 を 4 で割っても、余りは 0 になります。",
+          "part": {
+            "line": 5,
+            "text": "n % 4 === 0"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "余り 0"
+            }
+          },
+          "speech": "十二 を 四 で割っても、余りは ゼロ になります。"
+        },
+        {
+          "say": "両方が合うので、全体も true でした。",
+          "part": {
+            "line": 5,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "true"
+            }
+          },
+          "speech": "両方が合うので、全体も トゥルー でした。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 分ける前の枚数を入れる",
+        "const n = 12;",
+        "// 3で割り切れるか調べる",
+        "const exact = n % 3 === 0;",
+        "// 3と4の両方で割り切れるか調べる",
+        "const both = n % 3 === 0 && n % 4 === 0;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "exact"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 両方で割り切れるか調べる", "const both = 15 % 5 === 0 && 15 % 3 === 0;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "二つの条件が両方合うでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 両方で割り切れるか調べる", "const both = 15 % 5 === 0 && 15 % 3 === 0;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは true です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "true"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは トゥルー です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 両方で割り切れるか調べる", "const both = 15 % 5 === 0 && 15 % 3 === 0;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "左では、15 を 5 で割った余りが 0 になります。",
+          "part": {
+            "line": 1,
+            "text": "15 % 5 === 0"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "true"
+            }
+          },
+          "speech": "左では、十五 を 五 で割った余りが ゼロ になります。"
+        },
+        {
+          "say": "右でも、15 を 3 で割った余りは 0 です。",
+          "part": {
+            "line": 1,
+            "text": "15 % 3 === 0"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "true"
+            }
+          },
+          "speech": "右でも、十五 を 三 で割った余りは ゼロ です。"
+        },
+        {
+          "say": "左右が合ったので、全体も true になります。",
+          "part": {
+            "line": 1,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "true"
+            }
+          },
+          "speech": "左右が合ったので、全体も トゥルー になります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "商品を同じ個数ずつ箱に入れるときに使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "分け方が二種類とも可能かを調べる場面にも便利です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12で使う",
+      "code": [
+        "//     例: fizzBuzz(15) → \"FizzBuzz\"",
+        "export function fizzBuzz(n: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問12には、両方の倍数になる場合があります。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十二には、両方の倍数になる場合があります。"
+        },
+        {
+          "say": "余りを二つ確かめるのが手がかりです。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        },
+        {
+          "say": "片方だけの場合と、どう分けるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

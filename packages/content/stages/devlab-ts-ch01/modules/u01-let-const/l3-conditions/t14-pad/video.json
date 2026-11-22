@@ -1,0 +1,603 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "2桁にそろえる書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "数をそのまま桁埋めしようとしてしまう。",
+    "points": [".padStart() で、決まった桁数になるよう前を埋められます。"],
+    "leaveOut": ["問20の解答コード"]
+  },
+  "art": {
+    "clock-raw": {
+      "prompt": "A rectangular digital clock body with an empty dark display. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "zero-placeholder": {
+      "prompt": "One violet square tile sliding into an empty spot at the left of two blue tiles. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "clock-ready": {
+      "prompt": "One desktop digital clock with two pairs of blank display cells. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "そろえる前",
+          "art": "clock-raw",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "前を埋める",
+          "art": "zero-placeholder",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "そろえた表示",
+          "art": "clock-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "元の文字列",
+          "art": "clock-raw",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "指定の長さ",
+          "art": "zero-placeholder",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "そろえた表示",
+          "art": "clock-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "注文番号",
+          "art": "clock-raw",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "長い文字列",
+          "art": "zero-placeholder",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "秒",
+          "art": "clock-raw",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "桁をそろえる",
+          "art": "zero-placeholder",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "時と分と秒",
+          "art": "clock-ready",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "digital-clock",
+      "beats": [
+        {
+          "say": "この動画では、桁数をそろえる方法を学びます。"
+        },
+        {
+          "say": "デジタル時計で、1時5分の表示は01:05です。",
+          "speech": "デジタル時計で、いちじごふんの表示はゼロイチ、ゼロゴです。"
+        },
+        {
+          "say": "足りない桁は、前に0を付けて埋めます。",
+          "speech": "足りない桁は、前にゼロを付けて埋めます。"
+        },
+        {
+          "say": "前を埋めて桁をそろえるのが、パッドスタートです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "時刻の表示をどうそろえる？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "時計では、分も二桁で表示します。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "1:5"
+          }
+        },
+        {
+          "say": "一桁のときに足すのは、先頭のゼロです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "0"
+          }
+        },
+        {
+          "say": "表示の幅がそろいました。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "01:05"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "埋める位置と文字を指定",
+      "code": ["// 5を文字列にして前を0で埋める", "const padded = String(5).padStart(2, \"0\");"],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "まず、数を String で文字列にします。",
+          "part": {
+            "line": 1,
+            "text": "String(5)"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "まず、数を ストリング で文字列にします。",
+          "type": [0, 1]
+        },
+        {
+          "say": "前を埋めるのが、パッドスタートです。",
+          "part": {
+            "line": 1,
+            "text": ".padStart"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "term": {
+            "text": "padStart",
+            "note": "文字列の前を埋める",
+            "ruby": "パッドスタート"
+          }
+        },
+        {
+          "say": "引数には、仕上がりの長さと埋める文字を渡します。",
+          "part": {
+            "line": 1,
+            "text": "2, \"0\""
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 125秒に含まれる分を求める",
+        "const minutes = Math.floor(125 / 60);",
+        "// 分に含まれない残りの秒を求める",
+        "const seconds = 125 % 60;",
+        "// 分の前を0で埋めて2桁にする",
+        "const mm = String(minutes).padStart(2, \"0\");",
+        "// 秒の前を0で埋めて2桁にする",
+        "const ss = String(seconds).padStart(2, \"0\");",
+        "// 分と秒をコロンでつなぐ",
+        "const label = `${mm}:${ss}`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "125 秒を分にすると、整数で 2 分です。",
+          "part": {
+            "line": 1,
+            "text": "Math.floor"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "2分"
+            }
+          },
+          "speech": "百二十五 秒を分にすると、整数で 二 分です。"
+        },
+        {
+          "say": "余りは 5 秒になります。",
+          "part": {
+            "line": 3,
+            "text": "% 60"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "5秒"
+            }
+          },
+          "speech": "余りは 五 秒になります。"
+        },
+        {
+          "say": "分と秒を、別々に二桁へそろえました。",
+          "part": {
+            "line": 5,
+            "text": ".padStart"
+          },
+          "figure": {
+            "pulse": ["card0", "card1"],
+            "tag": {
+              "card0": "02",
+              "card1": "05"
+            }
+          }
+        },
+        {
+          "say": "コロンでつなぐと、表示は 02:05 です。",
+          "part": {
+            "line": 9,
+            "text": "label"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "02:05"
+            }
+          },
+          "speech": "コロンでつなぐと、表示は ゼロニ、ゼロゴ です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": ["// 5を文字列にして前を0で埋める", "const padded = String(5).padStart(2, \"0\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ".padStart"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "padded"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 7の前を0で埋めて3桁にする", "const label = String(7).padStart(3, \"0\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "三桁で表示すると、どんな文字列でしょうか。",
+          "part": {
+            "line": 1,
+            "text": "3, \"0\""
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 7の前を0で埋めて3桁にする", "const label = String(7).padStart(3, \"0\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは「007」です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "007"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは「ゼロゼロ六」です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 7の前を0で埋めて3桁にする", "const label = String(7).padStart(3, \"0\");"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "最初は、一桁の文字列です。",
+          "part": {
+            "line": 1,
+            "text": "String(7)"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "7"
+            }
+          }
+        },
+        {
+          "say": "三桁にするには、二文字足りません。",
+          "part": {
+            "line": 1,
+            "text": "3, \"0\""
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "あと二文字"
+            }
+          }
+        },
+        {
+          "say": "足りない二つのゼロを、前に足します。",
+          "part": {
+            "line": 1,
+            "text": ".padStart"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "007"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "注文番号の表示をそろえる場面でも使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "指定した長さ以上の文字列は、そのままです。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問20で使う",
+      "code": [
+        "//     例: secondsToClock(3723) → \"01:02:03\"",
+        "export function secondsToClock(seconds: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問20では、秒を時と分と秒の形にします。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問二十では、秒を時と分と秒の形にします。"
+        },
+        {
+          "say": "時と分と秒は、それぞれ二桁にそろえる決まりです。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        },
+        {
+          "say": "問20を解いたら、買い物かごの応用問題に進みましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "speech": "問二十を解いたら、買い物かごの応用問題に進みましょう。",
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

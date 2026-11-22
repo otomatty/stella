@@ -1,0 +1,590 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "はいといいえを値にして、条件の中で使える。",
+    "stuck": "はいといいえをプログラムの値として表せない。",
+    "points": ["true と false の 2 つだけをとる種類が boolean です。"],
+    "leaveOut": ["問15の解答コード"]
+  },
+  "art": {
+    "loyalty-card": {
+      "prompt": "One blank violet membership card with a blue border. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "empty-card-slot": {
+      "prompt": "An open empty card wallet. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "switch-pair": {
+      "prompt": "Two plain physical switches with opposite lever positions. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "会員",
+          "art": "loyalty-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "会員ではない",
+          "art": "empty-card-slot",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "二通りの値",
+          "art": "switch-pair",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "比べる数",
+          "art": "loyalty-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "比較の結果",
+          "art": "empty-card-slot",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "変数の値",
+          "art": "switch-pair",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "引数の型注釈",
+          "art": "loyalty-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "二通りの状態",
+          "art": "empty-card-slot",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "小計",
+          "art": "loyalty-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "会員かどうか",
+          "art": "empty-card-slot",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "送料",
+          "art": "switch-pair",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "member-card",
+      "beats": [
+        {
+          "say": "この動画では、はいかいいえを表す値を学びます。"
+        },
+        {
+          "say": "お店の会員かどうかは、はいかいいえのどちらかです。"
+        },
+        {
+          "say": "会員なら true、そうでなければ false で表します。",
+          "speech": "会員なら トゥルー、そうでなければ フォルスで表します。"
+        },
+        {
+          "say": "この2つだけをとる種類が、boolean です。",
+          "speech": "この二つだけをとる種類が、ブーリアン です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "会員かどうかを表すには？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "カードを持つ会員には、はいが当てはまります。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "true"
+          }
+        },
+        {
+          "say": "会員ではない人は、いいえです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "false"
+          }
+        },
+        {
+          "say": "この二通りで会員かどうかを表します。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "二通り"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "型注釈に boolean を書く",
+      "code": ["// 会員であることを変数に入れる", "const isMember: boolean = true;"],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "boolean は、二通りを表す型です。",
+          "part": {
+            "line": 1,
+            "text": "boolean"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "ブーリアン は、二通りを表す型です。",
+          "term": {
+            "text": "boolean",
+            "note": "はいかいいえの型",
+            "ruby": "ブーリアン"
+          },
+          "type": [0, 1]
+        },
+        {
+          "say": "会員なら true を入れます。",
+          "part": {
+            "line": 1,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "speech": "会員なら トゥルー を入れます。"
+        },
+        {
+          "say": "isMember は、会員かどうかを表す名前です。",
+          "part": {
+            "line": 1,
+            "text": "isMember"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "speech": "イズメンバー は、会員かどうかを表す名前です。"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 会員であることを変数に入れる",
+        "const isMember: boolean = true;",
+        "// 会員かどうかで処理を分ける",
+        "if (isMember) {",
+        "  // 会員であることを表示する",
+        "  console.log(\"会員\");",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "この値は、そのまま if の条件に使えます。",
+          "part": {
+            "line": 3,
+            "text": "isMember",
+            "note": "会員かどうか"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "条件"
+            }
+          },
+          "speech": "この値は、そのまま イフ の条件に使えます。"
+        },
+        {
+          "say": "会員なら、条件の結果は true です。",
+          "part": {
+            "line": 3,
+            "text": "isMember"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "true"
+            }
+          },
+          "speech": "会員なら、条件の結果は トゥルー です。"
+        },
+        {
+          "say": "中に進み、会員と表示します。",
+          "part": {
+            "line": 5,
+            "text": "\"会員\""
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "会員"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": ["// 会員であることを変数に入れる", "const isMember: boolean = true;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "boolean"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "isMember"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 比較した結果を変数に入れる", "const ok: boolean = 3 > 5;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "この比較の結果は、どちらの値でしょうか。",
+          "part": {
+            "line": 1,
+            "text": "3 > 5"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 比較した結果を変数に入れる", "const ok: boolean = 3 > 5;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは false です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "false"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは フォルス です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 比較した結果を変数に入れる", "const ok: boolean = 3 > 5;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "3 は 5 より大きくありません。",
+          "part": {
+            "line": 1,
+            "text": "3 > 5"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "false"
+            }
+          },
+          "speech": "三 は 五 より大きくありません。"
+        },
+        {
+          "say": "大小を比べた結果も、boolean の値です。",
+          "part": {
+            "line": 1,
+            "text": "boolean"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "二通り"
+            }
+          },
+          "speech": "大小を比べた結果も、ブーリアン の値です。"
+        },
+        {
+          "say": "その結果が変数に入ります。",
+          "part": {
+            "line": 1,
+            "text": "ok"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "引数の型注釈にも使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "会員かどうかや、予約が済んだかどうかを受け取る型です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問15で使う",
+      "code": [
+        "//     例: shippingFee(2000, false) → 500",
+        "export function shippingFee(subtotal: number, isMember: boolean): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問15では、会員かどうかを引数で受け取ります。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十五では、会員かどうかを引数で受け取ります。"
+        },
+        {
+          "say": "型注釈の boolean がその目印です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "isMember: boolean"
+          },
+          "speech": "型注釈の ブーリアン がその目印です。"
+        },
+        {
+          "say": "どちらの値のときに無料になるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

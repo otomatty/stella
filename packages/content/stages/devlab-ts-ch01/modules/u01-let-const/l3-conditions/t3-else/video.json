@@ -1,0 +1,683 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "条件を読む順番と、どの処理が実行されるかを説明できる。",
+    "stuck": "複数の条件に当てはまるとき、どこが動くか分かりにくい。",
+    "points": ["else と else if で、条件ごとに別の処理を選べます。"],
+    "leaveOut": ["問12の解答コード"]
+  },
+  "art": {
+    "weather-umbrella": {
+      "prompt": "One open violet umbrella with a few blue raindrops. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "weather-hat": {
+      "prompt": "One light blue sun hat with a violet ribbon. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "weather-hook": {
+      "prompt": "An empty wall hook beside a small cloudy window. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "雨の日",
+          "art": "weather-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "晴れの日",
+          "art": "weather-hat",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "その他",
+          "art": "weather-hook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "点数",
+          "art": "weather-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "上から比較",
+          "art": "weather-hat",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "表示",
+          "art": "weather-hook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "案内を選ぶ",
+          "art": "weather-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "優先する条件",
+          "art": "weather-hat",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "受け取る数",
+          "art": "weather-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "倍数の条件",
+          "art": "weather-hat",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "文字列",
+          "art": "weather-hook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "umbrella-choice",
+      "beats": [
+        {
+          "say": "この動画では、条件で処理を分ける書き方を学びます。"
+        },
+        {
+          "say": "雨なら、持ち物は傘です。"
+        },
+        {
+          "say": "晴れなら帽子、どちらでもなければ何も持ちません。"
+        },
+        {
+          "say": "else if と else で、ほかの場合を書き分けます。",
+          "speech": "エルスイフ と エルス で、ほかの場合を書き分けます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "どの持ち物を選ぶ？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "雨なら、傘を持って出かけます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "傘"
+          }
+        },
+        {
+          "say": "晴れなら、帽子の出番です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "帽子"
+          }
+        },
+        {
+          "say": "くもりの日は、何も持ちません。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "条件を上から並べる",
+      "code": [
+        "// 雨か確かめる",
+        "if (weather === \"雨\") {",
+        "  // 持ち物を傘にする",
+        "  item = \"傘\";",
+        "// 雨でなければ晴れか確かめる",
+        "} else if (weather === \"晴れ\") {",
+        "  // 持ち物を帽子にする",
+        "  item = \"帽子\";",
+        "// どちらでもない場合に進む",
+        "} else {",
+        "  // 持ち物をなしにする",
+        "  item = \"なし\";",
+        "}"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "天気と持ち物を表す変数を使う例です。",
+          "figure": {
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "先頭の if で、雨かどうかを確かめます。",
+          "part": {
+            "line": 1,
+            "text": "if"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "type": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+          "speech": "先頭のイフで、雨かどうかを確かめます。"
+        },
+        {
+          "say": "合わなければ、else if が次の条件です。",
+          "part": {
+            "line": 5,
+            "text": "else if"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "speech": "合わなければ、エルスイフ が次の条件です。",
+          "term": {
+            "text": "else if",
+            "ruby": "エルスイフ",
+            "note": "次の条件を調べる"
+          }
+        },
+        {
+          "say": "どれにも合わなければ、else に進みます。",
+          "part": {
+            "line": 9,
+            "text": "else"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "speech": "どれにも合わなければ、エルス に進みます。"
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 雨か確かめる",
+        "if (weather === \"雨\") {",
+        "  // 持ち物を傘にする",
+        "  item = \"傘\";",
+        "// 雨でなければ晴れか確かめる",
+        "} else if (weather === \"晴れ\") {",
+        "  // 持ち物を帽子にする",
+        "  item = \"帽子\";",
+        "// どちらでもない場合に進む",
+        "} else {",
+        "  // 持ち物をなしにする",
+        "  item = \"なし\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "晴れの日も、まず雨かを確かめます。",
+          "part": {
+            "line": 1,
+            "text": "\"雨\""
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "晴れ"
+            }
+          }
+        },
+        {
+          "say": "雨の条件には当てはまらない値です。",
+          "part": {
+            "line": 1,
+            "text": "==="
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "条件は偽"
+            }
+          }
+        },
+        {
+          "say": "次の条件が合うので、帽子を選びました。",
+          "part": {
+            "line": 7,
+            "text": "\"帽子\""
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "帽子"
+            }
+          }
+        },
+        {
+          "say": "条件が合ったので、else の中身には進みません。",
+          "part": {
+            "line": 9,
+            "text": "else"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "通らない"
+            }
+          },
+          "speech": "条件が合ったので、エルス の中身には進みません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 雨か確かめる",
+        "if (weather === \"雨\") {",
+        "  // 持ち物を傘にする",
+        "  item = \"傘\";",
+        "// 雨でなければ晴れか確かめる",
+        "} else if (weather === \"晴れ\") {",
+        "  // 持ち物を帽子にする",
+        "  item = \"帽子\";",
+        "// どちらでもない場合に進む",
+        "} else {",
+        "  // 持ち物をなしにする",
+        "  item = \"なし\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "if"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "weather"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 点数を用意する",
+        "const score = 70;",
+        "// 80点以上ならAを表示する",
+        "if (score >= 80) {",
+        "  // Aを表示する",
+        "  console.log(\"A\");",
+        "// 80点未満なら60点以上か確かめる",
+        "} else if (score >= 60) {",
+        "  // Bを表示する",
+        "  console.log(\"B\");",
+        "// 60点未満ならCを表示する",
+        "} else { console.log(\"C\"); }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "70 点なら、どの文字が出るでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "70"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card0": "70点"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          },
+          "speech": "七十 点なら、どの文字が出るでしょうか。"
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 点数を用意する",
+        "const score = 70;",
+        "// 80点以上ならAを表示する",
+        "if (score >= 80) {",
+        "  // Aを表示する",
+        "  console.log(\"A\");",
+        "// 80点未満なら60点以上か確かめる",
+        "} else if (score >= 60) {",
+        "  // Bを表示する",
+        "  console.log(\"B\");",
+        "// 60点未満ならCを表示する",
+        "} else { console.log(\"C\"); }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは B です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "B"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは ビー です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 点数を用意する",
+        "const score = 70;",
+        "// 80点以上ならAを表示する",
+        "if (score >= 80) {",
+        "  // Aを表示する",
+        "  console.log(\"A\");",
+        "// 80点未満なら60点以上か確かめる",
+        "} else if (score >= 60) {",
+        "  // Bを表示する",
+        "  console.log(\"B\");",
+        "// 60点未満ならCを表示する",
+        "} else { console.log(\"C\"); }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "70 点は 80 点以上ではありません。",
+          "part": {
+            "line": 3,
+            "text": ">= 80"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "false"
+            }
+          },
+          "speech": "七十 点は 八十 点以上ではありません。"
+        },
+        {
+          "say": "60 点以上には当てはまります。",
+          "part": {
+            "line": 7,
+            "text": ">= 60"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "true"
+            }
+          },
+          "speech": "六十 点以上には当てはまります。"
+        },
+        {
+          "say": "そこで B が選ばれました。",
+          "part": {
+            "line": 9,
+            "text": "\"B\""
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "B"
+            }
+          },
+          "speech": "そこで ビー が選ばれました。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "天気や営業時間に合わせて案内を選べます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "複数の条件に合うときは、上の条件が優先です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12で使う",
+      "code": [
+        "//     例: fizzBuzz(15) → \"FizzBuzz\"",
+        "export function fizzBuzz(n: number): string {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問12では、条件に合う文字列を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十二では、条件に合う文字列を返します。"
+        },
+        {
+          "say": "両方の倍数になる場合もある問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        },
+        {
+          "say": "どの条件から確かめるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

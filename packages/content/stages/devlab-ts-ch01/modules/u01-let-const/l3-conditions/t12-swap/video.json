@@ -1,0 +1,670 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "2つの値を入れ替えていく書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "先に値を入れ直して、後から使う値を消してしまう。",
+    "points": ["一時的な変数に退避すると、2 つの値を順に入れ替えられます。"],
+    "leaveOut": ["問18の解答コード"]
+  },
+  "art": {
+    "tile-board": {
+      "prompt": "A single flat blue rectangular wooden board viewed from above. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "tile-cut": {
+      "prompt": "A narrow violet rectangular strip beside two square blue tiles. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "tile-next": {
+      "prompt": "One violet square tile beside a short blue rectangular offcut. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "割られる数",
+          "art": "tile-board",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "控えた余り",
+          "art": "tile-cut",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "割る数",
+          "art": "tile-next",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "前の二つ",
+          "art": "tile-board",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "控えた余り",
+          "art": "tile-cut",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "入れ替え後",
+          "art": "tile-next",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "値を更新する",
+          "art": "tile-board",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "元の値を控える",
+          "art": "tile-cut",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "二つの整数",
+          "art": "tile-board",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "余り",
+          "art": "tile-cut",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "最大公約数",
+          "art": "tile-next",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "tile-squares",
+      "beats": [
+        {
+          "say": "この動画では、2つの値を入れ替えていく方法を学びます。",
+          "speech": "この動画では、二つの値を入れ替えていく方法を学びます。"
+        },
+        {
+          "say": "縦8、横20の長方形の板を、正方形で切り取りましょう。",
+          "speech": "縦八、横二十の長方形の板を、正方形で切り取りましょう。"
+        },
+        {
+          "say": "切り取ったあとの残りを、また正方形で切り取ります。"
+        },
+        {
+          "say": "残りが無くなったときの正方形の一辺が、答えです。"
+        },
+        {
+          "say": "2つの値を順に入れ替えると、この手順をコードにできます。",
+          "speech": "二つの値を順に入れ替えると、この手順をコードにできます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "板の残りをどう扱う？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "長方形の短い辺を、一辺にした正方形を取ります。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "20"
+          }
+        },
+        {
+          "say": "取り切れない部分は、余りとして控えるところです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "4"
+          }
+        },
+        {
+          "say": "残った板に、同じ手順を使います。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "余りを先に控える",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 20;",
+        "// 割る数を入れる",
+        "let b = 8;",
+        "// 入れ直す前に余りを控える",
+        "const r = a % b;",
+        "// 前の割る数を次の割られる数にする",
+        "a = b;",
+        "// 控えた余りを次の割る数にする",
+        "b = r;"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "まず、入れ直す前の値で余りを求めます。",
+          "part": {
+            "line": 5,
+            "text": "a % b"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "type": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        },
+        {
+          "say": "余りを控える変数が r です。",
+          "part": {
+            "line": 5,
+            "text": "r"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "speech": "余りを控える変数がアール です。"
+        },
+        {
+          "say": "前の割る数を、次の割られる数にします。",
+          "part": {
+            "line": 7,
+            "text": "a = b"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        },
+        {
+          "say": "最後に入れるのが、控えておいた余りです。",
+          "part": {
+            "line": 9,
+            "text": "b = r"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 20;",
+        "// 割る数を入れる",
+        "let b = 8;",
+        "// 入れ直す前に余りを控える",
+        "const r = a % b;",
+        "// 前の割る数を次の割られる数にする",
+        "a = b;",
+        "// 控えた余りを次の割る数にする",
+        "b = r;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "20 を 8 で割った余りは 4 です。",
+          "part": {
+            "line": 5,
+            "text": "a % b"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "4"
+            }
+          },
+          "speech": "二十 を 八 で割った余りは 四 です。"
+        },
+        {
+          "say": "先に、8 を割られる数に移します。",
+          "part": {
+            "line": 7,
+            "text": "a = b"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "8"
+            }
+          },
+          "speech": "先に、八 を割られる数に移します。"
+        },
+        {
+          "say": "割る数には、控えておいた 4 が入りました。",
+          "part": {
+            "line": 9,
+            "text": "b = r"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "4"
+            }
+          },
+          "speech": "割る数には、控えておいた 四 が入りました。"
+        },
+        {
+          "say": "先に割る数を変えると、元の 8 を移せません。",
+          "part": {
+            "line": 9,
+            "text": "b = r"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "順番に注意"
+            }
+          },
+          "speech": "先に割る数を変えると、元の 八 を移せません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 20;",
+        "// 割る数を入れる",
+        "let b = 8;",
+        "// 入れ直す前に余りを控える",
+        "const r = a % b;",
+        "// 前の割る数を次の割られる数にする",
+        "a = b;",
+        "// 控えた余りを次の割る数にする",
+        "b = r;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "const"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "r"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 10;",
+        "// 割る数を入れる",
+        "let b = 4;",
+        "// 余りを控える",
+        "const r = a % b;",
+        "// 割られる数を入れ直す",
+        "a = b;",
+        "// 割る数を入れ直す",
+        "b = r;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "一回入れ直すと、どの二つの数になるでしょうか。",
+          "part": {
+            "line": 5,
+            "text": "a % b"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 10;",
+        "// 割る数を入れる",
+        "let b = 4;",
+        "// 余りを控える",
+        "const r = a % b;",
+        "// 割られる数を入れ直す",
+        "a = b;",
+        "// 割る数を入れ直す",
+        "b = r;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "順に、4 と 2 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "4 と 2"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "順に、四 と 二 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 割られる数を入れる",
+        "let a = 10;",
+        "// 割る数を入れる",
+        "let b = 4;",
+        "// 余りを控える",
+        "const r = a % b;",
+        "// 割られる数を入れ直す",
+        "a = b;",
+        "// 割る数を入れ直す",
+        "b = r;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "10 を 4 で割ると、余りは 2 になります。",
+          "part": {
+            "line": 5,
+            "text": "a % b"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "2"
+            }
+          },
+          "speech": "十 を 四 で割ると、余りは 二 になります。"
+        },
+        {
+          "say": "先に移すのは、元の割る数の 4 です。",
+          "part": {
+            "line": 7,
+            "text": "a = b"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "4"
+            }
+          },
+          "speech": "先に移すのは、元の割る数の 四 です。"
+        },
+        {
+          "say": "最後に余りの 2 を入れます。",
+          "part": {
+            "line": 9,
+            "text": "b = r"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "2"
+            }
+          },
+          "speech": "最後に余りの 二 を入れます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "二つの値を同じ手順で更新するときに使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "入れ直す前に、後で必要になる値を控えるのが大切です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問18で使う",
+      "code": [
+        "//     例: gcd(12, 18) → 6",
+        "export function gcd(a: number, b: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問18では、二つの数の最大公約数を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十八では、二つの数の最大公約数を返します。"
+        },
+        {
+          "say": "入れ替えを while で続ける問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          },
+          "speech": "入れ替えを ホワイル で続ける問題です。"
+        },
+        {
+          "say": "余りがいくつになったら止めるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

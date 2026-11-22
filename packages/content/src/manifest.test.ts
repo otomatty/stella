@@ -67,11 +67,20 @@ describe("buildContentManifest", () => {
       "応用 letとconst（応用問題）",
     );
     expect(task?.problemSteps).toHaveLength(21);
-    expect(task?.problemSteps?.slice(8, 12).map((step) => step.problemId)).toEqual([
+    expect(task?.problemSteps?.slice(8).map((step) => step.problemId)).toEqual([
       "q01-09-count-char",
       "q01-10-reverse-text",
-      "q01-16-count-vowels",
       "q01-11-digit-sum",
+      "q01-12-fizz-buzz",
+      "q01-13-compound",
+      "q01-14-max-of3",
+      "q01-15-shipping-fee",
+      "q01-16-count-vowels",
+      "q01-17-collatz-steps",
+      "q01-18-gcd",
+      "q01-19-fibonacci",
+      "q01-20-seconds-to-clock",
+      "q01-let-const",
     ]);
   });
 

@@ -65,57 +65,57 @@
     {
       "id": "q01-11-digit-sum",
       "title": "0以上の整数の、各桁の数字の合計を返す",
-      "after": "1-3-1"
+      "after": "1-3-2"
     },
     {
       "id": "q01-12-fizz-buzz",
       "title": "3の倍数なら \"Fizz\"、5の倍数なら \"Buzz\"、両方なら \"FizzBuzz\"、どちらでもなければ数字の文字列を返す",
-      "after": "1-3-2"
+      "after": "1-3-5"
     },
     {
       "id": "q01-13-compound",
       "title": "元金を年利 rate パーセントで years 年預けたときの金額を返す",
-      "after": "1-3-2"
+      "after": "1-3-6"
     },
     {
       "id": "q01-14-max-of3",
       "title": "3つの数の最大値を返す",
-      "after": "1-3-2"
+      "after": "1-3-7"
     },
     {
       "id": "q01-15-shipping-fee",
       "title": "送料を返す",
-      "after": "1-3-2"
+      "after": "1-3-9"
     },
     {
       "id": "q01-16-count-vowels",
       "title": "英字の文字列に含まれる母音の数を返す",
-      "after": "1-2-10"
+      "after": "1-3-10"
     },
     {
       "id": "q01-17-collatz-steps",
       "title": "n が1になるまでの手順の数を返す",
-      "after": "1-3-1"
+      "after": "1-3-11"
     },
     {
       "id": "q01-18-gcd",
       "title": "2つの正の整数の最大公約数を返す",
-      "after": "1-3-1"
+      "after": "1-3-12"
     },
     {
       "id": "q01-19-fibonacci",
       "title": "フィボナッチ数列の n 番目を返す",
-      "after": "1-3-3"
+      "after": "1-3-13"
     },
     {
       "id": "q01-20-seconds-to-clock",
       "title": "秒を「時:分:秒」の形にする",
-      "after": "1-3-3"
+      "after": "1-3-14"
     },
     {
       "id": "q01-let-const",
       "title": "letとconst（応用問題）",
-      "after": "1-3-3"
+      "after": "1-3-14"
     }
   ],
   "submit": {

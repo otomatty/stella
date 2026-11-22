@@ -3,8 +3,8 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-type-annotation]
 id: 2-1-2
 title: 文字列の道具
 takeaway: "文字列の長さや一部を調べ、加工や条件の組合せに使えます。"
-introduces: ["length", "repeat", "toUpperCase", "toLocaleString", "&&"]
-requires: ["const", "文字列", "string", "number", "boolean", "メソッド", "引数", "戻り値", "型注釈"]
+introduces: ["length", "repeat", "toUpperCase", "toLocaleString"]
+requires: ["const", "文字列", "string", "number", "boolean", "メソッド", "引数", "戻り値", "型注釈", "&&"]
 header: "開発ラボG 事前課題 第1部"
 ---
 

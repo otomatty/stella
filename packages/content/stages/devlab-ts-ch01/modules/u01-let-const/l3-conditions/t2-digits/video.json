@@ -1,0 +1,607 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "余りと切り捨てを使って、一の位と残りの数を求められる。",
+    "stuck": "余りと割り算の結果を取り違えやすい。",
+    "points": ["10 で割った余りが 1 の位、10 で割って切り捨てると残りの桁になります。"],
+    "leaveOut": ["問11の解答コード"]
+  },
+  "art": {
+    "digit-row": {
+      "prompt": "Three plain wooden cubes in a horizontal row. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "digit-right": {
+      "prompt": "One violet wooden cube lifted off a little tray. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "digit-left": {
+      "prompt": "Two blue wooden cubes side by side. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "元の数",
+          "art": "digit-row",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "右端の数字",
+          "art": "digit-right",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "残りの数",
+          "art": "digit-left",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "元の数",
+          "art": "digit-row",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "捨てる桁",
+          "art": "digit-right",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "残り",
+          "art": "digit-left",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "整理番号",
+          "art": "digit-row",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "残りの桁",
+          "art": "digit-right",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "残りの数",
+          "art": "digit-row",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "各桁の数字",
+          "art": "digit-right",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "合計",
+          "art": "digit-left",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "digit-blocks",
+      "beats": [
+        {
+          "say": "この動画では、数の桁を1つずつ取り出す方法を学びます。",
+          "speech": "この動画では、数の桁を一つずつ取り出す方法を学びます。"
+        },
+        {
+          "say": "123という数を、数字のブロックで並べましょう。",
+          "speech": "百二十三という数を、数字のブロックで並べましょう。"
+        },
+        {
+          "say": "右端から1つずつ外すと、3、2、1の順に取れました。",
+          "speech": "右端から一つずつ外すと、さん、に、いちの順に取れました。"
+        },
+        {
+          "say": "余りと切り捨てで、この外し方をコードにできます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "右端を外したら？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "456 の右端だけを取り出します。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "456"
+          },
+          "speech": "四百五十六 の右端だけを取り出します。"
+        },
+        {
+          "say": "外れた数字は、1の位の 6 です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "6"
+          },
+          "speech": "外れた数字は、一の位の 六 です。"
+        },
+        {
+          "say": "残りは 45 になりました。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "45"
+          },
+          "speech": "残りは 四十五 になりました。"
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "余りと切り捨て",
+      "code": [
+        "// 取り出す前の数を入れる",
+        "let n = 456;",
+        "// 1の位を余りで取り出す",
+        "const last = n % 10;",
+        "// 右端を外した数を入れ直す",
+        "n = Math.floor(n / 10);"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "10 で割った余りを取り出します。",
+          "part": {
+            "line": 3,
+            "text": "% 10",
+            "note": "余り"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "十 で割った余りを取り出します。",
+          "type": [0, 1, 2, 3, 4, 5]
+        },
+        {
+          "say": "残りの桁を求めるには、切り捨てが必要です。",
+          "part": {
+            "line": 5,
+            "text": "Math.floor",
+            "note": "切り捨て"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 取り出す前の数を入れる",
+        "let n = 456;",
+        "// 1の位を余りで取り出す",
+        "const last = n % 10;",
+        "// 右端を外した数を入れ直す",
+        "n = Math.floor(n / 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "last は、最後という意味の英語です。",
+          "part": {
+            "line": 3,
+            "text": "last"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "右端"
+            }
+          },
+          "speech": "ラスト は、最後という意味の英語です。"
+        },
+        {
+          "say": "456 を 10 で割った余りは 6 になります。",
+          "part": {
+            "line": 3,
+            "text": "% 10"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "6"
+            }
+          },
+          "speech": "四百五十六 を 十 で割った余りは 六 になります。"
+        },
+        {
+          "say": "割り算の結果は 45.6 でした。",
+          "part": {
+            "line": 5,
+            "text": "Math.floor"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "45.6"
+            }
+          },
+          "speech": "割り算の結果は 四十五点六 でした。"
+        },
+        {
+          "say": "小数点以下を捨てると、残りは 45 です。",
+          "part": {
+            "line": 5,
+            "text": "Math.floor"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "45"
+            }
+          },
+          "speech": "小数点以下を捨てると、残りは 四十五 です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 取り出す前の数を入れる",
+        "let n = 456;",
+        "// 1の位を余りで取り出す",
+        "const last = n % 10;",
+        "// 右端を外した数を入れ直す",
+        "n = Math.floor(n / 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "const"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "last"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// 右端の数字を外した数を入れる", "const rest = Math.floor(789 / 10);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "この計算で残る数はいくつでしょうか。",
+          "part": {
+            "line": 1,
+            "text": "789"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 右端の数字を外した数を入れる", "const rest = Math.floor(789 / 10);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは 78 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "78"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは 七十八 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// 右端の数字を外した数を入れる", "const rest = Math.floor(789 / 10);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "割り算の結果は 78.9 になります。",
+          "part": {
+            "line": 1,
+            "text": "789"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "78.9"
+            }
+          },
+          "speech": "割り算の結果は 七十八点九 になります。"
+        },
+        {
+          "say": "切り捨てるのは、右端から来た 0.9 です。",
+          "part": {
+            "line": 1,
+            "text": "Math.floor"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "捨てる"
+            }
+          },
+          "speech": "切り捨てるのは、右端から来た ゼロ点九 です。"
+        },
+        {
+          "say": "残りは 78 になりました。",
+          "part": {
+            "line": 1,
+            "text": "rest"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "78"
+            }
+          },
+          "speech": "残りは 七十八 になりました。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "整理番号の末尾を確かめるときに使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "残りの数にも同じ操作ができるのが特徴です。",
+          "show": ["card1"],
+          "pulse": ["card1"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問11で使う",
+      "code": [
+        "//     例: digitSum(1234) → 10",
+        "export function digitSum(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問11では、各桁の数字の合計を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十一では、各桁の数字の合計を返します。"
+        },
+        {
+          "say": "右端を足して外す手順を、while でくり返す問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          },
+          "speech": "右端を足して外す手順を、ホワイル でくり返す問題です。"
+        },
+        {
+          "say": "次の回でどの数を使うか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

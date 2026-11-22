@@ -1,0 +1,708 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "等しくない間くり返す書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "止めたい値と、続ける条件を取り違えやすい。",
+    "points": [
+      "!== は等しくないとき true です。while と組み合わせて、目標になるまでくり返します。"
+    ],
+    "leaveOut": ["問17の解答コード"]
+  },
+  "art": {
+    "lift-current": {
+      "prompt": "A simple elevator car beside a small building cross section. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "lift-moving": {
+      "prompt": "A closed elevator car between two floors of a building section. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "lift-arrival": {
+      "prompt": "Open elevator doors at the ground level of a building. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "今の階",
+          "art": "lift-current",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "移動中",
+          "art": "lift-moving",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "着いた階",
+          "art": "lift-arrival",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "最初の数",
+          "art": "lift-current",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "止まる条件",
+          "art": "lift-moving",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "手順の数",
+          "art": "lift-arrival",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "目標に着くまで",
+          "art": "lift-current",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "偶数かどうか",
+          "art": "lift-moving",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "最初の数",
+          "art": "lift-current",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "続ける条件",
+          "art": "lift-moving",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "手順の数",
+          "art": "lift-arrival",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "elevator",
+      "beats": [
+        {
+          "say": "この動画では、目標になるまでくり返す書き方を学びます。"
+        },
+        {
+          "say": "エレベーターは、1階に着くまで下りていくのです。",
+          "speech": "エレベーターは、一階に着くまで下りていくのです。"
+        },
+        {
+          "say": "今の階が1階でない間は、動き続けます。",
+          "speech": "今の階が一階でない間は、動き続けます。"
+        },
+        {
+          "say": "等しくないことを表す記号が、!== です。",
+          "speech": "等しくないことを表す記号が、ノットイコール です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "どの階で止まる？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "今いる階を、先に確かめます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "5階"
+          }
+        },
+        {
+          "say": "目標に着くまでは移動中です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "2階"
+          }
+        },
+        {
+          "say": "目標と同じ階になったら動きません。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "1階"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "等しくない間続ける",
+      "code": [
+        "// 出発する階を入れる",
+        "let floor = 5;",
+        "// 1階と等しくない間くり返す",
+        "while (floor !== 1) {",
+        "  // 今の階を1つ下げる",
+        "  floor--;",
+        "}"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "等しくないことを表す記号が、!== です。",
+          "part": {
+            "line": 3,
+            "text": "!=="
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "speech": "等しくないことを表す記号が、ノットイコール です。",
+          "term": {
+            "text": "!==",
+            "note": "等しくない",
+            "ruby": "ノットイコール"
+          },
+          "type": [0, 1, 2, 3, 4, 5, 6]
+        },
+        {
+          "say": "今の階と目標の階を、毎回比べます。",
+          "part": {
+            "line": 3,
+            "text": "floor !== 1"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "中に入ったら、次の比較に向けて今の階を変える形です。",
+          "part": {
+            "line": 5,
+            "text": "floor--"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 出発する階を入れる",
+        "let floor = 5;",
+        "// 1階と等しくない間くり返す",
+        "while (floor !== 1) {",
+        "  // 今の階を1つ下げる",
+        "  floor--;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初にいるのは 5階です。",
+          "part": {
+            "line": 1,
+            "text": "5"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "5階"
+            }
+          },
+          "speech": "最初にいるのは 五階です。"
+        },
+        {
+          "say": "目標の階と異なる間は、下りていきます。",
+          "part": {
+            "line": 3,
+            "text": "!=="
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "移動中"
+            }
+          }
+        },
+        {
+          "say": "1階に着くと、次の移動はありません。",
+          "part": {
+            "line": 5,
+            "text": "floor--"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "1階"
+            }
+          },
+          "speech": "一階に着くと、次の移動はありません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 出発する階を入れる",
+        "let floor = 5;",
+        "// 1階と等しくない間くり返す",
+        "while (floor !== 1) {",
+        "  // 今の階を1つ下げる",
+        "  floor--;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "while"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "floor"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 最初の数を入れる",
+        "let n = 4;",
+        "// くり返した回数を0から数える",
+        "let steps = 0;",
+        "// 今の数が1と等しくない間くり返す",
+        "while (n !== 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "  // 数を変えた回数を1増やす",
+        "  steps++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "くり返しを終えるまでに、何回増えるでしょうか。",
+          "part": {
+            "line": 9,
+            "text": "steps"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 最初の数を入れる",
+        "let n = 4;",
+        "// くり返した回数を0から数える",
+        "let steps = 0;",
+        "// 今の数が1と等しくない間くり返す",
+        "while (n !== 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "  // 数を変えた回数を1増やす",
+        "  steps++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは 2 回です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "2回"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは 二 回です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 最初の数を入れる",
+        "let n = 4;",
+        "// くり返した回数を0から数える",
+        "let steps = 0;",
+        "// 今の数が1と等しくない間くり返す",
+        "while (n !== 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "  // 数を変えた回数を1増やす",
+        "  steps++;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "4 が 2 になり、一回増えます。",
+          "part": {
+            "line": 7,
+            "text": "n ="
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "1回"
+            }
+          },
+          "speech": "四 が 二 になり、一回増えます。"
+        },
+        {
+          "say": "2 が 1 になり、もう一回増えました。",
+          "part": {
+            "line": 9,
+            "text": "steps++"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "2回"
+            }
+          },
+          "speech": "二 が 一 になり、もう一回増えました。"
+        },
+        {
+          "say": "ここで目標に着くので、回数はもう増えません。",
+          "part": {
+            "line": 5,
+            "text": "!=="
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "終わり"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "even",
+      "kind": "code",
+      "role": "note",
+      "title": "偶数かどうかを調べる",
+      "code": [
+        "// 調べる数を用意する",
+        "const numberToCheck = 14;",
+        "// 2で割った余りが0か確かめる",
+        "const even = numberToCheck % 2 === 0;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "今の数で、別の条件を確かめることもできます。",
+          "part": {
+            "line": 1,
+            "text": "14"
+          },
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card0": "14"
+            },
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "偶数かどうかを見るときは、2 で割った余りです。",
+          "part": {
+            "line": 3,
+            "text": "% 2"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "余り 0"
+            }
+          },
+          "speech": "偶数かどうかを見るときは、二で割った余りです。"
+        },
+        {
+          "say": "余りが 0 なら、偶数と判断できます。",
+          "speech": "余りがゼロなら、偶数と判断できます。",
+          "part": {
+            "line": 3,
+            "text": "=== 0"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "偶数"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "目標の段階まで進む処理に使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "途中の処理を、偶数か奇数かで分けることも可能です。",
+          "show": ["card1"],
+          "pulse": ["card1"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問17で使う",
+      "code": [
+        "//     例: collatzSteps(6) → 8",
+        "export function collatzSteps(n: number): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問17では、n が 1 になるまでの手順の数を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十七では、n が 一 になるまでの手順の数を返します。"
+        },
+        {
+          "say": "途中で、今の数が偶数かどうかを確かめる問題です。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        },
+        {
+          "say": "余りを使うと、偶数と奇数を分けられます。",
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "偶数なら余り0"
+            }
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}

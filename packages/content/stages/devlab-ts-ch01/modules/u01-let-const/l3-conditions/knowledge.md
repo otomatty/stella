@@ -16,7 +16,6 @@ let rest = 3;
 while (rest > 1) {
   // rest を 1 減らす
   rest--;
-  // くり返す中身はここまで
 }
 // 残りを表示する
 console.log(rest);
@@ -43,7 +42,6 @@ function addStock(stock: number): number {
   stock = stock + 1;
   // stock を返す
   return stock;
-  // 関数の中身はここまで
 }
 ```
 
@@ -64,8 +62,13 @@ function addStock(stock: number): number {
 // 関数 reservationLabel を作り、会員か招待客かを受け取る
 function reservationLabel(member: boolean, guest: boolean): string {
   // どちらかが true なら予約可、そうでなければ受付番号を返す
-  return member || guest ? "予約可" : String(42);
-  // 関数の中身はここまで
+  if (member || guest) {
+    // 予約可を返す
+    return "予約可";
+  } else {
+    // 受付番号を文字列にして返す
+    return String(42);
+  }
 }
 ```
 
@@ -77,7 +80,7 @@ function reservationLabel(member: boolean, guest: boolean): string {
 <details>
 <summary>解答</summary>
 
-**A, C** — || はどちらかが true なら true です。両方 false のときはコロンの右を選び、String で文字列に変えます。
+**A, C** — || はどちらかが true なら true です。両方 false のときはelse の中に進み、String で文字列に変えます。
 
 </details>
 
@@ -108,12 +111,10 @@ console.log(score, rating);
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
 ```ts
-// 関数 orderCode を作り、n を文字列にして 0 で先頭を埋める
-const orderCode = (n: number) => String(n).padStart(4, "0");
 // 残数 remaining を作り、20 から 3 を引いた数を入れる
 const remaining = 20 - 3;
-// 残数を注文番号の形にして表示する
-console.log(orderCode(remaining));
+// 残数を文字列にし、前を 0 で埋めて表示する
+console.log(String(remaining).padStart(4, "0"));
 ```
 
 - A. `"0017"`
@@ -123,7 +124,7 @@ console.log(orderCode(remaining));
 <details>
 <summary>解答</summary>
 
-**A** — 先に引き算をして 17 を作ります。それを関数に渡し、文字列の先頭を 0 で埋め、全体を 4 文字にします。
+**A** — 先に引き算をして 17 を作ります。その数を文字列に変え、先頭を 0 で埋めて全体を 4 文字にします。
 
 </details>
 

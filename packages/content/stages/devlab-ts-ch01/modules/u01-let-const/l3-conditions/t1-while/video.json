@@ -1,345 +1,665 @@
 {
-  "schema": 1,
+  "schema": 2,
   "brief": {
-    "goal": "while の条件と値の更新を追い、引数を写す理由を説明できる。",
-    "stuck": "回数を先に決められず、引数を直接変えたり更新を忘れたりする。",
-    "points": [
-      "引数は let の変数に写してから入れ直す。",
-      "while は条件を先に確かめ、より大きい間だけくり返す。",
-      "!== は等しくないかを比べる。"
-    ],
-    "leaveOut": [
-      "条件演算子と文字列への変換は別の動画で扱う",
-      "break と continue",
-      "問11・問17・問18の答えのコード"
-    ]
+    "goal": "条件が続く間くり返す書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "どこに条件と値の更新を書くか分からない。",
+    "points": ["while は、条件が true の間だけくり返します。"],
+    "leaveOut": ["問11の解答コード"]
+  },
+  "art": {
+    "glass-full": {
+      "prompt": "A clear glass full of water. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "glass-low": {
+      "prompt": "A clear glass with just a little water. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "glass-empty": {
+      "prompt": "An empty clear drinking glass. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "飲む前",
+          "art": "glass-full",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "残った水",
+          "art": "glass-low",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "飲み終わり",
+          "art": "glass-empty",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "初めの量",
+          "art": "glass-full",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "くり返す条件",
+          "art": "glass-low",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "残り",
+          "art": "glass-empty",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "残りで決める",
+          "art": "glass-full",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "回数で決める",
+          "art": "glass-low",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "残りの数",
+          "art": "glass-full",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "各桁の数字",
+          "art": "glass-low",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "合計",
+          "art": "glass-empty",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
   },
   "scenes": [
     {
-      "id": "hook",
-      "kind": "code",
-      "role": "hook",
-      "title": "在庫が残る間だけ",
-      "code": ["// 今回届いた在庫の数", "const quantity = 2;"],
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "drink-water",
       "beats": [
         {
-          "say": "届いた在庫を、一つずつ発送します。",
-          "type": [0, 1]
+          "say": "この動画では、条件が続く間くり返す書き方を学びます。"
         },
         {
-          "say": "在庫の数は、その日によって変わります。",
-          "part": { "line": 1, "text": "2" }
+          "say": "コップの水を、ひと口ずつ飲むとしましょう。"
         },
         {
-          "say": "何回くり返すか、どう決めればよいでしょうか。",
-          "focus": [1]
+          "say": "水が残っている間は、飲むのを続けます。"
+        },
+        {
+          "say": "条件が合う間くり返すのが、while です。",
+          "speech": "条件が合う間くり返すのが、ホワイル です。",
+          "pause": 1
         }
       ]
     },
     {
-      "id": "copy",
-      "kind": "code",
-      "role": "point",
-      "title": "引数を let に写す",
-      "code": [
-        "// 関数 ship を作り、在庫 quantity を受け取る",
-        "function ship(quantity: number): number {",
-        "  // quantity を直接減らすと検査でエラー",
-        "  quantity--;",
-        "  // 残り rest を入れ直せる変数として作り、quantity を写す",
-        "  let rest = quantity;",
-        "  // rest を 1 減らす",
-        "  rest--;",
-        "  // rest を返す",
-        "  return rest;",
-        "}"
-      ],
+      "id": "example",
+      "role": "example",
+      "title": "水を飲み終わるのはいつ？",
+      "board": "example",
       "beats": [
         {
-          "say": "受け取った引数を、直接減らしてしまいました。",
-          "type": [0, 1, 2, 3],
-          "set": {
-            "quantity": "3"
+          "say": "水が残っているかを先に確かめます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "300 mL"
           }
         },
         {
-          "say": "引数への再代入は、課題の検査でエラーです。",
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "この行を消し、let の別の変数に写します。",
-          "speech": "この行を消し、レットの別の変数に写します。",
-          "clear": [2, 3],
-          "type": [4, 5]
-        },
-        {
-          "say": "写した変数にも、同じ三が入ります。",
-          "focus": [5],
-          "set": {
-            "rest": "3"
+          "say": "水があれば、次のひと口を飲むところです。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "200 mL"
           }
         },
         {
-          "say": "発送したら、写したほうを一つ減らします。",
-          "type": [6, 7],
-          "calc": {
-            "on": "rest",
-            "expr": "3 - 1",
-            "result": "2"
-          }
-        },
-        {
-          "say": "元の引数は三で、写した変数だけが二になります。",
-          "type": [8, 9, 10],
-          "set": {
-            "quantity": "3",
-            "rest": "2"
+          "say": "なくなったら、次のひと口は飲みません。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "0 mL"
           }
         }
-      ],
-      "panel": {
-        "kind": "values",
-        "items": ["quantity", "rest"]
-      },
-      "point": 1
+      ]
     },
     {
-      "id": "loop",
+      "id": "syntax",
       "kind": "code",
-      "role": "point",
-      "title": "while は条件を先に確かめる",
+      "role": "syntax",
+      "title": "条件と更新を書く",
       "code": [
-        "// 残り rest を入れ直せる変数として作り、2 を入れる",
-        "let rest = 2;",
-        "// rest が 0 より大きい間くり返す",
+        "// 残りの水の量を入れる",
+        "let rest = 300;",
+        "// 水が残る間くり返す",
         "while (rest > 0) {",
-        "  // rest を 1 減らす",
-        "  rest--;",
+        "  // ひと口分の水の量を引く",
+        "  rest = rest - 100;",
         "}"
-      ],
-      "beats": [
-        {
-          "say": "while は、条件が成り立つ間くり返します。",
-          "speech": "ワイルは、条件が成り立つ間くり返します。",
-          "type": [0, 1],
-          "set": {
-            "rest": "2"
-          }
-        },
-        {
-          "say": "大なり記号は、より大きいかを比べます。",
-          "type": [2, 3],
-          "plot": {
-            "at": 2,
-            "label": "2 > 0 は true"
-          }
-        },
-        {
-          "say": "条件を先に確かめ、中身を一回進めます。",
-          "type": [4, 5, 6],
-          "calc": {
-            "on": "rest",
-            "expr": "2 - 1",
-            "result": "1"
-          }
-        },
-        {
-          "say": "一もゼロより大きいので、もう一回進めます。",
-          "focus": [3],
-          "plot": {
-            "at": 1,
-            "label": "1 > 0 は true"
-          }
-        },
-        {
-          "say": "残りがゼロになると、条件は成り立ちません。",
-          "calc": {
-            "on": "rest",
-            "expr": "1 - 1",
-            "result": "0"
-          },
-          "plot": {
-            "at": 0,
-            "label": "0 > 0 は false"
-          }
-        },
-        {
-          "say": "最初からゼロなら、中身は一度も動きません。",
-          "tick": [
-            {
-              "at": 0,
-              "kind": "cross"
-            }
-          ],
-          "focus": [3]
-        }
       ],
       "panel": {
-        "kind": "numberLine",
-        "from": 0,
-        "to": 3,
-        "items": ["rest"]
+        "kind": "figure",
+        "board": "example"
       },
-      "point": 2
-    },
-    {
-      "id": "mistake",
-      "kind": "code",
-      "role": "point",
-      "title": "更新を忘れない",
-      "code": [
-        "// 残り rest を入れ直せる変数として作り、2 を入れる",
-        "let rest = 2;",
-        "// rest が 0 より大きい間くり返す",
-        "while (rest > 0) {",
-        "  // 残りを表示するだけでは減らない",
-        "  console.log(rest);",
-        "}"
-      ],
       "beats": [
         {
-          "say": "表示するだけでは、残りは減りません。",
-          "type": [0, 1, 2, 3, 4, 5, 6],
-          "set": {
-            "rest": "2"
-          }
-        },
-        {
-          "say": "値を変え忘れると、いつまでも終わりません。",
-          "mark": [
-            {
-              "line": 5,
-              "kind": "cross"
-            }
-          ]
-        }
-      ],
-      "panel": {
-        "kind": "values",
-        "items": ["rest"]
-      },
-      "point": 2
-    },
-    {
-      "id": "different",
-      "kind": "code",
-      "role": "point",
-      "title": "等しくないかを比べる",
-      "code": [
-        "// 関数 pendingLabel を作り、発送状態 status を受け取る",
-        "function pendingLabel(status: string): string {",
-        "  // もし status が完了と等しくないなら",
-        "  if (status !== \"完了\") {",
-        "    // 作業ありを返す",
-        "    return \"作業あり\";",
-        "  }",
-        "  // 作業なしを返す",
-        "  return \"作業なし\";",
-        "}"
-      ],
-      "beats": [
-        {
-          "say": "等しくないかを比べる印が、こちらです。",
-          "type": [0, 1, 2, 3],
-          "set": {
-            "status": "\"発送待ち\""
-          }
-        },
-        {
-          "say": "違う値なので、条件は成り立ちます。",
+          "say": "while の後ろのかっこに条件を書きます。",
           "part": {
             "line": 3,
-            "text": "!=="
+            "text": "while"
           },
-          "set": {
-            "比較の結果": "true"
+          "figure": {
+            "pulse": ["card0"]
           },
-          "type": [4, 5, 6]
+          "speech": "ホワイル の後ろのかっこに条件を書きます。",
+          "term": {
+            "text": "while",
+            "note": "条件が合う間くり返す",
+            "ruby": "ホワイル"
+          },
+          "type": [0, 1, 2, 3, 4, 5, 6]
         },
         {
-          "say": "同じ値のときは、条件は成り立ちません。",
-          "focus": [3],
-          "type": [7, 8, 9],
-          "set": {
-            "status": "\"完了\"",
-            "比較の結果": "false"
+          "say": "rest が 0 より大きい間だけ続く形です。",
+          "part": {
+            "line": 3,
+            "text": "rest > 0"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "speech": "レスト が ゼロ より大きい間だけ続く形です。"
+        },
+        {
+          "say": "より大きいかは、この記号で比べます。",
+          "part": {
+            "line": 3,
+            "text": ">",
+            "note": "より大きい"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "ここで使う引き算の記号は、マイナスです。",
+          "part": {
+            "line": 5,
+            "text": "-"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        },
+        {
+          "say": "引いたあとの量を、同じ変数に入れ直します。",
+          "part": {
+            "line": 5,
+            "text": "rest ="
+          },
+          "figure": {
+            "pulse": ["card0"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": [
+        "// 残りの水の量を入れる",
+        "let rest = 300;",
+        "// 水が残る間くり返す",
+        "while (rest > 0) {",
+        "  // ひと口分の水の量を引く",
+        "  rest = rest - 100;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "最初の残りは 300 です。",
+          "part": {
+            "line": 1,
+            "text": "300"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "300 mL"
+            }
+          },
+          "speech": "最初の残りは 三百 です。"
+        },
+        {
+          "say": "ひと口飲むと、残りが 200 になります。",
+          "part": {
+            "line": 5,
+            "text": "rest - 100"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "200 mL"
+            }
+          },
+          "speech": "ひと口飲むと、残りが 二百 になります。"
+        },
+        {
+          "say": "もうひと口で、残りは 100 になりました。",
+          "part": {
+            "line": 5,
+            "text": "rest ="
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "100 mL"
+            }
+          },
+          "speech": "もうひと口で、残りは 百 になりました。"
+        },
+        {
+          "say": "残りが 0 になると、次は中に入りません。",
+          "part": {
+            "line": 3,
+            "text": "rest > 0"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "0 mL"
+            }
+          },
+          "speech": "残りが ゼロ になると、次は中に入りません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 残りの水の量を入れる",
+        "let rest = 300;",
+        "// 水が残る間くり返す",
+        "while (rest > 0) {",
+        "  // ひと口分の水の量を引く",
+        "  rest = rest - 100;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "while"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "rest"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": [
+        "// 最初の数を入れる",
+        "let n = 8;",
+        "// 今の数が1より大きい間くり返す",
+        "while (n > 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "くり返しが終わると、今の数はいくつでしょうか。",
+          "part": {
+            "line": 3,
+            "text": "n > 1"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
           }
         }
       ],
-      "panel": {
-        "kind": "values",
-        "items": ["status", "比較の結果"]
-      },
-      "point": 3
+      "think": 8
     },
     {
-      "id": "recap",
+      "id": "answer",
       "kind": "code",
-      "role": "recap",
-      "title": "問11・問17・問18へ",
+      "role": "answer",
+      "title": "答え合わせ",
       "code": [
+        "// 最初の数を入れる",
+        "let n = 8;",
+        "// 今の数が1より大きい間くり返す",
+        "while (n > 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは 1 です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "1"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは 一 です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": [
+        "// 最初の数を入れる",
+        "let n = 8;",
+        "// 今の数が1より大きい間くり返す",
+        "while (n > 1) {",
+        "  // 今の数を半分にする",
+        "  n = n / 2;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "8 を半分にして、4 になります。",
+          "part": {
+            "line": 5,
+            "text": "n ="
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "4"
+            }
+          },
+          "speech": "八 を半分にして、四 になります。"
+        },
+        {
+          "say": "4 と 2 のときも中に入りました。",
+          "part": {
+            "line": 5,
+            "text": "n ="
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "2 → 1"
+            }
+          },
+          "speech": "四 と 二 のときも中に入りました。"
+        },
+        {
+          "say": "1 は 1 より大きくないので、中に入りません。",
+          "part": {
+            "line": 3,
+            "text": "n > 1"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "1"
+            }
+          },
+          "speech": "一 は 一 より大きくないので、中に入りません。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "残りを確かめる作業に使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "回数が先に分かる場合は、for が便利です。",
+          "show": ["card1"],
+          "pulse": ["card1"],
+          "speech": "回数が先に分かる場合は、フォー が便利です。"
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問11で使う",
+      "code": [
+        "//     例: digitSum(1234) → 10",
         "export function digitSum(n: number): number {",
-        "  // ここに書く",
-        "}",
-        "export function collatzSteps(n: number): number {",
-        "  // ここに書く",
-        "}",
-        "export function gcd(a: number, b: number): number {",
         "  // ここに書く",
         "}"
       ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
       "beats": [
         {
-          "say": "問十一は、各桁の数字を足す問題です。",
-          "type": [0, 1, 2],
-          "row": [0]
-        },
-        {
-          "say": "問十七は、一になるまでの回数を数えます。",
-          "type": [3, 4, 5],
-          "row": [1]
-        },
-        {
-          "say": "最初から一なら、回数はゼロです。",
-          "row": [2]
-        },
-        {
-          "say": "問十八は、二つの数の最大公約数を返します。",
-          "type": [6, 7, 8],
-          "row": [3]
-        },
-        {
-          "say": "while と比較を使って、書いてみましょう。",
-          "speech": "ワイルと比較を使って、書いてみましょう。",
-          "focus": [1, 4, 7]
-        }
-      ],
-      "panel": {
-        "kind": "calls",
-        "rows": [
-          {
-            "call": "digitSum(1234)",
-            "result": "10"
+          "say": "問11では、残りの数がある間くり返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
           },
-          {
-            "call": "collatzSteps(6)",
-            "result": "8"
+          "speech": "問十一では、残りの数がある間くり返します。"
+        },
+        {
+          "say": "残りがなくなる条件を考えるのが手がかりです。",
+          "figure": {
+            "pulse": ["card1"]
           },
-          {
-            "call": "collatzSteps(1)",
-            "result": "0"
-          },
-          {
-            "call": "gcd(12, 18)",
-            "result": "6"
+          "part": {
+            "line": 1,
+            "text": "function"
           }
-        ]
-      }
+        },
+        {
+          "say": "受け取った値は、別の変数に写しましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
     }
   ]
 }

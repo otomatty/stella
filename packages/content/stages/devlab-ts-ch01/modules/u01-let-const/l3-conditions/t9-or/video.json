@@ -1,0 +1,598 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "どちらかが合えば書き方を読み、値がどう変わるかを説明できる。",
+    "stuck": "片方でよい条件と両方必要な条件を区別しにくい。",
+    "points": ["|| は、どちらかの条件が true なら true になります。"],
+    "leaveOut": ["問15の解答コード"]
+  },
+  "art": {
+    "shipping-basket": {
+      "prompt": "A small shopping basket holding plain parcels. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "shipping-card": {
+      "prompt": "A blank rectangular membership card half pulled out of a small wallet. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "shipping-parcel": {
+      "prompt": "A sealed cardboard parcel beside a blank shipping tag. Draw the objects large and centered on white. No text, letters, digits, or logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "買い物の金額",
+          "art": "shipping-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "会員かどうか",
+          "art": "shipping-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "送料無料",
+          "art": "shipping-parcel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "左側の条件",
+          "art": "shipping-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "右側の条件",
+          "art": "shipping-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "全体の結果",
+          "art": "shipping-parcel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    },
+    "use": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "参加条件",
+          "art": "shipping-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "両方が合う場合",
+          "art": "shipping-card",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        }
+      ]
+    },
+    "task": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "card0",
+          "label": "小計",
+          "art": "shipping-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "card1",
+          "label": "会員かどうか",
+          "art": "shipping-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "card2",
+          "label": "送料",
+          "art": "shipping-parcel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "link0",
+          "from": "card0",
+          "to": "card1"
+        },
+        {
+          "id": "link1",
+          "from": "card1",
+          "to": "card2"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "free-shipping",
+      "beats": [
+        {
+          "say": "この動画では、どちらかが合えばよい条件を学びます。"
+        },
+        {
+          "say": "送料無料になるのは、3000円以上のときです。",
+          "speech": "送料無料になるのは、三千円以上のときです。"
+        },
+        {
+          "say": "または会員なら、金額に関係なく送料はかかりません。"
+        },
+        {
+          "say": "どちらかが合えば true になるのが、縦棒2本です。",
+          "speech": "どちらかが合えば トゥルーになるのが、縦棒二本です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "送料無料になるのは？",
+      "board": "example",
+      "beats": [
+        {
+          "say": "まず、買い物の金額が条件に合うかを見ます。",
+          "show": ["card0"],
+          "tag": {
+            "card0": "金額"
+          }
+        },
+        {
+          "say": "それとは別に、会員かどうかも条件です。",
+          "show": ["card1", "link0"],
+          "tag": {
+            "card1": "会員"
+          }
+        },
+        {
+          "say": "片方が当てはまれば、送料無料になります。",
+          "show": ["card2", "link1"],
+          "tag": {
+            "card2": "無料"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "条件を縦棒でつなぐ",
+      "code": [
+        "// 条件がどちらか一方でも成り立つか調べる",
+        "if (a || b) {",
+        "  // 利用できると表示する",
+        "  console.log(\"利用できます\");",
+        "}"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "それぞれの条件を別の値に入れた例です。",
+          "figure": {
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "縦棒二本で、二つの条件をつなぎます。",
+          "part": {
+            "line": 1,
+            "text": "||"
+          },
+          "figure": {
+            "pulse": ["card0"]
+          },
+          "term": {
+            "text": "||",
+            "note": "どちらかの条件が合う",
+            "ruby": "オア"
+          },
+          "type": [0, 1, 2, 3, 4]
+        },
+        {
+          "say": "左側が、一つ目の条件です。",
+          "part": {
+            "line": 1,
+            "text": "a ||",
+            "note": "左の条件"
+          },
+          "figure": {
+            "pulse": ["card1"]
+          }
+        },
+        {
+          "say": "右側が合うだけでも、中に進みます。",
+          "part": {
+            "line": 1,
+            "text": "|| b",
+            "note": "右の条件"
+          },
+          "figure": {
+            "pulse": ["card2"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "値の動きをたどる",
+      "code": ["// どちらかの条件で利用できるか調べる", "const canEnter = true || false;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "beats": [
+        {
+          "say": "左の条件には当てはまります。",
+          "part": {
+            "line": 1,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "true"
+            }
+          }
+        },
+        {
+          "say": "右の条件は false です。",
+          "part": {
+            "line": 1,
+            "text": "false"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "false"
+            }
+          },
+          "speech": "右の条件は フォルス です。"
+        },
+        {
+          "say": "片方が合うので、利用できます。",
+          "part": {
+            "line": 1,
+            "text": "canEnter"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "note",
+      "kind": "code",
+      "role": "note",
+      "title": "書き方と名前を見分ける",
+      "code": [
+        "// 条件がどちらか一方でも成り立つか調べる",
+        "if (a || b) {",
+        "  // 利用できると表示する",
+        "  console.log(\"利用できます\");",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "この色は、言語で決まっている書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "if"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card0"],
+            "pulse": ["card0"]
+          }
+        },
+        {
+          "say": "こちらの色は、自分で決める名前を示します。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "a"
+              }
+            ]
+          },
+          "figure": {
+            "show": ["card1"],
+            "pulse": ["card1"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "考えてみる",
+      "code": ["// どちらかの条件に合うかを調べる", "const allowed = false || true;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "この計算の結果は、どちらの値でしょうか。",
+          "part": {
+            "line": 1,
+            "text": "||"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// どちらかの条件に合うかを調べる", "const allowed = false || true;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "答えは true です。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "tag": {
+              "card2": "true"
+            },
+            "mark": [
+              {
+                "on": "card2",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["card2"]
+          },
+          "pause": 1.5,
+          "speech": "答えは トゥルー です。"
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えをたどる",
+      "code": ["// どちらかの条件に合うかを調べる", "const allowed = false || true;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "quiz"
+      },
+      "beats": [
+        {
+          "say": "左側は false です。",
+          "part": {
+            "line": 1,
+            "text": "false"
+          },
+          "figure": {
+            "pulse": ["card0"],
+            "tag": {
+              "card0": "false"
+            }
+          },
+          "speech": "左側は フォルス です。"
+        },
+        {
+          "say": "右側は true なので、少なくとも片方は成り立ちます。",
+          "part": {
+            "line": 1,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["card1"],
+            "tag": {
+              "card1": "true"
+            }
+          },
+          "speech": "右側は トゥルー なので、少なくとも片方は成り立ちます。"
+        },
+        {
+          "say": "両方が必要な && なら、結果は false でした。",
+          "part": {
+            "line": 1,
+            "text": "||"
+          },
+          "figure": {
+            "pulse": ["card2"],
+            "tag": {
+              "card2": "両方なら偽"
+            }
+          },
+          "speech": "両方が必要な アンド なら、結果は フォルス でした。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "こんな場面で使う",
+      "board": "use",
+      "beats": [
+        {
+          "say": "どちらかの参加条件を満たせばよい場面で使えます。",
+          "show": ["card0"],
+          "pulse": ["card0"]
+        },
+        {
+          "say": "両方が成り立つときも、全体の結果は true です。",
+          "show": ["card1"],
+          "pulse": ["card1"],
+          "speech": "両方が成り立つときも、全体の結果は トゥルー です。"
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問15で使う",
+      "code": [
+        "//     例: shippingFee(2000, false) → 500",
+        "export function shippingFee(subtotal: number, isMember: boolean): number {",
+        "  // ここに書く",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問15では、条件に合わせて送料を返します。",
+          "figure": {
+            "show": ["card0", "card1", "card2", "link0", "link1"],
+            "pulse": ["card0"]
+          },
+          "speech": "問十五では、条件に合わせて送料を返します。"
+        },
+        {
+          "say": "無料になる条件は、金額と会員の二通りです。",
+          "figure": {
+            "pulse": ["card1"]
+          },
+          "part": {
+            "line": 1,
+            "text": "function"
+          }
+        },
+        {
+          "say": "二つの条件をどこに並べるか考えましょう。",
+          "figure": {
+            "pulse": ["card2"]
+          },
+          "part": {
+            "line": 2,
+            "text": "ここに書く"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ]
+}
