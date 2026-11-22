@@ -59,6 +59,24 @@ it("asks Claude for a structured release summary and parses the text blocks", as
   });
 });
 
+it("asks for polite, reader-friendly wording and one point for internal-only changes", async () => {
+  const { create, client } = mockClient({ stop_reason: "end_turn", content: content(validText) });
+  await summarizeChangelog({ ...args, client });
+
+  const system = create.mock.calls[0]?.[0].system;
+  expect(system).toContain("1 項目 1 文");
+  expect(system).toContain("summary はです・ます調");
+  expect(system).toContain(
+    "points の文末は「〜できるようになりました」「〜を直しました」「〜を変えました」のような、です・ます調",
+  );
+  expect(system).toContain(
+    "受講者・管理者が読んで分かる言葉を使い、API・コンポーネント・リファクタなどの開発者向けの用語は避けて",
+  );
+  expect(system).toContain(
+    "利用者から見えない変更（内部の整理・テスト・CI など）しかないときは、points を「内部の改善を行いました」の 1 件",
+  );
+});
+
 it.each([
   ["refusal", { stop_reason: "refusal", content: content(validText) }],
   ["max_tokens", { stop_reason: "max_tokens", content: content(validText) }],

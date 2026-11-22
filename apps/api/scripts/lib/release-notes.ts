@@ -92,6 +92,17 @@ export function buildReleaseBody(args: {
   return parts.join("\n\n");
 }
 
+const chatCopy = {
+  web: {
+    heading: "🚀 *STELLA（Web）を更新しました*",
+    guidance: "開いたままの画面は、再読み込みすると新しい版になります。",
+  },
+  vscode: {
+    heading: "🧩 *STELLA の VS Code 拡張を更新しました*",
+    guidance: "VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。",
+  },
+} satisfies Record<ReleaseProduct, { heading: string; guidance: string }>;
+
 export function buildChatMessage(args: {
   product: ReleaseProduct;
   version: string;
@@ -99,15 +110,16 @@ export function buildChatMessage(args: {
   releaseUrl: string;
 }): string {
   const limit = 4000;
-  const title = `*STELLA ${releaseProductName(args.product)} `;
-  const titleEnd = " を公開しました*";
-  const linkEnd = "|リリースノートを見る>";
-  // 箇条書きの長さを決める前に、見出しとリンクの分を確保する。
-  const budget = limit - title.length - titleEnd.length - `\n<${linkEnd}`.length;
+  const { heading, guidance } = chatCopy[args.product];
+  const title = `${heading} — v`;
+  const linkStart = `\n\n${guidance}\n<`;
+  const linkEnd = "|変更の詳細を見る>";
+  // 箇条書きの長さを決める前に、見出し・案内・リンクの分を確保する。
+  const budget = limit - title.length - linkStart.length - linkEnd.length;
   const url = args.releaseUrl.slice(0, budget);
-  const version = args.version.slice(0, budget - url.length);
+  const version = args.version.replace(/^v/, "").slice(0, budget - url.length);
   const bullet = "\n• ";
-  const lines = [`${title}${version}${titleEnd}`];
+  const lines = [`${title}${version}`];
   let remaining = budget - url.length - version.length;
   for (const point of args.points.slice(0, 5)) {
     if (remaining <= bullet.length) break;
@@ -119,7 +131,7 @@ export function buildChatMessage(args: {
     lines.push(line);
     remaining -= line.length;
   }
-  return `${lines.join("")}\n<${url}${linkEnd}`;
+  return `${lines.join("")}${linkStart}${url}${linkEnd}`;
 }
 
 export function isGoogleChatWebhookUrl(url: string): boolean {

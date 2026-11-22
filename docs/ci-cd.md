@@ -102,7 +102,7 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 Release の本文は CHANGELOG の該当節を AI で要約し、全文も折りたたみに残す。既定のモデルは `claude-opus-5-5` で、`prepare` を実行する環境の `RELEASE_NOTES_MODEL` で変更できる。要約用の `ANTHROPIC_API_KEY` が空か、要約に失敗した場合は、該当節をそのまま本文に使う。
 
-Google Chat には、新しい版の Release を初めて作ったときに 1 回だけ、変更の要点と Release のリンクを投稿する。VS Code 拡張は Marketplace 公開の成功後に投稿する。Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定なら投稿を省略し、通知が失敗してもリリースは成功のままとする。
+Google Chat には、新しい版の Release を初めて作ったときに 1 回だけ投稿する。投稿には見出し、変更点（最大 5 件）、製品ごとの固定の更新案内、変更の詳細へのリンクをこの順に載せる。VS Code 拡張は Marketplace 公開の成功後に投稿する。Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定なら投稿を省略し、通知が失敗してもリリースは成功のままとする。
 
 リリースのトリガは `main` への push のみ。やり直しは Actions の Re-run で行う。
 

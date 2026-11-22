@@ -163,7 +163,11 @@ describe("notify", () => {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify({
-        text: `*STELLA Web 1.2.0 を公開しました*\n• ＜変更＞\n<${releaseUrl}|リリースノートを見る>`,
+        text: `🚀 *STELLA（Web）を更新しました* — v1.2.0
+• ＜変更＞
+
+開いたままの画面は、再読み込みすると新しい版になります。
+<${releaseUrl}|変更の詳細を見る>`,
       }),
       signal: expect.any(AbortSignal),
       redirect: "manual",

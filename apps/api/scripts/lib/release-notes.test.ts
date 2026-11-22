@@ -88,19 +88,51 @@ it("uses both product names and adds the VSIX instructions to the extension rele
 });
 
 describe("buildChatMessage", () => {
-  const releaseUrl = "https://github.com/example/stella/releases/tag/v1.2.0";
+  const releaseUrl = "https://github.com/example/stella/releases/tag/web-v1.1.0";
 
-  it("escapes angle brackets, folds multiline points and includes the release link", () => {
+  it("formats the full Web announcement", () => {
+    expect(
+      buildChatMessage({
+        product: "web",
+        version: "1.1.0",
+        points: [
+          "課題の一覧で、提出の状態がひと目で分かるようになりました",
+          "スマートフォンでスライドが途中で切れる不具合を直しました",
+        ],
+        releaseUrl,
+      }),
+    ).toBe(`🚀 *STELLA（Web）を更新しました* — v1.1.0
+• 課題の一覧で、提出の状態がひと目で分かるようになりました
+• スマートフォンでスライドが途中で切れる不具合を直しました
+
+開いたままの画面は、再読み込みすると新しい版になります。
+<${releaseUrl}|変更の詳細を見る>`);
+  });
+
+  it("formats the full VS Code announcement without duplicating the version prefix", () => {
+    const extensionUrl = "https://github.com/example/stella/releases/tag/vscode-v0.11.0";
     expect(
       buildChatMessage({
         product: "vscode",
-        version: "1.2.0",
-        points: ["<引数|値>\n 続き"],
-        releaseUrl,
+        version: "v0.11.0",
+        points: ["課題文を表示できるようになりました"],
+        releaseUrl: extensionUrl,
       }),
-    ).toBe(
-      `*STELLA VS Code 拡張 1.2.0 を公開しました*\n• ＜引数|値＞ 続き\n<${releaseUrl}|リリースノートを見る>`,
-    );
+    ).toBe(`🧩 *STELLA の VS Code 拡張を更新しました* — v0.11.0
+• 課題文を表示できるようになりました
+
+VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。
+<${extensionUrl}|変更の詳細を見る>`);
+  });
+
+  it("escapes angle brackets and folds multiline points", () => {
+    const message = buildChatMessage({
+      product: "vscode",
+      version: "0.11.0",
+      points: ["<引数|値> \r\n\n 続き"],
+      releaseUrl,
+    });
+    expect(message.split("\n")[1]).toBe("• ＜引数|値＞ 続き");
   });
 
   it("limits points to five lines of at most 200 characters each", () => {
@@ -108,7 +140,9 @@ describe("buildChatMessage", () => {
     const lines = buildChatMessage({ product: "web", version: "1.2.0", points, releaseUrl }).split(
       "\n",
     );
-    expect(lines.slice(1, -1)).toEqual(Array(5).fill(`• ${"点".repeat(200)}`));
+    expect(lines.filter((line) => line.startsWith("• "))).toEqual(
+      Array(5).fill(`• ${"点".repeat(200)}`),
+    );
   });
 
   it("keeps the whole message within 4000 characters and reserves space for the link", () => {
@@ -116,10 +150,15 @@ describe("buildChatMessage", () => {
     const args = { product: "web" as const, points: ["点".repeat(200)], releaseUrl: longUrl };
     const message = buildChatMessage({ ...args, version: "1.2.0" });
     expect(message).toHaveLength(4000);
-    expect(message.endsWith(`\n<${longUrl}|リリースノートを見る>`)).toBe(true);
-    expect(
-      buildChatMessage({ ...args, version: "v".repeat(4000), releaseUrl: `${longUrl}${longUrl}` }),
-    ).toHaveLength(4000);
+    expect(message.split("\n").at(-1)).toBe(`<${longUrl}|変更の詳細を見る>`);
+
+    const oversizedMessage = buildChatMessage({
+      ...args,
+      version: "v".repeat(4000),
+      releaseUrl: `${longUrl}${longUrl}`,
+    });
+    expect(oversizedMessage).toHaveLength(4000);
+    expect(oversizedMessage.split("\n").at(-1)).toMatch(/^<https:\/\/[^>]+\|変更の詳細を見る>$/);
   });
 });
 
