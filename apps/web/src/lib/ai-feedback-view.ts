@@ -1,6 +1,7 @@
 import {
   type LearnerAiFeedback,
   type LearnerRubricItem,
+  formatAiResubmitConclusion,
   optionalFindingComments,
 } from "@stella/shared/review/ai-review";
 import type { Submission } from "@stella/shared/review/types";
@@ -46,9 +47,7 @@ export function buildAiFeedbackView(
 
   const resubmit = verdict === "resubmit";
   const fixCount = fixes.length;
-  const conclusion = resubmit
-    ? `動きは合っています。書き方を${fixCount ? ` ${fixCount} 点` : ""}直すと合格です。`
-    : "合格です。";
+  const conclusion = resubmit ? formatAiResubmitConclusion(fixCount) : "合格です。";
   const writingSummary = resubmit
     ? `${checklist.length} 項目のうち ${fixCount} 項目を直す`
     : "すべて満たしています";
@@ -63,7 +62,18 @@ export function buildAiFeedbackView(
     optionalComments: [...new Set(optionalComments)],
     message: resubmit ? "" : feedback.message,
     goodPoints: [...new Set(feedback.goodPoints)],
-    ...(!resubmit ? { nextSteps: [...new Set(feedback.nextSteps)] } : {}),
+    ...(!resubmit
+      ? {
+          importantComments: [
+            ...new Set(
+              feedback.findings
+                .filter(({ severity }) => severity === "major")
+                .map(({ comment }) => comment),
+            ),
+          ],
+          nextSteps: [...new Set(feedback.nextSteps)],
+        }
+      : {}),
   };
 }
 

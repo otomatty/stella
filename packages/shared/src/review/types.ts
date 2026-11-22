@@ -15,6 +15,8 @@ export type SubmissionReference =
   | { available: false; reason: string }
   | {
       available: true;
+      /** 参考の解決に使った提出の日時 (ms)。 */
+      submittedAt: number;
       version: "submitted" | "latest";
       note?: string;
       /** 解答例のファイル。パスは private/solution/ からの相対パス。 */

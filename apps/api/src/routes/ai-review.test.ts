@@ -401,7 +401,7 @@ describe("提出の AI 一次レビュー (実 SQLite / R2)", () => {
       aiReviewStatus: "confirmed",
       reviewerId: null,
     });
-    expect(saved.reviewNotes).toContain("書き方を 1 点直すと合格です。");
+    expect(saved.reviewNotes).toContain("テストは通っています。必須の項目を 1 点直すと合格です。");
     expect(saved.reviewNotes).toContain(
       `- ${HEADING_GUIDE.title}: ${HEADING_GUIDE.problem} ${HEADING_GUIDE.why}`,
     );

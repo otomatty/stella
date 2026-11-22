@@ -16,7 +16,11 @@ function decodeText(base64: string): string | null {
   return text.includes("\u0000") || text.includes("\uFFFD") ? null : text;
 }
 
-function formatReference(filesJson: string, version: "submitted" | "latest"): SubmissionReference {
+function formatReference(
+  filesJson: string,
+  version: "submitted" | "latest",
+  submittedAt: Date,
+): SubmissionReference {
   const privateFiles = JSON.parse(filesJson) as Record<string, string>;
   const files = Object.keys(privateFiles)
     .filter((path) => path.startsWith(SOLUTION_PREFIX) && path.length > SOLUTION_PREFIX.length)
@@ -27,6 +31,7 @@ function formatReference(filesJson: string, version: "submitted" | "latest"): Su
     });
   return {
     available: true,
+    submittedAt: submittedAt.getTime(),
     version,
     ...(version === "latest"
       ? { note: "提出時の版が分からないため、今の版の解答例を表示しています" }
@@ -42,12 +47,16 @@ export async function loadSubmissionReference(
   id: string,
 ): Promise<SubmissionReference | null> {
   const [submission] = await db
-    .select({ taskId: submissions.taskId, taskPrivateHash: submissions.taskPrivateHash })
+    .select({
+      taskId: submissions.taskId,
+      taskPrivateHash: submissions.taskPrivateHash,
+      submittedAt: submissions.submittedAt,
+    })
     .from(submissions)
     .where(eq(submissions.id, id))
     .limit(1);
   if (!submission) return null;
-  const { taskId, taskPrivateHash } = submission;
+  const { taskId, taskPrivateHash, submittedAt } = submission;
   if (!taskId) return { available: false, reason: "旧形式の提出には参考の書き方がありません" };
 
   if (taskPrivateHash) {
@@ -61,7 +70,7 @@ export async function loadSubmissionReference(
         ),
       )
       .limit(1);
-    if (submitted) return formatReference(submitted.files, "submitted");
+    if (submitted) return formatReference(submitted.files, "submitted", submittedAt);
   }
 
   const [latest] = await db
@@ -70,6 +79,6 @@ export async function loadSubmissionReference(
     .where(eq(taskPrivate.taskId, taskId))
     .limit(1);
   return latest
-    ? formatReference(latest.files, "latest")
+    ? formatReference(latest.files, "latest", submittedAt)
     : { available: false, reason: "この課題の解答例が見つかりません" };
 }

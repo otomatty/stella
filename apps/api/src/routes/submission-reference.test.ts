@@ -22,6 +22,7 @@ const secret = "test-secret";
 const submittedSolution = "// 提出時の解答例";
 const submittedGuide = "# 提出時のレビューの観点";
 const latestSolution = "// 最新の解答例";
+const submittedAt = new Date("2026-11-22T09:00:00.123Z");
 
 function privateFiles(files: Record<string, string | Uint8Array>): string {
   return JSON.stringify(
@@ -43,7 +44,11 @@ describe("GET /api/submissions/:id/reference", () => {
 
   beforeEach(async () => {
     database = sqliteD1();
-    env = { DB: database.binding, AUTH_JWT_SECRET: secret } as unknown as Env;
+    env = {
+      DB: database.binding,
+      AUTH_JWT_SECRET: secret,
+      SUBMISSIONS_BUCKET: { get: async () => null },
+    } as unknown as Env;
     db = getDb(env);
     const task = {
       sectionId: "unit",
@@ -61,6 +66,7 @@ describe("GET /api/submissions/:id/reference", () => {
       stageTitle: "開発環境",
       assignmentTitle: "課題",
       code: "",
+      submittedAt,
     };
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
@@ -123,12 +129,35 @@ describe("GET /api/submissions/:id/reference", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await json<SubmissionReference>(response)).toEqual({
       available: true,
+      submittedAt: submittedAt.getTime(),
       version: "submitted",
       files: [
         { path: "index.html", text: "<main>見本</main>" },
         { path: "src/checks.js", text: submittedSolution },
       ],
       reviewGuide: submittedGuide,
+    });
+  });
+
+  it("同じ ID の提出が更新されると参考に使った提出の日時も変わる", async () => {
+    const detailResponse = await get("submitted");
+    expect(detailResponse.status).toBe(200);
+    const detail = await json<{ row: { submitted_at: string } }>(detailResponse);
+    expect(new Date(detail.row.submitted_at).getTime()).toBe(submittedAt.getTime());
+
+    const updatedAt = new Date(submittedAt.getTime() + 1);
+    await db
+      .update(submissions)
+      .set({ taskPrivateHash: null, submittedAt: updatedAt })
+      .where(eq(submissions.id, "submitted"));
+
+    const response = await get("submitted/reference");
+    expect(response.status).toBe(200);
+    expect(await json<SubmissionReference>(response)).toMatchObject({
+      available: true,
+      submittedAt: updatedAt.getTime(),
+      version: "latest",
+      files: [{ path: "src/checks.js", text: latestSolution }],
     });
   });
 
@@ -149,6 +178,7 @@ describe("GET /api/submissions/:id/reference", () => {
       expect(response.status).toBe(200);
       expect(await json<SubmissionReference>(response)).toEqual({
         available: true,
+        submittedAt: submittedAt.getTime(),
         version: "latest",
         note: "提出時の版が分からないため、今の版の解答例を表示しています",
         files: [{ path: "src/checks.js", text: latestSolution }],

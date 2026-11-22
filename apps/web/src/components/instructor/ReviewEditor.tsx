@@ -56,7 +56,11 @@ import {
   refreshSubmission,
 } from "@/lib/submissions-store";
 import { isAiPassed, isAiResubmitted, passByLabel } from "@/lib/review-queue";
-import { fetchSubmissionById, fetchSubmissionReference } from "@/lib/submissions-api";
+import {
+  fetchSubmissionById,
+  fetchSubmissionReference,
+  referenceForSubmission,
+} from "@/lib/submissions-api";
 import { cn } from "@/lib/utils";
 import { type CodeSegment, highlightSubmission } from "@/lib/submission-highlight";
 import { alignReference } from "@/lib/reference-align";
@@ -118,8 +122,10 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
     version: string;
     reference: SubmissionReference;
   }>();
-  const referenceResult =
-    loadedReference?.version === version ? loadedReference.reference : undefined;
+  const referenceResult = referenceForSubmission(
+    loadedReference?.version === version ? loadedReference.reference : undefined,
+    taskDetail?.submittedAt,
+  );
   const reference = referenceResult?.available ? referenceResult : undefined;
   const [referenceView, setReferenceView] = useState(readReferenceView);
   const [referenceSelection, setReferenceSelection] = useState<{

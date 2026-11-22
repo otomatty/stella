@@ -177,9 +177,20 @@ export async function fetchSubmissionById(id: string): Promise<Submission> {
   return rowToSubmission(row);
 }
 
-/** staff: 提出時の解答例とレビューの観点。 */
+/** staff: 解答例とレビューの観点。submittedAt は詳細と同じミリ秒で受け取る。 */
 export async function fetchSubmissionReference(id: string): Promise<SubmissionReference> {
   return apiFetch<SubmissionReference>(`/api/submissions/${encodeURIComponent(id)}/reference`);
+}
+
+export function referenceForSubmission(
+  reference: SubmissionReference | undefined,
+  submittedAt: number | undefined,
+): SubmissionReference | undefined {
+  if (!reference?.available) return reference;
+  if (submittedAt === undefined) return undefined;
+  return reference.submittedAt === submittedAt
+    ? reference
+    : { available: false, reason: "提出が更新されました。開き直してください" };
 }
 
 /** staff: 提出物一覧 (新着順)。 認可はサーバ側 (admin)。 */

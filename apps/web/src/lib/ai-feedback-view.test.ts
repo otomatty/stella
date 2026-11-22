@@ -56,7 +56,7 @@ describe("buildAiFeedbackView", () => {
     const view = buildAiFeedbackView(feedback(), "pass");
     expect(view).toMatchObject({
       resubmit: true,
-      conclusion: "動きは合っています。書き方を 1 点直すと合格です。",
+      conclusion: "テストは通っています。必須の項目を 1 点直すと合格です。",
       writingSummary: "3 項目のうち 1 項目を直す",
       fixes: [
         {
@@ -86,7 +86,7 @@ describe("buildAiFeedbackView", () => {
       "resubmit",
     );
     expect(view).toMatchObject({
-      conclusion: "動きは合っています。書き方を 2 点直すと合格です。",
+      conclusion: "テストは通っています。必須の項目を 2 点直すと合格です。",
       writingSummary: "3 項目のうち 2 項目を直す",
     });
     expect(view?.fixes).toHaveLength(2);
@@ -98,6 +98,11 @@ describe("buildAiFeedbackView", () => {
       example: undefined,
     });
     expect(view?.checklist[1]?.label).toBe("表示名");
+  });
+
+  it("必須の未達がない再提出では結論に件数を出さない", () => {
+    const view = buildAiFeedbackView(feedback({ rubric: [met, optional] }), "resubmit");
+    expect(view?.conclusion).toBe("テストは通っています。必須の項目を直すと合格です。");
   });
 
   it("合格では返信を表示し、修正カードを出さない", () => {
@@ -118,6 +123,25 @@ describe("buildAiFeedbackView", () => {
   it("合格では次に試すことを表示データに残す", () => {
     const view = buildAiFeedbackView(feedback({ verdict: "pass", rubric: [met] }), "pass");
     expect(view?.nextSteps).toEqual(["次の手順"]);
+  });
+
+  it("合格では major の本文を見直したいところに出す", () => {
+    const location = { file: "src/checks.js", startLine: 12, endLine: 14 };
+    const view = buildAiFeedbackView(
+      feedback({
+        verdict: "pass",
+        rubric: [met],
+        findings: [
+          { ...location, severity: "major", comment: "重大な所見" },
+          { ...location, severity: "minor", comment: "軽い所見" },
+          { ...location, severity: "info", comment: "参考の所見" },
+        ],
+      }),
+      "pass",
+    );
+    expect(view?.importantComments).toEqual(["重大な所見"]);
+    expect(view?.optionalComments).toEqual(["軽い所見", "参考の所見"]);
+    expect(JSON.stringify(view)).not.toContain(location.file);
   });
 
   it("任意の未達と必須の未達を区別し、判断できない項目は一覧に出さない", () => {
@@ -148,6 +172,7 @@ describe("buildAiFeedbackView", () => {
       "resubmit",
     );
     expect(view?.optionalComments).toEqual(["軽い所見", "参考の所見"]);
+    expect(view).not.toHaveProperty("importantComments");
     expect(JSON.stringify(view)).not.toContain(location.file);
   });
 

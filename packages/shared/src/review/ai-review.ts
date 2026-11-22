@@ -667,16 +667,16 @@ export function formatLearnerReply(reply: AiLearnerReply): string {
   return parts.filter(Boolean).join("\n\n");
 }
 
+export function formatAiResubmitConclusion(fixCount: number): string {
+  return `テストは通っています。必須の項目を${fixCount > 0 ? ` ${fixCount} 点` : ""}直すと合格です。`;
+}
+
 /** AI の再提出では、教材の直し方と照合済みの良かった点を総評に載せる。 */
 export function formatAiResubmitNotes(feedback: LearnerAiFeedback): string {
   const rubric = feedback.rubric ?? [];
   const unmet = rubric.filter((item) => item.required && item.result === "unmet");
   const met = rubric.filter((item) => item.result === "met");
-  const summary =
-    unmet.length === 1
-      ? "動きは合っています。書き方を 1 点直すと合格です。"
-      : "動きは合っています。書き方を直すと合格です。";
-  const sections = [summary];
+  const sections = [formatAiResubmitConclusion(unmet.length)];
   if (unmet.length > 0) {
     const fixes = unmet.map(({ label, criterion, guide }) => {
       if (!guide) return `- ${criterion}`;

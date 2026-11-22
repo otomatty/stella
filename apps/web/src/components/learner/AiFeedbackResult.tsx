@@ -64,7 +64,7 @@ export function AiFeedbackResult({ view, taskId }: { view: AiFeedbackView; taskI
             </dd>
           </div>
           <div className={insetStyle}>
-            <dt className="text-sm text-ink-2">書き方</dt>
+            <dt className="text-sm text-ink-2">評価項目</dt>
             <dd
               className={`mt-1 flex items-start gap-2 text-sm font-semibold ${view.resubmit ? "dark:text-warning" : "dark:text-success"}`}
             >
@@ -137,6 +137,19 @@ export function AiFeedbackResult({ view, taskId }: { view: AiFeedbackView; taskI
           </div>
         </Card>
       ))}
+
+      {view.importantComments && view.importantComments.length > 0 && (
+        <Card className={cardStyle}>
+          <h2 className="text-base font-semibold">見直したいところ</h2>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-ink-2">
+            {view.importantComments.map((comment) => (
+              <li key={comment} className="whitespace-pre-wrap">
+                {comment}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {(view.optionalItems.length > 0 || view.optionalComments.length > 0) && (
         <Card className={cardStyle}>
