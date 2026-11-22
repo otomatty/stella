@@ -33,13 +33,13 @@ vi.mock("./lib/tts.js", async (original) => ({
   synthesizeCached: vi.fn(),
 }));
 import { chromium } from "playwright";
-import { buildVideos } from "./build-video.js";
-import { buildSceneTopic } from "./build-scene-video.js";
+import { buildVideos, loadVideoVoice, videoTtsOf } from "./build-video.js";
+import { buildSceneTopic, planSceneTopic } from "./build-scene-video.js";
 import { probeDuration } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, type NarrationTopic } from "./lib/narration-topics.js";
 import { collectPdfTargets } from "../src/material-pdf.js";
 import { videoSceneHash } from "../src/material-video.js";
-import { synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
+import { synthesizeCached, QuotaExhaustedError, createTtsProvider, cueHash } from "./lib/tts.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -70,6 +70,46 @@ function fixture() {
   vi.mocked(collectNarrationTopics).mockReturnValue([topic]);
   return { root, topic };
 }
+it.each([undefined, "gemini", "openjtalk", "fake", "grok"] as const)(
+  "content:video の読み上げ指定 %s で配信計画を作る",
+  async (tts) => {
+    const { root, topic } = fixture();
+    const skip = vi.fn(() => true);
+    await buildVideos(["--out", join(root, "out"), ...(tts ? ["--tts", tts] : [])], skip);
+    const provider = createTtsProvider(loadVideoVoice(tts ?? "openjtalk"));
+    expect(skip).toHaveBeenCalledExactlyOnceWith({
+      stageSlug: topic.stageSlug,
+      id: topic.id,
+      sourceHash: planSceneTopic(topic, provider.identity),
+    });
+  },
+);
+
+it.each([
+  [[], "openjtalk"],
+  [["--remote"], "gemini"],
+  [["--remote", "--tts", "openjtalk"], "openjtalk"],
+  [["--tts", "gemini"], "gemini"],
+  [["--remote", "--tts", "fake"], "fake"],
+] as const)("video:sync の引数 %j で %s を選ぶ", (args, expected) => {
+  expect(
+    loadVideoVoice(
+      videoTtsOf(
+        [...args],
+        args.some((arg) => arg === "--remote"),
+      ),
+    ).provider,
+  ).toBe(expected);
+});
+
+it("明示した Gemini の音声識別子とキャッシュキーを保つ", () => {
+  const { identity } = createTtsProvider(loadVideoVoice(videoTtsOf(["--tts", "gemini"])));
+  expect(identity).toBe(
+    "gemini/gemini-3.8-flash-tts/Charon/落ち着いた研修講師として、はっきり、ややゆっくり。段落と段落の間は 1 秒ほど間を空ける",
+  );
+  expect(cueHash(identity, "文")).toBe("c0d451da661ebc959393fd03b9d0e2b8");
+});
+
 it("video.json だけのトピックもplanに入り、台帳のskipならブラウザも生成も使わない", async () => {
   const { root } = fixture();
   const skip = vi.fn(() => true);

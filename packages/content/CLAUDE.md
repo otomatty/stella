@@ -113,8 +113,8 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
 - 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
-- 生成だけの確認: `bun run content:video -- dev-env-basics --tts fake` → `dist/video/`。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。`fake` は音声の代わりに仮の音を作ります。日本語の音声を鍵なしで確かめる場合は `--tts openjtalk` と `pip install pyopenjtalk-prebuilt "numpy<2"` を使います
-- 配信: `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2)。本物の音声は `--tts gemini` (`GEMINI_API_KEY`)、本番 R2 は `--remote`。R2 の資格情報・公開バケットは PDF と同じです
+- 手元では最初に `bun run --filter=@stella/content video:tts:setup` を 1 回実行します。Python 3.10〜3.13 と `pyopenjtalk-plus` の wheel を使います。`video:scenes`・`content:video`・ローカルの `video:sync` は、`--tts` を省くと Open JTalk で日本語の音声を合成します。`bun run content:video -- dev-env-basics` の出力先は `dist/video/` です。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。読み上げなしで描画を確かめるには `--tts fake` を指定すると仮の音で作れます
+- 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。R2 の資格情報・公開バケットは PDF と同じです
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です

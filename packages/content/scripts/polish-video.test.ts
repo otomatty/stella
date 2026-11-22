@@ -87,6 +87,16 @@ afterEach(() => {
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe("video:polish の取得と保存済みの案の反映", () => {
+  it("残高切れでは本文の理由を示し、再試行しない", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ error: { message: "prepayment credits are depleted" } }, { status: 402 }),
+    );
+    await expect(polishVideo(["fixture"])).rejects.toThrow(
+      /Gemini API の残高がありません.*prepayment credits are depleted.*--tts openjtalk/,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("取得時は本文を保ちハッシュを保存し、反映時はAPIを呼ばず読んだ案を反映する", async () => {
     await polishVideo(["fixture", "--model", "chosen-model"]);
     expect(fetchMock).toHaveBeenCalledTimes(1);

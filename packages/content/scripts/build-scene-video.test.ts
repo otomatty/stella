@@ -395,6 +395,33 @@ describe("音声モデルと日次上限", () => {
     return { root, browser, context, topics, storyboard, page };
   }
 
+  it.each([undefined, "gemini", "openjtalk", "fake"] as const)(
+    "video:scenes の読み上げ指定 %s を解決する",
+    async (tts) => {
+      const { root } = fixture();
+      const exitCode = process.exitCode;
+      const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      try {
+        vi.stubEnv("VIDEO_TTS_MODEL", "");
+        vi.mocked(createTtsProvider).mockReturnValue(provider("topic"));
+        vi.mocked(synthesizeCached).mockRejectedValueOnce(new QuotaExhaustedError("テスト用"));
+        await buildSceneVideos([
+          "fixture",
+          "--out",
+          join(root, "out"),
+          ...(tts ? ["--tts", tts] : []),
+        ]);
+        expect(createTtsProvider).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ provider: tts ?? "openjtalk" }),
+        );
+      } finally {
+        process.exitCode = exitCode;
+        error.mockRestore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   it.each([undefined, "env-model", "cli-model"])(
     "選んだモデル %s を使い、声・話し方は保つ。上限では後続の場面・トピックを試さない",
     async (model) => {

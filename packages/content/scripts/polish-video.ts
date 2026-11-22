@@ -18,7 +18,7 @@ import {
 } from "../src/video-polish.js";
 import { parseStoryboard } from "../src/video-storyboard.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { RetryableError, withRetry } from "./lib/tts.js";
+import { geminiCreditsError, RetryableError, withRetry } from "./lib/tts.js";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -82,6 +82,7 @@ async function generate(
     } catch {
       throw new RetryableError("Gemini API との通信に失敗しました");
     }
+    if (res.status === 402) throw await geminiCreditsError(res, key);
     if (res.status === 429 || res.status >= 500) {
       const retryAfter = Number(res.headers.get("retry-after"));
       throw new RetryableError(

@@ -292,11 +292,14 @@ bun run --filter=@stella/content video:polish -- <トピックのパス> --apply
 
 ## 確かめ方
 
+手元の `video:scenes`・`content:video`・`video:sync` は、`--tts` を省くと Open JTalk の合成音声で作ります。最初に `bun run --filter=@stella/content video:tts:setup` を 1 回実行してください。Python 3.10〜3.13 と `pyopenjtalk-plus` の wheel を使います。読み上げなしの確認では `--tts fake` で仮の音を作れます。本番の声で確かめるには `--tts gemini` を指定します。
+
 `video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。コメントと空行だけの `code` はエラーにします。`narration.json` があり、`video.json` も `screen.mp4` も無いトピックは、置き換えの対象として警告します。
 
 ```bash
 bun run --filter=@stella/content video:check                                   # 絵コンテの検査
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --stills      # 文ごとの静止画 (API を呼ばない)
+bun run --filter=@stella/content video:scenes -- <トピックのパス>               # Open JTalk で動画まで
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts fake    # 仮の音で動画まで
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini  # 本番の音声
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --tts-model gemini-3.8-flash-lite-tts  # 別の音声モデル
@@ -309,11 +312,11 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 
 ## 公開のされ方
 
-`main` に入ると、デプロイの `video:sync` が `video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。
+`main` に入ると、CI の `video:sync --remote --tts gemini` が `video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。
 
-手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
+手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。`video:sync --remote` の既定は Gemini です。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
 
 ```bash
-bun run --filter=@stella/content video:sync dev-env-basics --tts fake
+bun run --filter=@stella/content video:sync dev-env-basics
 VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed
 ```

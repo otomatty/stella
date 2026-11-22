@@ -8,9 +8,11 @@ import {
   formatVideoFailure,
   loadVideoVoice,
   validatePublishedVideoVoice,
+  videoTtsOf,
   type VideoPlan,
 } from "./build-video.js";
 import { createR2Client, putAll } from "./lib/r2.js";
+import { logVideoTts } from "./lib/tts.js";
 import {
   hasVideo,
   mergeVideoFailure,
@@ -27,19 +29,19 @@ const STATE_KEY = "lesson-video/state.json";
 
 export async function uploadVideos(args: string[]): Promise<void> {
   validatePublishedVideoVoice(args);
+  const remote = args.includes("--remote");
+  const tts = loadVideoVoice(videoTtsOf(args, remote)).provider;
+  logVideoTts(tts);
   beginVideoCacheRun();
   try {
     const manifestFile = join(contentRoot, "dist/video-manifest.json");
     // 古い manifest を誤って seed に渡さない。鍵なしでは R2 に一切触れない。
     rmSync(manifestFile, { force: true });
-    const tts = args.includes("--tts")
-      ? args[args.indexOf("--tts") + 1]
-      : loadVideoVoice().provider;
     if (tts === "gemini" && !process.env.GEMINI_API_KEY) {
       console.log("キーが無いので動画を作りません");
       return;
     }
-    const r2 = createR2Client("stella-materials-public", args.includes("--remote"));
+    const r2 = createR2Client("stella-materials-public", remote);
     let state: VideoState = { version: 1, objects: {}, durations: {} };
     try {
       const body = await r2.get(STATE_KEY);
@@ -56,7 +58,10 @@ export async function uploadVideos(args: string[]): Promise<void> {
     const pending: VideoPlan[] = [];
     const seen = new Set<string>();
     const { reports, failures } = await buildVideos(
-      args.filter((arg) => arg !== "--remote"),
+      [
+        ...args.filter((arg) => arg !== "--remote"),
+        ...(args.includes("--tts") ? [] : ["--tts", tts]),
+      ],
       (plan) => {
         const key = videoManifestKey(plan.stageSlug, plan.id);
         if (seen.has(key)) throw new Error(`レッスン ID が重複しています: ${key}`);
@@ -136,4 +141,11 @@ export async function uploadVideos(args: string[]): Promise<void> {
   }
 }
 
-if (import.meta.main) await uploadVideos(process.argv.slice(2));
+if (import.meta.main) {
+  try {
+    await uploadVideos(process.argv.slice(2));
+  } catch (error) {
+    console.error((error as Error).message);
+    process.exitCode = 1;
+  }
+}

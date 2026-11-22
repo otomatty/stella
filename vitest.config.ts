@@ -23,6 +23,7 @@ export default defineConfig({
     // テンプレート・ステージの課題・見本の .test.ts を include が拾わないように外す。
     exclude: [
       ...configDefaults.exclude,
+      "packages/content/.venv-tts/**",
       "packages/content/templates/runners/**",
       "packages/content/stages/**/tasks/**",
       "apps/vscode/samples/**",
