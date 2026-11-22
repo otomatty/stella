@@ -31,7 +31,12 @@ import {
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
-import { evaluatedProblemSteps, loadProblemSteps } from "../lib/task-problem-steps.js";
+import { planProblemStepProgressWrites } from "../lib/lesson-progress-write.js";
+import {
+  evaluatedProblemSteps,
+  loadProblemSteps,
+  problemStepsIfReady,
+} from "../lib/task-problem-steps.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -143,6 +148,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       steps.push(step);
       stepsByTask.set(step.taskId, steps);
     }
+    const missingCompletions: string[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
         const p = progressByTaskId.get(task.id);
@@ -164,22 +170,29 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           p?.status === "passed" || p?.status === "ai-passed",
         );
         const steps = gatedTaskIds.has(task.id)
-          ? evaluatedProblemSteps(
+          ? problemStepsIfReady(
               stepsByTask.get(task.id) ?? [],
               problems,
               countedProblemIds(saved, contentHash, false),
-            ).map(({ problem, stepLessonId, afterLessonId, state }) => ({
+            )
+          : undefined;
+        const problemSteps = steps?.map(
+          ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
+            if (state === "submitted" && !stepCompleted) missingCompletions.push(stepLessonId);
+            return {
               id: problem.id,
               title: problem.title,
               label: problemStepLabel(problem.title, problem.index),
               stepLessonId,
               afterLessonId,
+              afterTitle,
               state,
-            }))
-          : undefined;
+            };
+          },
+        );
         return {
           ...base,
-          ...(steps ? { problems: steps } : {}),
+          ...(problemSteps ? { problems: problemSteps } : {}),
           problems_manual: saved.filter(
             (row) =>
               row.source === "manual" &&
@@ -190,6 +203,8 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
       });
+    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+      await write;
     return c.json({ tasks: result });
   } catch (err) {
     return errorResponse(c, err);
@@ -252,13 +267,20 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
           countedProblemIds(saved, row.contentHash, false),
         )
       : undefined;
+    const missingCompletions =
+      steps
+        ?.filter((step) => step.state === "submitted" && !step.stepCompleted)
+        .map((step) => step.stepLessonId) ?? [];
+    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+      await write;
     const entries = steps
-      ? steps.map(({ problem, state, stepLessonId, afterLessonId }) => ({
+      ? steps.map(({ problem, state, stepLessonId, afterLessonId, afterTitle }) => ({
           id: problem.id,
           title: problem.title,
           state,
           stepLessonId,
           afterLessonId,
+          afterTitle,
         }))
       : problems.map(({ id, title }) => ({ id, title }));
     return c.json({

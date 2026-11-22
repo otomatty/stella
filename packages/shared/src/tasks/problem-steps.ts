@@ -12,6 +12,7 @@ export interface TaskProblemStepSummary {
   label: string;
   stepLessonId: string;
   afterLessonId: string;
+  afterTitle: string;
   state: ProblemStepState;
 }
 

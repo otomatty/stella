@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
@@ -142,6 +142,13 @@ describe("0046: 既存の自己申告完了をレビュー合格に移行する 
       expect(corrected.updatedAt.getTime()).toBeGreaterThan(updatedAt.getTime());
       expect(await db.select().from(certificates)).toHaveLength(0);
       expect(await enrollment()).toMatchObject({ status: "active", completedAt: null });
+      // 0046 の直後を検証したあと、現行の route は現行のスキーマで確かめる。
+      const migrations = new URL("../../drizzle/", import.meta.url);
+      for (const name of readdirSync(migrations)
+        .filter((file) => file.endsWith(".sql") && file > `${TAG}.sql`)
+        .sort()) {
+        database.sqlite.exec(readFileSync(new URL(name, migrations), "utf8"));
+      }
       const { app } = mountTestApp(env, lessonProgressRoute);
       const read = await request(app, env, "/api/lesson-progress", { token });
       const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(read);

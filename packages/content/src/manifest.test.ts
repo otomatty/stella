@@ -44,7 +44,8 @@ describe("buildContentManifest", () => {
     expect(lessons?.[8]).toMatchObject({
       title: "問1 税込価格を返す",
       type: "text",
-      markdown: expect.stringContaining("例: addTax(1000) → 1100"),
+      markdown:
+        "# 問1 税込価格を返す（税率10%。税額の1円未満は切り捨て）\n\n例: addTax(1000) → 1100\n\nVS Code で開いて解き、確認して提出します。",
     });
     expect(lessons?.find((lesson) => lesson.id.endsWith("q01-q01-let-const"))?.title).toBe(
       "応用 letとconst（応用問題）",

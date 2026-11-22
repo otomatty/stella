@@ -457,9 +457,10 @@ function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string
     if (!line.startsWith("//") && (line || body.length)) break;
     if (body.length || line.startsWith("// 問")) body.push(line.slice(2).trim());
   }
+  const [heading = title, ...details] = body;
   return [
-    `# ${title}`,
-    ...(body.length ? [body.join("  \n")] : []),
+    `# ${heading}`,
+    ...(details.length ? [details.join("  \n")] : []),
     "VS Code で開いて解き、確認して提出します。",
   ].join("\n\n");
 }

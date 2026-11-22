@@ -16,6 +16,7 @@ import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { withResourceLock } from "./resource-lock.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
+import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import { evaluatedProblemSteps, loadProblemSteps } from "./task-problem-steps.js";
 import { reviewTaskSubmission, taskSubmissionLockId } from "./task-submission.js";
 
@@ -162,6 +163,7 @@ export async function submitTaskProblem(
         .limit(1);
       const defined = readTaskDefinition(current?.definition ?? "");
       const currentProblems = defined.problems ?? [];
+      let stepLessonId: string | undefined;
       if (bundle.manifest.problemSteps) {
         const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
         const submitted = countedProblemIds(saved, task.contentHash, false);
@@ -177,6 +179,7 @@ export async function submitTaskProblem(
           );
         if (step.state === "locked-previous")
           throw new ApiError("この問題はまだ解けません。先に前の問題を提出してください。", 409);
+        stepLessonId = step.stepLessonId;
       }
       const [progress] = await db
         .select({ status: taskProgress.status })
@@ -257,6 +260,8 @@ export async function submitTaskProblem(
             setWhere: sql`${taskProgress.status} not in ('passed', 'ai-passed')`,
           }),
       ];
+      if (stepLessonId)
+        writes.push(...planProblemStepProgressWrites(db, caller.id, [stepLessonId], now));
       const replacesManualPass =
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual") &&
