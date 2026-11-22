@@ -11,6 +11,7 @@ import {
   loadProblemRevisionHashes,
   countableProblemResults,
   readProblemDependencies,
+  submittedProblemImportSpecifiers,
   type ProblemRevisionHashes,
 } from "./task-problem-hashes.js";
 import { readTaskDefinition } from "./task-problem-submission.js";
@@ -53,8 +54,12 @@ interface ProblemRow {
   contentHash: string;
   source: "tests" | "manual";
   firstPassedAt: number;
-  path: string | null;
-  code: string | null;
+  path?: string;
+  importSpecifiers?: readonly string[] | null;
+  resultRowId: number | null;
+  codeBytes: number | null;
+  resultUpdatedAt: number | null;
+  resultSha256: string | null;
   dependenciesJson?: string | null;
   currentDependenciesJson?: string | null;
 }
@@ -87,9 +92,10 @@ function problemSummary(
   return { total: problems.length, passed: sources.size, sources: [...new Set(sources.values())] };
 }
 
-// 1 問の受付上限に合わせ、連携 API の 1 ページにもコードの総量の上限を設ける。
+// 1 問の受付上限を守り、ページ内のコードは本文を溜めずに小分けに読む。
 const MAX_PROBLEM_CODE_BYTES = 64 * 1024;
-const MAX_PAGE_CODE_BYTES = 4 * 1024 * 1024;
+const CODE_BATCH_BYTES = 1024 * 1024;
+const CODE_BATCH_ROWS = 200;
 const storedCodeBytes = sql`length(cast(r.code as blob))`;
 
 function problemCodeBytes(needed: SQL) {
@@ -98,26 +104,70 @@ function problemCodeBytes(needed: SQL) {
   end`;
 }
 
-function boundedProblemResults(candidates: SQL) {
+function problemResultMetadata(candidates: SQL) {
   return sql`select b.user_id,b.task_id,b.problemId,b.contentHash,b.source,b.firstPassedAt,
-      b.dependenciesJson,b.currentDependenciesJson,r.path,r.code
-    from (
-      select c.*,sum(c.codeBytes) over (
-        order by c.user_id,c.task_id,c.problemId,c.contentHash rows unbounded preceding
-      ) totalCodeBytes
-      from (${candidates}) c
-    ) b
-    left join task_problem_results r on b.codeBytes is not null
-      and b.totalCodeBytes <= ${MAX_PAGE_CODE_BYTES} and r.rowid=b.resultRowId
+      b.dependenciesJson,b.currentDependenciesJson,b.codeBytes,
+      case when b.codeBytes is not null then b.resultRowId end resultRowId,
+      case when b.codeBytes is not null then b.resultUpdatedAt end resultUpdatedAt,
+      case when b.codeBytes is not null then b.resultSha256 end resultSha256
+    from (${candidates}) b
     order by case when b.sequence<>0 then b.firstPassedAt end desc,b.sequence desc,b.problemId`;
 }
+
+type ScopedProblemRow = ProblemRow & { user_id: string; task_id: string };
+
+async function loadProblemImports(db: Db, rows: Iterable<ScopedProblemRow>) {
+  const batch = new Map<number, ScopedProblemRow>();
+  let batchBytes = 0;
+  const readBatch = async () => {
+    const keys = [...batch.values()].map((row) => [
+      row.resultRowId,
+      row.contentHash,
+      row.resultUpdatedAt,
+      row.resultSha256,
+      row.codeBytes,
+      row.user_id,
+      row.task_id,
+      row.problemId,
+    ]);
+    // 行の更新や rowid の再利用があったら、最初に読み取った結果と混ぜない。
+    for (const row of await db.all<{ resultRowId: number; path: string; code: string }>(sql`
+      select r.rowid resultRowId,r.path,r.code
+      from json_each(${JSON.stringify(keys)}) k
+      join task_problem_results r on r.rowid=json_extract(k.value,'$[0]')
+        and r.content_hash=json_extract(k.value,'$[1]')
+        and r.updated_at=json_extract(k.value,'$[2]')
+        and r.sha256=json_extract(k.value,'$[3]')
+        and ${storedCodeBytes}=json_extract(k.value,'$[4]')
+        and r.user_id=json_extract(k.value,'$[5]')
+        and r.task_id=json_extract(k.value,'$[6]')
+        and r.problem_id=json_extract(k.value,'$[7]')
+    `)) {
+      const target = batch.get(row.resultRowId);
+      if (!target) continue;
+      target.path = row.path;
+      target.importSpecifiers = submittedProblemImportSpecifiers(row.path, row.code);
+    }
+    batch.clear();
+    batchBytes = 0;
+  };
+  for (const row of rows) {
+    if (row.resultRowId === null || row.codeBytes === null) continue;
+    if (batchBytes + row.codeBytes > CODE_BATCH_BYTES || batch.size >= CODE_BATCH_ROWS)
+      await readBatch();
+    batch.set(row.resultRowId, row);
+    batchBytes += row.codeBytes;
+  }
+  if (batch.size) await readBatch();
+}
+
 const liveProblemCandidate = sql`r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,
   r.source,r.first_passed_at firstPassedAt,0 sequence,null dependenciesJson,
   case when r.content_hash=t.content_hash then r.problem_dependencies end currentDependenciesJson,
-  r.rowid resultRowId,
+  r.rowid resultRowId,r.updated_at resultUpdatedAt,r.sha256 resultSha256,
   ${problemCodeBytes(sql`r.source='tests' and r.content_hash<>t.content_hash and coalesce(tp.status,'') not in ('passed','ai-passed')`)} codeBytes`;
 
-/** 固定回数のクエリ。各クエリで同じメンバーページとグループのステージを結合する。 */
+/** 各集計クエリで同じメンバーページとグループのステージを結合する。 */
 export async function readIntegrationProgress(
   db: Db,
   groupId: string,
@@ -219,8 +269,8 @@ export async function readIntegrationProgress(
         ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
         : historicalPasses,
     ),
-    db.all<ProblemRow & { user_id: string; task_id: string }>(
-      boundedProblemResults(
+    db.all<ScopedProblemRow>(
+      problemResultMetadata(
         at === null
           ? sql`select ${liveProblemCandidate}
             from task_problem_results r join (${page}) p on p.id=r.user_id
@@ -229,6 +279,7 @@ export async function readIntegrationProgress(
             where t.active=1 and t.variant_of is null`
           : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,h.sequence,
               h.dependenciesJson,null currentDependenciesJson,r.rowid resultRowId,
+              r.updated_at resultUpdatedAt,r.sha256 resultSha256,
               ${problemCodeBytes(sql`r.rowid is not null`)} codeBytes
             from (
               select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,e.problem_dependencies dependenciesJson,
@@ -248,6 +299,7 @@ export async function readIntegrationProgress(
       sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
     ),
   ]);
+  await loadProblemImports(db, problems);
   // 索引を作り、人数×全履歴の走査も避ける。
   const key = (user: string, task: string) => JSON.stringify([user, task]);
   const progressMap = new Map(progress.map((r) => [key(r.user_id, r.task_id), r]));
@@ -390,8 +442,9 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     content_hash: string | null;
     status: string | null;
   };
-  type ResultRow = ProblemRow & { user_id: string; task_id: string };
-  const rows = await db.all<(EventRow & { event_row: 1 }) | (ResultRow & { event_row: 0 })>(sql`with
+  const rows = await db.all<
+    (EventRow & { event_row: 1 }) | (ScopedProblemRow & { event_row: 0 })
+  >(sql`with
     members as (select m.profile_id,m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
     scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
@@ -411,25 +464,28 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       where type in ('problems_passed','problems_revoked')
     ),
     problem_rows as (
-      ${boundedProblemResults(sql`select ${liveProblemCandidate}
+      ${problemResultMetadata(sql`select ${liveProblemCandidate}
         from targets k join task_problem_results r on r.user_id=k.user_id and r.task_id=k.task_id
         join tasks t on t.id=r.task_id
         left join task_progress tp on tp.user_id=r.user_id and tp.task_id=r.task_id`)}
     )
     select 1 event_row,page.*,t.definition,t.content_hash,tp.status,
-      null problemId,null contentHash,null firstPassedAt,null dependenciesJson,null currentDependenciesJson,null path,null code
+      null problemId,null contentHash,null firstPassedAt,null dependenciesJson,null currentDependenciesJson,
+      null codeBytes,null resultRowId,null resultUpdatedAt,null resultSha256
     from page left join tasks t on t.id=page.task_id
       left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id
     union all
     select 0,null,null,null,null,user_id,null,null,task_id,source,null,null,null,null,null,null,
-      problemId,contentHash,firstPassedAt,dependenciesJson,currentDependenciesJson,path,code
+      problemId,contentHash,firstPassedAt,dependenciesJson,currentDependenciesJson,
+      codeBytes,resultRowId,resultUpdatedAt,resultSha256
     from problem_rows
     order by seq`);
+  const resultRows = rows.filter((row) => row.event_row === 0);
+  await loadProblemImports(db, resultRows);
   const eventRows = rows.filter((row) => row.event_row === 1);
   const page = eventRows.slice(0, 500);
   const byKey = new Map<string, ProblemRow[]>();
-  for (const row of rows) {
-    if (row.event_row === 1) continue;
+  for (const row of resultRows) {
     const key = JSON.stringify([row.user_id, row.task_id]);
     const saved = byKey.get(key) ?? [];
     saved.push(row);

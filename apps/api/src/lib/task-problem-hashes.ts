@@ -31,6 +31,8 @@ export interface SavedProblemResult {
   source: "manual" | "tests";
   path?: string | null;
   code?: string | null;
+  /** 連携 API がコード本文を保持せずに渡す相対 import。null は依存未確定。 */
+  importSpecifiers?: readonly string[] | null;
   historicalDependencies?: readonly string[] | null;
   /** 連携 API は現行版のコードを読まず、提出時に控えた依存だけを使う。 */
   currentDependencies?: readonly string[] | null;
@@ -98,14 +100,14 @@ function isDistributedScript(path: string) {
   return /\.[cm]?[jt]sx?$/.test(path);
 }
 
-function submissionSpecifiers(path: string, code: string): string[] | null {
+export function submittedProblemImportSpecifiers(path: string, code: string): string[] | null {
   if (!path.endsWith(".ts")) return [];
   const imports = readRelativeImports(code);
   return imports.unresolvedDynamicImport ? null : imports.specifiers;
 }
 
 export function submittedProblemDependencies(bundle: TaskBundle, path: string, code: string) {
-  const specifiers = submissionSpecifiers(path, code);
+  const specifiers = submittedProblemImportSpecifiers(path, code);
   if (specifiers === null) return null;
   return directProblemDependencies(path, specifiers, {
     ...problemPaths(
@@ -143,7 +145,7 @@ export function countableProblemResults<T extends SavedProblemResult>(
   if (taskPassed) return [...rows];
   const current = revisions?.get(currentHash);
   const byId = new Map<string, T>();
-  const imports = new Map<SavedProblemResult, string[] | null>();
+  const imports = new Map<SavedProblemResult, readonly string[] | null>();
   for (const row of rows) if (!byId.has(row.problemId)) byId.set(row.problemId, row);
 
   return rows.filter((row) => {
@@ -162,11 +164,15 @@ export function countableProblemResults<T extends SavedProblemResult>(
         result.historicalDependencies ??
         (result.contentHash === currentHash ? result.currentDependencies : null);
       if (dependencies == null) {
-        if (result.path == null || result.code == null) return false;
-        let specifiers = imports.get(result);
+        if (result.path == null) return false;
+        let specifiers = result.importSpecifiers;
         if (specifiers === undefined) {
-          specifiers = submissionSpecifiers(result.path, result.code);
-          imports.set(result, specifiers);
+          specifiers = imports.get(result);
+          if (specifiers === undefined) {
+            if (result.code == null) return false;
+            specifiers = submittedProblemImportSpecifiers(result.path, result.code);
+            imports.set(result, specifiers);
+          }
         }
         if (specifiers === null) return false;
         dependencies = directProblemDependencies(result.path, specifiers, current, [
