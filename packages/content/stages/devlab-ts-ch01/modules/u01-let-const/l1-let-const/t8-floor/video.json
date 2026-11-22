@@ -13,14 +13,6 @@
     ]
   },
   "art": {
-    "cafe": {
-      "prompt": "A café table seen from above at a slight angle, drawn large and filling the whole image. On the left half, a hand holds a smartphone whose screen shows a loyalty point card with a row of round stamp circles, some of them filled with solid colour. On the right half, a paper receipt with a few thin placeholder lines lies on the table next to a cup of coffee. A wide gap between the phone and the receipt. No face, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "card": [0.18, 0.19, 0.25, 0.57],
-        "calc": [0.56, 0.43, 0.24, 0.38]
-      }
-    },
     "meter": {
       "prompt": "A measuring cup filled almost to the top with blue liquid, with plain tick marks but no numbers. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
@@ -178,34 +170,25 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:cafe",
+      "motion": "age-floor",
       "beats": [
         {
           "say": "この動画では、端数を切り捨てる書き方を学びます。"
         },
         {
-          "say": "お店のポイントは、整数でしか付きません。",
-          "spot": ["card"],
-          "label": [
-            {
-              "at": "card",
-              "text": "整数だけ"
-            }
-          ]
+          "say": "20歳と9か月の人に年齢を聞くと、答えは20歳です。",
+          "speech": "にじっさいと九か月の人に年齢を聞くと、答えはにじっさいです。"
         },
         {
-          "say": "でも、計算の途中で小数が出ることもあるでしょう。",
-          "pause": 1,
-          "spot": ["calc"],
-          "label": [
-            {
-              "at": "calc",
-              "text": "19.8 ?"
-            }
-          ]
+          "say": "21歳になるまで、月の分は数えません。",
+          "speech": "にじゅういっさいになるまで、月の分は数えません。"
+        },
+        {
+          "say": "余った分を捨てて整数にするのが、切り捨てです。",
+          "pause": 1
         }
       ]
     },

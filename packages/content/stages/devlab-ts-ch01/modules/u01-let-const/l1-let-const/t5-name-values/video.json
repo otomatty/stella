@@ -13,14 +13,6 @@
     ]
   },
   "art": {
-    "jars": {
-      "prompt": "A kitchen shelf seen from the front, drawn large and filling the whole image. Three identical glass jars filled with the same white powder stand in a row with wide gaps. The two jars on the left half have no label at all. The single jar on the right has a large blank white label sticker on its front with one short thick placeholder line. A wooden spoon lies on the shelf in front. No people, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "plain": [0.12, 0.22, 0.49, 0.56],
-        "tagged": [0.65, 0.22, 0.24, 0.56]
-      }
-    },
     "coins": {
       "prompt": "A small neat pile of three coins and one blank banknote shape. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
@@ -222,34 +214,26 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:jars",
+      "motion": "contacts",
       "beats": [
         {
           "say": "この動画では、値に名前を付ける方法を学びます。"
         },
         {
-          "say": "同じびんが並ぶと、中身の区別がつきません。",
-          "spot": ["plain"],
-          "label": [
-            {
-              "at": "plain",
-              "text": "中身は？"
-            }
-          ]
+          "say": "電話番号だけが並ぶと、だれの番号か分かりません。"
         },
         {
-          "say": "ラベルを貼れば、ひと目で分かるでしょう。",
-          "pause": 1,
-          "spot": ["tagged"],
-          "label": [
-            {
-              "at": "tagged",
-              "text": "名前つき"
-            }
-          ]
+          "say": "連絡先に名前を付ければ、ひと目で分かります。"
+        },
+        {
+          "say": "かけるときも、名前を選ぶだけです。"
+        },
+        {
+          "say": "コードでも、値に名前を付けて使います。",
+          "pause": 1
         }
       ]
     },

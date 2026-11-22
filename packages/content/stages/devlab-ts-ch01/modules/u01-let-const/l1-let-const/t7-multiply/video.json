@@ -13,14 +13,6 @@
     ]
   },
   "art": {
-    "bookshop": {
-      "prompt": "Inside a bookshop, drawn large and filling the whole image. On the left half, one purple hardcover book stands upright on a small display stand with one blank price tag. On the right half, a customer's two hands hold a neat stack of three identical purple hardcover books. Softly drawn bookshelves in the background. A wide gap between the single book and the stack. No face, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "one": [0.09, 0.37, 0.38, 0.54],
-        "three": [0.61, 0.4, 0.38, 0.38]
-      }
-    },
     "onebook": {
       "prompt": "One closed purple hardcover book standing upright with a blank price tag. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
@@ -178,35 +170,24 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:bookshop",
+      "motion": "onigiri-times",
       "beats": [
         {
           "say": "この動画では、掛け算の書き方を学びます。"
         },
         {
-          "say": "同じ本を3冊買うと、値段は3倍です。",
-          "speech": "同じ本を三冊買うと、値段は三倍です。",
-          "spot": ["three"],
-          "label": [
-            {
-              "at": "three",
-              "text": "3冊分"
-            }
-          ]
+          "say": "おにぎりは1個150円で、買うのは3個です。",
+          "speech": "おにぎりは一個百五十円で、買うのは三個です。"
         },
         {
-          "say": "算数では、かける記号を使って計算しました。",
-          "pause": 1,
-          "spot": ["one"],
-          "label": [
-            {
-              "at": "one",
-              "text": "1冊の値段"
-            }
-          ]
+          "say": "算数では、かける記号を使って計算しました。"
+        },
+        {
+          "say": "コードでは、この記号の書き方が変わります。",
+          "pause": 1
         }
       ]
     },

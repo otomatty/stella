@@ -208,9 +208,7 @@ export function VendingChange({ beats }: MotionProps) {
         { opacity: 0 },
       );
 
-      // ずっと続く小さな動き: 背景の丸がゆっくり上下し、ランプが明滅する
-      t.to("#blob-1", { y: -16, duration: 4.5, ease: "sine.inOut", repeat: 5, yoyo: true }, 0);
-      t.to("#blob-2", { y: 14, duration: 5.5, ease: "sine.inOut", repeat: 4, yoyo: true }, 0);
+      // ずっと続く小さな動き: ランプが明滅する
       t.fromTo(
         "#led",
         { opacity: 0.35 },
@@ -397,10 +395,6 @@ export function VendingChange({ beats }: MotionProps) {
       </defs>
 
       <g clipPath="url(#art-clip)">
-        {/* 背景のやわらかい丸 (ゆっくり動く) */}
-        <circle id="blob-1" cx={330} cy={300} r={210} fill="#EEF2FF" />
-        <circle id="blob-2" cx={1640} cy={330} r={170} fill="#FDF2F8" />
-
         {/* カメラで寄る範囲 */}
         <g id="world">
           <ellipse id="shadow" cx={1030} cy={944} rx={340} ry={14} fill={INK} opacity={0.08} />

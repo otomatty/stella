@@ -15,14 +15,6 @@
     ]
   },
   "art": {
-    "vending": {
-      "prompt": "Close-up front view of the payment panel of a drinks vending machine, drawn large and filling the whole image. On the left half, a small round coin slot with a hand inserting one blank coin into it. On the right half, a wide flat banknote slot with one blank banknote halfway inserted. A wide gap between the two slots. No face, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "coin": [0.04, 0.28, 0.36, 0.42],
-        "bill": [0.5, 0.3, 0.42, 0.44]
-      }
-    },
     "coin": {
       "prompt": "One large round blank coin held between two fingers. Drawn large and centered. No face, no letters, no digits, no symbols."
     },
@@ -268,33 +260,25 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:vending",
+      "motion": "entry-form",
       "beats": [
         {
           "say": "この動画で学ぶのは、型注釈です。"
         },
         {
-          "say": "自動販売機には、硬貨の入口があります。",
-          "spot": ["coin"],
-          "label": [
-            {
-              "at": "coin",
-              "text": "硬貨だけ"
-            }
-          ]
+          "say": "申込用紙には、名前や年齢を書く欄があります。"
         },
         {
-          "say": "お札は、別の入口から入れる決まりです。",
-          "spot": ["bill"],
-          "label": [
-            {
-              "at": "bill",
-              "text": "お札だけ"
-            }
-          ],
+          "say": "年齢の欄に書けるのは、数だけです。"
+        },
+        {
+          "say": "欄ごとに、書いてよいものの種類が決まっています。"
+        },
+        {
+          "say": "値の種類を書いて決めるのが、型注釈です。",
           "pause": 1
         }
       ]

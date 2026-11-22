@@ -15,14 +15,6 @@
     ]
   },
   "art": {
-    "diner": {
-      "prompt": "Inside a family restaurant, drawn large and filling the whole image. On the left half, a customer sitting at a table presses a round call button on the table with one finger; an open menu lies on the table; the menu pages show small pictures of dishes in natural, appetizing colours (a plate of curry and rice, a hamburger) with blank placeholder lines beside them, never landscapes or scenery. On the right half, a waiter in an apron walks toward the table carrying a tray with one steaming plate of food. A wide gap between the two people. No letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "ask": [0.16, 0.25, 0.46, 0.7],
-        "dish": [0.62, 0.14, 0.32, 0.8]
-      }
-    },
     "orderslip": {
       "prompt": "A hand holding up a small blank order slip on a clip, with two short placeholder lines on it. Drawn large and centered. No face, no letters, no digits, no symbols."
     },
@@ -268,48 +260,25 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:diner",
+      "motion": "call-staff",
       "beats": [
         {
           "say": "この動画で学ぶのは、関数の使い方です。"
         },
         {
-          "say": "飲食店の料理は、注文して初めて作られます。",
-          "spot": ["ask"],
-          "label": [
-            {
-              "at": "ask",
-              "text": "注文する"
-            }
-          ]
+          "say": "計算の担当は、呼ばれるまで動きません。"
         },
         {
-          "say": "頼まなければ、料理は出てきません。",
-          "spot": ["dish"],
-          "label": [
-            {
-              "at": "dish",
-              "text": "料理が届く"
-            }
-          ],
-          "pause": 1
+          "say": "名前を呼んで、伝票を渡してみましょう。"
         },
         {
-          "say": "関数も、使うときには呼び出しが必要です。",
-          "spot": ["ask", "dish"],
-          "label": [
-            {
-              "at": "ask",
-              "text": "呼び出す"
-            },
-            {
-              "at": "dish",
-              "text": "結果が返る"
-            }
-          ],
+          "say": "担当が計算して、結果を返してくれました。"
+        },
+        {
+          "say": "関数も、名前で呼び出すと動きます。",
           "pause": 1
         }
       ]

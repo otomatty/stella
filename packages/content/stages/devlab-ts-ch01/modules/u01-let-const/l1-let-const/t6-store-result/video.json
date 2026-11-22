@@ -13,14 +13,6 @@
     ]
   },
   "art": {
-    "checkout": {
-      "prompt": "A supermarket checkout seen from the customer's side, drawn large and filling the whole image. On the left half, a checkout belt carries two grocery items side by side: a milk carton and a loaf of bread, each with a small blank price sticker. On the right half, a hand holds up a long paper receipt showing two thin short placeholder lines at the top and one thick dark placeholder bar inside a highlighted box at the bottom. No face, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "items": [0.15, 0.29, 0.41, 0.46],
-        "receipt": [0.55, 0.18, 0.27, 0.7]
-      }
-    },
     "pad": {
       "prompt": "A desk calculator with a blank display, with two small price tags lying beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
@@ -178,34 +170,25 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:checkout",
+      "motion": "test-total",
       "beats": [
         {
           "say": "この動画では、計算した結果に名前を付けます。"
         },
         {
-          "say": "レジで最初にするのは、商品の値段の足し算です。",
-          "spot": ["items"],
-          "label": [
-            {
-              "at": "items",
-              "text": "先に計算"
-            }
-          ]
+          "say": "国語は80点、算数は90点でした。",
+          "speech": "国語は八十点、算数は九十点でした。"
         },
         {
-          "say": "その合計が、レシートのいちばん下に出ました。",
-          "pause": 1,
-          "spot": ["receipt"],
-          "label": [
-            {
-              "at": "receipt",
-              "text": "合計"
-            }
-          ]
+          "say": "合計の欄には、足した結果の170点を書きます。",
+          "speech": "合計の欄には、足した結果の百七十点を書きます。"
+        },
+        {
+          "say": "欄に入るのは、式ではなく計算した結果です。",
+          "pause": 1
         }
       ]
     },

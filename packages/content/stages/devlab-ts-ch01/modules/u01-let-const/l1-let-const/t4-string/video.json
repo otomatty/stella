@@ -13,14 +13,6 @@
     ]
   },
   "art": {
-    "form": {
-      "prompt": "Close-up view from above of a delivery slip form lying on a light desk, drawn large and filling most of the image. The slip has two clearly separated blank fields with a wide gap between them: on the left half, a wide rectangular field containing one long thick placeholder line; on the right half, a small square field containing one short thick placeholder mark. A hand holding a pen comes in from the bottom edge, about to write in the left field. A small cardboard parcel peeks in at the top right corner. No face, no letters, no digits, no symbols.",
-      "aspect": "16:9",
-      "regions": {
-        "name": [0.18, 0.34, 0.44, 0.36],
-        "count": [0.64, 0.34, 0.19, 0.36]
-      }
-    },
     "nametag": {
       "prompt": "One blank white name card in a clear holder with a neck strap, showing only one short placeholder line. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
     },
@@ -152,34 +144,23 @@
   "scenes": [
     {
       "id": "goal",
-      "kind": "view",
+      "kind": "motion",
       "role": "goal",
       "title": "この動画で学ぶこと",
-      "image": "art:form",
+      "motion": "quote-marks",
       "beats": [
         {
           "say": "この動画では、文字の書き方を学びます。"
         },
         {
-          "say": "宅配便の伝票で、名前を書く欄を見てください。",
-          "spot": ["name"],
-          "label": [
-            {
-              "at": "name",
-              "text": "文字"
-            }
-          ]
+          "say": "作文で話した言葉を囲むのが、かぎかっこです。"
         },
         {
-          "say": "個数の欄に書くのは、文字ではなく数です。",
-          "pause": 1,
-          "spot": ["count"],
-          "label": [
-            {
-              "at": "count",
-              "text": "数"
-            }
-          ]
+          "say": "囲んだ中は、そのまま言葉として読まれます。"
+        },
+        {
+          "say": "コードの文字も、記号で囲んで書く決まりです。",
+          "pause": 1
         }
       ]
     },
