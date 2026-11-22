@@ -31,14 +31,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      queue: ${{ steps.announcement.outputs.queue }}
     steps:
+      # ビルドと変更履歴の読み取りに同じコミットを使う。
       - uses: actions/checkout@v7
 
+      # ワークスペースの依存関係とリリース用スクリプトを Bun で扱う。
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
+      # ロックファイルの版でパッケージを再現する。
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -51,33 +55,83 @@ jobs:
           bun run build
           bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
+      # 手動で採番した版からタグを決める。
       - name: Read version
         id: meta
-        run: echo "version=$(node -p "require('./apps/vscode/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(node -p "require('./apps/vscode/package.json').version")
+          tag="vscode-v${version}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      # 同一バージョンで再度 main に push された場合は既存 Release に上書き添付する
-      # （バージョン採番は apps/vscode/package.json の手動更新。自動 bump はしない）。
-      - name: Create or update release
+      # 同じ版の再 push で本文の手直しを失わないよう、先に Release の有無を確かめる。
+      - name: Check for an existing release
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: vscode-v${{ steps.meta.outputs.version }}
-          NOTES: |
-            commit ${{ github.sha }} からビルド。
-            .vsix をダウンロードし、VS Code の「Extensions: Install from VSIX...」でインストールする。
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
-            # .vsix と本文をセットで差し替える（本文の commit がビルド元）。
-            # タグ自体は初回リリース時のコミットを指したままなので、
-            # コミットとタグを一致させたい場合はバージョンを上げること。
-            gh release upload "$TAG" apps/vscode/*.vsix --clobber
-            gh release edit "$TAG" --notes "$NOTES"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            # タグ未作成時の gh release create はデフォルトブランチの最新から
-            # タグを切るため、ビルドした commit を --target で明示する。
-            gh release create "$TAG" apps/vscode/*.vsix \
-              --target "$GITHUB_SHA" \
-              --title "VS Code 拡張 $TAG" \
-              --notes "$NOTES"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 同じ版の再ビルドは配布ファイルだけに反映する。
+      - name: Replace the existing VSIX
+        if: steps.release.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          gh release upload "$TAG" \
+            "apps/vscode/stella-lms-${VERSION}.vsix#stella-lms-${VERSION}.vsix（commit ${GITHUB_SHA::7}）" \
+            --clobber
+
+      # 初回だけ本文と通知に使う要約を用意する。
+      - name: Prepare release notes
+        if: steps.release.outputs.exists == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          bun run release:notes prepare --product vscode --version "$VERSION" \
+            --changelog apps/vscode/CHANGELOG.md --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/release"
+
+      # 本文と VSIX を公開し、Marketplace 公開前の要約も同時に添付する。
+      - name: Create release
+        if: steps.release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          cp "$RUNNER_TEMP/release/release-summary.json" "$RUNNER_TEMP/release/release-summary.pending.json"
+          gh release create "$TAG" \
+            "apps/vscode/stella-lms-${VERSION}.vsix#stella-lms-${VERSION}.vsix（commit ${GITHUB_SHA::7}）" \
+            "$RUNNER_TEMP/release/release-summary.pending.json" --target "$GITHUB_SHA" \
+            --title "VS Code 拡張 $TAG" --notes-file "$RUNNER_TEMP/release/release-body.md"
+
+      # 再実行は Release の添付から再開する。0.10.1 以前には pending がなく、通知の対象外。
+      - name: Check whether to queue the announcement
+        id: announcement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.release.outputs.exists }}
+        run: |
+          if [[ "$RELEASE_EXISTS" == 'false' ]]; then
+            echo "queue=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          if grep -Fxq 'release-summary.pending.json' <<< "$assets" &&
+            ! grep -Fxq 'release-summary.json' <<< "$assets" &&
+            ! grep -Fxq 'release-announced.json' <<< "$assets"; then
+            echo "queue=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "queue=false" >> "$GITHUB_OUTPUT"
           fi
 
   # 公開だけが OIDC トークンを要求できる。bun install や build と同じジョブに置くと、
@@ -90,6 +144,7 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # vsce を Bun から起動する。
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -106,8 +161,29 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: gh release download "vscode-v${VERSION}" --pattern "stella-lms-*.vsix" --dir vsix
 
+      # 公開済みの版を飛ばし、同じ版の再 push でも手順を再実行できるようにする。
       - name: Publish to Marketplace
         working-directory: vsix
         env:
           VERSION: ${{ needs.release.outputs.version }}
         run: bunx @vscode/vsce@4.1.0 publish --oidc --packagePath "stella-lms-${VERSION}.vsix" --skip-duplicate
+
+  # Marketplace に公開できた版だけを翌朝のお知らせに載せる。
+  queue-announcement:
+    needs: [release, publish]
+    if: needs.release.outputs.queue == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Attach release summary
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          tag="vscode-v${VERSION}"
+          dir="$RUNNER_TEMP/release"
+          gh release download "$tag" --pattern release-summary.pending.json --dir "$dir"
+          mv "$dir/release-summary.pending.json" "$dir/release-summary.json"
+          gh release upload "$tag" "$dir/release-summary.json" --clobber
