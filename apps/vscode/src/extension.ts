@@ -358,7 +358,7 @@ export function activate(context: vscode.ExtensionContext): void {
       await auth.clear();
     }),
     vscode.commands.registerCommand("stella.refresh", () => {
-      refreshLearningSidebar();
+      refreshLearningSidebar({ showLoading: true });
     }),
     vscode.commands.registerCommand("stella.openTask", (taskId?: unknown) =>
       openTaskFromSidebar(context, taskId),
