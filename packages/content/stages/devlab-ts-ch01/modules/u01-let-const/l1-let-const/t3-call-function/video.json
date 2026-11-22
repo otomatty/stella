@@ -16,7 +16,7 @@
   },
   "art": {
     "diner": {
-      "prompt": "Inside a family restaurant, drawn large and filling the whole image. On the left half, a customer sitting at a table presses a round call button on the table with one finger; an open menu with only picture shapes lies on the table. On the right half, a waiter in an apron walks toward the table carrying a tray with one steaming plate of food. A wide gap between the two people. No letters, no digits, no symbols.",
+      "prompt": "Inside a family restaurant, drawn large and filling the whole image. On the left half, a customer sitting at a table presses a round call button on the table with one finger; an open menu lies on the table; the menu pages show small pictures of dishes in natural, appetizing colours (a plate of curry and rice, a hamburger) with blank placeholder lines beside them, never landscapes or scenery. On the right half, a waiter in an apron walks toward the table carrying a tray with one steaming plate of food. A wide gap between the two people. No letters, no digits, no symbols.",
       "aspect": "16:9",
       "regions": {
         "ask": [0.16, 0.25, 0.46, 0.7],
