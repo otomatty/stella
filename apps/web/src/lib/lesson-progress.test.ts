@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { ProblemStepState } from "@stella/shared/tasks/problem-steps";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import {
   deriveStageProgress,
@@ -16,6 +17,8 @@ import {
   type LessonProgressEntry,
   type LessonProgressMap,
 } from "@/lib/lesson-progress";
+
+import type { ProblemLesson } from "./problem-lesson";
 
 function lesson(id: string, status: LessonStatus = "todo"): Lesson {
   return { id, title: id, type: "slides", duration: "3分", status };
@@ -195,5 +198,44 @@ describe("resolveLessonStatus / deriveStageProgress", () => {
     const all = { a: done(), b: done(), c: done(), d: done() };
     expect(deriveStageProgress(many, all).progress).toBe(99);
     expect(deriveStageProgress({ ...many, completed: true }, {}).progress).toBe(100);
+  });
+});
+
+describe("問題のステップのレッスン", () => {
+  const step = (id: string, state: ProblemStepState): [string, ProblemLesson] => [
+    id,
+    {
+      taskId: "task",
+      problem: {
+        id: `q-${id}`,
+        title: "税込価格を返す",
+        label: "問1",
+        stepLessonId: id,
+        afterLessonId: "video",
+        afterTitle: "関数の返り値",
+        state,
+      },
+    },
+  ];
+
+  it.each([
+    ["submitted", "done"],
+    ["open", "todo"],
+    ["locked-video", "locked"],
+    ["locked-previous", "locked"],
+  ] as const)("API の %s を %s として優先する", (state, status) => {
+    const problem = { ...lesson("a"), type: "text" } as const;
+    expect(resolveLessonStatus(problem, { a: done() }, new Map([step("a", state)]))).toBe(status);
+  });
+
+  it("次のレッスンは提出済みとロック中を飛ばし、解ける問題を返す", () => {
+    const steps = new Map([
+      step("a", "submitted"),
+      step("b", "locked-video"),
+      step("c", "locked-previous"),
+      step("d", "open"),
+    ]);
+    expect(findNextLesson(stage, { d: done() }, steps)?.lesson.id).toBe("d");
+    expect(findNextLesson(stage, {})?.lesson.id).toBe("a");
   });
 });

@@ -43,6 +43,7 @@ import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchMyStageCompletion } from "@/lib/certificates-api";
 import { findNextLesson, resolveLessonStatus, resumeLessonId } from "@/lib/lesson-progress";
+import { problemLessonsById, problemLockReason } from "@/lib/problem-lesson";
 import { stageWrapupOf } from "@/lib/stage-wrapup";
 import { cn } from "@/lib/utils";
 import { openInVscode } from "@/lib/vscode-launch";
@@ -106,45 +107,43 @@ export const StageDetail = ({
   const sections = stage.sections ?? [];
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
+  // TaskList が取得した一覧を、シラバスと仕上げでも使う。
+  const [loadedTasks, setLoadedTasks] = useState<{
+    stageId: string;
+    tasks: TaskSummary[];
+  } | null>(null);
+  const tasks = loadedTasks?.stageId === stage.id ? loadedTasks.tasks : null;
+  const problemLessons = useMemo(() => problemLessonsById(tasks), [tasks]);
+
   // 完了数は fixture の初期 status ではなく進捗ストア (サーバ同期済み) で解決する。
   const progressMap = useLessonProgressMap();
-  const statusOf = (l: Lesson) => resolveLessonStatus(l, progressMap);
+  const statusOf = (l: Lesson) => resolveLessonStatus(l, progressMap, problemLessons);
   const totalLessons = sections.reduce((a, s) => a + s.lessons.length, 0) || stage.lessonsCount;
   const doneLessons = sections.reduce(
     (a, s) => a + s.lessons.filter((l) => statusOf(l) === "done").length,
     0,
   );
   // 「続きから」 の再開位置 (最初の未完了レッスン)。 レッスンが無いステージでは null。
-  const resumeId = resumeLessonId(stage, progressMap);
+  const resumeId = resumeLessonId(stage, progressMap, problemLessons);
 
-  /**
-   * 新形式の課題の一覧 (`TaskList` が読んだもの。旧形式・未取得は null)。レッスンを終えても
-   * 課題が合格していなければクリアにならないので、受講者の番の課題があれば主ボタンを
-   * 「続きから」ではなく「課題に取り組む」にする。
-   *
-   * 読んだステージと一緒に持ち、いま開いているステージのものだけを使う。ステージ詳細から
-   * 別のステージへ移ると、このコンポーネントは作り直されずに残るため — 前のステージの課題で
-   * 「課題に取り組む」を出さない (旧形式のステージでは一覧を読み直さないので、なおさら)。
-   */
-  const [loadedTasks, setLoadedTasks] = useState<{
-    stageId: string;
-    tasks: TaskSummary[];
-  } | null>(null);
-  const tasks = loadedTasks?.stageId === stage.id ? loadedTasks.tasks : null;
   const wrapup = useMemo(() => (tasks ? stageWrapupOf(tasks) : null), [tasks]);
-  const lessonsLeft = findNextLesson(stage, progressMap) !== null;
+  const nextLesson = findNextLesson(stage, progressMap, problemLessons);
   const handheld = useIsHandheld();
   const taskTurn =
     !stage.completed &&
-    !lessonsLeft &&
+    !nextLesson &&
     wrapup?.learnerTurn &&
     // スマートフォン・タブレットは課題文のレッスン (リンクをパソコンへ送るボタン) へ送る。
-    (!handheld || wrapup.task.lessonId)
+    (!handheld || wrapup.nextLesson || wrapup.task.lessonId)
       ? wrapup
       : null;
   const [launching, setLaunching] = useState(false);
   const startTask = async () => {
     if (!taskTurn) return;
+    if (taskTurn.nextLesson) {
+      onOpenLesson(taskTurn.nextLesson.id);
+      return;
+    }
     if (handheld) {
       if (taskTurn.task.lessonId) onOpenLesson(taskTurn.task.lessonId);
       return;
@@ -312,6 +311,7 @@ export const StageDetail = ({
                         key={l.id}
                         lesson={l}
                         status={status}
+                        lockReason={problemLockReason(problemLessons.get(l.id)?.problem)}
                         onClick={() => status !== "locked" && onOpenLesson(l.id)}
                         reviewedSubmissionId={reviewedSubmission?.id}
                         onOpenSubmission={onOpenSubmission}
@@ -357,8 +357,14 @@ export const StageDetail = ({
                   disabled={launching}
                   onClick={() => void startTask()}
                 >
-                  {launching ? <Loader2 size={14} className="animate-spin" /> : <Code size={14} />}
-                  課題に取り組む
+                  {taskTurn.nextLesson ? (
+                    <Play size={14} />
+                  ) : launching ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Code size={14} />
+                  )}
+                  {taskTurn.nextLesson?.action ?? "課題に取り組む"}
                 </Button>
               ) : (
                 <Button
@@ -368,10 +374,14 @@ export const StageDetail = ({
                   onClick={() => resumeId && onOpenLesson(resumeId)}
                 >
                   <Play size={14} />
-                  {stage.progress === 0 ? "受講を開始" : "続きから"}
+                  {nextLesson && problemLessons.has(nextLesson.lesson.id)
+                    ? "問題を開く"
+                    : stage.progress === 0
+                      ? "受講を開始"
+                      : "続きから"}
                 </Button>
               )}
-              {wrapup && !lessonsLeft && !stage.completed ? (
+              {wrapup && !nextLesson && !stage.completed ? (
                 <p className="mt-2 text-[11.5px] leading-relaxed text-ink-3">{wrapup.detail}</p>
               ) : null}
               {/* 旧スタブを実装 (Issue #77): ステージ内の配布資料をまとめて一覧・DL する。 */}
@@ -434,6 +444,7 @@ export const StageDetail = ({
 const LessonRow = ({
   lesson,
   status,
+  lockReason,
   onClick,
   reviewedSubmissionId,
   onOpenSubmission,
@@ -441,6 +452,7 @@ const LessonRow = ({
   lesson: Lesson;
   /** 進捗ストアで解決済みの表示ステータス。 */
   status: LessonStatus;
+  lockReason?: string;
   onClick: () => void;
   reviewedSubmissionId?: string;
   onOpenSubmission?: (submissionId: string) => void;
@@ -475,6 +487,7 @@ const LessonRow = ({
             </>
           ) : null}
         </div>
+        {lockReason ? <div className="mt-1 text-[11px] text-ink-3">{lockReason}</div> : null}
       </div>
       {reviewedSubmissionId && onOpenSubmission ? (
         <button

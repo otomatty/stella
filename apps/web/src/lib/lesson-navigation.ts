@@ -15,6 +15,8 @@
 import type { Stage, Lesson, Section } from "@/data/types";
 import { resolveLessonStatus, type LessonProgressMap } from "@/lib/lesson-progress";
 
+import type { ProblemLesson } from "./problem-lesson";
+
 export interface LessonNavNode {
   lesson: Lesson;
   section: Section;
@@ -85,6 +87,7 @@ export function resolveLessonNeighbors(
   stage: Stage | undefined,
   activeLessonId: string,
   map: LessonProgressMap,
+  problemLessons?: ReadonlyMap<string, ProblemLesson>,
 ): LessonNeighbors {
   const nodes = flattenLessonNodes(stage);
   if (nodes.length === 0) return EMPTY_NEIGHBORS;
@@ -92,10 +95,12 @@ export function resolveLessonNeighbors(
   const current = index >= 0 ? (nodes[index] ?? null) : null;
   if (!current) return { ...EMPTY_NEIGHBORS, total: nodes.length };
 
-  const unlocked = (node: LessonNavNode) => resolveLessonStatus(node.lesson, map) !== "locked";
+  const unlocked = (node: LessonNavNode) =>
+    resolveLessonStatus(node.lesson, map, problemLessons) !== "locked";
   const prev = findInDirection(nodes, index, -1, unlocked);
   const next = findInDirection(nodes, index, 1, unlocked);
-  const isDone = (node: LessonNavNode) => resolveLessonStatus(node.lesson, map) === "done";
+  const isDone = (node: LessonNavNode) =>
+    resolveLessonStatus(node.lesson, map, problemLessons) === "done";
   return {
     current,
     prev,

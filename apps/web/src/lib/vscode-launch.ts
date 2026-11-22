@@ -61,7 +61,9 @@ function showHandoffHint(): void {
   }
 }
 
-export type VscodeTarget = { taskId: string } | { stageId: string; lessonId: string };
+export type VscodeTarget =
+  | { taskId: string; problemId?: string }
+  | { stageId: string; lessonId: string };
 
 async function issueLinkCode(): Promise<string | undefined> {
   try {
@@ -126,7 +128,7 @@ export async function openInVscode(target: VscodeTarget): Promise<void> {
   const code = await issueLinkCode();
   const uri =
     "taskId" in target
-      ? buildVscodeTaskUri(target.taskId, code)
+      ? buildVscodeTaskUri(target.taskId, code, target.problemId)
       : buildVscodeLessonUri(target.stageId, target.lessonId, code);
   watchLaunch();
   location.assign(uri);

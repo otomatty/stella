@@ -56,6 +56,14 @@ describe("案内の回数", () => {
 });
 
 describe("VS Code への引き継ぎ", () => {
+  it("指定した問題と接続コードを起動リンクに載せる", async () => {
+    await openInVscode({ taskId: "task", problemId: "q1" });
+
+    expect(location.assign).toHaveBeenCalledWith(
+      "vscode://saedgewell.stella-lms/task?taskId=task&problem=q1&code=link",
+    );
+  });
+
   it("離れる前の focus では出さず、戻った最初の 1 回だけ 15 秒の案内を出す", async () => {
     await openInVscode({ taskId: "task" });
     browser.dispatchEvent(new Event("focus"));

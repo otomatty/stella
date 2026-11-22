@@ -14,6 +14,7 @@
 import { isBackendConfigured } from "@/lib/backend";
 import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
+import { type ProblemLesson, problemLessonStatus } from "./problem-lesson";
 
 const STORAGE_KEY = "lms_lesson_progress";
 const COMPLETION_THRESHOLD = 0.9;
@@ -489,12 +490,19 @@ export function markComplete(lessonId: string): LessonProgressEntry {
 /**
  * fixture の初期 status と進捗マップから現在の表示 status を導出。
  *
+ * 問題のステップは API の状態を使う。それ以外のレッスンの
  * 優先度: locked 維持 → completed なら done → fixture が done なら done 維持
  *      → エントリ有なら active → fixture status。
  * fixture done の lesson を再訪して部分閲覧しただけで done から active に
  * 落ちないように、 fixture done を partial entry より上に置く。
  */
-export function resolveLessonStatus(lesson: Lesson, map: LessonProgressMap): LessonStatus {
+export function resolveLessonStatus(
+  lesson: Lesson,
+  map: LessonProgressMap,
+  problemLessons?: ReadonlyMap<string, ProblemLesson>,
+): LessonStatus {
+  const step = problemLessons?.get(lesson.id);
+  if (step) return problemLessonStatus(step.problem);
   if (lesson.status === "locked") return "locked";
   const entry = map[lesson.id];
   if (entry?.completed) return "done";
@@ -518,6 +526,7 @@ export interface NextLessonInfo {
 export function findNextLesson(
   stage: Stage | undefined,
   map: LessonProgressMap,
+  problemLessons?: ReadonlyMap<string, ProblemLesson>,
 ): NextLessonInfo | null {
   if (!stage?.sections) return null;
   let flat = 0;
@@ -526,7 +535,7 @@ export function findNextLesson(
     if (!section) continue;
     for (const lesson of section.lessons) {
       flat += 1;
-      const status = resolveLessonStatus(lesson, map);
+      const status = resolveLessonStatus(lesson, map, problemLessons);
       if (status !== "done" && status !== "locked") {
         return { lesson, sectionNumber: si + 1, lessonNumber: flat };
       }
@@ -540,11 +549,15 @@ export function findNextLesson(
  * 最初の非 locked レッスンへ戻す (読み返しでボタンを死なせない / ロック行ガードを迂回しない)。
  * すべて locked / レッスン無しなら null。
  */
-export function resumeLessonId(stage: Stage | undefined, map: LessonProgressMap): string | null {
-  const next = findNextLesson(stage, map);
+export function resumeLessonId(
+  stage: Stage | undefined,
+  map: LessonProgressMap,
+  problemLessons?: ReadonlyMap<string, ProblemLesson>,
+): string | null {
+  const next = findNextLesson(stage, map, problemLessons);
   if (next) return next.lesson.id;
   const lessons = stage?.sections?.flatMap((s) => s.lessons) ?? [];
-  return lessons.find((l) => resolveLessonStatus(l, map) !== "locked")?.id ?? null;
+  return lessons.find((l) => resolveLessonStatus(l, map, problemLessons) !== "locked")?.id ?? null;
 }
 
 /**
