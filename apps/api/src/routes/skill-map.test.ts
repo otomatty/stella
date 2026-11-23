@@ -13,6 +13,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
 import { addStudyDays, toStudyDate } from "@stella/shared/study/activity";
 
 import type { Env } from "../env.js";
@@ -27,10 +28,44 @@ import {
 } from "../lib/skill-map-data.js";
 import type { StaffSkillMapStageRow } from "../lib/skill-map-data.js";
 import {
+  loadStageContentSummaries,
+  type StageContentSummary,
+} from "../lib/stage-content-summary.js";
+import {
   skillMapRoute,
   type SkillMapStagePayload as StagePayload,
   type StaffSkillMapStagePayload,
 } from "./skill-map.js";
+
+vi.mock("@stella/shared/skill-map/evaluate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@stella/shared/skill-map/evaluate")>();
+  return { ...actual, evaluateSkillMap: vi.fn(actual.evaluateSkillMap) };
+});
+
+vi.mock("../lib/stage-content-summary.js", () => ({
+  loadStageContentSummaries: vi.fn(),
+}));
+
+const CONTENT_SUMMARY: StageContentSummary = {
+  units: 2,
+  videos: 3,
+  texts: 4,
+  knowledgeQuestions: 5,
+  tasks: 6,
+  problems: 7,
+  runners: ["ts-test"],
+  plannedHours: 2.5,
+};
+const CONTENT_PAYLOAD = {
+  units: 2,
+  videos: 3,
+  texts: 4,
+  knowledge_questions: 5,
+  tasks: 6,
+  problems: 7,
+  runners: ["ts-test"],
+  planned_hours: 2.5,
+};
 
 // 発見教材 (Phase 4) の読み出し。このファイルは視界の秘匿だけを見るので、既定は
 // 「教材なし」。discovery の公開条件そのものは `routes/discovery.test.ts` が持つ。
@@ -155,6 +190,7 @@ async function fetchStages(): Promise<Map<string, StagePayload>> {
 
 beforeEach(() => {
   CALLER.role = "student";
+  vi.mocked(loadStageContentSummaries).mockReset().mockResolvedValue(new Map());
   vi.mocked(wantsDevReveal).mockReturnValue(false);
   vi.mocked(loadSkillMapSource).mockResolvedValue(lineSource());
   vi.mocked(loadSkillProfileCounts).mockResolvedValue({
@@ -183,6 +219,47 @@ describe("GET /api/skill-map/mine", () => {
     expect(stages.get("id-d")?.visibility).toBe("edge");
     expect(stages.get("id-e")).toBeUndefined();
     expect(stages.get("id-f")).toBeUndefined();
+  });
+
+  it.each([false, true])("解放済みの full にだけ教材の集計を返す (開発者表示 %s)", async (dev) => {
+    const source = lineSource();
+    const evaluated = evaluateSkillMap(source);
+    // 現行の評価器が通常返さない互換用の段も、応答で秘匿する。
+    evaluated.visibility.set("id-e", "fog");
+    vi.mocked(evaluateSkillMap).mockReturnValueOnce(evaluated);
+    vi.mocked(wantsDevReveal).mockReturnValue(dev);
+    vi.mocked(loadStageContentSummaries).mockResolvedValue(
+      new Map(source.stages.map(({ id }) => [id, CONTENT_SUMMARY])),
+    );
+
+    const stages = await fetchStages();
+
+    expect(stages.get("id-a")?.content).toEqual(CONTENT_PAYLOAD);
+    expect(stages.get("id-b")?.content).toEqual(CONTENT_PAYLOAD);
+    expect(stages.get("id-c")).toMatchObject({ state: "locked", visibility: "full" });
+    expect(stages.get("id-d")?.visibility).toBe("edge");
+    expect(stages.get("id-e")?.visibility).toBe("fog");
+    const stagesWithContent = [...stages.values()].filter((stage) => "content" in stage);
+    expect(stagesWithContent.map((stage) => stage.id)).toEqual(["id-a", "id-b"]);
+    expect(loadStageContentSummaries).toHaveBeenCalledExactlyOnceWith(expect.anything(), [
+      "id-a",
+      "id-b",
+    ]);
+  });
+
+  it("教材の集計に失敗しても content を省いて 200 を返す", async () => {
+    const error = new Error("summary failed");
+    vi.mocked(loadStageContentSummaries).mockRejectedValueOnce(error);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const stages = await fetchStages();
+
+      expect(stages.get("id-b")?.state).toBe("unlocked");
+      for (const stage of stages.values()) expect(stage).not.toHaveProperty("content");
+      expect(log).toHaveBeenCalledWith("[skill-map] 教材の集計に失敗しました", error);
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("開発ラボG の 00章は前提のクリア前から見え、未到達の章は開発者表示にだけ載せる", async () => {
@@ -1438,6 +1515,33 @@ describe("GET /api/skill-map/staff", () => {
     }
     expect(stages.get("live-course")?.has_icon).toBe(true);
     expect(stages.get("draft-course")?.has_icon).toBeUndefined();
+  });
+
+  it("盤面に載る各ステージに教材の集計を付ける", async () => {
+    vi.mocked(loadStageContentSummaries).mockResolvedValue(
+      new Map(staffBoardRows().map(({ id }) => [id, CONTENT_SUMMARY])),
+    );
+
+    const stages = await fetchStaffStages();
+
+    expect(stages.size).toBeGreaterThan(0);
+    for (const stage of stages.values()) expect(stage.content).toEqual(CONTENT_PAYLOAD);
+    expect(loadStageContentSummaries).toHaveBeenCalledExactlyOnceWith(expect.anything());
+  });
+
+  it("教材の集計に失敗しても content を省いて 200 を返す", async () => {
+    const error = new Error("summary failed");
+    vi.mocked(loadStageContentSummaries).mockRejectedValueOnce(error);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const stages = await fetchStaffStages();
+
+      expect(stages.get("live-course")?.status).toBe("published");
+      for (const stage of stages.values()) expect(stage).not.toHaveProperty("content");
+      expect(log).toHaveBeenCalledWith("[skill-map] 教材の集計に失敗しました", error);
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("Extra は割り当てが無くても載り、audience と granted_count が付く", async () => {

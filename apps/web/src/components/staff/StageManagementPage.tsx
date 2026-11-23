@@ -20,10 +20,11 @@ import {
   getStaffSkillMapIcons,
   type StaffSkillMapStageNode,
 } from "@/lib/skill-map-api";
+import { hasTasksOnly, runnerLabelOf, sumStageContent } from "@/lib/stage-content";
 import { cn } from "@/lib/utils";
 
 import { StaffEnrollButton } from "./StaffEnrollButton";
-import { StageGrantEditor } from "./StageGrantEditor";
+import { StageContentStats } from "./StageContentStats";
 import {
   entryStageId,
   filterStagesByQuery,
@@ -67,7 +68,6 @@ export function StageManagementPage({
   const [stages, setStages] = useState<StaffSkillMapStageNode[] | null>(null);
   const [loading, setLoading] = useState(backendEnabled);
   const [error, setError] = useState<string | null>(null);
-  const [grantStageId, setGrantStageId] = useState<string | null>(null);
   const [selectedIslandKey, setSelectedIslandKey] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -169,7 +169,6 @@ export function StageManagementPage({
 
   const showSkeleton = backendEnabled && loading && stages === null;
   const showError = backendEnabled && error !== null && stages === null;
-  const grantStage = grantStageId === null ? undefined : byId.get(grantStageId);
 
   return (
     <div className="relative h-[calc(100dvh-var(--shell-header-height))] overflow-hidden">
@@ -214,19 +213,10 @@ export function StageManagementPage({
             celebrate={false}
             loadIcons={getStaffSkillMapIcons}
             starTag={staffStarTag}
-            renderDetail={(node, close) => {
+            renderDetail={(node) => {
               const stage = byId.get(node.id);
               if (!stage) return null;
-              return (
-                <StarDetailCard
-                  stage={stage}
-                  onOpenAsLearner={onOpenAsLearner}
-                  onAssign={() => {
-                    close();
-                    setGrantStageId(stage.id);
-                  }}
-                />
-              );
+              return <StarDetailCard stage={stage} onOpenAsLearner={onOpenAsLearner} />;
             }}
             handleRef={treeRef}
             insetLeft={isDesktop && expanded ? CARD_INSET_PX : 0}
@@ -284,7 +274,6 @@ export function StageManagementPage({
                   island={selectedIsland}
                   onBack={() => setSelectedIslandKey(null)}
                   onSelectIsland={selectIsland}
-                  onAssign={setGrantStageId}
                 />
               ) : (
                 <>
@@ -390,22 +379,13 @@ export function StageManagementPage({
                               </Badge>
                             </div>
                             <p className="mt-1 text-[11px] text-ink-3">{offBoardNote(stage)}</p>
+                            <StageContentStats content={stage.content} />
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               <Button asChild variant="primary" size="sm">
                                 <Link to="/stages/$stageId" params={{ stageId: stage.id }}>
                                   ステージ詳細を開く
                                 </Link>
                               </Button>
-                              {stage.audience === "granted" ? (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setGrantStageId(stage.id)}
-                                >
-                                  ユーザーを割り当てる
-                                </Button>
-                              ) : null}
                               {stage.status === "published" ? (
                                 <StaffEnrollButton
                                   stageId={stage.id}
@@ -451,29 +431,19 @@ export function StageManagementPage({
           </div>
         )}
       </aside>
-
-      <StageGrantEditor
-        stageId={grantStageId}
-        stageTitle={grantStage?.title ?? grantStage?.slug ?? ""}
-        open={grantStageId !== null}
-        onClose={() => setGrantStageId(null)}
-        onSaved={() => void load()}
-        stageTitleOf={(id) => byId.get(id)?.title}
-      />
     </div>
   );
 }
 
 function StarDetailCard({
   stage,
-  onAssign,
   onOpenAsLearner,
 }: {
   stage: StaffSkillMapStageNode;
   onOpenAsLearner: (stageId: string) => void;
-  onAssign: () => void;
 }) {
   const category = stage.category?.trim() ?? "";
+  const { content } = stage;
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-ink-3">
@@ -488,6 +458,39 @@ function StarDetailCard({
           {stageAudienceLabel(stage.audience)}
         </Badge>
       </div>
+      {content ? (
+        <>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12px] tabular-nums">
+            <dt className="text-ink-3">単元</dt>
+            <dd>{content.units.toLocaleString("ja-JP")}</dd>
+            <dt className="text-ink-3">レッスン</dt>
+            <dd>
+              動画 {content.videos.toLocaleString("ja-JP")} · まとめ{" "}
+              {content.texts.toLocaleString("ja-JP")} · 知識問題{" "}
+              {content.knowledge_questions.toLocaleString("ja-JP")} 問
+            </dd>
+            <dt className="text-ink-3">VS Code</dt>
+            <dd>
+              課題 {content.tasks.toLocaleString("ja-JP")} · 問題{" "}
+              {content.problems.toLocaleString("ja-JP")}
+              {content.runners.length > 0
+                ? ` · ${content.runners.map(runnerLabelOf).join(" · ")}`
+                : ""}
+            </dd>
+            {content.planned_hours !== null ? (
+              <>
+                <dt className="text-ink-3">予定時間</dt>
+                <dd>{content.planned_hours.toLocaleString("ja-JP")} 時間</dd>
+              </>
+            ) : null}
+          </dl>
+          {hasTasksOnly(content) ? (
+            <Badge className="self-start" variant="warning">
+              教材なし (課題のみ)
+            </Badge>
+          ) : null}
+        </>
+      ) : null}
       <p className="text-[12px] text-ink-2">
         受講登録 {stage.enrolled_count}
         {stage.audience === "granted" ? ` · 割り当て ${stage.granted_count}` : ""}
@@ -498,11 +501,6 @@ function StarDetailCard({
             ステージ詳細を開く
           </Link>
         </Button>
-        {stage.audience === "granted" ? (
-          <Button type="button" size="sm" variant="outline" onClick={onAssign}>
-            ユーザーを割り当てる
-          </Button>
-        ) : null}
         {stage.status === "published" ? (
           <StaffEnrollButton stageId={stage.id} onOpenAsLearner={onOpenAsLearner} />
         ) : null}
@@ -579,13 +577,25 @@ function StaffIslandDetail({
   island,
   onBack,
   onSelectIsland,
-  onAssign,
 }: {
   island: StaffIslandEntry;
   onBack: () => void;
   onSelectIsland: (key: string) => void;
-  onAssign: (id: string) => void;
 }) {
+  const contents = island.stages.map((stage) => stage.content);
+  const total = contents.some(Boolean) ? sumStageContent(contents) : null;
+  const maxProblems = Math.max(0, ...contents.map((content) => content?.problems ?? 0));
+  const stats = total
+    ? [
+        { label: "ステージ", value: island.count },
+        { label: "VS Code の課題", value: total.tasks },
+        { label: "課題の問題", value: total.problems },
+        { label: "動画", value: total.videos },
+        { label: "知識問題", value: total.knowledge_questions },
+        { label: "予定時間 (h)", value: total.planned_hours },
+      ]
+    : [];
+
   return (
     <>
       <Button type="button" size="sm" variant="ghost" className="self-start" onClick={onBack}>
@@ -594,6 +604,7 @@ function StaffIslandDetail({
       <div className="flex flex-wrap items-center gap-2">
         <RouteDot routeKey={island.key} />
         <h2 className="text-[15px] font-semibold">{island.key}</h2>
+        <span className="text-[11px] text-ink-3">コース</span>
         {island.allExtra ? <Badge variant="accent">Extra</Badge> : null}
       </div>
       <dl className="space-y-3 text-[12px]">
@@ -617,30 +628,40 @@ function StaffIslandDetail({
             )}
           </dd>
         </div>
-        {island.next.length > 0 ? (
-          <div>
-            <dt className="text-ink-4">このまとまりの先</dt>
-            <dd>
-              {island.next.map((next) => (
-                <button
-                  type="button"
-                  key={next.key}
-                  aria-pressed={false}
-                  onClick={() => onSelectIsland(next.key)}
-                  className="flex min-h-[30px] w-full items-center gap-2 rounded-md py-1 text-left hover:bg-sunken"
-                >
-                  <RouteDot routeKey={next.key} />
-                  <span>
-                    {next.key}
-                    <span className="block text-[11px] text-ink-4">表示: {next.visibility}</span>
-                  </span>
-                </button>
-              ))}
-            </dd>
-          </div>
-        ) : null}
       </dl>
-      <section aria-label="まとまりのステージ">
+      {total ? (
+        <dl aria-label="コースの合計" className="grid grid-cols-3 gap-2 text-[12px] tabular-nums">
+          {stats.map(({ label, value }) => (
+            <div key={label}>
+              <dt className="text-ink-3">{label}</dt>
+              <dd>{value?.toLocaleString("ja-JP") ?? "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {island.next.length > 0 ? (
+        <dl className="text-[12px]">
+          <dt className="text-ink-4">このコースの先</dt>
+          <dd>
+            {island.next.map((next) => (
+              <button
+                type="button"
+                key={next.key}
+                aria-pressed={false}
+                onClick={() => onSelectIsland(next.key)}
+                className="flex min-h-[30px] w-full items-center gap-2 rounded-md py-1 text-left hover:bg-sunken"
+              >
+                <RouteDot routeKey={next.key} />
+                <span>
+                  {next.key}
+                  <span className="block text-[11px] text-ink-4">表示: {next.visibility}</span>
+                </span>
+              </button>
+            ))}
+          </dd>
+        </dl>
+      ) : null}
+      <section aria-label="コースのステージ">
         <h3 className="text-[12px] font-semibold">
           ステージ <span className="font-normal text-ink-4">{island.count}</span>
         </h3>
@@ -662,18 +683,7 @@ function StaffIslandDetail({
                   {stageAudienceLabel(stage.audience)}
                 </Badge>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {stage.audience === "granted" ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onAssign(stage.id)}
-                  >
-                    ユーザーを割り当てる
-                  </Button>
-                ) : null}
-              </div>
+              <StageContentStats content={stage.content} maxProblems={maxProblems} />
             </li>
           ))}
         </ol>

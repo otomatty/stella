@@ -45,6 +45,10 @@ vi.mock("../lib/discovery-data.js", () => ({
   loadPassedDiscoveryCount: vi.fn(),
 }));
 
+vi.mock("../lib/stage-content-summary.js", () => ({
+  loadStageContentSummaries: vi.fn().mockResolvedValue(new Map()),
+}));
+
 vi.mock("../lib/skill-map-data.js", async (importOriginal) => ({
   // 差し替えるのは I/O を持つ口だけ。純粋なヘルパ (視界の段の申告など) は本物を使う。
   ...(await importOriginal<typeof import("../lib/skill-map-data.js")>()),

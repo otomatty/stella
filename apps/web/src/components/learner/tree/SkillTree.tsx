@@ -172,7 +172,7 @@ interface SkillTreeProps {
    */
   celebrate?: boolean;
   /**
-   * 島タイトルの 2 行目に ` · ` で足す文言。null か空なら「星雲 · n ステージ」だけ。
+   * 管理画面で島タイトルの「N ステージ」に ` · ` で足す文言。
    */
   islandCaption?: (key: string) => string | null;
   /** 本土の見出し。既定は「開発スキル」。 */
@@ -189,6 +189,7 @@ interface SkillTreeProps {
    */
   initialFit?: boolean;
   selectedIslandKey?: string | null;
+  showSelectedIslandPrerequisite?: boolean;
   onSelectIsland?: (key: string) => void;
   className?: string;
 }
@@ -455,6 +456,7 @@ export const SkillTree = ({
   showLegend = true,
   initialFit = false,
   selectedIslandKey = null,
+  showSelectedIslandPrerequisite = true,
   onSelectIsland,
   className,
 }: SkillTreeProps) => {
@@ -974,6 +976,7 @@ export const SkillTree = ({
     [mainlandTitle, drawnCounts.mainland, layout, drawnStars, islandFrames, visibleView],
   );
   const selectedBridge = useMemo(() => {
+    if (!showSelectedIslandPrerequisite) return null;
     const island = visibleIslands.find((island) => island.key === selectedIslandKey);
     const anchor = drawnStars.find((star) => star.instanceId === island?.anchorId);
     if (!island || !anchor) return null;
@@ -992,7 +995,7 @@ export const SkillTree = ({
         root ? (starRadius.get(root.instanceId) ?? 16) : 0,
       ),
     };
-  }, [visibleIslands, selectedIslandKey, drawnStars, starRadius]);
+  }, [showSelectedIslandPrerequisite, visibleIslands, selectedIslandKey, drawnStars, starRadius]);
   useEffect(() => {
     if (!handleRef) return;
     handleRef.current = { focusStage: (stageId) => focusStage(stageId), focusRegion };
@@ -1041,7 +1044,10 @@ export const SkillTree = ({
                 size="sm"
                 variant="outline"
                 className="tree-zoom-btn h-6 gap-1.5 px-2 text-[10.5px]"
-                onClick={() => jumpTo(target.x, target.y)}
+                onClick={() => {
+                  jumpTo(target.x, target.y);
+                  if (index > 0) onSelectIsland?.(target.key);
+                }}
               >
                 <span
                   aria-hidden="true"

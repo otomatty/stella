@@ -24,8 +24,6 @@ import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { nebulaCaption } from "@/components/learner/tree/nebula-caption";
-
 import { Button } from "@/components/ui/button";
 import type { Stage } from "@/data/types";
 import { useGuidedStages } from "@/hooks/useGuidedStages";
@@ -36,6 +34,7 @@ import { useSkillMap } from "@/hooks/useSkillMap";
 import { useIsHandheld } from "@/hooks/useIsHandheld";
 import { useSrsToday } from "@/hooks/useSrsToday";
 import { useStageWrapup } from "@/hooks/useStageWrapup";
+import { CoursePanel } from "@/components/learner/CoursePanel";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
 import { HomeHud } from "@/components/learner/home/HomeHud";
 import {
@@ -119,6 +118,8 @@ export const LearnerHome = ({
       return "tree";
     }
   });
+  const [courseKey, setCourseKey] = useState<string | null>(null);
+  const closeCourse = useCallback(() => setCourseKey(null), []);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   useEffect(() => {
     try {
@@ -140,7 +141,11 @@ export const LearnerHome = ({
   const revealDev = revealsDevMap(devModeRequested, skillMap.map?.dev_mode);
 
   const nodes = skillMap.map?.stages ?? [];
-  const islandCaption = useCallback((key: string) => nebulaCaption(key, nodes), [nodes]);
+  const visibleCourseKey =
+    courseKey !== null && nodes.some((node) => node.category === courseKey) ? courseKey : null;
+  useEffect(() => {
+    if (courseKey !== visibleCourseKey) closeCourse();
+  }, [courseKey, visibleCourseKey, closeCourse]);
   const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const stageById = useMemo(() => {
     const map = new Map(stages.map((s) => [s.id, s]));
@@ -567,7 +572,9 @@ export const LearnerHome = ({
           <SkillTree
             overview
             nodes={nodes}
-            islandCaption={islandCaption}
+            selectedIslandKey={visibleCourseKey}
+            onSelectIsland={setCourseKey}
+            showSelectedIslandPrerequisite={false}
             currentUserId={currentUserId}
             activeStageId={serverActiveStageId}
             onResumeStage={resumeStage}
@@ -586,6 +593,18 @@ export const LearnerHome = ({
           />
         ) : null}
       </div>
+
+      <CoursePanel
+        courseKey={visibleCourseKey}
+        nodes={nodes}
+        activeStageId={serverActiveStageId}
+        isDesktop={isDesktop}
+        onClose={closeCourse}
+        onResumeStage={resumeStage}
+        onStartStage={startStage}
+        onOpenStage={openStage}
+        openTask={activeInfo?.openTask}
+      />
 
       <div className="pointer-events-none absolute inset-x-0 inset-y-3 z-20 grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_fit-content(45cqh)] gap-2 lg:inset-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-3">
         <div ref={topControlsRef} className="z-10 flex flex-col items-start gap-2">
@@ -637,6 +656,7 @@ export const LearnerHome = ({
                     )}
                     onClick={() => {
                       setPendingFocusId(null);
+                      if (view === "lanes") closeCourse();
                       setHomeView(view);
                     }}
                   >
@@ -653,7 +673,6 @@ export const LearnerHome = ({
         {showViewToggle && homeView === "lanes" ? (
           <SkillLanes
             nodes={nodes}
-            islandCaption={islandCaption}
             activeStageId={serverActiveStageId}
             revealDev={revealDev}
             activeInfo={activeInfo}
