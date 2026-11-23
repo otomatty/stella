@@ -3,8 +3,8 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 id: 5-1-2
 title: 位置で取り出す
 takeaway: "後ろから取り出すなら slice の負の位置、指定の一文字なら charAt を使います。"
-introduces: ["slice", "charAt"]
-requires: ["const", "文字列", "string", "メソッド", "引数", "戻り値", "型注釈", "number"]
+introduces: ["slice"]
+requires: ["const", "文字列", "string", "メソッド", "引数", "戻り値", "型注釈", "number", "charAt"]
 header: "開発ラボG 事前課題 第1部"
 ---
 

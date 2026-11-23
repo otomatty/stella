@@ -1,0 +1,712 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数.toLocaleString() で、3桁ごとにカンマを入れた文字列になります。",
+    "stuck": "請求の明細に大きな金額が並びます。桁を数えなくても読みやすい表示にするには、どうすればよいでしょうか。",
+    "points": [
+      "数.toLocaleString() で、3桁ごとにカンマを入れた文字列になります。引数に \"ja-JP\" を渡すと、実行する環境によらず日本向けの区切りになります。"
+    ],
+    "leaveOut": ["小数や通貨記号の表示設定"]
+  },
+  "art": {
+    "priceblank": {
+      "prompt": "A plain tilted price tag beside one neat pile of coins. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "pricegroups": {
+      "prompt": "A single long pale price ticket separated into several visible panels by narrow gaps. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "priceformatted": {
+      "prompt": "A broad blank blue display card propped upright beside a stack of coins. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "invoice": {
+      "prompt": "A simple blank invoice sheet with ruled rows beside a coin stack. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "visitorcount": {
+      "prompt": "An entrance turnstile beside a small blank blue counter. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "inventorysheet": {
+      "prompt": "A clipboard with empty rows and three small cartons beside it. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "parcels": {
+      "prompt": "Several plain shipping parcels stacked in front of a blank tally sheet. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "parcelgroups": {
+      "prompt": "Three groups of plain violet blocks with clear spaces between the groups. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "parceldisplay": {
+      "prompt": "A blue digital counter housing with a blank light display. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の金額",
+          "art": "priceblank",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "右から区切る",
+          "art": "pricegroups",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "表示する金額",
+          "art": "priceformatted",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の数値",
+          "art": "priceblank",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "表示形式",
+          "art": "pricegroups",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "できた文字列",
+          "art": "priceformatted",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "明細の金額",
+          "art": "invoice",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "来場者の数",
+          "art": "visitorcount",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "在庫の一覧",
+          "art": "inventorysheet",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "渡す金額",
+          "art": "priceblank",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "表示する文字列",
+          "art": "priceformatted",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "荷物の合計",
+          "art": "parcels",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "桁のまとまり",
+          "art": "parcelgroups",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "表示の結果",
+          "art": "parceldisplay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "price-comma",
+      "beats": [
+        {
+          "say": "この動画では、数を3桁ごとに区切る方法を学びます。",
+          "speech": "この動画では、数をさんけたごとに区切る方法を学びます。"
+        },
+        {
+          "say": "値札の表示は、1234567円です。",
+          "speech": "値札の表示は、ひゃくにじゅうさんまんよんせんごひゃくろくじゅうななえんです。"
+        },
+        {
+          "say": "3桁ごとにカンマを入れると、読みやすくなりました。",
+          "speech": "さんけたごとにカンマを入れると、読みやすくなりました。"
+        },
+        {
+          "pause": 1,
+          "say": "カンマ付きの文字列にするのが、toLocaleString です。",
+          "speech": "カンマ付きの文字列にするのが、トゥーロケールストリングです。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "金額を読みやすくする",
+      "board": "example",
+      "beats": [
+        {
+          "say": "桁の多い金額を、値札に書きました。",
+          "show": ["a"],
+          "tag": {
+            "a": "76840"
+          }
+        },
+        {
+          "say": "右端から、3桁ずつのまとまりに分けます。",
+          "speech": "右端から、さんけたずつのまとまりに分けます。",
+          "show": ["b", "ab"],
+          "tag": {
+            "b": "76｜840"
+          }
+        },
+        {
+          "say": "まとまりの間に入れるのは、カンマです。",
+          "show": ["c", "bc"],
+          "tag": {
+            "c": "76,840"
+          }
+        },
+        {
+          "pause": 1,
+          "say": "桁の並びが分かりやすくなりました。",
+          "travel": {
+            "along": ["bc"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "3桁ごとに区切る",
+      "code": [
+        "// 表示する金額を数値で用意する",
+        "const amount = 76840;",
+        "// 金額を表示用の文字列にする",
+        "const amountText = amount.toLocaleString();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "数値を、表示形式に合った文字列にするメソッドです。",
+          "part": {
+            "line": 3,
+            "text": "toLocaleString"
+          },
+          "term": {
+            "text": "表示形式",
+            "ruby": "ひょうじけいしき",
+            "note": "画面に出すときの形"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "数値が入った変数の後ろに、点を書きます。",
+          "part": {
+            "line": 3,
+            "text": "amount."
+          },
+          "figure": {
+            "tag": {
+              "a": "76840"
+            }
+          }
+        },
+        {
+          "say": "続けて、toLocaleString と書きましょう。",
+          "speech": "続けて、トゥーロケールストリングと書きましょう。",
+          "part": {
+            "line": 3,
+            "text": "toLocaleString"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "最後のかっこで、このメソッドを呼び出します。",
+          "part": {
+            "line": 3,
+            "text": "()"
+          },
+          "figure": {
+            "tag": {
+              "c": "76,840"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 表示する金額を数値で用意する",
+        "const amount = 76840;",
+        "// 金額を表示用の文字列にする",
+        "const amountText = amount.toLocaleString();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "メソッド名とかっこは、書き方が決まっています。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": ".toLocaleString"
+              },
+              {
+                "line": 3,
+                "text": "()"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "金額の変数名と、その中の値は自分で決める部分です。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "amount"
+              },
+              {
+                "line": 1,
+                "text": "76840"
+              },
+              {
+                "line": 3,
+                "text": "amountText"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 表示する金額を数値で用意する",
+        "const amount = 76840;",
+        "// 日本向けの表示で金額を文字列にする",
+        "const amountText = amount.toLocaleString(\"ja-JP\");"
+      ],
+      "show": [0, 1],
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "受け取った金額を、画面に表示しましょう。",
+          "part": {
+            "line": 1,
+            "text": "amount",
+            "note": "金額"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "76840"
+            }
+          }
+        },
+        {
+          "say": "日本向けの表示を選ぶには、ja-JP を渡します。",
+          "speech": "日本向けの表示を選ぶには、ジェイエー、ジェイピーを渡します。",
+          "type": [2, 3],
+          "figure": {
+            "tag": {
+              "b": "ja-JP"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "返ってきたのは、カンマの付いた文字列です。",
+          "part": {
+            "line": 3,
+            "text": "amountText",
+            "note": "金額の文字"
+          },
+          "figure": {
+            "tag": {
+              "c": "76,840"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "カンマはどこに付く？",
+      "code": [
+        "// 表示する荷物の合計を用意する",
+        "const parcelTotal = 684271;",
+        "// 日本向けの表示で合計を文字列にする",
+        "const parcelText = parcelTotal.toLocaleString(\"ja-JP\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "荷物の合計を、表示用の文字列にします。",
+          "part": {
+            "line": 1,
+            "text": "684271"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "684271"
+            }
+          }
+        },
+        {
+          "say": "日本向けの表示を指定しました。",
+          "part": {
+            "line": 3,
+            "text": "\"ja-JP\""
+          },
+          "figure": {
+            "tag": {
+              "b": "ja-JP"
+            }
+          }
+        },
+        {
+          "say": "カンマは、どこに付くでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 表示する荷物の合計を用意する",
+        "const parcelTotal = 684271;",
+        "// 日本向けの表示で合計を文字列にする",
+        "const parcelText = parcelTotal.toLocaleString(\"ja-JP\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "答えは「684,271」という文字列です。",
+          "speech": "答えは、ろく、はち、よん、カンマ、に、なな、いちという文字列です。",
+          "figure": {
+            "tag": {
+              "c": "684,271"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "右端から三桁ずつ見る",
+      "code": [
+        "// 表示する荷物の合計を用意する",
+        "const parcelTotal = 684271;",
+        "// 日本向けの表示で合計を文字列にする",
+        "const parcelText = parcelTotal.toLocaleString(\"ja-JP\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "右から三桁を取ると、271 です。",
+          "speech": "右からさんけたを取ると、にひゃくななじゅういちです。",
+          "part": {
+            "line": 1,
+            "text": "271"
+          },
+          "figure": {
+            "tag": {
+              "b": "271"
+            }
+          }
+        },
+        {
+          "say": "その左に、カンマを一つ入れます。",
+          "figure": {
+            "tag": {
+              "b": "｜271"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "残った 684 が、カンマの左側です。",
+          "speech": "残ったろっぴゃくはちじゅうよんが、カンマの左側です。",
+          "part": {
+            "line": 1,
+            "text": "684"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "請求の明細では、金額を読みやすくできます。",
+          "show": ["a"]
+        },
+        {
+          "say": "桁が多くなりやすいのは、来場者の数も同じです。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "在庫の一覧を作るときも、カンマで区切りましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12 で使う",
+      "code": [
+        "// 問12 金額を3桁ごとのカンマ区切りにし、「円」を付ける",
+        "//     例: formatYen(1234) → \"1,234円\"",
+        "export function formatYen() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問12では、金額をカンマで区切ります。",
+          "speech": "といじゅうにでは、金額をカンマで区切ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例の右側は、「円」まで含めた文字列です。",
+          "part": {
+            "line": 1,
+            "text": "→ \"1,234円\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "まず、どこまでが数値の表示かを見てみましょう。",
+          "part": {
+            "line": 1,
+            "text": "1,234"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "39da70be5b0c869325e78b0642ce4aefda838d781c2f879333e6845f070ec4bb"
+  }
+}

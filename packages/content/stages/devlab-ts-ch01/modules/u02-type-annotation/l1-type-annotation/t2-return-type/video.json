@@ -1,0 +1,709 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "引数のかっこの後ろに、コロンと戻り値の型を書きます。",
+    "stuck": "商品にかかる税額を別の処理で使います。関数がどんな種類の値を返すかは、どこを見れば分かるでしょうか。",
+    "points": ["引数のかっこの後ろに、コロンと戻り値の型を書きます。"],
+    "leaveOut": ["戻り値の型を省略できる条件"]
+  },
+  "art": {
+    "vendbutton": {
+      "prompt": "A close-up of a single illuminated round button on a vending machine. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "vendingbox": {
+      "prompt": "A light grey vending machine with a row of naturally colored drink cans behind glass. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "drinkcan": {
+      "prompt": "A naturally colored orange juice can lying in a vending machine pickup slot. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "tasknumbers": {
+      "prompt": "Two small piles of coins set side by side. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "taxreceipt": {
+      "prompt": "A blank receipt next to a small desk calculator and a few coins. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "shelftag": {
+      "prompt": "A blank label on a shelf holding a few light grey cartons. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "booking": {
+      "prompt": "A blank desk calendar with one colored cell highlighted. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "taskbrackets": {
+      "prompt": "Two blank rounded slots in a small violet form. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "押すボタン",
+          "art": "vendbutton",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自動販売機",
+          "art": "vendingbox",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "出てくる缶",
+          "art": "drinkcan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る金額",
+          "art": "tasknumbers",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "税額を計算",
+          "art": "rule",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "返す値の型",
+          "art": "drinkcan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "金額の計算",
+          "art": "taxreceipt",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "棚の見出し",
+          "art": "shelftag",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "予約できるか",
+          "art": "booking",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "引数のかっこ",
+          "art": "taskbrackets",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値",
+          "art": "tasknumbers",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "棚の名前",
+          "art": "shelftag",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値",
+          "art": "shelftag",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "戻り値の型",
+          "art": "rule",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "vending-output",
+      "beats": [
+        {
+          "say": "この動画では、戻り値に型を書く方法を学びます。"
+        },
+        {
+          "say": "自動販売機の取り出し口は、飲み物が出る場所です。"
+        },
+        {
+          "say": "ボタンを押すと、缶が一本出てきました。"
+        },
+        {
+          "pause": 1,
+          "say": "出てくる値の種類を表すのが、戻り値の型です。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "取り出し口から出るもの",
+      "board": "example",
+      "beats": [
+        {
+          "say": "飲み物を選ぶために、ボタンを押します。",
+          "show": ["a"]
+        },
+        {
+          "say": "押したボタンの飲み物が決まりました。",
+          "show": ["b", "ab"],
+          "travel": {
+            "along": ["ab"]
+          }
+        },
+        {
+          "say": "機械から出てくるのは、選んだ飲み物です。",
+          "show": ["c", "bc"],
+          "travel": {
+            "along": ["bc"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "関数でも、何が出てくるかに注目しましょう。",
+          "pulse": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "戻り値に型を書く",
+      "code": [
+        "// 税抜価格を受け取って、税額を返す関数",
+        "function tax(price: number): number {",
+        "  // 値段に税率を掛けて返す",
+        "  return price * 0.08;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "引数のかっこが終わる位置を見ましょう。",
+          "part": {
+            "line": 1,
+            "text": ")"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "そのすぐ後ろに、コロンを書きます。",
+          "part": {
+            "line": 1,
+            "text": "):",
+            "note": "かっこの後ろ"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "say": "続く number は、数値を返すことを表す型です。",
+          "speech": "続くナンバーは、数値を返すことを表す型です。",
+          "part": {
+            "line": 1,
+            "text": ": number {"
+          },
+          "figure": {
+            "tag": {
+              "c": "number"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "中で返す値は、この型にそろえましょう。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 税抜価格を受け取って、税額を返す関数",
+        "function tax(price: number): number {",
+        "  // 値段に税率を掛けて返す",
+        "  return price * 0.08;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "コロンや型のつづりは、言語で決まっています。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": ": number"
+              },
+              {
+                "line": 3,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "関数名や引数名のほか、税率もここで決めた値です。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "tax"
+              },
+              {
+                "line": 1,
+                "text": "price"
+              },
+              {
+                "line": 3,
+                "text": "0.08"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// 税抜価格を受け取って、税額を返す関数",
+        "function tax(price: number): number {",
+        "  // 値段に税率を掛けて返す",
+        "  return price * 0.08;",
+        "}",
+        "// 商品の価格を渡して、税額を求める",
+        "tax(250);"
+      ],
+      "show": [0, 1, 2, 3, 4],
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "税額を求める関数を、呼び出してみましょう。",
+          "part": {
+            "line": 1,
+            "text": "tax",
+            "note": "税"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "商品の価格として、250 を渡します。",
+          "speech": "商品の価格として、にひゃくごじゅうを渡します。",
+          "type": [5, 6],
+          "figure": {
+            "tag": {
+              "a": "250"
+            }
+          }
+        },
+        {
+          "say": "価格に税率を掛けた結果は、20 です。",
+          "speech": "価格に税率を掛けた結果は、にじゅうです。",
+          "part": {
+            "line": 3,
+            "text": "price * 0.08"
+          },
+          "figure": {
+            "tag": {
+              "b": "20"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "税額は数値なので、戻り値の型に合っています。",
+          "part": {
+            "line": 1,
+            "text": ": number {"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            },
+            "tag": {
+              "c": "20"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "棚の名前と型は合う？",
+      "code": [
+        "// 表示用の棚の名前を返す関数",
+        "function shelfLabel(): number {",
+        "  // 棚の名前を文字列で返す",
+        "  return \"北の棚\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "棚の名前を返す関数を用意しました。",
+          "part": {
+            "line": 1,
+            "text": "shelfLabel",
+            "note": "棚の名前"
+          },
+          "figure": {
+            "show": ["b", "c", "bc"]
+          }
+        },
+        {
+          "say": "戻り値の型には、number と書いてあります。",
+          "speech": "戻り値の型には、ナンバーと書いてあります。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "tag": {
+              "c": "number"
+            }
+          }
+        },
+        {
+          "say": "この関数は、型の確認を通るでしょうか？",
+          "part": {
+            "line": 3,
+            "text": "\"北の棚\""
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 表示用の棚の名前を返す関数",
+        "function shelfLabel(): number {",
+        "  // 棚の名前を文字列で返す",
+        "  return \"北の棚\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "型の確認で、エラーになります。",
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "値と戻り値の型をそろえる",
+      "code": [
+        "// 表示用の棚の名前を返す関数",
+        "function shelfLabel(): number {",
+        "  // 棚の名前を文字列で返す",
+        "  return \"北の棚\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "関数が返そうとしているのは、棚の名前です。",
+          "part": {
+            "line": 3,
+            "text": "\"北の棚\""
+          },
+          "figure": {
+            "tag": {
+              "b": "北の棚"
+            }
+          }
+        },
+        {
+          "say": "「北の棚」は文字列なので、数値の型に合いません。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "棚の名前を返すなら、戻り値の型は string です。",
+          "speech": "棚の名前を返すなら、戻り値の型はストリングです。",
+          "figure": {
+            "tag": {
+              "c": "string"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "金額を計算して返すときは、戻り値の型を数値にします。",
+          "show": ["a"]
+        },
+        {
+          "say": "棚に付ける見出しなら、戻り値は文字列です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "予約できるかを返す関数でも、値の種類を書きましょう。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1 で使う",
+      "code": [
+        "// 問1 a から b を引いた数を返す",
+        "//     例: subtract(5, 3) → 2",
+        "export function subtract() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1では、引き算の結果を返します。",
+          "speech": "といいちでは、引き算の結果を返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例の右にあるのが、返す値です。",
+          "part": {
+            "line": 1,
+            "text": "→ 2"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "その値の種類を、引数のかっこの後ろに書きましょう。",
+          "part": {
+            "line": 2,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c29c2aee350f5286acc515e33fcd685b090b28fa83c2cb8d7ab9f907ebc0d02b"
+  }
+}

@@ -1,0 +1,694 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": ".repeat(回数) で、同じ文字列を回数だけ並べられます。",
+    "stuck": "評価の数に合わせて、画面に同じ印を並べます。毎回、印を一つずつ書く必要があるでしょうか。",
+    "points": [".repeat(回数) で、同じ文字列を回数だけ並べられます。"],
+    "leaveOut": ["負の回数を指定したエラー"]
+  },
+  "art": {
+    "stamphead": {
+      "prompt": "A violet rubber stamp with a simple star-shaped stamp pad resting beside it. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stampblank": {
+      "prompt": "A violet rubber stamp hovering above a blank card with faded round guide spots. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "stamptrail": {
+      "prompt": "A white card with an evenly spaced row of violet star stamp impressions. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "tabledivider": {
+      "prompt": "A printed table of faint grey cells with one prominent violet dividing line. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "ratingcard": {
+      "prompt": "A review card with a row of purple stars and short placeholder bars. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "progressmeter": {
+      "prompt": "A horizontal progress meter made of several equal rounded blue blocks. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "tasktext": {
+      "prompt": "A blank rectangular card with a single broad violet placeholder bar. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "chantcard": {
+      "prompt": "One small blank card with two short violet placeholder bars and generous whitespace. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "chantpair": {
+      "prompt": "Two identical blank cards lying side by side with equal spacing. Drawn large and centered. No letters, no digits, no logos."
+    },
+    "chantstrip": {
+      "prompt": "A single horizontal strip with two identical separated groups of abstract bars. Drawn large and centered. No letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "一つの模様",
+          "art": "stamphead",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "押す回数",
+          "art": "stampblank",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "並んだ模様",
+          "art": "stamptrail",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "stamphead",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "くり返す回数",
+          "art": "stampblank",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "並べた結果",
+          "art": "stamptrail",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 2,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [2, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "表の区切り",
+          "art": "tabledivider",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "評価の印",
+          "art": "ratingcard",
+          "at": [2, 1]
+        },
+        {
+          "id": "c",
+          "label": "進み具合",
+          "art": "progressmeter",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "tasktext",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "回数と結果",
+          "art": "stamptrail",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の合図",
+          "art": "chantcard",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "並べる回数",
+          "art": "chantpair",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "続いた合図",
+          "art": "chantstrip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "stamp-repeat",
+      "beats": [
+        {
+          "say": "この動画では、同じ文字列をくり返し並べる方法を学びます。"
+        },
+        {
+          "say": "星のスタンプを、カードに3回続けて押しました。",
+          "speech": "星のスタンプを、カードに三回続けて押しました。"
+        },
+        {
+          "say": "同じ模様が、左から3つ並んでいます。",
+          "speech": "同じ模様が、左から三つ並んでいます。"
+        },
+        {
+          "pause": 1,
+          "say": "同じ文字列を決めた回数だけ並べるのが、repeat です。",
+          "speech": "同じ文字列を決めた回数だけ並べるのが、リピートです。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "同じ模様を続けて押す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "一つのスタンプを用意しました。",
+          "show": ["a"]
+        },
+        {
+          "say": "同じカードに、決めた回数だけ押します。",
+          "show": ["b", "ab"],
+          "travel": {
+            "along": ["ab"]
+          }
+        },
+        {
+          "say": "カードに並んでいるのは、どれも同じ模様です。",
+          "show": ["c", "bc"],
+          "travel": {
+            "along": ["bc"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "押す回数を変えれば、模様の数も変わります。",
+          "tag": {
+            "b": "4 回"
+          }
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字列をくり返す",
+      "code": [
+        "// くり返す音を用意する",
+        "const sound = \"ぽん\";",
+        "// 音の「ぽん」を続けて並べる",
+        "const echo = sound.repeat(4);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ文字列を並べるメソッドが、repeat です。",
+          "speech": "同じ文字列を並べるメソッドが、リピートです。",
+          "term": {
+            "text": "repeat",
+            "ruby": "リピート",
+            "note": "同じ文字列を並べる"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "まず、元の文字列を書きます。",
+          "part": {
+            "line": 1,
+            "text": "\"ぽん\"",
+            "note": "音"
+          },
+          "figure": {
+            "tag": {
+              "a": "ぽん"
+            }
+          }
+        },
+        {
+          "say": "続けて、点と repeat を書きましょう。",
+          "speech": "続けて、点とリピートを書きましょう。",
+          "part": {
+            "line": 3,
+            "text": ".repeat"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "かっこの中の 4 が、くり返す回数です。",
+          "speech": "かっこの中のよんが、くり返す回数です。",
+          "part": {
+            "line": 3,
+            "text": "(4)"
+          },
+          "figure": {
+            "tag": {
+              "b": "4 回"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// くり返す音を用意する",
+        "const sound = \"ぽん\";",
+        "// 音の「ぽん」を続けて並べる",
+        "const echo = sound.repeat(4);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "点とメソッド名、かっこは決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": ".repeat"
+              },
+              {
+                "line": 3,
+                "text": "("
+              },
+              {
+                "line": 3,
+                "text": ")"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "a": "変えられない"
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "並べる文字列と回数は、必要に合わせて選びます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "echo"
+              },
+              {
+                "line": 1,
+                "text": "\"ぽん\""
+              },
+              {
+                "line": 3,
+                "text": "4"
+              }
+            ]
+          },
+          "figure": {
+            "tag": {
+              "b": "変えてよい"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例を書いて確かめる",
+      "code": [
+        "// くり返す音を用意する",
+        "const sound = \"ぽん\";",
+        "// 音の「ぽん」を続けて並べる",
+        "const echo = sound.repeat(4);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "音の「ぽん」を、続けて並べてみましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"ぽん\"",
+            "note": "音"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "ぽん"
+            }
+          }
+        },
+        {
+          "say": "今回は、同じ音を 4 回くり返します。",
+          "speech": "今回は、同じ音をよんかいくり返します。",
+          "part": {
+            "line": 3,
+            "text": "(4)"
+          },
+          "figure": {
+            "travel": {
+              "along": ["ab"]
+            },
+            "tag": {
+              "b": "4 回"
+            }
+          }
+        },
+        {
+          "say": "途中に区切りは入りません。",
+          "figure": {
+            "tag": {
+              "c": "ぽんぽんぽんぽん"
+            },
+            "travel": {
+              "along": ["bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "できた文字列を、echo に入れます。",
+          "speech": "できた文字列を、エコーに入れます。",
+          "part": {
+            "line": 3,
+            "text": "echo",
+            "note": "反響"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "空白もくり返される？",
+      "code": ["// 短い合図を続けて並べる", "const chant = \"go \".repeat(2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "合図の文字列には、最後に空白が入っています。",
+          "part": {
+            "line": 1,
+            "text": "\"go \""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "go␠"
+            }
+          }
+        },
+        {
+          "say": "この文字列を、2 回並べるコードです。",
+          "speech": "この文字列を、にかい並べるコードです。",
+          "part": {
+            "line": 1,
+            "text": "(2)"
+          },
+          "figure": {
+            "tag": {
+              "b": "2 回"
+            }
+          }
+        },
+        {
+          "say": "空白は、どこに残るでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 短い合図を続けて並べる", "const chant = \"go \".repeat(2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "pause": 1,
+          "say": "合図のあとに、毎回空白が残るのが答えです。",
+          "figure": {
+            "tag": {
+              "c": "go␠go␠"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "空白も元の文字列に含まれる",
+      "code": ["// 短い合図を続けて並べる", "const chant = \"go \".repeat(2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "引用符の内側は、すべて並べる文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"go \""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "空白ごと、同じ文字列がくり返されます。",
+          "figure": {
+            "travel": {
+              "along": ["ab", "bc"]
+            }
+          }
+        },
+        {
+          "pause": 1,
+          "say": "図の空白の印は、実際には半角スペースです。",
+          "figure": {
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "文字でできた表では、同じ記号を並べて区切りを作れます。",
+          "show": ["a"]
+        },
+        {
+          "say": "評価の数だけ印を並べるのも、同じ使い方です。",
+          "show": ["b"]
+        },
+        {
+          "pause": 1,
+          "say": "進み具合を記号で表すときにも、回数を変えて使えます。",
+          "show": ["c"]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問4 で使う",
+      "code": [
+        "// 問4 text を times 回つなげた文字列を返す",
+        "//     例: repeatText(\"ab\", 3) → \"ababab\"",
+        "export function repeatText() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問4では、受け取った文字列を続けて並べます。",
+          "speech": "といよんでは、受け取った文字列を続けて並べます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "例のカンマの後ろは、くり返す回数です。",
+          "part": {
+            "line": 1,
+            "text": ", 3"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "pause": 1,
+          "say": "回数をどの引数から受け取るか、確かめましょう。",
+          "part": {
+            "line": 2,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4306ff08f0ed637367920251fda4b3f9dee9ed5006f5f3555eb39449fc952d1c"
+  }
+}
