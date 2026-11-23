@@ -104,11 +104,11 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 **説明の優先順位**は実際の画面のキャプチャ → 概念図・イラストのアニメーションです (2026-11-20、オーナー決定)。書き方・考え方を教える動画はレッスン型 (schema 2) にし、動画 1 本で要点を 1 つだけ扱います。コードやテキストだけの場面は作らず、コードは概念図と並べます。詳しくは [VIDEO_GUIDE.md の「何を映すか」](VIDEO_GUIDE.md#何を映すか) と [「レッスン型の動画 (schema 2)」](VIDEO_GUIDE.md#レッスン型の動画-schema-2) を参照してください。読み上げ文は丁寧な説明にし、最初のイラストは動画ごとにその具体例が伝わる絵にします (2026-11-21、オーナー決定)。
 
-**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (既定は Gemini 4 Neon、考える量は `low`) で磨きます。ガイドの抜粋を送り、受け取った修正案と使用トークン数・料金の目安を報告します。`video.json` のあるトピックは、デプロイの `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は `captions.vtt` に文ごとの読み上げ時刻で書き、プレイヤーが動画に重ねます。画面が暗い文には `<c.on-dark>` を付けます。動くイラストの場面 (`motion`) は Remotion と GSAP で描きます。`video:studio` で動きを確かめられます。以下は旧方式の説明です。
+**新方式:** トピックに絵コンテ `video.json` を置くと、スライドを映さず、場面ごとのクリップをつないだ動画を作れます (`bun run --filter=@stella/content video:scenes`)。実際に画面を操作している動画 (`packages/content/clips/`) を主役にし、静止画 (`packages/content/shots/`) とイラスト (`assets/art/`) で補います。VS Code の操作は Windows の手元で撮ります。手引きは [docs/video-local-recording.md](../../docs/video-local-recording.md) にあります。書き方と素材の作り方は [VIDEO_GUIDE.md](VIDEO_GUIDE.md)。先に学習設計 (`brief`) を書き、読み上げ文は `video:polish` (既定は Gemini 4 Neon、考える量は `low`) で磨きます。ガイドの抜粋を送り、受け取った修正案と使用トークン数・料金の目安を報告します。`video.json` のあるトピックは、手動の `video:sync` が新方式で作ります。台帳に同じ内容ハッシュの動画があれば作らず、変わったトピックだけ作り直します。場面ごとの音声と映像は `dist/video-cache` で使い回します。無ければ収録版 (`screen.*`)、次にスライド版 (`narration.json`) を使います。`video.json` のあるトピックは `video:check` で検査し、使わない `narration.json` は `narration:check` の検査から外します。新方式の字幕は `captions.vtt` に文ごとの読み上げ時刻で書き、プレイヤーが動画に重ねます。画面が暗い文には `<c.on-dark>` を付けます。動くイラストの場面 (`motion`) は Remotion と GSAP で描きます。`video:studio` で動きを確かめられます。以下は旧方式の説明です。
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに台本があります。GitHub Secret `GEMINI_API_KEY` は登録済みで、CI で動画を生成しています。main への push で生成・公開 R2 へのアップロード・seed・レッスン画面の配信まで通ります。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに台本があります。本番の動画は main への push では作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を手動実行します。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
@@ -117,9 +117,9 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。R2 の資格情報・公開バケットは PDF と同じです
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。旧版は削除しません
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
-- CI は教材 PDF sync のあとで `video:sync --remote --tts gemini` を実行します。GitHub Repository Secret `GEMINI_API_KEY` が必要です。未設定なら動画だけを飛ばし、デプロイは続行します。登録後の再生成には教材の変更または `bun run content:state:reset:remote` が必要です
-- Gemini は新方式では場面ごと、スライド版ではトピック (動画 1 本) ごとに 1 回合成し、無音の位置で字幕に分けます。429 で 1 日の上限に当たったらすぐ止めます。
-- 動画が一部失敗してもデプロイは続け、できた動画は公開し、失敗したトピックは前の版を残します。教材の指紋は記録せず、次のデプロイで失敗したトピックを作り直します (成功分は台帳で生成を省きます)。作れなかったトピックは manifest に理由を書き、seed が `lessons.video_issue` に入れます (管理者の画面に出します)。動画の工程そのものが走らなかったとき (キーが無い・途中で止まった) は前回の値のままです。
+- 本番の生成は `.github/workflows/videos.yml` (main の手動実行) です。入力は `stage` (任意の slug。空なら全ステージ)、`topics` (任意。トピック ID のカンマ区切り。`stage` と併用)、`force` (既定 false。`topics` を指定したときだけ、台帳にあっても作り直す)、`dry_run` (既定 false。対象と必要な TTS の回数・残りを出すだけで、R2 と D1 に書かない)。既定の対象は、台帳に今の内容ハッシュの動画が無いトピックです。GitHub Repository Secret `GEMINI_API_KEY` が必要です。`VIDEO_TTS_DAILY_LIMIT` (既定 100) はリポジトリの Variables にあれば渡します。`deployment.json` には載せません
+- 作る前に、Gemini を実際に呼ぶ回数を数えます。新方式は場面ごとに 1 回、旧方式はトピックごとに 1 回で、`dist/video-cache` にある音声は数えません。必要な回数が 1 日の残りを超えるときは、1 本も作らず R2 と manifest に書かずに失敗します。`dry_run` は同じ表を出して終了します。この回数は `video:sync` の呼び出しだけです。手元の `--tts gemini` や、同じ API キーの別用途 (清書・イラスト・チュートリアル) は数えません。使った回数 (失敗した呼び出しを含む) は `lesson-video/state.json` の `ttsUsage` に、太平洋時間の日付で残します。実行中に 429 で 1 日の上限に当たったら、その場で止めます
+- manifest ができたときだけ remote の content seed に `VIDEO_MANIFEST` を渡します。deploy は動画を作らず、seed に `VIDEO_MANIFEST` を渡さないので、既存の `lessons.video_path` を保ちます。一部のトピックが失敗しても、できた動画は公開し、失敗したトピックは manifest に理由を書きます。seed が `lessons.video_issue` に入れます (管理者の画面に出します)
 - レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になります。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。
 - 3ファイルがあれば収録版を優先し、TTS とスライド撮影を省きます。一部だけあると `narration:check` と動画生成がエラーになります。
@@ -169,7 +169,7 @@ Basic = 新18ステージ、それ以外は Extra (`audience: granted`)。講師
 
 退役した19ステージと、2026-10 に退役した AI駆動開発の島の6ステージの教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに新しい台本を配置済みです。`GEMINI_API_KEY` は登録済みで、CI で動画を生成・配信しています。
+新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに新しい台本を配置済みです。本番の動画は Lesson videos の手動実行で生成・配信します。
 
 残す教材の本文は維持します。新しいステージと教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 

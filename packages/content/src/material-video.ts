@@ -152,11 +152,79 @@ export function mergeVideoFailure(
   return { stageSlug: failure.stageSlug, error: summarizeVideoError(failure.reason) };
 }
 
+/** Gemini の 1 日の上限が戻る、太平洋時間の日付とその日に video:sync が呼んだ回数。 */
+export interface TtsUsage {
+  day: string;
+  requests: number;
+}
+
 export interface VideoState {
   version: 1;
   objects: Record<string, number>;
   durations: Record<string, number>;
   scenes?: Record<string, VideoScene[]>;
+  /**
+   * このパイプライン (video:sync) が Gemini TTS を呼んだ回数だけ。
+   * 手元の `--tts gemini` や、同じ API キーの別用途は含まれない。
+   */
+  ttsUsage?: TtsUsage;
+}
+
+export const DEFAULT_VIDEO_TTS_DAILY_LIMIT = 100;
+const PACIFIC = "America/Los_Angeles";
+
+/** 太平洋時間の暦日 (YYYY-MM-DD)。Gemini の 1 日の上限はここが変わるときに戻る。 */
+export function pacificDate(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: PACIFIC,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+  const year = value("year");
+  const month = value("month");
+  const day = value("day");
+  if (!year || !month || !day) throw new Error("太平洋時間の日付を決められません");
+  return `${year}-${month}-${day}`;
+}
+
+export function videoTtsDailyLimit(raw: string | undefined): number {
+  const text = raw?.trim() ?? "";
+  if (text === "") return DEFAULT_VIDEO_TTS_DAILY_LIMIT;
+  if (!/^[1-9]\d*$/.test(text))
+    throw new Error(`VIDEO_TTS_DAILY_LIMIT は正の整数にしてください: ${text}`);
+  return Number(text);
+}
+
+function validTtsUsage(usage: TtsUsage | undefined): TtsUsage | undefined {
+  if (!usage) return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(usage.day)) return undefined;
+  if (!Number.isInteger(usage.requests) || usage.requests < 0) return undefined;
+  return { day: usage.day, requests: usage.requests };
+}
+
+/** 日付が違えば 0。同じ太平洋時間の日だけ、台帳の回数を引き継ぐ。 */
+export function ttsUsageToday(usage: TtsUsage | undefined, now = new Date()): TtsUsage {
+  const day = pacificDate(now);
+  const current = validTtsUsage(usage);
+  if (current?.day === day) return { day, requests: current.requests };
+  return { day, requests: 0 };
+}
+
+export function addTtsUsage(
+  usage: TtsUsage | undefined,
+  calls: number,
+  now = new Date(),
+): TtsUsage {
+  const today = ttsUsageToday(usage, now);
+  return { day: today.day, requests: today.requests + calls };
+}
+
+export function videoTtsAllowance(usage: TtsUsage | undefined, limit: number, now = new Date()) {
+  const today = ttsUsageToday(usage, now);
+  return { day: today.day, used: today.requests, remaining: limit - today.requests };
 }
 export const videoKeyHash = (key: string): string => createHash("sha256").update(key).digest("hex");
 

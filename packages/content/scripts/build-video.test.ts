@@ -33,7 +33,7 @@ vi.mock("./lib/tts.js", async (original) => ({
   synthesizeCached: vi.fn(),
 }));
 import { chromium } from "playwright";
-import { buildVideos, loadVideoVoice, videoTtsOf } from "./build-video.js";
+import { buildVideos, loadVideoVoice, videoTtsOf, type PendingVideoTts } from "./build-video.js";
 import { buildSceneTopic, planSceneTopic } from "./build-scene-video.js";
 import { probeDuration } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, type NarrationTopic } from "./lib/narration-topics.js";
@@ -372,3 +372,90 @@ it.each([false, true])(
     }
   },
 );
+
+it("--topics で対象を絞り、無い ID は生成前に止める", async () => {
+  const { root, topic } = fixture();
+  vi.mocked(collectNarrationTopics).mockReturnValue([topic, { ...topic, id: "second" }]);
+  const skip = vi.fn((_plan: { id: string }) => true);
+  await buildVideos(["--topics", "second", "--tts", "fake", "--out", join(root, "out")], skip);
+  expect(skip.mock.calls.map((call) => call[0].id)).toEqual(["second"]);
+  await expect(
+    buildVideos(["--topics", "missing", "--tts", "fake", "--out", join(root, "out")]),
+  ).rejects.toThrow("トピックが見つかりません: missing");
+  expect(chromium.launch).not.toHaveBeenCalled();
+});
+
+it("台本も絵コンテも無いトピック ID は動画の対象ではない", async () => {
+  const { root, topic } = fixture();
+  const plainDir = mkdtempSync(join(tmpdir(), "plain-topic-"));
+  roots.push(plainDir);
+  vi.mocked(collectNarrationTopics).mockReturnValue([
+    {
+      ...topic,
+      id: "plain",
+      topicDir: plainDir,
+      narrationFile: join(plainDir, "narration.json"),
+      narration: undefined,
+      parseError: undefined,
+    },
+  ]);
+  await expect(
+    buildVideos(["--topics", "plain", "--tts", "fake", "--out", join(root, "out")]),
+  ).rejects.toThrow("動画の対象ではありません: plain");
+  expect(chromium.launch).not.toHaveBeenCalled();
+  expect(buildSceneTopic).not.toHaveBeenCalled();
+});
+
+it("作る前に新方式は場面ごと、旧方式はトピックごとの読み上げを渡す", async () => {
+  const { root, topic } = fixture();
+  const storyboard = JSON.parse(readFileSync(join(root, "video.json"), "utf8")) as {
+    scenes: unknown[];
+  };
+  const legacyDir = join(root, "legacy");
+  mkdirSync(legacyDir);
+  const legacy: NarrationTopic = {
+    ...topic,
+    id: "legacy",
+    topicDir: legacyDir,
+    narrationFile: join(legacyDir, "narration.json"),
+    parseError: undefined,
+    narration: {
+      schema: 1,
+      slidesHash: "fixture",
+      slides: [{ cues: [{ text: "ひとつ。" }, { text: "ふたつ。" }] }],
+    },
+  };
+  writeFileSync(legacy.narrationFile, "{}");
+  vi.mocked(collectNarrationTopics).mockReturnValue([topic, legacy]);
+  vi.mocked(collectPdfTargets).mockReturnValue([
+    {
+      kind: "slides",
+      stageSlug: "fixture",
+      lessonId: "legacy",
+      courseTitle: "fixture",
+      source: "slide",
+      assets: [],
+    } as unknown as ReturnType<typeof collectPdfTargets>[number],
+  ]);
+  let pending: PendingVideoTts[] = [];
+  await expect(
+    buildVideos(
+      ["--tts", "gemini", "--out", join(root, "out")],
+      () => false,
+      (items) => {
+        pending = [...items];
+        throw new Error("halt");
+      },
+    ),
+  ).rejects.toThrow("halt");
+  expect(chromium.launch).not.toHaveBeenCalled();
+  expect(buildSceneTopic).not.toHaveBeenCalled();
+  const scene = pending.find((item) => item.id === topic.id);
+  const slide = pending.find((item) => item.id === "legacy");
+  expect(scene?.kind).toBe("scene");
+  expect(scene?.speeches).toHaveLength(storyboard.scenes.length + 1);
+  expect(slide).toMatchObject({ kind: "narration" });
+  expect(slide?.speeches).toHaveLength(1);
+  expect(slide?.speeches[0]).toContain("ひとつ。");
+  expect(slide?.speeches[0]).toContain("ふたつ。");
+});
