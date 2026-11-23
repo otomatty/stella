@@ -1,7 +1,7 @@
 import picomatch from "picomatch";
 import type { TaskBundle } from "./catalog.js";
 import { type CiRunCheck, parseCiRunClaim } from "./ci-run.js";
-import { normalizeForHash } from "./hash.js";
+import { normalizeForHash, sha256Hex } from "./hash.js";
 import { isSafeRelativePattern } from "./manifest.js";
 import { isProblemId, problemFiles } from "./problems.js";
 import {
@@ -194,8 +194,7 @@ export function decodeFile(content: string): Uint8Array {
 }
 export async function contentHash(bytes: Uint8Array): Promise<string> {
   const normalized = normalizeForHash(bytes);
-  const hash = await crypto.subtle.digest("SHA-256", Uint8Array.from(normalized));
-  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return sha256Hex(normalized);
 }
 export function matchesPattern(file: string, patterns: string[]): boolean {
   return patterns.some((p) => picomatch(p, { dot: true })(file));

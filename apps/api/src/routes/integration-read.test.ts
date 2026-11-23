@@ -15,6 +15,7 @@ import {
   enrollments,
   taskProgress,
   taskProblemResults,
+  taskRevisions,
   submissions,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
@@ -235,6 +236,243 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     expect((await read("progress?at=2026-02-30T00:00:00Z")).status).toBe(400);
     expect((await read("progress?at=2026-11-01")).status).toBe(400);
   });
+  it.each([true, false])(
+    "at の旧版引き継ぎを再提出前の依存で数える (依存の記録あり: %s)",
+    async (recorded) => {
+      const db = getDb(env);
+      const taskId = "task-stage";
+      const ids = ["q1", "q2", "q3"];
+      const definition = JSON.stringify({ problems: ids.map((id) => ({ id, title: id })) });
+      const bundle = JSON.stringify({
+        files: Object.fromEntries(ids.map((id) => [`src/${id}.ts`, ""])),
+      });
+      const problemHashes = JSON.stringify(
+        Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
+      );
+      sqlite.sqlite.exec(`
+        delete from task_problem_results where user_id='inside' and task_id='task-stage';
+        delete from integration_events where user_id='inside' and task_id='task-stage' and problem_id is not null;
+      `);
+      sqlite.sqlite.prepare("update tasks set definition=? where id=?").run(definition, taskId);
+      await db.insert(taskRevisions).values(
+        ["old", "current"].map((contentHash) => ({
+          taskId,
+          contentHash,
+          definition,
+          bundle,
+          problemHashes,
+        })),
+      );
+      const results = ids.map((problemId, index) => {
+        const dependency = ids[index + 1];
+        const date = new Date(T1 + (ids.length - index) * 100);
+        return {
+          userId: "inside",
+          taskId,
+          problemId,
+          contentHash: "old",
+          source: "tests" as const,
+          path: `src/${problemId}.ts`,
+          code: dependency ? `import "./${dependency}.js";` : "export {};",
+          sha256: "hash",
+          problemDependencies: recorded ? (dependency ? [dependency] : []) : null,
+          firstPassedAt: date,
+          updatedAt: date,
+        };
+      });
+      await db.insert(taskProblemResults).values(results);
+      const history = () =>
+        sqlite.sqlite
+          .prepare(`
+        select problem_id, problem_dependencies from integration_events
+        where user_id='inside' and task_id='task-stage' and type='problem_passed' order by seq
+      `)
+          .all();
+      expect(history()).toEqual([
+        { problem_id: "q1", problem_dependencies: recorded ? '["q2"]' : null },
+        { problem_id: "q2", problem_dependencies: recorded ? '["q3"]' : null },
+        { problem_id: "q3", problem_dependencies: recorded ? "[]" : null },
+      ]);
+      const at = `?at=${new Date(T1 + 500).toISOString()}`;
+      const counted = async () => (await progress(at)).members[0]?.stages[0]?.units[0]?.tasks[0];
+      expect(await counted()).toMatchObject({ passed: false, problems: { passed: 3 } });
+
+      const resubmit = sqlite.sqlite.prepare(`
+        update task_problem_results set content_hash=?, code='export {};', problem_dependencies='[]', updated_at=?
+        where user_id='inside' and task_id='task-stage' and problem_id=?
+      `);
+      resubmit.run("current", T2 + 10, "q1");
+      resubmit.run("old", T2 + 20, "q2");
+      expect(history().slice(-2)).toEqual([
+        { problem_id: "q1", problem_dependencies: "[]" },
+        { problem_id: "q2", problem_dependencies: "[]" },
+      ]);
+      expect(await counted()).toMatchObject({
+        passed: false,
+        problems: { passed: recorded ? 3 : 1 },
+      });
+
+      if (recorded) {
+        // q1 は、その後の依存なしの q2 ではなく、指定時点に q3 を読み込んでいた q2 をたどる。
+        const changed = JSON.stringify({ ...JSON.parse(problemHashes), q3: "b".repeat(64) });
+        sqlite.sqlite
+          .prepare(
+            "update task_revisions set problem_hashes=? where task_id=? and content_hash='current'",
+          )
+          .run(changed, taskId);
+        expect(await counted()).toMatchObject({ passed: false, problems: { passed: 0 } });
+      }
+    },
+  );
+  it("連携の集計は上限を超える旧版コードを数えず、現行版の依存は保存済みIDでたどる", async () => {
+    const db = getDb(env);
+    const taskId = "task-stage";
+    const definition = JSON.stringify({
+      problems: [
+        { id: "q1", title: "問1" },
+        { id: "q2", title: "問2" },
+      ],
+    });
+    const bundle = JSON.stringify({ files: { "src/q1.ts": "", "src/q2.ts": "" } });
+    const problemHashes = JSON.stringify({ q1: "a".repeat(64), q2: "b".repeat(64) });
+    const revisions = ["old", "current"].map((contentHash) => ({
+      taskId,
+      contentHash,
+      definition,
+      bundle,
+      problemHashes,
+    }));
+    await db.insert(taskRevisions).values(revisions);
+    sqlite.sqlite.exec(`
+      update task_progress set status='local-passed' where user_id='inside' and task_id='task-stage';
+      update task_problem_results set source='tests', path='src/q1.ts', code='import "./q2";'
+        where user_id='inside' and task_id='task-stage' and problem_id='q1';
+      update task_problem_results set source='tests', path='src/q2.ts', content_hash='current',
+        code='import "./missing";', problem_dependencies='[]'
+        where user_id='inside' and task_id='task-stage' and problem_id='q2';
+    `);
+    const expectCount = async (count: number) => {
+      const current = (await progress()).members[0]?.stages[0]?.units[0]?.tasks[0];
+      expect(current?.problems?.passed).toBe(count);
+      const last = (await events()).events
+        .filter((event) => event.type === "problems_passed")
+        .at(-1);
+      expect(last).toMatchObject({ problemsPassed: count });
+    };
+    await expectCount(2);
+    sqlite.sqlite
+      .prepare(`
+      update task_problem_results set code=?
+      where user_id='inside' and task_id='task-stage' and problem_id='q1'
+    `)
+      .run(`import "./q2"; /* ${"字".repeat(22_000)} */`);
+    await expectCount(1);
+    sqlite.sqlite.exec(
+      "update task_progress set status='passed' where user_id='inside' and task_id='task-stage'",
+    );
+    await expectCount(2);
+  });
+
+  it.each(["progress", "historical", "events"] as const)(
+    "%s は 4 MiB を超える旧版コードを小分けに照合し、読み取り途中で変わった行を除く",
+    async (mode) => {
+      const db = getDb(env);
+      const taskId = "task-stage";
+      const ids = Array.from(
+        { length: 70 },
+        (_, index) => `q${String(index + 1).padStart(3, "0")}`,
+      );
+      const definition = JSON.stringify({ problems: ids.map((id) => ({ id, title: id })) });
+      const bundle = JSON.stringify({
+        files: Object.fromEntries(ids.map((id) => [`src/${id}.ts`, ""])),
+      });
+      const problemHashes = JSON.stringify(
+        Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
+      );
+      sqlite.sqlite.exec(`
+        delete from task_problem_results where user_id='inside' and task_id='task-stage';
+        delete from integration_events where user_id='inside' and task_id='task-stage' and problem_id is not null;
+        update task_progress set status='local-passed' where user_id='inside' and task_id='task-stage';
+      `);
+      sqlite.sqlite.prepare("update tasks set definition=? where id=?").run(definition, taskId);
+      const revisions = ["old", "current"].map((contentHash) => ({
+        taskId,
+        contentHash,
+        definition,
+        bundle,
+        problemHashes,
+      }));
+      await db.insert(taskRevisions).values(revisions);
+      const insert = sqlite.sqlite.prepare(`
+        insert into task_problem_results
+          (user_id,task_id,problem_id,content_hash,source,path,code,sha256,first_passed_at,updated_at)
+        values ('inside','task-stage',?,'old','tests',?,?,'hash',?,?)
+      `);
+      const paddedCode = (prefix: string) => prefix.padEnd(64 * 1024 - 2, "x") + "*/";
+      for (const id of ids) {
+        const code = paddedCode(id === "q001" ? "export {}; /*" : 'import "./q001"; /*');
+        insert.run(id, `src/${id}.ts`, code, T1, T1);
+      }
+      if (mode === "events") {
+        insert.run("obsolete", "src/obsolete.ts", "", T1 + 1, T1 + 1);
+        sqlite.sqlite.exec(`
+          delete from task_problem_results
+          where user_id='inside' and task_id='task-stage' and problem_id='obsolete';
+        `);
+      }
+
+      const updateTime = sqlite.sqlite.prepare(`
+        update task_problem_results set updated_at=?
+        where user_id='inside' and task_id='task-stage' and problem_id='q035'
+      `);
+      const updateHash = sqlite.sqlite.prepare(`
+        update task_problem_results set content_hash='next'
+        where user_id='inside' and task_id='task-stage' and problem_id='q036'
+      `);
+      const originalPrepare = sqlite.binding.prepare.bind(sqlite.binding);
+      let codeReads = 0;
+      let resubmit = false;
+      const prepare = vi.spyOn(sqlite.binding, "prepare").mockImplementation((query) => {
+        if (query.includes("select r.rowid resultRowId,r.path,r.code")) {
+          codeReads++;
+          if (resubmit && codeReads === 2) {
+            updateTime.run(T2 + 1);
+            updateHash.run();
+          }
+        }
+        return originalPrepare(query);
+      });
+      const checkCount = async (count: number) => {
+        if (mode === "events") {
+          const summaries = (await events()).events.filter(
+            (event) => event.type === "problems_passed" || event.type === "problems_revoked",
+          );
+          expect(summaries.map((event) => event.type)).toEqual([
+            "problems_passed",
+            "problems_passed",
+            "problems_revoked",
+          ]);
+          expect(summaries.map((event) => event.problemsPassed)).toEqual(
+            summaries.map(() => count),
+          );
+        } else {
+          const query = mode === "historical" ? `?at=${new Date(T1 + 500).toISOString()}` : "";
+          const task = (await progress(query)).members[0]?.stages[0]?.units[0]?.tasks[0];
+          expect(task?.problems).toMatchObject({ total: ids.length, passed: count });
+        }
+        expect(codeReads).toBe(5);
+      };
+      try {
+        await checkCount(ids.length);
+        codeReads = 0;
+        resubmit = true;
+        await checkCount(ids.length - 2);
+      } finally {
+        prepare.mockRestore();
+      }
+    },
+  );
+
   it("段の自動修了を取り消して再修了しても、締切時点の修了日時を保つ", async () => {
     const db = getDb(env);
     await db.insert(profiles).values({ id: "teacher", displayName: "架空の管理者", role: "admin" });

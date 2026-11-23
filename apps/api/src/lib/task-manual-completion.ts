@@ -21,7 +21,13 @@ import {
 import { ApiError, type Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { auditLogInsert } from "./audit.js";
-import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
+import { loadProblemRevisionHashes, loadTaskProblemHashes } from "./task-problem-hashes.js";
+import {
+  countedProblemIds,
+  manualTaskPassWrites,
+  pendingProblemCompletion,
+  readTaskDefinition,
+} from "./task-problem-submission.js";
 import { recomputeTaskProgress, resetPassedAt, taskSubmissionLockId } from "./task-submission.js";
 import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import { loadProblemSteps } from "./task-problem-steps.js";
@@ -141,6 +147,8 @@ export async function readManualCompletion(
             source: taskProblemResults.source,
             manualReason: taskProblemResults.manualReason,
             manualAt: taskProblemResults.manualAt,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
             manualByName: profiles.displayName,
           })
           .from(taskProblemResults)
@@ -164,13 +172,22 @@ export async function readManualCompletion(
       savedByTask.set(row.taskId, rows);
     }
   }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    scope.taskRows.map(({ task }) => ({
+      taskId: task.id,
+      currentHash: task.contentHash,
+      rows: savedByTask.get(task.id) ?? [],
+      taskPassed: passByTask.has(task.id),
+    })),
+  );
   for (const { task } of scope.taskRows) {
     const progress = progressByTask.get(task.id);
     const pass = passByTask.get(task.id);
     const saved = savedByTask.get(task.id) ?? [];
     const problems = readTaskDefinition(task.definition).problems ?? [];
     const currentProblemIds = new Set(problems.map((problem) => problem.id));
-    const counted = countedProblemIds(saved, task.contentHash, Boolean(pass));
+    const counted = countedProblemIds(saved, task.contentHash, Boolean(pass), hashes.get(task.id));
     result.units
       .find((unit) => unit.id === task.sectionId)
       ?.tasks.push({
@@ -282,7 +299,13 @@ export async function writeManualCompletion(
           const taskPassed =
             passes.length > 0 || progress?.status === "passed" || progress?.status === "ai-passed";
           const writes: BatchItem<"sqlite">[] = [];
-          const counted = countedProblemIds(saved, task.contentHash, taskPassed);
+          const hashes = await loadTaskProblemHashes(db, {
+            taskId: task.id,
+            currentHash: task.contentHash,
+            rows: saved,
+            taskPassed: taskPassed && !revoke,
+          });
+          const counted = countedProblemIds(saved, task.contentHash, taskPassed, hashes);
           let problemCount = 0;
           let touchedProblems: ReadonlySet<string>;
           if (revoke) {
@@ -338,6 +361,7 @@ export async function writeManualCompletion(
               saved.filter((row) => !removedIds.has(row.problemId)),
               task.contentHash,
               false,
+              hashes,
             );
             const cancelsCompletion =
               !personalPass &&
@@ -348,18 +372,7 @@ export async function writeManualCompletion(
               // 最後の問題の保存後、tests の確定がロックを取り直す前の提出も捨てる。
               // 相談や AI の確認待ちは対象にしない。
               writes.push(
-                db
-                  .delete(submissions)
-                  .where(
-                    and(
-                      eq(submissions.studentId, input.userId),
-                      eq(submissions.taskId, task.id),
-                      eq(submissions.submissionMode, "submit"),
-                      isNull(submissions.verdict),
-                      isNull(submissions.aiReviewStatus),
-                      sql`json_extract(${submissions.localResult}, '$.problemId') is not null`,
-                    ),
-                  ),
+                db.delete(submissions).where(pendingProblemCompletion(input.userId, task.id)),
               );
             }
             if (
@@ -441,6 +454,7 @@ export async function writeManualCompletion(
                       path: sql`excluded.path`,
                       code: sql`excluded.code`,
                       sha256: sql`excluded.sha256`,
+                      problemDependencies: null,
                       contentHash: sql`excluded.content_hash`,
                       source: sql`excluded.source`,
                       manualReason: sql`excluded.manual_reason`,
@@ -457,32 +471,22 @@ export async function writeManualCompletion(
             for (const pid of additions) counted.add(pid);
             const complete = !problems || problems.every((p) => counted.has(p.id));
             if (complete && !taskPassed) {
-              const submissionId = crypto.randomUUID();
               writes.push(
-                db.insert(submissions).values({
-                  id: submissionId,
-                  studentId: input.userId,
-                  taskId: task.id,
-                  taskContentHash: task.contentHash,
-                  taskKind: task.kind,
-                  submissionMode: "submit",
-                  stageTitle: scope.stage.title,
-                  sectionTitle: unitTitle,
-                  assignmentTitle: task.title,
-                  code: "",
-                  reviewSource: "manual",
-                  verdict: "pass",
-                  status: "passed",
-                  reviewerId: caller.id,
-                  reviewNotes: input.reason,
-                  reviewTaskContentHash: task.contentHash,
-                  submittedAt: now,
-                  reviewedAt: now,
-                  attempt: sql`(select coalesce(max(attempt), 0) + 1 from submissions where student_id = ${input.userId} and task_id = ${task.id})`,
-                }),
-              );
-              writes.push(
-                recomputeTaskProgress(db, { studentId: input.userId, taskId: task.id }, now),
+                ...manualTaskPassWrites(
+                  db,
+                  input.userId,
+                  task.id,
+                  {
+                    taskContentHash: task.contentHash,
+                    taskKind: task.kind,
+                    stageTitle: scope.stage.title,
+                    sectionTitle: unitTitle,
+                    assignmentTitle: task.title,
+                  },
+                  caller.id,
+                  input.reason,
+                  now,
+                ),
               );
               passedTaskIds.push(task.id);
               if (!problems) inserted++;

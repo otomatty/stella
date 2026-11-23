@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { evaluateSkillMap, isRevealOneAtATimeIsland } from "@stella/shared/skill-map/evaluate";
 import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
@@ -16,6 +16,7 @@ import {
 import type { Caller } from "./authz.js";
 import { loadSkillMapSource } from "./skill-map-data.js";
 import { guidanceColumns } from "./stage-grant-guidance.js";
+import { loadProblemRevisionHashes } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 /** 割り当ての件数によらず、ステージ・課題・問題をそれぞれまとめて読む。 */
@@ -59,6 +60,8 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     return true;
   });
   if (visibleGrants.length === 0) return { stages: [] };
+  const stageIds = JSON.stringify(visibleGrants.map((grant) => grant.stage_id));
+  const displayedStage = sql`${sections.stageId} in (select value from json_each(${stageIds}))`;
   const taskRows = await db
     .select({
       stageId: sections.stageId,
@@ -69,10 +72,6 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     })
     .from(tasks)
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .innerJoin(
-      stageGrants,
-      and(eq(stageGrants.stageId, sections.stageId), eq(stageGrants.profileId, caller.id)),
-    )
     .leftJoin(
       taskRevisions,
       and(eq(taskRevisions.taskId, tasks.id), eq(taskRevisions.contentHash, tasks.contentHash)),
@@ -81,22 +80,22 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
       taskProgress,
       and(eq(taskProgress.taskId, tasks.id), eq(taskProgress.userId, caller.id)),
     )
-    .where(and(eq(tasks.active, true), isNull(tasks.variantOf)));
+    .where(and(displayedStage, eq(tasks.active, true), isNull(tasks.variantOf)));
   const results = await db
     .select({
       taskId: taskProblemResults.taskId,
       problemId: taskProblemResults.problemId,
       contentHash: taskProblemResults.contentHash,
+      path: taskProblemResults.path,
+      code: taskProblemResults.code,
+      source: taskProblemResults.source,
     })
     .from(taskProblemResults)
     .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
     .innerJoin(sections, eq(sections.id, tasks.sectionId))
-    .innerJoin(
-      stageGrants,
-      and(eq(stageGrants.stageId, sections.stageId), eq(stageGrants.profileId, caller.id)),
-    )
     .where(
       and(
+        displayedStage,
         eq(taskProblemResults.userId, caller.id),
         eq(tasks.active, true),
         isNull(tasks.variantOf),
@@ -108,6 +107,15 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     list.push(row);
     resultsByTask.set(row.taskId, list);
   }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    taskRows.map((row) => ({
+      taskId: row.id,
+      currentHash: row.hash,
+      rows: resultsByTask.get(row.id) ?? [],
+      taskPassed: row.status === "passed" || row.status === "ai-passed",
+    })),
+  );
   const progress = new Map<
     string,
     { tasks: number; passedTasks: number; problems: number; passedProblems: number }
@@ -123,7 +131,12 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     entry.tasks++;
     if (passed) entry.passedTasks++;
     const problems = readTaskDefinition(row.definition ?? "{}").problems ?? [];
-    const counted = countedProblemIds(resultsByTask.get(row.id) ?? [], row.hash, passed);
+    const counted = countedProblemIds(
+      resultsByTask.get(row.id) ?? [],
+      row.hash,
+      passed,
+      hashes.get(row.id),
+    );
     entry.problems += problems.length;
     entry.passedProblems += problems.filter((problem) => counted.has(problem.id)).length;
     progress.set(row.stageId, entry);

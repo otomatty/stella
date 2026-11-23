@@ -2,7 +2,7 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
 import { lessonProgress, lessons, submissions } from "../db/schema.js";
-import { problemStepCompletion } from "./lesson-progress-write.js";
+import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -83,23 +83,23 @@ export async function reviewedProgressRows(
       .select({
         id: lessons.id,
         type: lessons.type,
-        problemSubmitted: problemStepCompletion(userId, sql`lessons.id`),
+        problemStep: isProblemStepLesson(sql`lessons.id`),
       })
       .from(lessons)
       .where(inArray(lessons.id, ids));
     const codeLessonIds: string[] = [];
     for (const row of existingLessons) {
       existing.add(row.id);
-      if (row.type !== "code" && row.problemSubmitted === null) continue;
+      if (row.type !== "code" && !row.problemStep) continue;
       reviewed.add(row.id);
-      if (row.problemSubmitted === null) codeLessonIds.push(row.id);
-      else {
-        problemStepLessonIds.add(row.id);
-        if (row.problemSubmitted) passed.add(row.id);
-      }
+      if (row.problemStep) problemStepLessonIds.add(row.id);
+      else codeLessonIds.push(row.id);
     }
     const ok = await reviewedPassLessonIds(db, userId, codeLessonIds);
     for (const id of ok) passed.add(id);
+  }
+  for (const row of await loadCompletedProblemSteps(db, [userId], [...problemStepLessonIds])) {
+    passed.add(row.lessonId);
   }
   return {
     rows: rows

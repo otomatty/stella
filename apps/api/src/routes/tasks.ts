@@ -1,6 +1,15 @@
-import { type Handler, Hono } from "hono";
+import { type Context, type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import { countedProblemIds, readTaskDefinition } from "../lib/task-problem-submission.js";
+import {
+  loadProblemRevisionHashes,
+  loadTaskProblemHashes,
+  type SavedProblemResult,
+} from "../lib/task-problem-hashes.js";
+import {
+  completeCarriedProblemTask,
+  countedProblemIds,
+  readTaskDefinition,
+} from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -37,11 +46,16 @@ import {
   loadProblemSteps,
   problemStepsIfReady,
 } from "../lib/task-problem-steps.js";
+import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
+import { clientIp } from "../lib/audit.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
 
-tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
+async function stageTaskList(
+  c: Context<{ Bindings: Env }, "/api/tasks/for-stage/:stageId">,
+  finalize: boolean,
+): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
     const stageId = c.req.param("stageId");
@@ -116,10 +130,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       problemTasks.set(row.id, problems);
       if (problems.some((problem) => problem.after)) gatedTaskIds.add(row.id);
     }
-    const resultsByTask = new Map<
-      string,
-      { problemId: string; contentHash: string; source?: string }[]
-    >();
+    const resultsByTask = new Map<string, SavedProblemResult[]>();
     if (problemTasks.size > 0) {
       const results = await db
         .select({
@@ -127,6 +138,8 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problemId: taskProblemResults.problemId,
           contentHash: taskProblemResults.contentHash,
           source: taskProblemResults.source,
+          path: taskProblemResults.path,
+          code: taskProblemResults.code,
         })
         .from(taskProblemResults)
         .where(
@@ -141,6 +154,18 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
         resultsByTask.set(result.taskId, saved);
       }
     }
+    const hashes = await loadProblemRevisionHashes(
+      db,
+      rows.map((row) => {
+        const status = progressByTaskId.get(row.id)?.status;
+        return {
+          taskId: row.id,
+          currentHash: row.contentHash,
+          rows: resultsByTask.get(row.id) ?? [],
+          taskPassed: status === "passed" || status === "ai-passed",
+        };
+      }),
+    );
     const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
     const stepsByTask = new Map<string, typeof stepRows>();
     for (const step of stepRows) {
@@ -148,7 +173,9 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
       steps.push(step);
       stepsByTask.set(step.taskId, steps);
     }
-    const missingCompletions: string[] = [];
+    const changedCompletions: string[] = [];
+    const completedSteps = new Set<string>();
+    const possibleCompletions: { summary: TaskSummary; contentHash: string }[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
         const p = progressByTaskId.get(task.id);
@@ -168,13 +195,16 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           saved,
           contentHash,
           p?.status === "passed" || p?.status === "ai-passed",
+          hashes.get(task.id),
         );
         const steps = gatedTaskIds.has(task.id)
           ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
           : undefined;
         const problemSteps = steps?.map(
           ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
-            if (state === "submitted" && !stepCompleted) missingCompletions.push(stepLessonId);
+            if (state === "submitted") completedSteps.add(stepLessonId);
+            if ((state === "submitted") !== Boolean(stepCompleted))
+              changedCompletions.push(stepLessonId);
             return {
               id: problem.id,
               title: problem.title,
@@ -186,7 +216,7 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
             };
           },
         );
-        return {
+        const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
           problems_manual: saved.filter(
@@ -198,19 +228,55 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", async (c) => {
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
+        if (
+          finalize &&
+          status !== "passed" &&
+          status !== "ai-passed" &&
+          p?.status !== "resubmit" &&
+          summary.problems_passed === problems.length &&
+          saved.some((row) => row.contentHash !== contentHash && passed.has(row.problemId))
+        ) {
+          possibleCompletions.push({ summary, contentHash });
+        }
+        return summary;
       });
-    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+    for (const write of planProblemStepProgressWrites(
+      db,
+      caller.id,
+      changedCompletions,
+      undefined,
+      completedSteps,
+    ))
       await write;
-    return c.json({ tasks: result });
+    let completedTask = false;
+    let refresh = false;
+    for (const { summary, contentHash } of possibleCompletions) {
+      const completion = await completeCarriedProblemTask(db, caller, summary.id, contentHash);
+      if (completion === "refresh") refresh = true;
+      else if (completion) {
+        summary.status = "passed";
+        completedTask = true;
+      }
+    }
+    if (completedTask) {
+      await autoCompleteStagesIfMet(db, {
+        actor: caller,
+        userId: caller.id,
+        stageIds: [stageId],
+        ip: clientIp(c),
+      });
+    }
+    return refresh ? stageTaskList(c, false) : c.json({ tasks: result });
   } catch (err) {
     return errorResponse(c, err);
   }
-});
+}
+tasksRoute.get("/api/tasks/for-stage/:stageId", (c) => stageTaskList(c, true));
 
 /**
  * 問題つきの課題の、本人の問題の状態。一覧は今の版の problems。問題の無い課題は 404。
  */
-tasksRoute.get("/api/tasks/problem-results", async (c) => {
+async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
     const taskId = c.req.query("taskId") ?? "";
@@ -240,6 +306,8 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
         contentHash: taskProblemResults.contentHash,
         firstPassedAt: taskProblemResults.firstPassedAt,
         source: taskProblemResults.source,
+        path: taskProblemResults.path,
+        code: taskProblemResults.code,
       })
       .from(taskProblemResults)
       .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
@@ -248,14 +316,41 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
       .from(taskProgress)
       .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
       .limit(1);
-    const taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
-    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed);
+    let taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
+    const hashes = await loadTaskProblemHashes(db, {
+      taskId: row.id,
+      currentHash: row.contentHash,
+      rows: saved,
+      taskPassed,
+    });
+    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed, hashes);
     const byId = new Map(
       saved
         .filter((item) => passedIds.has(item.problemId))
         .map((item) => [item.problemId, item.firstPassedAt]),
     );
     const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
+    if (
+      finalize &&
+      !taskPassed &&
+      progress?.status !== "resubmit" &&
+      passedProblems === problems.length &&
+      saved.some(
+        (result) => passedIds.has(result.problemId) && result.contentHash !== row.contentHash,
+      )
+    ) {
+      const completion = await completeCarriedProblemTask(db, caller, row.id, row.contentHash);
+      if (completion === "refresh") return problemResults(c, false);
+      taskPassed = completion;
+      if (taskPassed) {
+        await autoCompleteStagesIfMet(db, {
+          actor: caller,
+          userId: caller.id,
+          stageIds: [row.stageId],
+          ip: clientIp(c),
+        });
+      }
+    }
     const steps = problems.some((problem) => problem.after)
       ? evaluatedProblemSteps(
           await loadProblemSteps(db, caller.id, { taskId: row.id }),
@@ -263,11 +358,20 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
           passedIds,
         )
       : undefined;
-    const missingCompletions =
+    const completedSteps = new Set(
+      steps?.filter((step) => step.state === "submitted").map((step) => step.stepLessonId),
+    );
+    const changedCompletions =
       steps
-        ?.filter((step) => step.state === "submitted" && !step.stepCompleted)
+        ?.filter((step) => completedSteps.has(step.stepLessonId) !== Boolean(step.stepCompleted))
         .map((step) => step.stepLessonId) ?? [];
-    for (const write of planProblemStepProgressWrites(db, caller.id, missingCompletions))
+    for (const write of planProblemStepProgressWrites(
+      db,
+      caller.id,
+      changedCompletions,
+      undefined,
+      completedSteps,
+    ))
       await write;
     const entries = steps
       ? steps.map(({ problem, state, stepLessonId, afterLessonId, afterTitle }) => ({
@@ -299,7 +403,8 @@ tasksRoute.get("/api/tasks/problem-results", async (c) => {
   } catch (err) {
     return errorResponse(c, err);
   }
-});
+}
+tasksRoute.get("/api/tasks/problem-results", (c) => problemResults(c, true));
 
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
