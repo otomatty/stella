@@ -38,3 +38,26 @@ export function courseStageStatus(
   if (node.enrolled || node.id === activeStageId) return "in-progress";
   return "startable";
 }
+
+export type CourseStageButton =
+  | { label: "課題に取り組む"; kind: "open-task" }
+  | { label: "続きから"; kind: "resume" }
+  | { label: "レッスン一覧"; kind: "lessons" }
+  | { label: "始める"; kind: "start" };
+
+/**
+ * 行の主なボタン。盤面の星のカード・道のりと同じく、現在地の受講中で
+ * 課題を開く処理があるときだけ「課題に取り組む」。
+ */
+export function courseStageButton(input: {
+  status: "cleared" | "in-progress" | "startable";
+  isActive: boolean;
+  hasOpenTask: boolean;
+}): CourseStageButton {
+  if (input.status === "in-progress" && input.isActive && input.hasOpenTask) {
+    return { label: "課題に取り組む", kind: "open-task" };
+  }
+  if (input.status === "cleared") return { label: "レッスン一覧", kind: "lessons" };
+  if (input.status === "in-progress") return { label: "続きから", kind: "resume" };
+  return { label: "始める", kind: "start" };
+}

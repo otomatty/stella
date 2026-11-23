@@ -603,6 +603,7 @@ export const LearnerHome = ({
         onResumeStage={resumeStage}
         onStartStage={startStage}
         onOpenStage={openStage}
+        openTask={activeInfo?.openTask}
       />
 
       <div className="pointer-events-none absolute inset-x-0 inset-y-3 z-20 grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_fit-content(45cqh)] gap-2 lg:inset-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:gap-3">

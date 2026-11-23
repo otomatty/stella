@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { courseStagesOf, courseStageStatus } from "@/lib/course-panel";
+import { courseStageButton, courseStagesOf, courseStageStatus } from "@/lib/course-panel";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
 function stage(id: string, fields: Partial<SkillMapStageNode> = {}): SkillMapStageNode {
@@ -80,5 +80,39 @@ describe("courseStageStatus", () => {
 
   it("受講登録も現在地の指定もなければ始められる", () => {
     expect(courseStageStatus(stage("open"), "other")).toBe("startable");
+  });
+});
+
+describe("courseStageButton", () => {
+  it("現在地の受講中で課題を開けるときは課題に取り組む", () => {
+    expect(courseStageButton({ status: "in-progress", isActive: true, hasOpenTask: true })).toEqual(
+      { label: "課題に取り組む", kind: "open-task" },
+    );
+  });
+
+  it("現在地でなければ受講中は続きから", () => {
+    expect(
+      courseStageButton({ status: "in-progress", isActive: false, hasOpenTask: true }),
+    ).toEqual({ label: "続きから", kind: "resume" });
+  });
+
+  it("課題を開けなければ受講中は続きから", () => {
+    expect(
+      courseStageButton({ status: "in-progress", isActive: true, hasOpenTask: false }),
+    ).toEqual({ label: "続きから", kind: "resume" });
+  });
+
+  it("クリアは現在地で課題があってもレッスン一覧", () => {
+    expect(courseStageButton({ status: "cleared", isActive: true, hasOpenTask: true })).toEqual({
+      label: "レッスン一覧",
+      kind: "lessons",
+    });
+  });
+
+  it("始められるは課題があっても始める", () => {
+    expect(courseStageButton({ status: "startable", isActive: false, hasOpenTask: true })).toEqual({
+      label: "始める",
+      kind: "start",
+    });
   });
 });

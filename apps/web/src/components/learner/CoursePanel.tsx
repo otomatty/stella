@@ -9,7 +9,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { courseStagesOf, courseStageStatus } from "@/lib/course-panel";
+import { courseStageButton, courseStagesOf, courseStageStatus } from "@/lib/course-panel";
 import { X } from "@/lib/icons";
 import type { SkillMapStageNode, StageContentPayload } from "@/lib/skill-map-api";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ interface CoursePanelProps {
   onResumeStage: (id: string) => void;
   onStartStage: (id: string) => void;
   onOpenStage: (id: string) => void;
+  /** 現在地で受講者の番の課題が残っているとき、「続きから」の代わりに開く。 */
+  openTask?: () => void;
 }
 
 function CourseStageCounts({ content }: { content: StageContentPayload }) {
@@ -53,6 +55,7 @@ export function CoursePanel({
   onResumeStage,
   onStartStage,
   onOpenStage,
+  openTask,
 }: CoursePanelProps) {
   const titleId = useId();
   const drawerAnchor = useRef<HTMLElement | null>(null);
@@ -71,9 +74,9 @@ export function CoursePanel({
 
   const { open, lockedAhead, hasMoreAhead } = courseStagesOf(nodes, courseKey);
   const actions = {
-    cleared: { status: "クリア", badge: "success", label: "レッスン一覧", run: onOpenStage },
-    "in-progress": { status: "受講中", badge: "info", label: "続きから", run: onResumeStage },
-    startable: { status: "始められる", badge: "accent", label: "始める", run: onStartStage },
+    cleared: { status: "クリア", badge: "success", run: onOpenStage },
+    "in-progress": { status: "受講中", badge: "info", run: onResumeStage },
+    startable: { status: "始められる", badge: "accent", run: onStartStage },
   } as const;
 
   const title = (
@@ -91,7 +94,13 @@ export function CoursePanel({
       {open.length ? (
         <ol className="divide-y divide-border">
           {open.map((node) => {
-            const action = actions[courseStageStatus(node, activeStageId)];
+            const status = courseStageStatus(node, activeStageId);
+            const action = actions[status];
+            const button = courseStageButton({
+              status,
+              isActive: node.id === activeStageId,
+              hasOpenTask: openTask !== undefined,
+            });
             const hours = node.content?.planned_hours;
             return (
               <li key={node.id} className="space-y-2 py-3 first:pt-0">
@@ -109,10 +118,16 @@ export function CoursePanel({
                   type="button"
                   size="sm"
                   variant="outline"
-                  aria-label={node.title ? `${node.title}の${action.label}` : action.label}
-                  onClick={() => action.run(node.id)}
+                  aria-label={node.title ? `${node.title}の${button.label}` : button.label}
+                  onClick={() => {
+                    if (button.kind === "open-task") {
+                      if (openTask) openTask();
+                      return;
+                    }
+                    action.run(node.id);
+                  }}
                 >
-                  {action.label}
+                  {button.label}
                 </Button>
               </li>
             );
