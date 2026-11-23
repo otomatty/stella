@@ -23,7 +23,7 @@
       "prompt": "A small meeting room seen from the front with two rows of four empty chairs facing a blank whiteboard. Drawn large and centered. No people, no letters, no digits, no symbols."
     },
     "memo": {
-      "prompt": "One square paper memo note pinned with a round pushpin, showing only one short thick placeholder line in the middle and nothing else. Object only, drawn large and centered. No people, no letters, no digits, no symbols.",
+      "prompt": "One square paper memo note pinned with a round pushpin, with only the digits 500 written on the paper and nothing else. The digits 500 are required. Object only, drawn large and centered. No people.",
       "regions": {
         "paper": [0.18, 0.17, 0.63, 0.67]
       }
