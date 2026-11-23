@@ -408,6 +408,7 @@ export const taskRevisions = sqliteTable(
      * 記録する前の版は null (分からないので素材を出さない) (0054)。
      */
     privateHash: text("private_hash"),
+    problemHashes: text("problem_hashes"),
   },
   (t) => ({ pk: primaryKey({ columns: [t.taskId, t.contentHash] }) }),
 );
@@ -631,6 +632,7 @@ export const taskProblemResults = sqliteTable(
     contentHash: text("content_hash").notNull(),
     path: text("path").notNull(),
     code: text("code").notNull(),
+    problemDependencies: safeJson<string[]>("problem_dependencies"),
     sha256: text("sha256").notNull(),
     source: text("source", { enum: ["tests", "manual"] })
       .notNull()
@@ -2239,6 +2241,7 @@ export const integrationEvents = sqliteTable(
     reason: text("reason"),
     problemId: text("problem_id"),
     contentHash: text("content_hash"),
+    problemDependencies: safeJson<string[]>("problem_dependencies"),
   },
   (t) => ({
     position: index("integration_events_position_idx").on(t.occurredAt, t.id),

@@ -26,6 +26,7 @@ import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
 import { RETIRED_STAGES } from "../src/curriculum/retired-stages.js";
+import { problemFingerprints } from "../src/tasks/problems.js";
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { lessonIdRemapStatements } from "./lesson-id-remap.js";
@@ -768,9 +769,19 @@ for (const [order, task] of content.tasks.entries()) {
     JSON.stringify(task.bundle),
     LITERAL_PART_BYTES,
   );
+  const problemHashes = d.problems
+    ? strLit(
+        JSON.stringify(
+          await problemFingerprints(
+            { ...task.bundle.manifest, problems: d.problems },
+            task.bundle.files,
+          ),
+        ),
+      )
+    : "null";
   const revision = `task_id = ${strLit(d.id)} and content_hash = ${contentHash}`;
   lines.push(
-    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash) values (${strLit(d.id)}, ${contentHash}, ${definition}, ${strLit(bundleHead)}, ${nowExpr()}, ${strLit(privateHash)}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash"])};`,
+    `insert into task_revisions (task_id, content_hash, definition, bundle, created_at, private_hash, problem_hashes) values (${strLit(d.id)}, ${contentHash}, ${definition}, ${strLit(bundleHead)}, ${nowExpr()}, ${strLit(privateHash)}, ${problemHashes}) on conflict (task_id, content_hash) ${doUpdate("task_revisions", ["private_hash", "problem_hashes"])};`,
   );
   let bundleBytes = Buffer.byteLength(bundleHead);
   for (const part of bundleRest) {

@@ -3,7 +3,9 @@
  * パスは ID からこの関数だけで決める。課題ごとにパスは書かない。
  */
 
-import type { RunnerPlanKind } from "./runners.js";
+import { sha256Hex } from "./hash.js";
+import type { TaskManifest } from "./manifest.js";
+import { RUNNERS, type RunnerPlanKind } from "./runners.js";
 
 /** `^[a-z0-9][a-z0-9-]*$`。`..`・空白・`-p:` はここに当たらない。 */
 export const PROBLEM_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
@@ -85,4 +87,169 @@ export function readProblems(
   }
   if (errors.length > 0) return { errors };
   return { problems, errors };
+}
+
+// 正規表現なのでコメント中の import も拾うことがある。依存が不明なら API は引き継がない。
+const COMMENT = String.raw`/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//[^\r\n]*(?:\r\n?|\n|$)`;
+const TRIVIA = String.raw`(?:\s|(?:${COMMENT}))*`;
+const FROM_CLAUSE = String.raw`(?:(?:${COMMENT})|/(?![/*])|[^/'";\x60()])*?\bfrom${TRIVIA}`;
+const STATIC_IMPORT = new RegExp(
+  String.raw`\b(?:import\b${TRIVIA}|(?:import|export)\b${FROM_CLAUSE})(["'])(\.{1,2}/[^"'\r\n]+)\1`,
+  "g",
+);
+const DYNAMIC_CALL = new RegExp(String.raw`\b(?:import|require)\b${TRIVIA}\(${TRIVIA}`, "g");
+const DYNAMIC_LITERAL = String.raw`"(?:\\[\s\S]|[^"\\\r\n])*"|'(?:\\[\s\S]|[^'\\\r\n])*'|\x60(?:\\[\s\S]|[^\x60\\])*\x60`;
+
+export function readRelativeImports(code: string): {
+  specifiers: string[];
+  unresolvedDynamicImport: boolean;
+} {
+  const matches = Array.from(code.matchAll(STATIC_IMPORT), (match) => ({
+    index: match.index,
+    specifier: match[2] ?? "",
+  }));
+  const firstLiteral = new RegExp(DYNAMIC_LITERAL, "y");
+  const argumentEnd = new RegExp(`${TRIVIA}(?=[,)])`, "y");
+  let unresolvedDynamicImport = false;
+  for (const call of code.matchAll(DYNAMIC_CALL)) {
+    firstLiteral.lastIndex = call.index + call[0].length;
+    const literal = firstLiteral.exec(code)?.[0];
+    if (!literal || (literal[0] === "\x60" && literal.includes("${"))) {
+      unresolvedDynamicImport = true;
+      continue;
+    }
+    const specifier = literal.slice(1, -1);
+    if (/^\.{1,2}\//.test(specifier)) matches.push({ index: call.index, specifier });
+    argumentEnd.lastIndex = firstLiteral.lastIndex;
+    if (literal.includes("\\") || !argumentEnd.test(code)) unresolvedDynamicImport = true;
+  }
+  matches.sort((a, b) => a.index - b.index);
+  return { specifiers: matches.map(({ specifier }) => specifier), unresolvedDynamicImport };
+}
+
+export function relativeImportSpecifiers(code: string): string[] {
+  return readRelativeImports(code).specifiers;
+}
+
+/** 拡張・教材・API で同じ順序で候補を試し、課題フォルダーの外には出ない。 */
+export function resolveRelativeImport(
+  from: string,
+  specifier: string,
+  files: ReadonlySet<string>,
+): string | undefined {
+  const parts = from.split("/").slice(0, -1);
+  for (const segment of specifier.split("/")) {
+    if (!segment || segment === ".") continue;
+    if (segment === "..") {
+      if (!parts.length) return undefined;
+      parts.pop();
+    } else parts.push(segment);
+  }
+  const path = parts.join("/");
+  return [
+    path,
+    `${path}.ts`,
+    `${path}.tsx`,
+    path.replace(/\.js$/, ".ts"),
+    `${path}/index.ts`,
+    `${path}/index.tsx`,
+  ].find((candidate) => files.has(candidate));
+}
+
+const explanationFiles = new Set([
+  "readme.md",
+  "hints.md",
+  "explanation.md",
+  "review.md",
+  ".stella/task.json",
+]);
+
+type ProblemHashDefinition = Pick<TaskManifest, "runner" | "problems" | "checks" | "environment">;
+
+/** 配布時の base64 を使い、実行に関わるファイルをパス順に並べて版をまたいで比べる。 */
+export async function problemFingerprints(
+  definition: ProblemHashDefinition,
+  files: Readonly<Record<string, string>>,
+): Promise<Record<string, string>> {
+  if (!definition.problems?.length) return {};
+  const plan = RUNNERS[definition.runner].plan;
+  const problems = definition.problems.map(({ id, title }) => {
+    const paths = problemFiles(plan, id);
+    if (!paths) throw new Error(`問題のファイル名が不正です: ${id}`);
+    return { id, title, paths: [paths.source, paths.test] };
+  });
+  const ownerByPath = new Map(
+    problems.flatMap(({ id, paths }) => paths.map((path) => [path, id] as const)),
+  );
+  const distributedPaths = new Set(Object.keys(files));
+  const sharedFiles = Object.keys(files)
+    .sort()
+    .filter((path) => !ownerByPath.has(path) && !explanationFiles.has(path.toLowerCase()))
+    .map((path) => [path, files[path]]);
+  const dotnet = plan === "dotnet" ? definition.environment?.dotnet : undefined;
+  const encoder = new TextEncoder();
+  const sharedHash = await sha256Hex(
+    encoder.encode(
+      JSON.stringify([
+        definition.runner,
+        definition.checks.lint,
+        definition.checks.format,
+        [dotnet?.min, dotnet?.maxMajor, dotnet?.majors],
+        sharedFiles,
+      ]),
+    ),
+  );
+  const ownHashes = new Map(
+    await Promise.all(
+      problems.map(async ({ id, title, paths }) => {
+        const problem = paths.map((path) => {
+          if (!Object.hasOwn(files, path))
+            throw new Error(`問題の配布ファイルがありません: ${path}`);
+          return [path, files[path]];
+        });
+        const hash = await sha256Hex(encoder.encode(JSON.stringify([sharedHash, title, problem])));
+        return [id, hash] as const;
+      }),
+    ),
+  );
+  if (plan === "dotnet") return Object.fromEntries(ownHashes);
+
+  const decoder = new TextDecoder();
+  const importsByPath = new Map<string, string[]>();
+  const importsOf = (path: string) => {
+    const cached = importsByPath.get(path);
+    if (cached) return cached;
+    if (!/\.[cm]?[jt]sx?$/.test(path)) return [];
+    const code = decoder.decode(Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)));
+    const paths = relativeImportSpecifiers(code).flatMap((specifier) => {
+      const dependency = resolveRelativeImport(path, specifier, distributedPaths);
+      return dependency ? [dependency] : [];
+    });
+    importsByPath.set(path, paths);
+    return paths;
+  };
+  const problemPaths = new Map(problems.map(({ id, paths }) => [id, paths]));
+
+  return Object.fromEntries(
+    await Promise.all(
+      [...ownHashes].map(async ([id, ownHash]) => {
+        const paths = problemPaths.get(id);
+        const dependencies = new Set<string>([id]);
+        const visited = new Set(paths);
+        for (const path of visited) {
+          for (const dependency of importsOf(path)) {
+            visited.add(dependency);
+            const owner = ownerByPath.get(dependency);
+            if (!owner || dependencies.has(owner)) continue;
+            dependencies.add(owner);
+            // 依存先の雛形とテストの両方をたどる。循環は visited と dependencies で止まる。
+            for (const related of problemPaths.get(owner) ?? []) visited.add(related);
+          }
+        }
+        if (dependencies.size === 1) return [id, ownHash];
+        const hashes = [...dependencies].sort().map((key) => [key, ownHashes.get(key)]);
+        return [id, await sha256Hex(encoder.encode(JSON.stringify(hashes)))];
+      }),
+    ),
+  );
 }

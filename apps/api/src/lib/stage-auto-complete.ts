@@ -16,7 +16,7 @@ import { taskCompletionCounts } from "./task-completion.js";
  * staff が Gradebook (`POST /api/certificates/issue`) から発行する。
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { DISPLAY_NAME } from "@stella/shared/brand/display";
 import type { StageClearedNotice, StageCompletion } from "@stella/shared/cms/types";
@@ -40,6 +40,7 @@ import { recordAudit } from "./audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "./enrollment-bulk.js";
 import { stageClearLockId, withResourceLock } from "./resource-lock.js";
 import { recordStagePathEvents } from "./stage-path-events.js";
+import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
 import { passCountsForLesson } from "./reviewed-progress.js";
 
 /**
@@ -533,7 +534,12 @@ async function batchComputeCounts(
 ): Promise<Map<string, CompletionCounts>> {
   const lessonRows = await selectChunked(stageIds, (slice) =>
     db
-      .select({ stageId: sections.stageId, lessonId: lessons.id, type: lessons.type })
+      .select({
+        stageId: sections.stageId,
+        lessonId: lessons.id,
+        type: lessons.type,
+        problemStep: isProblemStepLesson(sql`lessons.id`),
+      })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .where(inArray(sections.stageId, slice)),
@@ -547,7 +553,7 @@ async function batchComputeCounts(
       .where(inArray(sections.stageId, slice)),
   );
 
-  const lessonIds = lessonRows.map((row) => row.lessonId);
+  const lessonIds = lessonRows.filter((row) => !row.problemStep).map((row) => row.lessonId);
   const quizIds = quizRows.map((row) => row.quizId);
   const assignmentLessonIds = lessonRows
     .filter((row) => row.type === "assignment" || row.type === "code")
@@ -569,6 +575,13 @@ async function batchComputeCounts(
       )
     ).map((row) => row.lessonId),
   );
+  for (const step of await loadCompletedProblemSteps(
+    db,
+    [userId],
+    lessonRows.filter((row) => row.problemStep).map((row) => row.lessonId),
+  )) {
+    doneLessonIds.add(step.lessonId);
+  }
   const passedQuizIds = new Set(
     (
       await selectChunked(quizIds, (slice) =>

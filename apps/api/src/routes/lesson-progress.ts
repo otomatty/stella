@@ -12,7 +12,7 @@
  */
 
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { normalizeProgressRows, type ProgressSyncInput } from "@stella/shared/study/progress-sync";
 
 import { getCaller, errorResponse, requireAdmin } from "../lib/authz.js";
@@ -21,6 +21,8 @@ import { lessonProgress } from "../db/schema.js";
 import {
   executeLessonProgressWrites,
   assertProgressSyncSize,
+  isProblemStepLesson,
+  loadCompletedProblemSteps,
 } from "../lib/lesson-progress-write.js";
 import {
   autoCompleteStagesIfMet,
@@ -47,10 +49,29 @@ const SELECT = {
 lessonProgressRoute.get("/api/lesson-progress", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const rows = await db
-      .select(SELECT)
-      .from(lessonProgress)
-      .where(eq(lessonProgress.userId, caller.id));
+    const [stored, completedSteps] = await Promise.all([
+      db
+        .select({ ...SELECT, problemStep: isProblemStepLesson(sql`lesson_progress.lesson_id`) })
+        .from(lessonProgress)
+        .where(eq(lessonProgress.userId, caller.id)),
+      loadCompletedProblemSteps(db, [caller.id]),
+    ]);
+    const stepsByLesson = new Map(completedSteps.map((step) => [step.lessonId, step]));
+    const rows = stored.map(({ problemStep, ...row }) => {
+      if (problemStep) row.completed = stepsByLesson.delete(row.lesson_id);
+      return row;
+    });
+    for (const step of stepsByLesson.values()) {
+      rows.push({
+        user_id: step.userId,
+        lesson_id: step.lessonId,
+        completed: true,
+        last_page: null,
+        viewed_pages: [],
+        watched_sec: null,
+        updated_at: new Date(step.updatedAt),
+      });
+    }
     return c.json({ rows });
   } catch (err) {
     return errorResponse(c, err);

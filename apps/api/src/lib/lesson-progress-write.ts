@@ -17,6 +17,11 @@ import type { Db } from "../db/client.js";
 import { lessonProgress } from "../db/schema.js";
 import { ApiError } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
+import {
+  loadProblemRevisionHashes,
+  countableProblemResults,
+  type ProblemHashCache,
+} from "./task-problem-hashes.js";
 import { buildStudyActivityIncrement } from "./study-activity.js";
 
 /** D1 の Worker 1 呼び出しあたりのクエリ上限 (有料プラン)。 batch の各文が 1 カウント。 */
@@ -46,19 +51,94 @@ export function assertProgressSyncSize(count: number): void {
   }
 }
 
-/** ステップの提出を確認する。課題の合格後は旧版の提出も数える。それ以外のレッスンは null。 */
-export function problemStepCompletion(userId: string | SQL, lessonId: string | SQL) {
+/** 提出の書き込みと同じ SQL 内で、書き込み後の状態から完了を確かめる。 */
+function problemStepCompletion(
+  userId: string | SQL,
+  lessonId: string | SQL,
+  carried: boolean | SQL = false,
+) {
   return sql<boolean | null>`(
     select exists (
       select 1 from task_problem_results r
       inner join tasks t on t.id = p.task_id
       left join task_progress tp on tp.user_id = r.user_id and tp.task_id = r.task_id
+      left join task_revisions current on current.task_id = t.id and current.content_hash = t.content_hash
+      left join task_revisions previous on previous.task_id = r.task_id and previous.content_hash = r.content_hash
       where r.user_id = ${userId} and r.task_id = p.task_id and r.problem_id = p.problem_id
-        and (t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed'))
+        and (
+          t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed')
+          or ((r.source = 'manual' or ${typeof carried === "boolean" ? sql.raw(carried ? "1" : "0") : carried}) and exists (
+            select 1 from json_each(case when json_valid(current.problem_hashes) then case when json_type(current.problem_hashes) = 'object' then current.problem_hashes end end) c
+            join json_each(case when json_valid(previous.problem_hashes) then case when json_type(previous.problem_hashes) = 'object' then previous.problem_hashes end end) v
+              on v.key = c.key and v.value = c.value
+            where c.key = p.problem_id and c.type = 'text'
+              and length(c.value) = 64 and c.value not glob '*[^0-9a-f]*'
+          ))
+        )
     )
     from task_problem_steps p
     where p.step_lesson_id = ${lessonId}
   )`;
+}
+
+export function isProblemStepLesson(lessonId: SQL) {
+  return sql<number>`exists (select 1 from task_problem_steps p where p.step_lesson_id = ${lessonId})`;
+}
+
+/** 問題のステップは保存済みの完了フラグより、現在数えられる提出を優先する。 */
+export async function loadCompletedProblemSteps(
+  db: Db,
+  userIds: readonly string[],
+  lessonIds?: readonly string[],
+  cache?: ProblemHashCache,
+) {
+  if (userIds.length === 0 || lessonIds?.length === 0) return [];
+  const rows = await db.all<{
+    userId: string;
+    lessonId: string | null;
+    taskId: string;
+    problemId: string;
+    contentHash: string;
+    currentHash: string;
+    status: string | null;
+    updatedAt: number;
+    source: "tests" | "manual";
+    path: string;
+    code: string;
+  }>(sql`
+    select r.user_id userId, p.step_lesson_id lessonId, r.task_id taskId, r.problem_id problemId,
+      r.content_hash contentHash, t.content_hash currentHash, tp.status, r.updated_at updatedAt,
+      r.source, r.path, r.code
+    from task_problem_results r
+    join tasks t on t.id = r.task_id
+    left join task_problem_steps p on p.task_id = r.task_id and p.problem_id = r.problem_id
+    left join task_progress tp on tp.task_id = r.task_id and tp.user_id = r.user_id
+    where r.user_id in (select value from json_each(${JSON.stringify(userIds)}))
+      and r.task_id in (select scope.task_id from task_problem_steps scope
+        ${lessonIds ? sql`where scope.step_lesson_id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``})
+  `);
+  const groups = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const key = JSON.stringify([row.userId, row.taskId]);
+    const group = groups.get(key) ?? [];
+    group.push(row);
+    groups.set(key, group);
+  }
+  const scopes = [...groups.values()].map((group) => ({
+    taskId: group[0].taskId,
+    currentHash: group[0].currentHash,
+    rows: group,
+    taskPassed: group[0].status === "passed" || group[0].status === "ai-passed",
+  }));
+  const hashes = await loadProblemRevisionHashes(db, scopes, cache);
+  const requested = lessonIds && new Set(lessonIds);
+  return scopes.flatMap(({ taskId, currentHash, taskPassed, rows }) =>
+    countableProblemResults(rows, currentHash, taskPassed, hashes.get(taskId)).flatMap((row) =>
+      row.lessonId && (!requested || requested.has(row.lessonId))
+        ? [{ ...row, lessonId: row.lessonId }]
+        : [],
+    ),
+  );
 }
 
 /** 問題結果の書き込みと同じ batch に追加できる、完了フラグだけの差分 upsert。 */
@@ -67,11 +147,12 @@ export function planProblemStepProgressWrites(
   userId: string,
   lessonIds: readonly string[],
   now = new Date(),
+  carriedLessons?: ReadonlySet<string>,
 ) {
   const values = [...new Set(lessonIds)].map((lessonId) => ({
     userId,
     lessonId,
-    completed: sql<boolean>`coalesce(${problemStepCompletion(userId, lessonId)}, 0)`,
+    completed: sql<boolean>`coalesce(${problemStepCompletion(userId, lessonId, carriedLessons?.has(lessonId))}, 0)`,
     updatedAt: now,
   }));
   const upsert = (batch: typeof values) =>
@@ -110,7 +191,7 @@ function toValues(
     userId,
     lessonId: r.lessonId,
     completed: problemStepLessonIds.has(r.lessonId)
-      ? sql`coalesce(${problemStepCompletion(userId, r.lessonId)}, 0)`
+      ? sql`coalesce(${problemStepCompletion(userId, r.lessonId, r.completed)}, 0)`
       : r.completed,
     lastPage: r.lastPage,
     viewedPages: r.viewedPages,
@@ -139,7 +220,11 @@ const reviewedCompleted = sql`case when exists (
 
 function buildProgressUpsert(db: Db, values: ProgressValue[]) {
   const newer = sql`excluded.updated_at > ${lessonProgress.updatedAt}`;
-  const problemCompleted = problemStepCompletion(sql`excluded.user_id`, sql`excluded.lesson_id`);
+  const problemCompleted = problemStepCompletion(
+    sql`excluded.user_id`,
+    sql`excluded.lesson_id`,
+    sql`excluded.completed`,
+  );
   return db
     .insert(lessonProgress)
     .values(values)

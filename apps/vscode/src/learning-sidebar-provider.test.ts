@@ -1,5 +1,6 @@
 import type * as vscode from "vscode";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthExpiredError } from "./api.js";
 import type { AuthStore } from "./auth.js";
 import type { CatalogStage } from "./catalog.js";
 
@@ -92,7 +93,7 @@ beforeEach(() => {
 });
 
 describe("学習サイドバーと拡張の接続", () => {
-  it("再読み込みでは初期文書を維持し、開始・完了をメッセージで送る", async () => {
+  it("手動の再読み込みでは初期文書を維持し、開始・完了をメッセージで送る", async () => {
     const h = harness();
     const initialDocument = h.view.webview.html;
     await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
@@ -103,7 +104,7 @@ describe("学習サイドバーと拡張の接続", () => {
           finish = resolve;
         }),
     );
-    const refreshing = h.provider.refresh();
+    h.send({ action: "refresh" });
     await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
     expect(h.html).toContain('aria-busy="true"');
     expect(h.html).toContain('class="loading-layout"');
@@ -113,12 +114,95 @@ describe("学習サイドバーと拡張の接続", () => {
     expect(h.html).not.toMatch(/\bstyle\s*=|<style\b/i);
     expect(h.view.webview.html).toBe(initialDocument);
     finish(catalog);
-    await refreshing;
-    expect(h.html).toContain('aria-busy="false"');
+    await vi.waitFor(() => expect(h.html).toContain('aria-busy="false"'));
     expect(h.html).toContain(
       '<ol class="segments" role="img" aria-label="1 件中 0 件完了"><li class="here"></li></ol>',
     );
     expect(h.view.webview.html).toBe(initialDocument);
+  });
+
+  it("裏の更新は読み込み中も同じ内容を取得したあとも描き直さない", async () => {
+    const h = harness();
+    await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
+    const initialCatalog = h.html;
+    const { postMessage } = h.view.webview;
+    postMessage.mockClear();
+    let finish: (value: CatalogStage[]) => void = () => undefined;
+    mocks.load.mockImplementationOnce(
+      () =>
+        new Promise<CatalogStage[]>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const refreshing = h.provider.refresh();
+    await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+    expect(h.html).toBe(initialCatalog);
+    expect(h.html).toContain('aria-busy="false"');
+    expect(h.html).not.toContain('class="loading-layout"');
+    expect(postMessage).not.toHaveBeenCalled();
+    finish(structuredClone(catalog));
+    await refreshing;
+    expect(h.html).toBe(initialCatalog);
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it("裏の更新で進捗が変わると最新の選択で一度だけ描き直す", async () => {
+    const sharedCatalog = structuredClone(catalog);
+    mocks.load.mockResolvedValueOnce(sharedCatalog);
+    const h = harness();
+    await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
+    const { postMessage } = h.view.webview;
+    let finish: (value: CatalogStage[]) => void = () => undefined;
+    mocks.load.mockImplementationOnce(
+      () =>
+        new Promise<CatalogStage[]>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const refreshing = h.provider.refresh();
+    await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+    h.provider.reveal({ lessonId: "doc" });
+    postMessage.mockClear();
+    sharedCatalog[0].sections[0].lessons[0].completed = true;
+    finish(structuredClone(sharedCatalog));
+    await refreshing;
+    expect(postMessage).toHaveBeenCalledOnce();
+    expect(h.html).toContain('aria-busy="false"');
+    expect(h.html).toContain("1 件中 1 件完了");
+    expect(h.html).toContain('<li class="lesson done current">');
+  });
+
+  it("裏の更新で通信に失敗してもカタログを残し、手動の再読み込みではエラーを出す", async () => {
+    const h = harness();
+    await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
+    const initialCatalog = h.html;
+    const { postMessage } = h.view.webview;
+    postMessage.mockClear();
+    mocks.load.mockRejectedValue(new Error("通信エラー"));
+    await h.provider.refresh();
+    expect(h.html).toBe(initialCatalog);
+    expect(postMessage).not.toHaveBeenCalled();
+    h.send({ action: "open", id: "doc" });
+    expect(mocks.execute).toHaveBeenCalledWith("stella.openInWeb", "s", "doc");
+
+    await h.provider.refresh({ showLoading: true });
+    expect(h.html).toContain('data-state="error"');
+    expect(h.html).toContain("通信エラー");
+  });
+
+  it.each(["トークンなし", "認証切れ"])("裏の更新で接続案内に切り替える (%s)", async (reason) => {
+    const getToken = vi.fn().mockResolvedValue("token");
+    const h = harness(getToken);
+    await vi.waitFor(() => expect(h.html).toContain('data-select="stage"'));
+    const { postMessage } = h.view.webview;
+    postMessage.mockClear();
+    if (reason === "トークンなし") getToken.mockResolvedValueOnce(null);
+    else mocks.load.mockRejectedValueOnce(new AuthExpiredError());
+    await h.provider.refresh();
+    expect(postMessage).toHaveBeenCalledOnce();
+    expect(h.html).toContain('data-state="disconnected"');
+    expect(h.html).toContain("Web で接続する");
+    expect(h.html).not.toContain('data-select="stage"');
   });
 
   it("スクリプトの準備より早く取得が終わっても、readyの後に最新状態を送る", async () => {

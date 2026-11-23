@@ -43,10 +43,12 @@ import { reviewNotification } from "./review-notification.js";
 import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { canAccessTask } from "./task-access.js";
 import {
+  assertCurrentProblemSubmission,
   countedProblemIds,
   readTaskDefinition,
   submitTaskProblem,
 } from "./task-problem-submission.js";
+import { loadTaskProblemHashes } from "./task-problem-hashes.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
 import { hasRecordedSupport, isAssistedSubmission } from "./task-support.js";
@@ -91,6 +93,8 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .limit(1);
   if (!revision)
     throw new ApiError("課題の版が見つかりません。配布した課題を開き直してください", 409);
+  if (input.mode === "submit" && input.problemId)
+    assertCurrentProblemSubmission(input.contentHash, task.contentHash);
   const bundle = parsePublicTaskBundle(JSON.parse(revision.bundle));
   const definition = JSON.parse(revision.definition) as {
     submit: { explanation: boolean; debuggingRecord: boolean };
@@ -664,6 +668,8 @@ export async function reviewTaskSubmission(
             problemId: taskProblemResults.problemId,
             contentHash: taskProblemResults.contentHash,
             source: taskProblemResults.source,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
           })
           .from(taskProblemResults)
           .where(
@@ -677,12 +683,19 @@ export async function reviewTaskSubmission(
           .from(taskProgress)
           .where(and(eq(taskProgress.userId, row.studentId), eq(taskProgress.taskId, row.taskId)))
           .limit(1);
-        const counted = countedProblemIds(
-          saved,
-          current?.hash ?? "",
-          progress?.status === "passed" || progress?.status === "ai-passed",
-        );
-        if (!problems?.every((problem) => counted.has(problem.id))) {
+        const currentHash = current?.hash ?? "";
+        const taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
+        const hashes = await loadTaskProblemHashes(db, {
+          taskId: row.taskId,
+          currentHash,
+          rows: saved,
+          taskPassed,
+        });
+        const counted = countedProblemIds(saved, currentHash, taskPassed, hashes);
+        if (
+          row.taskContentHash !== currentHash ||
+          !problems?.every((problem) => counted.has(problem.id))
+        ) {
           // 確認中の表示や人の一覧に取り残さず、残っている提出・問題の結果から状態を付け直す。
           const scope = { studentId: row.studentId, taskId: row.taskId };
           const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [

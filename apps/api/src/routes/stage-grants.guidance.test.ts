@@ -408,6 +408,30 @@ it("問題の数・現行版の合格・引き継ぎを合計し、類題・無�
     stages: [{ progress: { unit: "problems", passed: 3, total: 5 } }],
   });
 });
+it("案内に出さない修了済みステージの版を照合しない", async () => {
+  await grant();
+  await task("cleared-task", ["q1"]);
+  await problem("cleared-task", "q1", "old");
+  await db.insert(enrollments).values({ userId: "learner", stageId: "extra", status: "completed" });
+  await db.insert(stages).values({
+    id: "visible",
+    slug: "sample-visible",
+    title: "案内するステージ",
+    audience: "granted",
+    status: "published",
+  });
+  await grant("learner", "visible");
+  const prepare = vi.spyOn(database.binding, "prepare");
+  try {
+    expect((await mine()).stages.map((stage) => stage.stage_id)).toEqual(["visible"]);
+    expect(
+      prepare.mock.calls.some(([query]) => query.includes("join task_revisions r on r.task_id")),
+    ).toBe(false);
+  } finally {
+    prepare.mockRestore();
+  }
+});
+
 it("問題が無ければ課題の合格を数え、手元の合格を含めない", async () => {
   await grant();
   await task("a");

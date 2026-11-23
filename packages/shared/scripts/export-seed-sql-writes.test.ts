@@ -21,6 +21,7 @@ import {
   MAX_CHUNK_BYTES,
   splitSqlStatements,
 } from "../../../apps/api/scripts/lib/d1-remote.js";
+import { problemFingerprints } from "../src/tasks/problems.js";
 import { videoKeys, videoManifestKey } from "../../content/src/material-video.js";
 
 /**
@@ -167,7 +168,22 @@ describe("seed の書き込み行数", () => {
       try {
         const sql = await exportSql();
         apply(db, sql);
-        const destination = db.prepare("select content_hash from tasks where id = ?").get(to);
+        const revision = db.prepare(
+          "select r.content_hash, r.bundle, r.definition, r.problem_hashes from task_revisions r join tasks t on t.id = r.task_id and t.content_hash = r.content_hash where t.id = ?",
+        );
+        const destination = revision.get(to) as {
+          content_hash: string;
+          bundle: string;
+          definition: string;
+          problem_hashes: string;
+        };
+        const bundle = JSON.parse(destination.bundle);
+        const fingerprints = await problemFingerprints(
+          { ...bundle.manifest, problems: JSON.parse(destination.definition).problems },
+          bundle.files,
+        );
+        expect(fingerprints["q01-01-add-tax"]).toMatch(/^[0-9a-f]{64}$/);
+        expect(JSON.parse(destination.problem_hashes)).toEqual(fingerprints);
         db.prepare("delete from tasks where id = ?").run(to);
         db.prepare(
           `insert into sections (id, stage_id, title, "order", created_at) values ('old-unit', ?, '章の課題', 99, 1)`,
@@ -202,6 +218,7 @@ describe("seed の書き込み行数", () => {
         expect(
           db.prepare("select status, content_hash from task_progress where task_id = ?").get(to),
         ).toEqual({ status: "local-passed", content_hash: destination?.content_hash });
+        expect(revision.get(to)?.problem_hashes).toBe(destination.problem_hashes);
         expect(apply(db, sql)).toEqual({});
       } finally {
         db.close();

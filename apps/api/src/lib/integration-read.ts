@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import type {
   IntegrationProgress,
   IntegrationEvent,
@@ -7,7 +7,14 @@ import type {
 import type { Db } from "../db/client.js";
 import { lastLearningDate } from "./last-learning-date.js";
 import { ApiError } from "./authz.js";
-import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
+import {
+  loadProblemRevisionHashes,
+  countableProblemResults,
+  readProblemDependencies,
+  submittedProblemImportSpecifiers,
+  type ProblemRevisionHashes,
+} from "./task-problem-hashes.js";
+import { readTaskDefinition } from "./task-problem-submission.js";
 
 export function encodePosition(value: unknown): string {
   return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
@@ -47,20 +54,120 @@ interface ProblemRow {
   contentHash: string;
   source: "tests" | "manual";
   firstPassedAt: number;
+  path?: string;
+  importSpecifiers?: readonly string[] | null;
+  resultRowId: number | null;
+  codeBytes: number | null;
+  resultUpdatedAt: number | null;
+  resultSha256: string | null;
+  dependenciesJson?: string | null;
+  currentDependenciesJson?: string | null;
 }
-function problemSummary(definition: string, hash: string, rows: ProblemRow[], taskPassed: boolean) {
+function problemSummary(
+  definition: string,
+  hash: string,
+  rows: ProblemRow[],
+  taskPassed: boolean,
+  revisions?: ProblemRevisionHashes,
+) {
   const problems = readTaskDefinition(definition).problems;
   if (!problems) return undefined;
-  const counted = countedProblemIds(rows, hash, taskPassed);
-  const current = new Set(problems.filter((p) => counted.has(p.id)).map((p) => p.id));
-  return {
-    total: problems.length,
-    passed: current.size,
-    sources: [...new Set(rows.filter((r) => current.has(r.problemId)).map((r) => r.source))],
-  };
+  const current = new Set(problems.map((p) => p.id));
+  const sources = new Map<string, ProblemRow["source"]>();
+  // 履歴は新しい順。数える版の中で各問題のいちばん新しい出所だけを使う。
+  for (const row of countableProblemResults(
+    rows.map((row) => ({
+      ...row,
+      historicalDependencies: readProblemDependencies(row.dependenciesJson ?? null),
+      currentDependencies: readProblemDependencies(row.currentDependenciesJson ?? null),
+    })),
+    hash,
+    taskPassed,
+    revisions,
+  )) {
+    if (current.has(row.problemId) && !sources.has(row.problemId)) {
+      sources.set(row.problemId, row.source);
+    }
+  }
+  return { total: problems.length, passed: sources.size, sources: [...new Set(sources.values())] };
 }
 
-/** 固定回数のクエリ。各クエリで同じメンバーページとグループのステージを結合する。 */
+// 1 問の受付上限を守り、ページ内のコードは本文を溜めずに小分けに読む。
+const MAX_PROBLEM_CODE_BYTES = 64 * 1024;
+const CODE_BATCH_BYTES = 1024 * 1024;
+const CODE_BATCH_ROWS = 200;
+const storedCodeBytes = sql`length(cast(r.code as blob))`;
+
+function problemCodeBytes(needed: SQL) {
+  return sql`case when ${needed} then
+    case when ${storedCodeBytes} <= ${MAX_PROBLEM_CODE_BYTES} then ${storedCodeBytes} end
+  end`;
+}
+
+function problemResultMetadata(candidates: SQL) {
+  return sql`select b.user_id,b.task_id,b.problemId,b.contentHash,b.source,b.firstPassedAt,
+      b.dependenciesJson,b.currentDependenciesJson,b.codeBytes,
+      case when b.codeBytes is not null then b.resultRowId end resultRowId,
+      case when b.codeBytes is not null then b.resultUpdatedAt end resultUpdatedAt,
+      case when b.codeBytes is not null then b.resultSha256 end resultSha256
+    from (${candidates}) b
+    order by case when b.sequence<>0 then b.firstPassedAt end desc,b.sequence desc,b.problemId`;
+}
+
+type ScopedProblemRow = ProblemRow & { user_id: string; task_id: string };
+
+async function loadProblemImports(db: Db, rows: Iterable<ScopedProblemRow>) {
+  const batch = new Map<number, ScopedProblemRow>();
+  let batchBytes = 0;
+  const readBatch = async () => {
+    const keys = [...batch.values()].map((row) => [
+      row.resultRowId,
+      row.contentHash,
+      row.resultUpdatedAt,
+      row.resultSha256,
+      row.codeBytes,
+      row.user_id,
+      row.task_id,
+      row.problemId,
+    ]);
+    // 行の更新や rowid の再利用があったら、最初に読み取った結果と混ぜない。
+    for (const row of await db.all<{ resultRowId: number; path: string; code: string }>(sql`
+      select r.rowid resultRowId,r.path,r.code
+      from json_each(${JSON.stringify(keys)}) k
+      join task_problem_results r on r.rowid=json_extract(k.value,'$[0]')
+        and r.content_hash=json_extract(k.value,'$[1]')
+        and r.updated_at=json_extract(k.value,'$[2]')
+        and r.sha256=json_extract(k.value,'$[3]')
+        and ${storedCodeBytes}=json_extract(k.value,'$[4]')
+        and r.user_id=json_extract(k.value,'$[5]')
+        and r.task_id=json_extract(k.value,'$[6]')
+        and r.problem_id=json_extract(k.value,'$[7]')
+    `)) {
+      const target = batch.get(row.resultRowId);
+      if (!target) continue;
+      target.path = row.path;
+      target.importSpecifiers = submittedProblemImportSpecifiers(row.path, row.code);
+    }
+    batch.clear();
+    batchBytes = 0;
+  };
+  for (const row of rows) {
+    if (row.resultRowId === null || row.codeBytes === null) continue;
+    if (batchBytes + row.codeBytes > CODE_BATCH_BYTES || batch.size >= CODE_BATCH_ROWS)
+      await readBatch();
+    batch.set(row.resultRowId, row);
+    batchBytes += row.codeBytes;
+  }
+  if (batch.size) await readBatch();
+}
+
+const liveProblemCandidate = sql`r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,
+  r.source,r.first_passed_at firstPassedAt,0 sequence,null dependenciesJson,
+  case when r.content_hash=t.content_hash then r.problem_dependencies end currentDependenciesJson,
+  r.rowid resultRowId,r.updated_at resultUpdatedAt,r.sha256 resultSha256,
+  ${problemCodeBytes(sql`r.source='tests' and r.content_hash<>t.content_hash and coalesce(tp.status,'') not in ('passed','ai-passed')`)} codeBytes`;
+
+/** 各集計クエリで同じメンバーページとグループのステージを結合する。 */
 export async function readIntegrationProgress(
   db: Db,
   groupId: string,
@@ -94,6 +201,24 @@ export async function readIntegrationProgress(
     sql`select p.*, ${at === null ? lastLearningDate(sql`p.id`) : sql`null`} last_active from (${page}) p`,
   );
   const stageRows = await db.all<{ id: string; slug: string }>(sql`${scope} order by s.slug,s.id`);
+  const historicalPasses = sql`with history as (
+            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,e.submission_attempt,e.seq,
+              sum(case when e.type='task_pass_revoked' then 1 else 0 end) over (
+                partition by e.user_id,e.task_id,e.submission_id order by e.occurred_at,e.seq
+              ) pass_period
+            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+            where e.type in ('task_passed','task_pass_revoked') and e.occurred_at <= ${at}
+          ), decisions as (
+            select *,min(case when type='task_passed' then reviewed_at end) over (
+                partition by user_id,task_id,id,pass_period
+              ) first_passed_at,
+              row_number() over (partition by user_id,task_id,id order by reviewed_at desc,seq desc) position
+            from history
+          ), remaining as (
+            select *,min(first_passed_at) over (partition by user_id,task_id) task_passed_at,
+              row_number() over (partition by user_id,task_id order by submission_attempt desc,id) chosen
+            from decisions where position=1 and type='task_passed'
+          ) select user_id,task_id,id,source,task_passed_at reviewed_at,type from remaining where chosen=1`;
   const [enrolled, taskRows, progress, passes, problems, more] = await Promise.all([
     db.all<{
       user_id: string;
@@ -142,39 +267,39 @@ export async function readIntegrationProgress(
     }>(
       at === null
         ? sql`select x.student_id user_id,x.task_id,x.id,x.review_source source,x.reviewed_at,'task_passed' type from submissions x join (${page}) p on p.id=x.student_id join tasks t on t.id=x.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id where x.verdict='pass' order by x.attempt desc,x.id`
-        : sql`with history as (
-            select e.user_id,e.task_id,e.submission_id id,e.source,e.occurred_at reviewed_at,e.type,e.submission_attempt,e.seq,
-              sum(case when e.type='task_pass_revoked' then 1 else 0 end) over (
-                partition by e.user_id,e.task_id,e.submission_id order by e.occurred_at,e.seq
-              ) pass_period
-            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type in ('task_passed','task_pass_revoked') and e.occurred_at <= ${at}
-          ), decisions as (
-            select *,min(case when type='task_passed' then reviewed_at end) over (
-                partition by user_id,task_id,id,pass_period
-              ) first_passed_at,
-              row_number() over (partition by user_id,task_id,id order by reviewed_at desc,seq desc) position
-            from history
-          ), remaining as (
-            select *,min(first_passed_at) over (partition by user_id,task_id) task_passed_at,
-              row_number() over (partition by user_id,task_id order by submission_attempt desc,id) chosen
-            from decisions where position=1 and type='task_passed'
-          ) select user_id,task_id,id,source,task_passed_at reviewed_at,type from remaining where chosen=1`,
+        : historicalPasses,
     ),
-    db.all<ProblemRow & { user_id: string; task_id: string }>(
-      at === null
-        ? sql`select r.user_id,r.task_id,r.problem_id problemId,r.content_hash contentHash,r.source,r.first_passed_at firstPassedAt from task_problem_results r join (${page}) p on p.id=r.user_id join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id`
-        : sql`select user_id,task_id,problemId,contentHash,source,firstPassedAt from (
-            select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,
-              row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
-            from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
-            where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
-          ) where position=1 and type='problem_passed' order by firstPassedAt desc,sequence desc`,
+    db.all<ScopedProblemRow>(
+      problemResultMetadata(
+        at === null
+          ? sql`select ${liveProblemCandidate}
+            from task_problem_results r join (${page}) p on p.id=r.user_id
+            join tasks t on t.id=r.task_id join sections u on u.id=t.section_id join (${scope}) s on s.id=u.stage_id
+            left join task_progress tp on tp.user_id=r.user_id and tp.task_id=r.task_id
+            where t.active=1 and t.variant_of is null`
+          : sql`select h.user_id,h.task_id,h.problemId,h.contentHash,h.source,h.firstPassedAt,h.sequence,
+              h.dependenciesJson,null currentDependenciesJson,r.rowid resultRowId,
+              r.updated_at resultUpdatedAt,r.sha256 resultSha256,
+              ${problemCodeBytes(sql`r.rowid is not null`)} codeBytes
+            from (
+              select e.user_id,e.task_id,e.problem_id problemId,e.content_hash contentHash,e.source,e.occurred_at firstPassedAt,e.seq sequence,e.type,e.problem_dependencies dependenciesJson,
+                row_number() over (partition by e.user_id,e.task_id,e.problem_id,e.content_hash order by e.occurred_at desc,e.seq desc) position
+              from integration_events e join (${page}) p on p.id=e.user_id join (${scope}) s on s.id=e.stage_id
+              where e.type in ('problem_passed','problem_pass_revoked') and e.occurred_at <= ${at}
+            ) h
+            join tasks t on t.id=h.task_id
+            left join (${historicalPasses}) hp on hp.user_id=h.user_id and hp.task_id=h.task_id
+            left join task_problem_results r on r.user_id=h.user_id and r.task_id=h.task_id
+              and h.source='tests' and h.contentHash<>t.content_hash and hp.user_id is null
+              and h.dependenciesJson is null and r.problem_id=h.problemId and r.content_hash=h.contentHash and r.updated_at <= ${at}
+            where h.position=1 and h.type='problem_passed' and t.active=1 and t.variant_of is null`,
+      ),
     ),
     db.all<{ id: string }>(
       sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
     ),
   ]);
+  await loadProblemImports(db, problems);
   // 索引を作り、人数×全履歴の走査も避ける。
   const key = (user: string, task: string) => JSON.stringify([user, task]);
   const progressMap = new Map(progress.map((r) => [key(r.user_id, r.task_id), r]));
@@ -188,6 +313,26 @@ export async function readIntegrationProgress(
     list.push(r);
     problemMap.set(k, list);
   }
+  const tasksById = new Map(taskRows.map((task) => [task.id, task]));
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    problems.flatMap((row) => {
+      const task = tasksById.get(row.task_id);
+      if (!task) return [];
+      const k = key(row.user_id, row.task_id);
+      return [
+        {
+          taskId: task.id,
+          currentHash: task.content_hash,
+          rows: [row],
+          taskPassed:
+            at === null
+              ? passed(progressMap.get(k)?.status ?? null)
+              : passMap.get(k)?.type === "task_passed",
+        },
+      ];
+    }),
+  );
   return {
     members: members.map((member) => ({
       id: member.id,
@@ -210,19 +355,6 @@ export async function readIntegrationProgress(
             tp = progressMap.get(k),
             pass = passMap.get(k);
           const isPassed = at === null ? passed(tp?.status ?? null) : pass?.type === "task_passed";
-          // 履歴は版ごとに最新を取得済み。確定合格の保持という既存の数え方を守り、
-          // 数える版の中で各問題のいちばん新しい出所だけを使う。
-          const seenProblems = new Set<string>();
-          const problemRows = (problemMap.get(k) ?? []).filter((row) => {
-            if (at === null) return true;
-            if (
-              (!isPassed && row.contentHash !== task.content_hash) ||
-              seenProblems.has(row.problemId)
-            )
-              return false;
-            seenProblems.add(row.problemId);
-            return true;
-          });
           unit.tasks.push({
             id: task.id,
             title: task.title,
@@ -244,7 +376,13 @@ export async function readIntegrationProgress(
             ...(pass?.id && (at === null || isPassed)
               ? { submissionUrl: `/submissions/${encodeURIComponent(pass.id)}` }
               : {}),
-            problems: problemSummary(task.definition, task.content_hash, problemRows, isPassed),
+            problems: problemSummary(
+              task.definition,
+              task.content_hash,
+              problemMap.get(k) ?? [],
+              isPassed,
+              hashes.get(task.id),
+            ),
           });
         }
         return {
@@ -287,7 +425,7 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       throw new ApiError("Invalid cursor", 400);
     sequence = p[2];
   }
-  const rows = await db.all<{
+  type EventRow = {
     id: string;
     type: IntegrationEvent["type"];
     time: number;
@@ -303,8 +441,10 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
     definition: string | null;
     content_hash: string | null;
     status: string | null;
-    problems: string;
-  }>(sql`with
+  };
+  const rows = await db.all<
+    (EventRow & { event_row: 1 }) | (ScopedProblemRow & { event_row: 0 })
+  >(sql`with
     members as (select m.profile_id,m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
     scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
@@ -317,12 +457,59 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
       union all
       select json_array(type,user_id,task_id,occurred_at,min(seq),max(seq)),case when type='problem_passed' then 'problems_passed' else 'problems_revoked' end,occurred_at,max(seq),user_id,external_id,slug,task_id,null,null,count(distinct problem_id),null from numbered where type in ('problem_passed','problem_pass_revoked') group by group_number,type,user_id,task_id,occurred_at
     ),
-    page as (select * from events order by seq limit 501)
-    select page.*, t.definition,t.content_hash,tp.status,
-      coalesce((select json_group_array(json_object('problemId',r.problem_id,'contentHash',r.content_hash,'source',r.source,'firstPassedAt',r.first_passed_at)) from task_problem_results r where r.user_id=page.user_id and r.task_id=page.task_id),'[]') problems
-    from page left join tasks t on t.id=page.task_id left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id order by page.seq`);
-  const page = rows.slice(0, 500);
-  const events: IntegrationEvent[] = page.map((r) => ({
+    page as (select * from events order by seq limit 501),
+    targets as (
+      select distinct user_id,task_id
+      from (select * from page order by seq limit 500)
+      where type in ('problems_passed','problems_revoked')
+    ),
+    problem_rows as (
+      ${problemResultMetadata(sql`select ${liveProblemCandidate}
+        from targets k join task_problem_results r on r.user_id=k.user_id and r.task_id=k.task_id
+        join tasks t on t.id=r.task_id
+        left join task_progress tp on tp.user_id=r.user_id and tp.task_id=r.task_id`)}
+    )
+    select 1 event_row,page.*,t.definition,t.content_hash,tp.status,
+      null problemId,null contentHash,null firstPassedAt,null dependenciesJson,null currentDependenciesJson,
+      null codeBytes,null resultRowId,null resultUpdatedAt,null resultSha256
+    from page left join tasks t on t.id=page.task_id
+      left join task_progress tp on tp.user_id=page.user_id and tp.task_id=page.task_id
+    union all
+    select 0,null,null,null,null,user_id,null,null,task_id,source,null,null,null,null,null,null,
+      problemId,contentHash,firstPassedAt,dependenciesJson,currentDependenciesJson,
+      codeBytes,resultRowId,resultUpdatedAt,resultSha256
+    from problem_rows
+    order by seq`);
+  const resultRows = rows.filter((row) => row.event_row === 0);
+  await loadProblemImports(db, resultRows);
+  const eventRows = rows.filter((row) => row.event_row === 1);
+  const page = eventRows.slice(0, 500);
+  const byKey = new Map<string, ProblemRow[]>();
+  for (const row of resultRows) {
+    const key = JSON.stringify([row.user_id, row.task_id]);
+    const saved = byKey.get(key) ?? [];
+    saved.push(row);
+    byKey.set(key, saved);
+  }
+  const problemRows = page.map(
+    (row) => byKey.get(JSON.stringify([row.user_id, row.task_id])) ?? [],
+  );
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    page.flatMap((row, index) =>
+      row.task_id && row.content_hash
+        ? [
+            {
+              taskId: row.task_id,
+              currentHash: row.content_hash,
+              rows: problemRows[index],
+              taskPassed: passed(row.status),
+            },
+          ]
+        : [],
+    ),
+  );
+  const events: IntegrationEvent[] = page.map((r, index) => ({
     id: r.id,
     type: r.type,
     occurredAt: new Date(r.time).toISOString(),
@@ -342,8 +529,9 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
             problemSummary(
               r.definition ?? "{}",
               r.content_hash ?? "",
-              JSON.parse(r.problems) as ProblemRow[],
+              problemRows[index],
               passed(r.status),
+              hashes.get(r.task_id ?? ""),
             )?.passed ?? 0,
         }),
   }));
@@ -351,6 +539,6 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
   return {
     events,
     next: last ? encodePosition(["events-v2", groupId, last.seq]) : (after ?? null),
-    hasMore: rows.length > 500,
+    hasMore: eventRows.length > 500,
   };
 }

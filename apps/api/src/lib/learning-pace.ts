@@ -31,7 +31,9 @@ import {
 import { ApiError, type Caller, isStaffRole, loadActiveStaffIds } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { loadClearedStageIds, loadSkillMapSource, parsePrerequisites } from "./skill-map-data.js";
-import { readTaskDefinition } from "./task-problem-submission.js";
+import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
+import { loadProblemRevisionHashes, type ProblemHashCache } from "./task-problem-hashes.js";
+import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 /**
  * 問題つき課題の、今の版の問題数と提出済み数。課題ごとの SQL にはしない。
@@ -41,6 +43,7 @@ async function problemProgressOf(
   db: Db,
   userId: string,
   taskIds: string[],
+  cache: ProblemHashCache,
 ): Promise<Map<string, { total: number; passed: number }>> {
   const progress = new Map<string, { total: number; passed: number }>();
   if (taskIds.length === 0) return progress;
@@ -48,7 +51,7 @@ async function problemProgressOf(
     await Promise.all(
       chunk(taskIds, D1_MAX_BOUND_PARAMS - 1).map((batch) =>
         db
-          .select({ id: tasks.id, definition: tasks.definition })
+          .select({ id: tasks.id, definition: tasks.definition, contentHash: tasks.contentHash })
           .from(tasks)
           .where(
             and(
@@ -74,25 +77,40 @@ async function problemProgressOf(
           .select({
             taskId: taskProblemResults.taskId,
             problemId: taskProblemResults.problemId,
+            contentHash: taskProblemResults.contentHash,
+            path: taskProblemResults.path,
+            code: taskProblemResults.code,
+            source: taskProblemResults.source,
           })
           .from(taskProblemResults)
-          .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
           .where(
-            and(
-              eq(taskProblemResults.userId, userId),
-              inArray(taskProblemResults.taskId, batch),
-              eq(taskProblemResults.contentHash, tasks.contentHash),
-            ),
+            and(eq(taskProblemResults.userId, userId), inArray(taskProblemResults.taskId, batch)),
           ),
       ),
     )
   ).flat();
+  const resultsByTask = new Map<string, typeof results>();
   for (const result of results) {
-    const ids = problemsByTask.get(result.taskId);
-    const row = progress.get(result.taskId);
-    if (!ids || !row || !ids.has(result.problemId)) continue;
-    ids.delete(result.problemId);
-    row.passed += 1;
+    const saved = resultsByTask.get(result.taskId) ?? [];
+    saved.push(result);
+    resultsByTask.set(result.taskId, saved);
+  }
+  const hashes = await loadProblemRevisionHashes(
+    db,
+    definitions.map((row) => ({
+      taskId: row.id,
+      currentHash: row.contentHash,
+      rows: resultsByTask.get(row.id) ?? [],
+    })),
+    cache,
+  );
+  for (const row of definitions) {
+    const saved = resultsByTask.get(row.id);
+    const ids = problemsByTask.get(row.id);
+    const count = progress.get(row.id);
+    if (!saved || !ids || !count) continue;
+    const counted = countedProblemIds(saved, row.contentHash, false, hashes.get(row.id));
+    count.passed = [...counted].filter((id) => ids.has(id)).length;
   }
   return progress;
 }
@@ -197,6 +215,7 @@ export async function loadLearningPace(
           title: lessons.title,
           duration: lessons.durationLabel,
           completed: lessonProgress.completed,
+          problemStep: isProblemStepLesson(sql`lessons.id`),
         })
         .from(lessons)
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
@@ -234,18 +253,27 @@ export async function loadLearningPace(
         .where(and(inArray(sections.stageId, ids), eq(tasks.active, true), isNull(tasks.variantOf)))
         .orderBy(asc(tasks.order)),
     ]);
+    const cache: ProblemHashCache = new Map();
     const problemProgress = await problemProgressOf(
       db,
       learner.id,
       taskRows.map((task) => task.id),
+      cache,
     );
+    const completedSteps = await loadCompletedProblemSteps(
+      db,
+      [learner.id],
+      lessonRows.filter((row) => row.problemStep).map((row) => row.id),
+      cache,
+    );
+    const doneSteps = new Set(completedSteps.map((row) => row.lessonId));
     for (const lesson of lessonRows) {
       const match = /^(\d+(?:\.\d+)?)分$/.exec(lesson.duration ?? "");
       units.get(lesson.unitId)?.lessons.push({
         id: lesson.id,
         title: lesson.title,
         minutes: match ? Number(match[1]) : 1,
-        completed: lesson.completed === true,
+        completed: lesson.problemStep ? doneSteps.has(lesson.id) : lesson.completed === true,
       });
     }
     for (const task of taskRows) {

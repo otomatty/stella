@@ -11,7 +11,6 @@ import {
   tasks,
   enrollments,
   submissions,
-  taskProblemResults,
   integrationClients,
   integrationGroups,
   integrationGroupMembers,
@@ -83,19 +82,14 @@ it.each([true, false])(
           reviewSource: "human",
           reviewedAt: new Date(3000),
         });
-        await db.insert(taskProblemResults).values({
-          userId,
-          taskId: "fixture-task",
-          problemId: "q1",
-          contentHash: "current",
-          source: "manual",
-          manualReason: "PRIVATE REASON",
-          path: "private.ts",
-          code: "PRIVATE CODE",
-          sha256: "hash",
-          firstPassedAt: new Date(2000),
-          updatedAt: new Date(2000),
-        });
+        // 0080 適用前の列だけで、当時の問題結果を作る。
+        fixture.sqlite
+          .prepare(`
+          insert into task_problem_results
+            (user_id, task_id, problem_id, content_hash, source, manual_reason, path, code, sha256, first_passed_at, updated_at)
+          values (?, 'fixture-task', 'q1', 'current', 'manual', 'PRIVATE REASON', 'private.ts', 'PRIVATE CODE', 'hash', 2000, 2000)
+        `)
+          .run(userId);
         await db.insert(submissions).values({
           studentId: userId,
           taskId: "fixture-task",
