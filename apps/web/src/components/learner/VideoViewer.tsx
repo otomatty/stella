@@ -939,7 +939,7 @@ export function VideoViewer({
                   className={cn(CONTROL_BUTTON, "bg-zinc-950 [color-scheme:dark]")}
                 >
                   {SPEEDS.map((s) => (
-                    <option key={s} value={s}>
+                    <option key={s} value={s} className="bg-zinc-950 text-white">
                       {s.toFixed(2)}x
                     </option>
                   ))}
