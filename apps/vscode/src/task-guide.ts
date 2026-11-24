@@ -17,7 +17,7 @@ import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { escapeHtml } from "./markdown-html.js";
-import { listFiles, matchPatterns, readFileInRoot } from "./runner/files.js";
+import { listFiles, matchEditableFiles, readFileInRoot } from "./runner/files.js";
 import {
   nextUnsubmittedProblem,
   PROBLEM_STATUS_LABELS,
@@ -82,12 +82,8 @@ export async function resolveEditFiles(root: string, manifest: TaskManifest): Pr
   } catch {
     return { files: [], missing: [...manifest.submit.files] };
   }
-  const submitted = matchPatterns(all, manifest.submit.files);
-  const fixed = new Set(matchPatterns(all, manifest.protected).files);
-  return {
-    files: submitted.files.filter((file) => !fixed.has(file)),
-    missing: submitted.unmatched,
-  };
+  const { files, unmatched } = matchEditableFiles(all, manifest);
+  return { files, missing: unmatched };
 }
 
 export interface GuideRun {

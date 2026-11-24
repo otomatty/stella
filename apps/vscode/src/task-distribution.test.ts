@@ -11,6 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
 import {
   installTask,
@@ -18,6 +19,8 @@ import {
   TaskInstallConflict,
   unlockTaskFiles,
 } from "./task-distribution.js";
+import { sha256Hex } from "./runner/files.js";
+
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return { ...actual, writeFile: vi.fn(actual.writeFile), rename: vi.fn(actual.rename) };
@@ -46,6 +49,26 @@ const bundle: TaskBundle = {
     ".stella/task.json": Buffer.from("{}").toString("base64"),
   },
 };
+const receiptPath = ".stella/distribution.json";
+const readReceipt = async (taskRoot: string) =>
+  JSON.parse(await readFile(path.join(taskRoot, receiptPath), "utf8"));
+const makeHashes = (files: TaskBundle["files"]) =>
+  Object.fromEntries(
+    Object.entries(files).map(([rel, encoded]) => [
+      rel,
+      sha256Hex(normalizeForHash(Buffer.from(encoded, "base64"))),
+    ]),
+  );
+const nextBundle = (changes: Record<string, string>): TaskBundle => ({
+  ...bundle,
+  contentHash: "b".repeat(64),
+  files: {
+    ...bundle.files,
+    ...Object.fromEntries(
+      Object.entries(changes).map(([rel, data]) => [rel, Buffer.from(data).toString("base64")]),
+    ),
+  },
+});
 async function root() {
   const dir = await mkdtemp(path.join(tmpdir(), "stella-distribution-"));
   dirs.push(dir);
@@ -72,17 +95,144 @@ describe("課題の配布", () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);
     await writeFile(path.join(taskRoot, "index.js"), "learner code");
-    const updated = {
-      ...bundle,
-      contentHash: "b".repeat(64),
-      files: { ...bundle.files, "index.js": Buffer.from("new starter").toString("base64") },
-    };
+    const updated = nextBundle({
+      "README.md": "new readme",
+      ".stella/task.json": '{"checks":{}}',
+      "index.js": "new starter",
+      "new.txt": "new file",
+    });
     const conflict = await conflictOf(installTask(training, updated));
     expect(conflict.reason).toBe("updated");
     expect(conflict.target).toBe(taskRoot);
     expect(conflict.files).toEqual(["index.js"]);
     expect(conflict.message).toContain("教材が更新");
     expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+    expect(await readFile(path.join(taskRoot, ".stella/task.json"), "utf8")).toBe("{}");
+    expect(await readReceipt(taskRoot)).toMatchObject({ contentHash: bundle.contentHash });
+    await expect(readFile(path.join(taskRoot, "new.txt"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    expect((await readdir(path.join(taskRoot, ".stella"))).sort()).toEqual([
+      "distribution.json",
+      "task.json",
+    ]);
+  });
+  it("雛形が同じなら編集したコードと配布から外れたファイルを残す", async () => {
+    const training = await root();
+    const old = {
+      ...bundle,
+      files: { ...bundle.files, "retired.txt": Buffer.from("old").toString("base64") },
+    };
+    const taskRoot = await installTask(training, old);
+    await writeFile(path.join(taskRoot, "index.js"), "learner code");
+    const updated = nextBundle({ "README.md": "new readme" });
+    const onUpdated = vi.fn();
+    expect(await installTask(training, updated, { onUpdated })).toBe(taskRoot);
+    expect(onUpdated).toHaveBeenCalledWith(undefined);
+    expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("new readme");
+    expect(await readFile(path.join(taskRoot, "retired.txt"), "utf8")).toBe("old");
+    expect(await readReceipt(taskRoot)).toEqual({
+      taskId: bundle.manifest.id,
+      contentHash: updated.contentHash,
+      files: makeHashes(updated.files),
+    });
+  });
+  it.each([false, true])(
+    "雛形が変わったとき未編集または無いファイルを更新する (削除済み %s)",
+    async (removed) => {
+      const training = await root();
+      const taskRoot = await installTask(training, bundle);
+      if (removed) await rm(path.join(taskRoot, "index.js"));
+      else await writeFile(path.join(taskRoot, "index.js"), "\ufeffstarter");
+      await installTask(training, nextBundle({ "index.js": "new starter" }));
+      expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("new starter");
+    },
+  );
+  it("編集した保護ファイルと課題文を退避して更新する", async () => {
+    const training = await root();
+    const tests = "tests/index.test.js";
+    const old = {
+      ...bundle,
+      manifest: {
+        ...bundle.manifest,
+        submit: { files: ["**/*"] },
+        protected: [tests, "README.md"],
+      },
+      files: { ...bundle.files, [tests]: Buffer.from("test").toString("base64") },
+    };
+    const taskRoot = await installTask(training, old);
+    await writeFile(path.join(taskRoot, "README.md"), "learner notes");
+    await writeFile(path.join(taskRoot, tests), "learner tests");
+    const updated = {
+      ...nextBundle({ "README.md": "new readme", [tests]: "new test" }),
+      manifest: old.manifest,
+    };
+    const onUpdated = vi.fn();
+    await installTask(training, updated, { onUpdated });
+    const backup = path.join(taskRoot, ".stella/previous", bundle.contentHash.slice(0, 12));
+    expect(onUpdated).toHaveBeenCalledWith(backup);
+    expect(await readFile(path.join(backup, "README.md"), "utf8")).toBe("learner notes");
+    expect(await readFile(path.join(backup, tests), "utf8")).toBe("learner tests");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("new readme");
+    expect(await readFile(path.join(taskRoot, tests), "utf8")).toBe("new test");
+    await expect(readFile(path.join(backup, ".stella/task.json"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+  it("更新の途中で配布記録の公開に失敗したら配布物も元に戻して再試行できる", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (target === path.join(taskRoot, receiptPath)) throw new Error("receipt publish failed");
+      await actual.rename(source, target);
+    });
+    const updated = nextBundle({ "README.md": "new readme", "new.txt": "new" });
+    await expect(installTask(training, updated)).rejects.toThrow("receipt publish failed");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+    await expect(readFile(path.join(taskRoot, "new.txt"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    expect(await readReceipt(taskRoot)).toMatchObject({ contentHash: bundle.contentHash });
+    vi.mocked(rename).mockReset();
+    await expect(installTask(training, updated)).resolves.toBe(taskRoot);
+  });
+  it("巻き戻しの途中で終了しても次に開くと元のバージョンに戻る", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (
+        target === path.join(taskRoot, receiptPath) ||
+        path.basename(String(source)).startsWith("before-")
+      )
+        throw new Error("interrupted");
+      await actual.rename(source, target);
+    });
+    await expect(installTask(training, nextBundle({ "README.md": "new readme" }))).rejects.toThrow(
+      "interrupted",
+    );
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("new readme");
+    vi.mocked(rename).mockReset();
+    await expect(installTask(training, bundle)).resolves.toBe(taskRoot);
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+    expect(await readReceipt(taskRoot)).toMatchObject({ contentHash: bundle.contentHash });
+  });
+  it("前のハッシュが取得できないときは更新しない", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const old = { taskId: bundle.manifest.id, contentHash: bundle.contentHash };
+    await writeFile(path.join(taskRoot, receiptPath), JSON.stringify(old));
+    const loadRevisionFiles = vi.fn().mockRejectedValue(new Error("404"));
+    const conflict = await conflictOf(
+      installTask(training, nextBundle({ "README.md": "new readme" }), { loadRevisionFiles }),
+    );
+    expect(loadRevisionFiles).toHaveBeenCalledWith(old.taskId, old.contentHash);
+    expect(conflict.reason).toBe("updated");
+    expect(await readReceipt(taskRoot)).toEqual(old);
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
   });
   it("配布先が既存のリンクなら書き込まない", async () => {
     const training = await root();
@@ -177,7 +327,11 @@ describe("課題の配布", () => {
     expect(await readFile(path.join(target, "index.js"), "utf8")).toBe("starter");
     expect(
       JSON.parse(await readFile(path.join(target, ".stella/distribution.json"), "utf8")),
-    ).toEqual({ taskId: bundle.manifest.id, contentHash: bundle.contentHash });
+    ).toEqual({
+      taskId: bundle.manifest.id,
+      contentHash: bundle.contentHash,
+      files: makeHashes(bundle.files),
+    });
   });
   it("学習者のファイルの横に配る途中で失敗したら、自分が作ったものだけを片付ける", async () => {
     const training = await root();
@@ -287,6 +441,7 @@ describe("固定した開始点", () => {
       taskId: bundle.manifest.id,
       contentHash: bundle.contentHash,
       variant: "fixed-start",
+      files: makeHashes(fixedStart.files),
     });
     // 開き直しても記録や作業を書き換えない。
     await writeFile(path.join(fixed, "index.js"), "learner continues");
@@ -377,6 +532,28 @@ describe("段階のある課題の配布", () => {
     const conflict = await conflictOf(unlockTaskFiles(taskRoot, withProblems, both));
     expect(conflict.reason).toBe("damaged");
     expect(conflict.files).toEqual(["src/q02.ts"]);
+  });
+
+  it("新しいバージョンに移っても未表示の問題は解放後にだけ配る", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, withProblems, { visibleProblems: firstOnly });
+    await writeFile(path.join(taskRoot, "src/q01.ts"), "learner answer");
+    const updated = {
+      ...withProblems,
+      contentHash: "b".repeat(64),
+      files: {
+        ...withProblems.files,
+        "src/q02.ts": Buffer.from("new starter 2").toString("base64"),
+      },
+    };
+    await installTask(training, updated, { visibleProblems: firstOnly });
+    expect(await readFile(path.join(taskRoot, "src/q01.ts"), "utf8")).toBe("learner answer");
+    expect(await readdir(path.join(taskRoot, "src"))).toEqual(["q01.ts"]);
+    expect(await readdir(path.join(taskRoot, "tests"))).toEqual(["q01.test.ts"]);
+    expect((await readReceipt(taskRoot)).files).not.toHaveProperty(["src/q02.ts"]);
+    await unlockTaskFiles(taskRoot, updated, both);
+    expect(await readFile(path.join(taskRoot, "src/q02.ts"), "utf8")).toBe("new starter 2");
+    expect((await readReceipt(taskRoot)).files).toEqual(makeHashes(updated.files));
   });
 
   it("あとから解放する場所の衝突を示し、学習者のファイルを保持する", async () => {

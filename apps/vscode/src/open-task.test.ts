@@ -430,6 +430,39 @@ describe("課題を開く", () => {
     expect(await samePath(missing, missingLower, "linux")).toBe(false);
     expect(await samePath(missing, `${missing}${path.sep}`, "linux")).toBe(true);
   });
+  it("古い配布記録を API で照合し、新しいバージョンと写しの場所を知らせる", async () => {
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    const task = taskRoot();
+    const receipt = path.join(task, ".stella/distribution.json");
+    const old = JSON.parse(await readFile(receipt, "utf8"));
+    await writeFile(receipt, JSON.stringify({ taskId, contentHash: old.contentHash }));
+    await writeFile(path.join(task, "index.js"), "learner code");
+    await writeFile(path.join(task, "README.md"), "learner notes");
+    state.apiRequest
+      .mockResolvedValueOnce({
+        bundle: {
+          ...bundle,
+          contentHash: "b".repeat(64),
+          files: { ...bundle.files, "README.md": Buffer.from("new readme").toString("base64") },
+        },
+      })
+      .mockResolvedValueOnce({ files: old.files });
+    await openDistributedTask(context, taskId);
+    expect(state.apiRequest).toHaveBeenLastCalledWith(
+      `/api/tasks/revision-files?${new URLSearchParams({ taskId, contentHash: bundle.contentHash })}`,
+      { signal: expect.any(AbortSignal) },
+    );
+    const backup = path.join(task, ".stella/previous", bundle.contentHash.slice(0, 12));
+    expect(await readFile(path.join(task, "index.js"), "utf8")).toBe("learner code");
+    expect(await readFile(path.join(backup, "README.md"), "utf8")).toBe("learner notes");
+    expect(state.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `課題を新しいバージョンにしました。あなたのコードはそのまま残しています。 編集した配布ファイルの写しは ${backup} にあります。`,
+      ),
+    );
+  });
+
   it("課題文が消えた課題フォルダーを「今のフォルダーを開く」ときは、フォルダーを示す", async () => {
     state.folders = [training];
     await openDistributedTask(context, taskId);

@@ -22,6 +22,7 @@ import {
   extensionUpgradeMessage,
   requiredExtensionVersion,
 } from "@stella/shared/tasks/extension-compat";
+import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
 import type { TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
@@ -439,6 +440,42 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
       fixedStart: row.fixedStartHash === row.contentHash,
     };
     return c.json(response);
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+/** 通常配布の過去のバージョンを照合するため、公開ファイルのハッシュだけを返す。 */
+tasksRoute.get("/api/tasks/revision-files", async (c) => {
+  try {
+    const { caller, db } = await getCaller(c);
+    const [row] = await db
+      .select({
+        id: tasks.id,
+        stageId: sections.stageId,
+        variantOf: tasks.variantOf,
+        bundle: taskRevisions.bundle,
+      })
+      .from(tasks)
+      .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .innerJoin(
+        taskRevisions,
+        and(
+          eq(taskRevisions.taskId, tasks.id),
+          eq(taskRevisions.contentHash, c.req.query("contentHash") ?? ""),
+        ),
+      )
+      .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
+      .limit(1);
+    if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
+    const { files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const hashes = await Promise.all(
+      Object.entries(files).map(async ([rel, encoded]) => {
+        const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
+        return [rel, await sha256Hex(normalizeForHash(bytes))];
+      }),
+    );
+    return c.json({ files: Object.fromEntries(hashes) });
   } catch (err) {
     return errorResponse(c, err);
   }
