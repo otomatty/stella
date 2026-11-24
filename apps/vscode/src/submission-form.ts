@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 import { onDidChangeAuthSession } from "./auth.js";
-import { sideColumn } from "./task-panel.js";
+import { sideColumn, trackTaskSidePanel } from "./task-panel.js";
 import {
   initialSubmissionDraft,
   parseSubmissionDraft,
@@ -51,6 +51,7 @@ export function showSubmissionForm(
       localResourceRoots: [mediaRoot],
     },
   );
+  trackTaskSidePanel(panel);
   panels.set(input.key, { panel, mode: input.mode });
   const nonce = randomBytes(18).toString("hex");
   const resource = (name: string) =>

@@ -38,7 +38,7 @@ import { AuthSessionChanged, authSession, onDidChangeAuthSession } from "./auth.
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
 import { loadTask } from "./runner/run-task.js";
 import { helpUrl, isInside, locateTask, workspaceRoots } from "./task-commands.js";
-import { referencesHtml, sideColumn } from "./task-panel.js";
+import { referencesHtml, sideColumn, trackTaskSidePanel } from "./task-panel.js";
 import { readDistribution } from "./task-submission.js";
 
 /** 受講者向けの提出の詳細 (`GET /api/submissions/:id`) のうち、パネルに出す部分。 */
@@ -404,6 +404,7 @@ function showHelpPanel(html: string, title: string): void {
         "stella.compareTaskSolution",
       ],
     });
+    trackTaskSidePanel(helpPanel);
     helpPanel.onDidDispose(() => {
       helpPanel = undefined;
     });
