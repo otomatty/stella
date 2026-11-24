@@ -22,6 +22,9 @@ vi.mock("vscode", () => ({
       return [];
     },
     tabGroups: {
+      get activeTabGroup() {
+        return undefined;
+      },
       get all() {
         return [];
       },
@@ -180,7 +183,7 @@ describe("buildTaskPanelHtml", () => {
     expect(createPanel).toHaveBeenCalledTimes(1);
     expect(panel.reveal).not.toHaveBeenCalled();
     expect(panel.webview.html).toContain("手元の確認はすべて通りました。");
-    panel.onDidDispose.mock.calls[0]?.[0]();
+    for (const [listener] of panel.onDidDispose.mock.calls) listener();
     createPanel.mockClear();
   });
 
@@ -655,14 +658,23 @@ describe("課題文のパネル", () => {
 
   it("課題文の幅で配置を切り替え、まとめたときはコードを前面に戻す", () => {
     const panel = mockReadmePanel();
+    const resultPanel = mockReadmePanel();
+    const closedPanel = mockReadmePanel();
     const input = { title: "課題A", markdown, root: "/a" };
+    const resultInput = { kind: "result" as const, manifest, result: result() };
     const editor = { viewColumn: vscode.ViewColumn.One, document: {} } as vscode.TextEditor;
     const editors = vi.spyOn(vscode.window, "visibleTextEditors", "get").mockReturnValue([editor]);
     const groups = vi.spyOn(vscode.window.tabGroups, "all", "get");
+    const activeGroup = vi.spyOn(vscode.window.tabGroups, "activeTabGroup", "get");
     const showDocument = vi.mocked(vscode.window.showTextDocument).mockResolvedValue(editor);
     const createPanel = vi.mocked(vscode.window.createWebviewPanel);
-    createPanel.mockReturnValueOnce(panel as never);
     try {
+      createPanel.mockReturnValueOnce(closedPanel as never);
+      showTaskPanel(resultInput);
+      for (const [listener] of closedPanel.onDidDispose.mock.calls) listener();
+      createPanel.mockReturnValueOnce(resultPanel as never);
+      showTaskPanel(resultInput);
+      createPanel.mockReturnValueOnce(panel as never);
       showTaskReadme(input);
       expect(createPanel).toHaveBeenLastCalledWith(
         "stella.taskReadme",
@@ -688,16 +700,21 @@ describe("課題文のパネル", () => {
 
       panel.visible = true;
       receive?.({ type: "layout", width: 300 });
+      expect(resultPanel.reveal).toHaveBeenCalledExactlyOnceWith(vscode.ViewColumn.One, true);
+      expect(resultPanel.reveal).toHaveBeenCalledBefore(panel.reveal);
+      expect(closedPanel.reveal).not.toHaveBeenCalled();
       expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.One, true);
       expect(showDocument).toHaveBeenCalledExactlyOnceWith(editor.document, {
         viewColumn: vscode.ViewColumn.One,
         preview: false,
       });
       expect(sideColumn()).toBe(vscode.ViewColumn.Active);
+      activeGroup.mockReturnValue({ viewColumn: vscode.ViewColumn.Two } as vscode.TabGroup);
+      expect(sideColumn()).toBe(vscode.ViewColumn.Two);
 
       panel.viewColumn = vscode.ViewColumn.One;
       showTaskReadme(input);
-      expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.Active, false);
+      expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.Two, false);
       groups.mockReturnValue([{ viewColumn: vscode.ViewColumn.One, tabs: [{}] }] as never);
       receive?.({ type: "layout", width: 900 });
       expect(panel.reveal).toHaveBeenCalledTimes(2);
@@ -708,8 +725,10 @@ describe("課題文のパネル", () => {
       expect(sideColumn()).toBe(vscode.ViewColumn.Two);
     } finally {
       panel.onDidDispose.mock.calls[0]?.[0]();
+      for (const [listener] of resultPanel.onDidDispose.mock.calls) listener();
       editors.mockRestore();
       groups.mockRestore();
+      activeGroup.mockRestore();
       showDocument.mockReset();
     }
   });

@@ -51,6 +51,18 @@ import { expectedActual } from "./task-test-message.js";
 export const NARROW_WIDTH = 420;
 export const WIDE_WIDTH = 900;
 let compact = false;
+const taskSidePanels = new Set<vscode.WebviewPanel>();
+
+export function isCompactTaskLayout(): boolean {
+  return compact;
+}
+
+export function trackTaskSidePanel(panel: vscode.WebviewPanel): void {
+  taskSidePanels.add(panel);
+  panel.onDidDispose(() => {
+    taskSidePanels.delete(panel);
+  });
+}
 
 export function decideReadmeLayout(input: {
   compact: boolean;
@@ -76,12 +88,16 @@ function hasLeftEditor(): boolean {
   return leftTextEditor() !== undefined;
 }
 
+function activeColumn(): vscode.ViewColumn {
+  return vscode.window.tabGroups.activeTabGroup?.viewColumn ?? vscode.ViewColumn.Active;
+}
+
 /**
  * 課題のパネルを出す列。左の列でファイルを開いていれば右の列 (2 列目) にそろえる —
  * パネルのリンクから開くたびに「隣」へ 3 列目・4 列目を作らないため。
  */
 export function sideColumn(): vscode.ViewColumn {
-  if (compact) return vscode.ViewColumn.Active;
+  if (compact) return activeColumn();
   return hasLeftEditor() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside;
 }
 
@@ -450,6 +466,7 @@ export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean
         "stella.showTaskHelp",
       ],
     });
+    trackTaskSidePanel(currentPanel);
     currentPanel.onDidDispose(() => {
       currentPanel = undefined;
     });
@@ -588,6 +605,11 @@ function updateReadmeLayout(panel: vscode.WebviewPanel, message: unknown): void 
   if (layout === "collapse" && editor) {
     compact = true;
     const document = editor.document;
+    for (const sidePanel of taskSidePanels) {
+      if (sidePanel.viewColumn !== vscode.ViewColumn.One) {
+        sidePanel.reveal(vscode.ViewColumn.One, true);
+      }
+    }
     panel.reveal(vscode.ViewColumn.One, true);
     void vscode.window
       .showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false })
@@ -625,7 +647,7 @@ export function showTaskReadme(
       README_VIEW_TYPE,
       title,
       {
-        viewColumn: beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active,
+        viewColumn: beside ? vscode.ViewColumn.Two : activeColumn(),
         preserveFocus: beside,
       },
       { enableScripts: true, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
@@ -655,7 +677,7 @@ export function showTaskReadme(
   } else {
     readmePanel.title = title;
     if (options.reveal !== false)
-      readmePanel.reveal(beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active, beside);
+      readmePanel.reveal(beside ? vscode.ViewColumn.Two : activeColumn(), beside);
   }
   readmePanel.webview.html = html;
 }

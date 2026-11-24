@@ -38,6 +38,7 @@ import {
 import { resolveFileInRoot } from "./runner/files.js";
 import { taskBundleUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
+import { isCompactTaskLayout } from "./task-panel.js";
 import {
   fetchProblemResults,
   problemFileToOpen,
@@ -181,6 +182,7 @@ async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<vo
     () => undefined,
     () => undefined,
   );
+  if (first && isCompactTaskLayout()) await openInLeftColumn(taskRoot, first);
 }
 
 /**
