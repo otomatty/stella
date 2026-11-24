@@ -1,12 +1,11 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問6 width と height が同じなら true
+//     例: isSquareShape({ width: 5, height: 5 }) → true
+// 引数と戻り値には型注釈を付けます。
 
 export type Box = { width: number; height: number; depth: number };
 
 export type Paper = { width: number; height: number };
 
-// 問6
 export function isSquareShape(x: { width: number; height: number }): boolean {
   return x.width === x.height;
 }

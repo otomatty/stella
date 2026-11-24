@@ -1,8 +1,3 @@
-// 02-e01 発展問題 入れ子のオブジェクトと readonly
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/readonly-vs-const
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//
 // 問題
 // 1. 設定を表す型 Config を定義して export してください。すべて読み取り専用にする
 //    - name: 文字列

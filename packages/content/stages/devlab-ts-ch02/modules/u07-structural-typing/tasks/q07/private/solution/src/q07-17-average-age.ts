@@ -1,12 +1,11 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問17 age の平均を返す。空の配列なら 0
+//     例: averageAge([ミケ, ポチ]) → 4
+// 引数と戻り値には型注釈を付けます。
 
 export type Cat = { name: string; age: number; meow: string };
 
 export type Dog = { name: string; age: number; breed: string };
 
-// 問17
 export function averageAge(items: readonly { age: number }[]): number {
   if (items.length === 0) {
     return 0;

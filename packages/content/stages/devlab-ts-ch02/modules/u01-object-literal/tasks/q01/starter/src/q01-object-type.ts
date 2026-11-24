@@ -1,8 +1,3 @@
-// 02-q01 オブジェクトの型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/type-annotation-of-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/shorthand-property-names
-//
 // 問題
 // 1. 本を表す型 Book を定義して export してください。プロパティは次の3つ
 //    - title: 文字列

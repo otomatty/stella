@@ -1,9 +1,7 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-
-// 問6
+// 問6 { perPage? } の perPage を返す。なければ 20
+//     例: perPageOf({}) → 20
+// 引数と戻り値には型注釈を付けます。
+// 値が省略されている場合は、?? で補えます。
 export function perPageOf(options: { perPage?: number }): number {
   return options.perPage ?? 20;
 }

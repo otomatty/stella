@@ -1,12 +1,5 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-//
-// 引数と戻り値には型注釈を付けること。
-// なくてもよいプロパティは nickname?: string のように ? を付ける。書き換えさせないプロパティには readonly を付ける。
-// オプションプロパティの値は undefined かもしれないので、?? や !== undefined で扱う。
-
 // 問9 { first, middle?, last } をつなぐ。middle があれば「first middle last」、なければ「first last」
 //     例: nameWithMiddle({ first: "John", middle: "F", last: "Kennedy" }) → "John F Kennedy"
+// 引数と戻り値には型注釈を付けます。
+// 値が省略されたかどうかは undefined と比較して確かめます。
 export function nameWithMiddle() {}

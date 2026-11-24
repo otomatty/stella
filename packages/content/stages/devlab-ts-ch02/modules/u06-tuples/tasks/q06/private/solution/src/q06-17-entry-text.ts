@@ -1,9 +1,7 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問17
+// 問17 [名前, 数] を「りんご × 3」の形にする
+//     例: entryText(["りんご", 3]) → "りんご × 3"
+// 引数と戻り値には型注釈を付けます。
+// タプルの要素は配列の分割代入で取り出せます。
 export function entryText([name, count]: [string, number]): string {
   return `${name} × ${count}`;
 }

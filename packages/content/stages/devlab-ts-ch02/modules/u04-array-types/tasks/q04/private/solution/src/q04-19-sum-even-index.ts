@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問19
+// 問19 0番目、2番目、4番目…の要素だけを合計する
+//     例: sumEvenIndex([1, 2, 3, 4, 5]) → 9
+// 引数と戻り値には型注釈を付けます。
+// 要素とその位置を順に見るには forEach が使えます。
 export function sumEvenIndex(numbers: readonly number[]): number {
   let total = 0;
   numbers.forEach((n, i) => {

@@ -1,9 +1,8 @@
-// 02-q08 インデックス型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/index-signature
-//       https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object
-
-// 問10
+// 問10 値がいちばん大きいキーを返す。同じなら先に出てきたキー。空なら undefined
+//     例: topKey({ a: 1, b: 3, c: 2 }) → "b"
+// 引数と戻り値には型注釈を付けます。
+// キーが自由なオブジェクトの型は { [key: string]: number } の形で書きます。
+// キーと値を順に見るには Object.entries を使います。
 export function topKey(record: { [key: string]: number }): string | undefined {
   let top: string | undefined;
   let best = -Infinity;

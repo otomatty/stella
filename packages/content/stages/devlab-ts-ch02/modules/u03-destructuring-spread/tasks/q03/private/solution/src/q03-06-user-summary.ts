@@ -1,11 +1,10 @@
-// 02-q03 分割代入とスプレッド構文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object
+// 問6 分割代入で name と age を取り出し、「山田（30）」の形にする
+//     例: userSummary(山田) → "山田（30）"
+// 引数と戻り値には型注釈を付けます。
+// 定義済みの User 型を使います。
 
 export type User = { id: number; name: string; age: number; email: string };
 
-// 問6
 export function userSummary(user: User): string {
   const { name, age } = user;
   return `${name}（${age}）`;

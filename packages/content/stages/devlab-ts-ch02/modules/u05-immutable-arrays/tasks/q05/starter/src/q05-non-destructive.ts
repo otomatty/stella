@@ -1,8 +1,3 @@
-// 02-q05 配列を壊さない操作
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-//
 // 問題
 // 本を表す型 Book は定義済みです。次の3つの関数を書いてください。
 // どの関数も、引数の配列は readonly Book[] にし、元の配列を変えずに新しい配列を返すこと。

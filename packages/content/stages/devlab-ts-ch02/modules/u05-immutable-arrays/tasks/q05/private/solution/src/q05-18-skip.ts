@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問18
+// 問18 先頭の n 個を除いた新しい配列を返す
+//     例: skip([1, 2, 3, 4], 2) → [3, 4]
+// 引数と戻り値には型注釈を付けます。
+// 配列の一部を取り出すには slice が使えます。
 export function skip(numbers: readonly number[], n: number): number[] {
   return numbers.slice(n);
 }

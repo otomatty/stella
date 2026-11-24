@@ -1,10 +1,9 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問2 name の文字数を返す
+//     例: nameLength(ポチ) → 2
+// 引数と戻り値には型注釈を付けます。
 
 export type Dog = { name: string; age: number; breed: string };
 
-// 問2
 export function nameLength(x: { name: string }): number {
   return x.name.length;
 }

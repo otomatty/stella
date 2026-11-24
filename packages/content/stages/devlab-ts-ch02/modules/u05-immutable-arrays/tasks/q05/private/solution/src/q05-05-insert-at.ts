@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問5
+// 問5 index 番目に item を差し込んだ新しい配列を返す
+//     例: insertAt(["a", "c"], 1, "b") → ["a", "b", "c"]
+// 引数と戻り値には型注釈を付けます。
+// slice で分けた配列と追加する要素を、スプレッド構文でまとめます。
 export function insertAt(items: readonly string[], index: number, item: string): string[] {
   return [...items.slice(0, index), item, ...items.slice(index)];
 }

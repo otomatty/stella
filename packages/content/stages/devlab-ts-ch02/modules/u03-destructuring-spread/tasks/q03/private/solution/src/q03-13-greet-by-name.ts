@@ -1,11 +1,10 @@
-// 02-q03 分割代入とスプレッド構文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object
+// 問13 引数の位置で分割代入して（function greetByName({ name }: User)）、「こんにちは、山田さん」を返す
+//     例: greetByName(山田) → "こんにちは、山田さん"
+// 引数と戻り値には型注釈を付けます。
+// 定義済みの User 型を使います。
 
 export type User = { id: number; name: string; age: number; email: string };
 
-// 問13
 export function greetByName({ name }: User): string {
   return `こんにちは、${name}さん`;
 }

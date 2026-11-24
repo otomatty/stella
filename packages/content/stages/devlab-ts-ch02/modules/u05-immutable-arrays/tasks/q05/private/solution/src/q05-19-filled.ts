@@ -1,9 +1,6 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問19
+// 問19 value を length 個並べた新しい配列を返す
+//     例: filled(3, 0) → [0, 0, 0]
+// 引数と戻り値には型注釈を付けます。
 export function filled(length: number, value: number): number[] {
   return Array.from({ length }, () => value);
 }

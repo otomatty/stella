@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問9
+// 問9 大きい順に並べた新しい配列を返す
+//     例: sortDesc([3, 1, 2]) → [3, 2, 1]
+// 引数と戻り値には型注釈を付けます。
+// [...配列] でコピーしてから sort で並べ替えます。
 export function sortDesc(numbers: readonly number[]): number[] {
   return [...numbers].sort((a, b) => b - a);
 }

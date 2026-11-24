@@ -1,9 +1,3 @@
-// 02-q04 配列の型と読み取り専用の配列
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-//
 // 問題
 // 次の4つの関数を書いてください。
 // 引数の配列は、関数の中で書き換えないことを示すために readonly number[] にすること。
