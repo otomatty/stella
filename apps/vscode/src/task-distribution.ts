@@ -1,8 +1,10 @@
+import { constants } from "node:fs";
 import {
+  copyFile,
   lstat,
   mkdir,
   mkdtemp,
-  link,
+  open,
   readdir,
   realpath,
   rename,
@@ -28,6 +30,7 @@ import {
 import type { SupportEvent } from "@stella/shared/tasks/submission";
 import {
   createNewFile,
+  FileTooLargeError,
   LIMITS,
   matchEditableFiles,
   matchPatterns,
@@ -55,6 +58,7 @@ const CONFLICT_REASONS = {
   occupied: "準備先に同じ名前のファイルがあります",
   updated: "教材が更新されています。準備先には前のバージョンの課題があります",
   damaged: "準備先の配布ファイルが不足しているか、通常のファイルではありません",
+  unsaved: "課題フォルダーに未保存のファイルがあります",
 } as const;
 
 /**
@@ -464,34 +468,111 @@ async function readExisting(root: string, rel: string): Promise<Buffer | undefin
   return readFileInRoot(root, rel, LIMITS.protectedFileBytes);
 }
 
-async function moveStagedFile(
+async function moveUpdateFile(base: string, source: string, target: string): Promise<void> {
+  await assertPlainDirectory(base, path.dirname(target));
+  await assertPlainDirectory(base, path.dirname(source));
+  if (!(await info(source))?.isFile()) throw new Error("課題の更新ファイルが見つかりません");
+  await rename(source, target);
+}
+
+async function createUpdateFile(
   base: string,
   root: string,
   rel: string,
-  source: string,
-  replace: boolean,
+  data: Buffer,
+  journal: string,
+  index: number,
 ): Promise<void> {
-  const dir = path.dirname(path.join(root, rel));
-  await assertPlainDirectory(base, dir);
-  await assertPlainDirectory(base, path.dirname(source));
-  if (!(await info(source))?.isFile()) throw new Error("課題の更新ファイルが見つかりません");
   const target = path.join(root, rel);
-  if (replace) await rename(source, target);
-  else await link(source, target);
+  await assertPlainDirectory(base, path.dirname(target));
+  if (await info(target)) throw new TaskInstallConflict("occupied", root, [rel]);
+  const handle = await open(
+    target,
+    constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0),
+  ).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "EEXIST") throw new TaskInstallConflict("occupied", root, [rel]);
+    throw error;
+  });
+  try {
+    // 排他的に作れたことを、内容を書く前に控える。
+    await writeNewFile(base, journal, `created-${index}`, Buffer.alloc(0));
+    await handle.writeFile(data);
+  } finally {
+    await handle.close();
+  }
+}
+
+interface UpdateEntry {
+  rel: string;
+  before: boolean;
+  hash: string;
+}
+
+async function rollBackFile(
+  base: string,
+  root: string,
+  journal: string,
+  index: number,
+  { rel, before, hash }: UpdateEntry,
+  legacy: boolean,
+): Promise<void> {
+  const beforeName = `before-${index}`;
+  const rollbackName = `rollback-${index}`;
+  const target = path.join(root, rel);
+  const rollback = path.join(journal, rollbackName);
+  const saved = before ? await info(path.join(journal, beforeName)) : null;
+  if (saved && !saved.isFile()) throw new TaskInstallConflict("damaged", root, [rel]);
+  const original = saved !== null;
+  const created = legacy
+    ? original && !(await info(path.join(journal, `after-${index}`)))
+    : (await info(path.join(journal, `created-${index}`)))?.isFile();
+  if (legacy && !created) return;
+  if (!created && !original) return;
+
+  if (created && !(await info(rollback)) && (await info(target))) {
+    if (!(await isPlainFile(root, rel))) throw new TaskInstallConflict("damaged", root, [rel]);
+    await moveUpdateFile(base, target, rollback);
+  }
+  const moved = await readExisting(journal, rollbackName).catch((error: unknown) => {
+    if (error instanceof FileTooLargeError) return null;
+    throw error;
+  });
+  // 作った内容と一致したものだけを片付ける。後から保存された内容は元の場所へ返す。
+  const changed = moved === null || (moved !== undefined && sha256Hex(moved) !== hash);
+  const restoreName = changed ? rollbackName : original ? beforeName : undefined;
+  if (await info(target)) {
+    const current = await readExisting(root, rel);
+    if (!restoreName || !current?.equals(await readFileInRoot(journal, restoreName)))
+      throw new TaskInstallConflict("occupied", root, [rel]);
+  } else if (restoreName) {
+    await assertPlainDirectory(base, path.dirname(target));
+    await assertPlainDirectory(base, journal);
+    if (!(await isPlainFile(journal, restoreName)))
+      throw new TaskInstallConflict("damaged", root, [rel]);
+    await copyFile(path.join(journal, restoreName), target, constants.COPYFILE_EXCL);
+  }
+  // 置き換え前と作成後の内容が両方ある場合は、置き換え前の控えも残す。
+  if (changed && original) throw new TaskInstallConflict("occupied", root, [rel]);
 }
 
 /**
  * 更新の控えをまとめて公開してからファイルを入れ替え、最後に配布記録を rename する。
  * 途中で拡張が終了しても、次に開いたときに控えを使ってやり直せる。
  */
-async function recoverUpdate(base: string, root: string): Promise<void> {
+async function recoverUpdate(
+  base: string,
+  root: string,
+  beforeUpdate?: InstallOptions["beforeUpdate"],
+): Promise<void> {
   if (!(await info(path.join(root, ".stella")))?.isDirectory()) return;
   const journal = path.join(root, UPDATE_DIR);
   if (!(await info(journal))) return;
   await assertPlainDirectory(base, journal);
-  const plan: { pid: number; entries: { rel: string; before: boolean; hash: string }[] } =
-    JSON.parse((await readFileInRoot(journal, "plan.json", 1024 * 1024)).toString("utf8"));
+  const plan: { version?: 2; pid: number; entries: UpdateEntry[] } = JSON.parse(
+    (await readFileInRoot(journal, "plan.json", 1024 * 1024)).toString("utf8"),
+  );
   if (
+    (plan.version !== undefined && plan.version !== 2) ||
     !Number.isSafeInteger(plan.pid) ||
     plan.pid < 1 ||
     !Array.isArray(plan.entries) ||
@@ -516,26 +597,9 @@ async function recoverUpdate(base: string, root: string): Promise<void> {
     if (running) throw new Error("別のウィンドウで課題を更新しています");
   }
   if (await info(path.join(journal, "receipt"))) {
-    for (const [i, { rel, before, hash }] of [...plan.entries.entries()].reverse()) {
-      const saved = path.join(journal, `before-${i}`);
-      const staged = path.join(journal, `after-${i}`);
-      // 置換の rename で after が消える。新規ファイルは link で公開したものだけを取り除く。
-      const source = await info(staged);
-      if (before && (source || !(await info(saved)))) continue;
-      const target = path.join(root, rel);
-      if (!before) {
-        const found = await info(target);
-        if (!found || !source || found.ino !== source.ino || found.dev !== source.dev) continue;
-      }
-      const current = await readExisting(root, rel);
-      if (!current || sha256Hex(current) !== hash)
-        throw new TaskInstallConflict("damaged", root, [rel]);
-      if (before) await moveStagedFile(base, root, rel, saved, true);
-      else {
-        await assertPlainDirectory(base, path.dirname(target));
-        await rm(target);
-      }
-    }
+    await beforeUpdate?.(root);
+    for (const [i, entry] of [...plan.entries.entries()].reverse())
+      await rollBackFile(base, root, journal, i, entry, plan.version === undefined);
   }
   // 控えを消す途中で終了しても、次に開くときは更新済みとして扱えるようにする。
   const cleanup = await mkdtemp(path.join(root, ".stella/.distribution-cleanup-"));
@@ -550,22 +614,22 @@ async function writeDistributionUpdate(
   entries: Replacement[],
   previous: Receipt,
   receipt: Receipt,
+  beforeUpdate?: InstallOptions["beforeUpdate"],
 ): Promise<void> {
   await assertPlainDirectory(base, path.join(root, ".stella"));
   const staging = await mkdtemp(path.join(root, ".stella/.distribution-staging-"));
   const journal = path.join(root, UPDATE_DIR);
   try {
-    const plan = [];
-    for (const [i, { rel, before, data }] of entries.entries()) {
-      plan.push({ rel, before: before !== undefined, hash: sha256Hex(data) });
-      if (before) await writeNewFile(base, staging, `before-${i}`, before);
-      await writeNewFile(base, staging, `after-${i}`, data);
-    }
+    const plan = entries.map(({ rel, before, data }) => ({
+      rel,
+      before: before !== undefined,
+      hash: sha256Hex(data),
+    }));
     await writeNewFile(
       base,
       staging,
       "plan.json",
-      Buffer.from(JSON.stringify({ pid: process.pid, entries: plan })),
+      Buffer.from(JSON.stringify({ version: 2, pid: process.pid, entries: plan })),
     );
     await writeNewFile(base, staging, "receipt", Buffer.from(JSON.stringify(receipt)));
     await assertPlainDirectory(base, staging);
@@ -573,21 +637,27 @@ async function writeDistributionUpdate(
     try {
       if (JSON.stringify(await readReceipt(root)) !== JSON.stringify(previous))
         throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
-      for (const [i, { rel, before }] of entries.entries()) {
+      await beforeUpdate?.(root);
+      for (const [i, { rel, before, data }] of entries.entries()) {
         await assertPlainDirectory(base, root);
         await ensureDirectoryIn(root, rel.split("/").slice(0, -1));
-        const current = await readExisting(root, rel);
-        if (before ? !current?.equals(before) : current !== undefined)
-          throw new TaskInstallConflict("occupied", root, [rel]);
-        await moveStagedFile(
-          base,
-          root,
-          rel,
-          path.join(journal, `after-${i}`),
-          before !== undefined,
-        );
+        if (before) {
+          const target = path.join(root, rel);
+          if (!(await isPlainFile(root, rel)))
+            throw new TaskInstallConflict("occupied", root, [rel]);
+          const beforeName = `before-${i}`;
+          await moveUpdateFile(base, target, path.join(journal, beforeName));
+          const saved = await readFileInRoot(journal, beforeName, before.length).catch(
+            (error: unknown) => {
+              if (error instanceof FileTooLargeError) return undefined;
+              throw error;
+            },
+          );
+          if (!saved?.equals(before)) throw new TaskInstallConflict("occupied", root, [rel]);
+        }
+        await createUpdateFile(base, root, rel, data, journal, i);
       }
-      await moveStagedFile(base, root, RECEIPT_PATH, path.join(journal, "receipt"), true);
+      await moveUpdateFile(base, path.join(journal, "receipt"), path.join(root, RECEIPT_PATH));
     } finally {
       await recoverUpdate(base, root);
     }
@@ -697,6 +767,7 @@ type InstallOptions = {
   now?: Date;
   visibleProblems?: ReadonlySet<string>;
   loadRevisionFiles?: (taskId: string, contentHash: string) => Promise<unknown>;
+  beforeUpdate?: (root: string) => Promise<void>;
   onUpdated?: (backupDir?: string) => void;
 };
 
@@ -707,9 +778,14 @@ async function updateDistribution(
   receipt: Receipt,
   options: InstallOptions,
 ): Promise<void> {
+  await options.beforeUpdate?.(root);
   let oldFiles = receipt.files;
-  const pending = await pendingProblems(root, bundle.manifest, receipt);
-  const pendingPaths = new Set(pending.flatMap(({ paths }) => paths));
+  const problems = bundle.manifest.problemSteps ? problemPaths(bundle.manifest) : [];
+  const onDisk = new Set<string>();
+  for (const { id, paths } of problems)
+    if ((await Promise.all(paths.map((rel) => isPlainFile(root, rel)))).every(Boolean))
+      onDisk.add(id);
+
   if (!isFileHashes(oldFiles)) {
     // 固定した開始点の雛形は通常配布の履歴とは異なる。
     const loaded =
@@ -720,17 +796,16 @@ async function updateDistribution(
             .catch(() => undefined);
     if (!isFileHashes(loaded))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
+    const pending = await pendingProblems(root, bundle.manifest, receipt);
+    const pendingPaths = new Set(
+      pending.filter(({ id }) => !onDisk.has(id)).flatMap(({ paths }) => paths),
+    );
     oldFiles = Object.fromEntries(Object.entries(loaded).filter(([rel]) => !pendingPaths.has(rel)));
   }
-  const visible =
-    options.visibleProblems ??
-    new Set(
-      problemPaths(bundle.manifest)
-        .filter(({ paths }) =>
-          paths.some((rel) => Object.hasOwn(oldFiles, rel) && !pendingPaths.has(rel)),
-        )
-        .map(({ id }) => id),
-    );
+  // 配布済みの問題は、解放状態が戻っても新しいバージョンへ移す。
+  const visible = new Set([...onDisk, ...(options.visibleProblems ?? [])]);
+  for (const { id, paths } of problems)
+    if (paths.some((rel) => Object.hasOwn(oldFiles, rel))) visible.add(id);
   const deferred = deferredFiles(bundle, visible);
   const entries = readBundleEntries(bundle, deferred);
   const backupDir = backupDirectory(receipt.contentHash);
@@ -741,16 +816,20 @@ async function updateDistribution(
     oldFiles,
     backupDir,
   );
-  const retained = Object.fromEntries(
-    Object.entries(oldFiles).filter(([rel]) => Object.hasOwn(deferred ?? {}, rel)),
+  await writeDistributionUpdate(
+    base,
+    root,
+    writes,
+    receipt,
+    {
+      taskId: receipt.taskId,
+      contentHash: bundle.contentHash,
+      ...(receipt.variant ? { variant: receipt.variant } : {}),
+      ...(deferred ? { deferred } : {}),
+      files: fileHashes(entries),
+    },
+    options.beforeUpdate,
   );
-  await writeDistributionUpdate(base, root, writes, receipt, {
-    taskId: receipt.taskId,
-    contentHash: bundle.contentHash,
-    ...(receipt.variant ? { variant: receipt.variant } : {}),
-    ...(deferred ? { deferred } : {}),
-    files: { ...retained, ...fileHashes(entries) },
-  });
   options.onUpdated?.(backedUp ? path.join(root, backupDir) : undefined);
 }
 
@@ -828,7 +907,7 @@ async function installTaskFiles(
   if (rootInfo && (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()))
     throw new Error(`配布先に通常のフォルダーが必要です: ${root}`);
 
-  if (rootInfo) await recoverUpdate(base, root);
+  if (rootInfo) await recoverUpdate(base, root, options.beforeUpdate);
   const receipt = rootInfo ? await readReceipt(root) : undefined;
   if (receipt === "invalid")
     throw new TaskInstallConflict("occupied", root, [".stella/distribution.json"]);

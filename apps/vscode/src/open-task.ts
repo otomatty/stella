@@ -18,7 +18,7 @@
  * (同じ課題文がタブに 2 つ並ぶと、どれを読めばよいか分からなくなるため)。
  */
 
-import { lstat } from "node:fs/promises";
+import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
 import {
   parsePublicTaskBundle,
@@ -72,7 +72,7 @@ function preparationLog(): vscode.OutputChannel {
 
 function isInside(dir: string, target: string): boolean {
   const rel = path.relative(dir, target);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));
 }
 
 /**
@@ -247,6 +247,7 @@ const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {
     "準備先のファイルを別の場所へ移すか、フォルダーの名前を変えてから、もう一度「VS Code で開く」を押してください。",
   updated:
     "自動更新を止めました。今の課題フォルダーを開いて作業を続けられます。新しいバージョンで始めるには、課題フォルダーの名前を変えてからもう一度「VS Code で開く」を押し、必要なファイルを新しいフォルダーに写してください。問題つきの課題を提出するには、新しいバージョンが必要です。",
+  unsaved: "ファイルを保存してから、もう一度「VS Code で開く」を押してください。",
   damaged:
     "足りないファイルは自動では戻しません。課題フォルダーの名前を変えてから開き直すと、新しく準備します。自分のファイルは名前を変えたフォルダーに残ります。",
 };
@@ -273,7 +274,9 @@ async function showConflict(
   const showList = "一覧を表示";
   const reveal = "準備先を表示";
   const actions =
-    conflict.reason === "occupied" ? [showList, reveal] : [openExisting, showList, reveal];
+    conflict.reason === "occupied" || conflict.reason === "unsaved"
+      ? [showList, reveal]
+      : [openExisting, showList, reveal];
   const choice = await vscode.window.showWarningMessage(
     `${conflict.summary}。受講者のファイルは上書きしません`,
     {
@@ -328,6 +331,22 @@ async function prepareAndOpen(
           },
         );
         return files;
+      },
+      beforeUpdate: async (root) => {
+        const unsaved = [];
+        for (const { isDirty, uri } of vscode.workspace.textDocuments) {
+          if (!isDirty || uri.scheme !== "file") continue;
+          if (isInside(root, uri.fsPath)) unsaved.push(path.relative(root, uri.fsPath));
+          else {
+            const [actualRoot, actualFile] = await Promise.all([
+              realpath(root),
+              realpath(uri.fsPath).catch(() => uri.fsPath),
+            ]);
+            if (isInside(actualRoot, actualFile))
+              unsaved.push(path.relative(actualRoot, actualFile));
+          }
+        }
+        if (unsaved.length > 0) throw new TaskInstallConflict("unsaved", root, unsaved);
       },
       onUpdated: (backupDir) => {
         const backup = backupDir ? ` 編集した配布ファイルの写しは ${backupDir} にあります。` : "";

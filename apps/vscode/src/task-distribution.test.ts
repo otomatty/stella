@@ -1,4 +1,5 @@
 import {
+  link,
   mkdir,
   mkdtemp,
   readdir,
@@ -23,10 +24,16 @@ import { sha256Hex } from "./runner/files.js";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, writeFile: vi.fn(actual.writeFile), rename: vi.fn(actual.rename) };
+  return {
+    ...actual,
+    link: vi.fn(actual.link),
+    writeFile: vi.fn(actual.writeFile),
+    rename: vi.fn(actual.rename),
+  };
 });
 const dirs: string[] = [];
 afterEach(async () => {
+  vi.mocked(link).mockReset();
   vi.mocked(writeFile).mockReset();
   vi.mocked(rename).mockReset();
   await Promise.all(dirs.splice(0).map((d) => rm(d, { recursive: true, force: true })));
@@ -206,7 +213,7 @@ describe("課題の配布", () => {
     vi.mocked(rename).mockImplementation(async (source, target) => {
       if (
         target === path.join(taskRoot, receiptPath) ||
-        path.basename(String(source)).startsWith("before-")
+        path.basename(String(target)).startsWith("rollback-")
       )
         throw new Error("interrupted");
       await actual.rename(source, target);
@@ -220,6 +227,77 @@ describe("課題の配布", () => {
     expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
     expect(await readReceipt(taskRoot)).toMatchObject({ contentHash: bundle.contentHash });
   });
+  it("ハードリンクが使えないフォルダーでも既存ファイルの更新と新規ファイルの追加ができる", async () => {
+    vi.mocked(link).mockRejectedValue(
+      Object.assign(new Error("hard link unsupported"), { code: "EPERM" }),
+    );
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const updated = nextBundle({ "README.md": "new readme", "new.txt": "new" });
+
+    await expect(installTask(training, updated)).resolves.toBe(taskRoot);
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("new readme");
+    expect(await readFile(path.join(taskRoot, "new.txt"), "utf8")).toBe("new");
+    expect((await readReceipt(taskRoot)).contentHash).toBe(updated.contentHash);
+    expect(link).not.toHaveBeenCalled();
+  });
+
+  it("置き換え直前に保存されたコードを戻し、配布の更新を止める", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const code = path.join(taskRoot, "index.js");
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (source === code) await actual.writeFile(code, "learner saved during update");
+      await actual.rename(source, target);
+    });
+
+    const updated = nextBundle({ "index.js": "new starter", "README.md": "new readme" });
+    const conflict = await conflictOf(installTask(training, updated));
+    expect(conflict.files).toEqual(["index.js"]);
+    expect(await readFile(code, "utf8")).toBe("learner saved during update");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+    expect((await readReceipt(taskRoot)).contentHash).toBe(bundle.contentHash);
+    expect(await readdir(path.join(taskRoot, ".stella"))).not.toContain(".distribution-update");
+  });
+
+  it("更新中に作成したファイルも、その後の保存でハッシュが変われば巻き戻しで消さない", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const added = path.join(taskRoot, "new.txt");
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (target === path.join(taskRoot, receiptPath)) {
+        await actual.writeFile(added, "learner saved before rollback");
+        throw new Error("receipt publish failed");
+      }
+      await actual.rename(source, target);
+    });
+
+    await expect(installTask(training, nextBundle({ "new.txt": "new" }))).rejects.toThrow(
+      "receipt publish failed",
+    );
+    expect(await readFile(added, "utf8")).toBe("learner saved before rollback");
+    expect((await readReceipt(taskRoot)).contentHash).toBe(bundle.contentHash);
+  });
+
+  it("同じ内容でも更新が作成していないファイルは巻き戻しで消さない", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const added = path.join(taskRoot, "new.txt");
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      await actual.rename(source, target);
+      if (target === path.join(taskRoot, ".stella/.distribution-update"))
+        await actual.writeFile(added, "new");
+    });
+
+    const conflict = await conflictOf(installTask(training, nextBundle({ "new.txt": "new" })));
+    expect(conflict.files).toEqual(["new.txt"]);
+    expect(await readFile(added, "utf8")).toBe("new");
+    expect((await readReceipt(taskRoot)).contentHash).toBe(bundle.contentHash);
+  });
+
   it("前のハッシュが取得できないときは更新しない", async () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);
