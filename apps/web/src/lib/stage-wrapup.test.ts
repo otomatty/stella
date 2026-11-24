@@ -110,6 +110,7 @@ describe("動画と提出で解放する課題の仕上げ", () => {
     stepLessonId: `step-${id}`,
     afterLessonId: `video-${id}`,
     afterTitle: "関数の返り値",
+    refs: [],
   });
 
   it("並び順で先頭の解ける問題を、未視聴の動画より先に案内する", () => {

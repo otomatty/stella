@@ -5,7 +5,7 @@
  */
 
 import type { TaskBundleResponse } from "@stella/shared/tasks/catalog";
-import type { ProblemStepState } from "@stella/shared/tasks/problem-steps";
+import type { ProblemStepState, TaskRefSummary } from "@stella/shared/tasks/problem-steps";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { isProblemId, problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
@@ -61,10 +61,12 @@ export interface ServerProblem {
   afterTitle?: string;
   stepLessonId?: string;
   afterLessonId?: string;
+  refs?: TaskRefSummary[];
 }
 
 export interface ProblemResults {
   gated?: true;
+  refs?: TaskRefSummary[];
   problems: ServerProblem[];
   passedProblems: number;
   totalProblems: number;

@@ -47,6 +47,7 @@ import {
   loadProblemSteps,
   problemStepsIfReady,
 } from "../lib/task-problem-steps.js";
+import { loadTaskRefs } from "../lib/task-refs.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
 import { localRunUpsert } from "../lib/task-support.js";
@@ -167,7 +168,10 @@ async function stageTaskList(
         };
       }),
     );
-    const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
+    const [stepRows, refsByTask] = await Promise.all([
+      gatedTaskIds.size ? loadProblemSteps(db, caller.id, { stageId }) : [],
+      rows.length ? loadTaskRefs(db, caller, { stageId }) : undefined,
+    ]);
     const stepsByTask = new Map<string, typeof stepRows>();
     for (const step of stepRows) {
       const steps = stepsByTask.get(step.taskId) ?? [];
@@ -188,6 +192,7 @@ async function stageTaskList(
           ...task,
           kind: task.kind as TaskKind,
           status,
+          refs: refsByTask?.get(task.id)?.get("") ?? [],
         };
         const problems = problemTasks.get(task.id);
         if (!problems) return base;
@@ -214,6 +219,7 @@ async function stageTaskList(
               afterLessonId,
               afterTitle,
               state,
+              refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
             };
           },
         );
@@ -384,12 +390,17 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
           afterTitle,
         }))
       : problems.map(({ id, title }) => ({ id, title }));
+    const refsByTask = await loadTaskRefs(db, caller, { taskId: row.id });
+    const refsByProblem = refsByTask.get(row.id);
     return c.json({
       ...(steps ? { gated: true } : {}),
+      refs: refsByProblem?.get("") ?? [],
       problems: entries.map((problem) => {
         const firstPassedAt = byId.get(problem.id);
+        const refs = refsByProblem?.get(problem.id) ?? [];
         return {
           ...problem,
+          refs: steps ? refs : refs.filter((ref) => !ref.auto),
           status: firstPassedAt ? "passed" : "not-submitted",
           firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
           source: firstPassedAt

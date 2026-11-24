@@ -19,6 +19,7 @@ const render = (state: ProblemStepState) =>
         afterLessonId: "video",
         afterTitle: "関数の返り値",
         state,
+        refs: [],
       },
     }),
   );

@@ -1,4 +1,4 @@
-import type { TaskProblemStepSummary } from "./problem-steps.js";
+import type { TaskProblemStepSummary, TaskRefSummary } from "./problem-steps.js";
 import {
   isSafeRelativePattern,
   parseTaskManifest,
@@ -39,6 +39,7 @@ export interface TaskSummary {
   manual_passed?: boolean;
   /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
   lessonId: string | null;
+  refs?: TaskRefSummary[];
   /** 問題つきの課題だけ。今の版の問題数。 */
   problems_total?: number;
   /** 動画と提出で順に出す問題。レッスン一覧の順で返す。 */

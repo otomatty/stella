@@ -6,6 +6,17 @@ export interface ProblemStep {
   position: number;
 }
 
+export interface TaskRefSummary {
+  lessonId: string;
+  stageId: string;
+  title: string;
+  lessonType: string;
+  stageTitle?: string;
+  completed: boolean;
+  accessible: boolean;
+  auto?: true;
+}
+
 export interface TaskProblemStepSummary {
   id: string;
   title: string;
@@ -14,6 +25,7 @@ export interface TaskProblemStepSummary {
   afterLessonId: string;
   afterTitle: string;
   state: ProblemStepState;
+  refs: TaskRefSummary[];
 }
 
 /** 問番号は教材の problems の位置、提出の順序はレッスン一覧の位置で決まります。 */
