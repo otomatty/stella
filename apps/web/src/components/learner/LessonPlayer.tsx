@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import {
   Check,
   ChevronLeft,
+  Code,
   Download,
   FileText,
   Folder,
@@ -122,6 +123,7 @@ export const LessonPlayer = ({
   const tasksEnabled = stage.format === 2 && isBackendConfigured();
   const stageTasks = useStageTasks(stage.id, tasksEnabled, true);
   const problemLessons = useMemo(() => problemLessonsById(stageTasks), [stageTasks]);
+  const problemLessonIds = useMemo(() => new Set(problemLessons.keys()), [problemLessons]);
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -220,8 +222,6 @@ export const LessonPlayer = ({
   }, [sections, lessonObj]);
 
   const activeSection = sections[activeSectionIndex] ?? sections[0];
-  const lessonIndexInSection =
-    activeSection && lessonObj ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id) : 0;
 
   // lessonObj が無いステージでも hook 順序を保つため空文字を渡す (内部で no-op)
   const { markComplete } = useLessonProgress(lessonObj?.id ?? "");
@@ -333,6 +333,7 @@ export const LessonPlayer = ({
   const isVideo = lessonObj.type === "video";
   const isSlides = lessonObj.type === "slides";
   const displayType = displayLessonType(lessonObj);
+  const problemState = problemLesson?.problem.state;
   const nextMeta = nextLesson
     ? nextLessonMeta(lessonTypeLabel[displayLessonType(nextLesson)], nextLesson.duration)
     : null;
@@ -496,13 +497,19 @@ export const LessonPlayer = ({
                       variant="accent"
                       className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
                     >
-                      <LessonTypeIcon type={displayType} size={10} />
-                      {lessonTypeLabel[displayType]}
+                      {problemLesson ? (
+                        <>
+                          <Code size={10} aria-hidden="true" />
+                          問題
+                        </>
+                      ) : (
+                        <>
+                          <LessonTypeIcon type={displayType} size={10} />
+                          {lessonTypeLabel[displayType]}
+                        </>
+                      )}
                     </Badge>
-                    <span className="text-[11.5px] text-ink-3">
-                      {activeSection ? activeSection.title : ""} · {lessonIndexInSection + 1} /{" "}
-                      {activeSection ? activeSection.lessons.length : 0}
-                    </span>
+                    <span className="text-[11.5px] text-ink-3">{activeSection?.title}</span>
                     {showVideo ? (
                       <div className="ml-auto shrink-0">
                         {activeCompleted ? (
@@ -516,6 +523,24 @@ export const LessonPlayer = ({
                           </Button>
                         )}
                       </div>
+                    ) : problemState === "open" || problemState === "submitted" ? (
+                      <span
+                        className={cn(
+                          "ml-auto inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs",
+                          problemState === "submitted"
+                            ? "bg-success-soft text-success"
+                            : "bg-muted text-ink-2",
+                        )}
+                      >
+                        {problemState === "submitted" ? (
+                          <>
+                            <Check size={13} aria-hidden="true" />
+                            提出済み
+                          </>
+                        ) : (
+                          "未提出"
+                        )}
+                      </span>
                     ) : null}
                   </div>
                   <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
@@ -618,6 +643,7 @@ export const LessonPlayer = ({
                     ) : isText ? (
                       <LessonReadable
                         lesson={lessonObj}
+                        isProblemLesson={Boolean(problemLesson)}
                         onComplete={trackTextProgress ? handleMarkComplete : undefined}
                         afterContent={
                           problemLesson ? <ProblemLessonHandoff {...problemLesson} /> : null
@@ -634,7 +660,11 @@ export const LessonPlayer = ({
                     ) : isVideo || isSlides ? (
                       <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
                     ) : (
-                      <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                      <LessonReadable
+                        lesson={lessonObj}
+                        isProblemLesson={false}
+                        onComplete={handleMarkComplete}
+                      />
                     )}
                   </TabsContent>
                 )}
@@ -650,7 +680,8 @@ export const LessonPlayer = ({
           </>
         )}
 
-        {/* コーディング課題にも完了の CTA と前後ナビを出すため、上の分岐の外に置く。
+        {/* コーディング課題にも末尾ナビを出すため、上の分岐の外に置く。
+            完了直後の案内は末尾ナビにまとめ、動画の最後の教材だけ独立した案内を出す。
 
             ページ末尾はこのブロックなので、 下端に重なる固定要素のクリアランスもここが持つ。
             pb-24 (96px) は右下の開発者モード FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
@@ -665,7 +696,7 @@ export const LessonPlayer = ({
           {submissionTarget ? (
             <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
           ) : null}
-          {showCompleteCallout && (!showVideo || neighbors.next === null) ? (
+          {showCompleteCallout && showVideo && neighbors.next === null ? (
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
@@ -678,6 +709,9 @@ export const LessonPlayer = ({
               neighbors={neighbors}
               onSelectLesson={goToLesson}
               onBackToStage={handleBackToStage}
+              justCompleted={showCompleteCallout}
+              onDismissCompletion={() => setCalloutDismissed(true)}
+              problemLessonIds={problemLessonIds}
             />
           ) : null}
         </div>
@@ -861,7 +895,7 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
 
 /**
  * text レッスンの本文。 CMS (lessons.markdown) の実データを描画する。
- * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
+ * 問題レッスンは補足がなくても状態カードで進められるため、空本文に準備中の案内を出さない。
  *
  * 画像パスは R2 のオブジェクトキーで入っているので、 `LessonMarkdown` が公開 URL へ解決する。
  *
@@ -871,10 +905,12 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
  */
 const LessonReadable = ({
   lesson,
+  isProblemLesson,
   onComplete,
   afterContent,
 }: {
   lesson: Lesson;
+  isProblemLesson: boolean;
   onComplete?: () => void;
   afterContent?: ReactNode;
 }) => {
@@ -901,7 +937,7 @@ const LessonReadable = ({
     <div data-testid="lesson-doc" className="prose-lms">
       {lesson.markdown ? (
         <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
-      ) : (
+      ) : isProblemLesson ? null : (
         <div className="py-10 text-center text-[12.5px] text-ink-3">
           <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">本文を準備中です</div>
           この教材の本文はまだ登録されていません。 管理者が登録次第、 ここに表示されます。

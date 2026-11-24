@@ -205,6 +205,36 @@ describe("問題つきの課題のファイル", () => {
     return buildContentManifest(join(root, "stages"));
   }
 
+  it("問題レッスンの題名と重なる説明を省き、雛形の補足を本文に残す", () => {
+    const problems = [...problemTask().problems, { id: "q03-same", title: "同じ題" }].map(
+      (problem) => ({ ...problem, after: "01-1-3" }),
+    );
+    const root = place(
+      {
+        "starter/src/q01-add-tax.ts":
+          "// 問1 税込価格を返す、 (税率10%。税額の1円未満は切り捨て)\n" +
+          "// 例: addTax(1000) → 1100\nexport const tax = 1;\n",
+        "starter/src/q02-split-bill.ts":
+          "// 問2 別の書き出し\n// 問2 割り勘\n// 2人で分ける\nexport const split = 1;\n",
+        "starter/src/q03-same.ts": "// 問3 同じ題\n// 問3 同じ題\nexport const same = 1;\n",
+        "tests/q03-same.test.ts": "export {};\n",
+        "private/solution/src/q03-same.ts": "export const same = 1;\n",
+      },
+      problemTask({ problems }),
+    );
+    const lessons = build(root).stages[0].sections?.flatMap((section) => section.lessons);
+    const markdown = problems.map(
+      ({ id }) =>
+        lessons?.find((lesson) => lesson.id === `problem-u02-first-task-q02-problems-${id}`)
+          ?.markdown,
+    );
+    expect(markdown).toEqual([
+      "税率10%。税額の1円未満は切り捨て\n\n例: addTax(1000) → 1100",
+      "問2 別の書き出し\n\n問2 割り勘  \n2人で分ける",
+      "",
+    ]);
+  });
+
   it("前の単元の動画にも問題を置き、存在しないトピックと後の単元は拒む", () => {
     const problems = problemTask().problems;
     const task = problemTask({
@@ -221,9 +251,7 @@ describe("問題つきの課題のファイル", () => {
       "01-1-3",
       "problem-u02-first-task-q02-problems-q02-split-bill",
     ]);
-    expect(earlier[video + 1].markdown).toBe(
-      "# 問2 割り勘\n\nVS Code で開いて解き、確認して提出します。",
-    );
+    expect(earlier[video + 1].markdown).toBe("");
 
     const taskFile = join(root, unit, "task.json");
     writeFileSync(

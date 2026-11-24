@@ -447,6 +447,7 @@ function assertPublicUnitStage(
     );
 }
 
+/** 画面に題名があるので、雛形のコメントから問題を解くための補足だけを本文にする。 */
 function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string): string {
   const plan = RUNNERS[task.definition.runner].plan;
   const path = problemFiles(plan, problem.id)?.source;
@@ -457,12 +458,19 @@ function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string
     if (!line.startsWith("//") && (line || body.length)) break;
     if (body.length || line.startsWith("// 問")) body.push(line.slice(2).trim());
   }
-  const [heading = title, ...details] = body;
-  return [
-    `# ${heading}`,
-    ...(details.length ? [details.join("  \n")] : []),
-    "VS Code で開いて解き、確認して提出します。",
-  ].join("\n\n");
+  const [firstLine = title, ...details] = body;
+  let introduction = firstLine;
+  if (firstLine.startsWith(title)) {
+    introduction = firstLine.slice(title.length).replace(/^[。、.,\s]+/, "");
+    if (/^(?:（.*）|\(.*\))$/u.test(introduction)) {
+      introduction = introduction.slice(1, -1).trim();
+    }
+  }
+  const paragraphs = introduction ? [introduction] : [];
+  if (details.some((line) => line !== "" && line !== title)) {
+    paragraphs.push(details.join("  \n"));
+  }
+  return paragraphs.join("\n\n");
 }
 
 /** 指定された動画の単元に問題を置き、提出順をレッスンの位置から決めます。 */
