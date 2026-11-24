@@ -1,10 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
   INTEGRATION_SCOPES,
   INTEGRATION_SCOPE_DESCRIPTIONS,
   type IntegrationClient,
-  type IntegrationGroup,
   type IntegrationScope,
 } from "@stella/shared/integrations/types";
 import { apiFetch } from "@/lib/api-client";
@@ -40,7 +40,6 @@ export function IntegrationsAdmin() {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<{ name: string; rows: IntegrationGroup[] } | null>(null);
   const load = useCallback(async () => {
     const data = await apiFetch<{ clients: IntegrationClient[] }>(ROOT);
     setClients(data.clients);
@@ -166,51 +165,9 @@ export function IntegrationsAdmin() {
               if (window.confirm("古いトークンは使えなくなります。作り直しますか？"))
                 void mutate(`${ROOT}/${client.id}/rotate`, "POST");
             }}
-            onGroups={() => {
-              void apiFetch<{ groups: IntegrationGroup[] }>(`${ROOT}/${client.id}/groups`)
-                .then((data) => setGroups({ name: client.name, rows: data.groups }))
-                .catch(() => setError("グループの取得に失敗しました"));
-            }}
           />
         ))}
       </div>
-      {groups ? (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="min-w-0 break-all">{groups.name} のグループ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {groups.rows.length ? (
-              <ul className="divide-y divide-border">
-                {groups.rows.map((group) => (
-                  <li
-                    key={group.id}
-                    className="flex min-w-0 items-start justify-between gap-3 py-3 first:pt-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-all text-[13px] font-medium">{group.name}</p>
-                      <p className="break-all font-mono text-xs text-ink-3">{group.key}</p>
-                    </div>
-                    <Badge className="shrink-0">{group.memberCount} 人</Badge>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="py-4 text-center text-[13px] text-ink-3">グループはありません</p>
-            )}
-            <div className="mt-4 border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className={BUTTON_CLASS}
-                onClick={() => setGroups(null)}
-              >
-                閉じる
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
     </>
   );
 }
@@ -219,13 +176,11 @@ function ClientCard({
   busy,
   onUpdate,
   onRotate,
-  onGroups,
 }: {
   client: IntegrationClient;
   busy: boolean;
   onUpdate: (body: object) => void;
   onRotate: () => void;
-  onGroups: () => void;
 }) {
   const [draft, setDraft] = useState(() => syncIntegrationClientDraft(null, client));
   useEffect(() => setDraft((previous) => syncIntegrationClientDraft(previous, client)), [client]);
@@ -295,14 +250,10 @@ function ClientCard({
           >
             トークンを作り直す
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className={BUTTON_CLASS}
-            disabled={busy}
-            onClick={onGroups}
-          >
-            グループを見る
+          <Button asChild variant="ghost" className={BUTTON_CLASS}>
+            <Link to="/admin/groups" search={{ clientId: client.id }}>
+              グループを見る
+            </Link>
           </Button>
         </div>
       </CardContent>

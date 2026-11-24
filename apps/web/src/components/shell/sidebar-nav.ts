@@ -35,6 +35,7 @@ export type NavId =
   | "gradebook"
   | "integrations"
   | "users"
+  | "groups"
   | "enrollments"
   | "report"
   | "audit"
@@ -65,6 +66,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "users", label: "ユーザー管理", icon: Users },
+    { id: "groups", label: "グループ", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
     { id: "integrations", label: "外部連携", icon: Shield },

@@ -100,6 +100,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   discovery: "/discovery",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
+  groups: "/admin/groups",
   integrations: "/admin/integrations",
   enrollments: "/admin/enrollments",
   audit: "/admin/audit",
@@ -112,6 +113,7 @@ function pageKeyFromPath(path: string): string {
   if (path.startsWith("/stages/")) {
     return path.includes("/lessons/") ? "lesson" : "stage-detail";
   }
+  if (path.startsWith("/admin/groups/")) return "groups";
   if (path.startsWith("/reviews/")) return "review";
   if (path.startsWith("/submissions/")) return "submission-result";
   // 一覧 (`/certificates`) と詳細 (`/certificates/$certId`) のどちらも「修了証」。
