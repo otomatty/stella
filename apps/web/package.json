@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "e2e": "playwright test",
+    "release:shots": "playwright test -c release-shots/playwright.config.ts",
     "e2e:update": "playwright test --update-snapshots",
     "deploy": "bunx wrangler deploy && bunx wrangler deploy --config wrangler.legacy.toml",
     "typecheck": "tsc -b --noEmit",

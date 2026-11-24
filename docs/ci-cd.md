@@ -124,6 +124,23 @@ Chat のスペースの「アプリと統合」→「Webhook」で作った URL 
 
 受講者への配布は Visual Studio Marketplace に寄せる（Web の「VS Code で開く」で VS Code がインストールを尋ねる。受講者に `.vsix` を配らない）。Marketplace への公開もこのワークフローが行う。Release に付けた `.vsix` を `vsce publish --oidc --packagePath` で出し、同じ版は `--skip-duplicate` で飛ばす。認証は GitHub Actions の OIDC で、PAT は置かない。初回だけ、publisher `saedgewell` の Trusted Publishing に owner `otomatty`、repository `stella`、workflow `release-vscode.yml`、environment なしを登録する（手順は `apps/vscode/README.md` の「Marketplace 公開」）。Release の `.vsix` は控え。
 
+### スクリーンショットの撮影
+
+お知らせに画面を添えるときは、CHANGELOG の該当項目に `![説明](shot:名前)` を単独の行で書く。場面の登録簿は [Web](../apps/web/release-shots/scenarios.ts) と [VS Code 拡張](../apps/vscode/scripts/release-shots/scenarios.ts) にある。新しい場面を使うときは、同じ PR で製品の登録簿にも追加する。
+
+Web は 1280×800、VS Code 拡張は WebView の場面ごとの幅と高さで撮る。共通の設定はライトテーマ、倍率 2、日本語（`ja-JP`）、日本時間（`Asia/Tokyo`）。アニメーションを止め、入力欄のキャレットを隠す。撮影対象を指定した場合は四辺に 24 px の余白を付け、ページ内に収める。強調箇所にはオレンジ色の枠を付ける。
+
+手元で撮るには Playwright の Chromium と日本語フォント（Noto Sans CJK JP など）を用意する。Web は `apps/api/.dev.vars.example` を `apps/api/.dev.vars` にコピーし、`AUTH_JWT_SECRET` と `ALLOWED_ORIGINS` を確認する。`ALLOWED_ORIGINS` には `http://127.0.0.1:4173` を追加する。リポジトリのルートで `bun run db:migrate` と `bun run db:seed` を実行し、別の端末で `bun run dev:api` を起動してから撮影する。
+
+```sh
+RELEASE_SHOTS=learner-home RELEASE_SHOTS_OUT=/tmp/shots bun run --filter=@stella/web release:shots
+RELEASE_SHOTS=submission-form RELEASE_SHOTS_OUT=/tmp/shots bun run --filter=stella-lms release:shots
+```
+
+両方の製品を撮るときは、アップロード時に画像が混ざらないよう撮影先を分ける。
+
+`bun run release:shots list --changelog <path> --version <版>` は撮影する名前をカンマ区切りで出す。撮影後は `bun run release:shots upload --product <web|vscode> --version <版> --dir <撮影先> --out <images.json>` で教材と同じ公開バケット `stella-materials-public` にアップロードする。R2 のキーは `release-notes/<product>/<版>/<名前>-<内容の SHA-256 の先頭 16 文字>.png`。公開 URL は HTTPS の `MATERIALS_BASE_URL` の末尾のスラッシュを除いた値に `/` とキーをつないだもの。アップロードは `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を使い、`release:notes prepare --images` に渡す JSON を出力する。
+
 ## 必須ステータスチェック設定
 
 GitHub リポジトリの Settings → Branches → Branch protection rule（`main`）で、

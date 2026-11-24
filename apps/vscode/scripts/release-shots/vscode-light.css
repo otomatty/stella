@@ -1,0 +1,49 @@
+/* https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/light_modern.json */
+:root {
+  --vscode-button-background: #005fb8;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #0258a8;
+  --vscode-button-secondaryBackground: #e5e5e5;
+  --vscode-button-secondaryForeground: #3b3b3b;
+  --vscode-button-secondaryHoverBackground: #cccccc;
+  --vscode-contrastActiveBorder: transparent;
+  --vscode-contrastBorder: transparent;
+  --vscode-descriptionForeground: #3b3b3b;
+  --vscode-dropdown-background: #ffffff;
+  --vscode-dropdown-border: #cecece;
+  --vscode-dropdown-foreground: #3b3b3b;
+  --vscode-editor-background: #ffffff;
+  --vscode-editor-font-family: Consolas, "Courier New", "Noto Sans Mono CJK JP", monospace;
+  --vscode-editor-inactiveSelectionBackground: #e5ebf1;
+  --vscode-editorWarning-foreground: #bf8803;
+  --vscode-errorForeground: #f85149;
+  --vscode-focusBorder: #005fb8;
+  --vscode-font-family: "Segoe WPC", "Segoe UI", "Noto Sans CJK JP", "Noto Sans JP", sans-serif;
+  --vscode-font-size: 13px;
+  --vscode-foreground: #3b3b3b;
+  --vscode-input-background: #ffffff;
+  --vscode-input-border: #cecece;
+  --vscode-input-foreground: #3b3b3b;
+  --vscode-list-hoverBackground: #f2f2f2;
+  --vscode-list-hoverForeground: #3b3b3b;
+  --vscode-list-inactiveSelectionBackground: #e4e6f1;
+  --vscode-list-inactiveSelectionForeground: #3b3b3b;
+  --vscode-panel-border: #e5e5e5;
+  --vscode-progressBar-background: #005fb8;
+  --vscode-sideBar-background: #f8f8f8;
+  --vscode-testing-iconFailed: #f14c4c;
+  --vscode-testing-iconPassed: #73c991;
+  --vscode-textBlockQuote-background: #f8f8f8;
+  --vscode-textBlockQuote-border: #e5e5e5;
+  --vscode-textCodeBlock-background: #f8f8f8;
+  --vscode-textLink-foreground: #005fb8;
+  --vscode-widget-border: #e5e5e5;
+}
+
+body {
+  padding: 0 20px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  background: var(--vscode-editor-background);
+}
