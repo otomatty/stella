@@ -1,6 +1,5 @@
-import { constants } from "node:fs";
 import {
-  copyFile,
+  link,
   lstat,
   mkdir,
   mkdtemp,
@@ -394,6 +393,28 @@ function pendingProblems(manifest: TaskManifest, receipt: Receipt) {
     .filter(({ paths }) => paths.length > 0);
 }
 
+/** 旧拡張があとから配った問題を、旧配布記録のハッシュを保ったまま取り込む。 */
+async function legacyDistribution(root: string, manifest: TaskManifest, receipt: Receipt) {
+  const { files, deferred } = receipt;
+  const hashes: FileHashes = {};
+  if (files !== undefined || !deferred) return { deferred, hashes, migrated: false };
+
+  const remaining = { ...deferred };
+  let migrated = false;
+  for (const { id, paths } of pendingProblems(manifest, receipt)) {
+    const marker = await readFileInRoot(root, `.stella/installed-${id}`, 64).catch(() => undefined);
+    if (marker?.toString("utf8") !== receipt.contentHash) continue;
+    migrated = true;
+    for (const rel of paths) {
+      const file = remaining[rel];
+      if (file?.path === rel && typeof file.sha256 === "string" && HASH_PATTERN.test(file.sha256))
+        hashes[rel] = file.sha256;
+      delete remaining[rel];
+    }
+  }
+  return { deferred: remaining, hashes, migrated };
+}
+
 export async function pendingProblemBundle(
   root: string,
   manifest: TaskManifest,
@@ -401,7 +422,8 @@ export async function pendingProblemBundle(
 ): Promise<{ contentHash: string; variant?: "fixed-start"; ids: string[] } | undefined> {
   const receipt = await readReceipt(root);
   if (!receipt || receipt === "invalid" || receipt.taskId !== manifest.id) return undefined;
-  const ids = pendingProblems(manifest, receipt)
+  const { deferred } = await legacyDistribution(root, manifest, receipt);
+  const ids = pendingProblems(manifest, { ...receipt, deferred })
     .filter(({ id }) => visible.has(id))
     .map(({ id }) => id);
   const { contentHash, variant } = receipt;
@@ -412,10 +434,11 @@ export async function pendingProblemBundle(
 async function deferredProtectedFiles(root: string, manifest: TaskManifest): Promise<HashedFile[]> {
   const receipt = await readReceipt(root);
   if (!receipt || receipt === "invalid" || receipt.taskId !== manifest.id) return [];
-  const pending = pendingProblems(manifest, receipt);
+  const { deferred } = await legacyDistribution(root, manifest, receipt);
+  const pending = pendingProblems(manifest, { ...receipt, deferred });
   return pending.flatMap(({ paths }) =>
     paths.flatMap((rel) => {
-      const file = receipt.deferred?.[rel];
+      const file = deferred?.[rel];
       return file?.path === rel &&
         typeof file.bytes === "number" &&
         /^[a-f0-9]{64}$/.test(file.sha256)
@@ -475,6 +498,32 @@ async function needsPublication(
   return true;
 }
 
+const NO_HARD_LINK = new Set([
+  "EPERM",
+  "EACCES",
+  "ENOSYS",
+  "ENOTSUP",
+  "EOPNOTSUPP",
+  "EXDEV",
+  "EMLINK",
+]);
+
+async function publishNewFile(root: string, source: string, write: Replacement): Promise<void> {
+  const target = path.join(root, write.rel);
+  try {
+    await link(source, target);
+  } catch (error) {
+    const code = errorCode(error);
+    if (code === "EEXIST") {
+      if (await needsPublication(root, write)) throw error;
+    } else if (typeof code === "string" && NO_HARD_LINK.has(code)) {
+      if (await needsPublication(root, write)) await rename(source, target);
+    } else {
+      throw error;
+    }
+  }
+}
+
 /** バージョン更新は先に更新先を控え、全ファイルの公開後に配布記録を切り替える。 */
 async function writeDistributionUpdate(
   base: string,
@@ -518,7 +567,7 @@ async function writeDistributionUpdate(
         await rename(markerSource, path.join(root, RECEIPT_PATH));
     }
     for (const [i, write] of writes.entries()) {
-      const { rel, before, data } = write;
+      const { rel, before } = write;
       await assertPlainDirectory(base, root);
       const dir = await ensureDirectoryIn(root, rel.split("/").slice(0, -1));
       await assertPlainDirectory(base, dir);
@@ -535,14 +584,7 @@ async function writeDistributionUpdate(
       if (before) {
         await rename(source, target);
       } else {
-        // ハードリンクが使えないボリュームでも、既存のファイルを上書きせずに公開する。
-        try {
-          await copyFile(source, target, constants.COPYFILE_EXCL);
-        } catch (error) {
-          if (errorCode(error) !== "EEXIST") throw error;
-          if (!(await readExisting(root, rel))?.equals(data))
-            throw new TaskInstallConflict("occupied", root, [rel]);
-        }
+        await publishNewFile(root, source, write);
       }
     }
   } finally {
@@ -565,6 +607,16 @@ async function verifiedOldManifest(
     }
   } catch {
     // 照合できない設定からは、以前の編集対象を決めない。
+  }
+}
+
+async function backupPath(root: string, rel: string, data: Buffer): Promise<string | undefined> {
+  const suffix = sha256Hex(data).slice(0, 12);
+  for (let attempt = 0; ; attempt++) {
+    const candidate = attempt === 0 ? rel : `${rel}.${suffix}${attempt === 1 ? "" : `-${attempt}`}`;
+    const existing = await readExisting(root, candidate);
+    if (!existing) return candidate;
+    if (existing.equals(data)) return undefined;
   }
 }
 
@@ -608,11 +660,12 @@ async function planReplacements(
         continue;
       }
     } else if (before && currentHash !== previousHash) {
-      const backupRel = `${backupDir}/${rel}`;
-      const backup = await readExisting(root, backupRel);
-      if (backup && !backup.equals(before))
-        throw new TaskInstallConflict("occupied", root, [backupRel]);
-      if (!backup) writes.push({ rel: backupRel, data: before });
+      if (!oldManifest && mode !== "add") {
+        clashes.push(rel);
+        continue;
+      }
+      const backupRel = await backupPath(root, `${backupDir}/${rel}`, before);
+      if (backupRel) writes.push({ rel: backupRel, data: before });
     }
     writes.push({ rel, data, before });
   }
@@ -629,7 +682,10 @@ async function extendDistribution(
   visible: ReadonlySet<string> | undefined,
   beforeUpdate?: InstallOptions["beforeUpdate"],
 ): Promise<void> {
-  const pending = bundle.manifest.problemSteps ? pendingProblems(bundle.manifest, receipt) : [];
+  const legacy = await legacyDistribution(root, bundle.manifest, receipt);
+  const pending = bundle.manifest.problemSteps
+    ? pendingProblems(bundle.manifest, { ...receipt, deferred: legacy.deferred })
+    : [];
   const deferred = new Set(pending.flatMap((problem) => problem.paths));
   const missing: string[] = [];
   for (const rel of paths)
@@ -644,7 +700,7 @@ async function extendDistribution(
       entries.push([rel, Buffer.from(bundle.files[rel], "base64")]);
     }
   }
-  if (entries.length === 0) return;
+  if (entries.length === 0 && !legacy.migrated) return;
   const oldFiles = receipt.files ?? {};
   await beforeUpdate?.(root);
   const writes = await planReplacements(
@@ -655,7 +711,7 @@ async function extendDistribution(
     backupDirectory(receipt.contentHash),
     "add",
   );
-  const remaining = { ...receipt.deferred };
+  const remaining = { ...legacy.deferred };
   for (const [rel] of entries) delete remaining[rel];
   const files =
     receipt.files ?? fileHashes(readBundleEntries(bundle).filter(([rel]) => !deferred.has(rel)));
@@ -664,7 +720,11 @@ async function extendDistribution(
     root,
     writes,
     receipt,
-    { ...receipt, deferred: remaining, files: { ...files, ...fileHashes(entries) } },
+    {
+      ...receipt,
+      deferred: remaining,
+      files: { ...files, ...legacy.hashes, ...fileHashes(entries) },
+    },
     beforeUpdate,
   );
 }
@@ -702,9 +762,13 @@ async function updateDistribution(
             .catch(() => undefined);
     if (!isFileHashes(loaded))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
-    oldFiles = Object.fromEntries(
-      Object.entries(loaded).filter(([rel]) => !Object.hasOwn(receipt.deferred ?? {}, rel)),
-    );
+    const legacy = await legacyDistribution(root, bundle.manifest, receipt);
+    oldFiles = {
+      ...Object.fromEntries(
+        Object.entries(loaded).filter(([rel]) => !Object.hasOwn(legacy.deferred ?? {}, rel)),
+      ),
+      ...legacy.hashes,
+    };
   }
   // 配布済みの問題は、解放状態が戻っても新しいバージョンへ移す。
   const visible = new Set(options.visibleProblems);

@@ -507,7 +507,6 @@ describe("問題の段階", () => {
     expect(result.preparationError).toBeUndefined();
     expect(await readFile(path.join(root, "src/q02-sub.ts"), "utf8")).toBe("export const sub = 1;");
     expect(await readFile(path.join(root, "tests/q02-sub.test.ts"), "utf8")).toBe("test 2");
-    expect(link).not.toHaveBeenCalled();
   });
 
   it("提出後の次問追加も課題内の未保存文書があれば止める", async () => {
