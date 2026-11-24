@@ -2,13 +2,16 @@
  * レッスンの前後移動の解決。
  *
  * ここが壊れると、 レッスン画面の前後ナビと完了直後の「次のレッスンへ」が
- * 誤った移動先を出す (locked を開こうとする / セクションの区切りを見落とす)。
+ * 誤った移動先を出す (locked を飛ばす / セクションの区切りを見落とす)。
  */
 
+import type { TaskSummary } from "@stella/shared/tasks/catalog";
+import type { TaskProblemStepSummary } from "@stella/shared/tasks/problem-steps";
 import { describe, expect, it } from "vitest";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
 import { flattenLessonNodes, resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import { presentStageProblems, problemLessonsById } from "@/lib/problem-lesson";
 
 function lesson(id: string, status: LessonStatus = "todo"): Lesson {
   return { id, title: id, type: "slides", duration: "3分", status };
@@ -67,7 +70,7 @@ describe("resolveLessonNeighbors", () => {
     expect(n.prev?.lesson.id).toBe("c");
   });
 
-  it("locked は飛ばして解禁済みの隣へ寄せる", () => {
+  it("locked でも隣のレッスンを返す", () => {
     const locked: Stage = {
       ...stage,
       sections: [
@@ -76,18 +79,78 @@ describe("resolveLessonNeighbors", () => {
       ],
     };
     const n = resolveLessonNeighbors(locked, "a", empty);
-    expect(n.next?.lesson.id).toBe("d");
-    // 飛んだ先が別セクションなら区切り扱いになる。
-    expect(n.nextStartsNewSection).toBe(true);
-    expect(resolveLessonNeighbors(locked, "d", empty).prev?.lesson.id).toBe("a");
+    expect(n.next?.lesson.id).toBe("b");
+    expect(n.nextLocked).toBe(true);
+    expect(n.nextBlockedBy).toBeNull();
+    expect(n.nextStartsNewSection).toBe(false);
+    const back = resolveLessonNeighbors(locked, "d", empty);
+    expect(back.prev?.lesson.id).toBe("c");
+    expect(back.prevLocked).toBe(true);
   });
 
-  it("先が locked しか無ければ next は null", () => {
+  it("先が locked でも next はそのレッスン", () => {
     const locked: Stage = {
       ...stage,
       sections: [{ id: "m0", title: "M0", lessons: [lesson("a"), lesson("b", "locked")] }],
     };
-    expect(resolveLessonNeighbors(locked, "a", empty).next).toBeNull();
+    const n = resolveLessonNeighbors(locked, "a", empty);
+    expect(n.next?.lesson.id).toBe("b");
+    expect(n.nextLocked).toBe(true);
+  });
+
+  it("ロック中の次を飛ばさず、nextBlockedBy が止めているレッスンを指す", () => {
+    const video = { ...lesson("video"), type: "video" as const, title: "関数の返り値" };
+    const q1 = { ...lesson("q1"), title: "問1" };
+    const q2 = { ...lesson("q2"), title: "問2" };
+    const later = { ...lesson("later"), title: "その先" };
+    const problemStage: Stage = {
+      ...stage,
+      sections: [{ id: "m0", title: "M0", lessons: [video, q1, q2, later] }],
+    };
+    const step = (id: string, stepLessonId: string): TaskProblemStepSummary => ({
+      id,
+      title: id,
+      label: id,
+      stepLessonId,
+      afterLessonId: "server-after",
+      afterTitle: "サーバーの題",
+      state: "locked-video",
+    });
+    const tasks: TaskSummary[] = [
+      {
+        id: "task",
+        sectionId: "s",
+        title: "課題",
+        kind: "basic",
+        pattern: "p",
+        skills: { uses: [], assesses: [] },
+        estimatedMinutes: 10,
+        status: "not-started",
+        lessonId: null,
+        problems: [step("p1", "q1"), step("p2", "q2")],
+      },
+    ];
+    const doneVideo: LessonProgressMap = {
+      video: { completed: true, updatedAt: "2026-08-12T00:00:00.000Z" },
+    };
+    const lockedProblems = problemLessonsById(presentStageProblems(tasks, problemStage, {}));
+    const fromVideo = resolveLessonNeighbors(problemStage, "video", {}, lockedProblems);
+    expect(fromVideo.next?.lesson.id).toBe("q1");
+    expect(fromVideo.nextLocked).toBe(true);
+    expect(fromVideo.nextBlockedBy?.lesson.id).toBe("video");
+    expect(fromVideo.nextLockReason).toBe("「関数の返り値」を終えると解けます");
+
+    const opened = problemLessonsById(presentStageProblems(tasks, problemStage, doneVideo));
+    const fromDoneVideo = resolveLessonNeighbors(problemStage, "video", doneVideo, opened);
+    expect(fromDoneVideo.next?.lesson.id).toBe("q1");
+    expect(fromDoneVideo.nextLocked).toBe(false);
+    expect(fromDoneVideo.nextBlockedBy).toBeNull();
+
+    const fromQ1 = resolveLessonNeighbors(problemStage, "q1", doneVideo, opened);
+    expect(fromQ1.next?.lesson.id).toBe("q2");
+    expect(fromQ1.nextLocked).toBe(true);
+    expect(fromQ1.nextBlockedBy?.lesson.id).toBe("q1");
+    expect(fromQ1.nextLockReason).toBe("「問1」を提出すると解けます");
   });
 
   it("進捗で解禁された locked ではないレッスンは status を進捗ストアで解決する", () => {

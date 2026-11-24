@@ -25,7 +25,9 @@ test("受講中のステージのまとめを読める", async ({ page }) => {
 const problemStageId = "1a628d2a-96a5-5fce-a148-b9e92b3a92bf";
 const problemLessonId = "a28a17f0-8787-56fc-bff3-170300ca754e";
 
-test("問題のレッスンは解放状態を取り直し、閲覧では完了にならない", async ({ page }) => {
+test("問題のレッスンは手元の進捗でロックし、提出は取り直す。閲覧では完了にならない", async ({
+  page,
+}) => {
   await signInAs(page, "seed-learner");
   let state: ProblemStepState = "locked-video";
   await page.route(`**/api/tasks/for-stage/${problemStageId}`, async (route) => {
@@ -44,14 +46,14 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     .getByTestId("stage-syllabus")
     .getByRole("button", { name: /問1 税込価格を返す/ });
   await expect(row).toBeDisabled();
-  await expect(row).toContainText("の動画を見ると解けます");
+  await expect(row).toContainText("を終えると解けます");
 
   await page.goto(`/stages/${problemStageId}/lessons/${problemLessonId}`);
   const lesson = page.getByTestId("lesson-screen");
   const handoff = lesson.getByTestId("lesson-problem-handoff");
   const open = handoff.getByRole("button", { name: "VS Code で開く" });
   await expect(lesson.getByTestId("lesson-doc")).toBeVisible();
-  await expect(handoff).toContainText("の動画を見ると解けます");
+  await expect(handoff).toContainText("を終えると解けます");
   await expect(open).toHaveCount(0);
 
   const tocButton = page.getByRole("button", { name: "教材の目次を開く" });
@@ -61,15 +63,16 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     `[data-testid="lesson-toc-text"][data-lesson-id="${problemLessonId}"]`,
   );
   await expect(tocRow).toBeDisabled();
-  await expect(tocRow).toContainText("の動画を見ると解けます");
+  await expect(tocRow).toContainText("を終えると解けます");
   if (usesTocDrawer) {
     await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
   }
 
+  // サーバーが open でも、前の教材が手元で終わっていなければロックのまま。
   state = "open";
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(open).toBeVisible();
-  await open.scrollIntoViewIfNeeded();
+  await expect(handoff).toContainText("を終えると解けます");
+  await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
   const savedProgress = await page.evaluate((id) => {
     window.dispatchEvent(new Event("pagehide"));

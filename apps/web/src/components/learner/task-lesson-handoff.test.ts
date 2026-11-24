@@ -37,8 +37,8 @@ describe("問題のレッスンの本文下", () => {
   });
 
   it.each([
-    ["locked-video", "「関数の返り値」の動画を見ると解けます"],
-    ["locked-previous", "前の問題を提出すると解けます"],
+    ["locked-video", "「関数の返り値」を終えると解けます"],
+    ["locked-previous", "「関数の返り値」を提出すると解けます"],
   ] as const)("ロック中は理由を出す (%s)", (state, reason) => {
     const markup = render(state);
     expect(markup).toContain(reason);

@@ -9,7 +9,12 @@
 
 import type { TaskStatus, TaskSummary } from "@stella/shared/tasks/catalog";
 
-import { firstOpenProblem, problemLockReason } from "./problem-lesson";
+import {
+  firstOpenProblem,
+  problemLockReason,
+  type PresentedTask,
+  type ProblemStepView,
+} from "./problem-lesson";
 import { isProblemTask } from "./task-row";
 
 /** クリアに数える状態 (`task-completion.ts` と同じ)。 */
@@ -25,8 +30,8 @@ const LEARNER_TURN: ReadonlySet<TaskStatus> = new Set<TaskStatus>([
 export interface StageWrapup {
   /** 次に見る課題 (受講者の番の課題を先に、無ければレビュー待ちの課題)。 */
   task: Pick<TaskSummary, "id" | "title" | "status" | "lessonId">;
-  /** 動画と提出で順に進む課題で案内するレッスン。 */
-  nextLesson?: { id: string; action: "問題を開く" | "動画を見る" };
+  /** 解ける問題、またはロックを止めているレッスン。 */
+  nextLesson?: { id: string; action: "問題を開く" | "教材を開く" };
   /** 合格していない課題の数 (1 以上)。 */
   remaining: number;
   /** 問題・動画・課題に進む案内を出せるか。 */
@@ -71,29 +76,42 @@ function statusSentence(task: TaskSummary): string {
   }
 }
 
+function lockedDestination(
+  problem: ProblemStepView,
+): NonNullable<StageWrapup["nextLesson"]> | undefined {
+  const blocking = problem.blocking;
+  const id = blocking?.id ?? problem.afterLessonId;
+  if (!id) return undefined;
+  const opensProblem = blocking ? blocking.kind === "problem" : problem.state === "locked-previous";
+  return { id, action: opensProblem ? "問題を開く" : "教材を開く" };
+}
+
 /**
  * まだ合格していない課題から、仕上げの案内を作る。
  *
  * すべて合格済み (または課題の無い星) なら null — 残りは修了の判定待ちなので、
  * 呼び出し側は従来の文面に倒す。
  */
-export function stageWrapupOf(tasks: readonly TaskSummary[]): StageWrapup | null {
+export function stageWrapupOf(tasks: readonly PresentedTask[]): StageWrapup | null {
   const pending = tasks.filter((task) => !PASSED.has(task.status));
   const task = pending.find((t) => LEARNER_TURN.has(t.status)) ?? pending[0];
   if (!task) return null;
   const open = firstOpenProblem(task.problems);
-  const locked = task.problems?.find((problem) => problem.state === "locked-video");
+  const locked = task.problems?.find(
+    (problem) => problem.state === "locked-video" || problem.state === "locked-previous",
+  );
   const nextLesson: StageWrapup["nextLesson"] = open
     ? { id: open.stepLessonId, action: "問題を開く" }
     : locked
-      ? { id: locked.afterLessonId, action: "動画を見る" }
+      ? lockedDestination(locked)
       : undefined;
   const allProblemsSubmitted =
     task.problems?.length && task.problems.every((problem) => problem.state === "submitted");
+  const lockReason = locked ? problemLockReason(locked) : undefined;
   const nextDetail = open
     ? `次は「${open.label} ${open.title}」に取り組みましょう。`
-    : locked
-      ? `${problemLockReason(locked)}。`
+    : lockReason
+      ? `${lockReason}。`
       : allProblemsSubmitted
         ? `課題「${task.title}」の問題はすべて提出済みです。`
         : statusSentence(task);

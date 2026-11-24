@@ -57,6 +57,7 @@ import { lessonSubmissionTarget } from "@/lib/lesson-submissions";
 import {
   firstOpenProblem,
   type ProblemLesson,
+  presentStageProblems,
   problemLessonsById,
   problemLockReason,
 } from "@/lib/problem-lesson";
@@ -120,8 +121,13 @@ export const LessonPlayer = ({
   const [tabSelection, setTabSelection] = useState<{ key: string; tab: string }>();
   const shell = useContext(AppShellContext);
   const tasksEnabled = stage.format === 2 && isBackendConfigured();
-  const stageTasks = useStageTasks(stage.id, tasksEnabled, true);
-  const problemLessons = useMemo(() => problemLessonsById(stageTasks), [stageTasks]);
+  const stageTasks = useStageTasks(stage.id, tasksEnabled);
+  const progressMap = useLessonProgressMap();
+  const presentedTasks = useMemo(
+    () => presentStageProblems(stageTasks, stage, progressMap),
+    [stageTasks, stage, progressMap],
+  );
+  const problemLessons = useMemo(() => problemLessonsById(presentedTasks), [presentedTasks]);
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -131,8 +137,6 @@ export const LessonPlayer = ({
   // ステージが届いても再適用されずステージ先頭に落ちてしまう。
   const selectionKey = initialLesson ? `${initialLesson.id}:${initialLesson.seq}` : null;
   const appliedSelectionRef = useRef<string | null>(null);
-
-  const progressMap = useLessonProgressMap();
 
   const completedLessonCount = useMemo(
     () =>
@@ -238,8 +242,8 @@ export const LessonPlayer = ({
       (lessonObj?.type !== "text" || trackTextProgress),
   );
 
-  // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 locked はスキップして
-  // 手前 / 先の解禁レッスンを探す。 無ければ null で、 ナビは端の表示になる。
+  // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 ロック中でも隣を返し、
+  // ナビ側が止めているレッスンへ案内する。
   const neighbors = useMemo(
     () => resolveLessonNeighbors(stage, activeLesson, progressMap, problemLessons),
     [stage, activeLesson, progressMap, problemLessons],
@@ -318,7 +322,7 @@ export const LessonPlayer = ({
     return <div className="p-10 text-sm text-ink-3">このステージには教材がありません。</div>;
   }
 
-  const task = stageTasks?.find((task) => task.lessonId === lessonObj.id);
+  const task = presentedTasks?.find((item) => item.lessonId === lessonObj.id);
   const taskId = task?.id ?? null;
   const submissionTarget = lessonSubmissionTarget({
     format: stage.format,
