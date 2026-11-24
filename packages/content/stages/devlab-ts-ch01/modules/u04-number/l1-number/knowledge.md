@@ -64,15 +64,13 @@ function reserve(isAvailable: boolean): number {
   if (!isAvailable) {
     // 予約できないことを知らせるエラーを投げる
     throw new Error("予約できません");
-    // 条件の中身はここまで
   }
-  // 予約番号 101 を返す
-  return 101;
-  // 関数の中身はここまで
+  // 予約番号 307 を返す
+  return 307;
 }
 ```
 
-- A. `101` を返す
+- A. `307` を返す
 - B. `false` を返す
 - C. エラーを投げ、戻り値は返さない
 
@@ -106,9 +104,9 @@ const failed = Number.isNaN(amount);
 ### Q5. 結果が true になる式をすべて選んでください。
 <!-- kind: multiple; skills: devlab-ts-ch01 -->
 
-- A. `Number.isFinite(2.5)`
+- A. `Number.isFinite(7.75)`
 - B. `Number.isFinite(Infinity)`
-- C. `Number.isInteger(2.5)`
+- C. `Number.isInteger(7.75)`
 - D. `Number.isInteger(3)`
 - E. `Number.isNaN(NaN)`
 

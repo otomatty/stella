@@ -1,0 +1,628 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ数を繰り返し掛ける式を書けます。",
+    "stuck": "同じ数を何度も書き並べると、いくつ掛けるのかが分かりにくくなります。",
+    "points": ["数 ** 回数 で、その数を回数だけ掛けた数になります。"],
+    "leaveOut": ["負の数や小数を右側に書く計算"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "power-example-1": {
+      "prompt": "A terracotta pot with one green seedling. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "power-example-2": {
+      "prompt": "A terracotta pot with two green seedlings. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "power-example-3": {
+      "prompt": "A terracotta pot with four green seedlings. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "power-use-1": {
+      "prompt": "A terracotta pot with green sprouts. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "power-use-2": {
+      "prompt": "A square grid of violet floor tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "power-use-3": {
+      "prompt": "A stack of matching cardboard boxes. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "最初の芽",
+          "art": "power-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "翌日の芽",
+          "art": "power-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "その翌日の芽",
+          "art": "power-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "掛け合わせる数",
+          "art": "power-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "累乗の結果",
+          "art": "power-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "掛け合わせる数",
+          "art": "power-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "累乗の結果",
+          "art": "power-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "掛け合わせる数",
+          "art": "power-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "累乗の結果",
+          "art": "power-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "芽の増え方",
+          "art": "power-use-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "床のタイル",
+          "art": "power-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "箱のコピー",
+          "art": "power-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "power-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "sprout-double",
+      "beats": [
+        {
+          "say": "この動画では、同じ数を何回も掛ける書き方を学びます。"
+        },
+        {
+          "say": "植木鉢の芽は、1 日ごとに 2 倍です。",
+          "speech": "植木鉢の芽は、いちにちごとににばいです。"
+        },
+        {
+          "say": "3 日たつと、2 × 2 × 2 で 8 本になりました。",
+          "speech": "みっかたつと、にかけるにかけるにで、はっぽんになりました。"
+        },
+        {
+          "say": "星印を二つ並べ、2 を 3 回掛けた数を表せます。",
+          "speech": "星印を二つ並べ、にをさんかい掛けた数を表せます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "毎日同じ倍率で増える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "植木鉢に、芽が一本生えました。",
+          "show": ["a"]
+        },
+        {
+          "say": "次の日には、二倍の本数です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "さらに二倍になると、四本になります。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 三を四つ掛けた数を入れる", "const copies = 3 ** 4;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ数を繰り返し掛ける計算が、累乗です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "累乗",
+            "ruby": "るいじょう",
+            "note": "同じ数を掛け合わせる"
+          }
+        },
+        {
+          "say": "左の三を、右の四回だけ掛け合わせます。",
+          "part": {
+            "line": 1,
+            "text": "3 ** 4"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "3を4つ"
+            }
+          }
+        },
+        {
+          "say": "三を四つ掛けた結果は、八十一です。",
+          "part": {
+            "line": 1,
+            "text": "**"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "81"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "copies",
+            "note": "複製の数"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 三を四つ掛けた数を入れる", "const copies = 3 ** 4;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "**"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "計算に使う数は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "3"
+              },
+              {
+                "line": 1,
+                "text": "4"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 一日ごとの増え方を入れる",
+        "const growth = 2;",
+        "// 五日後の芽の本数を求める",
+        "const sprouts = growth ** 5;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "一日の増え方は二倍です。",
+          "part": {
+            "line": 1,
+            "text": "2"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "2を5つ"
+            }
+          }
+        },
+        {
+          "say": "五日続くので、右側には五を書きます。",
+          "part": {
+            "line": 3,
+            "text": "5"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "二を五つ掛けた結果は、三十二です。",
+          "part": {
+            "line": 3,
+            "text": "growth ** 5"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "32"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "累乗の結果はいくつ？",
+      "code": ["// 五を二つ掛けた数を入れる", "const tiles = 5 ** 2;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "5 × 5"
+            }
+          }
+        },
+        {
+          "say": "左の数を、右に書いた回数だけ掛けます。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "この計算では、いくつになるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 五を二つ掛けた数を入れる", "const tiles = 5 ** 2;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "五を二つ掛けるので、二十五です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "25"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": ["// 五を二つ掛けた数を入れる", "const tiles = 5 ** 2;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "左の五が、繰り返し使う数です。",
+          "part": {
+            "line": 1,
+            "text": "5"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "右の二は、五を二回掛けることを表します。",
+          "part": {
+            "line": 1,
+            "text": "2"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式は、五に二を掛ける計算とは別です。",
+          "part": {
+            "line": 1,
+            "text": "**"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "毎日同じ倍率で増える芽の数を計算します。",
+          "show": ["a"]
+        },
+        {
+          "say": "縦と横が同じタイルの枚数は、二乗の計算です。",
+          "show": ["b"]
+        },
+        {
+          "say": "コピーを繰り返すときの合計も求められます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問7 で使う",
+      "code": [
+        "// 問7 3乗した数を返す（** 演算子を使う）",
+        "//     例: cube(3) → 27",
+        "export function cube() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問7では、渡された数を三つ掛け合わせます。",
+          "speech": "問いななでは、渡された数を三つ掛け合わせます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "受け取る値と結果は、スターターの例のとおりです。",
+          "part": {
+            "line": 0,
+            "text": "// 問7 3乗した数を返す（** 演算子を使う）"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "左に置く数と、右に置く回数を区別しましょう。",
+          "part": {
+            "line": 2,
+            "text": "export function cube() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9ee8da2f08e7499387b02e17d5573ffd9c433536d1b91b2d1a5dd0d6332e38b4"
+  }
+}

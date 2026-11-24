@@ -1,0 +1,655 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.startsWith(文字) は、その文字で始まっていれば true です。",
+    "stuck": "受付票の見出しには、窓口名と用件が続けて書かれています。",
+    "points": ["文字列.startsWith(文字) は、その文字で始まっていれば true です。"],
+    "leaveOut": ["途中にある文字の検索"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "starts-with-input": {
+      "prompt": "A stack of intake slips with blank blue header bars. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "starts-with-action": {
+      "prompt": "A magnifying glass over the left edge of a blank ticket. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "starts-with-result": {
+      "prompt": "A blue sorting tray holding a neat pile of intake slips. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "starts-with-use1": {
+      "prompt": "Two stacked blue and violet office sorting trays. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "starts-with-use2": {
+      "prompt": "A blank stock label on a storage bin. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "starts-with-use3": {
+      "prompt": "A blue browser form with a small violet bookmark. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受付票",
+          "art": "starts-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭を見る",
+          "art": "starts-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "会計の票",
+          "art": "starts-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "starts-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭を見る",
+          "art": "starts-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "starts-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "starts-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭を見る",
+          "art": "starts-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "starts-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "窓口の仕分け",
+          "art": "starts-with-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "分類記号",
+          "art": "starts-with-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "仮の登録",
+          "art": "starts-with-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "starts-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "starts-with-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "mail-sort",
+      "beats": [
+        {
+          "say": "この動画では、文字列の始まりを確かめる方法を学びます。"
+        },
+        {
+          "say": "封筒を、宛先ごとに仕分ける作業です。"
+        },
+        {
+          "say": "大阪で始まる封筒だけを、左の箱に入れました。"
+        },
+        {
+          "say": "startsWith で、先頭が合うかを確かめます。",
+          "speech": "スターツウィズで、先頭が合うかを確かめます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "受付票をまとめる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "用件ごとに受付票を用意しました。",
+          "show": ["a"]
+        },
+        {
+          "say": "窓口の名前が書いてあるのは、見出しの先頭です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "会計の票を、専用のトレーに集めます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "始まりを確かめる",
+      "code": [
+        "// 受付票の見出しが会計から始まるか確かめる",
+        "const forCashier = \"会計窓口\".startsWith(\"会計\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "先頭の一致を確かめるときは、startsWith を使います。",
+          "speech": "先頭の一致を確かめるときは、スターツウィズを使います。",
+          "part": {
+            "line": 1,
+            "text": "startsWith"
+          },
+          "term": {
+            "text": "startsWith",
+            "note": "先頭の一致を確かめる"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"会計窓口\""
+            }
+          }
+        },
+        {
+          "say": "引数に渡すのは、先頭にあるか調べたい文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"会計\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "先頭から指定した文字が続いているかを照らし合わせます。",
+          "part": {
+            "line": 1,
+            "text": ".startsWith("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 受付票の見出しが会計から始まるか確かめる",
+        "const forCashier = \"会計窓口\".startsWith(\"会計\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "startsWith と、その前後の記号は決まった書き方です。",
+          "speech": "スターツウィズと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".startsWith("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、引数は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "forCashier"
+              },
+              {
+                "line": 1,
+                "text": "\"会計窓口\""
+              },
+              {
+                "line": 1,
+                "text": "\"会計\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "受付票から結果を求める",
+      "code": [
+        "// 受付票の見出しが会計から始まるか確かめる",
+        "const forCashier = \"会計窓口\".startsWith(\"会計\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "調べる見出しは、会計窓口です。",
+          "part": {
+            "line": 1,
+            "text": "\"会計窓口\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"会計窓口\""
+            }
+          }
+        },
+        {
+          "say": "先頭の二文字が会計と一致しました。",
+          "part": {
+            "line": 1,
+            "text": "\"会計\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "一致したので、結果は true になります。",
+          "speech": "一致したので、結果はトゥルーになります。",
+          "part": {
+            "line": 1,
+            "text": "forCashier",
+            "note": "会計向け"
+          },
+          "figure": {
+            "tag": {
+              "c": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 部屋の名前が研修から始まるか確かめる",
+        "const isTraining = \"社内研修室\".startsWith(\"研修\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、こちらの部屋の名前を使います。",
+          "part": {
+            "line": 1,
+            "text": "\"社内研修室\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"社内研修室\""
+            }
+          }
+        },
+        {
+          "say": "照らし合わせる文字は、研修です。",
+          "part": {
+            "line": 1,
+            "text": "\"研修\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 部屋の名前が研修から始まるか確かめる",
+        "const isTraining = \"社内研修室\".startsWith(\"研修\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は false です。",
+          "speech": "結果はフォルスです。",
+          "part": {
+            "line": 1,
+            "text": "isTraining"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 部屋の名前が研修から始まるか確かめる",
+        "const isTraining = \"社内研修室\".startsWith(\"研修\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "調べる名前は、社内研修室です。",
+          "part": {
+            "line": 1,
+            "text": "\"社内研修室\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "先頭の二文字を読むと、社内でした。",
+          "part": {
+            "line": 1,
+            "text": "\"研修\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "研修は途中にあるので、結果は false になります。",
+          "speech": "研修は途中にあるので、結果はフォルスになります。",
+          "part": {
+            "line": 1,
+            "text": "isTraining"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "見出しの先頭を読んで、担当の窓口へ回せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "商品を先頭の分類記号で分けるときにも便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "仮の名前で登録された項目も、先頭から探せます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問6 で使う",
+      "code": [
+        "// 問6 「#」で始まっていれば true を返す",
+        "//     例: isHashtag(\"#agora\") → true",
+        "export function isHashtag() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問6では、指定された記号で始まるかを確かめます。",
+          "speech": "問いろくでは、指定された記号で始まるかを確かめます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "調べる記号は、コメントに書いてある記号です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "「#」で始まっていれば "
+          }
+        },
+        {
+          "say": "先頭から一致したときに、どんな値を返すか考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "isHashtag"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7a71ea36fb7a9389a30c84742b61bf15026decc1770f474d7ced35cc99a6b9ed"
+  }
+}

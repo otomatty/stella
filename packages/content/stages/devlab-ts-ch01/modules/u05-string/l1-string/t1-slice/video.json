@@ -1,0 +1,719 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.slice(始め, 終わり) で、始めから終わりの手前までを取り出します。",
+    "stuck": "荷札には区画名と棚の番号が続けて書かれています。",
+    "points": ["文字列.slice(始め, 終わり) で、始めから終わりの手前までを取り出します。"],
+    "leaveOut": ["文字列を見つけた位置から切る操作"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "slice-input": {
+      "prompt": "A long blank segmented label on a cardboard parcel. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "slice-action": {
+      "prompt": "Rounded scissors cutting a strip of blank label tape. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "slice-result": {
+      "prompt": "A short detached strip of segmented label tape. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "slice-use1": {
+      "prompt": "A stack of blank parcel labels on a shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "slice-use2": {
+      "prompt": "A blank timetable next to a clock face without markings. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "slice-use3": {
+      "prompt": "A blue browser window with a short blank heading area. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の荷札",
+          "art": "slice-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "切る範囲",
+          "art": "slice-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "区画名",
+          "art": "slice-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "slice-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "切る範囲",
+          "art": "slice-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "slice-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "slice-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "切る範囲",
+          "art": "slice-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "slice-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "整理番号",
+          "art": "slice-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "予約時刻",
+          "art": "slice-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "一覧の見出し",
+          "art": "slice-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "slice-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "slice-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "details": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "操作する箇所",
+          "art": "slice-action",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "結果",
+          "art": "slice-result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "tape-cut",
+      "beats": [
+        {
+          "say": "この動画では、文字列の一部を切り出す方法を学びます。"
+        },
+        {
+          "say": "はさみで切るのは、文字の書かれたテープです。"
+        },
+        {
+          "say": "0 番目から 3 文字ぶんを切ると、「SKY」が残りました。",
+          "speech": "ゼロ番目から三文字ぶんを切ると、スカイが残りました。"
+        },
+        {
+          "say": "slice に 0 と 3 を渡すと、その部分を取り出せます。",
+          "speech": "スライスにゼロと三を渡すと、その部分を取り出せます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "荷札から区画名を読む",
+      "board": "example",
+      "beats": [
+        {
+          "say": "荷物の札に、区画名と棚の番号を続けて書きました。",
+          "show": ["a"]
+        },
+        {
+          "say": "札の先頭にある青葉が、区画名です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "番号の手前まで切ると、区画名だけが残ります。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字列の一部を切り出す",
+      "code": ["// 荷札から区画名を取り出す", "const zone = \"青葉１２\".slice(0, 2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字列の一部を切り出すときは、slice を使います。",
+          "speech": "文字列の一部を切り出すときは、スライスを使います。",
+          "part": {
+            "line": 1,
+            "text": "slice"
+          },
+          "term": {
+            "text": "slice",
+            "note": "文字列の一部を切り出す"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"青葉１２\""
+            }
+          }
+        },
+        {
+          "say": "一つ目の引数は、取り出し始める位置です。",
+          "part": {
+            "line": 1,
+            "text": "0"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "二つ目には、切り出す範囲のすぐ後ろの位置を渡します。",
+          "part": {
+            "line": 1,
+            "text": "2"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 荷札から区画名を取り出す", "const zone = \"青葉１２\".slice(0, 2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "slice と、その前後の記号は決まった書き方です。",
+          "speech": "スライスと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".slice("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              },
+              {
+                "line": 1,
+                "text": ", "
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、引数は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "zone"
+              },
+              {
+                "line": 1,
+                "text": "\"青葉１２\""
+              },
+              {
+                "line": 1,
+                "text": "0"
+              },
+              {
+                "line": 1,
+                "text": "2"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "元の荷札から結果を求める",
+      "code": ["// 荷札から区画名を取り出す", "const zone = \"青葉１２\".slice(0, 2);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "「青」は 0 番目から始まります。",
+          "speech": "青はゼロ番目から始まります。",
+          "part": {
+            "line": 1,
+            "text": "\"青葉１２\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"青葉１２\""
+            }
+          }
+        },
+        {
+          "say": "2 番目の「１」は、取り出す範囲の外です。",
+          "speech": "二番目の数字の一は、取り出す範囲の外です。",
+          "part": {
+            "line": 1,
+            "text": "0"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "切り出した青葉を、区画名として保存しました。",
+          "part": {
+            "line": 1,
+            "text": "zone",
+            "note": "区画"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"青葉\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "kind": "code",
+      "role": "note",
+      "title": "後ろから数える・終わりを省く",
+      "code": [
+        "// 整理番号の後ろから四文字目を始めにして、末尾まで取り出す",
+        "const batch = \"便名KITE\".slice(-4);",
+        "// 整理番号の二番目から末尾まで取り出す",
+        "const suffix = \"便名KITE\".slice(2);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "details"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "-4 は、後ろから四文字目を指します。",
+          "speech": "マイナス四は、後ろから四文字目を指します。",
+          "part": {
+            "line": 1,
+            "text": "-4"
+          },
+          "figure": {
+            "tag": {
+              "b": "\"KITE\""
+            },
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "終わりを省くと、始めの位置から末尾までです。",
+          "part": {
+            "line": 3,
+            "text": "(2)"
+          },
+          "figure": {
+            "tag": {
+              "b": "\"KITE\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": ["// 案内板の文字から一部を取り出す", "const segment = \"北口待合室\".slice(1, 4);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、こちらの文字列を使います。",
+          "part": {
+            "line": 1,
+            "text": "\"北口待合室\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"北口待合室\""
+            }
+          }
+        },
+        {
+          "say": "かっこの中にあるのは、始めと終わりの位置です。",
+          "part": {
+            "line": 1,
+            "text": "1, 4"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 案内板の文字から一部を取り出す", "const segment = \"北口待合室\".slice(1, 4);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は「口待合」です。",
+          "part": {
+            "line": 1,
+            "text": "segment"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"口待合\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": ["// 案内板の文字から一部を取り出す", "const segment = \"北口待合室\".slice(1, 4);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "1 番目は「口」です。",
+          "speech": "一番目は口です。",
+          "part": {
+            "line": 1,
+            "text": "\"北口待合室\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "4 番目の「室」の手前までを取り出します。",
+          "speech": "四番目の室の手前までを取り出します。",
+          "part": {
+            "line": 1,
+            "text": "1, 4"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "残るのは、口、待、合の三文字でした。",
+          "part": {
+            "line": 1,
+            "text": "segment"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "整理番号から、支店を表す部分を取り出せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "予約時刻から、時間だけを表示する場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "長い見出しの一部を、一覧に表示するときにも使えます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問3 で使う",
+      "code": [
+        "// 問3 最初の3文字を返す",
+        "//     例: firstThree(\"TypeScript\") → \"Typ\"",
+        "export function firstThree() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問3では、受け取った文字列の先頭を切り出します。",
+          "speech": "問いさんでは、受け取った文字列の先頭を切り出します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "取り出す文字数は、スターターのコメントにある指定です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "最初の3文字を返す"
+          }
+        },
+        {
+          "say": "最後に含めたい文字の、次の位置を考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "firstThree"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "d807510e639c5c640ee3a81b17d3a2d52d375a6d1f54013d6fdb37c9ed071a59"
+  }
+}

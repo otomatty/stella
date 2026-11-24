@@ -14,87 +14,108 @@
   "problems": [
     {
       "id": "q05-01-length-of",
-      "title": "文字数を返す"
+      "title": "文字数を返す",
+      "after": "5-1-1"
     },
     {
       "id": "q05-02-to-upper",
-      "title": "英字を大文字にする"
+      "title": "英字を大文字にする",
+      "after": "5-1-1"
     },
     {
       "id": "q05-03-first-three",
-      "title": "最初の3文字を返す"
+      "title": "最初の3文字を返す",
+      "after": "5-1-1"
     },
     {
       "id": "q05-04-last-char",
-      "title": "最後の1文字を返す"
+      "title": "最後の1文字を返す",
+      "after": "5-1-1"
     },
     {
       "id": "q05-05-has-word",
-      "title": "text に word が含まれていれば true を返す"
+      "title": "text に word が含まれていれば true を返す",
+      "after": "5-1-2"
     },
     {
       "id": "q05-06-is-hashtag",
-      "title": "「#」で始まっていれば true を返す"
+      "title": "「#」で始まっていれば true を返す",
+      "after": "5-1-2"
     },
     {
       "id": "q05-07-is-png",
-      "title": "ファイル名が「.png」で終わっていれば true を返す"
+      "title": "ファイル名が「.png」で終わっていれば true を返す",
+      "after": "5-1-4"
     },
     {
       "id": "q05-08-pad-id",
-      "title": "番号を4桁になるように前を0で埋める"
+      "title": "番号を4桁になるように前を0で埋める",
+      "after": "5-1-4"
     },
     {
       "id": "q05-09-normalize",
-      "title": "前後の空白を取り除き、英字を小文字にする"
+      "title": "前後の空白を取り除き、英字を小文字にする",
+      "after": "5-1-5"
     },
     {
       "id": "q05-10-snake-spaces",
-      "title": "半角スペースをすべて「_」に置き換える"
+      "title": "半角スペースをすべて「_」に置き換える",
+      "after": "5-1-6"
     },
     {
       "id": "q05-11-at-position",
-      "title": "「@」が何文字目にあるかを返す"
+      "title": "「@」が何文字目にあるかを返す",
+      "after": "5-1-7"
     },
     {
       "id": "q05-12-capitalize",
-      "title": "最初の1文字だけを大文字にする"
+      "title": "最初の1文字だけを大文字にする",
+      "after": "5-1-7"
     },
     {
       "id": "q05-13-surround",
-      "title": "text の前後に mark を付ける"
+      "title": "text の前後に mark を付ける",
+      "after": "5-1-7"
     },
     {
       "id": "q05-14-is-palindrome",
-      "title": "前から読んでも後ろから読んでも同じなら true を返す"
+      "title": "前から読んでも後ろから読んでも同じなら true を返す",
+      "after": "5-1-7"
     },
     {
       "id": "q05-15-mask-phone",
-      "title": "「090-1234-5678」の形の電話番号の、真ん中の4桁を「****」にする"
+      "title": "「090-1234-5678」の形の電話番号の、真ん中の4桁を「****」にする",
+      "after": "5-1-7"
     },
     {
       "id": "q05-16-extension",
-      "title": "ファイル名の拡張子を返す"
+      "title": "ファイル名の拡張子を返す",
+      "after": "5-1-8"
     },
     {
       "id": "q05-17-clock-text",
-      "title": "時と分を「09:05」の形にする"
+      "title": "時と分を「09:05」の形にする",
+      "after": "5-1-8"
     },
     {
       "id": "q05-18-remove-vowels",
-      "title": "英字の母音を取り除く"
+      "title": "英字の母音を取り除く",
+      "after": "5-1-9"
     },
     {
       "id": "q05-19-char-at-or-empty",
-      "title": "index 番目の文字を返す"
+      "title": "index 番目の文字を返す",
+      "after": "5-1-9"
     },
     {
       "id": "q05-20-same-ignoring-case",
-      "title": "大文字と小文字の違いを無視して、同じ文字列なら true を返す"
+      "title": "大文字と小文字の違いを無視して、同じ文字列なら true を返す",
+      "after": "5-1-9"
     },
     {
       "id": "q05-string",
-      "title": "string型（応用問題）"
+      "title": "string型（応用問題）",
+      "after": "5-1-9"
     }
   ],
   "submit": {
