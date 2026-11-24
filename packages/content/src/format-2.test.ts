@@ -514,6 +514,41 @@ describe("format 2 の教材", () => {
       ),
     ).toBe(true);
   });
+  it("本文のある問題の PDF にだけ題名の見出しを足す", () => {
+    const problemTitle = "問1 税込価格を返す";
+    const problemMarkdown = "税率10%。税額の1円未満は切り捨て";
+    const summaryMarkdown = "# まとめ\n\n関数の返り値を確認します。";
+    const text = { type: "text", status: "todo", duration: "" } as const;
+    const targets = collectPdfTargets({
+      stages: [
+        {
+          id: "dev-env-basics",
+          title: "STELLAの使い方",
+          format: 2,
+          category: "基礎",
+          color: "indigo",
+          lessonsCount: 3,
+          progress: 0,
+          sections: [
+            {
+              id: "unit",
+              title: "関数",
+              lessons: [
+                { ...text, id: "problem-tax", title: problemTitle, markdown: problemMarkdown },
+                { ...text, id: "problem-empty", title: "問2 割り勘", markdown: "" },
+                { ...text, id: "doc-summary", title: "関数のまとめ", markdown: summaryMarkdown },
+              ],
+            },
+          ],
+        },
+      ],
+      quizzes: [],
+    });
+    expect(targets.map(({ lessonId, source }) => [lessonId, source])).toEqual([
+      ["problem-tax", `# ${problemTitle}\n\n${problemMarkdown}`],
+      ["doc-summary", summaryMarkdown],
+    ]);
+  });
   it("OS 別のブロックを含むまとめは、pdfByOs のステージでは OS ごとの PDF にする", () => {
     const root = fixture();
     const stage = join(root, "stages/dev-env-basics");

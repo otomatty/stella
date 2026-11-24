@@ -33,10 +33,11 @@ export function TaskLessonHandoff({
   );
 }
 
-/** 問題本文の下に、いま取れる操作と課題の提出状況をまとめる。 */
+/** 問題本文の下に、本人の提出と引き継ぎを区別して、いま取れる操作を案内する。 */
 export function ProblemLessonHandoff({ taskId, problem, problems }: ProblemLesson) {
   const lockReason = problemLockReason(problem);
   const submitted = problem.state === "submitted";
+  const inherited = submitted && problem.manual;
   const index = problems?.findIndex(({ id }) => id === problem.id) ?? -1;
   const submittedCount = problems?.filter(({ state }) => state === "submitted").length ?? 0;
   const remaining = (problems?.length ?? 0) - submittedCount;
@@ -52,19 +53,25 @@ export function ProblemLessonHandoff({ taskId, problem, problems }: ProblemLesso
           <div className="flex flex-wrap items-center gap-3">
             <div className="min-w-48 flex-1">
               <div className="text-[13px] font-semibold">
-                {submitted ? "提出しました" : "VS Code で解いて提出します"}
+                {inherited
+                  ? "以前の学習から引き継ぎました"
+                  : submitted
+                    ? "提出しました"
+                    : "VS Code で解いて提出します"}
               </div>
               <div className="mt-1 text-[12px] text-ink-2">
-                {submitted
-                  ? "手元のテストが通った答えを記録しています"
-                  : "確認が通ると、拡張機能の「提出する」から送れます"}
+                {inherited
+                  ? "管理者が済みにした問題です。VS Code で開いて解き直せます"
+                  : submitted
+                    ? "手元のテストが通った答えを記録しています"
+                    : "確認が通ると、拡張機能の「提出する」から送れます"}
               </div>
             </div>
             <OpenInVscodeButton
               taskId={taskId}
               problemId={problem.id}
               variant={submitted ? "outline" : "accent"}
-              label={submitted ? "VS Code で見直す" : undefined}
+              label={submitted ? (inherited ? "VS Code で開く" : "VS Code で見直す") : undefined}
             />
           </div>
           {problems && index >= 0 ? (

@@ -17,14 +17,20 @@ const problemStep = (state: ProblemStepState): TaskProblemStepSummary => ({
   state,
 });
 
-const render = (state: ProblemStepState, problems?: readonly TaskProblemStepSummary[]) =>
+const renderProblem = (
+  problem: TaskProblemStepSummary,
+  problems?: readonly TaskProblemStepSummary[],
+) =>
   renderToStaticMarkup(
     createElement(ProblemLessonHandoff, {
       taskId: "task",
-      problem: problemStep(state),
+      problem,
       problems,
     }),
   );
+
+const render = (state: ProblemStepState, problems?: readonly TaskProblemStepSummary[]) =>
+  renderProblem(problemStep(state), problems);
 
 const anotherProblem = (state: ProblemStepState): TaskProblemStepSummary => ({
   ...problemStep(state),
@@ -47,6 +53,18 @@ describe("問題のレッスンの本文下", () => {
     expect(markup).toContain("提出しました");
     expect(markup).toContain("VS Code で見直す");
     expect(markup).not.toContain("提出済み");
+  });
+
+  it("引き継いだ問題は解き直しを案内し、課題の進み具合にも数える", () => {
+    const inherited = { ...problemStep("submitted"), manual: true };
+    const markup = renderProblem(inherited, [inherited, anotherProblem("open")]);
+    expect(markup).toContain("以前の学習から引き継ぎました");
+    expect(markup).toContain("管理者が済みにした問題です。VS Code で開いて解き直せます");
+    expect(markup).toContain("VS Code で開く");
+    expect(markup).toContain("あと 1 問で課題を提出し終えます");
+    expect(markup).not.toContain("手元のテストが通った");
+    expect(markup).not.toContain("提出しました");
+    expect(markup).not.toContain("VS Code で見直す");
   });
 
   it.each([

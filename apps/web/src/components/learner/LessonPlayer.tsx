@@ -535,7 +535,7 @@ export const LessonPlayer = ({
                         {problemState === "submitted" ? (
                           <>
                             <Check size={13} aria-hidden="true" />
-                            提出済み
+                            {problemLesson?.problem.manual ? "引き継ぎ" : "提出済み"}
                           </>
                         ) : (
                           "未提出"
