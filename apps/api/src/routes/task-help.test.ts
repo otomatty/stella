@@ -781,7 +781,9 @@ describe("ヒント・解答例・解説の解放 API (実 SQLite)", () => {
       const refused = await openAt(OLD_HASH, "hint", 1);
       expect(refused.status).toBe(409);
       const text = await refused.text();
-      expect(text).toContain("手元の課題が古い版です。最新を受け取り直すと開けます");
+      expect(text).toContain(
+        "手元の課題が古いバージョンです。最新バージョンを受け取り直すと開けます",
+      );
       expect(leaked(text, ...Object.values(MARK), ...Object.values(OLD))).toEqual([]);
       expect(await opens()).toEqual([]);
     });

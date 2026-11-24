@@ -92,7 +92,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .where(and(eq(taskRevisions.taskId, task.id), eq(taskRevisions.contentHash, input.contentHash)))
     .limit(1);
   if (!revision)
-    throw new ApiError("課題の版が見つかりません。配布した課題を開き直してください", 409);
+    throw new ApiError("課題のバージョンが見つかりません。配布した課題を開き直してください", 409);
   if (input.mode === "submit" && input.problemId)
     assertCurrentProblemSubmission(input.contentHash, task.contentHash);
   const bundle = parsePublicTaskBundle(JSON.parse(revision.bundle));

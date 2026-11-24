@@ -190,7 +190,8 @@ describe("task URI の接続導線", () => {
   });
 
   it("課題 API が 426 を返したら更新の案内をそのまま表示する", async () => {
-    const message = "この課題を開くには、VS Code の STELLA 拡張を 0.8.0 以上に更新してください。";
+    const message =
+      "この課題を開くには、VS Code の STELLA 拡張をバージョン 0.8.0 以上に更新してください。";
     state.secrets.set("stella.accessToken", "saved-token");
     state.fetch.mockResolvedValue(Response.json({ error: message }, { status: 426 }));
     dispatch();

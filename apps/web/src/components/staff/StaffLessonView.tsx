@@ -207,7 +207,7 @@ export function StaffLessonView({
                       {
                         {
                           published: "『動画』を既定で表示します",
-                          stale: "『動画』を既定で表示します (前の版の動画)",
+                          stale: "『動画』を既定で表示します (前のバージョンの動画)",
                           missing: "スライドだけを表示します",
                           none: "スライドだけを表示します (台本がありません)",
                         }[status]

@@ -272,7 +272,7 @@ materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) =>
 
     const versionNo = Number(c.req.param("version"));
     if (!Number.isInteger(versionNo) || versionNo < 1) {
-      throw new ApiError("版番号が不正です", 400);
+      throw new ApiError("バージョン番号が不正です", 400);
     }
     const versions = await db
       .select()
@@ -285,7 +285,7 @@ materialsRoute.get("/api/materials/:id/versions/:version/download", async (c) =>
       )
       .limit(1);
     const version = versions[0];
-    if (!version) throw new ApiError("指定した版が見つかりません", 404);
+    if (!version) throw new ApiError("指定したバージョンが見つかりません", 404);
 
     const object = await bucket.get(version.path);
     if (!object) throw new ApiError("資料の実体が見つかりません", 404);

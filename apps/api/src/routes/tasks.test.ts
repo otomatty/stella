@@ -295,7 +295,7 @@ describe("課題の配布 API (実 SQLite)", () => {
     const response = await bundleOf(token, "0.7.0");
     expect(response.status).toBe(426);
     expect(await json<{ error: string }>(response)).toEqual({
-      error: expect.stringContaining("0.8.0 以上に更新してください"),
+      error: expect.stringContaining("バージョン 0.8.0 以上に更新してください"),
     });
   });
 

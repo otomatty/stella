@@ -90,7 +90,7 @@ describe("確認した課題の提出", () => {
       JSON.stringify({ taskId: fixture.input.taskId, contentHash: current.contentHash }),
     );
     await expect(prepareTaskSubmission(root, "submit", notes, current)).rejects.toThrow(
-      "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+      "確認した課題のバージョンが変わっています。もう一度「提出する」を押してください",
     );
   });
   it("リンク先の提出ファイルと支援記録は読み出さない", async () => {

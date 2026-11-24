@@ -239,7 +239,7 @@ describe("問題の提出", () => {
       JSON.stringify({ taskId: manifest.id, contentHash: "cd".repeat(32) }),
     );
     await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
-      "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+      "確認した課題のバージョンが変わっています。もう一度「提出する」を押してください",
     );
   });
 
