@@ -45,7 +45,11 @@ import {
   saveProblemStepResults,
   visibleProblemIds,
 } from "./task-problems.js";
-import { requireSavedTaskDocuments, loadTaskProblems } from "./task-update-guard.js";
+import {
+  requireSavedTaskDocuments,
+  requireSavedTaskFile,
+  loadTaskProblems,
+} from "./task-update-guard.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -333,6 +337,7 @@ async function prepareAndOpen(
         return files;
       },
       beforeUpdate: requireSavedTaskDocuments,
+      beforeReplace: requireSavedTaskFile,
       onUpdated: (backupDir) => {
         const backup = backupDir ? ` 編集した配布ファイルの写しは ${backupDir} にあります。` : "";
         void vscode.window.showInformationMessage(

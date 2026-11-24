@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
 import { version as extensionVersion } from "../package.json";
 import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
+import { requireSavedTaskFile } from "./task-update-guard.js";
 
 const state = vi.hoisted(() => ({
   home: "",
@@ -466,6 +467,22 @@ describe("課題を開く", () => {
         `課題を新しいバージョンにしました。あなたのコードはそのまま残しています。 編集した配布ファイルの写しは ${backup} にあります。`,
       ),
     );
+  });
+
+  it("別のパスで開いた未保存の文書も、実体が置き換え対象なら止める", async () => {
+    const folder = path.join(state.home, "task");
+    await mkdir(folder);
+    await writeFile(path.join(folder, "index.js"), "starter");
+    await writeFile(path.join(folder, "other.js"), "other");
+    const alias = path.join(state.home, "alias");
+    await symlink(folder, alias, "junction");
+    state.dirtyFiles = [path.join(alias, "index.js")];
+
+    await expect(requireSavedTaskFile(folder, "other.js")).resolves.toBeUndefined();
+    await expect(requireSavedTaskFile(folder, "index.js")).rejects.toMatchObject({
+      reason: "unsaved",
+      files: ["index.js"],
+    });
   });
 
   it("課題フォルダーに未保存の文書があれば保存を案内し、保存後は更新できる", async () => {

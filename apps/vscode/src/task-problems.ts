@@ -357,21 +357,20 @@ export function loadTaskProblems(
   {
     refresh = true,
     afterSubmission = false,
-    beforeUpdate,
+    ...guards
   }: {
     refresh?: boolean;
     afterSubmission?: boolean;
-    beforeUpdate?: Parameters<typeof unlockTaskFiles>[3];
-  } = {},
+  } & NonNullable<Parameters<typeof unlockTaskFiles>[3]> = {},
 ): Promise<TaskProblems> {
   if (!refresh || !manifest.problemSteps) return readTaskProblems(root, manifest, refresh);
   const key = JSON.stringify([root, manifest.id, apiSession()]);
   const inFlight = refreshing.get(key);
   if (inFlight)
     return afterSubmission
-      ? inFlight.then(() => loadTaskProblems(root, manifest, { beforeUpdate }))
+      ? inFlight.then(() => loadTaskProblems(root, manifest, guards))
       : inFlight;
-  const pending = readTaskProblems(root, manifest, true, beforeUpdate).finally(() =>
+  const pending = readTaskProblems(root, manifest, true, guards).finally(() =>
     refreshing.delete(key),
   );
   refreshing.set(key, pending);
@@ -382,7 +381,7 @@ async function readTaskProblems(
   root: string,
   manifest: TaskManifest,
   refresh: boolean,
-  beforeUpdate?: Parameters<typeof unlockTaskFiles>[3],
+  guards?: Parameters<typeof unlockTaskFiles>[3],
 ): Promise<TaskProblems> {
   const session = apiSession();
   const fresh = refresh
@@ -423,7 +422,7 @@ async function readTaskProblems(
               throw new Error(
                 "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
               );
-            await unlockTaskFiles(root, bundle, visible, beforeUpdate);
+            await unlockTaskFiles(root, bundle, visible, guards);
             unprepared = [];
           }
         }

@@ -25,10 +25,29 @@ export async function requireSavedTaskDocuments(root: string): Promise<void> {
   if (unsaved.length > 0) throw new TaskInstallConflict("unsaved", root, unsaved);
 }
 
+export async function requireSavedTaskFile(root: string, rel: string): Promise<void> {
+  const target = path.join(root, rel);
+  for (const { isDirty, uri } of vscode.workspace.textDocuments ?? []) {
+    if (!isDirty || uri.scheme !== "file") continue;
+    if (path.relative(target, uri.fsPath) === "")
+      throw new TaskInstallConflict("unsaved", root, [rel]);
+    const [actualTarget, actualFile] = await Promise.all([
+      realpath(target).catch(() => target),
+      realpath(uri.fsPath).catch(() => uri.fsPath),
+    ]);
+    if (path.relative(actualTarget, actualFile) === "")
+      throw new TaskInstallConflict("unsaved", root, [rel]);
+  }
+}
+
 export function loadTaskProblems(
   root: Parameters<typeof loadProblems>[0],
   manifest: Parameters<typeof loadProblems>[1],
   options?: Parameters<typeof loadProblems>[2],
 ) {
-  return loadProblems(root, manifest, { ...options, beforeUpdate: requireSavedTaskDocuments });
+  return loadProblems(root, manifest, {
+    ...options,
+    beforeUpdate: requireSavedTaskDocuments,
+    beforeReplace: requireSavedTaskFile,
+  });
 }

@@ -47,6 +47,8 @@ interface Receipt {
   deferred?: Record<string, HashedFile | null>;
   files?: FileHashes;
   updatingTo?: string;
+  updatingEditable?: string[];
+  adding?: FileHashes;
 }
 
 type FileHashes = Record<string, string>;
@@ -540,7 +542,8 @@ async function writeDistributionUpdate(
   entries: DistributionChange[],
   previous: Receipt,
   receipt: Receipt,
-  beforeUpdate?: InstallOptions["beforeUpdate"],
+  guards: DistributionGuards,
+  progress?: Pick<Receipt, "updatingTo" | "updatingEditable" | "adding">,
 ): Promise<void> {
   const state = path.join(root, ".stella");
   await assertPlainDirectory(base, state);
@@ -548,11 +551,9 @@ async function writeDistributionUpdate(
   try {
     const previousRecord = await readExisting(root, RECEIPT_PATH);
     if (!previousRecord) throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
-    const marking =
-      previous.contentHash !== receipt.contentHash && previous.updatingTo !== receipt.contentHash;
-    const activeRecord = marking
-      ? Buffer.from(JSON.stringify({ ...previous, updatingTo: receipt.contentHash }))
-      : previousRecord;
+    const pendingRecord = progress ? JSON.stringify({ ...previous, ...progress }) : undefined;
+    const marking = pendingRecord !== undefined && pendingRecord !== JSON.stringify(previous);
+    const activeRecord = marking ? Buffer.from(pendingRecord) : previousRecord;
     const markerSource = path.join(staging, "updating-receipt");
     if (marking) await writeNewFile(base, staging, path.basename(markerSource), activeRecord);
     const record: Replacement = {
@@ -563,7 +564,7 @@ async function writeDistributionUpdate(
     const writes = [...entries, record];
     for (const [i, { data }] of writes.entries())
       if (data) await writeNewFile(base, staging, String(i), data);
-    await beforeUpdate?.(root);
+    await guards.beforeUpdate?.(root);
     if (JSON.stringify(await readReceipt(root)) !== JSON.stringify(previous))
       throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
 
@@ -593,11 +594,15 @@ async function writeDistributionUpdate(
         const backup = await readExisting(root, write.backupRel);
         if (!backup?.equals(write.before))
           throw new TaskInstallConflict("occupied", root, [write.backupRel]);
-        if (await needsPublication(root, write)) await rm(target);
+        if (await needsPublication(root, write)) {
+          await guards.beforeReplace?.(root, rel);
+          await rm(target);
+        }
         continue;
       }
       if (!(await needsPublication(root, write))) continue;
       if (before) {
+        if (rel !== RECEIPT_PATH) await guards.beforeReplace?.(root, rel);
         await rename(source, target);
       } else {
         await publishNewFile(root, source, write);
@@ -642,13 +647,13 @@ async function planReplacements(
   entries: [string, Buffer][],
   oldFiles: FileHashes,
   backupDir: string,
-  mode: "update" | "resume" | "add" = "update",
+  policy:
+    | { mode: "update" | "resume"; oldEditable?: readonly string[] }
+    | { mode: "add"; adding?: FileHashes },
 ): Promise<Replacement[]> {
   const paths = entries.map(([rel]) => rel);
-  const oldManifest = mode === "add" ? undefined : await verifiedOldManifest(root, oldFiles);
   const editable = new Set(matchEditableFiles(paths, manifest).files);
-  if (oldManifest)
-    for (const rel of matchEditableFiles(paths, oldManifest).files) editable.add(rel);
+  if (policy.mode !== "add") for (const rel of policy.oldEditable ?? []) editable.add(rel);
 
   const clashes: string[] = [];
   const writes: Replacement[] = [];
@@ -664,19 +669,21 @@ async function planReplacements(
     const before = await readExisting(root, rel);
     const currentHash = before && fileHash(before);
     if (currentHash === nextHash) continue;
-    if (before && mode === "add" && previousHash === undefined)
+    if (before && policy.mode === "add" && previousHash === undefined) {
+      if (editable.has(rel) && policy.adding?.[rel] === nextHash) continue;
       throw new TaskInstallConflict("occupied", root, [rel]);
+    }
 
     if (before && editable.has(rel)) {
       // 更新先を記録したあとに保存されたコードも受講者の編集として残す。
-      if (previousHash === nextHash || (mode === "resume" && currentHash !== previousHash))
+      if (previousHash === nextHash || (policy.mode === "resume" && currentHash !== previousHash))
         continue;
       if (currentHash !== previousHash) {
         clashes.push(rel);
         continue;
       }
     } else if (before && currentHash !== previousHash) {
-      if (!oldManifest && mode !== "add") {
+      if (policy.mode !== "add" && policy.oldEditable === undefined) {
         clashes.push(rel);
         continue;
       }
@@ -717,7 +724,7 @@ async function extendDistribution(
   receipt: Receipt,
   paths: string[],
   visible: ReadonlySet<string> | undefined,
-  beforeUpdate?: InstallOptions["beforeUpdate"],
+  guards: DistributionGuards,
 ): Promise<void> {
   const legacy = await legacyDistribution(root, bundle.manifest, receipt);
   const pending = bundle.manifest.problemSteps
@@ -739,17 +746,23 @@ async function extendDistribution(
   }
   if (entries.length === 0 && !legacy.migrated) return;
   const oldFiles = receipt.files ?? {};
-  await beforeUpdate?.(root);
+  await guards.beforeUpdate?.(root);
   const writes = await planReplacements(
     root,
     bundle.manifest,
     entries,
     oldFiles,
     backupDirectory(receipt.contentHash),
-    "add",
+    { mode: "add", adding: receipt.adding },
   );
+  const addedFiles = fileHashes(entries);
+  const adding = { ...receipt.adding, ...addedFiles };
+  const remainingAdding = { ...adding };
   const remaining = { ...legacy.deferred };
-  for (const [rel] of entries) delete remaining[rel];
+  for (const [rel] of entries) {
+    delete remaining[rel];
+    delete remainingAdding[rel];
+  }
   const files =
     receipt.files ?? fileHashes(readBundleEntries(bundle).filter(([rel]) => !deferred.has(rel)));
   await writeDistributionUpdate(
@@ -760,9 +773,11 @@ async function extendDistribution(
     {
       ...receipt,
       deferred: remaining,
-      files: { ...files, ...legacy.hashes, ...fileHashes(entries) },
+      files: { ...files, ...legacy.hashes, ...addedFiles },
+      adding: Object.keys(remainingAdding).length > 0 ? remainingAdding : undefined,
     },
-    beforeUpdate,
+    guards,
+    entries.length > 0 ? { adding } : undefined,
   );
 }
 
@@ -775,8 +790,12 @@ type InstallOptions = {
   now?: Date;
   visibleProblems?: ReadonlySet<string>;
   loadRevisionFiles?: (taskId: string, contentHash: string) => Promise<unknown>;
-  beforeUpdate?: (root: string) => Promise<void>;
   onUpdated?: (backupDir?: string) => void;
+} & DistributionGuards;
+
+type DistributionGuards = {
+  beforeUpdate?: (root: string) => Promise<void>;
+  beforeReplace?: (root: string, rel: string) => Promise<void>;
 };
 
 async function updateDistribution(
@@ -815,14 +834,20 @@ async function updateDistribution(
   const deferred = deferredFiles(bundle, visible);
   const entries = readBundleEntries(bundle, deferred);
   const backupDir = backupDirectory(receipt.contentHash);
-  const writes = await planReplacements(
-    root,
-    bundle.manifest,
-    entries,
-    oldFiles,
-    backupDir,
-    receipt.updatingTo === bundle.contentHash ? "resume" : "update",
-  );
+  const resume = receipt.updatingTo === bundle.contentHash;
+  const oldManifest = await verifiedOldManifest(root, oldFiles);
+  const oldEditable = oldManifest
+    ? matchEditableFiles(
+        entries.map(([rel]) => rel),
+        oldManifest,
+      ).files
+    : resume && Array.isArray(receipt.updatingEditable)
+      ? receipt.updatingEditable
+      : undefined;
+  const writes = await planReplacements(root, bundle.manifest, entries, oldFiles, backupDir, {
+    mode: resume ? "resume" : "update",
+    oldEditable,
+  });
   const retirements = await planRetirements(root, bundle, oldFiles, backupDir);
   await writeDistributionUpdate(
     base,
@@ -836,7 +861,8 @@ async function updateDistribution(
       ...(deferred ? { deferred } : {}),
       files: fileHashes(entries),
     },
-    options.beforeUpdate,
+    options,
+    { updatingTo: bundle.contentHash, updatingEditable: oldEditable, adding: undefined },
   );
   const backup = path.join(root, backupDir);
   options.onUpdated?.((await info(backup))?.isDirectory() ? backup : undefined);
@@ -872,7 +898,7 @@ export async function unlockTaskFiles(
   root: string,
   raw: TaskBundle,
   visible: ReadonlySet<string>,
-  beforeUpdate?: InstallOptions["beforeUpdate"],
+  guards: DistributionGuards = {},
 ): Promise<void> {
   const realRoot = await realpath(root);
   await serializeInstallation(realRoot, async () => {
@@ -891,7 +917,7 @@ export async function unlockTaskFiles(
       receipt,
       paths,
       visible,
-      beforeUpdate,
+      guards,
     );
   });
 }
@@ -941,7 +967,7 @@ async function installTaskFiles(
         receipt,
         paths,
         options.visibleProblems,
-        options.beforeUpdate,
+        options,
       );
     return root;
   }

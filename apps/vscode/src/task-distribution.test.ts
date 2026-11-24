@@ -625,6 +625,81 @@ describe("課題の配布", () => {
     },
   );
 
+  it("設定の公開後に中断しても、古い編集対象だったコードを残せる", async () => {
+    const training = await root();
+    const old = {
+      ...nextBundle({ ".stella/task.json": JSON.stringify(bundle.manifest) }),
+      contentHash: bundle.contentHash,
+    };
+    const taskRoot = await installTask(training, old);
+    const code = path.join(taskRoot, "index.js");
+    await writeFile(code, "learner code");
+    const manifest = { ...bundle.manifest, protected: ["index.js"] };
+    const updated = {
+      ...nextBundle({ ".stella/task.json": JSON.stringify(manifest) }),
+      manifest,
+    };
+    const receipt = path.join(taskRoot, receiptPath);
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      if (target === receipt && path.basename(String(source)) !== "updating-receipt")
+        throw new Error("receipt publish failed");
+      await actual.rename(source, target);
+    });
+
+    await expect(installTask(training, updated)).rejects.toThrow("receipt publish failed");
+    expect(await readReceipt(taskRoot)).toMatchObject({
+      updatingTo: updated.contentHash,
+      updatingEditable: ["index.js"],
+    });
+    expect(await readFile(path.join(taskRoot, ".stella/task.json"), "utf8")).toBe(
+      JSON.stringify(manifest),
+    );
+    vi.mocked(rename).mockReset();
+
+    await expect(installTask(training, updated)).resolves.toBe(taskRoot);
+    expect(await readFile(code, "utf8")).toBe("learner code");
+    expect(await readReceipt(taskRoot)).toEqual({
+      taskId: manifest.id,
+      contentHash: updated.contentHash,
+      files: makeHashes(updated.files),
+    });
+  });
+
+  it.each(["replace", "retire"])("公開直前に未保存になった対象を変更しない (%s)", async (kind) => {
+    const training = await root();
+    const { old, updated } = testRenameBundles();
+    const original = kind === "retire" ? old : bundle;
+    const taskRoot = await installTask(training, original);
+    const changed = kind === "retire" ? updated : nextBundle({ "index.js": "new starter" });
+    const file = kind === "retire" ? retiredTest : "index.js";
+    let dirty = false;
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(rename).mockImplementation(async (source, target) => {
+      await actual.rename(source, target);
+      if (path.basename(String(source)) === "updating-receipt") dirty = true;
+    });
+    const beforeUpdate = vi.fn(async () => expect(dirty).toBe(false));
+    const conflict = await conflictOf(
+      installTask(training, changed, {
+        beforeUpdate,
+        beforeReplace: async (root, rel) => {
+          if (rel === file && dirty) throw new TaskInstallConflict("unsaved", root, [rel]);
+        },
+      }),
+    );
+
+    expect(beforeUpdate).toHaveBeenCalled();
+    expect(conflict).toMatchObject({ reason: "unsaved", files: [file] });
+    expect(await readFile(path.join(taskRoot, file), "utf8")).toBe(
+      kind === "retire" ? "original test" : "starter",
+    );
+    expect(await readReceipt(taskRoot)).toMatchObject({
+      contentHash: original.contentHash,
+      updatingTo: changed.contentHash,
+    });
+  });
+
   it("新規公開の直前に同じファイルができても上書きせずに続ける", async () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);
@@ -639,6 +714,26 @@ describe("課題の配布", () => {
     await expect(installTask(training, updated)).resolves.toBe(taskRoot);
     expect(await readFile(added, "utf8")).toBe("new");
     expect((await readReceipt(taskRoot)).contentHash).toBe(updated.contentHash);
+  });
+
+  it("ハードリンクが使えず、確認前に別の内容が置かれたら衝突として保持する", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    const added = path.join(taskRoot, "new.txt");
+    vi.mocked(link).mockImplementationOnce(async () => {
+      await writeFile(added, "learner file");
+      throw Object.assign(new Error("hard link unsupported"), { code: "ENOTSUP" });
+    });
+
+    const updated = nextBundle({ "new.txt": "distributed file" });
+    const conflict = await conflictOf(installTask(training, updated));
+    expect(conflict).toMatchObject({ reason: "occupied", files: ["new.txt"] });
+    expect(rename).not.toHaveBeenCalledWith(expect.anything(), added);
+    expect(await readFile(added, "utf8")).toBe("learner file");
+    expect(await readReceipt(taskRoot)).toMatchObject({
+      contentHash: bundle.contentHash,
+      updatingTo: updated.contentHash,
+    });
   });
 
   it("前のハッシュが取得できないときは更新しない", async () => {
@@ -1111,6 +1206,42 @@ describe("段階のある課題の配布", () => {
       );
     },
   );
+
+  it("次問の配布が中断しても、公開済みの解答を残してテストを追加する", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, withProblems, { visibleProblems: firstOnly });
+    const secondTest = path.join(taskRoot, "tests/q02.test.ts");
+    const secondSource = path.join(taskRoot, "src/q02.ts");
+    const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(link).mockImplementation(async (source, target) => {
+      if (target === secondTest) throw new Error("test publish failed");
+      await actual.link(source, target);
+    });
+
+    await expect(unlockTaskFiles(taskRoot, withProblems, both)).rejects.toThrow(
+      "test publish failed",
+    );
+    expect(await readFile(secondSource, "utf8")).toBe("starter 2");
+    const hashes = makeHashes(withProblems.files);
+    expect(await readReceipt(taskRoot)).toMatchObject({
+      adding: {
+        "src/q02.ts": hashes["src/q02.ts"],
+        "tests/q02.test.ts": hashes["tests/q02.test.ts"],
+      },
+    });
+    await writeFile(secondSource, "learner answer");
+    vi.mocked(link).mockReset();
+
+    await unlockTaskFiles(taskRoot, withProblems, both);
+    expect(await readFile(secondSource, "utf8")).toBe("learner answer");
+    expect(await readFile(secondTest, "utf8")).toBe("test 2");
+    expect(await readReceipt(taskRoot)).toEqual({
+      taskId: manifest.id,
+      contentHash: withProblems.contentHash,
+      deferred: {},
+      files: hashes,
+    });
+  });
 
   it("あとから解放する場所の衝突を示し、学習者のファイルを保持する", async () => {
     const training = await root();
