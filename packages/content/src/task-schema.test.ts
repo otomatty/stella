@@ -230,9 +230,28 @@ describe("問題つきの課題のファイル", () => {
     );
     expect(markdown).toEqual([
       "税率10%。税額の1円未満は切り捨て\n\n例: addTax(1000) → 1100",
-      "問2 別の書き出し\n\n問2 割り勘  \n2人で分ける",
+      "問2 別の書き出し\n\n2人で分ける",
       "",
     ]);
+  });
+
+  it.each([
+    ["（税率10%）（端数切り捨て）", "（税率10%）（端数切り捨て）"],
+    ["(a)(b)", "(a)(b)"],
+    ["（税率（10%））", "税率（10%）"],
+    ["（税率10%)", "（税率10%)"],
+  ])("問題の補足 %s は全体を囲む一対の括弧だけ外す", (suffix, expected) => {
+    const problems = problemTask().problems.map((problem) => ({ ...problem, after: "01-1-3" }));
+    const root = place(
+      {
+        "starter/src/q01-add-tax.ts": `// 問1 税込価格を返す${suffix}\nexport const tax = 1;\n`,
+      },
+      problemTask({ problems }),
+    );
+    const lesson = build(root)
+      .stages[0].sections?.flatMap((section) => section.lessons)
+      .find(({ id }) => id === "problem-u02-first-task-q02-problems-q01-add-tax");
+    expect(lesson?.markdown).toBe(expected);
   });
 
   it("前の単元の動画にも問題を置き、存在しないトピックと後の単元は拒む", () => {
