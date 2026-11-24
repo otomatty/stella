@@ -1,0 +1,728 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "返す値が何通りかあると、型は「または」でつながります。",
+    "stuck": "配送の方法に応じて、伝票に載せる案内を切り替えます。同じ関数を呼んでも、いつも同じ案内になるとは限りません。",
+    "points": ["返す値が何通りかあると、型は「または」でつながります。"],
+    "leaveOut": ["一行で条件から値を選ぶ書き方"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "dispatchparcel": {
+      "prompt": "A small cardboard shipping parcel with two neatly folded flaps. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pickupstore": {
+      "prompt": "A compact blue storefront with a blank awning and a pickup window. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dispatchvan": {
+      "prompt": "A simple violet delivery van with a blank side panel. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parcelcheck": {
+      "prompt": "A cardboard box with folded flaps awaiting inspection. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sealedbox": {
+      "prompt": "A closed cardboard shipping box with a single blue strip of tape. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "openbox": {
+      "prompt": "An open cardboard shipping box with its flaps spread wide. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "union-return-use1": {
+      "prompt": "A blue storefront parcel shelf with a blank hanging tag. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "union-return-use2": {
+      "prompt": "A cardboard parcel beside a closed violet mail sack. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "union-return-use3": {
+      "prompt": "Two service windows, one blue and one violet, without signs. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "荷物",
+          "art": "dispatchparcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "店頭受取",
+          "art": "pickupstore",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "配送",
+          "art": "dispatchvan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "ac",
+          "from": "a",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受取方法",
+          "art": "dispatchparcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "型の候補",
+          "art": "pickupstore",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "または",
+          "art": "dispatchvan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c",
+          "label": "または"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "箱の状態",
+          "art": "parcelcheck",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "密封の型",
+          "art": "sealedbox",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "開封の型",
+          "art": "openbox",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取り方",
+          "art": "union-return-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "発送の状態",
+          "art": "union-return-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "窓口の種類",
+          "art": "union-return-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "数の条件",
+          "art": "dispatchparcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す文字列",
+          "art": "dispatchvan",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "traffic-light",
+      "beats": [
+        {
+          "say": "この動画では、返す値が分かれたときの型を学びます。"
+        },
+        {
+          "say": "信号が示すのは、青か黄色か赤のどれかです。"
+        },
+        {
+          "say": "どの色になるかは、そのときによって変わります。"
+        },
+        {
+          "say": "型は、青、黄、赤を縦棒でつないだ形です。",
+          "speech": "型は、あお、き、あかを縦棒でつないだ形です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "配送の方法で札を替える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "配送する荷物を、窓口に持ち込みました。",
+          "show": ["a"]
+        },
+        {
+          "say": "店頭で受け取る荷物は、店の札を付けます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "家に届ける荷物なら、配送の札です。",
+          "show": ["c", "ac"]
+        },
+        {
+          "say": "どちらの札が付くかは、受け取り方で決まります。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "返す型を縦棒でつなぐ",
+      "code": [
+        "// 受け取り方を見て、案内を返す関数を作る",
+        "function handoff(pickup: boolean) {",
+        "  // 店頭で受け取るか確かめる",
+        "  if (pickup) {",
+        "    // 店頭で受け取る案内を返す",
+        "    return \"店頭\";",
+        "  }",
+        "  // 自宅へ送る案内を返す",
+        "  return \"配送\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "受け取り方によって、通る道が分かれます。",
+          "part": {
+            "line": 3,
+            "text": "pickup"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "条件に合えば、返すのは店頭という文字列です。",
+          "part": {
+            "line": 5,
+            "text": "\"店頭\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "条件に合わないときは、配送を返します。",
+          "part": {
+            "line": 8,
+            "text": "\"配送\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "\"店頭\""
+            }
+          }
+        },
+        {
+          "say": "候補の型を縦棒でつないだものが、ユニオン型です。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"配送\""
+            }
+          },
+          "term": {
+            "text": "ユニオン型",
+            "ruby": "ユニオンがた",
+            "note": "候補の型を縦棒で結ぶ"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 受け取り方を見て、案内を返す関数を作る",
+        "function handoff(pickup: boolean) {",
+        "  // 店頭で受け取るか確かめる",
+        "  if (pickup) {",
+        "    // 店頭で受け取る案内を返す",
+        "    return \"店頭\";",
+        "  }",
+        "  // 自宅へ送る案内を返す",
+        "  return \"配送\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "条件で返し分ける書き方を、色分けしましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "if と return は、言語で決まった書き方です。",
+          "speech": "イフとリターンは、言語で決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "if"
+              },
+              {
+                "line": 5,
+                "text": "return"
+              },
+              {
+                "line": 8,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件や返す文字列は、作りたい案内に合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "handoff"
+              },
+              {
+                "line": 5,
+                "text": "\"店頭\""
+              },
+              {
+                "line": 8,
+                "text": "\"配送\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "型は \"店頭\" | \"配送\"",
+      "code": [
+        "// 受け取り方を見て、案内を返す関数を作る",
+        "function handoff(pickup: boolean) {",
+        "  // 店頭で受け取るか確かめる",
+        "  if (pickup) {",
+        "    // 店頭で受け取る案内を返す",
+        "    return \"店頭\";",
+        "  }",
+        "  // 自宅へ送る案内を返す",
+        "  return \"配送\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "店頭で受け取る指定を渡してみましょう。",
+          "part": {
+            "line": 3,
+            "text": "pickup"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "店頭受取"
+            }
+          }
+        },
+        {
+          "say": "条件に合うので、店頭という値を返します。",
+          "part": {
+            "line": 5,
+            "text": "\"店頭\""
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "\"店頭\""
+            }
+          }
+        },
+        {
+          "say": "店頭受け取りの指定がなければ、配送です。",
+          "part": {
+            "line": 8,
+            "text": "\"配送\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"配送\""
+            }
+          }
+        },
+        {
+          "say": "二つの候補を縦棒でつないだ型になります。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b", "c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "箱の札を返すとき、戻り値の型は？",
+      "code": [
+        "// 箱の状態に合う札を返す関数を作る",
+        "function sealLabel(sealed: boolean) {",
+        "  // 封がされているか確かめる",
+        "  if (sealed) {",
+        "    // 封がされた箱の札を返す",
+        "    return \"密封\";",
+        "  }",
+        "  // 開いた箱の札を返す",
+        "  return \"開封\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、箱の封を見て札を返します。",
+          "part": {
+            "line": 5,
+            "text": "\"密封\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "封の状態"
+            }
+          }
+        },
+        {
+          "say": "密封と開封の、どちらか一方です。",
+          "part": {
+            "line": 8,
+            "text": "\"開封\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "戻り値の型は、どう表せるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 箱の状態に合う札を返す関数を作る",
+        "function sealLabel(sealed: boolean) {",
+        "  // 封がされているか確かめる",
+        "  if (sealed) {",
+        "    // 封がされた箱の札を返す",
+        "    return \"密封\";",
+        "  }",
+        "  // 開いた箱の札を返す",
+        "  return \"開封\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "密封と開封を、縦棒でつないだ型です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "\"密封\"",
+              "c": "\"開封\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "型は \"密封\" | \"開封\"",
+      "code": [
+        "// 箱の状態に合う札を返す関数を作る",
+        "function sealLabel(sealed: boolean) {",
+        "  // 封がされているか確かめる",
+        "  if (sealed) {",
+        "    // 封がされた箱の札を返す",
+        "    return \"密封\";",
+        "  }",
+        "  // 開いた箱の札を返す",
+        "  return \"開封\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "条件に合う場合は、密封を返します。",
+          "part": {
+            "line": 5,
+            "text": "\"密封\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "そうでないときに返す値は、開封です。",
+          "part": {
+            "line": 8,
+            "text": "\"開封\""
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "二通りをまとめて、縦棒でつなぎましょう。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "店頭受け取りと配送で、案内を分けます。",
+          "show": ["a"]
+        },
+        {
+          "say": "発送済みかどうかで、案内が変わる例です。",
+          "show": ["b"]
+        },
+        {
+          "say": "受付の種類に応じて、表示も切り替えられます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問8で使う",
+      "code": ["// 問題の関数を用意する", "export function sign() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問8では、数に応じて三つの値から選びます。",
+          "speech": "問はちでは、数に応じて三つの値から選びます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "正、負、ゼロで、それぞれ違う文字列です。",
+          "part": {
+            "line": 1,
+            "text": "sign"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "どの場合にも値を返せているか、確かめましょう。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "70b177b6da48e604ec47be4a0c00041e6a369297410761df34e104087cd0834f"
+  }
+}

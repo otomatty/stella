@@ -1,0 +1,698 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "戻り値の型を書かないと、return の値から型が決まります。",
+    "stuck": "買い物かごの金額に包装代を足す処理を書きます。この関数から何が戻るかは、どこを見れば分かるでしょうか。",
+    "points": ["戻り値の型を書かないと、return の値から型が決まります。"],
+    "leaveOut": ["候補が複数ある場合の戻り値の型"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "giftbasket": {
+      "prompt": "A blue shopping basket holding a small violet gift box. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "wrappingregister": {
+      "prompt": "A blue cash register with a strip of blank white receipt paper coming out. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gifttotal": {
+      "prompt": "A blue and a violet coin stacked beside a blank receipt. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ticketroll": {
+      "prompt": "A roll of blank violet queue tickets. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ticketdisplay": {
+      "prompt": "A small blue display with a blank rectangular inset. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ticketstrip": {
+      "prompt": "A strip of unmarked violet tickets beside a blank card. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "return-inference-use1": {
+      "prompt": "A small naturally brown cardboard gift box beside a blue coin. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "return-inference-use2": {
+      "prompt": "A blank violet queue ticket with a torn edge. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "return-inference-use3": {
+      "prompt": "An open blue storage tray with neatly arranged parcels. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "商品",
+          "art": "giftbasket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "レジ",
+          "art": "wrappingregister",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "支払額",
+          "art": "gifttotal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "giftbasket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す式",
+          "art": "wrappingregister",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "戻り値の型",
+          "art": "gifttotal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る型",
+          "art": "ticketroll",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す式",
+          "art": "ticketdisplay",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "戻り値の型",
+          "art": "ticketstrip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "包装代込み",
+          "art": "return-inference-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "番号の表示",
+          "art": "return-inference-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "在庫の確認",
+          "art": "return-inference-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る数",
+          "art": "giftbasket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "戻り値の型",
+          "art": "gifttotal",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "receipt-printer",
+      "beats": [
+        {
+          "say": "この動画では、戻り値の型を書かずに任せる方法を学びます。"
+        },
+        {
+          "say": "会計が終わると、レジから出るのがレシートです。"
+        },
+        {
+          "say": "出てきたのは、数字が書かれた紙でした。"
+        },
+        {
+          "say": "返す値を見て、戻り値の型が決まります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "レジから出てくるもの",
+      "board": "example",
+      "beats": [
+        {
+          "say": "かごの商品を、レジに持っていきました。",
+          "show": ["a"]
+        },
+        {
+          "say": "会計が終わると、レシートが出ます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "レシートで目に入るのは、支払った金額です。",
+          "show": ["c", "bc"]
+        },
+        {
+          "say": "関数から出てくる値にも、注目しましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "戻り値の型を書かずに関数を作る",
+      "code": [
+        "// 商品の代金を受け取り、包装代を足す関数を作る",
+        "function withWrapping(price: number) {",
+        "  // 包装代を足した金額を返す",
+        "  return price + 130;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "引数には、これまでどおり型注釈を書きます。",
+          "part": {
+            "line": 1,
+            "text": "price: number"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "閉じ丸かっこの後ろは、戻り値の型を書く位置です。",
+          "part": {
+            "line": 1,
+            "text": ") {"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "a": "number"
+            }
+          }
+        },
+        {
+          "say": "今回はその位置に、型注釈を書きません。",
+          "part": {
+            "line": 1,
+            "text": ") {"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "return の右にある式から、戻り値の型が決まります。",
+          "speech": "リターンの右にある式から、戻り値の型が決まります。",
+          "part": {
+            "line": 3,
+            "text": "price + 130"
+          },
+          "figure": {
+            "tag": {
+              "c": "number"
+            },
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 商品の代金を受け取り、包装代を足す関数を作る",
+        "function withWrapping(price: number) {",
+        "  // 包装代を足した金額を返す",
+        "  return price + 130;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "決まった部分と、選べる部分を見てみましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "関数の書き方や型の名前は、言語で決まっています。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "function"
+              },
+              {
+                "line": 1,
+                "text": ": number"
+              },
+              {
+                "line": 3,
+                "text": "return"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "関数の名前や包装代は、この例で決めたものです。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "withWrapping"
+              },
+              {
+                "line": 1,
+                "text": "price"
+              },
+              {
+                "line": 3,
+                "text": "130"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "戻り値の型は number",
+      "code": [
+        "// 商品の代金を受け取り、包装代を足す関数を作る",
+        "function withWrapping(price: number) {",
+        "  // 包装代を足した金額を返す",
+        "  return price + 130;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "商品代として 760 を受け取ります。",
+          "speech": "商品代として、ななひゃくろくじゅうを受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "price",
+            "note": "商品代"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "760"
+            }
+          }
+        },
+        {
+          "say": "包装代の 130 を足した金額は、890 です。",
+          "speech": "包装代の、ひゃくさんじゅうを足した金額は、はっぴゃくきゅうじゅうです。",
+          "part": {
+            "line": 3,
+            "text": "price + 130"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "890"
+            }
+          }
+        },
+        {
+          "say": "返す式は数なので、戻り値の型は number になります。",
+          "speech": "返す式は数なので、戻り値の型はナンバーになります。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "number"
+            }
+          }
+        },
+        {
+          "say": "どの代金を渡しても、数を返す関数です。",
+          "part": {
+            "line": 1,
+            "text": "withWrapping",
+            "note": "包装代込み"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "番号を文字列にすると何型になる？",
+      "code": [
+        "// 番号を文字列にして返す関数を作る",
+        "function ticketText(ticket: number) {",
+        "  // 番号を文字列に変えて返す",
+        "  return String(ticket);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、番号を受け取る関数です。",
+          "part": {
+            "line": 1,
+            "text": "ticket: number"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "number"
+            }
+          }
+        },
+        {
+          "say": "String で番号を文字列に変えて返します。",
+          "speech": "ストリングで番号を文字列に変えて返します。",
+          "part": {
+            "line": 3,
+            "text": "String(ticket)"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "戻り値の型は、何になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 番号を文字列にして返す関数を作る",
+        "function ticketText(ticket: number) {",
+        "  // 番号を文字列に変えて返す",
+        "  return String(ticket);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "戻り値の型は、string です。",
+          "speech": "戻り値の型は、ストリングです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "string"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "戻り値は返す式から決まる",
+      "code": [
+        "// 番号を文字列にして返す関数を作る",
+        "function ticketText(ticket: number) {",
+        "  // 番号を文字列に変えて返す",
+        "  return String(ticket);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "引数の型は、number です。",
+          "speech": "引数の型は、ナンバーです。",
+          "part": {
+            "line": 1,
+            "text": "ticket: number"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "返す値は、文字列に変わりました。",
+          "part": {
+            "line": 3,
+            "text": "String(ticket)"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "戻り値には、返す式の型が使われます。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "包装代を足した結果は、数になります。",
+          "show": ["a"]
+        },
+        {
+          "say": "番号を表示用に直した結果は、文字列です。",
+          "show": ["b"]
+        },
+        {
+          "say": "在庫が残っているかを比べると、真偽値が戻ります。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問5で使う",
+      "code": ["// 問題の関数を用意する", "export function double() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問5では、受け取った数を二倍にします。",
+          "speech": "問ごでは、受け取った数を二倍にします。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "引数の型は、自分で書く部分です。",
+          "part": {
+            "line": 1,
+            "text": "double"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "戻り値の型は、返す式から決めてもらいましょう。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c1b72062e267a4d2ee863a1dcb51fdb2d6f3ce8a0148f75955f26e9106505d09"
+  }
+}

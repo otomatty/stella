@@ -1,0 +1,692 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "条件 ? A : B で、条件に合えば A、合わなければ B になります。",
+    "stuck": "受け取った注文が贈り物かどうかで、梱包に使う袋を選びます。条件はひとつで、選ぶ値は二つです。",
+    "points": ["条件 ? A : B で、条件に合えば A、合わなければ B になります。"],
+    "leaveOut": ["条件演算子を入れ子にする書き方"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "wrappingcounter": {
+      "prompt": "A compact shop counter with a small parcel ready for wrapping. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ribbongiftbag": {
+      "prompt": "A violet gift bag tied with a magenta ribbon. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "plainpaperbag": {
+      "prompt": "A plain warm brown paper bag with short handles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "queuechoice": {
+      "prompt": "A short line of visitors at an indoor reception counter. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "prioritydesk": {
+      "prompt": "A single violet service desk with a blank upright plaque. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "generaldesk": {
+      "prompt": "A single blue service desk with a blank upright plaque. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "conditional-use1": {
+      "prompt": "A ribboned violet gift bag beside a plain brown bag. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "conditional-use2": {
+      "prompt": "A blue mailbox beside a violet storefront. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "conditional-use3": {
+      "prompt": "Two blank directional plaques pointing in different directions. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "商品の用途",
+          "art": "wrappingcounter",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "贈り物用",
+          "art": "ribbongiftbag",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "普段用",
+          "art": "plainpaperbag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "ac",
+          "from": "a",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "選ぶ条件",
+          "art": "wrappingcounter",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "型の候補",
+          "art": "ribbongiftbag",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "または",
+          "art": "plainpaperbag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c",
+          "label": "または"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "急ぎの指定",
+          "art": "queuechoice",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "急ぎの窓口",
+          "art": "prioritydesk",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "通常の窓口",
+          "art": "generaldesk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "包装の種類",
+          "art": "conditional-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "配達先",
+          "art": "conditional-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "受付の案内",
+          "art": "conditional-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "点数の条件",
+          "art": "wrappingcounter",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す判定",
+          "art": "plainpaperbag",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "fork-road",
+      "beats": [
+        {
+          "say": "この動画では、条件で値を選ぶ書き方を学びます。"
+        },
+        {
+          "say": "雨が降る日に持って出るのは、傘です。"
+        },
+        {
+          "say": "晴れていれば、帽子をかぶって出かけます。"
+        },
+        {
+          "say": "条件、はてな、傘、コロン、帽子の順に、1行で書く形です。",
+          "speech": "条件、はてな、傘、コロン、帽子の順に、いちぎょうで書く形です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "贈り物に合わせて袋を選ぶ",
+      "board": "example",
+      "beats": [
+        {
+          "say": "店で、商品を包む袋を用意しました。",
+          "show": ["a"]
+        },
+        {
+          "say": "贈り物なら、リボン付きの袋を選びます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "いつもの買い物なら、選ぶのは紙袋です。",
+          "show": ["c", "ac"]
+        },
+        {
+          "say": "袋を選ぶために、まず用途を確かめましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "条件の後ろに二つの値を書く",
+      "code": [
+        "// 贈り物かどうかで袋を選ぶ関数を作る",
+        "function bagFor(gift: boolean) {",
+        "  // 贈り物ならリボン袋、それ以外は紙袋を返す",
+        "  return gift ? \"リボン袋\" : \"紙袋\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "条件で二つの値を選ぶ書き方が、条件演算子です。",
+          "part": {
+            "line": 3,
+            "text": "gift ?"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          },
+          "term": {
+            "text": "条件演算子",
+            "ruby": "じょうけんえんざんし",
+            "note": "条件に応じて値を選ぶ"
+          }
+        },
+        {
+          "say": "はてなの前に、確かめる条件を書きます。",
+          "part": {
+            "line": 3,
+            "text": "gift"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "条件に合うときの値は、はてなのすぐ後ろです。",
+          "part": {
+            "line": 3,
+            "text": "\"リボン袋\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "\"リボン袋\""
+            }
+          }
+        },
+        {
+          "say": "条件に合わないときの値は、コロンの後ろに置きましょう。",
+          "part": {
+            "line": 3,
+            "text": "\"紙袋\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"紙袋\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 贈り物かどうかで袋を選ぶ関数を作る",
+        "function bagFor(gift: boolean) {",
+        "  // 贈り物ならリボン袋、それ以外は紙袋を返す",
+        "  return gift ? \"リボン袋\" : \"紙袋\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "記号と、場面に合わせて書く部分に分けます。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "はてなとコロンは、決まった順で置く記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "?"
+              },
+              {
+                "line": 3,
+                "text": ":"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件と二つの値は、自分で選びましょう。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "gift"
+              },
+              {
+                "line": 3,
+                "text": "\"リボン袋\""
+              },
+              {
+                "line": 3,
+                "text": "\"紙袋\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "袋の名前が型になる",
+      "code": [
+        "// 贈り物かどうかで袋を選ぶ関数を作る",
+        "function bagFor(gift: boolean) {",
+        "  // 贈り物ならリボン袋、それ以外は紙袋を返す",
+        "  return gift ? \"リボン袋\" : \"紙袋\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "贈り物かどうかを、最初に調べましょう。",
+          "part": {
+            "line": 3,
+            "text": "gift"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "true"
+            }
+          }
+        },
+        {
+          "say": "贈り物なら、選ぶのはリボン袋です。",
+          "part": {
+            "line": 3,
+            "text": "\"リボン袋\""
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "\"リボン袋\""
+            }
+          }
+        },
+        {
+          "say": "贈り物でなければ、紙袋が選ばれます。",
+          "part": {
+            "line": 3,
+            "text": "\"紙袋\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"紙袋\""
+            }
+          }
+        },
+        {
+          "say": "戻り値の型は、二つのリテラル型をつないだ形です。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b", "c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "急ぎでないときはどちらの窓口？",
+      "code": [
+        "// 急ぎかどうかで窓口を選ぶ関数を作る",
+        "function deskFor(urgent: boolean) {",
+        "  // 急ぎなら専用窓口、それ以外は総合窓口を返す",
+        "  return urgent ? \"専用\" : \"総合\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、急ぎかどうかで窓口を選びます。",
+          "part": {
+            "line": 3,
+            "text": "urgent"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "false"
+            }
+          }
+        },
+        {
+          "say": "渡した条件は、急ぎではないという指定です。",
+          "part": {
+            "line": 3,
+            "text": "?"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "このとき、どちらの値が返るでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 急ぎかどうかで窓口を選ぶ関数を作る",
+        "function deskFor(urgent: boolean) {",
+        "  // 急ぎなら専用窓口、それ以外は総合窓口を返す",
+        "  return urgent ? \"専用\" : \"総合\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "返る値は、総合です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"総合\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "コロンの後ろの値が戻る",
+      "code": [
+        "// 急ぎかどうかで窓口を選ぶ関数を作る",
+        "function deskFor(urgent: boolean) {",
+        "  // 急ぎなら専用窓口、それ以外は総合窓口を返す",
+        "  return urgent ? \"専用\" : \"総合\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初に、はてなの前にある条件を見ます。",
+          "part": {
+            "line": 3,
+            "text": "urgent"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "今回は、条件に合いません。",
+          "part": {
+            "line": 3,
+            "text": "?"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "選ばれるのは、コロンの後ろの値です。",
+          "part": {
+            "line": 3,
+            "text": "\"総合\""
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "包装の種類は、贈り物かどうかで分けられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "配達先に応じて、案内を選ぶのもこの形です。",
+          "show": ["b"]
+        },
+        {
+          "say": "一つの条件で済む案内に、この形を使いましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問9で使う",
+      "code": ["// 問題の関数を用意する", "export function judge() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問9では、点数に応じて判定を返します。",
+          "speech": "問きゅうでは、点数に応じて判定を返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "確かめるのは、点数が基準に達したかです。",
+          "part": {
+            "line": 1,
+            "text": "judge"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件に合う場合と合わない場合の値を並べましょう。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "3451a967167e7134e96a2adfd5b4c8b303f0a5f2701c4c86bad9f62aee547a8e"
+  }
+}

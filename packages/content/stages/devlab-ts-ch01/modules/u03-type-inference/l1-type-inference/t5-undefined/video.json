@@ -1,0 +1,722 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "返す値が無いときは undefined を返します。型は number | undefined のようになります。",
+    "stuck": "予約した席を案内する処理を書きます。予約が見つからないとき、席の番号が無いことをどう伝えるでしょうか。",
+    "points": [
+      "返す値が無いときは undefined を返します。型は number | undefined のようになります。"
+    ],
+    "leaveOut": ["文字列の添字で値が無い場合"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "venuecheckin": {
+      "prompt": "A blue event reception counter with a small violet desk bell. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reservedchair": {
+      "prompt": "A violet auditorium seat with an unmarked blue reservation card on it. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "emptytickettray": {
+      "prompt": "An empty blue ticket tray, seen at a slight angle from above. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parcelstation": {
+      "prompt": "A blue pickup station with open cubbies. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "westparcel": {
+      "prompt": "A cardboard parcel resting inside a violet shelf cubby. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "emptyshelf": {
+      "prompt": "An empty blue shelf cubby without a tag. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "undefined-use1": {
+      "prompt": "A blue theater ticket beside a small violet seat. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "undefined-use2": {
+      "prompt": "A violet parcel locker with one open empty compartment. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "undefined-use3": {
+      "prompt": "A blue magnifying glass over an empty document tray. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "会場の受付",
+          "art": "venuecheckin",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "予約済みの席",
+          "art": "reservedchair",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "席が無い",
+          "art": "emptytickettray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "ac",
+          "from": "a",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "予約",
+          "art": "venuecheckin",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "型の候補",
+          "art": "reservedchair",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "undefined",
+          "art": "emptytickettray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c",
+          "label": "または"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "品物の状態",
+          "art": "parcelstation",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "場所の型",
+          "art": "westparcel",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "undefined",
+          "art": "emptyshelf",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "会場の予約",
+          "art": "undefined-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "荷物の到着",
+          "art": "undefined-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "案内の検索",
+          "art": "undefined-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "偶数",
+          "art": "venuecheckin",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "値が無いとき",
+          "art": "emptytickettray",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "empty-locker",
+      "beats": [
+        {
+          "say": "この動画では、値が無いことを返す方法を学びます。"
+        },
+        {
+          "say": "ロッカーの番号を言うと、中の荷物を受け取れる仕組みです。"
+        },
+        {
+          "say": "空っぽのロッカーなら、渡せる荷物がありません。"
+        },
+        {
+          "say": "何も無いときは、undefined を返します。",
+          "speech": "何もないときは、アンディファインドを返します。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "予約した席があるか確かめる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "会場の受付に、予約を確かめに来ました。",
+          "show": ["a"]
+        },
+        {
+          "say": "予約があれば、案内できる席があります。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "予約がなければ、渡せる席の札はありません。",
+          "show": ["c", "ac"]
+        },
+        {
+          "say": "どちらの場合にも、結果を伝えましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "値が無い場合も返す",
+      "code": [
+        "// 予約があれば、案内する席の番号を返す関数を作る",
+        "function seatFor(reserved: boolean, seat: number) {",
+        "  // 予約があるか確かめる",
+        "  if (reserved) {",
+        "    // 予約した席の番号を返す",
+        "    return seat;",
+        "  }",
+        "  // 案内する席が無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "予約を受け付けたかどうかを、条件にします。",
+          "part": {
+            "line": 3,
+            "text": "reserved"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "予約があるときに返す値は、席の番号です。",
+          "part": {
+            "line": 5,
+            "text": "seat"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "number"
+            }
+          }
+        },
+        {
+          "say": "予約が無い場合は、undefined を返します。",
+          "speech": "予約がない場合は、アンディファインドを返します。",
+          "part": {
+            "line": 8,
+            "text": "undefined"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "term": {
+            "text": "undefined",
+            "ruby": "アンディファインド",
+            "note": "値が無いことを表す値"
+          }
+        },
+        {
+          "say": "戻り値の型は number または undefined です。",
+          "speech": "戻り値の型は、ナンバー、または、アンディファインドです。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 予約があれば、案内する席の番号を返す関数を作る",
+        "function seatFor(reserved: boolean, seat: number) {",
+        "  // 予約があるか確かめる",
+        "  if (reserved) {",
+        "    // 予約した席の番号を返す",
+        "    return seat;",
+        "  }",
+        "  // 案内する席が無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "二色に分けて、返す部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "値が無いことを表す名前は、undefined です。",
+          "speech": "値がないことを表す名前は、アンディファインドです。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "return"
+              },
+              {
+                "line": 8,
+                "text": "return undefined"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "値を返せる条件と、返す番号は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "reserved"
+              },
+              {
+                "line": 5,
+                "text": "seat"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "番号が無い場合も型に入る",
+      "code": [
+        "// 予約があれば、案内する席の番号を返す関数を作る",
+        "function seatFor(reserved: boolean, seat: number) {",
+        "  // 予約があるか確かめる",
+        "  if (reserved) {",
+        "    // 予約した席の番号を返す",
+        "    return seat;",
+        "  }",
+        "  // 案内する席が無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "予約が無い場合を、見てみましょう。",
+          "part": {
+            "line": 3,
+            "text": "reserved"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "false"
+            }
+          }
+        },
+        {
+          "say": "この場合は、席の番号を返しません。",
+          "part": {
+            "line": 5,
+            "text": "seat"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "number"
+            }
+          }
+        },
+        {
+          "say": "戻る値は、undefined です。",
+          "speech": "戻る値は、アンディファインドです。",
+          "part": {
+            "line": 8,
+            "text": "undefined"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "型を読むときは、値が無い場合も含めます。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b", "c"],
+            "tag": {
+              "b": "number"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "戻り値の型は何になる？",
+      "code": [
+        "// 受け取れるなら、品物の場所を返す関数を作る",
+        "function parcelShelf(ready: boolean) {",
+        "  // 受け取れるか確かめる",
+        "  if (ready) {",
+        "    // 品物の場所を返す",
+        "    return \"西棚\";",
+        "  }",
+        "  // 品物がまだ無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "受け取れるときは、品物の場所を返します。",
+          "part": {
+            "line": 5,
+            "text": "\"西棚\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "受取可能"
+            }
+          }
+        },
+        {
+          "say": "受け取りを待つ場合には、場所がありません。",
+          "part": {
+            "line": 8,
+            "text": "undefined"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "戻り値の型には、何が入るでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 受け取れるなら、品物の場所を返す関数を作る",
+        "function parcelShelf(ready: boolean) {",
+        "  // 受け取れるか確かめる",
+        "  if (ready) {",
+        "    // 品物の場所を返す",
+        "    return \"西棚\";",
+        "  }",
+        "  // 品物がまだ無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "西棚を表す型と、undefined をつないだ型です。",
+          "speech": "西棚を表す型と、アンディファインドをつないだ型です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "\"西棚\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "場所が無い場合も型に入る",
+      "code": [
+        "// 受け取れるなら、品物の場所を返す関数を作る",
+        "function parcelShelf(ready: boolean) {",
+        "  // 受け取れるか確かめる",
+        "  if (ready) {",
+        "    // 品物の場所を返す",
+        "    return \"西棚\";",
+        "  }",
+        "  // 品物がまだ無いことを返す",
+        "  return undefined;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "受け取れる場合には、西棚という文字列を返します。",
+          "part": {
+            "line": 5,
+            "text": "\"西棚\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "まだ受け取れない場合は、場所を返せません。",
+          "part": {
+            "line": 8,
+            "text": "undefined"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "場所が無い場合も、戻り値の型に含まれます。",
+          "part": {
+            "line": 8,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "予約がなければ、席の番号は返せません。",
+          "show": ["a"]
+        },
+        {
+          "say": "到着前なら、受け取り場所が未定の場合があります。",
+          "show": ["b"]
+        },
+        {
+          "say": "探した案内が見つからない場合にも使える値です。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12で使う",
+      "code": ["// 問題の関数を用意する", "export function halfIfEven() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問12では、数が偶数かどうかで返す値を分けます。",
+          "speech": "問じゅうにでは、数が偶数かどうかで返す値を分けます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "今回の問題で数を返すのは、偶数の場合だけです。",
+          "part": {
+            "line": 1,
+            "text": "halfIfEven"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "奇数の場合には、値が無いことを返しましょう。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bdfea52b13d4212537cbe54e922cce2088438d5afe4771084a291cac781c1f72"
+  }
+}

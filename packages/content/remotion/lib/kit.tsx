@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from "react";
-import { VIDEO_COLORS, VIDEO_FONT } from "../../src/scene-overlays";
+import { codeTextWidth, VIDEO_COLORS, VIDEO_FONT } from "../../src/scene-overlays";
 
 export const { ink: INK, blue: BLUE, pink: PINK, violet: VIOLET, line: LINE } = VIDEO_COLORS;
 export const FONT = VIDEO_FONT;
@@ -73,6 +73,47 @@ export function Callout({ id, x, y, text }: { id: string; x: number; y: number; 
         strokeWidth={4}
       />
       <text y={15} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={42} fill={INK}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+/** コードを等幅で見せる札。 */
+export function CodeCallout({
+  id,
+  x,
+  y,
+  text,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+}) {
+  const size = 42;
+  const width = Math.ceil(codeTextWidth(text) * size + 72);
+  return (
+    <g id={id} transform={`translate(${x} ${y})`} opacity={0}>
+      <rect
+        id={`${id}-box`}
+        x={-width / 2}
+        y={-42}
+        width={width}
+        height={84}
+        rx={16}
+        fill={VIDEO_COLORS.white}
+        stroke={PINK}
+        strokeWidth={4}
+      />
+      <text
+        y={14}
+        textAnchor="middle"
+        fontFamily="monospace"
+        fontWeight={700}
+        fontSize={size}
+        fill={INK}
+      >
         {text}
       </text>
     </g>
