@@ -130,6 +130,8 @@ Chat のスペースの「アプリと統合」→「Webhook」で作った URL 
 
 PR では `e2e` ジョブが、両製品の現在の版の CHANGELOG に指定された場面をブラウザー E2E の後で撮る。画像は Actions の成果物 `release-shots` で確認できる。新しい版のリリースでは撮り直して公開 R2 にアップロードし、画像の URL を Release 本文と Google Chat のお知らせに使う。撮影の準備・撮影・アップロードに失敗した場合は画像なしでリリースを続ける。同じ版の再 push で Release が作成済みなら撮影を省く。
 
+Marketplace の変更履歴で表示できるよう、VSIX に同梱する CHANGELOG からは `![説明](shot:名前)` だけの行を取り除く。
+
 Web は 1280×800、VS Code 拡張は WebView の場面ごとの幅と高さで撮る。共通の設定はライトテーマ、倍率 2、日本語（`ja-JP`）、日本時間（`Asia/Tokyo`）。アニメーションを止め、入力欄のキャレットを隠す。撮影対象を指定した場合は四辺に 24 px の余白を付け、ページ内に収める。強調箇所にはオレンジ色の枠を付ける。
 
 手元で撮るには Playwright の Chromium と日本語フォント（Noto Sans CJK JP など）を用意する。Web は `apps/api/.dev.vars.example` を `apps/api/.dev.vars` にコピーし、`AUTH_JWT_SECRET` と `ALLOWED_ORIGINS` を確認する。`ALLOWED_ORIGINS` には `http://127.0.0.1:4173` を追加する。リポジトリのルートで `bun run db:migrate` と `bun run db:seed` を実行し、別の端末で `bun run dev:api` を起動してから撮影する。

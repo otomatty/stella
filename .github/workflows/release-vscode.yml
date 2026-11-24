@@ -53,6 +53,8 @@ jobs:
         working-directory: apps/vscode
         run: |
           bun run build
+          trap 'git -C "$GITHUB_WORKSPACE" checkout -- apps/vscode/CHANGELOG.md' EXIT
+          (cd "$GITHUB_WORKSPACE" && bun run release:shots strip --changelog apps/vscode/CHANGELOG.md)
           bunx @vscode/vsce package --no-dependencies --allow-missing-repository --readme-path MARKETPLACE.md
 
       # 手動で採番した版からタグを決める。

@@ -11,6 +11,7 @@ import {
   parseSummary,
   type ReleaseItem,
   releaseProductName,
+  stripShotLines,
 } from "./release-notes.js";
 
 describe("extractChangelogSection", () => {
@@ -129,6 +130,33 @@ describe("parseChangelogItems", () => {
     });
   });
 
+  it.each([
+    ["+ ", "+ "],
+    ["1. ", "2.\t"],
+    ["1)\t", "2) "],
+  ])("groups %s and %s with separate shot limits", (first, second) => {
+    const section = `${first}最初\n  ![一](shot:a)\n  ![二](shot:b)\n${second}次\n  ![三](shot:c)`;
+    expect(parseChangelogItems(section)).toEqual({
+      items: [
+        {
+          title: null,
+          body: "最初",
+          shots: [
+            { name: "a", alt: "一" },
+            { name: "b", alt: "二" },
+          ],
+        },
+        { title: null, body: "次", shots: [{ name: "c", alt: "三" }] },
+      ],
+      errors: [],
+    });
+    expect(
+      parseChangelogItems(
+        section.replace("\n  ![二](shot:b)", "\n  ![二](shot:b)\n  ![四](shot:d)"),
+      ).errors,
+    ).toEqual(["「最初」: 画像は 1 項目につき 2 枚までです"]);
+  });
+
   it("keeps a section with no headings or bullets together", () => {
     expect(parseChangelogItems("\n最初の行\n\n次の行\n  ")).toEqual({
       items: [{ title: null, body: "最初の行\n\n次の行", shots: [] }],
@@ -168,6 +196,22 @@ describe("parseChangelogItems", () => {
     expect(
       parseChangelogItems("### 表示\n![一](shot:a)\n![二](shot:b)\n![三](shot:c)").errors,
     ).toEqual(["「表示」: 画像は 1 項目につき 2 枚までです"]);
+  });
+});
+
+describe("stripShotLines", () => {
+  it("removes standalone shot lines across releases and preserves the other lines and endings", () => {
+    const markdown =
+      "# CHANGELOG\r\n\r\n## 1.2.0\r\n+ 説明  \r\n  ![画面](shot:screen) \r\n\r\n## 1.1.0\n![以前](shot:old)\n文中の ![例](shot:example)\n![画像](./manual.png)\n";
+    expect(stripShotLines(markdown)).toBe(
+      "# CHANGELOG\r\n\r\n## 1.2.0\r\n+ 説明  \r\n\r\n## 1.1.0\n文中の ![例](shot:example)\n![画像](./manual.png)\n",
+    );
+  });
+
+  it("preserves whether the last line ends with a newline when removing a final shot", () => {
+    expect(stripShotLines("本文\r\n![画面](shot:screen)\r\n")).toBe("本文\r\n");
+    expect(stripShotLines("本文\r\n![画面](shot:screen)")).toBe("本文");
+    expect(stripShotLines("![画面](shot:screen)\r\n")).toBe("\r\n");
   });
 });
 

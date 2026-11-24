@@ -56,7 +56,16 @@ export function fallbackSummary(section: string): ReleaseSummary {
 const shotLine = /^\s*!\[((?:[^\]\\]|\\.)*)\]\(shot:([^)]*)\)\s*$/;
 const shotName = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const imageSyntax = /!\[.*?\]\([^)]*\)/;
-const bulletPrefix = /^[-*] /;
+const bulletPrefix = /^(?:[-+*]|\d{1,9}[.)])[ \t]/;
+
+export function stripShotLines(markdown: string): string {
+  const trailingNewline = /\r?\n$/.exec(markdown)?.[0];
+  const stripped = markdown
+    .split(/(?<=\n)/)
+    .filter((line) => !shotLine.test(line))
+    .join("");
+  return trailingNewline ? stripped || trailingNewline : stripped.replace(/\r?\n$/, "");
+}
 
 function trimBlankLines(lines: string[]): string {
   const first = lines.findIndex((line) => line.trim());

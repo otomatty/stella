@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main } from "./release-shots.js";
 
 const listArgs = ["list", "--changelog", "CHANGELOG.md", "--version", "1.2.0"];
+const stripArgs = ["strip", "--changelog", "CHANGELOG.md"];
 const uploadArgs = [
   "upload",
   "--product",
@@ -67,6 +68,34 @@ describe("list", () => {
       expect(console.log).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("strip", () => {
+  it("overwrites the changelog with standalone shots removed across versions", async () => {
+    const deps = mockDeps();
+    deps.readText.mockResolvedValue(
+      "## 1.2.0\n+ 説明\n  ![画面](shot:screen)\n\n## 1.1.0\n![以前](shot:older)\n",
+    );
+
+    await expect(main(stripArgs, deps)).resolves.toBe(0);
+    expect(deps.readText).toHaveBeenCalledExactlyOnceWith("CHANGELOG.md");
+    expect(deps.writeFile).toHaveBeenCalledExactlyOnceWith(
+      "CHANGELOG.md",
+      "## 1.2.0\n+ 説明\n\n## 1.1.0\n",
+    );
+  });
+
+  it("requires a changelog path and includes strip in the usage", async () => {
+    const deps = mockDeps();
+    for (const args of [[], ["strip"]]) {
+      await expect(main(args, deps)).resolves.toBe(1);
+      expect(console.error).toHaveBeenLastCalledWith(
+        expect.stringContaining("bun run release:shots strip --changelog <path>"),
+      );
+    }
+    expect(deps.readText).not.toHaveBeenCalled();
+    expect(deps.writeFile).not.toHaveBeenCalled();
+  });
 });
 
 describe("upload", () => {

@@ -9,6 +9,7 @@ import {
   isHttpsUrl,
   parseChangelogItems,
   type ReleaseProduct,
+  stripShotLines,
 } from "./lib/release-notes.js";
 
 const bucket = "stella-materials-public";
@@ -104,16 +105,22 @@ async function upload(
   return 0;
 }
 
-const listUsage = "bun run release:shots list --changelog <path> --version <v>";
-const uploadUsage =
-  "bun run release:shots upload --product <web|vscode> --version <v> --dir <dir> --out <images.json>";
+const usage = {
+  list: "bun run release:shots list --changelog <path> --version <v>",
+  strip: "bun run release:shots strip --changelog <path>",
+  upload:
+    "bun run release:shots upload --product <web|vscode> --version <v> --dir <dir> --out <images.json>",
+};
 
 export async function main(argv: string[], deps: Dependencies = defaultDeps): Promise<number> {
   const [command, ...args] = argv;
-  if (command !== "list" && command !== "upload")
-    return fail(`使い方\n  ${listUsage}\n  ${uploadUsage}`);
-  const names =
-    command === "list" ? ["changelog", "version"] : ["product", "version", "dir", "out"];
+  if (command !== "list" && command !== "strip" && command !== "upload")
+    return fail(`使い方\n  ${Object.values(usage).join("\n  ")}`);
+  const names = {
+    list: ["changelog", "version"],
+    strip: ["changelog"],
+    upload: ["product", "version", "dir", "out"],
+  }[command];
 
   let values: Record<string, string | undefined>;
   try {
@@ -122,17 +129,23 @@ export async function main(argv: string[], deps: Dependencies = defaultDeps): Pr
       options: Object.fromEntries(names.map((name) => [name, { type: "string" }])),
     }));
   } catch {
-    return fail(command === "list" ? listUsage : uploadUsage);
+    return fail(usage[command]);
   }
 
   const { changelog, version, product, dir, out } = values;
   try {
     if (command === "list") {
-      if (!changelog || !version?.trim()) return fail(listUsage);
+      if (!changelog || !version?.trim()) return fail(usage.list);
       return await list(changelog, version, deps);
     }
+    if (command === "strip") {
+      if (!changelog) return fail(usage.strip);
+      const markdown = await deps.readText(changelog);
+      await deps.writeFile(changelog, stripShotLines(markdown));
+      return 0;
+    }
     if ((product !== "web" && product !== "vscode") || !version || !dir || !out) {
-      return fail(uploadUsage);
+      return fail(usage.upload);
     }
     if (!/^[0-9A-Za-z.+-]+$/.test(version) || version === "." || version === "..") {
       return fail("--version の形式が不正です");
