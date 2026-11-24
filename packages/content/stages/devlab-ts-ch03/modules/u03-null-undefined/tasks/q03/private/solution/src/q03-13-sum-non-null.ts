@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問13 null を飛ばして合計する
+//     例: sumNonNull([1, null, 2]) → 3
+// 引数と戻り値に型注釈を付ける。
+// === null または !== null で、値があるかを確かめる。
 
-// 問13
 export function sumNonNull(values: readonly (number | null)[]): number {
   let total = 0;
   for (const value of values) {

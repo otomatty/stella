@@ -1,6 +1,4 @@
-// 03-q07 as const ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
+// 問8 定数 ENTRY を ["key", 1] として宣言する。型は readonly ["key", 1]
+// 定数の宣言に as const を付ける。
 
-// 問8
 export const ENTRY = ["key", 1] as const;

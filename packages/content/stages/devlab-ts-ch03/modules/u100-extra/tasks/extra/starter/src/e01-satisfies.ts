@@ -1,7 +1,3 @@
-// 03-e01 発展問題 satisfies 演算子
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/satisfies
-//
 // 問題
 // 画面の一覧 ROUTES は、型注釈 { [name: string]: Route } を付けて宣言されています。
 // このせいで、ROUTES のキー名（home、settings、admin）が型から消え、

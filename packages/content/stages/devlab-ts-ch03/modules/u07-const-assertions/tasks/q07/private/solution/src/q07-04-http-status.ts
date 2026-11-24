@@ -1,6 +1,4 @@
-// 03-q07 as const ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
+// 問4 定数 HTTP_STATUS を { ok: 200, notFound: 404 } として宣言する
+// 定数の宣言に as const を付ける。
 
-// 問4
 export const HTTP_STATUS = { ok: 200, notFound: 404 } as const;

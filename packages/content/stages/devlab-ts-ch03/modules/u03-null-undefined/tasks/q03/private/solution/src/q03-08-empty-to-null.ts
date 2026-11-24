@@ -1,9 +1,7 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問8 空の文字列なら null、それ以外はそのまま返す
+//     例: emptyToNull("") → null
+// 引数と戻り値に型注釈を付ける。
 
-// 問8
 export function emptyToNull(text: string): string | null {
   return text === "" ? null : text;
 }

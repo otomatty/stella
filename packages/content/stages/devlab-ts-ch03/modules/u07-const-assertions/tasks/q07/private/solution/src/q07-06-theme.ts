@@ -1,6 +1,4 @@
-// 03-q07 as const ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
+// 問6 定数 THEME を { primary: "#0066ff", radius: 4 } として宣言する
+// 定数の宣言に as const を付ける。
 
-// 問6
 export const THEME = { primary: "#0066ff", radius: 4 } as const;

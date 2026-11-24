@@ -1,11 +1,10 @@
-// 03-q02 リテラル型のユニオン ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問1 右に90度回った向きを返す。up → right → down → left → up
+//     例: turnRight("up") → "right"
+// 引数と戻り値に型注釈を付ける。
+// 定義済みの Direction 型を使う。
 
 export type Direction = "up" | "down" | "left" | "right";
 
-// 問1
 export function turnRight(direction: Direction): Direction {
   if (direction === "up") {
     return "right";

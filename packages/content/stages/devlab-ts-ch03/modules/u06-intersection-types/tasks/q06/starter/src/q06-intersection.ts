@@ -1,7 +1,3 @@
-// 03-q06 インターセクション型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/intersection
-//
 // 問題
 // 投稿の中身を表す型 Post と、保存したときに付く情報を表す型 Meta は定義済みです。
 //

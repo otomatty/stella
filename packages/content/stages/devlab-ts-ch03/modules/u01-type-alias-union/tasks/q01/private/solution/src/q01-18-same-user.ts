@@ -1,9 +1,7 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問18 型 UserId（文字列か数値）を定義して export し、sameUser(a: UserId, b: UserId) を書く。文字列にしたときに同じなら true
+//     例: sameUser(1, "1") → true
+// 引数と戻り値に型注釈を付ける。
 
-// 問18
 export type UserId = string | number;
 
 export function sameUser(a: UserId, b: UserId): boolean {

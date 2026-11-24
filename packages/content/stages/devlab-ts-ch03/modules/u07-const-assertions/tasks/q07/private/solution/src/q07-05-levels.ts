@@ -1,6 +1,4 @@
-// 03-q07 as const ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
+// 問5 定数 LEVELS を [1, 2, 3] として宣言する
+// 定数の宣言に as const を付ける。
 
-// 問5
 export const LEVELS = [1, 2, 3] as const;

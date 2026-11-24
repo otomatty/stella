@@ -1,10 +1,11 @@
-// 03-q05 成功と失敗を表す型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/discriminated-union
+// 問5 失敗なら error、成功なら fallback を返す
+//     例: errorOr({ ok: false, error: "x" }, "なし") → "x"
+// 引数と戻り値に型注釈を付ける。
+// 定義済みの Result 型を使う。
+// ok で成功か失敗かを見分ける。
 
 export type Result = { ok: true; value: number } | { ok: false; error: string };
 
-// 問5
 export function errorOr(result: Result, fallback: string): string {
   return result.ok ? fallback : result.error;
 }

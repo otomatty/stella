@@ -1,6 +1,7 @@
-// 03-q06 インターセクション型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/intersection
+// 問11 name、age、id から Named & Aged & Identified を作る
+//     例: makeMember("山田", 30, 1) → { name: "山田", age: 30, id: 1 }
+// 引数と戻り値に型注釈を付ける。
+// 戻り値の型には Named & Aged & Identified と書く。
 
 export type Named = { name: string };
 
@@ -8,7 +9,6 @@ export type Aged = { age: number };
 
 export type Identified = { id: number };
 
-// 問11
 export function makeMember(name: string, age: number, id: number): Named & Aged & Identified {
   return { name, age, id };
 }
