@@ -265,13 +265,17 @@ function selectWithLimit(resolver: () => Promise<unknown>) {
 }
 
 function selectWhereOnly(resolver: (where?: unknown) => Promise<unknown>) {
-  const chain = {
-    where: (where?: unknown) => resolver(where),
-    // biome-ignore lint/suspicious/noThenProperty: drizzle のクエリは thenable。where の無い select もある。
+  const query = (where?: unknown) => ({
+    orderBy: () => resolver(where),
+    // biome-ignore lint/suspicious/noThenProperty: drizzle のクエリは thenable。
     then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
-      resolver().then(onFulfilled, onRejected),
+      resolver(where).then(onFulfilled, onRejected),
+  });
+  const chain = {
+    ...query(),
+    where: (where?: unknown) => query(where),
   };
-  return { from: () => chain };
+  return { from: () => ({ ...chain, leftJoin: () => chain }) };
 }
 
 const DRIZZLE_TABLE_NAME = Symbol.for("drizzle:Name");
@@ -321,6 +325,11 @@ const mockDb = {
     }
     return selectWhereOnly(profileLookup);
   },
+  selectDistinct: (fields: Record<string, unknown>) =>
+    selectWhereOnly(async (where) => {
+      if (sqlSketch(where).includes("group_id is not null")) return [];
+      return "userId" in fields ? unlockSelect(where) : grantSelect();
+    }),
   delete: (table: unknown) => ({
     where: (where: unknown) => {
       deleted.push({ table, where });

@@ -29,13 +29,15 @@ import { integrationGroupFilter } from "../lib/integrations.js";
 
 import { Hono } from "hono";
 import { RETIRED_STAGES } from "@stella/shared/curriculum/retired-stages";
-import { sql, and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, notInArray } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
 import {
   certificates,
   enrollments,
   profiles,
+  effectiveStageGrants,
+  effectiveStageUnlocks,
   stageGrants,
   stageUnlocks,
   stages,
@@ -74,6 +76,9 @@ import {
 import type { Env } from "../env.js";
 
 import {
+  effectiveGuidanceColumns,
+  firstGuidanceBy,
+  guidancePriority,
   guidanceColumns,
   guidanceOf,
   guidanceValues,
@@ -242,41 +247,45 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
     requireCanManageStageGrants(caller);
 
     const grantedStages = await loadGrantedStages(db);
-    const grantRows =
-      grantedStages.length === 0
-        ? []
-        : await db
+    const ids = chunk(
+      grantedStages.map((stage) => stage.id),
+      90,
+    );
+    const [grantBatches, unlockBatches] = await Promise.all([
+      Promise.all(
+        ids.map((stageIds) =>
+          db
             .select({
-              stageId: stageGrants.stageId,
-              profileId: stageGrants.profileId,
-              ...guidanceColumns,
+              stageId: effectiveStageGrants.stageId,
+              profileId: effectiveStageGrants.profileId,
+              ...effectiveGuidanceColumns,
             })
-            .from(stageGrants)
-            .where(
-              inArray(
-                stageGrants.stageId,
-                grantedStages.map((s) => s.id),
-              ),
-            );
-
-    const unlockRows =
-      grantedStages.length === 0
-        ? []
-        : await db
-            .select({
-              stageId: stageUnlocks.stageId,
-              userId: stageUnlocks.userId,
+            .from(effectiveStageGrants)
+            .where(inArray(effectiveStageGrants.stageId, stageIds))
+            .orderBy(...guidancePriority),
+        ),
+      ),
+      Promise.all(
+        ids.map((stageIds) =>
+          db
+            .selectDistinct({
+              stageId: effectiveStageUnlocks.stageId,
+              userId: effectiveStageUnlocks.userId,
             })
-            .from(stageUnlocks)
+            .from(effectiveStageUnlocks)
             .where(
               and(
-                eq(stageUnlocks.via, "staff"),
-                inArray(
-                  stageUnlocks.stageId,
-                  grantedStages.map((stage) => stage.id),
-                ),
+                eq(effectiveStageUnlocks.via, "staff"),
+                inArray(effectiveStageUnlocks.stageId, stageIds),
               ),
-            );
+            ),
+        ),
+      ),
+    ]);
+    const unlockRows = unlockBatches.flat();
+    const grantRows = [
+      ...firstGuidanceBy(grantBatches.flat(), (row) => `${row.stageId}\0${row.profileId}`).values(),
+    ];
 
     const grantsByStage = new Map<string, string[]>();
     const grantedProfileIds = new Set<string>();
@@ -695,7 +704,7 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
 
     const stage = await loadGrantStage(db, c.req.param("stageId"));
     const slugs = prerequisiteSlugsFromRow(stage);
-    const [profileRows, grantRows, unlockRows, stagesBySlug] = await Promise.all([
+    const [profileRows, guidanceByProfile, unlockRows, stagesBySlug] = await Promise.all([
       db
         .select({
           id: profiles.id,
@@ -706,20 +715,11 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
         })
         .from(profiles)
         .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
+      loadStageGuidance(db, stage.id),
       db
-        .select({
-          profileId: stageGrants.profileId,
-          source_group: sql<
-            string | null
-          >`(select name from integration_groups where id = ${stageGrants.sourceGroupId})`,
-          ...guidanceColumns,
-        })
-        .from(stageGrants)
-        .where(eq(stageGrants.stageId, stage.id)),
-      db
-        .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
-        .from(stageUnlocks)
-        .where(eq(stageUnlocks.stageId, stage.id)),
+        .selectDistinct({ userId: effectiveStageUnlocks.userId, via: effectiveStageUnlocks.via })
+        .from(effectiveStageUnlocks)
+        .where(eq(effectiveStageUnlocks.stageId, stage.id)),
       loadStagesBySlug(db, slugs),
     ]);
     const prereqIds = [
@@ -734,7 +734,7 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
     const listed = listStageGrantLearners(
       {
         profiles: profileRows,
-        assignedIds: new Set(grantRows.map((row) => row.profileId)),
+        assignedIds: new Set(guidanceByProfile.keys()),
         staffUnlockIds: new Set(
           unlockRows.filter((row) => row.via === "staff").map((row) => row.userId),
         ),
@@ -759,13 +759,11 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       counts: listed.counts,
       total: listed.total,
       next_offset: listed.next_offset,
-      guidance_summary: summarizeGuidance(grantRows),
+      guidance_summary: summarizeGuidance([...guidanceByProfile.values()]),
       learners: listed.learners.map((row) => ({
         ...row,
-        source_group: grantRows.find((grant) => grant.profileId === row.id)?.source_group ?? null,
-        guidance: row.assigned
-          ? guidanceOf(grantRows.find((grant) => grant.profileId === row.id))
-          : null,
+        source_group: guidanceByProfile.get(row.id)?.source_group ?? null,
+        guidance: row.assigned ? guidanceOf(guidanceByProfile.get(row.id)) : null,
       })),
     });
   } catch (err) {
@@ -799,24 +797,43 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
       throw new ApiError("descendants は真偽値で指定してください", 400);
     }
     const stage = await loadGrantStage(db, stageId);
-    const [profileRows, grantRows, unlockRows] = await Promise.all([
-      db
-        .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
-        .from(profiles),
-      db
-        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
-        .from(stageGrants)
-        .where(eq(stageGrants.stageId, stageId)),
-      db
-        .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
-        .from(stageUnlocks)
-        .where(eq(stageUnlocks.stageId, stageId)),
-    ]);
+    const [profileRows, grantRows, unlockRows, groupGrantRows, groupUnlockRows] = await Promise.all(
+      [
+        db
+          .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
+          .from(profiles),
+        db
+          .select({ profileId: stageGrants.profileId, ...guidanceColumns })
+          .from(stageGrants)
+          .where(eq(stageGrants.stageId, stageId)),
+        db
+          .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
+          .from(stageUnlocks)
+          .where(eq(stageUnlocks.stageId, stageId)),
+        db
+          .selectDistinct({ profileId: effectiveStageGrants.profileId })
+          .from(effectiveStageGrants)
+          .where(
+            and(eq(effectiveStageGrants.stageId, stageId), isNotNull(effectiveStageGrants.groupId)),
+          ),
+        db
+          .selectDistinct({ userId: effectiveStageUnlocks.userId })
+          .from(effectiveStageUnlocks)
+          .where(
+            and(
+              eq(effectiveStageUnlocks.stageId, stageId),
+              isNotNull(effectiveStageUnlocks.groupId),
+            ),
+          ),
+      ],
+    );
+    const groupAssigned = new Set(groupGrantRows.map((row) => row.profileId));
     const prepared = prepareStageGrantDiff(
       parsed.value,
       new Map(profileRows.map((row) => [row.id, row])),
       new Set(grantRows.map((row) => row.profileId)),
       new Set(unlockRows.filter((row) => row.via !== "staff").map((row) => row.userId)),
+      groupAssigned,
     );
     if (!prepared.ok) throw new ApiError(prepared.error, 400);
     const plan = prepared.value;
@@ -877,7 +894,11 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId", async (c) => {
       unlockRows.filter((row) => row.via === "staff").map((row) => row.userId),
     );
     const next = assignmentAfterDiff(assigned, staffUnlocks, plan);
-    const counts = countStageGrantLearners(profileRows, next.assigned, next.staffUnlocks);
+    const counts = countStageGrantLearners(
+      profileRows,
+      new Set([...next.assigned, ...groupAssigned]),
+      new Set([...next.staffUnlocks, ...groupUnlockRows.map((row) => row.userId)]),
+    );
     const ancestorGrants = groupAncestorGrants(ancestorRows);
     const descendantGrants = groupAncestorGrants(descendantRows);
     const descendantRemovals = groupAncestorGrants(descendantRemovalRows);
@@ -919,7 +940,10 @@ stageGrantsRoute.patch("/api/stage-grants/:stageId/guidance", async (c) => {
     requireAdmin(caller);
     const { guidance, profileIds } = parseGuidance(await c.req.json().catch(() => null));
     const stage = await loadGrantStage(db, c.req.param("stageId"));
-    const rows = await loadStageGuidance(db, stage.id);
+    const rows = await db
+      .select({ profileId: stageGrants.profileId })
+      .from(stageGrants)
+      .where(eq(stageGrants.stageId, stage.id));
     const assigned = new Set(rows.map((row) => row.profileId));
     if (profileIds?.some((id) => !assigned.has(id)))
       throw new ApiError("割り当て済みのユーザーを指定してください", 400);

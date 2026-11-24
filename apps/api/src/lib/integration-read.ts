@@ -189,8 +189,8 @@ export async function readIntegrationProgress(
       throw new ApiError("Invalid cursor", 400);
     after = position[4];
   }
-  const page = sql`select p.id, p.email, p.display_name, m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 200`;
-  const scope = sql`select s.id, s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId} ${query.stage === undefined ? sql`` : sql`and s.slug=${query.stage}`}`;
+  const page = sql`select p.id, p.email, p.display_name, m.external_id from group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 200`;
+  const scope = sql`select s.id, s.slug from group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId} ${query.stage === undefined ? sql`` : sql`and s.slug=${query.stage}`}`;
   const members = await db.all<{
     id: string;
     email: string;
@@ -296,7 +296,7 @@ export async function readIntegrationProgress(
       ),
     ),
     db.all<{ id: string }>(
-      sql`select p.id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
+      sql`select p.id from group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student' and p.id > ${after} order by p.id limit 1 offset 200`,
     ),
   ]);
   await loadProblemImports(db, problems);
@@ -445,8 +445,8 @@ export async function readIntegrationEvents(db: Db, groupId: string, after?: str
   const rows = await db.all<
     (EventRow & { event_row: 1 }) | (ScopedProblemRow & { event_row: 0 })
   >(sql`with
-    members as (select m.profile_id,m.external_id from integration_group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
-    scope as (select s.id,s.slug from integration_group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
+    members as (select m.profile_id,m.external_id from group_members m join profiles p on p.id=m.profile_id where m.group_id=${groupId} and p.role='student'),
+    scope as (select s.id,s.slug from group_stages gs join stages s on s.id=gs.stage_id where gs.group_id=${groupId}),
     scoped as (select e.*,m.external_id,s.slug from integration_events e join members m on m.profile_id=e.user_id join scope s on s.id=e.stage_id
       left join tasks t on t.id=e.task_id where e.seq > ${sequence} and (e.task_id is null or (t.active=1 and t.variant_of is null))),
     keyed as (select *,case when type in ('problem_passed','problem_pass_revoked') then json_array(type,user_id,task_id,occurred_at) else json_array('event',seq) end group_key from scoped),

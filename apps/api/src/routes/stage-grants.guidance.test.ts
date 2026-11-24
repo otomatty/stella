@@ -5,6 +5,7 @@ import { getDb } from "../db/client.js";
 import {
   auditLogs,
   enrollments,
+  groupMembers,
   learnerFocus,
   lessonProgress,
   lessons,
@@ -21,6 +22,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { createOrRenameGroup, replaceGroupStages } from "../lib/groups.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -183,6 +185,46 @@ describe("割り当ての案内 (実 SQLite)", () => {
       expect(rows.find((r) => r.profileId === "learner")?.sourceName).toBe(guidance.source_name);
     },
   );
+  it("手動の割り当て・免除を解除しても、管理者グループの分は残る", async () => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await createOrRenameGroup(db, { id: group.id, name: "管理者のグループ" });
+    await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+    expect(
+      await replaceGroupStages(
+        db,
+        group,
+        [{ slug: "sample-extra", message: "グループの案内", exempt: true }],
+        [],
+      ),
+    ).toMatchObject({ ok: true });
+
+    expect(await mine()).toMatchObject({
+      stages: [{ status: "available", source_name: null, message: "グループの案内" }],
+    });
+    const path = "/api/stage-grants/extra";
+    expect((await call(path, "PATCH", { exempt: ["learner"] })).status).toBe(200);
+    expect((await call(path, "PATCH", { add: ["learner"] })).status).toBe(200);
+    expect(await db.select().from(stageGrants)).toHaveLength(1);
+    expect(await db.select().from(stageUnlocks)).toHaveLength(1);
+    expect(await mine()).toMatchObject({ stages: [empty] });
+
+    const removed = await call(path, "PATCH", { remove: ["learner"] });
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toMatchObject({ counts: { assigned: 1, exempted: 1 } });
+    expect(await db.select().from(stageGrants)).toEqual([]);
+    expect(await db.select().from(stageUnlocks)).toEqual([]);
+    expect(await mine()).toMatchObject({
+      stages: [{ status: "available", message: "グループの案内" }],
+    });
+
+    const roster = await call(`${path}/learners?status=assigned`);
+    expect(roster.status).toBe(200);
+    expect(await roster.json()).toMatchObject({
+      learners: [
+        { id: "learner", assigned: true, exempted: true, source_group: "管理者のグループ" },
+      ],
+    });
+  });
   it("割り当てなし・他人だけの割り当ては空、免除・受講・修了を評価する", async () => {
     expect(await mine()).toEqual({ stages: [] });
     await grant("other");

@@ -19,10 +19,10 @@ export function isIntegrationScopes(value: unknown): value is IntegrationScope[]
 export const INTEGRATION_GROUP_KEY = /^[A-Za-z0-9:_-]{1,100}$/;
 export interface IntegrationGroup {
   id: string;
-  key: string;
+  key: string | null;
   name: string;
   memberCount: number;
-  clientId: string;
+  clientId: string | null;
 }
 export interface IntegrationClient {
   id: string;
@@ -49,6 +49,7 @@ export interface IntegrationMemberInput {
   email: string;
   displayName?: string;
   externalId?: string | null;
+  peerName?: string | null;
 }
 export interface IntegrationMemberResult {
   index: number;

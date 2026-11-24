@@ -12,8 +12,6 @@ import {
   enrollments,
   submissions,
   integrationClients,
-  integrationGroups,
-  integrationGroupMembers,
 } from "./schema.js";
 
 it.each([true, false])(
@@ -39,12 +37,12 @@ it.each([true, false])(
           tokenHash: "fixture-hash",
           tokenPrefix: "fixture",
         });
-        await db
-          .insert(integrationGroups)
-          .values({ id: "group", clientId: "client", key: "sample", name: "fixture" });
-        await db
-          .insert(integrationGroupMembers)
-          .values({ groupId: "group", profileId: "fixture-user" });
+        fixture.sqlite.exec(`
+          INSERT INTO integration_groups (id, client_id, external_key, name, created_at, updated_at)
+          VALUES ('group', 'client', 'sample', 'fixture', 1, 1);
+          INSERT INTO integration_group_members (group_id, profile_id, joined_at)
+          VALUES ('group', 'fixture-user', 1);
+        `);
       }
       await db
         .insert(stages)
@@ -229,9 +227,9 @@ it.each([true, false])(
         await db
           .insert(profiles)
           .values({ id: "next-user", email: "next@example.test", displayName: "fixture" });
-        await db
-          .insert(integrationGroupMembers)
-          .values({ groupId: "group", profileId: "next-user" });
+        fixture.sqlite.exec(
+          "INSERT INTO integration_group_members (group_id, profile_id, joined_at) VALUES ('group', 'next-user', 1)",
+        );
         await db
           .insert(enrollments)
           .values({ userId: "next-user", stageId: "fixture-stage", enrolledAt: new Date(1000) });
