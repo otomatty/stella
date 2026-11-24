@@ -407,6 +407,20 @@ export function StageGrantEditor({
     />
   );
 
+  const groupFilter = (
+    <IntegrationGroupFilter
+      value={groupId}
+      onChange={setGroupId}
+      disabled={pending.size > 0 || saving || guidanceBusy}
+      className={
+        isMobile
+          ? "flex min-w-0 items-center gap-2 text-[13px] text-ink-3"
+          : "flex max-w-full items-center gap-1.5 text-[12px] text-ink-3"
+      }
+      selectClassName={isMobile ? "min-w-0 flex-1" : "w-56"}
+    />
+  );
+
   const shellProps = {
     completionStageId: stageId,
     stageLabel,
@@ -421,6 +435,7 @@ export function StageGrantEditor({
     saving: saving || guidanceBusy,
     queryText,
     onQueryText: setQueryText,
+    groupFilter,
     onRetry: () => setReloadTick((n) => n + 1),
     onAssigned,
     onExempted,
@@ -490,11 +505,6 @@ export function StageGrantEditor({
         }}
       >
         <DrawerContent key={sheetNonce} className="h-[92dvh] max-h-[92dvh]">
-          <IntegrationGroupFilter
-            value={groupId}
-            onChange={setGroupId}
-            disabled={pending.size > 0 || saving || guidanceBusy}
-          />
           <MobileRoster
             {...shellProps}
             tab={mobileTab}
@@ -527,11 +537,6 @@ export function StageGrantEditor({
       }}
     >
       <DialogContent className="flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] w-[min(calc(100vw-2rem),960px)] flex-col gap-0">
-        <IntegrationGroupFilter
-          value={groupId}
-          onChange={setGroupId}
-          disabled={pending.size > 0 || saving || guidanceBusy}
-        />
         <PcRoster
           {...shellProps}
           changedLearnerCount={changedLearnerCount}
@@ -555,13 +560,15 @@ function SearchField({
   value,
   onChange,
   tall,
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
   tall?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className={cn("relative min-w-0 flex-1", className)}>
       <Search
         size={16}
         aria-hidden="true"
@@ -802,6 +809,7 @@ function PcRoster({
   changedLearnerCount,
   saving,
   queryText,
+  groupFilter,
   status,
   prereq,
   assignment,
@@ -835,6 +843,7 @@ function PcRoster({
   changedLearnerCount: number;
   saving: boolean;
   queryText: string;
+  groupFilter: React.ReactNode;
   status: PcStatus;
   prereq: PcPrereq;
   assignment: { checked: boolean; disabled: boolean; visibleCount: number };
@@ -877,7 +886,7 @@ function PcRoster({
       </DialogHeader>
       <div className="flex shrink-0 flex-col gap-2 border-b px-6 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <SearchField value={queryText} onChange={onQueryText} />
+          <SearchField value={queryText} onChange={onQueryText} className="min-w-64 basis-64" />
           {prerequisiteTitles.length > 0 ? (
             <label
               className="flex items-center gap-1.5 text-[12px] text-ink-3"
@@ -896,6 +905,7 @@ function PcRoster({
               </NativeSelect>
             </label>
           ) : null}
+          {groupFilter}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div role="tablist" aria-label="割り当て状態" className="flex flex-wrap gap-1">
@@ -1087,6 +1097,7 @@ function MobileRoster({
   changeCount,
   saving,
   queryText,
+  groupFilter,
   tab,
   assignStatus,
   prereqDone,
@@ -1125,6 +1136,7 @@ function MobileRoster({
   changeCount: number;
   saving: boolean;
   queryText: string;
+  groupFilter: React.ReactNode;
   tab: MobileTab;
   assignStatus: AssignStatus;
   prereqDone: boolean;
@@ -1195,6 +1207,7 @@ function MobileRoster({
       </div>
       <div className="flex shrink-0 flex-col gap-2 px-4 py-2">
         <SearchField value={queryText} onChange={onQueryText} tall />
+        {groupFilter}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {tab === "assign" ? (
             <>
