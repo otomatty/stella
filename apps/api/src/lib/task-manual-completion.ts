@@ -407,11 +407,11 @@ export async function writeManualCompletion(
                       userId: input.userId,
                       taskId: task.id,
                       contentHash: task.contentHash,
-                      status: "local-passed",
+                      status: problems ? "not-started" : "local-passed",
                       updatedAt: now,
                     })
                     // 提出が残れば直前の recompute の結果を尊重する。
-                    // 行が無い = 提出なし・本人の問題だけ残る場合に限り local-passed。
+                    // 問題つきの課題で本人の問題だけが残る場合は未提出に戻す。
                     .onConflictDoNothing({ target: [taskProgress.userId, taskProgress.taskId] }),
                 );
               }

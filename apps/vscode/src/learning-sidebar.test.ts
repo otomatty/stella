@@ -102,6 +102,54 @@ describe("学習サイドバー", () => {
     }
   });
 
+  it("問1〜3の提出後は「計算の順番」、視聴完了後は問4へ案内する", () => {
+    const taskId = "devlab-ts-ch01/u01-let-const/q01";
+    const submitted = ["q01-01-add-tax", "q01-02-split-bill", "q01-03-minutes-to-text"].map((id) =>
+      lesson(id, { completed: true, problem: { taskId, id } }),
+    );
+    const video = lesson("1-1-14", { title: "計算の順番", type: "video" });
+    const fourth = lesson("problem-u01-let-const-q01-q01-04-average3", {
+      title: "問4 3つの数の平均を返す",
+      problem: { taskId, id: "q01-04-average3" },
+    });
+    expect(submitted.every(learningItemComplete)).toBe(true);
+    expect(learningItemComplete(fourth)).toBe(false);
+    const before = renderUnit([...submitted, video, fourth]);
+    expect(before).toContain('<h2 id="next-title">計算の順番</h2>');
+    expect(before).toContain('data-lesson="1-1-14">Web で進める</button>');
+
+    const after = renderUnit([...submitted, { ...video, completed: true }, fourth]);
+    expect(after).toContain('<h2 id="next-title">問4 3つの数の平均を返す</h2>');
+    expect(after).toContain("編集するファイルと課題文を並べて開きます。");
+    expect(after).toContain(`data-lesson="${fourth.id}">問題に取り組む</button>`);
+    const fourthRow = after.match(
+      /<li class="lesson"><button[^>]+data-lesson="problem-u01-let-const-q01-q01-04-average3".*?<\/li>/,
+    )?.[0];
+    expect(fourthRow).toContain('class="kind-icon"');
+    expect(fourthRow).toContain("</svg>課題");
+    expect(fourthRow).not.toContain("Web で受講");
+  });
+
+  it("課題 ID で最初の未完了の問題がある単元へ移り、全問完了なら最後の問題を表示する", () => {
+    const taskId = "devlab-ts-ch01/u01-let-const/q01";
+    const lessons = ["q01", "q02", "q03"].map((id, index) =>
+      lesson(id, { completed: index === 0, problem: { taskId, id } }),
+    );
+    const first = { id: "problems-1", title: "最初の単元", lessons: lessons.slice(0, 1) };
+    const second = { id: "problems-2", title: "次の単元", lessons: lessons.slice(1) };
+    const withProblems = [
+      catalog[0],
+      { ...catalog[1], sections: [...catalog[1].sections, first, second] },
+    ];
+    expect(resolveLearningLocation(withProblems, { taskId })).toEqual({
+      stage: withProblems[1],
+      section: second,
+      lesson: lessons[1],
+    });
+    for (const item of lessons) item.completed = true;
+    expect(resolveLearningLocation(withProblems, { taskId }).lesson).toBe(lessons[2]);
+  });
+
   it("レビュー待ちの課題をやり直させず、次の教材を案内する", () => {
     const waiting = lesson("waiting", { task: { id: "t", status: "submitted" } });
     expect(nextLearningItem({ id: "u", title: "u", lessons: [waiting, lesson("next")] })?.id).toBe(

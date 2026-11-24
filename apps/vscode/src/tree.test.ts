@@ -28,6 +28,17 @@ describe("課題文レッスン", () => {
     expect(node.task?.status).toBe("not-started");
   });
 
+  it("問題レッスンは課題 ID と問題 ID で開く", () => {
+    const problem = { taskId: "devlab-ts-ch01/u01-let-const/q01", id: "q01-04-average3" };
+    const node = toLessonNode({ ...base, id: `problem-u01-let-const-q01-${problem.id}`, problem });
+    expect(node.contextValue).toBe("lesson-problem");
+    expect(lessonCommand(node)).toEqual({
+      command: "stella.openTask",
+      title: "問題に取り組む",
+      arguments: [problem.taskId, problem.id],
+    });
+  });
+
   it.each(["text", "slides"] as const)("課題の無い %s のレッスンは Web で開く", (type) => {
     const node = toLessonNode({ ...base, type });
     expect(node.contextValue).toBe("lesson-web");

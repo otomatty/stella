@@ -641,6 +641,55 @@ describe("課題を開いた画面", () => {
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 
+  it.each([
+    { lastState: "locked-video", opened: undefined },
+    { lastState: "submitted", opened: "q01" },
+  ])("問題を指定せずに開く (最後の問題: $lastState)", async ({ lastState, opened }) => {
+    const problems = [
+      { id: "q01", title: "問1" },
+      { id: "q02", title: "問2" },
+    ];
+    const problemManifest = {
+      ...manifest,
+      problems,
+      problemSteps: true as const,
+      submit: { files: ["src/**/*.ts"] },
+    };
+    const files = {
+      ...bundle.files,
+      ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString("base64"),
+      ...Object.fromEntries(
+        problems.flatMap(({ id }) =>
+          [`src/${id}.ts`, `tests/${id}.test.ts`].map((rel) => [
+            rel,
+            Buffer.from(id).toString("base64"),
+          ]),
+        ),
+      ),
+    };
+    state.folders = [training];
+    state.apiRequest.mockImplementation(async (url: string) =>
+      url.includes("problem-results")
+        ? {
+            gated: true,
+            totalProblems: 2,
+            passedProblems: lastState === "submitted" ? 2 : 1,
+            taskPassed: lastState === "submitted",
+            problems: [
+              { id: "q01", state: "submitted" },
+              { id: "q02", state: lastState, afterTitle: "計算の順番" },
+            ],
+          }
+        : { bundle: { ...bundle, manifest: problemManifest, files } },
+    );
+    await openDistributedTask(context, taskId);
+    const openedFiles = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    expect(openedFiles).toEqual(opened ? [path.join(taskRoot(), "src", `${opened}.ts`)] : []);
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+
   it("準備後に動画を見終えたら、ウィンドウを開くときに問題のファイルを足す", async () => {
     const problemManifest = {
       ...manifest,
