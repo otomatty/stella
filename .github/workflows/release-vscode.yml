@@ -77,6 +77,48 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: List release screenshots
+        id: shots
+        if: steps.release.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          names=$(bun run --silent release:shots list --changelog apps/vscode/CHANGELOG.md --version "$VERSION")
+          printf 'names=%s\n' "$names" >> "$GITHUB_OUTPUT"
+
+      - name: Install Japanese fonts and Chromium for release screenshots
+        id: shots_browser
+        if: steps.shots.outputs.names != ''
+        continue-on-error: true
+        working-directory: apps/vscode
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          bunx playwright install --with-deps chromium
+
+      - name: Capture release screenshots
+        id: capture_shots
+        if: steps.shots_browser.outcome == 'success'
+        continue-on-error: true
+        env:
+          RELEASE_SHOTS: ${{ steps.shots.outputs.names }}
+          RELEASE_SHOTS_OUT: ${{ runner.temp }}/release-shots
+        run: bun run --filter=stella-lms release:shots
+
+      - name: Upload release screenshots to R2
+        id: upload_shots
+        if: steps.capture_shots.outcome == 'success'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MATERIALS_BASE_URL: ${{ vars.VITE_MATERIALS_BASE_URL }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          bun run release:shots upload --product vscode --version "$VERSION" \
+            --dir "$RUNNER_TEMP/release-shots" --out "$RUNNER_TEMP/release/images.json"
+
       # 同じ版の再ビルドは配布ファイルだけに反映する。
       - name: Replace the existing VSIX
         if: steps.release.outputs.exists == 'true'
@@ -95,9 +137,14 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           VERSION: ${{ steps.meta.outputs.version }}
+          SCREENSHOT_UPLOAD: ${{ steps.upload_shots.outcome }}
         run: |
+          images=()
+          if [[ "$SCREENSHOT_UPLOAD" == 'success' && -f "$RUNNER_TEMP/release/images.json" ]]; then
+            images=(--images "$RUNNER_TEMP/release/images.json")
+          fi
           bun run release:notes prepare --product vscode --version "$VERSION" \
-            --changelog apps/vscode/CHANGELOG.md --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/release"
+            --changelog apps/vscode/CHANGELOG.md --commit "$GITHUB_SHA" --out-dir "$RUNNER_TEMP/release" "${images[@]}"
 
       # 本文と VSIX を公開し、Marketplace 公開前の要約も同時に添付する。
       - name: Create release
