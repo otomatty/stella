@@ -225,9 +225,9 @@ describe("課題の配布", () => {
         if (completed === stop) throw new Error("interrupted");
         completed++;
       }
-      vi.mocked(rename).mockImplementation(async (...args) => {
-        stopIfNeeded();
-        await actual.rename(...args);
+      vi.mocked(rename).mockImplementation(async (source, target) => {
+        if (path.basename(String(source)) !== "updating-receipt") stopIfNeeded();
+        await actual.rename(source, target);
       });
       vi.mocked(copyFile).mockImplementation(async (...args) => {
         stopIfNeeded();
@@ -235,7 +235,11 @@ describe("課題の配布", () => {
       });
 
       await expect(installTask(training, updated)).rejects.toThrow("interrupted");
-      expect((await readReceipt(taskRoot)).contentHash).toBe(before.contentHash);
+      expect(await readReceipt(taskRoot)).toMatchObject({
+        contentHash: before.contentHash,
+        updatingTo: updated.contentHash,
+        files: makeHashes(before.files),
+      });
       vi.mocked(rename).mockReset();
       vi.mocked(copyFile).mockReset();
 
@@ -358,7 +362,10 @@ describe("課題の配布", () => {
     const added = path.join(taskRoot, "new.txt");
     const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
     vi.mocked(rename).mockImplementation(async (source, target) => {
-      if (target === path.join(taskRoot, receiptPath)) {
+      if (
+        target === path.join(taskRoot, receiptPath) &&
+        path.basename(String(source)) !== "updating-receipt"
+      ) {
         await actual.writeFile(added, "learner saved before receipt");
         throw new Error("receipt publish failed");
       }
@@ -371,6 +378,58 @@ describe("課題の配布", () => {
     expect(await readFile(added, "utf8")).toBe("learner saved before receipt");
     expect((await readReceipt(taskRoot)).contentHash).toBe(bundle.contentHash);
   });
+
+  it.each([false, true])(
+    "更新中に保存すると同じバージョンへの再試行だけで編集を引き継ぐ (更新先が変更 %s)",
+    async (changedTarget) => {
+      const training = await root();
+      const taskRoot = await installTask(training, bundle);
+      const code = path.join(taskRoot, "index.js");
+      const readme = path.join(taskRoot, "README.md");
+      const receipt = path.join(taskRoot, receiptPath);
+      const updated = nextBundle({ "index.js": "new starter", "README.md": "new readme" });
+      const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+      vi.mocked(rename).mockImplementation(async (source, target) => {
+        if (target === receipt && path.basename(String(source)) !== "updating-receipt") {
+          expect(await actual.readFile(code, "utf8")).toBe("new starter");
+          expect(await actual.readFile(readme, "utf8")).toBe("new readme");
+          await actual.writeFile(code, "learner saved after replacement");
+          throw new Error("receipt publish failed");
+        }
+        await actual.rename(source, target);
+      });
+
+      await expect(installTask(training, updated)).rejects.toThrow("receipt publish failed");
+      const pending = {
+        taskId: bundle.manifest.id,
+        contentHash: bundle.contentHash,
+        files: makeHashes(bundle.files),
+        updatingTo: updated.contentHash,
+      };
+      expect(await readReceipt(taskRoot)).toEqual(pending);
+      vi.mocked(rename).mockReset();
+
+      if (changedTarget) {
+        const newer = {
+          ...nextBundle({ "index.js": "another starter", "README.md": "another readme" }),
+          contentHash: "c".repeat(64),
+        };
+        const conflict = await conflictOf(installTask(training, newer));
+        expect(conflict.reason).toBe("updated");
+        expect(conflict.files).toEqual(["index.js"]);
+        expect(await readReceipt(taskRoot)).toEqual(pending);
+      } else {
+        await expect(installTask(training, updated)).resolves.toBe(taskRoot);
+        expect(await readReceipt(taskRoot)).toEqual({
+          taskId: bundle.manifest.id,
+          contentHash: updated.contentHash,
+          files: makeHashes(updated.files),
+        });
+      }
+      expect(await readFile(code, "utf8")).toBe("learner saved after replacement");
+      expect(await readFile(readme, "utf8")).toBe("new readme");
+    },
+  );
 
   it("新規公開の直前に同じファイルができても上書きせずに続ける", async () => {
     const training = await root();

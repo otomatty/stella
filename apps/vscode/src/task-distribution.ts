@@ -47,6 +47,7 @@ interface Receipt {
   variant?: "fixed-start";
   deferred?: Record<string, HashedFile | null>;
   files?: FileHashes;
+  updatingTo?: string;
 }
 
 type FileHashes = Record<string, string>;
@@ -474,7 +475,7 @@ async function needsPublication(
   return true;
 }
 
-/** 新しい配布記録は、全ファイルの公開が済んだあとに置く。 */
+/** バージョン更新は先に更新先を控え、全ファイルの公開後に配布記録を切り替える。 */
 async function writeDistributionUpdate(
   base: string,
   root: string,
@@ -489,10 +490,17 @@ async function writeDistributionUpdate(
   try {
     const previousRecord = await readExisting(root, RECEIPT_PATH);
     if (!previousRecord) throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
+    const marking =
+      previous.contentHash !== receipt.contentHash && previous.updatingTo !== receipt.contentHash;
+    const activeRecord = marking
+      ? Buffer.from(JSON.stringify({ ...previous, updatingTo: receipt.contentHash }))
+      : previousRecord;
+    const markerSource = path.join(staging, "updating-receipt");
+    if (marking) await writeNewFile(base, staging, path.basename(markerSource), activeRecord);
     const record: Replacement = {
       rel: RECEIPT_PATH,
       data: Buffer.from(JSON.stringify(receipt)),
-      before: previousRecord,
+      before: activeRecord,
     };
     const writes = [...entries, record];
     for (const [i, { data }] of writes.entries())
@@ -502,7 +510,13 @@ async function writeDistributionUpdate(
       throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
 
     // 一時ファイルを書いている間に保存された場合も、公開を始める前に止める。
-    for (const write of writes) await needsPublication(root, write);
+    for (const write of entries) await needsPublication(root, write);
+    if (marking) {
+      await assertPlainDirectory(base, staging);
+      const marker = { rel: RECEIPT_PATH, before: previousRecord, data: activeRecord };
+      if (await needsPublication(root, marker))
+        await rename(markerSource, path.join(root, RECEIPT_PATH));
+    }
     for (const [i, write] of writes.entries()) {
       const { rel, before, data } = write;
       await assertPlainDirectory(base, root);
@@ -514,7 +528,7 @@ async function writeDistributionUpdate(
       if (rel !== RECEIPT_PATH) {
         const currentReceipt = await readExisting(root, RECEIPT_PATH);
         if (currentReceipt?.equals(record.data)) return;
-        if (!currentReceipt?.equals(previousRecord))
+        if (!currentReceipt?.equals(activeRecord))
           throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
       }
       if (!(await needsPublication(root, write))) continue;
@@ -560,10 +574,10 @@ async function planReplacements(
   entries: [string, Buffer][],
   oldFiles: FileHashes,
   backupDir: string,
-  adding = false,
+  mode: "update" | "resume" | "add" = "update",
 ): Promise<Replacement[]> {
   const paths = entries.map(([rel]) => rel);
-  const oldManifest = adding ? undefined : await verifiedOldManifest(root, oldFiles);
+  const oldManifest = mode === "add" ? undefined : await verifiedOldManifest(root, oldFiles);
   const editable = new Set(matchEditableFiles(paths, manifest).files);
   if (oldManifest)
     for (const rel of matchEditableFiles(paths, oldManifest).files) editable.add(rel);
@@ -582,11 +596,13 @@ async function planReplacements(
     const before = await readExisting(root, rel);
     const currentHash = before && fileHash(before);
     if (currentHash === nextHash) continue;
-    if (before && adding && previousHash === undefined)
+    if (before && mode === "add" && previousHash === undefined)
       throw new TaskInstallConflict("occupied", root, [rel]);
 
     if (before && editable.has(rel)) {
-      if (previousHash === nextHash) continue;
+      // 更新先を記録したあとに保存されたコードも受講者の編集として残す。
+      if (previousHash === nextHash || (mode === "resume" && currentHash !== previousHash))
+        continue;
       if (currentHash !== previousHash) {
         clashes.push(rel);
         continue;
@@ -637,7 +653,7 @@ async function extendDistribution(
     entries,
     oldFiles,
     backupDirectory(receipt.contentHash),
-    true,
+    "add",
   );
   const remaining = { ...receipt.deferred };
   for (const [rel] of entries) delete remaining[rel];
@@ -697,7 +713,14 @@ async function updateDistribution(
   const deferred = deferredFiles(bundle, visible);
   const entries = readBundleEntries(bundle, deferred);
   const backupDir = backupDirectory(receipt.contentHash);
-  const writes = await planReplacements(root, bundle.manifest, entries, oldFiles, backupDir);
+  const writes = await planReplacements(
+    root,
+    bundle.manifest,
+    entries,
+    oldFiles,
+    backupDir,
+    receipt.updatingTo === bundle.contentHash ? "resume" : "update",
+  );
   await writeDistributionUpdate(
     base,
     root,
