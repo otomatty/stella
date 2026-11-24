@@ -185,6 +185,58 @@ describe("割り当ての案内 (実 SQLite)", () => {
       expect(rows.find((r) => r.profileId === "learner")?.sourceName).toBe(guidance.source_name);
     },
   );
+  it("割り当ての出どころに手動とすべてのグループを返す", async () => {
+    await grant("learner");
+    await grant("new");
+    await db
+      .insert(profiles)
+      .values({ id: "grouped", displayName: "架空の受講者", role: "student" });
+    const ids = new Map<string, string>();
+    for (const [name, members, due_at] of [
+      ["Z グループ", ["other", "new", "grouped"], "2026-12-01T00:00:00Z"],
+      ["A グループ", ["grouped"], null],
+    ] as const) {
+      const group = await createOrRenameGroup(db, { name, createdBy: "admin" });
+      expect(
+        await replaceGroupStages(db, group, [{ slug: "sample-extra", due_at }], []),
+      ).toMatchObject({ ok: true });
+      await db
+        .insert(groupMembers)
+        .values(members.map((profileId) => ({ groupId: group.id, profileId })));
+      ids.set(name, group.id);
+    }
+    const res = await call("/api/stage-grants/extra/learners");
+    expect(res.status).toBe(200);
+    const { learners } = await json<{
+      learners: { id: string; assigned: boolean; sources: unknown; source_group: string | null }[];
+    }>(res);
+    const byId = new Map(learners.map(({ id, ...row }) => [id, row]));
+    const groupA = { id: ids.get("A グループ"), name: "A グループ" };
+    const groupZ = { id: ids.get("Z グループ"), name: "Z グループ" };
+    expect(byId.get("learner")).toMatchObject({
+      assigned: true,
+      sources: { manual: true, groups: [] },
+    });
+    expect(byId.get("other")).toMatchObject({
+      assigned: true,
+      sources: { manual: false, groups: [groupZ] },
+    });
+    expect(byId.get("new")).toMatchObject({
+      assigned: true,
+      sources: { manual: true, groups: [groupZ] },
+    });
+    expect(byId.get("grouped")).toMatchObject({
+      assigned: true,
+      sources: { manual: false, groups: [groupA, groupZ] },
+      source_group: groupA.name,
+      guidance: { due_at: "2026-12-01T00:00:00.000Z" },
+    });
+    expect(byId.get("admin")).toMatchObject({
+      assigned: false,
+      sources: { manual: false, groups: [] },
+    });
+  });
+
   it("手動の割り当て・免除を解除しても、管理者グループの分は残る", async () => {
     const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
     await createOrRenameGroup(db, { id: group.id, name: "管理者のグループ" });

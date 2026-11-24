@@ -25,6 +25,7 @@ function row(partial: Partial<StageRosterRow> & Pick<StageRosterRow, "id">): Sta
     email: null,
     selectable: true,
     assigned: false,
+    sources: { manual: partial.assigned ?? false, groups: [] },
     exempted: false,
     unlocked_by_skill_check: false,
     prerequisites_cleared: false,
@@ -134,6 +135,37 @@ describe("割り当てと免除の差分", () => {
     expect(setRosterExempted(new Map(), cleared, true).size).toBe(0);
     expect(setRosterExempted(new Map(), skill, true).size).toBe(0);
     expect(setRosterExempted(new Map(), open, true).size).toBe(0);
+  });
+});
+
+describe("グループ経由の割り当て", () => {
+  const groups = [{ id: "group-id", name: "グループ" }];
+  const grouped = row({ id: "grouped", assigned: true, sources: { manual: false, groups } });
+  const mixed = row({ id: "mixed", assigned: true, sources: { manual: true, groups } });
+
+  it("グループのみの行は個別にも一括でも外せず、免除は操作できる", () => {
+    const pending: StageRosterPending = new Map();
+    expect(setRosterAssigned(pending, grouped, false)).toBe(pending);
+    expect(visibleAssignmentState([grouped], pending).disabled).toBe(true);
+    expect(toggleVisibleAssignments(pending, [grouped])).toBe(pending);
+    expect(rosterDiff(setRosterExempted(pending, grouped, true)).exempt).toEqual(["grouped"]);
+  });
+
+  it("一括で手動分だけ外せて、変更は取り消せる", () => {
+    const pending = toggleVisibleAssignments(new Map(), [grouped, mixed]);
+    expect(rosterDiff(pending)).toEqual({ add: [], remove: ["mixed"], exempt: [], unexempt: [] });
+    const views = composeRosterRows({
+      loaded: [grouped, mixed],
+      pending,
+      changesOnly: false,
+      assignedScope: false,
+      filter: openFilter,
+    });
+    expect(views).toMatchObject([
+      { assigned: true, assignmentChecked: true, canAssign: false },
+      { assigned: true, assignmentChecked: false, canAssign: true, marks: ["外す"] },
+    ]);
+    expect(toggleVisibleAssignments(pending, [grouped, mixed]).size).toBe(0);
   });
 });
 

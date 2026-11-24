@@ -9,6 +9,11 @@ export interface StageGrantGuidance {
 export type StageGrantGuidanceRequest = StageGrantGuidance &
   ({ all: true; profile_ids?: never } | { profile_ids: string[]; all?: never });
 
+export interface StageGrantSources {
+  manual: boolean;
+  groups: { id: string; name: string }[];
+}
+
 export interface StageGrantGuidanceSummary {
   uniform: boolean;
   /** 割り当てなし、または混在しているときは null。 */

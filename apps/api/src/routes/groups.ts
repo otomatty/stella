@@ -1,3 +1,4 @@
+import type { GroupPeerProgress, LearnerGroup } from "@stella/shared/groups/types";
 import { stageProgressPercent } from "@stella/shared/progress/stage-progress";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -15,7 +16,7 @@ groupsRoute.use("/api/groups/*", async (c, next) => {
 groupsRoute.get("/api/groups/mine", async (c) => {
   const { caller, db } = await getCaller(c);
   if (caller.role !== "student") throw new ApiError("権限がありません", 403);
-  const groups = await db.all<{ id: string; name: string; memberCount: number }>(sql`
+  const groups = await db.all<LearnerGroup>(sql`
     select g.id, g.name, count(p.id) memberCount
     from group_members mine
     join groups g on g.id = mine.group_id
@@ -109,11 +110,8 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
   const first = rows[0];
   if (!first) throw new ApiError("Not found", 404);
 
-  const stages = new Map<string, { id: string; title: string }>();
-  const members = new Map<
-    string,
-    { name: string; isMe: boolean; stages: { id: string; percent: number; cleared: boolean }[] }
-  >();
+  const stages = new Map<string, GroupPeerProgress["stages"][number]>();
+  const members = new Map<string, GroupPeerProgress["members"][number]>();
   for (const row of rows) {
     let member = members.get(row.profileId);
     if (!member) {
@@ -133,5 +131,5 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
     group: { id: first.groupId, name: first.groupName },
     stages: [...stages.values()],
     members: [...members.values()],
-  });
+  } satisfies GroupPeerProgress);
 });

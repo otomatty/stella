@@ -39,6 +39,15 @@ describe("navForRole", () => {
     expect(admin[users + 1]).toMatchObject({ id: "groups", label: "グループ" });
   });
 
+  it("公開中の所属グループがある受講者にだけ、修了証の前にグループを出す", () => {
+    expect(navForRole("learner", false).map((item) => item.id)).not.toContain("learner-groups");
+    expect(navForRole("learner", true).slice(-2)).toMatchObject([
+      { id: "learner-groups", label: "グループ" },
+      { id: "cert" },
+    ]);
+    expect(navForRole("admin", true)).toEqual(navForRole("admin"));
+  });
+
   it("外部連携は管理者の監査ログの直後に出す", () => {
     expect(ids("admin").slice(-2)).toEqual(["audit", "integrations"]);
   });

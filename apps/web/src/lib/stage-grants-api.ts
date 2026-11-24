@@ -2,6 +2,7 @@ import type {
   StageGrantGuidance,
   StageGrantGuidanceRequest,
   StageGrantGuidanceSummary,
+  StageGrantSources,
 } from "@stella/shared/stage-grants/types";
 import { apiFetch } from "./api-client";
 
@@ -19,7 +20,7 @@ export interface StageGrantLearnerCounts {
 }
 
 export interface StageGrantLearnerDetail {
-  source_group?: string | null;
+  sources: StageGrantSources;
   guidance?: StageGrantGuidance | null;
   id: string;
   display_name: string;

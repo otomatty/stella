@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { Stage, Role } from "@/data/types";
 import type { ProfileRole } from "@stella/shared/cms/types";
+import type { MyGroups } from "@/hooks/useMyGroups";
 import type { Profile } from "@/lib/auth";
 
 /**
@@ -18,6 +19,7 @@ export interface AppShellValue {
   onActiveLessonChange: (stageId: string, lessonId: string) => void;
   currentUserId: string | null;
   backendEnabled: boolean;
+  myGroups: MyGroups;
   /** 添削対象を控える (直後の setPage('review') が参照する)。 */
   onOpenReview: (id: string) => void;
   studentName: string;

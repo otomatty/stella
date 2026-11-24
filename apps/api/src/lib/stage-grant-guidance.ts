@@ -2,6 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import type {
   StageGrantGuidance,
   StageGrantGuidanceSummary,
+  StageGrantSources,
 } from "@stella/shared/stage-grants/types";
 import type { Db } from "../db/client.js";
 import { effectiveStageGrants, groups, stageGrants } from "../db/schema.js";
@@ -113,14 +114,28 @@ export async function loadStageGuidance(db: Db, stageId: string) {
   const rows = await db
     .select({
       profileId: effectiveStageGrants.profileId,
-      source_group: groups.name,
+      groupId: effectiveStageGrants.groupId,
+      groupName: groups.name,
       ...effectiveGuidanceColumns,
     })
     .from(effectiveStageGrants)
     .leftJoin(groups, eq(groups.id, effectiveStageGrants.groupId))
     .where(eq(effectiveStageGrants.stageId, stageId))
     .orderBy(...guidancePriority);
-  return firstGuidanceBy(rows, (row) => row.profileId);
+  const sourcesByProfile = new Map<string, StageGrantSources>();
+  for (const row of rows) {
+    let sources = sourcesByProfile.get(row.profileId);
+    if (!sources) {
+      sources = { manual: false, groups: [] };
+      sourcesByProfile.set(row.profileId, sources);
+    }
+    if (row.groupId == null) sources.manual = true;
+    else if (row.groupName !== null) sources.groups.push({ id: row.groupId, name: row.groupName });
+  }
+  for (const sources of sourcesByProfile.values()) {
+    sources.groups.sort((a, b) => a.name.localeCompare(b.name, "ja") || a.id.localeCompare(b.id));
+  }
+  return { guidanceByProfile: firstGuidanceBy(rows, (row) => row.profileId), sourcesByProfile };
 }
 
 /** 新規行だけを受け取る。祖先の自動割り当ても、その祖先自身の案内を継承する。 */

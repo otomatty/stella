@@ -967,9 +967,9 @@ function PcRoster({
                       <input
                         id={inputId}
                         type="checkbox"
-                        checked={view.assigned}
+                        checked={view.assignmentChecked}
                         disabled={!view.canAssign || saving}
-                        onChange={() => onAssigned(view.baseline, !view.assigned)}
+                        onChange={() => onAssigned(view.baseline, !view.assignmentChecked)}
                       />
                     </TableCell>
                     <TableCell>
@@ -986,7 +986,7 @@ function PcRoster({
                       {view.baseline.email ? (
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
-                      <GuidanceDue row={view.baseline} />
+                      <AssignmentSources view={view} />
                       {view.baseline.assigned &&
                       completionStageId &&
                       !saving &&
@@ -1269,9 +1269,9 @@ function MobileRoster({
                     <input
                       type="checkbox"
                       className="size-5 shrink-0"
-                      checked={view.assigned}
+                      checked={view.assignmentChecked}
                       disabled={!view.canAssign || saving}
-                      onChange={() => onAssigned(view.baseline, !view.assigned)}
+                      onChange={() => onAssigned(view.baseline, !view.assignmentChecked)}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1">
@@ -1303,7 +1303,7 @@ function MobileRoster({
                   </div>
                 )}
                 <div className="px-4">
-                  <GuidanceDue row={view.baseline} />
+                  <AssignmentSources view={view} />
                 </div>
                 {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
                   <Link
@@ -1334,10 +1334,37 @@ function MobileRoster({
   );
 }
 
-function GuidanceDue({ row }: { row: StageRosterRow }) {
+function AssignmentSources({ view }: { view: StageRosterView }) {
+  const row = view.baseline;
+  const { groups, manual } = row.sources;
   return (
     <>
-      {row.source_group ? <p className="text-xs text-ink-3">グループ: {row.source_group}</p> : null}
+      {(manual || groups.length > 0) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-2">
+          {manual && view.assignmentChecked && <Badge>手動</Badge>}
+          {groups.map((group) => (
+            <Link
+              key={group.id}
+              to="/admin/groups/$groupId"
+              params={{ groupId: group.id }}
+              className="inline-flex min-h-11 items-center text-brand underline"
+            >
+              <Badge variant="info" className="whitespace-normal break-words">
+                グループ: {group.name}
+              </Badge>
+            </Link>
+          ))}
+        </div>
+      )}
+      {groups.length > 0 && (
+        <p className="text-xs text-ink-3">
+          {!manual
+            ? "グループで管理しています"
+            : view.assignmentChecked
+              ? "外すと手動の割り当てだけが外れます"
+              : "保存後もグループの割り当ては残ります"}
+        </p>
+      )}
       {row.guidance?.due_at ? (
         <p className="text-xs text-ink-3">案内の期限 {guidanceDate(row.guidance.due_at)}</p>
       ) : null}

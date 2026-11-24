@@ -704,24 +704,25 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
 
     const stage = await loadGrantStage(db, c.req.param("stageId"));
     const slugs = prerequisiteSlugsFromRow(stage);
-    const [profileRows, guidanceByProfile, unlockRows, stagesBySlug] = await Promise.all([
-      db
-        .select({
-          id: profiles.id,
-          display_name: profiles.displayName,
-          email: profiles.email,
-          role: profiles.role,
-          disabled: profiles.disabled,
-        })
-        .from(profiles)
-        .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
-      loadStageGuidance(db, stage.id),
-      db
-        .selectDistinct({ userId: effectiveStageUnlocks.userId, via: effectiveStageUnlocks.via })
-        .from(effectiveStageUnlocks)
-        .where(eq(effectiveStageUnlocks.stageId, stage.id)),
-      loadStagesBySlug(db, slugs),
-    ]);
+    const [profileRows, { guidanceByProfile, sourcesByProfile }, unlockRows, stagesBySlug] =
+      await Promise.all([
+        db
+          .select({
+            id: profiles.id,
+            display_name: profiles.displayName,
+            email: profiles.email,
+            role: profiles.role,
+            disabled: profiles.disabled,
+          })
+          .from(profiles)
+          .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
+        loadStageGuidance(db, stage.id),
+        db
+          .selectDistinct({ userId: effectiveStageUnlocks.userId, via: effectiveStageUnlocks.via })
+          .from(effectiveStageUnlocks)
+          .where(eq(effectiveStageUnlocks.stageId, stage.id)),
+        loadStagesBySlug(db, slugs),
+      ]);
     const prereqIds = [
       ...new Set(
         slugs.flatMap((slug) => {
@@ -760,11 +761,15 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       total: listed.total,
       next_offset: listed.next_offset,
       guidance_summary: summarizeGuidance([...guidanceByProfile.values()]),
-      learners: listed.learners.map((row) => ({
-        ...row,
-        source_group: guidanceByProfile.get(row.id)?.source_group ?? null,
-        guidance: row.assigned ? guidanceOf(guidanceByProfile.get(row.id)) : null,
-      })),
+      learners: listed.learners.map((row) => {
+        const sources = sourcesByProfile.get(row.id) ?? { manual: false, groups: [] };
+        return {
+          ...row,
+          sources,
+          source_group: sources.groups[0]?.name ?? null,
+          guidance: row.assigned ? guidanceOf(guidanceByProfile.get(row.id)) : null,
+        };
+      }),
     });
   } catch (err) {
     return errorResponse(c, err);
