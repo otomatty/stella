@@ -352,6 +352,7 @@ describe("問題の提出", () => {
                 await problemInput(CURRENT, PROBLEMS, problemId),
                 {
                   id: TASK_ID,
+                  stageId: "stage",
                   stageTitle: "架空のステージ",
                   sectionTitle: "架空の単元",
                   contentHash: CURRENT,
@@ -568,7 +569,7 @@ describe("問題の提出", () => {
           change === "after"
             ? ["submitted", "submitted", "submitted", "open"]
             : change === "test"
-              ? ["submitted", "open", "submitted", "open"]
+              ? ["submitted", "open", "submitted", "locked-previous"]
               : ["open", "locked-previous", "locked-previous", "locked-previous"];
         const count = states.filter((state) => state === "submitted").length;
         expect(await result.json()).toMatchObject({
@@ -802,7 +803,7 @@ describe("問題の提出", () => {
     },
   );
 
-  it("動画と直前の問題の提出で解放し、管理者の引き継ぎも数える", async () => {
+  it("前の動画と問題の完了で解放し、管理者の引き継ぎも数える", async () => {
     const input = await gatedInput(await setupProblemSteps());
     async function results() {
       const response = await problemResults();
@@ -812,7 +813,7 @@ describe("問題の提出", () => {
     const lockedVideo = await post(input);
     expect(lockedVideo.status).toBe(409);
     expect(await lockedVideo.json()).toMatchObject({
-      error: "この問題はまだ解けません。先に計算の基礎の動画を見てください。",
+      error: "この問題はまだ解けません。先に「計算の基礎」を終えてください。",
     });
     expect(await results()).toMatchObject({
       gated: true,
@@ -838,7 +839,7 @@ describe("問題の提出", () => {
     const lockedPrevious = await post(input);
     expect(lockedPrevious.status).toBe(409);
     expect(await lockedPrevious.json()).toMatchObject({
-      error: "この問題はまだ解けません。先に前の問題を提出してください。",
+      error: "この問題はまだ解けません。先に「問2 引く」を提出してください。",
     });
     expect(await db.select().from(taskProblemResults)).toEqual([]);
 
@@ -908,6 +909,98 @@ describe("問題の提出", () => {
       (await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.11.0`, { token }))
         .status,
     ).toBe(200);
+  });
+
+  it("セクションと課題をまたいで、最初の未完了レッスンが問題を止める", async () => {
+    const input = await gatedInput(await setupProblemSteps());
+    const earlierTaskId = "csharp-foundations/u01/earlier";
+    const earlierProblems = [PROBLEMS[0]];
+    const earlier = await problemBundle(CURRENT, earlierProblems, true, undefined, earlierTaskId);
+    const definition = JSON.stringify(earlier.definition);
+    const bundle = JSON.stringify(earlier.bundle);
+    await db.batch([
+      db
+        .insert(sections)
+        .values({ id: "next-unit", stageId: "stage", title: "次の単元", order: 1 }),
+      db.insert(lessons).values([
+        { id: "intro-quiz", sectionId: "unit", title: "知識問題", type: "quiz", order: -2 },
+        { id: "intro-text", sectionId: "unit", title: "まとめ", type: "text", order: -1 },
+        { id: "earlier-step", sectionId: "unit", title: "別の課題の問題", type: "text", order: 3 },
+        {
+          id: "next-video",
+          sectionId: "next-unit",
+          title: "次の単元の動画",
+          type: "video",
+          order: 0,
+        },
+      ]),
+      db.update(lessons).set({ sectionId: "next-unit" }).where(eq(lessons.id, "step-add")),
+      db
+        .update(taskProblemSteps)
+        .set({ position: 8 })
+        .where(eq(taskProblemSteps.stepLessonId, "step-sub")),
+      db.insert(tasks).values({
+        id: earlierTaskId,
+        sectionId: "unit",
+        title: "別の課題",
+        kind: "basic",
+        pattern: "calc",
+        skills: { uses: [], assesses: ["calc"] },
+        estimatedMinutes: 10,
+        order: 2,
+        contentHash: CURRENT,
+        definition,
+        bundle,
+        active: true,
+      }),
+      db
+        .insert(taskRevisions)
+        .values({ taskId: earlierTaskId, contentHash: CURRENT, definition, bundle }),
+      db.insert(taskProblemSteps).values({
+        taskId: earlierTaskId,
+        problemId: earlierProblems[0].id,
+        stepLessonId: "earlier-step",
+        afterLessonId: "video",
+        position: 5,
+      }),
+    ]);
+
+    async function expectStep(state: string, afterLessonId: string, afterTitle: string) {
+      const results = await problemResults();
+      const list = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+      expect(results.status, await results.clone().text()).toBe(200);
+      expect(list.status, await list.clone().text()).toBe(200);
+      const expected = [{ id: "q02-sub" }, { id: "q01-add", state, afterLessonId, afterTitle }];
+      const resultBody = await json<{ problems: { state: string }[] }>(results);
+      const listBody = await json<{ tasks: { id: string; problems?: { state: string }[] }[] }>(
+        list,
+      );
+      const listed = listBody.tasks.find((task) => task.id === TASK_ID);
+      expect(resultBody.problems).toMatchObject(expected);
+      expect(listed?.problems).toMatchObject(expected);
+      expect(listed?.problems?.map((problem) => problem.state)).toEqual(
+        resultBody.problems.map((problem) => problem.state),
+      );
+    }
+
+    await expectStep("locked-video", "video", "計算の基礎");
+    await db
+      .update(lessonProgress)
+      .set({ completed: true })
+      .where(eq(lessonProgress.lessonId, "video"));
+    expect((await manual(["q02-sub"])).status).toBe(200);
+    await expectStep("locked-previous", "earlier-step", "別の課題の問題");
+
+    expect((await manual(["q01-add"], false, earlierTaskId)).status).toBe(200);
+    await expectStep("locked-video", "next-video", "次の単元の動画");
+    await db
+      .insert(lessonProgress)
+      .values({ userId: "learner", lessonId: "next-video", completed: true });
+    await expectStep("open", "video", "計算の基礎");
+
+    const response = await post(input);
+    expect(response.status, await response.clone().text()).toBe(201);
+    await expectStep("submitted", "video", "計算の基礎");
   });
 
   it("問題ステップの完了は提出で決まり、受講者の同期や手動完了の取り消しで矛盾しない", async () => {
@@ -2415,10 +2508,11 @@ async function problemBundle(
   problems: { id: string; title: string }[],
   gated = false,
   changedTest?: string,
+  taskId = TASK_ID,
 ) {
   const manifest: TaskManifest = {
     schemaVersion: 1,
-    id: TASK_ID,
+    id: taskId,
     title: "計算",
     kind: "basic",
     runner: "node-test",

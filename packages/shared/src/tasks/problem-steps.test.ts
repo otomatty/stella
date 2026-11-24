@@ -1,35 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { problemStepStates } from "./problem-steps.js";
+import { presentProblemStep } from "./problem-steps.js";
+import type { LockStep } from "./step-lock.js";
 
-describe("動画と前の提出で出る問題", () => {
-  const steps = [
-    { problemId: "q3", afterLessonId: "video2", position: 2 },
-    { problemId: "q1", afterLessonId: "video1", position: 0 },
-    { problemId: "q2", afterLessonId: "video1", position: 1 },
+describe("問題の解放状態", () => {
+  const steps: LockStep[] = [
+    { id: "video1", kind: "content", title: "最初の動画" },
+    { id: "q1", kind: "problem", title: "問1" },
+    { id: "video2", kind: "content", title: "次の動画" },
+    { id: "q2", kind: "problem", title: "問2" },
   ];
 
-  it("動画が未完了なら動画を優先し、完了した動画の中では position 順に出す", () => {
-    expect(problemStepStates(steps, new Set(["video1"]), new Set())).toEqual(
-      new Map([
-        ["q1", "open"],
-        ["q2", "locked-previous"],
-        ["q3", "locked-video"],
-      ]),
-    );
-    expect(problemStepStates(steps, new Set(["video1", "video2"]), new Set()).get("q3")).toBe(
-      "locked-previous",
-    );
+  it("最初の未完了ステップを、種類に応じたロック状態とともに返す", () => {
+    expect(presentProblemStep(steps, 3, new Set())).toEqual({
+      state: "locked-video",
+      blocking: steps[0],
+    });
+    expect(presentProblemStep(steps, 3, new Set(["video1"]))).toEqual({
+      state: "locked-previous",
+      blocking: steps[1],
+    });
+    expect(presentProblemStep(steps, 3, new Set(["video1", "q1"]))).toEqual({
+      state: "locked-video",
+      blocking: steps[2],
+    });
   });
 
-  it("手で済みにした問題も提出として扱い、動画の完了より提出を優先する", () => {
-    const manuallySubmitted = new Set(["q1", "q3"]);
-    expect(problemStepStates(steps, new Set(["video1"]), manuallySubmitted)).toEqual(
-      new Map([
-        ["q1", "submitted"],
-        ["q2", "open"],
-        ["q3", "submitted"],
-      ]),
-    );
-    expect(problemStepStates(steps, new Set(), manuallySubmitted).get("q1")).toBe("submitted");
+  it("前のステップが完了していれば開き、提出済みなら前の完了状況を問わない", () => {
+    expect(presentProblemStep(steps, 3, new Set(["video1", "q1", "video2"]))).toEqual({
+      state: "open",
+      blocking: null,
+    });
+    expect(presentProblemStep(steps, 3, new Set(["q2"]))).toEqual({
+      state: "submitted",
+      blocking: null,
+    });
+  });
+
+  it("問題以外のステップの状態は返さない", () => {
+    expect(presentProblemStep(steps, 2, new Set())).toBeNull();
   });
 });

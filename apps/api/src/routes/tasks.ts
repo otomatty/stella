@@ -1,15 +1,7 @@
 import { type Context, type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import {
-  loadProblemRevisionHashes,
-  loadTaskProblemHashes,
-  type SavedProblemResult,
-} from "../lib/task-problem-hashes.js";
-import {
-  completeCarriedProblemTask,
-  countedProblemIds,
-  readTaskDefinition,
-} from "../lib/task-problem-submission.js";
+import type { ProblemHashCache } from "../lib/task-problem-hashes.js";
+import { completeCarriedProblemTask } from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -23,8 +15,6 @@ import {
   requiredExtensionVersion,
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
-import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
-import type { TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
@@ -33,7 +23,6 @@ import {
   sections,
   taskFixedStarts,
   taskFixedStartUses,
-  taskProblemResults,
   taskProgress,
   taskRevisions,
   tasks,
@@ -42,11 +31,7 @@ import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
 import { planProblemStepProgressWrites } from "../lib/lesson-progress-write.js";
-import {
-  evaluatedProblemSteps,
-  loadProblemSteps,
-  problemStepsIfReady,
-} from "../lib/task-problem-steps.js";
+import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "../lib/task-problem-steps.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
 import { localRunUpsert } from "../lib/task-support.js";
@@ -56,6 +41,7 @@ export const tasksRoute = new Hono<{ Bindings: Env }>();
 async function stageTaskList(
   c: Context<{ Bindings: Env }, "/api/tasks/for-stage/:stageId">,
   finalize: boolean,
+  hashCache?: ProblemHashCache,
 ): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
@@ -105,75 +91,9 @@ async function stageTaskList(
               ),
             );
     const progressByTaskId = new Map(progress.map((p) => [p.taskId, p]));
-    // 問題の件数は今の版の definition から。課題ごとの SQL にはしない。
-    const definitions =
-      rows.length === 0
-        ? []
-        : await db
-            .select({ id: tasks.id, definition: taskRevisions.definition })
-            .from(tasks)
-            .innerJoin(sections, eq(sections.id, tasks.sectionId))
-            .innerJoin(
-              taskRevisions,
-              and(
-                eq(taskRevisions.taskId, tasks.id),
-                eq(taskRevisions.contentHash, tasks.contentHash),
-              ),
-            )
-            .where(
-              and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
-            );
-    const problemTasks = new Map<string, TaskProblem[]>();
-    const gatedTaskIds = new Set<string>();
-    for (const row of definitions) {
-      const problems = readTaskDefinition(row.definition).problems;
-      if (!problems) continue;
-      problemTasks.set(row.id, problems);
-      if (problems.some((problem) => problem.after)) gatedTaskIds.add(row.id);
-    }
-    const resultsByTask = new Map<string, SavedProblemResult[]>();
-    if (problemTasks.size > 0) {
-      const results = await db
-        .select({
-          taskId: taskProblemResults.taskId,
-          problemId: taskProblemResults.problemId,
-          contentHash: taskProblemResults.contentHash,
-          source: taskProblemResults.source,
-          path: taskProblemResults.path,
-          code: taskProblemResults.code,
-        })
-        .from(taskProblemResults)
-        .where(
-          and(
-            eq(taskProblemResults.userId, caller.id),
-            inArray(taskProblemResults.taskId, [...problemTasks.keys()]),
-          ),
-        );
-      for (const result of results) {
-        const saved = resultsByTask.get(result.taskId) ?? [];
-        saved.push(result);
-        resultsByTask.set(result.taskId, saved);
-      }
-    }
-    const hashes = await loadProblemRevisionHashes(
-      db,
-      rows.map((row) => {
-        const status = progressByTaskId.get(row.id)?.status;
-        return {
-          taskId: row.id,
-          currentHash: row.contentHash,
-          rows: resultsByTask.get(row.id) ?? [],
-          taskPassed: status === "passed" || status === "ai-passed",
-        };
-      }),
-    );
-    const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
-    const stepsByTask = new Map<string, typeof stepRows>();
-    for (const step of stepRows) {
-      const steps = stepsByTask.get(step.taskId) ?? [];
-      steps.push(step);
-      stepsByTask.set(step.taskId, steps);
-    }
+    const locks = rows.length
+      ? await loadStageStepLocks(db, caller.id, stageId, { hashCache })
+      : null;
     const changedCompletions: string[] = [];
     const completedSteps = new Set<string>();
     const possibleCompletions: { summary: TaskSummary; contentHash: string }[] = [];
@@ -189,34 +109,17 @@ async function stageTaskList(
           kind: task.kind as TaskKind,
           status,
         };
-        const problems = problemTasks.get(task.id);
-        if (!problems) return base;
-        const saved = resultsByTask.get(task.id) ?? [];
-        const passed = countedProblemIds(
-          saved,
-          contentHash,
-          p?.status === "passed" || p?.status === "ai-passed",
-          hashes.get(task.id),
-        );
-        const steps = gatedTaskIds.has(task.id)
-          ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
+        const problemTask = locks?.byTask.get(task.id);
+        if (!problemTask) return base;
+        const { problems, saved, counted: passed, ready, steps } = problemTask;
+        const problemSteps = ready
+          ? steps.map(({ blocking: _blocking, stepCompleted, ...step }) => {
+              if (step.state === "submitted") completedSteps.add(step.stepLessonId);
+              if ((step.state === "submitted") !== Boolean(stepCompleted))
+                changedCompletions.push(step.stepLessonId);
+              return step;
+            })
           : undefined;
-        const problemSteps = steps?.map(
-          ({ problem, stepLessonId, afterLessonId, afterTitle, state, stepCompleted }) => {
-            if (state === "submitted") completedSteps.add(stepLessonId);
-            if ((state === "submitted") !== Boolean(stepCompleted))
-              changedCompletions.push(stepLessonId);
-            return {
-              id: problem.id,
-              title: problem.title,
-              label: problemStepLabel(problem.title, problem.index),
-              stepLessonId,
-              afterLessonId,
-              afterTitle,
-              state,
-            };
-          },
-        );
         const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
@@ -252,7 +155,13 @@ async function stageTaskList(
     let completedTask = false;
     let refresh = false;
     for (const { summary, contentHash } of possibleCompletions) {
-      const completion = await completeCarriedProblemTask(db, caller, summary.id, contentHash);
+      const completion = await completeCarriedProblemTask(
+        db,
+        caller,
+        summary.id,
+        contentHash,
+        locks?.hashes,
+      );
       if (completion === "refresh") refresh = true;
       else if (completion) {
         summary.status = "passed";
@@ -267,7 +176,7 @@ async function stageTaskList(
         ip: clientIp(c),
       });
     }
-    return refresh ? stageTaskList(c, false) : c.json({ tasks: result });
+    return refresh ? stageTaskList(c, false, locks?.hashes) : c.json({ tasks: result });
   } catch (err) {
     return errorResponse(c, err);
   }
@@ -277,7 +186,11 @@ tasksRoute.get("/api/tasks/for-stage/:stageId", (c) => stageTaskList(c, true));
 /**
  * 問題つきの課題の、本人の問題の状態。一覧は今の版の problems。問題の無い課題は 404。
  */
-async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean): Promise<Response> {
+async function problemResults(
+  c: Context<{ Bindings: Env }>,
+  finalize: boolean,
+  hashCache?: ProblemHashCache,
+): Promise<Response> {
   try {
     const { caller, db } = await getCaller(c);
     const taskId = c.req.query("taskId") ?? "";
@@ -286,45 +199,22 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
         id: tasks.id,
         stageId: sections.stageId,
         variantOf: tasks.variantOf,
-        definition: taskRevisions.definition,
         contentHash: tasks.contentHash,
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .innerJoin(
-        taskRevisions,
-        and(eq(taskRevisions.taskId, tasks.id), eq(taskRevisions.contentHash, tasks.contentHash)),
-      )
       .where(and(eq(tasks.id, taskId), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTask(db, caller, row)))
       throw new ApiError("課題が見つかりません", 404);
-    const problems = readTaskDefinition(row.definition).problems;
-    if (!problems) throw new ApiError("課題が見つかりません", 404);
-    const saved = await db
-      .select({
-        problemId: taskProblemResults.problemId,
-        contentHash: taskProblemResults.contentHash,
-        firstPassedAt: taskProblemResults.firstPassedAt,
-        source: taskProblemResults.source,
-        path: taskProblemResults.path,
-        code: taskProblemResults.code,
-      })
-      .from(taskProblemResults)
-      .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
-    const [progress] = await db
-      .select({ status: taskProgress.status })
-      .from(taskProgress)
-      .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
-      .limit(1);
-    let taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
-    const hashes = await loadTaskProblemHashes(db, {
-      taskId: row.id,
-      currentHash: row.contentHash,
-      rows: saved,
-      taskPassed,
+    const locks = await loadStageStepLocks(db, caller.id, row.stageId, {
+      variantTaskId: row.variantOf === null ? undefined : row.id,
+      hashCache,
     });
-    const passedIds = countedProblemIds(saved, row.contentHash, taskPassed, hashes);
+    const problemTask = locks.byTask.get(row.id);
+    if (!problemTask) throw new ApiError("課題が見つかりません", 404);
+    const { problems, saved, counted: passedIds, status } = problemTask;
+    let taskPassed = status === "passed" || status === "ai-passed";
     const byId = new Map(
       saved
         .filter((item) => passedIds.has(item.problemId))
@@ -334,14 +224,20 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
     if (
       finalize &&
       !taskPassed &&
-      progress?.status !== "resubmit" &&
+      status !== "resubmit" &&
       passedProblems === problems.length &&
       saved.some(
         (result) => passedIds.has(result.problemId) && result.contentHash !== row.contentHash,
       )
     ) {
-      const completion = await completeCarriedProblemTask(db, caller, row.id, row.contentHash);
-      if (completion === "refresh") return problemResults(c, false);
+      const completion = await completeCarriedProblemTask(
+        db,
+        caller,
+        row.id,
+        row.contentHash,
+        locks.hashes,
+      );
+      if (completion === "refresh") return problemResults(c, false, locks.hashes);
       taskPassed = completion;
       if (taskPassed) {
         await autoCompleteStagesIfMet(db, {
@@ -352,13 +248,8 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
         });
       }
     }
-    const steps = problems.some((problem) => problem.after)
-      ? evaluatedProblemSteps(
-          await loadProblemSteps(db, caller.id, { taskId: row.id }),
-          problems,
-          passedIds,
-        )
-      : undefined;
+    if (problemTask.gated && !problemTask.ready) throw new ApiError(PROBLEM_STEPS_NOT_READY, 503);
+    const steps = problemTask.ready ? problemTask.steps : undefined;
     const completedSteps = new Set(
       steps?.filter((step) => step.state === "submitted").map((step) => step.stepLessonId),
     );
@@ -375,9 +266,9 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
     ))
       await write;
     const entries = steps
-      ? steps.map(({ problem, state, stepLessonId, afterLessonId, afterTitle }) => ({
-          id: problem.id,
-          title: problem.title,
+      ? steps.map(({ id, title, state, stepLessonId, afterLessonId, afterTitle }) => ({
+          id,
+          title,
           state,
           stepLessonId,
           afterLessonId,

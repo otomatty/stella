@@ -30,7 +30,7 @@ import {
 } from "./task-problem-submission.js";
 import { recomputeTaskProgress, resetPassedAt, taskSubmissionLockId } from "./task-submission.js";
 import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
-import { loadProblemSteps } from "./task-problem-steps.js";
+import { loadStageStepLocks } from "./task-problem-steps.js";
 import { withResourceLock } from "./resource-lock.js";
 import { autoCompleteStagesIfMet, reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
 
@@ -265,6 +265,9 @@ export async function writeManualCompletion(
     revoke
       ? reclaimAutoCertificatesIfUnmet(db, stageInput)
       : autoCompleteStagesIfMet(db, stageInput);
+  const locks = planned.some(({ problems }) => problems?.some((problem) => problem.after))
+    ? await loadStageStepLocks(db, input.userId, input.stageId)
+    : undefined;
   try {
     for (const { task, unitTitle, problems, selected, paths, wholeTask } of planned) {
       const locked = await withResourceLock(
@@ -493,13 +496,13 @@ export async function writeManualCompletion(
             } else if (!problems) skipped++;
           }
           if (touchedProblems.size && problems?.some((problem) => problem.after)) {
-            const steps = await loadProblemSteps(db, input.userId, { taskId: task.id });
+            const steps = locks?.byTask.get(task.id)?.steps ?? [];
             writes.push(
               ...planProblemStepProgressWrites(
                 db,
                 input.userId,
                 steps
-                  .filter((step) => touchedProblems.has(step.problemId))
+                  .filter((step) => touchedProblems.has(step.id))
                   .map((step) => step.stepLessonId),
                 now,
               ),
