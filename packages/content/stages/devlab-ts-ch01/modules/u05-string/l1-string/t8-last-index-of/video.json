@@ -1,0 +1,658 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.lastIndexOf(文字) で、最後に見つかった位置がわかります。",
+    "stuck": "保存先の名前を階層ごとに区切って表示します。",
+    "points": ["文字列.lastIndexOf(文字) で、最後に見つかった位置がわかります。"],
+    "leaveOut": ["見つかった位置を使った切り出し"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "last-index-of-input": {
+      "prompt": "A cascade of three nested blue and violet folders. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "last-index-of-action": {
+      "prompt": "A magnifying glass over the rightmost divider of a blank path strip. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "last-index-of-result": {
+      "prompt": "A violet folder at the end of a row of blue folders. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "last-index-of-use1": {
+      "prompt": "A branching stack of blue and violet folders. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "last-index-of-use2": {
+      "prompt": "A wide violet label divided into blank sections. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "last-index-of-use3": {
+      "prompt": "A blank contact card with separate violet bands. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "保存先の並び",
+          "art": "last-index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "last-index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "最後の位置",
+          "art": "last-index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "last-index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "last-index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "last-index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "last-index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "last-index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "last-index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "フォルダー階層",
+          "art": "last-index-of-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "管理番号の枝番",
+          "art": "last-index-of-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "宛先の区切り",
+          "art": "last-index-of-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "last-index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "last-index-of-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "dot-last",
+      "beats": [
+        {
+          "say": "この動画では、最後に出てくる位置を調べる方法を学びます。"
+        },
+        {
+          "say": "ファイル名に、点が 2 つ入っていました。",
+          "speech": "ファイル名に、点が二つ入っていました。"
+        },
+        {
+          "say": "後ろから探すと、拡張子の前の点が見つかります。"
+        },
+        {
+          "say": "lastIndexOf で、最後に見つかった位置がわかる仕組みです。",
+          "speech": "ラストインデックスオブで、最後に見つかった位置がわかる仕組みです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "保存先の区切りを探す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "保存先には、いくつかのフォルダー名が並んでいます。",
+          "show": ["a"]
+        },
+        {
+          "say": "名前と名前を分けるのは、スラッシュです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "いちばん奥の場所の手前にある区切りを探しましょう。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "最後に出てくる位置を調べる",
+      "code": [
+        "// 保存先で最後に出るスラッシュの位置を調べる",
+        "const lastFolderMark = \"棚/箱/奥\".lastIndexOf(\"/\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最後の位置を調べるには、lastIndexOf を使います。",
+          "speech": "最後の位置を調べるには、ラストインデックスオブを使います。",
+          "part": {
+            "line": 1,
+            "text": "lastIndexOf"
+          },
+          "term": {
+            "text": "最後の位置",
+            "ruby": "さいごのいち",
+            "note": "最後に見つかる位置"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"棚/箱/奥\""
+            }
+          }
+        },
+        {
+          "say": "かっこに入れるのは、後ろから探す文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"/\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "見つかった位置は、左端を 0 番目として数えます。",
+          "speech": "見つかった位置は、左端をゼロ番目として数えます。",
+          "part": {
+            "line": 1,
+            "text": ".lastIndexOf("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 保存先で最後に出るスラッシュの位置を調べる",
+        "const lastFolderMark = \"棚/箱/奥\".lastIndexOf(\"/\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "lastIndexOf と、その前後の記号は決まった書き方です。",
+          "speech": "ラストインデックスオブと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".lastIndexOf("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、引数は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "lastFolderMark"
+              },
+              {
+                "line": 1,
+                "text": "\"棚/箱/奥\""
+              },
+              {
+                "line": 1,
+                "text": "\"/\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "保存先の並びから結果を求める",
+      "code": [
+        "// 保存先で最後に出るスラッシュの位置を調べる",
+        "const lastFolderMark = \"棚/箱/奥\".lastIndexOf(\"/\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "保存先の名前には、区切りが二つあります。",
+          "part": {
+            "line": 1,
+            "text": "\"棚/箱/奥\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"棚/箱/奥\""
+            }
+          }
+        },
+        {
+          "say": "右から探して先に見つかるのは、奥の手前の区切りです。",
+          "part": {
+            "line": 1,
+            "text": "\"/\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "左端から数えると、見つかったのは 3 番目でした。",
+          "speech": "左端から数えると、見つかったのは三番目でした。",
+          "part": {
+            "line": 1,
+            "text": "lastFolderMark",
+            "note": "最後の区切り"
+          },
+          "figure": {
+            "tag": {
+              "c": "3"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 振り分けの最後の区切りを探す",
+        "const finalMarker = \"甲-乙丙-丁\".lastIndexOf(\"-\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、振り分けの区切りを探します。",
+          "part": {
+            "line": 1,
+            "text": "\"甲-乙丙-丁\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"甲-乙丙-丁\""
+            }
+          }
+        },
+        {
+          "say": "探す区切りには、ハイフンを指定しました。",
+          "part": {
+            "line": 1,
+            "text": "\"-\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 振り分けの最後の区切りを探す",
+        "const finalMarker = \"甲-乙丙-丁\".lastIndexOf(\"-\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は 4 です。",
+          "speech": "結果は四です。",
+          "part": {
+            "line": 1,
+            "text": "finalMarker"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "4"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 振り分けの最後の区切りを探す",
+        "const finalMarker = \"甲-乙丙-丁\".lastIndexOf(\"-\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "右端からたどると、丁の手前で区切りが見つかります。",
+          "part": {
+            "line": 1,
+            "text": "\"甲-乙丙-丁\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "位置の数え始めは、左端の甲です。",
+          "part": {
+            "line": 1,
+            "text": "\"-\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "甲を 0 番目と数えると、最後の区切りは 4 番目でした。",
+          "speech": "甲をゼロ番目と数えると、最後の区切りは四番目でした。",
+          "part": {
+            "line": 1,
+            "text": "finalMarker"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "いちばん奥のフォルダーの手前にある区切りを探せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "管理番号の最後にある枝番を調べるときに便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "同じ区切りが並ぶとき、いちばん右に注目しましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問16 で使う",
+      "code": [
+        "// 問16 ファイル名の拡張子（最後の「.」より後ろ）を返す",
+        "//     例: extension(\"photo.jpeg\") → \"jpeg\"",
+        "export function extension() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問16では、ファイル名の最後の点を探します。",
+          "speech": "問いじゅうろくでは、ファイル名の最後の点を探します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "必要なのは、その点より後ろにある拡張子です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "ファイル名の拡張子（最後"
+          }
+        },
+        {
+          "say": "点がないときに何を返すかも、コメントで確かめましょう。",
+          "part": {
+            "line": 2,
+            "text": "extension"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "eb44a549fe664d98ccd8be09c18f317470f8c8a3ea62b4b95131e7e7242b57e0"
+  }
+}

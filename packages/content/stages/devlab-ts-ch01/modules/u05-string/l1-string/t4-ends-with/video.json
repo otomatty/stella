@@ -1,0 +1,657 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.endsWith(文字) は、その文字で終わっていれば true です。",
+    "stuck": "連絡の宛先を一覧にすると、個人宛てと部署宛てが混ざります。",
+    "points": ["文字列.endsWith(文字) は、その文字で終わっていれば true です。"],
+    "leaveOut": ["拡張子の取り出し"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "ends-with-input": {
+      "prompt": "A blank contact card with a violet footer band. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ends-with-action": {
+      "prompt": "A magnifying glass over the right edge of a blank address label. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ends-with-result": {
+      "prompt": "A blue tray with a pile of matching contact cards. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ends-with-use1": {
+      "prompt": "Blank mailing labels beside a closed envelope. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ends-with-use2": {
+      "prompt": "A blue folder holding blank document sheets. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ends-with-use3": {
+      "prompt": "Blank order cards with violet tabs at the right. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "宛先の名前",
+          "art": "ends-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "末尾を見る",
+          "art": "ends-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "部署宛て",
+          "art": "ends-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "ends-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "末尾を見る",
+          "art": "ends-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "ends-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "ends-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "末尾を見る",
+          "art": "ends-with-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "ends-with-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "連絡の宛先",
+          "art": "ends-with-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "書類の種類",
+          "art": "ends-with-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "注文の状態",
+          "art": "ends-with-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "ends-with-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "ends-with-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "file-icons",
+      "beats": [
+        {
+          "say": "この動画では、文字列の終わりを確かめる方法を学びます。"
+        },
+        {
+          "say": "フォルダーには、ファイルが 3 つ並んでいました。",
+          "speech": "フォルダーには、ファイルが三つ並んでいました。"
+        },
+        {
+          "say": "名前が「.jpg」で終わるものは、写真のファイルです。",
+          "speech": "名前がドットジェイペグで終わるものは、写真のファイルです。"
+        },
+        {
+          "say": "endsWith で、末尾が合うかを確かめます。",
+          "speech": "エンズウィズで、末尾が合うかを確かめます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "連絡の宛先を分ける",
+      "board": "example",
+      "beats": [
+        {
+          "say": "連絡の宛先を、カードに並べました。",
+          "show": ["a"]
+        },
+        {
+          "say": "部署宛ての名前には、末尾にチームと書いてあります。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "チームで終わるカードが、部署宛てです。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "終わりを確かめる",
+      "code": [
+        "// 宛先の名前がチームで終わるか確かめる",
+        "const isGroup = \"制作チーム\".endsWith(\"チーム\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "末尾の一致を確かめるときは、endsWith を使います。",
+          "speech": "末尾の一致を確かめるときは、エンズウィズを使います。",
+          "part": {
+            "line": 1,
+            "text": "endsWith"
+          },
+          "term": {
+            "text": "endsWith",
+            "note": "末尾の一致を確かめる"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"制作チーム\""
+            }
+          }
+        },
+        {
+          "say": "かっこに入れるのは、末尾と照らし合わせる文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"チーム\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "指定した文字列で終わっているかを確かめます。",
+          "part": {
+            "line": 1,
+            "text": ".endsWith("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 宛先の名前がチームで終わるか確かめる",
+        "const isGroup = \"制作チーム\".endsWith(\"チーム\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "endsWith と、その前後の記号は決まった書き方です。",
+          "speech": "エンズウィズと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".endsWith("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、かっこに入れる文字は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "isGroup"
+              },
+              {
+                "line": 1,
+                "text": "\"制作チーム\""
+              },
+              {
+                "line": 1,
+                "text": "\"チーム\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "宛先の名前から結果を求める",
+      "code": [
+        "// 宛先の名前がチームで終わるか確かめる",
+        "const isGroup = \"制作チーム\".endsWith(\"チーム\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "宛先として書かれているのは、制作チームです。",
+          "part": {
+            "line": 1,
+            "text": "\"制作チーム\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"制作チーム\""
+            }
+          }
+        },
+        {
+          "say": "末尾の三文字が、指定したチームと一致しました。",
+          "part": {
+            "line": 1,
+            "text": "\"チーム\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "一致したので、結果は true になります。",
+          "speech": "一致したので、結果はトゥルーになります。",
+          "part": {
+            "line": 1,
+            "text": "isGroup",
+            "note": "部署宛て"
+          },
+          "figure": {
+            "tag": {
+              "c": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 表示の最後が済みで終わるか確かめる",
+        "const isClosed = \"締切済み一覧\".endsWith(\"済み\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、一覧の見出しを取り上げます。",
+          "part": {
+            "line": 1,
+            "text": "\"締切済み一覧\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"締切済み一覧\""
+            }
+          }
+        },
+        {
+          "say": "末尾と照らし合わせる文字は、済みです。",
+          "part": {
+            "line": 1,
+            "text": "\"済み\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 表示の最後が済みで終わるか確かめる",
+        "const isClosed = \"締切済み一覧\".endsWith(\"済み\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は false です。",
+          "speech": "結果はフォルスです。",
+          "part": {
+            "line": 1,
+            "text": "isClosed"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 表示の最後が済みで終わるか確かめる",
+        "const isClosed = \"締切済み一覧\".endsWith(\"済み\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "調べる見出しは、締切済み一覧です。",
+          "part": {
+            "line": 1,
+            "text": "\"締切済み一覧\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "最後の二文字を読むと、一覧でした。",
+          "part": {
+            "line": 1,
+            "text": "\"済み\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "済みは末尾にないので、結果は false になります。",
+          "speech": "済みは末尾にないので、結果はフォルスになります。",
+          "part": {
+            "line": 1,
+            "text": "isClosed"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "宛先の末尾を見て、部署向けの連絡を分けられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "名前の末尾で、書類の種類を見分けるのにも便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "末尾に付けた印で、処理済みの注文を探しましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問7 で使う",
+      "code": [
+        "// 問7 ファイル名が「.png」で終わっていれば true を返す",
+        "//     例: isPng(\"photo.PNG\") → true",
+        "export function isPng() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問7では、ファイル名が指定の文字列で終わるかを確かめます。",
+          "speech": "問いななでは、ファイル名が指定の文字列で終わるかを確かめます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "先に英字を小文字にそろえておくのが手順です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "ファイル名が「.png」"
+          }
+        },
+        {
+          "say": "指定された文字列と、そろえた名前の末尾を比べましょう。",
+          "part": {
+            "line": 2,
+            "text": "isPng"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ac03873696546d0a52809030207f0e8dedc4d2043a5358e898cb239af3959e1b"
+  }
+}

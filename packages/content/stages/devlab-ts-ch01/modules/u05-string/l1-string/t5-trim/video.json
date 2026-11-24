@@ -1,0 +1,626 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.trim() で、前後の空白を取り除きます。",
+    "stuck": "入力欄の宛名をコピーすると、一緒に空白が入ることがあります。",
+    "points": ["文字列.trim() で、前後の空白を取り除きます。"],
+    "leaveOut": ["途中の空白の置き換え"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "trim-input": {
+      "prompt": "A blue browser field with pale blank blocks at its ends. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trim-action": {
+      "prompt": "Two pale rectangles separated from a wide violet label. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trim-result": {
+      "prompt": "A neat blank mailing label centered on an envelope. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trim-use1": {
+      "prompt": "A blank shipping label curling off its backing. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trim-use2": {
+      "prompt": "A blue clipboard beside a small browser form. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trim-use3": {
+      "prompt": "A row of blank blue browser input fields. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力した宛名",
+          "art": "trim-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "前後の空白",
+          "art": "trim-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "整えた宛名",
+          "art": "trim-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "trim-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "前後の空白",
+          "art": "trim-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "trim-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "trim-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "前後の空白",
+          "art": "trim-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "trim-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "宛名ラベル",
+          "art": "trim-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "転記した名前",
+          "art": "trim-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "入力の確認",
+          "art": "trim-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "trim-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "trim-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "form-trim",
+      "beats": [
+        {
+          "say": "この動画では、前後の空白を取り除く方法を学びます。"
+        },
+        {
+          "say": "入力欄の名前の前後に、空白が入っていました。"
+        },
+        {
+          "say": "空白を取ると、名前の文字だけが残ります。"
+        },
+        {
+          "say": "trim は、前後の空白をまとめて取り除く書き方です。",
+          "speech": "トリムは、前後の空白をまとめて取り除く書き方です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "宛名を入力欄から移す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "入力欄に、荷物の宛名を貼り付けました。",
+          "show": ["a"]
+        },
+        {
+          "say": "取ってよいのは、宛名の前と後ろにある空白です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "前後を整えた宛名を、荷物に印刷します。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "前後の空白を取り除く",
+      "code": ["// 宛名の前後に付いた空白を取り除く", "const recipient = \"  東 物流部 \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "前後の空白を取り除くときは、trim を使います。",
+          "speech": "前後の空白を取り除くときは、トリムを使います。",
+          "part": {
+            "line": 1,
+            "text": "trim"
+          },
+          "term": {
+            "text": "trim",
+            "note": "前後の空白を取り除く"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "  東 物流部 "
+            }
+          }
+        },
+        {
+          "say": "かっこの中は空です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "文字列の左右の端から、空白を取り除きます。",
+          "part": {
+            "line": 1,
+            "text": ".trim("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 宛名の前後に付いた空白を取り除く", "const recipient = \"  東 物流部 \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "trim と、その前後の記号は決まった書き方です。",
+          "speech": "トリムと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".trim();"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前と、元の文字列は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "recipient"
+              },
+              {
+                "line": 1,
+                "text": "\"  東 物流部 \""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "入力した宛名から結果を求める",
+      "code": ["// 宛名の前後に付いた空白を取り除く", "const recipient = \"  東 物流部 \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "東の前と、部の後ろに空白があります。",
+          "part": {
+            "line": 1,
+            "text": "\"  東 物流部 \""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "  東 物流部 "
+            }
+          }
+        },
+        {
+          "say": "東と物流部の間にある空白は、宛名の一部です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "前後だけを整えた宛名を保存しました。",
+          "part": {
+            "line": 1,
+            "text": "recipient",
+            "note": "宛名"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"東 物流部\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": ["// 窓口の名前を整える", "const deskLabel = \" 西 受付  \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "別の窓口の名前でも試しましょう。",
+          "part": {
+            "line": 1,
+            "text": "\" 西 受付  \""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": " 西 受付  "
+            }
+          }
+        },
+        {
+          "say": "確かめたいのは、空白が消える範囲です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 窓口の名前を整える", "const deskLabel = \" 西 受付  \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は「西 受付」です。",
+          "part": {
+            "line": 1,
+            "text": "deskLabel"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"西 受付\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": ["// 窓口の名前を整える", "const deskLabel = \" 西 受付  \".trim();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "西の手前と、受付の後ろに空白が入っています。",
+          "part": {
+            "line": 1,
+            "text": "\" 西 受付  \""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "西と受付の間の空白は、文字列の途中です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "両端だけを取ると、西と受付の間が空いたまま残りました。",
+          "part": {
+            "line": 1,
+            "text": "deskLabel"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "宛名の表示がずれないよう、前後を整えられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "別の書類から転記した名前を整える場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "入力を比べる前に、余分な空白を取り除きましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問9 で使う",
+      "code": [
+        "// 問9 前後の空白を取り除き、英字を小文字にする",
+        "//     例: normalize(\"  Hello \") → \"hello\"",
+        "export function normalize() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問9では、受け取った文字列の前後にある空白を取り除きます。",
+          "speech": "問いきゅうでは、受け取った文字列の前後にある空白を取り除きます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "空白を取ったあとに、英字を小文字にする問題です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "前後の空白を取り除き、英"
+          }
+        },
+        {
+          "say": "それぞれの操作をどの順番でするか考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "normalize"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7a1fa5c73636fea0ea9a17ff2ab1e78606609ad8462fc8e3e7568b476bdef8a9"
+  }
+}

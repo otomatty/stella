@@ -1,0 +1,662 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.replaceAll(探す文字, 新しい文字) で、見つけた文字をすべて置き換えます。",
+    "stuck": "作業表と表示用の一覧で、区切りの記号が違います。",
+    "points": ["文字列.replaceAll(探す文字, 新しい文字) で、見つけた文字をすべて置き換えます。"],
+    "leaveOut": ["正規表現での置き換え"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "replace-all-input": {
+      "prompt": "A warehouse route strip with round spacers between colored panels. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "replace-all-action": {
+      "prompt": "Two small blue and violet divider tiles on a workbench. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "replace-all-result": {
+      "prompt": "A warehouse route strip with narrow violet dividers. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "replace-all-use1": {
+      "prompt": "A blue desk calendar with empty date cells. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "replace-all-use2": {
+      "prompt": "A three-stop route map with round markers. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "replace-all-use3": {
+      "prompt": "A blue browser list with three blank violet markers. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の経路",
+          "art": "replace-all-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "区切りの記号",
+          "art": "replace-all-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "整えた経路",
+          "art": "replace-all-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "replace-all-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "区切りの記号",
+          "art": "replace-all-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "replace-all-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "replace-all-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "区切りの記号",
+          "art": "replace-all-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "replace-all-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "日付の表示",
+          "art": "replace-all-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "経路の区切り",
+          "art": "replace-all-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "一覧の目印",
+          "art": "replace-all-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "replace-all-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "replace-all-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "date-replace",
+      "beats": [
+        {
+          "say": "この動画では、同じ文字をまとめて置き換える方法を学びます。"
+        },
+        {
+          "say": "日付は「2026-03-15」という表記です。",
+          "speech": "日付は、にせんにじゅうろく年三月十五日をハイフンで区切った表記です。"
+        },
+        {
+          "say": "ハイフンを替えると、2026 年 3 月 15 日がスラッシュ区切りになります。",
+          "speech": "ハイフンを替えると、にせんにじゅうろく年三月十五日がスラッシュ区切りになります。"
+        },
+        {
+          "say": "replaceAll は、見つけた文字をすべて置き換える書き方です。",
+          "speech": "リプレースオールは、見つけた文字をすべて置き換える書き方です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "区切りの表記をそろえる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "作業表に、経路を倉庫の名前で書きました。",
+          "show": ["a"]
+        },
+        {
+          "say": "倉庫の名前を区切っているのは、点の記号です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "表示用の経路では、区切りを矢印に替えます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "同じ文字をまとめて置き換える",
+      "code": [
+        "// 経路を区切る中点をすべて矢印に替える",
+        "const route = \"東・北・西\".replaceAll(\"・\", \"→\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "一致した文字を全部替えるときは、replaceAll を使います。",
+          "speech": "一致した文字を全部替えるときは、リプレースオールを使います。",
+          "part": {
+            "line": 1,
+            "text": "replaceAll"
+          },
+          "term": {
+            "text": "replaceAll",
+            "note": "一致した文字を全部替える"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"東・北・西\""
+            }
+          }
+        },
+        {
+          "say": "一つ目の引数は、探す文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"・\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "二つ目には、置き換えたあとに入れる文字を渡します。",
+          "part": {
+            "line": 1,
+            "text": "\"→\""
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 経路を区切る中点をすべて矢印に替える",
+        "const route = \"東・北・西\".replaceAll(\"・\", \"→\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "replaceAll と、その前後の記号は決まった書き方です。",
+          "speech": "リプレースオールと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".replaceAll("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              },
+              {
+                "line": 1,
+                "text": ", "
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、引数は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "route"
+              },
+              {
+                "line": 1,
+                "text": "\"東・北・西\""
+              },
+              {
+                "line": 1,
+                "text": "\"・\""
+              },
+              {
+                "line": 1,
+                "text": "\"→\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "元の経路から結果を求める",
+      "code": [
+        "// 経路を区切る中点をすべて矢印に替える",
+        "const route = \"東・北・西\".replaceAll(\"・\", \"→\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "経路には、区切りの点が二つあります。",
+          "part": {
+            "line": 1,
+            "text": "\"東・北・西\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"東・北・西\""
+            }
+          }
+        },
+        {
+          "say": "差し替える文字は、矢印です。",
+          "part": {
+            "line": 1,
+            "text": "\"・\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "二か所とも矢印に替えた経路ができました。",
+          "part": {
+            "line": 1,
+            "text": "route",
+            "note": "経路"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"東→北→西\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 担当欄の仕切りを替える",
+        "const lanes = \"甲｜乙｜丙\".replaceAll(\"｜\", \"／\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、担当を表す文字が並んでいます。",
+          "part": {
+            "line": 1,
+            "text": "\"甲｜乙｜丙\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"甲｜乙｜丙\""
+            }
+          }
+        },
+        {
+          "say": "縦線を、斜めの線に置き換える式です。",
+          "part": {
+            "line": 1,
+            "text": "\"｜\", \"／\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 担当欄の仕切りを替える",
+        "const lanes = \"甲｜乙｜丙\".replaceAll(\"｜\", \"／\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は、甲、乙、丙を斜めの線で区切った文字列です。",
+          "part": {
+            "line": 1,
+            "text": "lanes"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"甲／乙／丙\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 担当欄の仕切りを替える",
+        "const lanes = \"甲｜乙｜丙\".replaceAll(\"｜\", \"／\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "担当の名前の間には、縦線が二本あります。",
+          "part": {
+            "line": 1,
+            "text": "\"甲｜乙｜丙\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "縦線を斜めの線に置き換える指定です。",
+          "part": {
+            "line": 1,
+            "text": "\"｜\", \"／\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "二本とも斜めの線に替わりました。",
+          "part": {
+            "line": 1,
+            "text": "lanes"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "日付に使う区切りの表記をそろえられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "経路の区切りを、矢印にする場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "一覧で繰り返し使う目印を差し替えましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問10 で使う",
+      "code": [
+        "// 問10 半角スペースをすべて「_」に置き換える",
+        "//     例: snakeSpaces(\"a b c\") → \"a_b_c\"",
+        "export function snakeSpaces() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問10では、半角スペースをすべて別の記号に置き換えます。",
+          "speech": "問いじゅうでは、半角スペースをすべて別の記号に置き換えます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "置き換えたあとに使う記号は、コメントの指定どおりです。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "半角スペースをすべて「_"
+          }
+        },
+        {
+          "say": "探す文字と入れる記号を、どの順番で渡すか考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "snakeSpaces"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "0ef61b3f00d93ecd029957423125372849a49b874b713c27828fe4ecbb0b2625"
+  }
+}

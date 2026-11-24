@@ -1,0 +1,731 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.indexOf(文字) で、最初に見つかった位置がわかります。無ければ -1 です。",
+    "stuck": "駅の案内に、いくつかの地名が区切って書かれています。",
+    "points": ["文字列.indexOf(文字) で、最初に見つかった位置がわかります。無ければ -1 です。"],
+    "leaveOut": ["最後に現れる位置の検索"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "index-of-input": {
+      "prompt": "A station sign with three blue panels and round dividers. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-of-action": {
+      "prompt": "A magnifying glass over the first divider of a sign. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-of-result": {
+      "prompt": "A violet map pin beside a round divider tile. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-of-use1": {
+      "prompt": "A blank shipping label split into panels. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-of-use2": {
+      "prompt": "A blue timetable with narrow vertical dividers. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-of-use3": {
+      "prompt": "A row of blue and violet rectangular tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "案内の文字",
+          "art": "index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "最初の位置",
+          "art": "index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "探す区切り",
+          "art": "index-of-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "index-of-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "荷札の内訳",
+          "art": "index-of-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "時刻の区切り",
+          "art": "index-of-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "先頭からの位置",
+          "art": "index-of-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "index-of-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "index-of-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "details": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "操作する箇所",
+          "art": "index-of-action",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "結果",
+          "art": "index-of-result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "card-find-at",
+      "beats": [
+        {
+          "say": "この動画では、文字が何番目にあるかを調べる方法を学びます。"
+        },
+        {
+          "say": "並んだ文字カードから探すのは、「:」です。",
+          "speech": "並んだ文字カードから探すのは、コロンです。"
+        },
+        {
+          "say": "0 から数えると、「:」は 4 番目にありました。",
+          "speech": "ゼロから数えると、コロンは四番目にありました。"
+        },
+        {
+          "say": "indexOf で、最初に見つかった位置がわかります。",
+          "speech": "インデックスオブで、最初に見つかった位置がわかります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "案内の区切りを探す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "案内板に、行き先を左から並べました。",
+          "show": ["a"]
+        },
+        {
+          "say": "行き先の間に入っているのは、中点です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "左から見て、最初に出てきた中点の位置を調べます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "何文字目にあるか調べる",
+      "code": [
+        "// 案内で最初に出てくる中点の位置を調べる",
+        "const firstStopMark = \"港・駅前・丘\".indexOf(\"・\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の位置を調べるには、indexOf を使います。",
+          "speech": "最初の位置を調べるには、インデックスオブを使います。",
+          "part": {
+            "line": 1,
+            "text": "indexOf"
+          },
+          "term": {
+            "text": "indexOf",
+            "note": "最初に見つかる位置"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"港・駅前・丘\""
+            }
+          }
+        },
+        {
+          "say": "かっこに入れるのは、探す文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"・\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "左端を 0 番目として数えます。",
+          "speech": "左端をゼロ番目として数えます。",
+          "part": {
+            "line": 1,
+            "text": ".indexOf("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 案内で最初に出てくる中点の位置を調べる",
+        "const firstStopMark = \"港・駅前・丘\".indexOf(\"・\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "indexOf と、その前後の記号は決まった書き方です。",
+          "speech": "インデックスオブと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".indexOf("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、探す文字は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "firstStopMark"
+              },
+              {
+                "line": 1,
+                "text": "\"港・駅前・丘\""
+              },
+              {
+                "line": 1,
+                "text": "\"・\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "案内の文字から結果を求める",
+      "code": [
+        "// 案内で最初に出てくる中点の位置を調べる",
+        "const firstStopMark = \"港・駅前・丘\".indexOf(\"・\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "調べる案内には、中点が二つあります。",
+          "part": {
+            "line": 1,
+            "text": "\"港・駅前・丘\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"港・駅前・丘\""
+            }
+          }
+        },
+        {
+          "say": "左から見て、港のすぐ後ろにあるのが最初の中点です。",
+          "part": {
+            "line": 1,
+            "text": "\"・\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "見つかった位置は、0 から数えて 1 番目でした。",
+          "speech": "見つかった位置は、ゼロから数えて一番目でした。",
+          "part": {
+            "line": 1,
+            "text": "firstStopMark",
+            "note": "最初の区切り"
+          },
+          "figure": {
+            "tag": {
+              "c": "1"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "kind": "code",
+      "role": "note",
+      "title": "見つからないとき",
+      "code": [
+        "// 案内に斜線が出る位置を調べる",
+        "const absent = \"港・駅前・丘\".indexOf(\"／\");",
+        "// 案内に港が出る位置を調べる",
+        "const atFront = \"港・駅前・丘\".indexOf(\"港\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "details"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "斜線がないので、戻り値は -1 です。",
+          "speech": "斜線がないので、戻り値はマイナス一です。",
+          "part": {
+            "line": 1,
+            "text": "\"／\""
+          },
+          "figure": {
+            "tag": {
+              "b": "-1"
+            },
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "港は先頭にあるので、戻り値は 0 になります。",
+          "speech": "港は先頭にあるので、戻り値はゼロになります。",
+          "part": {
+            "line": 3,
+            "text": "\"港\""
+          },
+          "figure": {
+            "tag": {
+              "b": "0"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 時間帯の区切りの位置を調べる",
+        "const firstDivider = \"午前｜昼｜夕方\".indexOf(\"｜\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、時間帯の表示を調べます。",
+          "part": {
+            "line": 1,
+            "text": "\"午前｜昼｜夕方\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "午前｜昼｜夕方"
+            }
+          }
+        },
+        {
+          "say": "かっこの中にあるのは、探す区切りの文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"｜\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 時間帯の区切りの位置を調べる",
+        "const firstDivider = \"午前｜昼｜夕方\".indexOf(\"｜\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は 2 です。",
+          "speech": "結果は二です。",
+          "part": {
+            "line": 1,
+            "text": "firstDivider"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "2"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 時間帯の区切りの位置を調べる",
+        "const firstDivider = \"午前｜昼｜夕方\".indexOf(\"｜\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "先頭は、午の文字です。",
+          "part": {
+            "line": 1,
+            "text": "\"午前｜昼｜夕方\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "左からたどると、午前のあとで最初の縦線が見つかります。",
+          "part": {
+            "line": 1,
+            "text": "\"｜\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "午が 0 番目なので、縦線は 2 番目でした。",
+          "speech": "午がゼロ番目なので、縦線は二番目でした。",
+          "part": {
+            "line": 1,
+            "text": "firstDivider"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "荷札のどこで区画名が終わるかを調べられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "時刻の最初の区切りを探す場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "目印までの位置を、入力に合わせて調べましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問11 で使う",
+      "code": [
+        "// 問11 「@」が何文字目（0から数える）にあるかを返す。なければ -1",
+        "//     例: atPosition(\"taro@example.com\") → 4",
+        "export function atPosition() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問11では、指定された記号が現れる位置を調べます。",
+          "speech": "問いじゅういちでは、指定された記号が現れる位置を調べます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "数え始める位置は、最初の文字です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "「@」が何文字目（0から"
+          }
+        },
+        {
+          "say": "先頭で見つけたときと、見つからないときを区別しましょう。",
+          "part": {
+            "line": 2,
+            "text": "atPosition"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a93aec0effc317bd28fdcb8f3dddf612eba13e0e398f6495db6119a8b72c249f"
+  }
+}

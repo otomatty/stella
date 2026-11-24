@@ -1,0 +1,779 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.replace(/形/g, 新しい文字) で、正規表現に当てはまる文字をすべて置き換えます。",
+    "stuck": "資料に品番を載せるとき、英字は残して数字だけを伏せたいことがあります。",
+    "points": [
+      "文字列.replace(/形/g, 新しい文字) で、正規表現に当てはまる文字をすべて置き換えます。"
+    ],
+    "leaveOut": ["複数文字をまとめて表す正規表現"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "regex-replace-input": {
+      "prompt": "An inventory card with mixed blue and gray tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regex-replace-action": {
+      "prompt": "A broad stencil above a row of colored tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regex-replace-result": {
+      "prompt": "A stock label with two violet cover tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regex-replace-use1": {
+      "prompt": "A blue stock tag partly covered by violet squares. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regex-replace-use2": {
+      "prompt": "A blue search field with separated rectangular chips. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regex-replace-use3": {
+      "prompt": "Blue record cards beside a violet stencil. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の品番",
+          "art": "regex-replace-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数字の形",
+          "art": "regex-replace-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "伏せた品番",
+          "art": "regex-replace-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "regex-replace-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数字の形",
+          "art": "regex-replace-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "regex-replace-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "regex-replace-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数字の形",
+          "art": "regex-replace-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "regex-replace-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "品番の表示",
+          "art": "regex-replace-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "入力の区切り",
+          "art": "regex-replace-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "表示の整形",
+          "art": "regex-replace-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "regex-replace-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "regex-replace-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "details": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "操作する箇所",
+          "art": "regex-replace-action",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "結果",
+          "art": "regex-replace-result",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "digit-sieve",
+      "beats": [
+        {
+          "say": "この動画では、決まった形の文字をまとめて置き換える方法を学びます。"
+        },
+        {
+          "say": "「A1B2C3」から、数字だけを取り除きたい場面です。",
+          "speech": "エーいちビーにシーさんから、数字だけを取り除きたい場面です。"
+        },
+        {
+          "say": "0 から 9 のどれかを表す形で、まとめて探します。",
+          "speech": "ゼロから九のどれかを表す形で、まとめて探します。"
+        },
+        {
+          "say": "replace と正規表現で、当てはまる文字を置き換える方法です。",
+          "speech": "リプレースと正規表現で、当てはまる文字を置き換える方法です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "品番の数字を隠す",
+      "board": "example",
+      "beats": [
+        {
+          "say": "資料に載せる品番には、英字と数字が混ざっています。",
+          "show": ["a"]
+        },
+        {
+          "say": "伏せるのは、品番の中にある数字です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "違う数字も、同じ目印に置き換えましょう。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "決まった形の文字を置き換える",
+      "code": [
+        "// 品番の半角数字をすべて伏せ字に替える",
+        "const publicCode = \"Q8K5\".replace(/[0-9]/g, \"＊\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "探す文字の形を、正規表現と呼びます。",
+          "part": {
+            "line": 1,
+            "text": "[0-9]"
+          },
+          "term": {
+            "text": "正規表現",
+            "ruby": "せいきひょうげん",
+            "note": "探す文字の形"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"Q8K5\""
+            }
+          }
+        },
+        {
+          "say": "形は、二本のスラッシュで囲む書き方です。",
+          "part": {
+            "line": 1,
+            "text": "/[0-9]/"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "角かっこの 0 から 9 は、どれか一文字を表します。",
+          "speech": "角かっこのゼロから九は、ゼロから九のどれか一文字を表します。",
+          "part": {
+            "line": 1,
+            "text": "[0-9]"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "閉じるスラッシュの後ろの g は、すべてを探す指定です。",
+          "speech": "閉じるスラッシュの後ろのジーは、すべてを探す指定です。",
+          "part": {
+            "line": 1,
+            "text": "/g"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "その形と新しい文字を、replace に渡します。",
+          "speech": "その形と新しい文字を、リプレースに渡します。",
+          "part": {
+            "line": 1,
+            "text": ".replace("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 品番の半角数字をすべて伏せ字に替える",
+        "const publicCode = \"Q8K5\".replace(/[0-9]/g, \"＊\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "replace と、その前後の記号は決まった書き方です。",
+          "speech": "リプレースと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".replace("
+              },
+              {
+                "line": 1,
+                "text": ");"
+              },
+              {
+                "line": 1,
+                "text": "/"
+              },
+              {
+                "line": 1,
+                "text": "g"
+              },
+              {
+                "line": 1,
+                "text": ", "
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前、元の文字列、引数は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "publicCode"
+              },
+              {
+                "line": 1,
+                "text": "\"Q8K5\""
+              },
+              {
+                "line": 1,
+                "text": "[0-9]"
+              },
+              {
+                "line": 1,
+                "text": "\"＊\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "元の品番から結果を求める",
+      "code": [
+        "// 品番の半角数字をすべて伏せ字に替える",
+        "const publicCode = \"Q8K5\".replace(/[0-9]/g, \"＊\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "置き換える前の品番には、数字が二つあります。",
+          "part": {
+            "line": 1,
+            "text": "\"Q8K5\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"Q8K5\""
+            }
+          }
+        },
+        {
+          "say": "それぞれの数字は、指定した形に当てはまる文字です。",
+          "part": {
+            "line": 1,
+            "text": "[0-9]"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "数字を二か所とも伏せ字に替えました。",
+          "part": {
+            "line": 1,
+            "text": "publicCode",
+            "note": "公開用の品番"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"Q＊K＊\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "detail",
+      "kind": "code",
+      "role": "note",
+      "title": "空白を表す形",
+      "code": [
+        "// 区画の名前にある空白をすべて中点に替える",
+        "const marked = \"西  港 丘\".replace(/\\s/g, \"・\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "details"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "エスの前にバックスラッシュを付けると、空白一文字を表します。",
+          "part": {
+            "line": 1,
+            "text": "\\s"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "区画名の間の空白は、一つずつ置き換える場所です。",
+          "part": {
+            "line": 1,
+            "text": "\"西  港 丘\""
+          },
+          "figure": {
+            "tag": {
+              "b": "西・・港・丘"
+            }
+          }
+        },
+        {
+          "say": "replaceAll に文字列を渡すと、決まった文字を探します。",
+          "speech": "リプレースオールに文字列を渡すと、決まった文字を探します。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "正規表現を渡した replace は、形で探す書き方です。",
+          "speech": "正規表現を渡したリプレースは、形で探す書き方です。",
+          "part": {
+            "line": 1,
+            "text": "/\\s/g"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": [
+        "// 入場札の数字を伏せる",
+        "const displayCode = \"7門S4\".replace(/[0-9]/g, \"□\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、入場札を見てみましょう。",
+          "part": {
+            "line": 1,
+            "text": "\"7門S4\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"7門S4\""
+            }
+          }
+        },
+        {
+          "say": "数字を、四角に置き換える式です。",
+          "part": {
+            "line": 1,
+            "text": "/[0-9]/g, \"□\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 入場札の数字を伏せる",
+        "const displayCode = \"7門S4\".replace(/[0-9]/g, \"□\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "数字のあった両端が、四角に置き換わりました。",
+          "part": {
+            "line": 1,
+            "text": "displayCode"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"□門S□\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": [
+        "// 入場札の数字を伏せる",
+        "const displayCode = \"7門S4\".replace(/[0-9]/g, \"□\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "角かっこの中には、数字の範囲が書いてあります。",
+          "part": {
+            "line": 1,
+            "text": "\"7門S4\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "ここでは先頭と末尾の数字が、その形に当てはまる文字です。",
+          "part": {
+            "line": 1,
+            "text": "/[0-9]/g, \"□\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "当てはまった二文字が、どちらも四角に替わりました。",
+          "part": {
+            "line": 1,
+            "text": "displayCode"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "資料用に、品番の数字だけを伏せられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "入力の空白を目印に替える場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "一定の形の文字を、一覧でまとめて整えましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問18 で使う",
+      "code": [
+        "// 問18 英字の母音",
+        "//     例: removeVowels(\"typescript\") → \"typscrpt\"",
+        "export function removeVowels() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問18では、指定された英字の母音を取り除きます。",
+          "speech": "問いじゅうはちでは、指定された英字の母音を取り除きます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "取り除く文字は、スターターのコメントを見てください。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "英字の母音"
+          }
+        },
+        {
+          "say": "含める文字をどう指定し、何に置き換えるか考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "removeVowels"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "dfd35ee14a2d499a992b0b5062cf3b0a49f84e5972c6d1c333c729e889269997"
+  }
+}

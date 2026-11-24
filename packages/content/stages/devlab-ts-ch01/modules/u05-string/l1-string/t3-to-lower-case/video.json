@@ -1,0 +1,639 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列.toLowerCase() で、英字をすべて小文字にします。",
+    "stuck": "別々の担当者が登録した棚の名前を、一枚の一覧にまとめます。",
+    "points": ["文字列.toLowerCase() で、英字をすべて小文字にします。"],
+    "leaveOut": ["小文字にしたあとの判定"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "to-lower-case-input": {
+      "prompt": "A blue storage cabinet with a prominent blank label. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-lower-case-action": {
+      "prompt": "Two matching blank tags of different sizes on a workbench. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-lower-case-result": {
+      "prompt": "A tidy row of identical violet labels on a storage shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-lower-case-use1": {
+      "prompt": "A magnifying glass over a blank blue catalog card. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-lower-case-use2": {
+      "prompt": "Open storage cubbies with blank labels. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-lower-case-use3": {
+      "prompt": "Two matching blue browser input boxes. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "棚の札",
+          "art": "to-lower-case-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "英字の表記",
+          "art": "to-lower-case-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "小文字の札",
+          "art": "to-lower-case-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "to-lower-case-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "英字の表記",
+          "art": "to-lower-case-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "to-lower-case-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "問題の文字列",
+          "art": "to-lower-case-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "英字の表記",
+          "art": "to-lower-case-action",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果",
+          "art": "to-lower-case-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "名前の検索",
+          "art": "to-lower-case-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "棚の一覧",
+          "art": "to-lower-case-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "入力の比較",
+          "art": "to-lower-case-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "to-lower-case-input",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "問題の指定",
+          "art": "to-lower-case-action",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "name-case",
+      "beats": [
+        {
+          "say": "この動画では、英字を小文字にそろえる方法を学びます。"
+        },
+        {
+          "say": "名簿に、Hana と HANA が並んでいました。",
+          "speech": "名簿に、大文字で始まるハナと、すべて大文字のハナが並んでいました。"
+        },
+        {
+          "say": "小文字にそろえると、どちらも hana になります。",
+          "speech": "小文字にそろえると、どちらもすべて小文字のハナになります。"
+        },
+        {
+          "say": "toLowerCase で、英字をすべて小文字にする書き方です。",
+          "speech": "トゥーローワーケースで、英字をすべて小文字にする書き方です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "棚の名前の表記をそろえる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "棚の名前を、担当者が英字で書きました。",
+          "show": ["a"]
+        },
+        {
+          "say": "一覧に載せる棚の名前は、小文字で統一する決まりです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "大文字で書かれた部分を、小文字にそろえます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "小文字にそろえる",
+      "code": [
+        "// 棚の名前にある英字を小文字にそろえる",
+        "const shelfKey = \"RaCK８\".toLowerCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "英字を小文字にするときは、toLowerCase を使います。",
+          "speech": "英字を小文字にするときは、トゥーローワーケースを使います。",
+          "part": {
+            "line": 1,
+            "text": "toLowerCase"
+          },
+          "term": {
+            "text": "小文字",
+            "ruby": "こもじ",
+            "note": "英字の小さいほうの形"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"RaCK８\""
+            }
+          }
+        },
+        {
+          "say": "かっこの中は空です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "大文字の英字が、小文字に変わります。",
+          "part": {
+            "line": 1,
+            "text": ".toLowerCase("
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 棚の名前にある英字を小文字にそろえる",
+        "const shelfKey = \"RaCK８\".toLowerCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "toLowerCase と、その前後の記号は決まった書き方です。",
+          "speech": "トゥーローワーケースと、その前後の記号は決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "const"
+              },
+              {
+                "line": 1,
+                "text": " = "
+              },
+              {
+                "line": 1,
+                "text": ".toLowerCase();"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数の名前と、元の文字列は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "shelfKey"
+              },
+              {
+                "line": 1,
+                "text": "\"RaCK８\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "棚の札から結果を求める",
+      "code": [
+        "// 棚の名前にある英字を小文字にそろえる",
+        "const shelfKey = \"RaCK８\".toLowerCase();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "元の札には、大文字と小文字が混ざっています。",
+          "part": {
+            "line": 1,
+            "text": "\"RaCK８\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"RaCK８\""
+            }
+          }
+        },
+        {
+          "say": "そのうち大文字の英字が、変わる部分です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "小文字にそろえた名前を、一覧用に保存しました。",
+          "part": {
+            "line": 1,
+            "text": "shelfKey",
+            "note": "棚の識別名"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"rack８\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "結果はどうなる？",
+      "code": ["// 路線の名前を小文字にそろえる", "const routeKey = \"BuS-６\".toLowerCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、こちらの名前を使います。",
+          "part": {
+            "line": 1,
+            "text": "\"BuS-６\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"BuS-６\""
+            }
+          }
+        },
+        {
+          "say": "小文字にそろえるのは、路線の名前です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この式の結果は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 路線の名前を小文字にそろえる", "const routeKey = \"BuS-６\".toLowerCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は「bus-６」です。",
+          "speech": "結果は、小文字のビー、ユー、エス、ハイフン、六です。",
+          "part": {
+            "line": 1,
+            "text": "routeKey"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"bus-６\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "結果までの手順をたどる",
+      "code": ["// 路線の名前を小文字にそろえる", "const routeKey = \"BuS-６\".toLowerCase();"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "元の名前には、英字とハイフンと数字が入っています。",
+          "part": {
+            "line": 1,
+            "text": "\"BuS-６\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "ここで変わるのは、大文字の英字です。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "最初から小文字の英字や、ハイフンと数字は変わりません。",
+          "part": {
+            "line": 1,
+            "text": "routeKey"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "名前の英字の表記をそろえてから検索できます。",
+          "show": ["a"]
+        },
+        {
+          "say": "棚の番号と英字をそろえて表示するときにも便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "二つの入力を比べる前に、英字の表記をそろえましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問7 で使う",
+      "code": [
+        "// 問7 ファイル名が「.png」で終わっていれば true を返す",
+        "//     例: isPng(\"photo.PNG\") → true",
+        "export function isPng() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問7では、大文字で書かれたファイル名も受け取ります。",
+          "speech": "問いななでは、大文字で書かれたファイル名も受け取ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "この書き方を使うのは、ファイル名を小文字にそろえる部分です。",
+          "figure": {
+            "pulse": ["b"]
+          },
+          "part": {
+            "line": 0,
+            "text": "ファイル名が「.png」"
+          }
+        },
+        {
+          "say": "小文字にそろえる対象を、コメントで確かめましょう。",
+          "part": {
+            "line": 2,
+            "text": "isPng"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2a3cfb9a75e2885997af783f98b79060cf54e34a1340e33738fd257a692a69a0"
+  }
+}

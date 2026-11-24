@@ -8,19 +8,25 @@ import { BusSeats, busSeatsText } from "./bus-seats";
 import { CalculatorInfinity, calculatorInfinityText } from "./calculator-infinity";
 import { CallStaff, callStaffText } from "./call-staff";
 import { CandyRest, candyRestText } from "./candy-rest";
+import { CardFindAt, cardFindAtText } from "./card-find-at";
 import { Contacts, contactsText } from "./contacts";
 import { CookieSplit, cookieSplitText } from "./cookie-split";
+import { DateReplace, dateReplaceText } from "./date-replace";
 import { DigitBlocks, digitBlocksText } from "./digit-blocks";
+import { DigitSieve, digitSieveText } from "./digit-sieve";
 import { DigitalClock, digitalClockText } from "./digital-clock";
+import { DotLast, dotLastText } from "./dot-last";
 import { DrinkWater, drinkWaterText } from "./drink-water";
 import { EggCarton, eggCartonText } from "./egg-carton";
 import { Elevator, elevatorText } from "./elevator";
 import { EmptyCard, emptyCardText } from "./empty-card";
 import { EmptyLocker, emptyLockerText } from "./empty-locker";
 import { EntryForm, entryFormText } from "./entry-form";
+import { FileIcons, fileIconsText } from "./file-icons";
 import { FoldPaper, foldPaperText } from "./fold-paper";
 import { ForkRoad, forkRoadText } from "./fork-road";
 import { FormParse, formParseText } from "./form-parse";
+import { FormTrim, formTrimText } from "./form-trim";
 import { FreeShipping, freeShippingText } from "./free-shipping";
 import { FruitCount, fruitCountText } from "./fruit-count";
 import { HeightCompare, heightCompareText } from "./height-compare";
@@ -31,12 +37,14 @@ import { LadderWall, ladderWallText } from "./ladder-wall";
 import { Laps, lapsText } from "./laps";
 import { LetterCards, letterCardsText } from "./letter-cards";
 import { LetterIndex, letterIndexText } from "./letter-index";
+import { MailSort, mailSortText } from "./mail-sort";
 import { SproutDouble, sproutDoubleText } from "./sprout-double";
 import { SquareGarden, squareGardenText } from "./square-garden";
 import { StepsDistance, stepsDistanceText } from "./steps-distance";
 import { TicketGateStop, ticketGateStopText } from "./ticket-gate-stop";
 import type { MotionId } from "./manifest";
 import { MemberCard, memberCardText } from "./member-card";
+import { NameCase, nameCaseText } from "./name-case";
 import { NumberTag, numberTagText } from "./number-tag";
 import { OnigiriTimes, onigiriTimesText } from "./onigiri-times";
 import { ParkingSlots, parkingSlotsText } from "./parking-slots";
@@ -56,6 +64,7 @@ import { ShoppingOrder, shoppingOrderText } from "./shopping-order";
 import { StackPlates, stackPlatesText } from "./stack-plates";
 import { Stairs, stairsText } from "./stairs";
 import { StampRepeat, stampRepeatText } from "./stamp-repeat";
+import { TapeCut, tapeCutText } from "./tape-cut";
 import { TestTotal, testTotalText } from "./test-total";
 import { TileSquares, tileSquaresText } from "./tile-squares";
 import { TrafficLight, trafficLightText } from "./traffic-light";
@@ -124,6 +133,15 @@ export const motionComponents = {
   "empty-card": { Component: EmptyCard, text: emptyCardText },
   "whiteboard-note": { Component: WhiteboardNote, text: whiteboardNoteText },
   "price-tag-round": { Component: PriceTagRound, text: priceTagRoundText },
+  "tape-cut": { Component: TapeCut, text: tapeCutText },
+  "mail-sort": { Component: MailSort, text: mailSortText },
+  "name-case": { Component: NameCase, text: nameCaseText },
+  "file-icons": { Component: FileIcons, text: fileIconsText },
+  "form-trim": { Component: FormTrim, text: formTrimText },
+  "date-replace": { Component: DateReplace, text: dateReplaceText },
+  "card-find-at": { Component: CardFindAt, text: cardFindAtText },
+  "dot-last": { Component: DotLast, text: dotLastText },
+  "digit-sieve": { Component: DigitSieve, text: digitSieveText },
   "steps-distance": { Component: StepsDistance, text: stepsDistanceText },
   "sprout-double": { Component: SproutDouble, text: sproutDoubleText },
   "square-garden": { Component: SquareGarden, text: squareGardenText },
