@@ -1,0 +1,706 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数.toFixed(1) で、小数第1位までの文字列になります。",
+    "stuck": "気温を画面に並べます。値によって小数の桁数が違うと、表の数字が読みづらくなることがあります。",
+    "points": ["数.toFixed(1) で、小数第1位までの文字列になります。"],
+    "leaveOut": ["丸め誤差の理由"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "weathergauge": {
+      "prompt": "A blue indoor temperature gauge with a blank display and a small red sensor. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "decimaltiles": {
+      "prompt": "Two misaligned rows of small unmarked grey and violet display tiles. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "weatherdisplay": {
+      "prompt": "A blue display panel with two recesses of equal length and no markings. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shelfsample": {
+      "prompt": "A simple horizontal blue shelf plank. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "measureshelf": {
+      "prompt": "A plain violet tape measure stretched along a shelf, without marks. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dimensiondisplay": {
+      "prompt": "A blue digital measurement display with blank cells. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-fixed-use1": {
+      "prompt": "A blue weather panel with equally sized blank display slots. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-fixed-use2": {
+      "prompt": "A violet measuring tape without markings beside a shelf plank. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "to-fixed-use3": {
+      "prompt": "A blank white receipt beside two blue coins. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "測った気温",
+          "art": "weathergauge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "違う桁数",
+          "art": "decimaltiles",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "同じ桁数",
+          "art": "weatherdisplay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の数",
+          "art": "weathergauge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "表示する桁数",
+          "art": "decimaltiles",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果の型",
+          "art": "weatherdisplay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "棚の幅",
+          "art": "shelfsample",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "表示する桁数",
+          "art": "measureshelf",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "結果の文字列",
+          "art": "dimensiondisplay",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "気温の表",
+          "art": "to-fixed-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "製品の寸法",
+          "art": "to-fixed-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "明細の表示",
+          "art": "to-fixed-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "計算した数",
+          "art": "weathergauge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "表示用の桁",
+          "art": "weatherdisplay",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "price-tag-round",
+      "beats": [
+        {
+          "say": "この動画では、小数の桁をそろえる方法を学びます。"
+        },
+        {
+          "say": "体重計の表示は、小数第1位までです。",
+          "speech": "体重計の表示は、小数だいいちいまでです。"
+        },
+        {
+          "say": "22.5 のように、桁がそろって見やすくなります。",
+          "speech": "にじゅうにてんごのように、桁がそろって見やすくなります。"
+        },
+        {
+          "say": "toFixed に 1 を渡すと、小数第1位までの文字列です。",
+          "speech": "トゥーフィクストに、いちを渡すと、小数だいいちいまでの文字列です。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "気温の表示をそろえる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "測った気温を、画面に並べました。",
+          "show": ["a"]
+        },
+        {
+          "say": "測る場所によって、値の桁数が違います。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "読み比べやすいのは、同じ桁数の表示です。",
+          "show": ["c", "bc"]
+        },
+        {
+          "say": "小数点の後ろを、同じ長さにそろえましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "丸かっこに桁数を書く",
+      "code": [
+        "// 測った気温を数として用意する",
+        "const temperature = 16.78;",
+        "// 小数第1位までの表示用文字列にする",
+        "const temperatureText = temperature.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "小数の桁数をそろえる道具が、toFixed です。",
+          "speech": "小数の桁数をそろえる道具が、トゥーフィクストです。",
+          "part": {
+            "line": 3,
+            "text": "toFixed"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          },
+          "term": {
+            "text": "toFixed",
+            "ruby": "トゥーフィクスト",
+            "note": "桁をそろえた文字列に"
+          }
+        },
+        {
+          "say": "表示したい数の後ろに、ドットを付けます。",
+          "part": {
+            "line": 3,
+            "text": "temperature."
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "a": "16.78"
+            }
+          }
+        },
+        {
+          "say": "丸かっこの中は、小数点の後ろに並べる桁の数です。",
+          "part": {
+            "line": 3,
+            "text": "(1)"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "1 桁"
+            }
+          }
+        },
+        {
+          "say": "小数第1位までなら、丸かっこに 1 を入れましょう。",
+          "speech": "小数だいいちいまでなら、丸かっこに、いちを入れましょう。",
+          "part": {
+            "line": 3,
+            "text": "1"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "string"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 測った気温を数として用意する",
+        "const temperature = 16.78;",
+        "// 小数第1位までの表示用文字列にする",
+        "const temperatureText = temperature.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "数を選ぶ部分と、道具の名前を分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "ドットと toFixed と丸かっこは、決まった形です。",
+          "speech": "ドットとトゥーフィクストと丸かっこは、決まった形です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": ".toFixed("
+              },
+              {
+                "line": 3,
+                "text": ")"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "どの数を何桁で表示するかは、自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "temperature"
+              },
+              {
+                "line": 3,
+                "text": "1"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "表示用の型は string",
+      "code": [
+        "// 測った気温を数として用意する",
+        "const temperature = 16.78;",
+        "// 小数第1位までの表示用文字列にする",
+        "const temperatureText = temperature.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "測った気温として、16.78 を用意しました。",
+          "speech": "測った気温として、じゅうろくてんななはちを用意しました。",
+          "part": {
+            "line": 1,
+            "text": "16.78"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "16.78"
+            }
+          }
+        },
+        {
+          "say": "小数点の後ろを、一桁にする指定です。",
+          "part": {
+            "line": 3,
+            "text": "(1)"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "1 桁"
+            }
+          }
+        },
+        {
+          "say": "丸めた結果は、16.8 と表示されます。",
+          "speech": "丸めた結果は、じゅうろくてんはち、と表示されます。",
+          "part": {
+            "line": 3,
+            "text": "toFixed(1)"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"16.8\""
+            }
+          }
+        },
+        {
+          "say": "表示に使う値の型は、string です。",
+          "speech": "表示に使う値の型は、ストリングです。",
+          "part": {
+            "line": 3,
+            "text": "temperatureText",
+            "note": "気温の表示"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "string"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "整数を小数第1位まで表示すると？",
+      "code": [
+        "// 棚の幅を数で用意する",
+        "const width = 72;",
+        "// 小数第1位までを文字列にしてそろえる",
+        "const widthText = width.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度の棚の幅は、整数です。",
+          "part": {
+            "line": 1,
+            "text": "72"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "72"
+            }
+          }
+        },
+        {
+          "say": "小数点の後ろに一桁並べるよう指定しました。",
+          "part": {
+            "line": 3,
+            "text": "(1)"
+          },
+          "figure": {
+            "tag": {
+              "b": "1 桁"
+            }
+          }
+        },
+        {
+          "say": "表示される文字列は、何でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 棚の幅を数で用意する",
+        "const width = 72;",
+        "// 小数第1位までを文字列にしてそろえる",
+        "const widthText = width.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は、72.0 という文字列です。",
+          "speech": "結果は、ななじゅうにてんゼロという文字列です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "\"72.0\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "桁数までゼロが入る",
+      "code": [
+        "// 棚の幅を数で用意する",
+        "const width = 72;",
+        "// 小数第1位までを文字列にしてそろえる",
+        "const widthText = width.toFixed(1);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "元の 72 は、整数です。",
+          "speech": "元の、ななじゅうには、整数です。",
+          "part": {
+            "line": 1,
+            "text": "72"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "指定した桁数まで、小数点の後ろをゼロで補います。",
+          "part": {
+            "line": 3,
+            "text": "(1)"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "結果の文字列も、小数部分のゼロが付いたままです。",
+          "part": {
+            "line": 3,
+            "text": "widthText"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "気温を表に並べるとき、桁をそろえられます。",
+          "show": ["a"]
+        },
+        {
+          "say": "寸法の表示でも、桁をそろえると読みやすいです。",
+          "show": ["b"]
+        },
+        {
+          "say": "数値が入った明細にも、この方法を使いましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "応用問題で使う",
+      "code": [
+        "// 指数を計算する関数を用意する",
+        "export function calcBmi() {}",
+        "// 判定を付けた文字列を返す関数を用意する",
+        "export function bmiReport() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "応用問題では、計算した指数を判定と一緒に表示します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "目指す表示は、小数第1位までです。",
+          "speech": "目指す表示は、小数だいいちいまでです。",
+          "part": {
+            "line": 1,
+            "text": "calcBmi"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "表示する値の桁を、toFixed でそろえましょう。",
+          "speech": "表示する値の桁を、トゥーフィクストでそろえましょう。",
+          "part": {
+            "line": 3,
+            "text": "bmiReport"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "daabeb887fa8c68bc462d006e27369ee4d01b4acf4740c7163c0d44f9987871a"
+  }
+}

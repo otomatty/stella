@@ -1,0 +1,702 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列[0] の型は string | undefined です。空の文字列には1文字目が無いからです。",
+    "stuck": "受付では、名札の先頭の文字を整理用の印に使います。名前がまだ入っていない名札も届きます。",
+    "points": ["文字列[0] の型は string | undefined です。空の文字列には1文字目が無いからです。"],
+    "leaveOut": ["配列からの読み取り"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "checkinbadge": {
+      "prompt": "A horizontal blue name badge with a blank inset row of square spaces. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "leadingtile": {
+      "prompt": "A row of tiny light grey tiles with the leftmost violet tile raised. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "blankbadgepad": {
+      "prompt": "A plain blank white name card with a blue holder and an empty recessed center. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shelfcard": {
+      "prompt": "A blank violet label attached to a small shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shelftile": {
+      "prompt": "A single violet square tile on the front edge of a shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "missingtile": {
+      "prompt": "An empty recessed square slot on the front edge of a shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-undefined-use1": {
+      "prompt": "A blank blue reception badge clipped onto a violet card holder. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-undefined-use2": {
+      "prompt": "A neat storage shelf with plain removable labels. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "index-undefined-use3": {
+      "prompt": "A blue browser window showing a single blank input field. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "名札",
+          "art": "checkinbadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭の印",
+          "art": "leadingtile",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "空の名札",
+          "art": "blankbadgepad",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "ac",
+          "from": "a",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "checkinbadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "文字がある型",
+          "art": "leadingtile",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "文字なし",
+          "art": "blankbadgepad",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c",
+          "label": "または"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "空の文字列",
+          "art": "shelfcard",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "文字がある型",
+          "art": "shelftile",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "undefined",
+          "art": "missingtile",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受付の印",
+          "art": "index-undefined-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "棚番号の分類",
+          "art": "index-undefined-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "未入力の欄",
+          "art": "index-undefined-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の文字列",
+          "art": "checkinbadge",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭を読む",
+          "art": "blankbadgepad",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "empty-card",
+      "beats": [
+        {
+          "say": "この動画では、1文字目が無いかもしれない場合を学びます。",
+          "speech": "この動画では、いちもじめがないかもしれない場合を学びます。"
+        },
+        {
+          "say": "名札の最初の1文字を、大きく書き出しました。",
+          "speech": "名札の最初のひともじを、大きく書き出しました。"
+        },
+        {
+          "say": "ところが、何も書かれていない名札もあります。"
+        },
+        {
+          "say": "先頭の文字の型は string または undefined です。",
+          "speech": "先頭の文字の型はストリング、または、アンディファインドです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "名札から先頭の印を取る",
+      "board": "example",
+      "beats": [
+        {
+          "say": "受付で、名前の書かれた名札を預かりました。",
+          "show": ["a"]
+        },
+        {
+          "say": "文字の並びの、いちばん左に目を向けます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "名前が空の名札には、取り出せる文字がありません。",
+          "show": ["c", "ac"]
+        },
+        {
+          "say": "文字が無い場合も考えて、書き方を見ましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "角かっこで添字を書く",
+      "code": [
+        "// 名札の文字列を用意する",
+        "let badgeText = \"東受付\";",
+        "// 名札の先頭にある文字を取り出す",
+        "const badgeMark = badgeText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字の位置を表す番号は、添字でした。",
+          "part": {
+            "line": 3,
+            "text": "0"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "角かっこの中に番号を書く方法もあります。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "a": "東受付"
+            }
+          }
+        },
+        {
+          "say": "先頭に文字があれば、取り出した値は文字列です。",
+          "part": {
+            "line": 3,
+            "text": "badgeText[0]"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "string"
+            }
+          }
+        },
+        {
+          "say": "空なら、取り出した値は undefined になります。",
+          "speech": "空なら、取り出した値はアンディファインドになります。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "setting",
+      "role": "note",
+      "title": "この課題の設定",
+      "board": "model",
+      "beats": [
+        {
+          "say": "課題の設定には、添字を確かめる項目があります。",
+          "pulse": ["a"],
+          "dialog": {
+            "title": "tsconfig.json の設定",
+            "code": ["// 添字で値が無い可能性を型に含める", "\"noUncheckedIndexedAccess\": true"]
+          }
+        },
+        {
+          "say": "これが有効なので、文字が無い場合も型の候補です。",
+          "pulse": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 名札の文字列を用意する",
+        "let badgeText = \"東受付\";",
+        "// 名札の先頭にある文字を取り出す",
+        "const badgeMark = badgeText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "角かっこの形と、その中身を見比べましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "角かっこは、添字を囲むための記号です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "["
+              },
+              {
+                "line": 3,
+                "text": "]"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "調べたい文字列と取り出す位置は、自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 3,
+                "text": "badgeText"
+              },
+              {
+                "line": 3,
+                "text": "0"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "文字が無い場合も型に入る",
+      "code": [
+        "// 名札の文字列を用意する",
+        "let badgeText = \"東受付\";",
+        "// 名札の先頭にある文字を取り出す",
+        "const badgeMark = badgeText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "名札の文字列は、東受付です。",
+          "part": {
+            "line": 1,
+            "text": "\"東受付\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "東受付"
+            }
+          }
+        },
+        {
+          "say": "0 番目にあるのは、東の文字になります。",
+          "speech": "ゼロ番目にあるのは、ひがしの文字になります。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "東"
+            }
+          }
+        },
+        {
+          "say": "空の名札なら、取り出せる文字がありません。",
+          "part": {
+            "line": 1,
+            "text": "badgeText",
+            "note": "名札の文字"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "この課題の設定では、値が無い場合も型に含まれます。",
+          "part": {
+            "line": 3,
+            "text": "badgeText[0]"
+          },
+          "figure": {
+            "pulse": ["b", "c"],
+            "tag": {
+              "b": "string",
+              "a": "空の文字列"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "空のラベルから取り出せる値は？",
+      "code": [
+        "// 棚のラベルに空の文字列を用意する",
+        "let shelfText = \"\";",
+        "// 棚のラベルの先頭にある文字を取り出す",
+        "const shelfMark = shelfText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度のラベルには、文字が書かれていません。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"\""
+            }
+          }
+        },
+        {
+          "say": "読み取る場所は、文字列の先頭です。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "取り出した値は、何になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 棚のラベルに空の文字列を用意する",
+        "let shelfText = \"\";",
+        "// 棚のラベルの先頭にある文字を取り出す",
+        "const shelfMark = shelfText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "取り出した値は、undefined です。",
+          "speech": "取り出した値は、アンディファインドです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "空のラベルには先頭が無い",
+      "code": [
+        "// 棚のラベルに空の文字列を用意する",
+        "let shelfText = \"\";",
+        "// 棚のラベルの先頭にある文字を取り出す",
+        "const shelfMark = shelfText[0];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "いちばん左の位置を調べます。",
+          "part": {
+            "line": 3,
+            "text": "[0]"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "このラベルには、そこに文字がありません。",
+          "part": {
+            "line": 1,
+            "text": "\"\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "文字が無い可能性も、型に含まれます。",
+          "part": {
+            "line": 3,
+            "text": "shelfText[0]"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "受付では、名前の先頭を印に使えます。",
+          "show": ["a"]
+        },
+        {
+          "say": "棚の印も、何も書かれていない場合は空です。",
+          "show": ["b"]
+        },
+        {
+          "say": "空の入力欄を扱うときにも、思い出しましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問20で使う",
+      "code": ["// 問題の関数を用意する", "export function firstChar() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問20では、文字列の先頭を取り出して返します。",
+          "speech": "問にじゅうでは、文字列の先頭を取り出して返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "文字列が空なら、先頭の文字はありません。",
+          "part": {
+            "line": 1,
+            "text": "firstChar"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "角かっこで指定した位置の値を、そのまま返しましょう。",
+          "part": {
+            "line": 1,
+            "text": "()"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7397d7b60e4d9b0c5b5c4577d50851913ec6e3edef03977ee37817ee17da511f"
+  }
+}
