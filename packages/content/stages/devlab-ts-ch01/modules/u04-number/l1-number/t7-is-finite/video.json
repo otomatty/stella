@@ -1,0 +1,713 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "集計に使える有限の数か確かめられます。",
+    "stuck": "number 型と分かっていても、集計に使える値かどうかは型だけでは判断できません。",
+    "points": ["Number.isFinite(数) は、NaN でも Infinity でもない数なら true です。"],
+    "leaveOut": ["値が無限大になる計算の詳しい仕組み"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "is-finite-example-1": {
+      "prompt": "A blue scale with a parcel resting on the platform. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-finite-example-2": {
+      "prompt": "Two empty open cardboard cartons. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-finite-example-3": {
+      "prompt": "A small violet parcel scale with a blank display. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-finite-use-2": {
+      "prompt": "A blue clipboard holding a blank sheet. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-finite-use-3": {
+      "prompt": "A blue chart frame with scattered violet dots and blank axes. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "荷物の重さ",
+          "art": "is-finite-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "箱の数",
+          "art": "is-finite-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "一箱の重さ",
+          "art": "is-finite-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "確かめる数",
+          "art": "is-finite-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "有限か",
+          "art": "is-finite-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "重さの型",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "重さの値",
+          "art": "is-finite-example-3",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "箱数の型",
+          "art": "rule",
+          "at": [1, 2]
+        },
+        {
+          "id": "d",
+          "label": "箱数の値",
+          "art": "is-finite-example-2",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "cd",
+          "from": "c",
+          "to": "d"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "確かめる数",
+          "art": "is-finite-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "有限か",
+          "art": "is-finite-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "一箱の重さ",
+          "art": "is-finite-example-3",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "入力の確認",
+          "art": "is-finite-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "グラフの点",
+          "art": "is-finite-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "is-finite-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "calculator-infinity",
+      "beats": [
+        {
+          "say": "この動画では、計算に使える数かを確かめる方法を学びます。"
+        },
+        {
+          "say": "電卓で、1 を 0 で割ってみました。",
+          "speech": "電卓で、いちをゼロで割ってみました。"
+        },
+        {
+          "say": "表示は、限りなく大きいことを表す Infinity です。",
+          "speech": "表示は、限りなく大きいことを表すインフィニティです。"
+        },
+        {
+          "say": "Number.isFinite で、ふつうの数かを確かめます。",
+          "speech": "ナンバードットイズファイナイトで、ふつうの数かを確かめます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "一箱あたりの重さを計算する",
+      "board": "example",
+      "beats": [
+        {
+          "say": "荷物の重さを、箱の数で割ります。",
+          "show": ["a"]
+        },
+        {
+          "say": "記録した箱の数が、ゼロの場合もありました。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "その割り算の結果を、集計に使ってよいでしょうか？",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 測定値が有限かを確かめる", "const usable = Number.isFinite(6.25);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "無限大でも計算不能でもない数を、有限の数と呼びます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "有限の数",
+            "ruby": "ゆうげんのかず",
+            "note": "計算に使う通常の数"
+          }
+        },
+        {
+          "say": "Number.isFinite に、小数を渡しました。",
+          "speech": "ナンバードットイズファイナイトに、小数を渡しました。",
+          "part": {
+            "line": 1,
+            "text": "6.25"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "6.25"
+            }
+          }
+        },
+        {
+          "say": "小数も有限なので、この確認は true になります。",
+          "speech": "小数も有限なので、この確認はトゥルーになります。",
+          "part": {
+            "line": 1,
+            "text": "Number.isFinite"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "true"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決める部分です。",
+          "part": {
+            "line": 1,
+            "text": "usable",
+            "note": "利用できるか"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 測定値が有限かを確かめる", "const usable = Number.isFinite(6.25);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Number.isFinite"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "6.25"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 箱の数がゼロの記録を割り算に使う",
+        "const perBox: number = 48 / 0;",
+        "// 数字を含まない記録から整数を読んでみる",
+        "const boxCount: number = Number.parseInt(\"未記録\", 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "正の数をゼロで割ると、値は Infinity です。",
+          "speech": "正の数をゼロで割ると、値はインフィニティです。",
+          "part": {
+            "line": 1,
+            "text": "48 / 0"
+          },
+          "figure": {
+            "show": ["b"],
+            "tag": {
+              "b": "Infinity"
+            }
+          }
+        },
+        {
+          "say": "整数を読めない記録からは、NaN が返ります。",
+          "speech": "整数を読めない記録からは、ナンが返ります。",
+          "part": {
+            "line": 3,
+            "text": "Number.parseInt(\"未記録\", 10)"
+          },
+          "figure": {
+            "show": ["d"],
+            "tag": {
+              "d": "NaN"
+            }
+          }
+        },
+        {
+          "say": "どちらも number 型に入る特別な値です。",
+          "speech": "どちらもナンバー型に入る特別な値です。",
+          "part": {
+            "line": 3,
+            "text": "number"
+          },
+          "figure": {
+            "show": ["a", "c", "ab", "cd"],
+            "tag": {
+              "a": "number",
+              "c": "number"
+            },
+            "pulse": ["a", "c"]
+          }
+        },
+        {
+          "say": "集計に使う前に、有限の数か確かめましょう。",
+          "part": {
+            "line": 1,
+            "text": "number"
+          },
+          "figure": {
+            "pulse": ["b", "d"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reject",
+      "kind": "code",
+      "role": "note",
+      "title": "集計に使う前に確認する",
+      "code": ["// 集計に使える数か確かめる", "const usable = Number.isFinite(perBox);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここでは、一箱の重さを確かめます。",
+          "part": {
+            "line": 1,
+            "text": "perBox",
+            "note": "一箱あたり"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "Infinity"
+            }
+          }
+        },
+        {
+          "say": "無限大のとき、確認の結果は false です。",
+          "speech": "無限大のとき、確認の結果はフォールスです。",
+          "part": {
+            "line": 1,
+            "text": "Number.isFinite"
+          },
+          "figure": {
+            "tag": {
+              "b": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "割り算の結果は有限？",
+      "code": [
+        "// 負の数をゼロで割った結果が有限か確かめる",
+        "const keep = Number.isFinite(-18 / 0);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "負の無限大"
+            }
+          }
+        },
+        {
+          "say": "かっこの中で、先に割り算をします。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "負の数をゼロで割ったとき、有限の数でしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 負の数をゼロで割った結果が有限か確かめる",
+        "const keep = Number.isFinite(-18 / 0);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は負の無限大なので、確認は false です。",
+          "speech": "結果は負の無限大なので、確認はフォールスです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": [
+        "// 負の数をゼロで割った結果が有限か確かめる",
+        "const keep = Number.isFinite(-18 / 0);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "負の数をゼロで割ると、負の無限大になります。",
+          "part": {
+            "line": 1,
+            "text": "-18 / 0"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "正でも負でも、無限大は有限の数ではありません。",
+          "part": {
+            "line": 1,
+            "text": "Number.isFinite"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "NaN を渡したときも、結果は false です。",
+          "speech": "ナンを渡したときも、結果はフォールスです。",
+          "part": {
+            "line": 1,
+            "text": "keep",
+            "note": "採用するか"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "割り算の結果を、集計に入れてよいか確かめます。",
+          "show": ["a"]
+        },
+        {
+          "say": "入力から読んだ数を使う前にも、確認が必要です。",
+          "show": ["b"]
+        },
+        {
+          "say": "グラフに点を打つときも、有限の値を選べます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問12 で使う",
+      "code": [
+        "// 問12 NaN でも Infinity でもない数なら true を返す",
+        "//     例: isFiniteNumber(1.5) → true",
+        "export function isFiniteNumber() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問12では、受け取った数が有限かを確認します。",
+          "speech": "問いじゅうにでは、受け取った数が有限かを確認します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "スターターの例では、小数も確認の対象です。",
+          "part": {
+            "line": 0,
+            "text": "// 問12 NaN でも Infinity でもない数なら true を返す"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "プラスやマイナスの無限大や、読み取れなかった数も考えましょう。",
+          "part": {
+            "line": 2,
+            "text": "export function isFiniteNumber() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "54739505b164accd8565794f8df3cfef4276fda0186839a2665e4f50ba6683a5"
+  }
+}

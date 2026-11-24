@@ -1,0 +1,688 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "整数かどうかを調べて、その結果を反対にできます。",
+    "stuck": "小数を受け付けられない個数や桁数は、number 型と分かっていても整数か確かめる必要があります。",
+    "points": ["Number.isInteger(数) で整数か確かめ、! で「そうでない」を表します。"],
+    "leaveOut": ["真偽値以外に否定を使う書き方"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "is-integer-example-1": {
+      "prompt": "An open blue shipping box divided into equal compartments. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-integer-example-2": {
+      "prompt": "Two intact red apples in natural colors. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-integer-example-3": {
+      "prompt": "A single half apple showing its cut surface in natural colors. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-integer-use-1": {
+      "prompt": "A shipping box containing whole red apples in natural colors. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-integer-use-2": {
+      "prompt": "Several blue chairs arranged beside a reception counter. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "is-integer-use-3": {
+      "prompt": "A small blue calculator with a blank display and blank buttons. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "箱の仕切り",
+          "art": "is-integer-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "丸ごとの個数",
+          "art": "is-integer-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "半端な個数",
+          "art": "is-integer-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の真偽値",
+          "art": "is-integer-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "反対の値",
+          "art": "is-integer-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力した個数",
+          "art": "is-integer-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "整数か",
+          "art": "is-integer-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "整数でないか",
+          "art": "is-integer-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "元の真偽値",
+          "art": "is-integer-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "反対の値",
+          "art": "is-integer-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "品物の個数",
+          "art": "is-integer-use-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "予約する人数",
+          "art": "is-integer-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "丸める桁数",
+          "art": "is-integer-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "is-integer-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "egg-carton",
+      "beats": [
+        {
+          "say": "この動画では、整数かどうかを確かめる方法を学びます。"
+        },
+        {
+          "say": "卵のパックには、卵を 1 個ずつ入れる決まりです。",
+          "speech": "卵のパックには、卵をいっこずつ入れる決まりです。"
+        },
+        {
+          "say": "2.5 個のように、半端な数は入れられません。",
+          "speech": "にてんごこのように、半端な数は入れられません。"
+        },
+        {
+          "say": "Number.isInteger で確かめ、! で「整数でない」を表します。",
+          "speech": "ナンバードットイズインテジャーで確かめ、びっくりマークで「整数でない」を表します。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "箱に入れる個数を確かめる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "箱の仕切りに、品物を一つずつ入れます。",
+          "show": ["a"]
+        },
+        {
+          "say": "一つの仕切りに、一個ずつ入れる決まりです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "半端な個数の注文は、そのままでは受け付けられません。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 真偽値を反対にして入れる", "const opposite = !true;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "びっくりマークは、真偽値を反対にします。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "否定",
+            "ruby": "ひてい",
+            "note": "真偽値を反対にする"
+          }
+        },
+        {
+          "say": "ここで使う元の値は、true です。",
+          "speech": "ここで使う元の値は、トゥルーです。",
+          "part": {
+            "line": 1,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "true"
+            }
+          }
+        },
+        {
+          "say": "前に付けると、結果は false になります。",
+          "speech": "前に付けると、結果はフォールスになります。",
+          "part": {
+            "line": 1,
+            "text": "!true"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "false"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決める部分です。",
+          "part": {
+            "line": 1,
+            "text": "opposite",
+            "note": "反対"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 注文された個数を入れる",
+        "const orderCount = 8.75;",
+        "// 注文数が整数かを確かめる",
+        "const whole = Number.isInteger(orderCount);",
+        "// 注文数が整数でないかを確かめる",
+        "const fractional = !Number.isInteger(orderCount);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "注文の記録に、8.75 個と書かれていました。",
+          "speech": "注文の記録に、はちてんななごこ、と書かれていました。",
+          "part": {
+            "line": 1,
+            "text": "orderCount",
+            "note": "注文数"
+          },
+          "figure": {
+            "show": ["a"],
+            "tag": {
+              "a": "8.75"
+            }
+          }
+        },
+        {
+          "say": "Number.isInteger は、整数かを確かめます。",
+          "speech": "ナンバードットイズインテジャーは、整数かを確かめます。",
+          "part": {
+            "line": 3,
+            "text": "Number.isInteger"
+          },
+          "figure": {
+            "show": ["b", "ab"],
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "小数なので、確認の結果は false です。",
+          "speech": "小数なので、確認の結果はフォールスです。",
+          "part": {
+            "line": 3,
+            "text": "whole",
+            "note": "整数か"
+          },
+          "figure": {
+            "tag": {
+              "b": "false"
+            }
+          }
+        },
+        {
+          "say": "前にびっくりマークを付けて、結果を反対にします。",
+          "part": {
+            "line": 5,
+            "text": "!"
+          },
+          "figure": {
+            "show": ["c", "bc"],
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "整数でないことを表す結果は、true です。",
+          "speech": "整数でないことを表す結果は、トゥルーです。",
+          "part": {
+            "line": 5,
+            "text": "fractional",
+            "note": "整数でないか"
+          },
+          "figure": {
+            "tag": {
+              "c": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 注文された個数を入れる",
+        "const orderCount = 8.75;",
+        "// 注文数が整数かを確かめる",
+        "const whole = Number.isInteger(orderCount);",
+        "// 注文数が整数でないかを確かめる",
+        "const fractional = !Number.isInteger(orderCount);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 5,
+                "text": "!"
+              },
+              {
+                "line": 5,
+                "text": "Number.isInteger"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 5,
+                "text": "orderCount"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "整数でないと判定される？",
+      "code": ["// 注文数が整数ではないかを確かめる", "const needsFix = !Number.isInteger(22);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "22"
+            }
+          }
+        },
+        {
+          "say": "まず、整数かどうかを確かめた結果を見ます。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "二十二個の注文は、整数でないと判定されるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 注文数が整数ではないかを確かめる", "const needsFix = !Number.isInteger(22);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "二十二は整数なので、式の結果は false です。",
+          "speech": "二十二は整数なので、式の結果はフォールスです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": ["// 注文数が整数ではないかを確かめる", "const needsFix = !Number.isInteger(22);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "Number.isInteger は、二十二に true を返します。",
+          "speech": "ナンバードットイズインテジャーは、にじゅうににトゥルーを返します。",
+          "part": {
+            "line": 1,
+            "text": "Number.isInteger"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "その真偽値を反対にすると、false です。",
+          "speech": "その真偽値を反対にすると、フォールスです。",
+          "part": {
+            "line": 1,
+            "text": "!"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "整数だけを受け付けるときは、こうして見分けられます。",
+          "part": {
+            "line": 1,
+            "text": "needsFix",
+            "note": "修正が必要か"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "品物の注文で、個数が整数か確かめます。",
+          "show": ["a"]
+        },
+        {
+          "say": "予約を受け付ける人数にも、使える確認です。",
+          "show": ["b"]
+        },
+        {
+          "say": "丸める桁数を受け取る場合も、整数か調べられます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "応用問題で使う",
+      "code": [
+        "// 1. roundTo(value, digits)",
+        "//    value を小数第 digits 位までに四捨五入して返す",
+        "//    次のときは Error を投げる（throw new Error(\"…\")）",
+        "//    - value が NaN や Infinity のとき",
+        "//    - digits が 0〜10 の整数でないとき",
+        "//    ヒント: Math.round、Number.isFinite、Number.isInteger",
+        "",
+        "export function roundTo() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "応用問題では、丸める桁数を受け取ります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "スターターの条件は、桁数が指定範囲の整数かどうかです。",
+          "part": {
+            "line": 4,
+            "text": "//    - digits が 0〜10 の整数でないとき"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "整数かどうかと、範囲に入るかを確かめましょう。",
+          "part": {
+            "line": 7,
+            "text": "export function roundTo() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7b1029422387476f89f8b5ffea1eb8ca2b0f21ea5e9882679623398e26792187"
+  }
+}

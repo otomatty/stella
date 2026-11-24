@@ -1,0 +1,784 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文字列の先頭から整数を読み取れるか確かめられます。",
+    "stuck": "単位の付いた入力から数を取り出し、数字を読めなかった場合も確かめたいときがあります。",
+    "points": ["Number.parseInt(文字列, 10) で先頭の整数を取り出します。取り出せないと NaN です。"],
+    "leaveOut": ["十進数以外で読む方法"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "parse-int-example-1": {
+      "prompt": "A simple blue input field with a blank inset. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parse-int-example-2": {
+      "prompt": "A stack of gold coins on a light grey tray. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parse-int-example-3": {
+      "prompt": "A small open coin purse beside a stack of coins. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parse-int-use-2": {
+      "prompt": "A rolled blue tape measure with a blank tape. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parse-int-use-3": {
+      "prompt": "A blue form window with blank boxes and one accent-colored border. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力欄",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "先頭の数字",
+          "art": "parse-int-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "取り出した数",
+          "art": "parse-int-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "文字列",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "取り出した整数",
+          "art": "parse-int-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "文字列",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "取り出した整数",
+          "art": "parse-int-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力の文字列",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "読んだ値",
+          "art": "parse-int-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "読めなかったか",
+          "art": "parse-int-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "金額の入力",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "長さの表示",
+          "art": "parse-int-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "入力の確認",
+          "art": "parse-int-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "parse-int-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "missing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "取り出せない値",
+          "art": "parse-int-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "等しいか",
+          "art": "parse-int-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "読めない値か",
+          "art": "parse-int-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "form-parse",
+      "beats": [
+        {
+          "say": "この動画では、文字列から数を取り出す方法を学びます。"
+        },
+        {
+          "say": "入力欄に「120円」と書かれていました。",
+          "speech": "入力欄に「ひゃくにじゅうえん」と書かれていました。"
+        },
+        {
+          "say": "先頭の数字だけを読むと、120 という数になります。",
+          "speech": "先頭の数字だけを読むと、ひゃくにじゅうという数になります。"
+        },
+        {
+          "say": "数字が無い文字列では、数でないことを表す NaN です。",
+          "speech": "数字が無い文字列では、数でないことを表すナンです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "入力された金額から数を読む",
+      "board": "example",
+      "beats": [
+        {
+          "say": "金額を文字列で受け取る入力欄です。",
+          "show": ["a"]
+        },
+        {
+          "say": "先頭に数字があり、その右に円が付きます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "計算には、単位を除いた整数が必要です。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": [
+        "// 金額の文字列から整数を取り出す",
+        "const price = Number.parseInt(\"460円\", 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "文字列の先頭から、整数として読める部分を使います。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "Number.parseInt の最初の引数は、文字列です。",
+          "speech": "ナンバードットパースイントの最初の引数は、文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"460円\""
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "460円"
+            }
+          }
+        },
+        {
+          "say": "二つ目の 10 は、十進数で読む指定になります。",
+          "speech": "二つ目のじゅうは、じっしんすうで読む指定になります。",
+          "part": {
+            "line": 1,
+            "text": "10"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "460"
+            }
+          },
+          "term": {
+            "text": "十進数",
+            "ruby": "じっしんすう",
+            "note": "ゼロから九で数を表す"
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決める部分です。",
+          "part": {
+            "line": 1,
+            "text": "price",
+            "note": "金額"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 金額の文字列から整数を取り出す",
+        "const price = Number.parseInt(\"460円\", 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Number.parseInt"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "\"460円\""
+              },
+              {
+                "line": 1,
+                "text": "10"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 小数を含む文字列から先頭の整数を読む",
+        "const kilos = Number.parseInt(\"17.8kg\", 10);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "重さが、小数を含む文字列で届きました。",
+          "part": {
+            "line": 1,
+            "text": "\"17.8kg\""
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "17.8kg"
+            }
+          }
+        },
+        {
+          "say": "整数を読むので、小数点の手前までです。",
+          "part": {
+            "line": 1,
+            "text": "Number.parseInt"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "十七が、数値として変数に入ります。",
+          "part": {
+            "line": 1,
+            "text": "kilos",
+            "note": "重さ"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "17"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "missing",
+      "kind": "code",
+      "role": "note",
+      "title": "NaN を確かめる",
+      "code": [
+        "// 読めなかった結果として数値型の変数に入れる",
+        "const unread: number = NaN;",
+        "// 自分自身と同じと判定されるか調べる",
+        "const same = unread === unread;",
+        "// 読めなかった値かを調べる",
+        "const isMissing = Number.isNaN(unread);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "missing"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "整数を取り出せないと、結果は NaN です。",
+          "speech": "整数を取り出せないと、結果はナンです。",
+          "part": {
+            "line": 1,
+            "text": "NaN"
+          },
+          "figure": {
+            "show": ["a"],
+            "tag": {
+              "a": "NaN"
+            }
+          },
+          "term": {
+            "text": "NaN",
+            "ruby": "ナン",
+            "note": "数値にできない値"
+          }
+        },
+        {
+          "say": "NaN は、自分自身と比べても等しくなりません。",
+          "speech": "ナンは、自分自身と比べても等しくなりません。",
+          "part": {
+            "line": 3,
+            "text": "==="
+          },
+          "figure": {
+            "show": ["b", "ab"],
+            "tag": {
+              "b": "NaN 同士"
+            }
+          }
+        },
+        {
+          "say": "同じかを比べた結果は、false です。",
+          "speech": "同じかを比べた結果は、フォールスです。",
+          "part": {
+            "line": 3,
+            "text": "unread === unread"
+          },
+          "figure": {
+            "tag": {
+              "b": "false"
+            }
+          }
+        },
+        {
+          "say": "Number.isNaN で確かめると、true になります。",
+          "speech": "ナンバードットイズナンで確かめると、トゥルーになります。",
+          "part": {
+            "line": 5,
+            "text": "Number.isNaN"
+          },
+          "figure": {
+            "show": ["c", "bc"],
+            "tag": {
+              "c": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "数を読み取れる？",
+      "code": [
+        "// 整数を取り出せるか試す",
+        "const weight = Number.parseInt(\"約26kg\", 10);",
+        "// 取り出せなかったかを確かめる",
+        "const failed = Number.isNaN(weight);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "約26kg"
+            }
+          }
+        },
+        {
+          "say": "文字列は、数字以外の文字から始まります。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "先頭が「約」の文字列では、確認の結果はどうでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["c"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 整数を取り出せるか試す",
+        "const weight = Number.parseInt(\"約26kg\", 10);",
+        "// 取り出せなかったかを確かめる",
+        "const failed = Number.isNaN(weight);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "取り出せないので、確認の結果は true です。",
+          "speech": "取り出せないので、確認の結果はトゥルーです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": [
+        "// 整数を取り出せるか試す",
+        "const weight = Number.parseInt(\"約26kg\", 10);",
+        "// 取り出せなかったかを確かめる",
+        "const failed = Number.isNaN(weight);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "先頭の「約」のところで、読み取りが止まりました。",
+          "part": {
+            "line": 1,
+            "text": "\"約26kg\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "整数を読めないと、取り出した値は NaN です。",
+          "speech": "整数を読めないと、取り出した値はナンです。",
+          "part": {
+            "line": 1,
+            "text": "Number.parseInt"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "NaN"
+            }
+          }
+        },
+        {
+          "say": "Number.isNaN は、その値を見分けます。",
+          "speech": "ナンバードットイズナンは、その値を見分けます。",
+          "part": {
+            "line": 3,
+            "text": "Number.isNaN"
+          },
+          "figure": {
+            "pulse": ["c", "bc"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "文字列に付いた円を除いて、整数を取り出せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "長さの数字に単位が付いていても、同じ考え方です。",
+          "show": ["b"]
+        },
+        {
+          "say": "先頭の整数が読めない入力は、入力欄に案内を出せます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問11 で使う",
+      "code": [
+        "// 問11 文字列の先頭の整数を取り出す。取り出せなければ 0 を返す",
+        "//     （Number.parseInt と Number.isNaN）",
+        "//     例: parseIntOrZero(\"42px\") → 42",
+        "export function parseIntOrZero() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問11では、文字列の先頭から整数を読みます。",
+          "speech": "問いじゅういちでは、文字列の先頭から整数を読みます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "読めなかったときに返す値は、コメントの指定どおりです。",
+          "part": {
+            "line": 0,
+            "text": "// 問11 文字列の先頭の整数を取り出す。取り出せなければ 0 を返す"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "取り出した値を、どう見分けるか考えましょう。",
+          "part": {
+            "line": 3,
+            "text": "export function parseIntOrZero() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "937567f85bf76cc55619eb8f1866d070bfc87c56ed645bae85117a783e3eea62"
+  }
+}

@@ -1,0 +1,627 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数の向きを外して、大きさを求められます。",
+    "stuck": "予定より手前か先かにかかわらず、ずれの大きさだけを知りたいときがあります。",
+    "points": ["Math.abs(数) で、マイナスを外した大きさになります。"],
+    "leaveOut": ["距離を測るための別の計算"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "abs-example-1": {
+      "prompt": "A blue floor marker on a pale warehouse tile. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "abs-example-2": {
+      "prompt": "A cardboard shipping box slightly behind a violet floor stripe. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "abs-example-3": {
+      "prompt": "A short retractable tape measure with a blank tape. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "abs-use-1": {
+      "prompt": "A warehouse shelf with cardboard boxes. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "abs-use-2": {
+      "prompt": "A round wall clock with hands and a blank face. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "abs-use-3": {
+      "prompt": "A blue measuring gauge with a blank dial. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "予定の位置",
+          "art": "abs-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "ずれた荷物",
+          "art": "abs-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "ずれの大きさ",
+          "art": "abs-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "向きのある数",
+          "art": "abs-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "絶対値",
+          "art": "abs-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "向きのある数",
+          "art": "abs-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "絶対値",
+          "art": "abs-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "向きのある数",
+          "art": "abs-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "絶対値",
+          "art": "abs-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "在庫の差",
+          "art": "abs-use-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "時計のずれ",
+          "art": "abs-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "測定値の誤差",
+          "art": "abs-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "abs-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "steps-distance",
+      "beats": [
+        {
+          "say": "この動画では、数の大きさだけを取り出す方法を学びます。"
+        },
+        {
+          "say": "家から東へ 3 歩、西へ 3 歩、それぞれ歩きました。",
+          "speech": "家から東へさんぽ、西へさんぽ、それぞれ歩きました。"
+        },
+        {
+          "say": "向きは逆でも、歩いた距離はどちらも 3 歩です。",
+          "speech": "向きは逆でも、歩いた距離はどちらもさんぽです。"
+        },
+        {
+          "say": "向きを外して大きさにするのに、Math.abs を使います。",
+          "speech": "向きを外して大きさにするのに、マスドットエービーエスを使います。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "荷物を置いた位置がずれる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "倉庫の床に、荷物を置く位置の目印があります。",
+          "show": ["a"]
+        },
+        {
+          "say": "荷物は、目印より手前に置かれました。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "手前か先かに関係なく、何歩離れたかが知りたい場面です。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 予定の位置からのずれの大きさを入れる", "const offset = Math.abs(-6);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "絶対値とは、ゼロからの距離です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "絶対値",
+            "ruby": "ぜったいち",
+            "note": "ゼロからの距離"
+          }
+        },
+        {
+          "say": "Math.abs に、マイナス六を渡します。",
+          "speech": "マスドットエービーエスに、マイナスろくを渡します。",
+          "part": {
+            "line": 1,
+            "text": "-6"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "-6"
+            }
+          }
+        },
+        {
+          "say": "結果は、マイナスを外した六です。",
+          "part": {
+            "line": 1,
+            "text": "Math.abs"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "6"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "offset",
+            "note": "ずれ"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 予定の位置からのずれの大きさを入れる", "const offset = Math.abs(-6);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Math.abs"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "-6"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 荷物がずれた向きと歩数を記録する",
+        "const shift = -11;",
+        "// 向きを外して離れた歩数を求める",
+        "const distance = Math.abs(shift);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "目印より手前に、十一歩ずれていました。",
+          "part": {
+            "line": 1,
+            "text": "shift",
+            "note": "ずれ"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "-11"
+            }
+          }
+        },
+        {
+          "say": "手前のずれは、マイナス十一で表します。",
+          "part": {
+            "line": 1,
+            "text": "-11"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "絶対値にすると、離れた歩数は十一です。",
+          "part": {
+            "line": 3,
+            "text": "Math.abs(shift)"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "11"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "絶対値はいくつ？",
+      "code": ["// 奥へずれた距離の大きさを入れる", "const drift = Math.abs(14);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "14"
+            }
+          }
+        },
+        {
+          "say": "渡す数には、マイナスの符号がありません。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "プラスの十四を渡すと、結果はいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 奥へずれた距離の大きさを入れる", "const drift = Math.abs(14);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は、そのまま十四です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "14"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": ["// 奥へずれた距離の大きさを入れる", "const drift = Math.abs(14);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "渡した値は、ゼロより大きい数でした。",
+          "part": {
+            "line": 1,
+            "text": "14"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "ゼロから十四離れているので、絶対値は十四です。",
+          "part": {
+            "line": 1,
+            "text": "Math.abs"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "ゼロを渡したときも、そのままゼロが返ります。",
+          "part": {
+            "line": 1,
+            "text": "drift",
+            "note": "ずれ"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "在庫が予定より何個ずれたかを調べます。",
+          "show": ["a"]
+        },
+        {
+          "say": "時計が何分ずれたかを表すのにも便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "測定値の誤差も、大きさで比べられます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問4 で使う",
+      "code": [
+        "// 問4 2つの数の差の大きさ（絶対値）を返す",
+        "//     例: absDiff(3, 10) → 7",
+        "export function absDiff() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問4では、二つの数の差の大きさを返します。",
+          "speech": "問いよんでは、二つの数の差の大きさを返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "渡す値の順番は、スターターのコメントにある例のとおりです。",
+          "part": {
+            "line": 0,
+            "text": "// 問4 2つの数の差の大きさ（絶対値）を返す"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "引き算で出た差の符号にも注目しましょう。",
+          "part": {
+            "line": 2,
+            "text": "export function absDiff() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a3f010a8f1450e943a70948ca430ef41bfa2f957389a68982c667e1c6aa157c7"
+  }
+}

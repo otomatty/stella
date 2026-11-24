@@ -1,0 +1,627 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "直角を作る二辺から斜辺の長さを求められます。",
+    "stuck": "縦と横の長さが分かっていても、足し算では斜めの長さは求まりません。",
+    "points": ["Math.hypot(a, b) で、直角三角形の斜めの辺の長さになります。"],
+    "leaveOut": ["三つ以上の数を渡したときの計算"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "hypot-example-1": {
+      "prompt": "A short vertical brick wall in side view. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hypot-example-2": {
+      "prompt": "A flat strip of light grey tiled floor. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hypot-example-3": {
+      "prompt": "A blue ladder leaning against a short wall in side view. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hypot-use-2": {
+      "prompt": "A rectangular wooden board with a thin diagonal cut. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hypot-use-3": {
+      "prompt": "An overhead view of a rectangular grassy lot with a diagonal path. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "壁の高さ",
+          "art": "hypot-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "床の幅",
+          "art": "hypot-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "はしごの長さ",
+          "art": "hypot-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "直角を作る二辺",
+          "art": "hypot-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "斜辺の長さ",
+          "art": "hypot-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "直角を作る二辺",
+          "art": "hypot-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "斜辺の長さ",
+          "art": "hypot-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "直角を作る二辺",
+          "art": "hypot-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "斜辺の長さ",
+          "art": "hypot-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "はしごの長さ",
+          "art": "hypot-example-3",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "板の対角線",
+          "art": "hypot-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "長方形の敷地",
+          "art": "hypot-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "hypot-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "ladder-wall",
+      "beats": [
+        {
+          "say": "この動画では、直角三角形の斜めの辺を求める方法を学びます。"
+        },
+        {
+          "say": "壁に、はしごを立てかけました。"
+        },
+        {
+          "say": "高さ 4 m、床の幅 3 m で、はしごは 5 m です。",
+          "speech": "高さよんメートル、床の幅さんメートルで、はしごはごメートルです。"
+        },
+        {
+          "say": "Math.hypot に 3 と 4 を渡すと、斜めは 5 になります。",
+          "speech": "マスドットハイポットにさんとよんを渡すと、斜めはごになります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "壁と床からはしごの長さを求める",
+      "board": "example",
+      "beats": [
+        {
+          "say": "はしごを置くと、壁と床で直角ができます。",
+          "show": ["a"]
+        },
+        {
+          "say": "壁の高さと、床の幅は測れました。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "必要なのは、その先を結ぶ斜めの長さです。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 壁と床の長さからはしごの長さを求める", "const ladder = Math.hypot(6, 8);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "直角の向かい側にある辺が、斜辺です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "斜辺",
+            "ruby": "しゃへん",
+            "note": "直角の向かいの辺"
+          }
+        },
+        {
+          "say": "Math.hypot に、直角を作る二辺を渡します。",
+          "speech": "マスドットハイポットに、直角を作る二辺を渡します。",
+          "part": {
+            "line": 1,
+            "text": "6, 8"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "6 と 8"
+            }
+          }
+        },
+        {
+          "say": "戻り値は、六と八で作る三角形の斜辺です。",
+          "part": {
+            "line": 1,
+            "text": "Math.hypot"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "10"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "ladder",
+            "note": "はしご"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 壁と床の長さからはしごの長さを求める", "const ladder = Math.hypot(6, 8);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Math.hypot"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "6, 8"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 壁の高さを入れる",
+        "const wall = 12;",
+        "// はしごの足から壁までの幅を入れる",
+        "const floor = 16;",
+        "// はしごの長さを求める",
+        "const ladderLength = Math.hypot(wall, floor);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "壁の高さは、十二メートルです。",
+          "part": {
+            "line": 1,
+            "text": "wall",
+            "note": "壁"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "12 と 16"
+            }
+          }
+        },
+        {
+          "say": "床の幅を測ると、十六メートルになりました。",
+          "part": {
+            "line": 3,
+            "text": "floor",
+            "note": "床"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "二つの長さを渡すと、はしごは二十メートルです。",
+          "part": {
+            "line": 5,
+            "text": "Math.hypot(wall, floor)"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "20"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "板の斜めの長さは？",
+      "code": ["// 長方形の板の対角線の長さを求める", "const cornerSpan = Math.hypot(20, 21);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "20 と 21"
+            }
+          }
+        },
+        {
+          "say": "板の縦と横の長さが、分かっています。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "縦が二十、横が二十一の板では、斜めはいくつでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 長方形の板の対角線の長さを求める", "const cornerSpan = Math.hypot(20, 21);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "板の角から反対の角までは、二十九です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "29"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": ["// 長方形の板の対角線の長さを求める", "const cornerSpan = Math.hypot(20, 21);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "縦と横を、それぞれ二乗します。",
+          "part": {
+            "line": 1,
+            "text": "20, 21"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "二乗を足して、その平方根を求めましょう。",
+          "part": {
+            "line": 1,
+            "text": "Math.hypot"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この計算で、斜めの長さが求まります。",
+          "part": {
+            "line": 1,
+            "text": "cornerSpan",
+            "note": "対角線"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "はしごが届くか、壁の高さと床の幅から調べます。",
+          "show": ["a"]
+        },
+        {
+          "say": "長方形の板を斜めに切るときも、同じ計算です。",
+          "show": ["b"]
+        },
+        {
+          "say": "敷地を斜めに横切る距離も、縦と横から求められます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問17 で使う",
+      "code": [
+        "// 問17 直角三角形の2辺から、斜辺の長さを返す",
+        "//     （Math.hypot または Math.sqrt）",
+        "//     例: hypotenuse(3, 4) → 5",
+        "export function hypotenuse() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問17では、二辺から斜辺の長さを返します。",
+          "speech": "問いじゅうななでは、二辺から斜辺の長さを返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "スターターの呼び出し例にあるのは、直角を作る二辺です。",
+          "part": {
+            "line": 0,
+            "text": "// 問17 直角三角形の2辺から、斜辺の長さを返す"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "二辺と返す値の型を、引数と戻り値に示しましょう。",
+          "part": {
+            "line": 3,
+            "text": "export function hypotenuse() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e1ed1a6c3d67be6af005175ebeb75a344ad534922d055908cbb091f733476244"
+  }
+}
