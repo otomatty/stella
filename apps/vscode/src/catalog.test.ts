@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("vscode", () => ({
   workspace: { getConfiguration: () => ({ get: () => "http://127.0.0.1:8787" }) },
 }));
+vi.mock("./api.js", () => ({ apiRequest: vi.fn() }));
 
 import type { StageWithChildren } from "@stella/shared/cms/types";
-import { requireLoadedStageDetails, toCatalogStage } from "./catalog.js";
+import type { TaskProblemStepSummary } from "@stella/shared/tasks/problem-steps";
+import { apiRequest } from "./api.js";
+import { loadCatalog, requireLoadedStageDetails, toCatalogStage } from "./catalog.js";
 
 describe("requireLoadedStageDetails", () => {
   it("throws when enrolled stage ids exist but every detail is null", () => {
@@ -64,5 +67,50 @@ describe("toCatalogStage", () => {
       }),
     ]);
     expect(stage?.sections[0]?.lessons[0]).not.toHaveProperty("task");
+  });
+
+  it("課題文のない課題でも問題を結び、完了はレッスン進捗から読む", async () => {
+    const taskId = "devlab-ts-ch01/u01-let-const/q01";
+    const problems: TaskProblemStepSummary[] = (["open", "submitted"] as const).map(
+      (state, index) => ({
+        id: `q0${index + 1}`,
+        title: `問題 ${index + 1}`,
+        label: `問${index + 1}`,
+        stepLessonId: `problem-u01-let-const-q01-q0${index + 1}`,
+        afterLessonId: "video",
+        afterTitle: "計算の順番",
+        state,
+      }),
+    );
+    const section = {
+      ...detail.sections[0],
+      lessons: [lesson("video", 0), ...problems.map((step, i) => lesson(step.stepLessonId, i + 1))],
+    };
+    vi.mocked(apiRequest).mockImplementation(async (url) => {
+      switch (url) {
+        case "/api/enrollments/mine":
+          return { rows: [{ stage_id: "st", status: "active" }] };
+        case "/api/lesson-progress":
+          return { rows: [{ lesson_id: problems[0].stepLessonId, completed: 1 }] };
+        case "/api/cms/stages/st":
+          return { stage: { ...detail, sections: [section] } };
+        case "/api/tasks/for-stage/st":
+          return { tasks: [{ id: taskId, lessonId: null, status: "not-started", problems }] };
+        default:
+          throw new Error(url);
+      }
+    });
+    const [stage] = await loadCatalog();
+    expect(stage?.sections[0]?.lessons).toEqual([
+      { id: "video", stageId: "st", title: "video", type: "text", completed: false },
+      ...problems.map(({ id, stepLessonId }, i) => ({
+        id: stepLessonId,
+        stageId: "st",
+        title: stepLessonId,
+        type: "text",
+        completed: i === 0,
+        problem: { taskId, id },
+      })),
+    ]);
   });
 });

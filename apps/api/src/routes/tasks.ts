@@ -642,6 +642,7 @@ const handleLocalRun =
           contentHash: tasks.contentHash,
           stageId: sections.stageId,
           variantOf: tasks.variantOf,
+          definition: tasks.definition,
         })
         .from(tasks)
         .innerJoin(sections, eq(sections.id, tasks.sectionId))
@@ -652,7 +653,8 @@ const handleLocalRun =
       if (row.contentHash !== body.contentHash)
         throw new ApiError("教材が更新されています。課題を開き直してください", 409);
       const runs = localRunUpsert(db, { userId: caller.id }, row, body);
-      if (body.outcome !== "passed") {
+      // 問題の確認結果は回数だけを記録し、課題の合格は全問の提出で決める。
+      if (body.outcome !== "passed" || readTaskDefinition(row.definition).problems) {
         await runs;
         return c.json({ ok: true });
       }

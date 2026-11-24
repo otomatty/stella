@@ -231,6 +231,26 @@ describe("学習サイドバーと拡張の接続", () => {
     expect(h.html).toContain('<span class="sr-only">いま開いている教材</span>');
   });
 
+  it("問題レッスンを押すと、カタログの課題 ID と問題 ID で開く", async () => {
+    const taskId = "devlab-ts-ch01/u01-let-const/q01";
+    const problemId = "q01-04-average3";
+    const lessonId = `problem-u01-let-const-q01-${problemId}`;
+    const withProblem = structuredClone(catalog);
+    withProblem[0].sections[0].lessons.push({
+      id: lessonId,
+      stageId: "s",
+      title: "問4 3つの数の平均を返す",
+      type: "text",
+      completed: false,
+      problem: { taskId, id: problemId },
+    });
+    mocks.load.mockResolvedValueOnce(withProblem);
+    const h = harness();
+    await vi.waitFor(() => expect(h.html).toContain(`data-lesson="${lessonId}"`));
+    h.send({ action: "open", id: lessonId });
+    expect(mocks.execute.mock.calls).toEqual([["stella.openTask", taskId, problemId]]);
+  });
+
   it("未知の ID、任意のコマンド、古い表示からのメッセージを実行しない", async () => {
     const h = harness();
     const { provider, send } = h;

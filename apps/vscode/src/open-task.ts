@@ -110,7 +110,7 @@ async function filesToOpen(taskRoot: string, requestedProblem?: string): Promise
   const loaded = await loadTask(taskRoot);
   if (!loaded.ok) return [];
   if (loaded.manifest.problems?.length) {
-    const { states, blocked, unprepared, preparationError } = await loadTaskProblems(
+    const { states, blocked, unprepared, preparationError, progress } = await loadTaskProblems(
       taskRoot,
       loaded.manifest,
     );
@@ -125,6 +125,7 @@ async function filesToOpen(taskRoot: string, requestedProblem?: string): Promise
     const file = problemFileToOpen(
       states.filter(({ id }) => !unprepared.has(id)),
       loaded.manifest.problemSteps ? requestedProblem : undefined,
+      progress.total,
     );
     return file && opensAsText(file) ? [file] : [];
   }

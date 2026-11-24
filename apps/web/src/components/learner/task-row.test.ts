@@ -30,10 +30,10 @@ describe("課題の行", () => {
     expect(markup).toContain("約30分");
   });
 
-  it("問題の無い課題は件数を出さず、手元の合格の文言を変えない", () => {
+  it("問題の無い課題は件数を出さず、手元の確認に通っていても未提出と表示する", () => {
     const row = task("local-passed");
     expect(taskProblemCountLabel(row)).toBeNull();
-    expect(taskStatusLabel(row)).toBe("手元で合格");
+    expect(taskStatusLabel(row)).toBe("未提出");
     const markup = renderToStaticMarkup(createElement(TaskRowProgress, { task: row }));
     expect(markup).not.toContain("問");
     expect(taskStatusLabel(task("submitted"))).toBe("AI が確認中");
