@@ -1,0 +1,666 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "条件に合わない値で処理を止められます。",
+    "stuck": "受け付けられない値で処理を続けると、誤った結果を返すことがあります。",
+    "points": ["throw new Error(\"理由\") で、その場で処理を止めて理由を伝えます。"],
+    "leaveOut": ["投げられたエラーを受け止める書き方"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "throw-example-1": {
+      "prompt": "A violet theater seat with a blank paper ticket. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "throw-example-2": {
+      "prompt": "A single unoccupied blue theater seat. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "throw-example-3": {
+      "prompt": "A blue ticket gate with its barrier closed. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "throw-use-1": {
+      "prompt": "A row of violet theater seats. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "throw-use-2": {
+      "prompt": "A child-size blue bicycle with a small helmet. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "throw-use-3": {
+      "prompt": "A calendar sheet with empty cells beside a clock. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "希望の席数",
+          "art": "throw-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "予約の下限",
+          "art": "throw-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "受け付け停止",
+          "art": "throw-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "知らせる理由",
+          "art": "throw-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "処理の結果",
+          "art": "throw-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "知らせる理由",
+          "art": "throw-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "処理の結果",
+          "art": "throw-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "知らせる理由",
+          "art": "throw-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "処理の結果",
+          "art": "throw-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "席数の確認",
+          "art": "throw-use-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "年齢の確認",
+          "art": "throw-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "予約の締切",
+          "art": "throw-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "throw-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "ticket-gate-stop",
+      "beats": [
+        {
+          "say": "この動画では、処理を止めて知らせる書き方を学びます。"
+        },
+        {
+          "say": "改札に、期限の切れた切符を入れました。"
+        },
+        {
+          "say": "扉が閉まり、表示は「使えません」です。"
+        },
+        {
+          "say": "throw new Error で、止めて理由を伝えます。",
+          "speech": "スローニューエラーで、止めて理由を伝えます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "条件を満たさない予約を止める",
+      "board": "example",
+      "beats": [
+        {
+          "say": "席を予約するとき、希望する席数を受け取ります。",
+          "show": ["a"]
+        },
+        {
+          "say": "予約には、一席以上という決まりがありました。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "ゼロ席の申し込みは、予約を止めます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": [
+        "// 予約できない理由を知らせて処理を止める",
+        "throw new Error(\"席を選んでください\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "エラーを投げると、その場で処理は続きません。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "エラーを投げる",
+            "ruby": "エラーをなげる",
+            "note": "処理を止めて知らせる"
+          }
+        },
+        {
+          "say": "new Error で、理由を持ったエラーを作ります。",
+          "speech": "ニューエラーで、理由を持ったエラーを作ります。",
+          "part": {
+            "line": 1,
+            "text": "new Error"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "席を選ぶ"
+            }
+          }
+        },
+        {
+          "say": "throw は、そのエラーを投げる書き方です。",
+          "speech": "スローは、そのエラーを投げる書き方です。",
+          "part": {
+            "line": 1,
+            "text": "throw new Error"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "処理を停止"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 予約できない理由を知らせて処理を止める",
+        "throw new Error(\"席を選んでください\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "throw new Error"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値や、必要な理由の文は、自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "\"席を選んでください\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 希望する席数を確認して返す",
+        "function confirmSeats(seats: number): number {",
+        "  // 一席より少ないかを確かめる",
+        "  if (seats < 1) {",
+        "    // 受け付けられない理由を知らせる",
+        "    throw new Error(\"一席以上を選んでください\");",
+        "  }",
+        "  // 受け付けた席数を返す",
+        "  return seats;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "予約には、一席以上が必要です。",
+          "part": {
+            "line": 1,
+            "text": "seats",
+            "note": "席数"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "席数が一未満"
+            }
+          }
+        },
+        {
+          "say": "希望が一席未満なら、条件に合います。",
+          "part": {
+            "line": 3,
+            "text": "seats < 1"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "エラーを投げるので、下の行には進みません。",
+          "part": {
+            "line": 5,
+            "text": "throw new Error"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "処理を停止"
+            }
+          }
+        },
+        {
+          "say": "一席以上なら、下の行で希望の席数を返します。",
+          "part": {
+            "line": 8,
+            "text": "return seats"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "最後の表示まで進む？",
+      "code": [
+        "// 受け付けできる年齢か確かめる",
+        "const age = 7;",
+        "// 八歳未満なら処理を止める",
+        "if (age < 8) {",
+        "  // 年齢の条件を知らせる",
+        "  throw new Error(\"八歳から参加できます\");",
+        "}",
+        "// 受付が済んだことを表示する",
+        "console.log(\"参加受付\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "7 は 8 未満"
+            }
+          }
+        },
+        {
+          "say": "この例の参加条件は、八歳以上です。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "七歳の場合、最後の表示まで進むでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 受け付けできる年齢か確かめる",
+        "const age = 7;",
+        "// 八歳未満なら処理を止める",
+        "if (age < 8) {",
+        "  // 年齢の条件を知らせる",
+        "  throw new Error(\"八歳から参加できます\");",
+        "}",
+        "// 受付が済んだことを表示する",
+        "console.log(\"参加受付\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "条件に合い、エラーを投げるので進みません。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "処理を停止"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": [
+        "// 受け付けできる年齢か確かめる",
+        "const age = 7;",
+        "// 八歳未満なら処理を止める",
+        "if (age < 8) {",
+        "  // 年齢の条件を知らせる",
+        "  throw new Error(\"八歳から参加できます\");",
+        "}",
+        "// 受付が済んだことを表示する",
+        "console.log(\"参加受付\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "七歳は、八歳より小さい数です。",
+          "part": {
+            "line": 3,
+            "text": "age < 8"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件に合うので、内側でエラーを投げます。",
+          "part": {
+            "line": 5,
+            "text": "throw new Error"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "そこで止まるので、最後の表示は出ません。",
+          "part": {
+            "line": 8,
+            "text": "console.log"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "予約で受け付けられる席数を確認します。",
+          "show": ["a"]
+        },
+        {
+          "say": "参加できる年齢が決まっているときにも便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "締切を過ぎて申し込んだときも、理由を表示できます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問8 で使う",
+      "code": [
+        "// 問8 平方根を返す。負の数なら Error を投げる",
+        "//     例: squareRoot(9) → 3",
+        "export function squareRoot() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問8では、負の数を受け取ったときに処理を止めます。",
+          "speech": "問いはちでは、負の数を受け取ったときに処理を止めます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "止める条件が、スターターのコメントにある指定です。",
+          "part": {
+            "line": 0,
+            "text": "// 問8 平方根を返す。負の数なら Error を投げる"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件を確かめてから、平方根を求めましょう。",
+          "part": {
+            "line": 2,
+            "text": "export function squareRoot() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9b3c4ecc23925a9f7180be3a6ee5a008a6c614bc162e90e7442db2af7e9c1a3d"
+  }
+}

@@ -1,0 +1,649 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "候補の数から、最大と最小を選べます。",
+    "stuck": "複数の測定結果から、いちばん大きい数や小さい数を選びたいときがあります。",
+    "points": ["Math.max はいちばん大きい数、Math.min はいちばん小さい数を返します。"],
+    "leaveOut": ["配列から最大や最小を選ぶ書き方"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "min-max-example-1": {
+      "prompt": "A short blue rain gauge holding a shallow column of water. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "min-max-example-2": {
+      "prompt": "A tall violet rain gauge holding a deep column of water. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "min-max-example-3": {
+      "prompt": "A blue rain gauge holding a medium column of water. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "min-max-use-2": {
+      "prompt": "Two blank price tags beside a folded shirt. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "min-max-use-3": {
+      "prompt": "A pair of violet theater seats. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "一日目の雨量",
+          "art": "min-max-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "二日目の雨量",
+          "art": "min-max-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "三日目の雨量",
+          "art": "min-max-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "候補の数",
+          "art": "min-max-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "選んだ数",
+          "art": "min-max-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "候補の数",
+          "art": "min-max-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "最大の数",
+          "art": "min-max-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "最小の数",
+          "art": "min-max-example-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "候補の数",
+          "art": "min-max-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "選んだ数",
+          "art": "min-max-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "雨量の記録",
+          "art": "min-max-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "値段の比較",
+          "art": "min-max-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "席数の下限",
+          "art": "min-max-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "min-max-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "bar-max-min",
+      "beats": [
+        {
+          "say": "この動画では、いちばん大きい数と小さい数を選ぶ方法を学びます。"
+        },
+        {
+          "say": "3 つの棚に、本が 18 冊、42 冊、27 冊ありました。",
+          "speech": "みっつの棚に、本がじゅうはっさつ、よんじゅうにさつ、にじゅうななさつありました。"
+        },
+        {
+          "say": "いちばん多いのは 42 冊、少ないのは 18 冊です。",
+          "speech": "いちばん多いのはよんじゅうにさつ、少ないのはじゅうはっさつです。"
+        },
+        {
+          "say": "Math.max は最大、Math.min は最小を返します。",
+          "speech": "マスドットマックスは最大、マスドットミンは最小を返します。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "雨が多い日と少ない日を比べる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "雨が降った量を、三日分の記録にまとめました。",
+          "show": ["a"]
+        },
+        {
+          "say": "棒の高さは、それぞれの日の雨量です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "この中から、いちばん多い量と少ない量を選びます。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": [
+        "// 雨量のいちばん大きい値を選ぶ",
+        "const wettest = Math.max(24, 31, 17);",
+        "// 雨量のいちばん小さい値を選ぶ",
+        "const driest = Math.min(24, 31, 17);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "候補のうち、いちばん大きい数が最大です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "Math.max には、数をカンマで区切って渡します。",
+          "speech": "マスドットマックスには、数をカンマで区切って渡します。",
+          "part": {
+            "line": 1,
+            "text": "24, 31, 17"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "24・31・17"
+            }
+          }
+        },
+        {
+          "say": "Math.min を使うと、いちばん小さい数です。",
+          "speech": "マスドットミンを使うと、いちばん小さい数です。",
+          "part": {
+            "line": 3,
+            "text": "Math.min"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "31 と 17"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "wettest",
+            "note": "雨量の最大"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 雨量のいちばん大きい値を選ぶ",
+        "const wettest = Math.max(24, 31, 17);",
+        "// 雨量のいちばん小さい値を選ぶ",
+        "const driest = Math.min(24, 31, 17);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Math.max"
+              },
+              {
+                "line": 3,
+                "text": "Math.min"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "24, 31, 17"
+              },
+              {
+                "line": 3,
+                "text": "24, 31, 17"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 三日分の雨量から最大を求める",
+        "const mostRain = Math.max(26, 34, 21);",
+        "// 同じ記録から最小を求める",
+        "const leastRain = Math.min(26, 34, 21);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここでは、雨量の記録を三つ渡しました。",
+          "part": {
+            "line": 1,
+            "text": "26, 34, 21"
+          },
+          "figure": {
+            "show": ["a"],
+            "tag": {
+              "a": "26・34・21"
+            }
+          }
+        },
+        {
+          "say": "まず、いちばん大きい三十四が最大です。",
+          "part": {
+            "line": 1,
+            "text": "Math.max"
+          },
+          "figure": {
+            "show": ["b"],
+            "tag": {
+              "b": "34"
+            }
+          }
+        },
+        {
+          "say": "同じ三つを渡して、いちばん小さい二十一も求めます。",
+          "part": {
+            "line": 3,
+            "text": "Math.min"
+          },
+          "figure": {
+            "show": ["c"],
+            "tag": {
+              "c": "21"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "どの価格が返る？",
+      "code": [
+        "// 商品の候補価格から最も安い額を求める",
+        "const cheapest = Math.min(690, 850, 730);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "三つの価格"
+            }
+          }
+        },
+        {
+          "say": "ここでは、商品の価格を三つ渡しました。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "この三つのうち、どの価格が返るでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 商品の候補価格から最も安い額を求める",
+        "const cheapest = Math.min(690, 850, 730);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "いちばん安い、六百九十です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "690"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": [
+        "// 商品の候補価格から最も安い額を求める",
+        "const cheapest = Math.min(690, 850, 730);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "かっこの中に、三つの価格を並べました。",
+          "part": {
+            "line": 1,
+            "text": "690, 850, 730"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "Math.min は、いちばん小さい値を選びます。",
+          "speech": "マスドットミンは、いちばん小さい値を選びます。",
+          "part": {
+            "line": 1,
+            "text": "Math.min"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "数の並び順を変えても、選ばれる値は同じです。",
+          "part": {
+            "line": 1,
+            "text": "cheapest",
+            "note": "最安値"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "何日かの雨量から、その期間の最大を求めます。",
+          "show": ["a"]
+        },
+        {
+          "say": "商品の候補が複数あるとき、安い価格も選べて便利です。",
+          "show": ["b"]
+        },
+        {
+          "say": "席数の希望が下限を下回らないようにもできます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問9 で使う",
+      "code": [
+        "// 問9 value を min 以上 max 以下に収める",
+        "//     例: clamp(15, 0, 10) → 10",
+        "export function clamp() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問9では、値を下限と上限の間に収めます。",
+          "speech": "問いきゅうでは、値を下限と上限の間に収めます。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "スターターは、元の値と両方の境目がある例です。",
+          "part": {
+            "line": 0,
+            "text": "// 問9 value を min 以上 max 以下に収める"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "それぞれの境目で、大きい方と小さい方を選び分けましょう。",
+          "part": {
+            "line": 2,
+            "text": "export function clamp() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4f4e34a73b1c903bf377ca922d4d143085a86a1b5771a29ef94a02bb2d54d6bc"
+  }
+}

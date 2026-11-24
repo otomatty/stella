@@ -62,6 +62,15 @@ export const MOTIONS = {
   "card-find-at": { title: "文字カードから位置を探す", beats: 4, seconds: [2.5, 3.8, 4.7, 5.0] },
   "dot-last": { title: "ファイル名の最後の点", beats: 4, seconds: [2.5, 4.0, 4.3, 5.7] },
   "digit-sieve": { title: "ふるいで数字を取り除く", beats: 4, seconds: [2.5, 5.0, 4.8, 5.5] },
+  "steps-distance": { title: "歩いた距離", beats: 4, seconds: [2.5, 5.0, 4.5, 5.0] },
+  "sprout-double": { title: "倍に増える芽", beats: 4, seconds: [2.5, 4.3, 5.3, 4.8] },
+  "square-garden": { title: "正方形の花壇", beats: 4, seconds: [2.5, 4.0, 5.2, 5.8] },
+  "ticket-gate-stop": { title: "切符を止める改札", beats: 4, seconds: [2.5, 3.6, 4.0, 5.3] },
+  "bar-max-min": { title: "本棚の最大と最小", beats: 4, seconds: [2.5, 5.3, 5.0, 5.7] },
+  "form-parse": { title: "入力欄から数を読む", beats: 4, seconds: [2.5, 3.8, 4.8, 5.2] },
+  "calculator-infinity": { title: "電卓で0で割る", beats: 4, seconds: [2.5, 3.6, 5.3, 5.7] },
+  "ladder-wall": { title: "はしごの長さ", beats: 4, seconds: [2.5, 3.0, 5.3, 6.2] },
+  "egg-carton": { title: "卵を1個ずつ入れる", beats: 4, seconds: [2.5, 4.0, 4.3, 6.9] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;

@@ -2,8 +2,10 @@ import type { ComponentType } from "react";
 import { AgeFloor, ageFloorText } from "./age-floor";
 import { AllergyLabel, allergyLabelText } from "./allergy-label";
 import { BankInterest, bankInterestText } from "./bank-interest";
+import { BarMaxMin, barMaxMinText } from "./bar-max-min";
 import { Beads, beadsText } from "./beads";
 import { BusSeats, busSeatsText } from "./bus-seats";
+import { CalculatorInfinity, calculatorInfinityText } from "./calculator-infinity";
 import { CallStaff, callStaffText } from "./call-staff";
 import { CandyRest, candyRestText } from "./candy-rest";
 import { CardFindAt, cardFindAtText } from "./card-find-at";
@@ -15,6 +17,7 @@ import { DigitSieve, digitSieveText } from "./digit-sieve";
 import { DigitalClock, digitalClockText } from "./digital-clock";
 import { DotLast, dotLastText } from "./dot-last";
 import { DrinkWater, drinkWaterText } from "./drink-water";
+import { EggCarton, eggCartonText } from "./egg-carton";
 import { Elevator, elevatorText } from "./elevator";
 import { EmptyCard, emptyCardText } from "./empty-card";
 import { EmptyLocker, emptyLockerText } from "./empty-locker";
@@ -22,6 +25,7 @@ import { EntryForm, entryFormText } from "./entry-form";
 import { FileIcons, fileIconsText } from "./file-icons";
 import { FoldPaper, foldPaperText } from "./fold-paper";
 import { ForkRoad, forkRoadText } from "./fork-road";
+import { FormParse, formParseText } from "./form-parse";
 import { FormTrim, formTrimText } from "./form-trim";
 import { FreeShipping, freeShippingText } from "./free-shipping";
 import { FruitCount, fruitCountText } from "./fruit-count";
@@ -29,10 +33,15 @@ import { HeightCompare, heightCompareText } from "./height-compare";
 import { HeightGate, heightGateText } from "./height-gate";
 import { JumpRope, jumpRopeText } from "./jump-rope";
 import { LabelMaker, labelMakerText } from "./label-maker";
+import { LadderWall, ladderWallText } from "./ladder-wall";
 import { Laps, lapsText } from "./laps";
 import { LetterCards, letterCardsText } from "./letter-cards";
 import { LetterIndex, letterIndexText } from "./letter-index";
 import { MailSort, mailSortText } from "./mail-sort";
+import { SproutDouble, sproutDoubleText } from "./sprout-double";
+import { SquareGarden, squareGardenText } from "./square-garden";
+import { StepsDistance, stepsDistanceText } from "./steps-distance";
+import { TicketGateStop, ticketGateStopText } from "./ticket-gate-stop";
 import type { MotionId } from "./manifest";
 import { MemberCard, memberCardText } from "./member-card";
 import { NameCase, nameCaseText } from "./name-case";
@@ -133,4 +142,13 @@ export const motionComponents = {
   "card-find-at": { Component: CardFindAt, text: cardFindAtText },
   "dot-last": { Component: DotLast, text: dotLastText },
   "digit-sieve": { Component: DigitSieve, text: digitSieveText },
+  "steps-distance": { Component: StepsDistance, text: stepsDistanceText },
+  "sprout-double": { Component: SproutDouble, text: sproutDoubleText },
+  "square-garden": { Component: SquareGarden, text: squareGardenText },
+  "ticket-gate-stop": { Component: TicketGateStop, text: ticketGateStopText },
+  "bar-max-min": { Component: BarMaxMin, text: barMaxMinText },
+  "form-parse": { Component: FormParse, text: formParseText },
+  "calculator-infinity": { Component: CalculatorInfinity, text: calculatorInfinityText },
+  "ladder-wall": { Component: LadderWall, text: ladderWallText },
+  "egg-carton": { Component: EggCarton, text: eggCartonText },
 } satisfies Record<MotionId, { Component: ComponentType<MotionProps>; text: string }>;
