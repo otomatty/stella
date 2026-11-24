@@ -1,9 +1,5 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問19
+// 問19 フィボナッチ数列の n 番目を返す（0番目は0、1番目は1、それ以降は前の2つの和）
+//     例: fibonacci(10) → 55
 export function fibonacci(n: number): number {
   let prev = 0;
   let current = 1;

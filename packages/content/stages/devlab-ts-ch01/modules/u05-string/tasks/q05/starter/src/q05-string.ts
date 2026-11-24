@@ -1,7 +1,3 @@
-// 01-q05 string型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-//
 // 問題
 // 次の3つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //

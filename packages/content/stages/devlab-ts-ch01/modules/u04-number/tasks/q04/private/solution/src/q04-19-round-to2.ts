@@ -1,8 +1,7 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問19
+// 問19 小数第2位までに四捨五入する
+//     例: roundTo2(1.234) → 1.23
+// 戻り値には型注釈を付けてください。
+// Math.round が使えます。
 export function roundTo2(n: number): number {
   return Math.round(n * 100) / 100;
 }

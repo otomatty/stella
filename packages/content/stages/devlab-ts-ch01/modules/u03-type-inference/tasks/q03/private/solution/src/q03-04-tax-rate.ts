@@ -1,6 +1,4 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
+// 問4 定数 TAX_RATE を宣言する。値は 0.1。推論される型は 0.1
+// 型注釈を書かずに export const で宣言してください。
 
-// 問4
 export const TAX_RATE = 0.1;

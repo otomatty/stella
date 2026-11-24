@@ -1,8 +1,5 @@
-// 01-q08 any をなくす ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/any
-
-// 問6
+// 問6 半分にした数を返す
+//     例: half(9) → 4.5
 export function half(n: number): number {
   return n / 2;
 }

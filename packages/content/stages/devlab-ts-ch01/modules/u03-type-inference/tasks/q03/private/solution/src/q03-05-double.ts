@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問5
+// 問5 2倍の数を返す（戻り値は number に推論される）
+//     例: double(4) → 8
+// 戻り値の型は推論に任せてください。
 export function double(n: number) {
   return n * 2;
 }

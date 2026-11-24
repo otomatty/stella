@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問19
+// 問19 文字列を丸かっこ「()」で囲む
+//     例: wrapParen("注") → "(注)"
+// 戻り値の型は推論に任せてください。
 export function wrapParen(text: string) {
   return `(${text})`;
 }

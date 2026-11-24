@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問16
+// 問16 空の文字列なら true を返す
+//     例: isEmptyText("") → true
+// 戻り値の型は推論に任せてください。
 export function isEmptyText(text: string) {
   return text === "";
 }

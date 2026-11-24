@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問12
+// 問12 金額を3桁ごとのカンマ区切りにし、「円」を付ける
+//     例: formatYen(1234) → "1,234円"
+// 戻り値には型注釈を付けてください。
 export function formatYen(amount: number): string {
   return `${amount.toLocaleString("ja-JP")}円`;
 }

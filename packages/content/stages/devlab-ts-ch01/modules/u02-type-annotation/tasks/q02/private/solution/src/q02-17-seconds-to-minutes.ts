@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問17
+// 問17 秒を分に変える（1分未満は切り捨て）
+//     例: secondsToMinutes(150) → 2
+// 戻り値には型注釈を付けてください。
 export function secondsToMinutes(seconds: number): number {
   return Math.floor(seconds / 60);
 }

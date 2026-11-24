@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問10
+// 問10 true なら "yes"、false なら "no" を返す
+//     例: answerOf(true) → "yes"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function answerOf(flag: boolean): "yes" | "no" {
   return flag ? "yes" : "no";
 }

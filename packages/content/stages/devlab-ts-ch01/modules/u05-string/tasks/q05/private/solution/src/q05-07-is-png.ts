@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問7
+// 問7 ファイル名が「.png」で終わっていれば true を返す（大文字の「.PNG」も true）
+//     例: isPng("photo.PNG") → true
+// 戻り値には型注釈を付けてください。
+// toLowerCase と endsWith が使えます。
 export function isPng(fileName: string): boolean {
   return fileName.toLowerCase().endsWith(".png");
 }
