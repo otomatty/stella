@@ -731,6 +731,14 @@ export function videoTtsOf(args: string[], remote = false): TtsProviderName | un
 }
 
 /** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
+export function videoSelectorsFromArgs(args: readonly string[]): string[] {
+  const valueFlags = ["--tts", "--out", "--concurrency", "--topics"];
+  return args.filter(
+    (arg, i) =>
+      arg.trim() !== "" && !arg.startsWith("--") && !valueFlags.includes(args[i - 1] ?? ""),
+  );
+}
+
 export async function buildVideos(
   args: string[] = [],
   skip: (plan: VideoPlan) => boolean = () => false,
@@ -740,7 +748,6 @@ export async function buildVideos(
     const i = args.indexOf(name);
     return i !== -1 && args[i + 1] ? args[i + 1] : null;
   }
-  const VALUE_FLAGS = ["--tts", "--out", "--concurrency", "--topics"];
   const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "video"));
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const concurrency = Number(argValue("--concurrency") ?? 2);
@@ -748,9 +755,7 @@ export async function buildVideos(
   const force = args.includes("--force");
   const keepWork = args.includes("--keep-work");
   const topicIds = topicIdsFromArgs(args);
-  const selectors = args.filter(
-    (a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1] ?? ""),
-  );
+  const selectors = videoSelectorsFromArgs(args);
 
   validatePublishedVideoVoice(args);
 

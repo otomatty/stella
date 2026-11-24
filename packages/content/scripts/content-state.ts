@@ -86,51 +86,77 @@ function emit(changed: boolean, reason: string): void {
   if (out) appendFileSync(out, `changed=${changed}\n`);
 }
 
-const r2 = createR2Client(BUCKET, remote);
-const fingerprint = currentFingerprint();
-
-if (command === "check") {
-  if (process.env.FORCE_CONTENT_SYNC === "1") {
-    emit(true, "FORCE_CONTENT_SYNC=1");
-  } else {
-    let previous: ContentState | null = null;
-    try {
-      const body = await r2.get(CONTENT_STATE_KEY);
-      previous = body === null ? null : parseContentState(new TextDecoder().decode(body));
-    } catch (e) {
-      // 読めないときは「変わった」に倒す。飛ばして取り違えるより、
-      // 冪等なパイプラインをもう一度流す方が安い。
-      emit(true, `記録を読めませんでした (${e instanceof Error ? e.message : String(e)})`);
-      process.exit(0);
-    }
-    if (previous === null) {
-      emit(true, "記録がありません (初回)");
-    } else if (previous.fingerprint !== fingerprint) {
-      emit(
-        true,
-        `内容が変わりました (${previous.fingerprint.slice(0, 12)} → ${fingerprint.slice(0, 12)})`,
-      );
-    } else {
-      emit(false, `前回デプロイと同じ内容です (${fingerprint.slice(0, 12)})`);
-    }
+export async function requireDeployedContent(
+  fingerprint: string,
+  readState: () => Promise<Uint8Array | null>,
+): Promise<void> {
+  const retry =
+    "デプロイが終わってから、もう一度実行してください。作った動画は台帳にあるので、force を外せば読み上げを使わずに登録できます。";
+  let previous: ContentState | null;
+  try {
+    const body = await readState();
+    previous = body === null ? null : parseContentState(new TextDecoder().decode(body));
+  } catch (cause) {
+    throw new Error(`本番教材の指紋を取得できませんでした。 ${retry}`, { cause });
   }
-} else if (command === "save") {
-  const state: ContentState = {
-    version: 1,
-    fingerprint,
-    updatedAt: new Date().toISOString(),
-    ...(process.env.GITHUB_SHA ? { commit: process.env.GITHUB_SHA } : {}),
-  };
-  await r2.put(
-    CONTENT_STATE_KEY,
-    new TextEncoder().encode(JSON.stringify(state)),
-    "application/json",
-  );
-  console.log(`✓ 教材パイプラインの指紋を記録しました (${fingerprint.slice(0, 12)})`);
-} else if (command === "reset") {
-  await r2.remove(CONTENT_STATE_KEY);
-  console.log("✓ 記録を消しました (次のデプロイは教材パイプラインをフルで流します)");
-} else {
-  console.error(`不明なコマンド: ${command} (check / save / reset)`);
-  process.exit(1);
+  if (previous?.fingerprint !== fingerprint)
+    throw new Error(`本番教材の指紋が一致しません。 ${retry}`);
 }
+
+export async function verifyRemoteContent(): Promise<void> {
+  const r2 = createR2Client(BUCKET, true);
+  await requireDeployedContent(currentFingerprint(), () => r2.get(CONTENT_STATE_KEY));
+}
+
+async function main(): Promise<void> {
+  const r2 = createR2Client(BUCKET, remote);
+  const fingerprint = currentFingerprint();
+
+  if (command === "check") {
+    if (process.env.FORCE_CONTENT_SYNC === "1") {
+      emit(true, "FORCE_CONTENT_SYNC=1");
+    } else {
+      let previous: ContentState | null = null;
+      try {
+        const body = await r2.get(CONTENT_STATE_KEY);
+        previous = body === null ? null : parseContentState(new TextDecoder().decode(body));
+      } catch (e) {
+        // 読めないときは「変わった」に倒す。飛ばして取り違えるより、
+        // 冪等なパイプラインをもう一度流す方が安い。
+        emit(true, `記録を読めませんでした (${e instanceof Error ? e.message : String(e)})`);
+        process.exit(0);
+      }
+      if (previous === null) {
+        emit(true, "記録がありません (初回)");
+      } else if (previous.fingerprint !== fingerprint) {
+        emit(
+          true,
+          `内容が変わりました (${previous.fingerprint.slice(0, 12)} → ${fingerprint.slice(0, 12)})`,
+        );
+      } else {
+        emit(false, `前回デプロイと同じ内容です (${fingerprint.slice(0, 12)})`);
+      }
+    }
+  } else if (command === "save") {
+    const state: ContentState = {
+      version: 1,
+      fingerprint,
+      updatedAt: new Date().toISOString(),
+      ...(process.env.GITHUB_SHA ? { commit: process.env.GITHUB_SHA } : {}),
+    };
+    await r2.put(
+      CONTENT_STATE_KEY,
+      new TextEncoder().encode(JSON.stringify(state)),
+      "application/json",
+    );
+    console.log(`✓ 教材パイプラインの指紋を記録しました (${fingerprint.slice(0, 12)})`);
+  } else if (command === "reset") {
+    await r2.remove(CONTENT_STATE_KEY);
+    console.log("✓ 記録を消しました (次のデプロイは教材パイプラインをフルで流します)");
+  } else {
+    console.error(`不明なコマンド: ${command} (check / save / reset)`);
+    process.exit(1);
+  }
+}
+
+if (import.meta.main) await main();

@@ -8,6 +8,7 @@
  * 事前の数に含めず、実行後に台帳へ足す。
  */
 import { beginVideoCacheRun, pruneVideoCache } from "./lib/scene-cache.js";
+import { randomUUID } from "node:crypto";
 import { appendFileSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,23 +17,23 @@ import {
   formatVideoFailure,
   loadVideoVoice,
   validatePublishedVideoVoice,
+  videoSelectorsFromArgs,
   videoTtsOf,
   type PendingVideoTts,
   type VideoPlan,
 } from "./build-video.js";
-import { createR2Client, putAll } from "./lib/r2.js";
+import { createR2Client, putAll, type R2Client } from "./lib/r2.js";
 import { topicIdsFromArgs } from "./lib/narration-topics.js";
 import {
   countTtsCalls,
   createTtsProvider,
   lessonVideoTtsCacheDir,
   logVideoTts,
-  readGeminiTtsCalls,
   trackGeminiTtsCalls,
   type TtsCallTopic,
 } from "./lib/tts.js";
 import {
-  addTtsUsage,
+  pacificDate,
   hasVideo,
   mergeVideoFailure,
   serializeVideoManifest,
@@ -41,7 +42,6 @@ import {
   videoManifestKey,
   videoTtsAllowance,
   videoTtsDailyLimit,
-  type TtsUsage,
   type VideoManifest,
   type VideoState,
 } from "../src/material-video.js";
@@ -63,12 +63,13 @@ export function assessVideoTtsBudget(
   pending: readonly PendingVideoTts[],
   identity: string,
   cacheDir: string,
-  usage: TtsUsage | undefined,
+  usage: VideoState["ttsUsage"],
   limit: number,
   now = new Date(),
 ): VideoTtsBudget {
   const counted = countTtsCalls(pending, identity, cacheDir);
-  const allowance = videoTtsAllowance(usage, limit, now);
+  const day = pacificDate(now);
+  const allowance = videoTtsAllowance({ day, requests: usage?.[day] ?? 0 }, limit, now);
   return { ...allowance, limit, needed: counted.needed, topics: counted.topics };
 }
 
@@ -91,19 +92,87 @@ class VideoSyncHalted extends Error {
   }
 }
 
-function readVideoState(parsed: VideoState): VideoState {
-  if (parsed.version !== 1 || !parsed.objects || !parsed.durations)
-    throw new Error("invalid state");
-  const usage = parsed.ttsUsage;
-  const ttsUsage =
-    usage &&
-    typeof usage.day === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(usage.day) &&
-    Number.isInteger(usage.requests) &&
-    usage.requests >= 0
-      ? { day: usage.day, requests: usage.requests }
-      : undefined;
-  return { ...parsed, ttsUsage };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isNonnegativeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isDay(day: unknown): day is string {
+  return typeof day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day);
+}
+
+function isRequestCount(value: unknown): value is number {
+  return isNonnegativeNumber(value) && Number.isSafeInteger(value);
+}
+
+function parseVideoState(body: Uint8Array): VideoState {
+  const parsed: unknown = JSON.parse(new TextDecoder("utf8", { fatal: true }).decode(body));
+  if (
+    !isRecord(parsed) ||
+    parsed.version !== 1 ||
+    !isRecord(parsed.objects) ||
+    !Object.values(parsed.objects).every(isNonnegativeNumber) ||
+    !isRecord(parsed.durations) ||
+    !Object.values(parsed.durations).every(isNonnegativeNumber)
+  )
+    throw new Error("台帳の形式が不正です");
+  const { scenes, revisions, ttsUsage } = parsed;
+  if (
+    scenes !== undefined &&
+    (!isRecord(scenes) ||
+      !Object.values(scenes).every(
+        (list) =>
+          Array.isArray(list) &&
+          list.every(
+            (scene: unknown) =>
+              isRecord(scene) &&
+              typeof scene.id === "string" &&
+              typeof scene.hash === "string" &&
+              isNonnegativeNumber(scene.startSec) &&
+              isNonnegativeNumber(scene.durationSec),
+          ),
+      ))
+  )
+    throw new Error("台帳の scenes が不正です");
+  if (
+    revisions !== undefined &&
+    (!isRecord(revisions) ||
+      !Object.values(revisions).every(
+        (revision) => typeof revision === "string" && /^[0-9a-f-]{36}$/.test(revision),
+      ))
+  )
+    throw new Error("台帳の revisions が不正です");
+  if (ttsUsage === undefined) return parsed as unknown as VideoState;
+  if (!isRecord(ttsUsage)) throw new Error("台帳の ttsUsage が不正です");
+  // 旧形式は直近 1 日だけを記録していた。
+  if (
+    Object.keys(ttsUsage).length === 2 &&
+    isDay(ttsUsage.day) &&
+    isRequestCount(ttsUsage.requests)
+  ) {
+    return { ...parsed, ttsUsage: { [ttsUsage.day]: ttsUsage.requests } } as unknown as VideoState;
+  }
+  if (!Object.entries(ttsUsage).every(([day, count]) => isDay(day) && isRequestCount(count)))
+    throw new Error("台帳の ttsUsage が不正です");
+  return parsed as unknown as VideoState;
+}
+
+async function readVideoState(r2: R2Client): Promise<VideoState> {
+  try {
+    const body = await r2.get(STATE_KEY);
+    return body === null ? { version: 1, objects: {}, durations: {} } : parseVideoState(body);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`動画の台帳を読めませんでした (${STATE_KEY}): ${message}`, { cause: error });
+  }
+}
+
+function videoRevisionKeys(plan: VideoPlan, revision?: string): ReturnType<typeof videoKeys> {
+  const hash = revision ? `${plan.sourceHash}-${revision}` : plan.sourceHash;
+  return videoKeys(plan.stageSlug, plan.id, hash);
 }
 
 export function formatVideoTtsReport(
@@ -173,6 +242,9 @@ export async function uploadVideos(args: string[]): Promise<void> {
   const dryRun = args.includes("--dry-run");
   const force = args.includes("--force");
   if (force && !topicIds) throw new Error("--force は --topics を指定したときだけ使えます");
+  if (topicIds && videoSelectorsFromArgs(args).length !== 1) {
+    throw new Error("--topics には対象ステージを 1 つ指定してください");
+  }
   const remote = args.includes("--remote");
   const tts = loadVideoVoice(videoTtsOf(args, remote)).provider;
   logVideoTts(tts);
@@ -192,25 +264,25 @@ export async function uploadVideos(args: string[]): Promise<void> {
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const limit = videoTtsDailyLimit(process.env.VIDEO_TTS_DAILY_LIMIT);
   const r2 = createR2Client("stella-materials-public", remote);
-  let state: VideoState = { version: 1, objects: {}, durations: {} };
-  try {
-    const body = await r2.get(STATE_KEY);
-    if (body) state = readVideoState(JSON.parse(new TextDecoder().decode(body)) as VideoState);
-  } catch {
-    console.warn("動画の台帳を読めませんでした — 全件生成します");
-  }
+  const state = await readVideoState(r2);
+  const revision = force ? randomUUID() : undefined;
   const manifest: VideoManifest = {};
   const pending: VideoPlan[] = [];
   const seen = new Set<string>();
   let started = false;
+  let failure: { error: unknown } | undefined;
+  let successCount = 0;
+  let failures: Awaited<ReturnType<typeof buildVideos>>["failures"] = [];
   try {
-    const { reports, failures } = await buildVideos(
+    let reports: Awaited<ReturnType<typeof buildVideos>>["reports"];
+    ({ reports, failures } = await buildVideos(
       buildArgs,
       (plan) => {
         const key = videoManifestKey(plan.stageSlug, plan.id);
         if (seen.has(key)) throw new Error(`レッスン ID が重複しています: ${key}`);
         seen.add(key);
-        const keys = videoKeys(plan.stageSlug, plan.id, plan.sourceHash);
+        const originalHash = videoKeyHash(videoRevisionKeys(plan).video);
+        const keys = videoRevisionKeys(plan, state.revisions?.[originalHash]);
         if (!force && hasVideo(state, keys)) {
           if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
           const videoHash = videoKeyHash(keys.video);
@@ -226,31 +298,36 @@ export async function uploadVideos(args: string[]): Promise<void> {
         return false;
       },
       async (targets) => {
-        if (voice.provider !== "gemini") {
-          if (dryRun) {
-            console.log("--dry-run のため、動画は作りません。");
-            throw new VideoSyncHalted("dry-run", true);
+        if (voice.provider === "gemini") {
+          const budget = assessVideoTtsBudget(targets, identity, cacheDir, state.ttsUsage, limit);
+          const decision = videoTtsDecision(budget, dryRun);
+          console.log(formatVideoTtsReport(budget, decision));
+          appendStepSummary(summaryTable(budget, decision));
+          if (decision === "stop") {
+            throw new VideoSyncHalted(
+              `Gemini の読み上げが 1 日の上限を超えるので、動画を作りません。必要 ${budget.needed} 回、残り ${budget.remaining} 回 (${budget.day}、使用済み ${budget.used} / 上限 ${budget.limit})。--topics で対象を絞ってください。`,
+              false,
+            );
           }
-          beginVideoCacheRun();
-          started = true;
-          return;
+        } else if (dryRun) {
+          console.log("--dry-run のため、動画は作りません。");
         }
-        const budget = assessVideoTtsBudget(targets, identity, cacheDir, state.ttsUsage, limit);
-        const decision = videoTtsDecision(budget, dryRun);
-        console.log(formatVideoTtsReport(budget, decision));
-        appendStepSummary(summaryTable(budget, decision));
-        if (decision === "dry-run") throw new VideoSyncHalted("dry-run", true);
-        if (decision === "stop") {
-          throw new VideoSyncHalted(
-            `Gemini の読み上げが 1 日の上限を超えるので、動画を作りません。必要 ${budget.needed} 回、残り ${budget.remaining} 回 (${budget.day}、使用済み ${budget.used} / 上限 ${budget.limit})。--topics で対象を絞ってください。`,
-            false,
-          );
-        }
+        if (dryRun) throw new VideoSyncHalted("dry-run", true);
+        const output = process.env.GITHUB_OUTPUT;
+        if (output && targets.some((target) => target.kind !== "recorded"))
+          appendFileSync(output, "cache=true\n");
         beginVideoCacheRun();
         started = true;
-        trackGeminiTtsCalls(true);
+        if (voice.provider === "gemini") {
+          trackGeminiTtsCalls(true, () => {
+            const day = pacificDate();
+            state.ttsUsage ??= {};
+            const usage = state.ttsUsage;
+            usage[day] = (usage[day] ?? 0) + 1;
+          });
+        }
       },
-    );
+    ));
     for (const plan of pending) {
       const report = reports.find(
         (item) =>
@@ -259,7 +336,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
           item.sourceHash === plan.sourceHash,
       );
       if (!report) continue;
-      const keys = videoKeys(plan.stageSlug, plan.id, plan.sourceHash);
+      const keys = videoRevisionKeys(plan, revision);
       const base = join(contentRoot, "dist/video", plan.stageSlug, plan.id);
       const files = [
         { key: keys.video, file: join(base, "video.mp4"), contentType: "video/mp4" },
@@ -285,6 +362,10 @@ export async function uploadVideos(args: string[]): Promise<void> {
       const videoHash = videoKeyHash(keys.video);
       const scenes = report.videoScenes;
       state.durations[videoHash] = report.durationSec;
+      if (revision) {
+        state.revisions ??= {};
+        state.revisions[videoKeyHash(videoRevisionKeys(plan).video)] = revision;
+      }
       if (scenes) {
         state.scenes ??= {};
         state.scenes[videoHash] = scenes;
@@ -293,29 +374,44 @@ export async function uploadVideos(args: string[]): Promise<void> {
       if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
       manifest[key] = { ...keys, durationSec: report.durationSec, ...(scenes ? { scenes } : {}) };
     }
-    const successCount = Object.keys(manifest).length;
+    successCount = Object.keys(manifest).length;
     for (const failure of failures) {
       const key = videoManifestKey(failure.stageSlug, failure.id);
       manifest[key] = mergeVideoFailure(manifest[key], failure);
     }
-    if (voice.provider === "gemini")
-      state.ttsUsage = addTtsUsage(state.ttsUsage, readGeminiTtsCalls());
-    await r2.put(STATE_KEY, new TextEncoder().encode(JSON.stringify(state)), "application/json");
-    mkdirSync(dirname(manifestFile), { recursive: true });
-    writeFileSync(manifestFile, serializeVideoManifest(manifest));
-    console.log(`✓ video manifest: 成功 ${successCount} 件 / 失敗 ${failures.length} 件`);
-    appendStepSummary(`\n- 生成: 成功 ${successCount} 件 / 失敗 ${failures.length} 件\n`);
-    if (failures.length > 0) {
-      console.error(`作れなかった動画: ${failures.length} 件 (前の版を残します)`);
-      for (const failure of failures) console.error(`  ${formatVideoFailure(failure)}`);
-      process.exitCode = 1;
-    }
   } catch (error) {
     if (error instanceof VideoSyncHalted && error.dryRun) return;
-    throw error;
+    failure = { error };
   } finally {
     trackGeminiTtsCalls(false);
-    if (started) pruneVideoCache(join(contentRoot, "dist/video-cache"));
+    if (started) {
+      try {
+        await r2.put(
+          STATE_KEY,
+          new TextEncoder().encode(JSON.stringify(state)),
+          "application/json",
+        );
+      } catch (error) {
+        if (failure) console.error("動画の台帳の保存にも失敗しました", error);
+        else failure = { error };
+      } finally {
+        try {
+          pruneVideoCache(join(contentRoot, "dist/video-cache"));
+        } catch (error) {
+          console.warn("動画のキャッシュの整理に失敗しました", error);
+        }
+      }
+    }
+  }
+  if (failure) throw failure.error;
+  mkdirSync(dirname(manifestFile), { recursive: true });
+  writeFileSync(manifestFile, serializeVideoManifest(manifest));
+  console.log(`✓ video manifest: 成功 ${successCount} 件 / 失敗 ${failures.length} 件`);
+  appendStepSummary(`\n- 生成: 成功 ${successCount} 件 / 失敗 ${failures.length} 件\n`);
+  if (failures.length > 0) {
+    console.error(`作れなかった動画: ${failures.length} 件 (前の版を残します)`);
+    for (const failure of failures) console.error(`  ${formatVideoFailure(failure)}`);
+    process.exitCode = 1;
   }
 }
 

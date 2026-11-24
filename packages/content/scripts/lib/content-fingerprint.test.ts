@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { requireDeployedContent } from "../content-state.js";
 import { SEED_INPUT_PATHS, fingerprintFrom, parseContentState } from "./content-fingerprint.js";
 
 const rootDir = fileURLToPath(new URL("../../../..", import.meta.url));
@@ -216,5 +217,38 @@ describe("parseContentState", () => {
     expect(
       parseContentState(JSON.stringify({ version: 1, fingerprint: "x", updatedAt: "t" })),
     ).toMatchObject({ fingerprint: "x" });
+  });
+});
+
+describe("requireDeployedContent", () => {
+  const encode = (fingerprint: string) =>
+    new TextEncoder().encode(
+      JSON.stringify({
+        version: 1,
+        fingerprint,
+        updatedAt: "2026-11-23T00:00:00Z",
+      }),
+    );
+
+  it("一致した場合だけ登録に進める", async () => {
+    await expect(
+      requireDeployedContent("current", async () => encode("current")),
+    ).resolves.toBeUndefined();
+    await expect(requireDeployedContent("current", async () => encode("previous"))).rejects.toThrow(
+      "指紋が一致しません",
+    );
+  });
+
+  it("記録が無い、壊れている、取得に失敗した場合も再実行を案内する", async () => {
+    for (const body of [null, new TextEncoder().encode("not json")]) {
+      await expect(requireDeployedContent("current", async () => body)).rejects.toThrow(
+        "デプロイが終わってから",
+      );
+    }
+    await expect(
+      requireDeployedContent("current", async () => {
+        throw new Error("R2 read failed");
+      }),
+    ).rejects.toThrow("デプロイが終わってから");
   });
 });

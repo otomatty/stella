@@ -167,7 +167,9 @@ export interface VideoState {
    * このパイプライン (video:sync) が Gemini TTS を呼んだ回数だけ。
    * 手元の `--tts gemini` や、同じ API キーの別用途は含まれない。
    */
-  ttsUsage?: TtsUsage;
+  ttsUsage?: Record<string, number>;
+  /** 内容ハッシュの既定キー (mp4) の要約 → 最後に強制作成した版。 */
+  revisions?: Record<string, string>;
 }
 
 export const DEFAULT_VIDEO_TTS_DAILY_LIMIT = 100;
@@ -224,7 +226,7 @@ export function addTtsUsage(
 
 export function videoTtsAllowance(usage: TtsUsage | undefined, limit: number, now = new Date()) {
   const today = ttsUsageToday(usage, now);
-  return { day: today.day, used: today.requests, remaining: limit - today.requests };
+  return { day: today.day, used: today.requests, remaining: Math.max(0, limit - today.requests) };
 }
 export const videoKeyHash = (key: string): string => createHash("sha256").update(key).digest("hex");
 

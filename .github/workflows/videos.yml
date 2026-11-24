@@ -14,7 +14,7 @@ on:
         default: ""
         type: string
       topics:
-        description: トピック ID をカンマ区切り (例 1-1-9,1-2-3)。stage と併用できる
+        description: トピック ID をカンマ区切り (例 1-1-9,1-2-3)。stage の指定が必須
         required: false
         default: ""
         type: string
@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   videos:
-    name: generate → upload → seed
+    name: generate → upload → register
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
@@ -76,14 +76,15 @@ jobs:
       # 場面ごとの音声と映像は内容ハッシュで再利用する。毎回新しいキーで保存し、
       # 次の実行は直近のキャッシュを復元する。30日使わないファイルは sync が消す。
       # 上限超えと dry_run では消さない。
-      - name: Cache lesson video scenes and audio
-        uses: actions/cache@v6
+      - name: Restore lesson video scenes and audio
+        id: video-cache
+        uses: actions/cache/restore@v6
         with:
           path: packages/content/dist/video-cache
-          key: video-cache-${{ runner.os }}-${{ github.run_id }}
+          key: video-cache-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: video-cache-${{ runner.os }}-
 
-      # 一部失敗でも manifest があれば seed する。ジョブの成否は最後の step で戻す。
+      # 一部失敗でも manifest があれば登録する。ジョブの成否は最後の step で戻す。
       # 回数の表は video:sync が GITHUB_STEP_SUMMARY に書く。
       - name: Generate & upload lesson videos to R2 (remote)
         id: video
@@ -127,34 +128,20 @@ jobs:
           fi
           exit "$status"
 
-      # seed は教材全体を書く。グループを deploy と分けたので、この checkout の
-      # あとに main が進んでいると、古い教材で新しいデプロイを上書きする。
-      # チェックアウトした commit が origin/main の先頭と同じときだけ seed する。
-      # 違えば seed を飛ばして失敗する。作った動画は台帳にあるので、もう一度
-      # 実行すれば読み上げを使わずに登録だけを行う。同じ commit のデプロイと
-      # 同時に走るのは、同じ内容を書くので許す。git ls-remote は checkout の
-      # 認証のまま使い、追加の権限は要らない。
-      - name: Seed D1 content (remote)
-        if: steps.video.outputs.manifest == 'true'
-        run: |
-          set -euo pipefail
-          checkout="$(git rev-parse HEAD)"
-          remote="$(git ls-remote origin refs/heads/main | awk 'NR==1 { print $1 }')"
-          if [ -z "${remote}" ]; then
-            echo "origin/main の先頭を読めなかったので、動画の登録を飛ばしました"
-            echo "checkout=${checkout}"
-            exit 1
-          fi
-          if [ "${checkout}" != "${remote}" ]; then
-            echo "main が進んだので動画の登録を飛ばしました。作った動画は台帳にあるので、もう一度実行すれば読み上げを使わずに登録だけを行います"
-            echo "checkout=${checkout}"
-            echo "origin/main=${remote}"
-            exit 1
-          fi
-          bun run db:seed:remote:content
+      - name: Save lesson video scenes and audio
+        if: always() && steps.video.outputs.cache == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: packages/content/dist/video-cache
+          key: ${{ steps.video-cache.outputs.cache-primary-key }}
+
+      - name: Register lesson videos in D1 (remote)
+        if: ${{ !cancelled() && steps.video.outputs.manifest == 'true' }}
+        run: bun run packages/shared/scripts/register-lesson-videos.ts
         env:
           VIDEO_MANIFEST: ${{ github.workspace }}/packages/content/dist/video-manifest.json
+          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
       - name: Fail when video generation failed
-        if: steps.video.outcome == 'failure'
+        if: ${{ !cancelled() && steps.video.outcome == 'failure' }}
         run: exit 1

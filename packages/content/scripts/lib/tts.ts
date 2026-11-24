@@ -170,8 +170,11 @@ export async function withRetry<T>(
 let geminiCallCounting = false;
 let geminiCallCount = 0;
 
-export function trackGeminiTtsCalls(enabled: boolean): void {
+let onGeminiCall: (() => void) | undefined;
+
+export function trackGeminiTtsCalls(enabled: boolean, onCall?: () => void): void {
   geminiCallCounting = enabled;
+  onGeminiCall = enabled ? onCall : undefined;
   if (enabled) geminiCallCount = 0;
 }
 
@@ -180,7 +183,10 @@ export function readGeminiTtsCalls(): number {
 }
 
 async function checkedFetch(label: string, url: string, init: RequestInit): Promise<Response> {
-  if (label === "gemini" && geminiCallCounting) geminiCallCount += 1;
+  if (label === "gemini" && geminiCallCounting) {
+    geminiCallCount += 1;
+    onGeminiCall?.();
+  }
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal: AbortSignal.timeout(60_000) });
