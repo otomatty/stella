@@ -160,6 +160,62 @@ const total = (writes: Record<string, number>) =>
 
 describe("seed の書き込み行数", () => {
   it(
+    "課題と問題の手がかりだけを書き、変更と削除を反映する",
+    async () => {
+      const db = migratedDb();
+      const taskId = "devlab-ts-ch01/u01-let-const/q01";
+      const problemId = "q01-01-add-tax";
+      const first = { problemId: "", position: 0, stageId: COURSE, lessonId: LESSON };
+      const second = { ...first, position: 1, lessonId: "doc-0-1" };
+      const problem = { problemId, position: 0, stageId: "devlab-ts-ch01", lessonId: "1-2-1" };
+      const sqlFor = (refs: NonNullable<Manifest["tasks"][number]["refs"]>) =>
+        exportSql((manifest) => {
+          const task = manifest.tasks.find((row) => row.definition.id === taskId);
+          if (!task) throw new Error(`課題がありません: ${taskId}`);
+          task.refs = refs;
+          task.definition.refs = refs
+            .filter((ref) => ref.problemId === "")
+            .map((ref) => `${ref.stageId}:${ref.lessonId}`);
+        });
+      const read = () =>
+        db
+          .prepare(
+            "select problem_id, position, lesson_id from task_refs where task_id = ? order by problem_id, position",
+          )
+          .all(taskId);
+
+      try {
+        apply(db, await exportSql());
+        const full = await sqlFor([first, second, problem]);
+        expect(apply(db, full)).toEqual({ [`task_refs:${taskId}`]: 3 });
+        const firstId = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+        const docId = stableUuid(`lesson:ses:${COURSE}:doc-0-1`);
+        expect(read()).toEqual([
+          { problem_id: "", position: 0, lesson_id: firstId },
+          { problem_id: "", position: 1, lesson_id: docId },
+          {
+            problem_id: problemId,
+            position: 0,
+            lesson_id: stableUuid("lesson:ses:devlab-ts-ch01:1-2-1@r2"),
+          },
+        ]);
+        expect(apply(db, full)).toEqual({});
+
+        const reduced = await sqlFor([{ ...second, position: 0 }]);
+        expect(total(apply(db, reduced))).toBe(3);
+        expect(read()).toEqual([{ problem_id: "", position: 0, lesson_id: docId }]);
+        expect(apply(db, reduced)).toEqual({});
+
+        expect(total(apply(db, await sqlFor([])))).toBe(1);
+        expect(read()).toEqual([]);
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
     "開発ラボG の旧単元を除去しても提出履歴を保持し、未登録の新課題に問題結果を移す",
     async () => {
       const db = migratedDb();

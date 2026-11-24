@@ -522,12 +522,63 @@ function insertProblemSteps(
   }
 }
 
+type TaskRefLessons = Map<string, { lessonId: string; unitIndex: number }>;
+
+function resolveTaskRefs(
+  tasks: TaskSeed[],
+  stages: Stage[],
+  refLessonsByStage: Map<string, TaskRefLessons>,
+): void {
+  const bySlug = new Map(stages.map((stage) => [stage.id, stage]));
+  for (const task of tasks) {
+    const { definition, stageId } = task;
+    const groups = [
+      { problemId: "", refs: definition.refs },
+      ...(definition.problems ?? []).map(({ id, refs }) => ({ problemId: id, refs })),
+    ].filter(({ refs }) => refs?.length);
+    if (groups.length === 0) continue;
+
+    const unitIndex = bySlug.get(stageId)?.sections?.findIndex((s) => s.id === task.unitId) ?? -1;
+    const ancestors = new Set<string>();
+    const visit = (slug: string) => {
+      for (const prerequisite of bySlug.get(slug)?.prerequisites ?? []) {
+        if (ancestors.has(prerequisite)) continue;
+        ancestors.add(prerequisite);
+        visit(prerequisite);
+      }
+    };
+    visit(stageId);
+
+    task.refs = groups.flatMap(({ problemId, refs }) =>
+      (refs ?? []).map((ref, position) => {
+        const [targetStageId, key] = ref.includes(":") ? ref.split(":") : [stageId, ref];
+        const at = `${definition.id}${problemId ? ` の問題 ${problemId}` : ""} の refs`;
+        const lessons = refLessonsByStage.get(targetStageId);
+        if (!lessons) throw new Error(`${at} が存在しないステージを指しています: ${ref}`);
+        if (targetStageId !== stageId && !ancestors.has(targetStageId))
+          throw new Error(`${at} は前提をたどって到達できるステージを指してください: ${ref}`);
+        const target = lessons.get(key);
+        if (!target) throw new Error(`${at} が存在しないレッスンを指しています: ${ref}`);
+        if (targetStageId === stageId && target.unitIndex > unitIndex)
+          throw new Error(`${at} は同じ単元か前の単元のレッスンを指してください: ${ref}`);
+        return { problemId, position, stageId: targetStageId, lessonId: target.lessonId };
+      }),
+    );
+  }
+}
+
 function buildOneStage(
   slug: string,
   stageDir: string,
   modulesRoot: string,
   config: StageConfig & { tenantId: string },
-): { stage: Stage; quizzes: QuizSeed[]; tasks: TaskSeed[]; units: UnitSeed[] } {
+): {
+  stage: Stage;
+  quizzes: QuizSeed[];
+  tasks: TaskSeed[];
+  units: UnitSeed[];
+  refLessons: TaskRefLessons;
+} {
   const sections: Section[] = [];
   const quizzes: QuizSeed[] = [];
   const tasks: TaskSeed[] = [];
@@ -538,9 +589,11 @@ function buildOneStage(
   const moduleTitles = config.modules ?? {};
   const usedExerciseKeys = new Set<string>();
   const taskLessons = new Map<string, Lesson>();
+  const refLessons: TaskRefLessons = new Map();
 
   for (const moduleDir of dirsIn(modulesRoot)) {
     const modulePath = join(modulesRoot, moduleDir);
+    const unitIndex = sections.length;
     const lessons: Lesson[] = [];
     let referenceMap: ReturnType<typeof readUnitReferences>;
     let sourceRegistry: ReturnType<typeof readSourceRegistry> = new Map();
@@ -583,6 +636,7 @@ function buildOneStage(
         const source = readFileSync(slidesFile, "utf8");
         const fm = parseSlides(source);
         topicIds.push(fm.id);
+        refLessons.set(fm.id, { lessonId: fm.id, unitIndex });
         // 受講者に渡すのは講師ノートを外した本文だけ。区切りは `---` のまま残し、
         // 何枚に分けるかは描画側が splitSlides で決める。
         // `_class` は build_pptx.py と同じくスライドの見た目の型 (lead / summary) を
@@ -641,8 +695,10 @@ function buildOneStage(
         ? (docSource?.match(/^# (.+)$/m)?.[1] ?? moduleTitles[moduleDir] ?? lessonDir)
         : key;
       if (docSource !== undefined) {
+        const lessonId = `doc-${key}`;
+        refLessons.set(`${moduleDir}/${lessonDir}`, { lessonId, unitIndex });
         lessons.push({
-          id: `doc-${key}`,
+          id: lessonId,
           title: `${lessonTitle} まとめ`,
           type: "text",
           duration: "10分",
@@ -703,13 +759,14 @@ function buildOneStage(
       // 類題 (#39) は課題文のレッスンを作らない。出題した受講者にだけ拡張が配る。
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         if (task.lessonId === null) continue;
+        const readme = task.bundle.files["README.md"];
         const lesson: Lesson = {
           id: task.lessonId,
           title: `${task.definition.title} 課題文`,
           type: "text",
           duration: "5分",
           status: "todo",
-          markdown: Buffer.from(task.bundle.files["README.md"], "base64").toString("utf8"),
+          markdown: readme === undefined ? "" : Buffer.from(readme, "base64").toString("utf8"),
         };
         if (task.bundle.manifest.problemSteps) taskLessons.set(task.lessonId, lesson);
         else lessons.push(lesson);
@@ -791,6 +848,7 @@ function buildOneStage(
     quizzes,
     tasks,
     units,
+    refLessons,
   };
 }
 
@@ -927,6 +985,7 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
   const pdfByOs: string[] = [];
+  const refLessonsByStage = new Map<string, TaskRefLessons>();
 
   for (const slug of dirsIn(stagesRoot)) {
     const stageDir = join(stagesRoot, slug);
@@ -939,12 +998,14 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
     quizzes.push(...built.quizzes);
     tasks.push(...built.tasks);
     units.push(...built.units);
+    refLessonsByStage.set(slug, built.refLessons);
   }
 
   assertPrerequisiteTargets(stages);
   // 閉じた granted 鎖は、循環より先に「有効な根に着かない」として落とす。
   assertGrantedAudienceGraph(stages);
   assertPrerequisiteCycles(stages);
+  resolveTaskRefs(tasks, stages, refLessonsByStage);
 
   // 課題が指すコーディング規則の存在・範囲・導入済みかを確かめる (07 §6.4.1)。
   // 前提は準備中のステージ (modules が無い) を経由しうるので、全ステージの stage.json から引く。

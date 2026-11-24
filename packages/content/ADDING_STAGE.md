@@ -67,7 +67,7 @@ modules/<unit>/
     knowledge.md        # アプリで解く知識問題
   tasks/<task>/
     task.json
-    README.md           # 課題文と参照リンク
+    README.md           # 課題文と参照リンク (problems がある課題は省略可)
     starter/            # 内容を作業フォルダー直下へ配布
     tests/              # tests/ として配布
     fixed-start/        # 任意。前の実装が壊れていて進めない受講者向けの「固定した開始点」
@@ -87,6 +87,10 @@ modules/<unit>/
 問題つきの課題は、同じ課題の中を 1 問 1 ファイルで確認・提出します。`problems` に `{ "id", "title" }` を 1 件以上書きます。`id` は英小文字・数字で始め、英小文字・数字・ハイフンだけです。課題の中で重複しません。書けるのは手順が vitest・typescript・dotnet の runner だけです。ファイルのパスは書きません。`id` から、vitest・typescript は `src/<id>.ts` と `tests/<id>.test.ts`、dotnet は `src/<id>.cs` と `tests/<id>.test.cs` になります。`review` は書かなくてよく、読み込み後は空のルーブリックになります。`submit.explanation` と `submit.debuggingRecord` は `false` でよいです。AI の一次レビューは通さず、問題が全部そろった提出を `review_source = 'tests'` で合格にします。合否は手元のテストが通ったという申告で、サーバーはコードを実行しません。
 
 動画のあとに問題を出すには、同じステージの、その単元か前の単元のトピック ID を、全問の `after` に書きます（例 `"after": "1-1-7"`）。レッスン一覧では動画の直後に問題が並びます。動画のレッスンを完了し、一覧で一つ前の問題を提出すると解けます。最初の問題は動画の完了だけで解けます。類題には `after` を書けません。
+
+手がかりにする動画やまとめは、課題全体または各問題の `refs` に順番どおりに書けます（例 `"refs": ["1-2-3", "u01-let-const/l2-loops"]`）。動画は `slides.md` のトピック ID、まとめは `doc.md` の `<単元>/<レッスン>` です。同じステージではその単元か前の単元を参照できます。前提をさかのぼってたどれる別のステージは、`devlab-ts-ch01:1-2-3` のように先頭に `<ステージslug>:` を付けて指定します。空文字、同じ一覧での重複、その問題の `after` と同じ動画、類題の `refs` は使えません。
+
+`problems` がある課題で `README.md` を省くと、課題文のレッスンは空の本文で残ります。`references.json` の出典の対応先は従来どおり `tasks/<課題>/README.md` です。
 
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。

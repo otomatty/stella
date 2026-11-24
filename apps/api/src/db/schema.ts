@@ -670,6 +670,25 @@ export const taskProblemSteps = sqliteTable(
   }),
 );
 
+/** 課題と各問題の手がかり。課題全体の参照は problemId が空文字。 */
+export const taskRefs = sqliteTable(
+  "task_refs",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    problemId: text("problem_id").notNull(),
+    position: integer("position").notNull(),
+    lessonId: text("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.taskId, t.problemId, t.position] }),
+    lessonIdx: index("task_refs_lesson_idx").on(t.lessonId),
+  }),
+);
+
 /**
  * 手元の確認の要約 (#38)。受講者・課題ごとに 1 行の回数だけを持つ。
  * 実行ごとの履歴・コード・メッセージは持たない (07 §6.5)。版が変わると連続の失敗を数え直す。
