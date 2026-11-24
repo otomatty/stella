@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildDigestMessage,
+  buildDigestMessages,
+  collectShotNames,
   type DigestEntry,
   buildReleaseBody,
   extractChangelogSection,
   fallbackSummary,
   isGoogleChatWebhookUrl,
+  parseChangelogItems,
   parseSummary,
+  type ReleaseItem,
   releaseProductName,
 } from "./release-notes.js";
 
@@ -88,124 +91,236 @@ it("uses both product names and adds the VSIX instructions to the extension rele
   );
 });
 
-describe("buildDigestMessage", () => {
+describe("parseChangelogItems", () => {
+  it("uses headings as item boundaries and extracts ordered standalone shots", () => {
+    const result = parseChangelogItems(
+      "\r\n### 課題の画面  \r\n\r\n最初の行  \r\n\r\n- 補足\r\n  ![提出画面](shot:task-1)  \r\n![詳細](shot:detail)\r\n\r\n### 次の変更\r\n![もう一度](shot:task-1)",
+    );
+    expect(result).toEqual({
+      items: [
+        {
+          title: "課題の画面",
+          body: "最初の行  \n\n- 補足",
+          shots: [
+            { name: "task-1", alt: "提出画面" },
+            { name: "detail", alt: "詳細" },
+          ],
+        },
+        { title: "次の変更", body: "", shots: [{ name: "task-1", alt: "もう一度" }] },
+      ],
+      errors: [],
+    });
+    expect(collectShotNames(result.items)).toEqual(["task-1", "detail"]);
+  });
+
+  it("keeps unindented prose and uses indented lines as bullet continuations", () => {
+    expect(
+      parseChangelogItems(
+        "冒頭の説明\n\n- 最初  \n  続き\n  ![画面](shot:screen)\n\n* 変更\n  - 補足\n最後の説明\n続き",
+      ),
+    ).toEqual({
+      items: [
+        { title: null, body: "冒頭の説明", shots: [] },
+        { title: null, body: "最初  \n  続き", shots: [{ name: "screen", alt: "画面" }] },
+        { title: null, body: "変更\n  - 補足", shots: [] },
+        { title: null, body: "最後の説明\n続き", shots: [] },
+      ],
+      errors: [],
+    });
+  });
+
+  it("keeps a section with no headings or bullets together", () => {
+    expect(parseChangelogItems("\n最初の行\n\n次の行\n  ")).toEqual({
+      items: [{ title: null, body: "最初の行\n\n次の行", shots: [] }],
+      errors: [],
+    });
+  });
+
+  it("ignores blank lines before the first bullet", () => {
+    expect(parseChangelogItems("\n  \n- 変更\n")).toEqual({
+      items: [{ title: null, body: "変更", shots: [] }],
+      errors: [],
+    });
+  });
+
+  it("reports prose and bullets before the first heading", () => {
+    expect(parseChangelogItems("- 見出しの前\n### 項目\n- 補足").errors).toEqual([
+      "「見出しの前」: 最初の ### 見出しより前に本文があります",
+    ]);
+  });
+
+  it.each([
+    ["![ ](shot:valid)", "画像の説明が空"],
+    ["![説明](shot:bad--name)", "画像の名前"],
+    ["![説明](shot:UPPER)", "画像の名前"],
+    ["![説明](shot:)", "画像の名前"],
+    ["文中の ![説明](shot:valid)", "画像は ![説明](shot:名前) を単独の行"],
+    ["文中の ![説明](foo.png)", "画像は ![説明](shot:名前) を単独の行"],
+    ["![説明](https://example.com/manual.png)", "画像は ![説明](shot:名前) を単独の行"],
+  ])("reports invalid shot syntax %s with the item label", (line, reason) => {
+    const label = "先".repeat(30);
+    expect(parseChangelogItems(`- ${label}残り\n  ${line}`).errors).toEqual([
+      expect.stringContaining(`「${label}」: ${reason}`),
+    ]);
+  });
+
+  it("reports more than two shots in the same item", () => {
+    expect(
+      parseChangelogItems("### 表示\n![一](shot:a)\n![二](shot:b)\n![三](shot:c)").errors,
+    ).toEqual(["「表示」: 画像は 1 項目につき 2 枚までです"]);
+  });
+});
+
+describe("buildDigestMessages", () => {
   const now = new Date("2026-11-22T22:50:00Z");
-  const title = "📣 *STELLA の更新情報*（11月23日）";
+  const title = "📣 *STELLA を更新しました*（11月23日）";
   const webGuidance = "開いたままの画面は、再読み込みすると新しい版になります。";
   const extensionGuidance =
     "VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。";
   const baseUrl = "https://github.com/example/stella/releases/tag";
-  const web = (minor: number, points = [`変更 ${minor}`]): DigestEntry => ({
+  const item = (body: string): ReleaseItem => ({ title: null, body, images: [] });
+  const web = (minor: number, items: ReleaseItem[] = [item(`変更 ${minor}`)]): DigestEntry => ({
     product: "web",
     version: `1.${minor}.0`,
-    points,
+    items,
     releaseUrl: `${baseUrl}/web-v1.${minor}.0`,
     publishedAt: `2026-11-22T0${minor}:00:00Z`,
   });
 
-  it("formats one Web release using the next date in Japan at 22:50 UTC", () => {
-    expect(buildDigestMessage([web(1, ["変更 A", "変更 B"])], now)).toBe(`${title}
-
-🚀 *Web* — v1.1.0
-• 変更 A
-• 変更 B
-${webGuidance}
-<${baseUrl}/web-v1.1.0|変更の詳細を見る>`);
-  });
-
-  it("puts Web first and formats both products without duplicating the version prefix", () => {
+  it("uses the next date in Japan and puts Web first without duplicating the version prefix", () => {
     const extension: DigestEntry = {
       product: "vscode",
       version: "v0.11.0",
-      points: ["課題文を表示できるようになりました"],
+      items: [item("課題文を表示できるようになりました")],
       releaseUrl: `${baseUrl}/vscode-v0.11.0`,
       publishedAt: "2026-11-22T18:00:00Z",
     };
-    expect(buildDigestMessage([extension, web(1)], now)).toBe(`${title}
-
-🚀 *Web* — v1.1.0
-• 変更 1
+    const messages = buildDigestMessages(
+      [extension, web(1, [item("変更 A"), item("変更 B")])],
+      now,
+    );
+    expect(messages[0]).toEqual({
+      text: `${title}
+🚀 Web v1.1.0
+🧩 VS Code 拡張 v0.11.0
+変更の内容はこのスレッドに載せています。`,
+    });
+    expect(messages.slice(1, -1).map(cardBody)).toEqual([
+      "変更 A",
+      "変更 B",
+      "課題文を表示できるようになりました",
+    ]);
+    expect(messages.at(-1)).toEqual({
+      text: `🚀 Web v1.1.0
 ${webGuidance}
 <${baseUrl}/web-v1.1.0|変更の詳細を見る>
 
-🧩 *VS Code 拡張* — v0.11.0
-• 課題文を表示できるようになりました
+🧩 VS Code 拡張 v0.11.0
 ${extensionGuidance}
-<${baseUrl}/vscode-v0.11.0|変更の詳細を見る>`);
+<${baseUrl}/vscode-v0.11.0|変更の詳細を見る>`,
+    });
   });
 
-  it("orders three releases by publication date for the heading, points and links", () => {
-    const oldest = { ...web(3), publishedAt: "2026-11-22T00:00:00Z" };
-    expect(buildDigestMessage([web(1), oldest, web(2)], now)).toBe(`${title}
+  function cardBody(message: ReturnType<typeof buildDigestMessages>[number]) {
+    const widget =
+      "cardsV2" in message ? message.cardsV2[0].card.sections[0].widgets[0] : undefined;
+    return widget && "textParagraph" in widget ? widget.textParagraph.text : undefined;
+  }
 
-🚀 *Web* — v1.2.0（前回のお知らせから 3 回更新）
-• 変更 2
-• 変更 1
-• 変更 3
-${webGuidance}
-変更の詳細: <${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.1.0|v1.1.0>・<${baseUrl}/web-v1.2.0|v1.2.0>`);
+  it("orders releases by publication date and keeps repeated changelog entries", () => {
+    const oldest = { ...web(3, [item("同じ説明")]), publishedAt: "2026-11-22T00:00:00Z" };
+    const messages = buildDigestMessages([web(1), oldest, web(2, [item("同じ説明")])], now);
+    expect(messages[0]).toEqual({
+      text: expect.stringContaining("🚀 Web v1.2.0（前回のお知らせから 3 回更新）"),
+    });
+    expect(messages.slice(1, -1).map(cardBody)).toEqual(["同じ説明", "変更 1", "同じ説明"]);
+    expect(messages.at(-1)).toEqual({
+      text: expect.stringContaining(
+        `変更の詳細: <${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.1.0|v1.1.0>・<${baseUrl}/web-v1.2.0|v1.2.0>`,
+      ),
+    });
   });
 
-  it("deduplicates exact points before folding line breaks and escaping brackets", () => {
-    const repeated = "<引数|値> \r\n\n 続き";
-    expect(buildDigestMessage([web(1, [repeated]), web(2, [repeated, "追加"])], now)).toBe(`${title}
-
-🚀 *Web* — v1.2.0（前回のお知らせから 2 回更新）
-• ＜引数|値＞ 続き
-• 追加
-${webGuidance}
-変更の詳細: <${baseUrl}/web-v1.1.0|v1.1.0>・<${baseUrl}/web-v1.2.0|v1.2.0>`);
+  it("escapes the body, caps displayed text lengths, and supports image-only cards", () => {
+    const image = { url: "https://example.com/shot.png", alt: "画面" };
+    const messages = buildDigestMessages(
+      [
+        web(1, [
+          {
+            title: "題".repeat(201),
+            body: `<引数&値> \r\n\n 続き${"点".repeat(2000)}`,
+            images: [image],
+          },
+          { title: "画像だけ", body: "", images: [image] },
+        ]),
+      ],
+      now,
+    );
+    const start = "<引数&値> \r\n\n 続き";
+    expect(cardBody(messages[1])).toBe(
+      `&lt;引数&amp;値&gt; <br><br> 続き${"点".repeat(1999 - start.length)}…`,
+    );
+    expect(messages[1]).toMatchObject({
+      cardsV2: [{ card: { header: { title: "題".repeat(200), subtitle: "🚀 Web v1.1.0" } } }],
+    });
+    expect(messages[2]).toEqual({
+      cardsV2: [
+        {
+          cardId: "item",
+          card: {
+            header: { title: "画像だけ", subtitle: "🚀 Web v1.1.0" },
+            sections: [{ widgets: [{ image: { imageUrl: image.url, altText: image.alt } }] }],
+          },
+        },
+      ],
+    });
   });
 
-  it("limits points to five lines of at most 200 characters and counts the omitted points", () => {
-    const points = Array.from({ length: 7 }, (_, i) => `${i}${"点".repeat(200)}`);
-    const displayed = [0, 1, 2, 3, 4].map((i) => `• ${i}${"点".repeat(199)}`).join("\n");
-    expect(buildDigestMessage([web(1, points)], now)).toBe(`${title}
-
-🚀 *Web* — v1.1.0
-${displayed}
-（ほか 2 件は変更の詳細をご覧ください）
-${webGuidance}
-<${baseUrl}/web-v1.1.0|変更の詳細を見る>`);
+  it.each([28, 29, 35])("caps the full thread at 30 messages for %i items", (count) => {
+    const messages = buildDigestMessages(
+      [
+        web(
+          1,
+          Array.from({ length: count }, (_, i) => item(`変更 ${i + 1}`)),
+        ),
+      ],
+      now,
+    );
+    expect(messages).toHaveLength(30);
+    expect(messages.at(-2)).toEqual(
+      count <= 28
+        ? expect.objectContaining({ cardsV2: expect.any(Array) })
+        : { text: `ほか ${count - 27} 件は変更の詳細をご覧ください` },
+    );
+    expect(messages.at(-1)).toEqual({ text: expect.stringContaining("変更の詳細を見る") });
   });
 
   it("links to the five newest versions in ascending publication order", () => {
-    expect(
-      buildDigestMessage(
-        [1, 2, 3, 4, 5, 6].map((i) => web(i)),
-        now,
-      ),
-    ).toBe(`${title}
-
-🚀 *Web* — v1.6.0（前回のお知らせから 6 回更新）
-• 変更 6
-• 変更 5
-• 変更 4
-• 変更 3
-• 変更 2
-（ほか 1 件は変更の詳細をご覧ください）
-${webGuidance}
-変更の詳細: <${baseUrl}/web-v1.2.0|v1.2.0>・<${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.4.0|v1.4.0>・<${baseUrl}/web-v1.5.0|v1.5.0>・<${baseUrl}/web-v1.6.0|v1.6.0>・ほか 1 版`);
-  });
-
-  it("drops points from the end before changing headings, guidance or links", () => {
-    const longUrl = `${web(1).releaseUrl}?query=${"x".repeat(3650)}`;
-    const message = buildDigestMessage(
-      [{ ...web(1), points: ["残る点", "点".repeat(200)], releaseUrl: longUrl }],
+    const messages = buildDigestMessages(
+      [1, 2, 3, 4, 5, 6].map((i) => web(i)),
       now,
     );
-    expect(message.length).toBeLessThanOrEqual(4000);
-    expect(message).toBe(`${title}
-
-🚀 *Web* — v1.1.0
-• 残る点
-（ほか 1 件は変更の詳細をご覧ください）
+    expect(messages.at(-1)).toEqual({
+      text: `🚀 Web v1.6.0（前回のお知らせから 6 回更新）
 ${webGuidance}
-<${longUrl}|変更の詳細を見る>`);
+変更の詳細: <${baseUrl}/web-v1.2.0|v1.2.0>・<${baseUrl}/web-v1.3.0|v1.3.0>・<${baseUrl}/web-v1.4.0|v1.4.0>・<${baseUrl}/web-v1.5.0|v1.5.0>・<${baseUrl}/web-v1.6.0|v1.6.0>・ほか 1 版`,
+    });
   });
 
-  it("keeps the required lines within the limit for oversized version and link text", () => {
-    const message = buildDigestMessage(
+  it("preserves cards and a long release URL when they fit in separate messages", () => {
+    const longUrl = `${web(1).releaseUrl}?query=${"x".repeat(3650)}`;
+    const messages = buildDigestMessages(
+      [{ ...web(1), items: [item("変更 A"), item("点".repeat(200))], releaseUrl: longUrl }],
+      now,
+    );
+    expect(messages.slice(1, -1).map(cardBody)).toEqual(["変更 A", "点".repeat(200)]);
+    expect(messages.at(-1)).toEqual({
+      text: expect.stringContaining(`<${longUrl}|変更の詳細を見る>`),
+    });
+  });
+
+  it("keeps guidance and a link within the limit for oversized version and link text", () => {
+    const messages = buildDigestMessages(
       [
         {
           ...web(1),
@@ -215,10 +330,12 @@ ${webGuidance}
       ],
       now,
     );
-    expect(message.length).toBeLessThanOrEqual(4000);
-    expect(message).toContain("🚀 *Web* — v");
-    expect(message).toContain(webGuidance);
-    expect(message.split("\n").at(-1)).toMatch(/^<https:\/\/[^>]+\|変更の詳細を見る>$/);
+    const footer = messages.at(-1);
+    expect(footer).toEqual({ text: expect.stringContaining(webGuidance) });
+    if (!footer || !("text" in footer)) throw new Error("Missing footer");
+    expect(footer.text.length).toBeLessThanOrEqual(4000);
+    expect(footer.text).toContain("🚀 Web v");
+    expect(footer.text.split("\n").at(-1)).toMatch(/^<https:\/\/[^>]+\|変更の詳細を見る>$/);
   });
 });
 

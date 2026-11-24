@@ -112,11 +112,11 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 Release の本文は CHANGELOG の該当節を AI で要約し、全文も折りたたみに残す。既定のモデルは `claude-opus-5-5` で、`prepare` を実行する環境の `RELEASE_NOTES_MODEL` で変更できる。要約用の `ANTHROPIC_API_KEY` が空か、要約に失敗した場合は、該当節をそのまま本文に使う。
 
-Google Chat のお知らせは毎日 7:50（日本時間）に起動する。GitHub の定時実行は遅れることがある。前回のお知らせから出た版をまとめて 1 通にし、送る版が無い日は投稿しない。VS Code 拡張は Marketplace に公開できた版だけを載せる。
+Google Chat のお知らせは毎日 7:50（日本時間）に起動する。GitHub の定時実行は遅れることがある。送信待ちの版を 1 つのスレッドにまとめ、親メッセージには更新のお知らせと製品ごとの最新版を載せる。CHANGELOG の項目は書いた文章のままカードで 1 通ずつ返信し、公開 URL があるスクリーンショットはカードに添える。項目の文章は AI 要約を使わない。最後に製品ごとの反映方法と Release へのリンクを返信する。スレッドは合計 30 通までとし、省略した項目があれば最後の案内の直前に残りの件数を載せる。送る版が無い日は投稿しない。VS Code 拡張は Marketplace に公開できた版だけを載せる。
 
 VS Code 拡張の Release を作るときは `release-summary.pending.json` を添付し、Marketplace に公開できたら同じ要点を `release-summary.json` として添付する。公開や添付に失敗しても、再実行時に Release の添付を確認して続きから進める。
 
-Release に `release-summary.json` があり、`release-announced.json` が無い版を送信待ちとする。Chat の投稿に成功したら、対象の各 Release に `release-announced.json` を添付する。定時実行が飛んだ日や投稿に失敗した日の分は翌日に送る。投稿後に印の添付だけが失敗した版は、翌日に重ねて送られることがある。今すぐ送るには、Actions の「Release announcement」で **Run workflow** を選ぶ（main のみ）。
+Release に `release-summary.json` があり、`release-announced.json` が無い版を送信待ちとする。送信待ちのタグの組み合わせから `threadKey` を作り、各メッセージの `messageId` はそのハッシュと通し番号で決める。途中で送信に失敗したら印を付けずに止める。同じタグの組み合わせで再実行すると同じ ID で送り直し、HTTP 409 は送信済みとして次の投稿へ進む。全通を送れたら、対象の各 Release に `release-announced.json` を添付する。印の添付が一部だけ失敗した場合など、再実行時に送信待ちの版が変わると、新しいスレッドに重ねて載ることがある。今すぐ送るには、Actions の「Release announcement」で **Run workflow** を選ぶ（main のみ）。
 
 Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定の場合は送信待ちのまま残る。
 
