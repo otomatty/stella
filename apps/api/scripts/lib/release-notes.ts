@@ -1,5 +1,16 @@
 export type ReleaseProduct = "web" | "vscode";
 
+export interface ChangelogShot {
+  name: string;
+  alt: string;
+}
+
+export interface ChangelogItem {
+  title: string | null;
+  body: string;
+  shots: ChangelogShot[];
+}
+
 interface ReleaseSummary {
   summary: string;
   points: string[];
@@ -42,6 +53,127 @@ export function fallbackSummary(section: string): ReleaseSummary {
   return { summary: section, points };
 }
 
+const shotLine = /^\s*!\[((?:[^\]\\]|\\.)*)\]\(shot:([^)]*)\)\s*$/;
+const shotName = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const imageSyntax = /!\[.*?\]\([^)]*\)/;
+const bulletPrefix = /^(?:[-+*]|\d{1,9}[.)])[ \t]/;
+
+export function stripShotLines(markdown: string): string {
+  const trailingNewline = /\r?\n$/.exec(markdown)?.[0];
+  const stripped = markdown
+    .split(/(?<=\n)/)
+    .filter((line) => !shotLine.test(line))
+    .join("");
+  return trailingNewline ? stripped || trailingNewline : stripped.replace(/\r?\n$/, "");
+}
+
+function trimBlankLines(lines: string[]): string {
+  const first = lines.findIndex((line) => line.trim());
+  return first === -1
+    ? ""
+    : lines.slice(first, lines.findLastIndex((line) => line.trim()) + 1).join("\n");
+}
+
+export function parseChangelogItems(section: string): {
+  items: ChangelogItem[];
+  errors: string[];
+} {
+  const lines = section.split(/\r?\n/);
+  const items: ChangelogItem[] = [];
+  const errors: string[] = [];
+  const groups: { title: string | null; lines: string[] }[] = [];
+  let group: (typeof groups)[number] = { title: null, lines: [] };
+  const hasHeadings = lines.some((line) => line.startsWith("### "));
+  const hasBullets = lines.some((line) => bulletPrefix.test(line));
+  if (hasHeadings) {
+    for (const line of lines) {
+      if (!line.startsWith("### ")) {
+        group.lines.push(line);
+        continue;
+      }
+      if (group.title !== null) groups.push(group);
+      else {
+        const preamble = group.lines.find((line) => line.trim())?.trim();
+        if (preamble) {
+          errors.push(
+            `「${preamble.replace(bulletPrefix, "").slice(0, 30)}」: 最初の ### 見出しより前に本文があります`,
+          );
+        }
+      }
+      group = { title: line.slice(4).trim(), lines: [] };
+    }
+    groups.push(group);
+  } else if (hasBullets) {
+    let inBullet = false;
+    for (const line of lines) {
+      const bullet = bulletPrefix.test(line);
+      if (bullet || (inBullet && /^\S/.test(line))) {
+        if (group.lines.some((line) => line.trim())) groups.push(group);
+        group = { title: null, lines: [] };
+        inBullet = bullet;
+      }
+      group.lines.push(line);
+    }
+    if (group.lines.some((line) => line.trim())) groups.push(group);
+  } else {
+    groups.push({ title: null, lines });
+  }
+
+  for (const { title, lines } of groups) {
+    const firstLine = lines.find((line) => line.trim())?.trim();
+    const label = title || firstLine?.replace(bulletPrefix, "").slice(0, 30) || "本文";
+    const shots: ChangelogShot[] = [];
+    const body = lines.filter((line) => {
+      const match = shotLine.exec(line);
+      if (match) {
+        const [, alt, name] = match;
+        if (!alt.trim()) errors.push(`「${label}」: 画像の説明が空です`);
+        if (!shotName.test(name))
+          errors.push(`「${label}」: 画像の名前「${name}」の形式が不正です`);
+        shots.push({ name, alt });
+        return false;
+      }
+      if (imageSyntax.test(line)) {
+        errors.push(`「${label}」: 画像は ![説明](shot:名前) を単独の行に書いてください`);
+      }
+      return true;
+    });
+    if (title !== null && imageSyntax.test(title)) {
+      errors.push(`「${label}」: 画像は見出しの下の単独の行に書いてください`);
+    }
+    if (shots.length > 2) errors.push(`「${label}」: 画像は 1 項目につき 2 枚までです`);
+    items.push({
+      title,
+      body: trimBlankLines(
+        body.map((line, index) =>
+          !hasHeadings && hasBullets && index === 0 ? line.replace(bulletPrefix, "") : line,
+        ),
+      ),
+      shots,
+    });
+  }
+  return { items, errors };
+}
+
+export function collectShotNames(items: ChangelogItem[]): string[] {
+  return [...new Set(items.flatMap(({ shots }) => shots.map(({ name }) => name)))];
+}
+
+function replaceChangelogShots(section: string, shotUrls?: ReadonlyMap<string, string>): string {
+  const lines = section.split(/\r?\n/).flatMap((line) => {
+    const match = shotLine.exec(line);
+    if (!match) return [line];
+    const [, alt, name] = match;
+    const url = shotUrls?.get(name);
+    return url ? [line.replace(`![${alt}](shot:${name})`, () => `![${alt}](${url})`)] : [];
+  });
+  return trimBlankLines(lines);
+}
+
+export function changelogWithoutShots(section: string): string {
+  return replaceChangelogShots(section);
+}
+
 export function parseSummary(value: unknown): ReleaseSummary | null {
   if (
     typeof value !== "object" ||
@@ -78,10 +210,11 @@ export function buildReleaseBody(args: {
   summary: string;
   section: string;
   commitSha: string;
+  shotUrls?: ReadonlyMap<string, string>;
 }): string {
   const parts = [
     args.summary,
-    `<details><summary>CHANGELOG の全文</summary>\n\n${args.section}\n\n</details>`,
+    `<details><summary>CHANGELOG の全文</summary>\n\n${replaceChangelogShots(args.section, args.shotUrls)}\n\n</details>`,
   ];
   if (args.product === "vscode") {
     parts.push(
@@ -108,16 +241,96 @@ const chatCopy = {
   },
 };
 
+interface ReleaseImage {
+  url: string;
+  alt: string;
+}
+
+export interface ReleaseItem {
+  title: string | null;
+  body: string;
+  images: ReleaseImage[];
+}
+
 export interface DigestEntry {
   product: ReleaseProduct;
   version: string;
-  points: string[];
+  items: ReleaseItem[];
   releaseUrl: string;
   publishedAt: string;
 }
 
-export function buildDigestMessage(entries: DigestEntry[], now: Date): string {
-  const limit = 4000;
+type CardWidget =
+  | { textParagraph: { text: string } }
+  | {
+      image: { imageUrl: string; altText: string };
+    };
+
+type ChatMessage =
+  | { text: string }
+  | {
+      cardsV2: {
+        cardId: string;
+        card: {
+          header: { title: string; subtitle?: string };
+          sections: { widgets: CardWidget[] }[];
+        };
+      }[];
+    };
+
+function shorten(text: string, limit: number): string {
+  const characters = Array.from(text);
+  return characters.length <= limit ? text : `${characters.slice(0, limit - 1).join("")}…`;
+}
+
+function displayVersion(entry: DigestEntry): string {
+  return shorten(`v${entry.version.replace(/^v/, "")}`, 200);
+}
+
+function productVersion(entry: DigestEntry): string {
+  return `${chatCopy[entry.product].icon} ${releaseProductName(entry.product)} ${displayVersion(entry)}`;
+}
+
+function buildItemCard(entry: DigestEntry, item: ReleaseItem): ChatMessage {
+  const version = productVersion(entry);
+  const widgets: CardWidget[] = [];
+  if (item.body) {
+    const text = shorten(item.body, 2000)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replace(/\r?\n/g, "<br>");
+    widgets.push({ textParagraph: { text } });
+  }
+  for (const { url, alt } of item.images) {
+    widgets.push({ image: { imageUrl: url, altText: alt } });
+  }
+  return {
+    cardsV2: [
+      {
+        cardId: "item",
+        card: {
+          header: item.title
+            ? { title: Array.from(item.title).slice(0, 200).join(""), subtitle: version }
+            : { title: version },
+          sections: widgets.length ? [{ widgets }] : [],
+        },
+      },
+    ],
+  };
+}
+
+function releaseLink(entry: DigestEntry, label: string, compact: boolean): string {
+  const url = compact
+    ? (/^https:\/\/github\.com\/[\w-]{1,39}\/[\w.-]{1,100}\/releases\//.exec(
+        entry.releaseUrl,
+      )?.[0] ?? "https://github.com")
+    : entry.releaseUrl;
+  return `<${url}|${label}>`;
+}
+
+export function buildDigestMessages(entries: DigestEntry[], now: Date): ChatMessage[] {
+  const maxMessages = 30;
   const date = new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     month: "long",
@@ -126,70 +339,78 @@ export function buildDigestMessage(entries: DigestEntry[], now: Date): string {
   const groups = (["web", "vscode"] as const).flatMap((product) => {
     const releases = entries
       .filter((entry) => entry.product === product)
-      .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
-    if (releases.length === 0) return [];
-
-    const uniquePoints = [...new Set(releases.flatMap(({ points }) => points))];
-    const points = uniquePoints.slice(0, 5).map((point) =>
-      point
-        .replace(/\s*[\r\n]+\s*/g, " ")
-        .replaceAll("<", "＜")
-        .replaceAll(">", "＞")
-        .slice(0, 200),
-    );
-    return [{ product, releases, points, pointCount: uniquePoints.length }];
+      .sort(
+        (a, b) =>
+          Date.parse(b.publishedAt) - Date.parse(a.publishedAt) ||
+          b.version.localeCompare(a.version, "en"),
+      );
+    return releases.length ? [{ product, releases }] : [];
   });
+  const productLines = groups.map(({ releases }) => {
+    const heading = productVersion(releases[0]);
+    return releases.length === 1
+      ? heading
+      : `${heading}（前回のお知らせから ${releases.length} 回更新）`;
+  });
+  const messages: ChatMessage[] = [
+    {
+      text: [
+        `📣 *STELLA を更新しました*（${date}）`,
+        ...productLines,
+        "変更の内容はこのスレッドに載せています。",
+      ].join("\n"),
+    },
+  ];
 
-  const render = (compactLinks = false, versionScale = 1) => {
-    const blocks = groups.map(({ product, releases, points, pointCount }) => {
-      const { icon, guidance } = chatCopy[product];
-      const version = (entry: DigestEntry) => {
-        const value = entry.version.replace(/^v/, "");
-        return `v${value.slice(0, Math.floor(value.length * versionScale))}`;
-      };
-      const link = ({ releaseUrl }: DigestEntry, label: string) => {
-        if (!compactLinks) return `<${releaseUrl}|${label}>`;
-        const releaseList = /^https:\/\/github\.com\/[\w-]{1,39}\/[\w.-]{1,100}\/releases\//.exec(
-          releaseUrl,
-        )?.[0];
-        return `<${releaseList ?? "https://github.com"}|${label}>`;
-      };
-      const count = releases.length;
-      const heading = `${icon} *${releaseProductName(product)}* — ${version(releases[0])}`;
-      const lines = [count === 1 ? heading : `${heading}（前回のお知らせから ${count} 回更新）`];
-      lines.push(...points.map((point) => `• ${point}`));
-      const omittedPoints = pointCount - points.length;
-      if (omittedPoints > 0) lines.push(`（ほか ${omittedPoints} 件は変更の詳細をご覧ください）`);
-      lines.push(guidance);
-      if (count === 1) {
-        lines.push(link(releases[0], "変更の詳細を見る"));
-      } else {
-        const links = releases
-          .slice(0, 5)
-          .reverse()
-          .map((entry) => link(entry, version(entry)));
-        if (count > 5) links.push(`ほか ${count - 5} 版`);
-        lines.push(`変更の詳細: ${links.join("・")}`);
-      }
-      return lines.join("\n");
-    });
-    return [`📣 *STELLA の更新情報*（${date}）`, ...blocks].join("\n\n");
-  };
-
-  let message = render();
-  for (const { points } of groups.slice().reverse()) {
-    while (message.length > limit && points.length > 0) {
-      points.pop();
-      message = render();
-    }
+  const items = groups.flatMap(({ releases }) =>
+    releases
+      .slice()
+      .reverse()
+      .flatMap((entry) => entry.items.map((item) => ({ entry, item }))),
+  );
+  const itemLimit = items.length <= maxMessages - 2 ? maxMessages - 2 : maxMessages - 3;
+  for (const { entry, item } of items.slice(0, itemLimit)) {
+    messages.push(buildItemCard(entry, item));
   }
-  if (message.length <= limit) return message;
+  if (items.length > itemLimit) {
+    messages.push({ text: `ほか ${items.length - itemLimit} 件は変更の詳細をご覧ください` });
+  }
 
-  // リンクだけで収まらない場合も、有効なリンクを残す。
-  message = render(true);
-  if (message.length <= limit) return message;
-  const fixedLength = render(true, 0).length;
-  return render(true, (limit - fixedLength) / (message.length - fixedLength));
+  const footer = (compact: boolean) =>
+    groups
+      .map(({ product, releases }, index) => {
+        const lines = [productLines[index], chatCopy[product].guidance];
+        if (releases.length === 1) {
+          lines.push(releaseLink(releases[0], "変更の詳細を見る", compact));
+        } else {
+          const links = releases
+            .slice(0, 5)
+            .reverse()
+            .map((entry) =>
+              releaseLink(
+                entry,
+                compact ? shorten(displayVersion(entry), 150) : displayVersion(entry),
+                compact,
+              ),
+            );
+          if (releases.length > 5) links.push(`ほか ${releases.length - 5} 版`);
+          lines.push(`変更の詳細: ${links.join("・")}`);
+        }
+        return lines.join("\n");
+      })
+      .join("\n\n");
+  const details = footer(false);
+  messages.push({ text: details.length <= 4000 ? details : footer(true) });
+  return messages;
+}
+
+export function isHttpsUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export function isGoogleChatWebhookUrl(url: string): boolean {

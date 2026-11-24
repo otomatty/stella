@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 import { expect, it } from "vitest";
-import { extractChangelogSection } from "./release-notes.js";
+import { extractChangelogSection, parseChangelogItems } from "./release-notes.js";
 
 const root = new URL("../../../../", import.meta.url);
 
@@ -13,8 +13,8 @@ it.each(["web", "vscode"])("apps/%s の現在の版に変更履歴がある", (p
   };
   const changelogUrl = new URL(changelogPath, root);
   const changelog = readFileSync(changelogUrl, "utf8");
-  expect(
-    extractChangelogSection(changelog, version),
-    `${changelogPath} に ${version} の節がありません`,
-  ).not.toBeNull();
+  const section = extractChangelogSection(changelog, version);
+  if (section === null) throw new Error(`${changelogPath} に ${version} の節がありません`);
+  const { errors } = parseChangelogItems(section);
+  expect(errors, errors.join("\n")).toEqual([]);
 });

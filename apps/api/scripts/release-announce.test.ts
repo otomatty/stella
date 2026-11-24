@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main } from "./release-announce.js";
@@ -23,6 +24,7 @@ function mockDeps(env: Record<string, string | undefined> = {}) {
     env,
     fetch: vi.fn<typeof fetch>(),
     now: () => new Date("2026-11-22T22:50:00Z"),
+    sleep: vi.fn<(ms: number) => Promise<void>>().mockResolvedValue(undefined),
     readFile: vi.fn<(path: string) => Promise<string>>(),
     writeFile: vi.fn<(path: string, content: string) => Promise<void>>(),
     makeDir: vi.fn<(path: string) => Promise<void>>(),
@@ -75,6 +77,7 @@ describe("prepare", () => {
       product: "vscode",
       version: "1.2.0",
       points: ["新しい機能", "表示の改善"],
+      items: [{ title: "追加", body: "- 新しい機能\n* 表示の改善", images: [] }],
     });
     expect(deps.writeFile).toHaveBeenCalledTimes(2);
   });
@@ -123,9 +126,116 @@ describe("prepare", () => {
         product: "vscode",
         version: "1.2.0",
         points: [expectedPoint],
+        items: [{ title: null, body: "追加", images: [] }],
       });
     },
   );
+
+  it("warns for unavailable shots without --images and removes the shot lines", async () => {
+    const deps = mockDeps();
+    deps.readFile.mockResolvedValue(
+      "## 1.2.0\n- 変更\n  ![画面](shot:missing)\n- 続き\n  ![同じ画像](shot:missing)",
+    );
+    await expect(main(prepareArgs, deps)).resolves.toBe(0);
+    expect(console.warn).toHaveBeenCalledWith(
+      "::warning::missing のスクリーンショットが無いので、画像なしで載せます",
+    );
+    expect(console.warn).toHaveBeenCalledTimes(2);
+    expect(deps.writeFile.mock.calls[0][1]).not.toContain("shot:");
+    expect(JSON.parse(deps.writeFile.mock.calls[1][1]).items).toEqual([
+      { title: null, body: "変更", images: [] },
+      { title: null, body: "続き", images: [] },
+    ]);
+  });
+
+  it("resolves known shots in the summary and the release details, while sending only text to Claude", async () => {
+    const deps = mockDeps({ ANTHROPIC_API_KEY: "test-key" });
+    const url = "https://cdn.example.com/shot.png";
+    deps.readFile
+      .mockResolvedValueOnce(
+        "## 1.2.0\n### 新機能\n\n変更した内容\n  ![説明](shot:known)\n![未撮影](shot:missing)",
+      )
+      .mockResolvedValueOnce(JSON.stringify({ shots: { known: { url } } }));
+    const create = vi.fn().mockResolvedValue({
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: '{"summary":"AI の要約","points":["AI の要点"]}' }],
+    });
+    deps.createClient.mockReturnValue({ beta: { messages: { create } } } as unknown as ReturnType<
+      typeof deps.createClient
+    >);
+    await expect(main([...prepareArgs, "--images", "images.json"], deps)).resolves.toBe(0);
+    expect(deps.readFile).toHaveBeenNthCalledWith(2, "images.json");
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: [
+          {
+            role: "user",
+            content: expect.stringContaining(
+              "<changelog>\n### 新機能\n\n変更した内容\n</changelog>",
+            ),
+          },
+        ],
+      }),
+    );
+    const body = deps.writeFile.mock.calls[0][1];
+    expect(body).toContain(
+      `AI の要約\n\n<details><summary>CHANGELOG の全文</summary>\n\n### 新機能\n\n変更した内容\n  ![説明](${url})\n\n</details>`,
+    );
+    expect(body).not.toContain("未撮影");
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+      "::warning::missing のスクリーンショットが無いので、画像なしで載せます",
+    );
+    expect(JSON.parse(deps.writeFile.mock.calls[1][1])).toEqual({
+      product: "vscode",
+      version: "1.2.0",
+      points: ["AI の要点"],
+      items: [{ title: "新機能", body: "変更した内容", images: [{ url, alt: "説明" }] }],
+    });
+  });
+
+  it.each([
+    "{",
+    "{}",
+    '{"shots":[]}',
+    '{"shots":{"name":12}}',
+    '{"shots":{"name":{"url":42}}}',
+    '{"shots":{"name":{"url":"http://example.com/img.png"}}}',
+    '{"shots":{"name":{"url":"https://"}}}',
+  ])("rejects an invalid image manifest before writing %s", async (manifest) => {
+    const deps = mockDeps({ ANTHROPIC_API_KEY: "test-key" });
+    deps.readFile.mockResolvedValueOnce("## 1.2.0\n- 変更").mockResolvedValueOnce(manifest);
+    await expect(main([...prepareArgs, "--images", "images.json"], deps)).resolves.toBe(1);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining("::error::--images"),
+    );
+    expect(deps.createClient).not.toHaveBeenCalled();
+    expect(deps.makeDir).not.toHaveBeenCalled();
+    expect(deps.writeFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects inline and repeated --images arguments", async () => {
+    const deps = mockDeps();
+    await expect(main([...prepareArgs, "--images=images.json"], deps)).resolves.toBe(2);
+    await expect(
+      main([...prepareArgs, "--images", "a.json", "--images", "b.json"], deps),
+    ).resolves.toBe(2);
+    expect(deps.readFile).not.toHaveBeenCalled();
+  });
+
+  it("logs each changelog error and writes no files", async () => {
+    const deps = mockDeps();
+    deps.readFile.mockResolvedValue(
+      "## 1.2.0\n### 新機能\n![](shot:known)\n![説明](shot:bad--name)",
+    );
+    await expect(main(prepareArgs, deps)).resolves.toBe(1);
+    expect(console.error).toHaveBeenNthCalledWith(1, "::error::「新機能」: 画像の説明が空です");
+    expect(console.error).toHaveBeenNthCalledWith(
+      2,
+      "::error::「新機能」: 画像の名前「bad--name」の形式が不正です",
+    );
+    expect(deps.makeDir).not.toHaveBeenCalled();
+    expect(deps.writeFile).not.toHaveBeenCalled();
+  });
 });
 
 describe("digest", () => {
@@ -224,41 +334,116 @@ describe("digest", () => {
     expect(console.log).toHaveBeenCalledExactlyOnceWith("::notice::送る更新情報はありません");
   });
 
-  it("posts a single JSON digest with a timeout, then marks each release", async () => {
+  function threadHash(...tags: string[]) {
+    return createHash("sha256").update(tags.sort().join("\n")).digest("hex").slice(0, 24);
+  }
+
+  function messageUrl(hash: string, index: number) {
+    return `${webhookUrl}&messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD&messageId=client-${hash}-${index}`;
+  }
+
+  function queueChat(deps: ReturnType<typeof configuredDeps>, ...statuses: number[]) {
+    for (const status of statuses) deps.fetch.mockResolvedValueOnce(new Response(null, { status }));
+  }
+
+  it("posts the parent, ordered item cards, and footer in one thread before marking releases", async () => {
     const deps = configuredDeps();
     const web = release(1);
     const extension = release(2, "vscode-v1.2.0");
+    const url = "https://cdn.example.com/shot.png";
     deps.fetch
       .mockResolvedValueOnce(Response.json([web, extension]))
-      .mockResolvedValueOnce(Response.json(summary))
-      .mockResolvedValueOnce(Response.json({ ...summary, product: "vscode" }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 201 }))
-      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+      .mockResolvedValueOnce(
+        Response.json({
+          ...summary,
+          items: [
+            {
+              title: "変更の見出し",
+              body: "本文<&>\n続き",
+              images: [
+                { url, alt: "画面" },
+                { url: "http://example.com/bad", alt: "除外" },
+                { url: "https://", alt: "除外" },
+              ],
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(Response.json({ ...summary, product: "vscode" }));
+    queueChat(deps, 204, 204, 204, 204, 201, 201);
     await expect(main(["digest"], deps)).resolves.toBe(0);
-    expect(deps.fetch).toHaveBeenCalledTimes(6);
-    expect(deps.fetch).toHaveBeenNthCalledWith(4, webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=UTF-8" },
-      body: JSON.stringify({
-        text: `📣 *STELLA の更新情報*（11月23日）
+    expect(deps.fetch).toHaveBeenCalledTimes(9);
+    expect(console.warn).not.toHaveBeenCalled();
 
-🚀 *Web* — v1.2.0
-• ＜変更＞
+    const hash = threadHash(web.tag_name, extension.tag_name);
+    const thread = { threadKey: `stella-release-${hash}` };
+    const bodies = [
+      {
+        text: `📣 *STELLA を更新しました*（11月23日）
+🚀 Web v1.2.0
+🧩 VS Code 拡張 v1.2.0
+変更の内容はこのスレッドに載せています。`,
+      },
+      {
+        cardsV2: [
+          {
+            cardId: "item",
+            card: {
+              header: { title: "変更の見出し", subtitle: "🚀 Web v1.2.0" },
+              sections: [
+                {
+                  widgets: [
+                    { textParagraph: { text: "本文&lt;&amp;&gt;<br>続き" } },
+                    { image: { imageUrl: url, altText: "画面" } },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        cardsV2: [
+          {
+            cardId: "item",
+            card: {
+              header: { title: "🧩 VS Code 拡張 v1.2.0" },
+              sections: [{ widgets: [{ textParagraph: { text: "&lt;変更&gt;" } }] }],
+            },
+          },
+        ],
+      },
+      {
+        text: `🚀 Web v1.2.0
 開いたままの画面は、再読み込みすると新しい版になります。
 <${web.html_url}|変更の詳細を見る>
 
-🧩 *VS Code 拡張* — v1.2.0
-• ＜変更＞
+🧩 VS Code 拡張 v1.2.0
 VS Code が自動で更新します。すぐに使うには、VS Code を再起動してください。
 <${extension.html_url}|変更の詳細を見る>`,
-      }),
-      signal: expect.any(AbortSignal),
-      redirect: "manual",
-    });
+      },
+    ];
+    for (const [index, body] of bodies.entries()) {
+      expect(deps.fetch).toHaveBeenNthCalledWith(4 + index, messageUrl(hash, index), {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=UTF-8" },
+        body: JSON.stringify({ ...body, thread }),
+        signal: expect.any(AbortSignal),
+        redirect: "manual",
+      });
+      if (index > 0) {
+        expect(deps.sleep.mock.invocationCallOrder[index - 1]).toBeGreaterThan(
+          deps.fetch.mock.invocationCallOrder[2 + index],
+        );
+        expect(deps.sleep.mock.invocationCallOrder[index - 1]).toBeLessThan(
+          deps.fetch.mock.invocationCallOrder[3 + index],
+        );
+      }
+    }
+    expect(deps.sleep.mock.calls).toEqual([[1100], [1100], [1100]]);
     for (const id of [1, 2]) {
       expect(deps.fetch).toHaveBeenNthCalledWith(
-        4 + id,
+        7 + id,
         `${uploadApi}/${id}/assets?name=${markerName}`,
         {
           method: "POST",
@@ -268,6 +453,50 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
         },
       );
     }
+  });
+
+  it("warns and falls back to each legacy point when items are malformed", async () => {
+    const deps = configuredDeps();
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([release(1)]))
+      .mockResolvedValueOnce(
+        Response.json({ ...summary, points: ["一", "二"], items: [{ title: 1 }] }),
+      );
+    queueChat(deps, 204, 204, 204, 204, 201);
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining("::warning::web-v1.2.0 の項目の形式が不正"),
+    );
+    expect(deps.fetch.mock.calls[3][1]?.body).toContain('"text":"一"');
+    expect(deps.fetch.mock.calls[4][1]?.body).toContain('"text":"二"');
+  });
+
+  it("reuses message IDs after a partial failure and continues after 409", async () => {
+    const deps = configuredDeps();
+    const web = release(1);
+    const extension = release(2, "vscode-v1.2.0");
+    deps.fetch
+      .mockResolvedValueOnce(Response.json([web, extension]))
+      .mockResolvedValueOnce(Response.json(summary))
+      .mockResolvedValueOnce(Response.json({ ...summary, product: "vscode" }));
+    queueChat(deps, 204, 204, 503);
+    await expect(main(["digest"], deps)).resolves.toBe(1);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith("::error::HTTP 503");
+    expect(deps.fetch).toHaveBeenCalledTimes(6);
+    const firstUrls = deps.fetch.mock.calls.slice(3).map(([url]) => url);
+
+    deps.fetch
+      .mockClear()
+      .mockResolvedValueOnce(Response.json([extension, web]))
+      .mockResolvedValueOnce(Response.json({ ...summary, product: "vscode" }))
+      .mockResolvedValueOnce(Response.json(summary));
+    queueChat(deps, 409, 409, 204, 204, 201, 201);
+    await expect(main(["digest"], deps)).resolves.toBe(0);
+    expect(deps.fetch.mock.calls.slice(3, 6).map(([url]) => url)).toEqual(firstUrls);
+    expect(deps.fetch.mock.calls.slice(7).map(([url]) => url)).toEqual([
+      `${uploadApi}/2/assets?name=${markerName}`,
+      `${uploadApi}/1/assets?name=${markerName}`,
+    ]);
   });
 
   it("logs only the HTTP status and skips markers when Chat returns an error", async () => {
@@ -281,7 +510,7 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
     expect(deps.fetch).toHaveBeenCalledTimes(3);
   });
 
-  it.each(["list", "summary", "chat", "upload"])(
+  it.each(["list", "summary", "chat", "upload"] as const)(
     "omits secrets from %s exceptions",
     async (stage) => {
       const deps = configuredDeps();
@@ -289,8 +518,11 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
         Response.json([release(1)]),
         Response.json(summary),
         new Response(null, { status: 204 }),
+        new Response(null, { status: 204 }),
+        new Response(null, { status: 204 }),
       ];
-      const index = ["list", "summary", "chat", "upload"].indexOf(stage);
+      const index = { list: 0, summary: 1, chat: 2, upload: 5 }[stage];
+      if (index === undefined) throw new Error("Unknown stage");
       for (const response of responses.slice(0, index)) deps.fetch.mockResolvedValueOnce(response);
       deps.fetch.mockRejectedValueOnce(new Error(`Failed to fetch ${webhookUrl} with ${token}`));
       await expect(main(["digest"], deps)).resolves.toBe(1);
@@ -315,10 +547,8 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
     deps.fetch
       .mockResolvedValueOnce(Response.json([unmarked, marked]))
       .mockResolvedValueOnce(Response.json(summary))
-      .mockResolvedValueOnce(Response.json({ ...summary, version: "1.3.0" }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+      .mockResolvedValueOnce(Response.json({ ...summary, version: "1.3.0" }));
+    queueChat(deps, 204, 204, 204, 204, 500, 201);
     await expect(main(["digest"], deps)).resolves.toBe(1);
     expect(console.error).toHaveBeenCalledExactlyOnceWith(
       "::error::web-v1.2.0 に送信済みの印を付けられず、翌日に重ねて送られるかもしれません (HTTP 500)",
@@ -329,14 +559,13 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
     deps.fetch
       .mockClear()
       .mockResolvedValueOnce(Response.json([unmarked, marked]))
-      .mockResolvedValueOnce(Response.json(summary))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+      .mockResolvedValueOnce(Response.json(summary));
+    queueChat(deps, 204, 204, 204, 201);
     await expect(main(["digest"], deps)).resolves.toBe(0);
     expect(deps.fetch.mock.calls.map(([url]) => url)).toEqual([
       `${api}?per_page=100&page=1`,
       `${api}/assets/1001`,
-      webhookUrl,
+      ...[0, 1, 2].map((index) => messageUrl(threadHash("web-v1.2.0"), index)),
       `${uploadApi}/1/assets?name=${markerName}`,
     ]);
   });
@@ -367,15 +596,14 @@ VS Code が自動で更新します。すぐに使うには、VS Code を再起�
         Response.json(Array.from({ length: 100 }, (_, i) => release(i, "other"))),
       )
       .mockResolvedValueOnce(Response.json([release(100)]))
-      .mockResolvedValueOnce(Response.json(summary))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
-      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+      .mockResolvedValueOnce(Response.json(summary));
+    queueChat(deps, 204, 204, 204, 201);
     await expect(main(["digest"], deps)).resolves.toBe(0);
     expect(deps.fetch.mock.calls.map(([url]) => url)).toEqual([
       `${api}?per_page=100&page=1`,
       `${api}?per_page=100&page=2`,
       `${api}/assets/1100`,
-      webhookUrl,
+      ...[0, 1, 2].map((index) => messageUrl(threadHash("web-v1.2.0"), index)),
       `${uploadApi}/100/assets?name=${markerName}`,
     ]);
   });
