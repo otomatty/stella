@@ -42,7 +42,7 @@ export interface TaskSeed {
    * 類題は null (レッスンを作らない。出題した受講者にだけ配る)。
    */
   lessonId: string | null;
-  problemSteps?: { problemId: string; stepLessonId: string; afterLessonId: string }[];
+  problemSteps?: { problemId: string; stepLessonId: string }[];
   /**
    * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題はステージの課題一覧・
    * レッスン・学習ペース・修了の判定に出さず、出題した受講者にだけ配る。

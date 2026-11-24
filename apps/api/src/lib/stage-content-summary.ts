@@ -1,15 +1,7 @@
 import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { Db } from "../db/client.js";
-import {
-  lessons,
-  quizQuestions,
-  quizzes,
-  sections,
-  stages,
-  taskProblemSteps,
-  tasks,
-} from "../db/schema.js";
+import { lessons, quizQuestions, quizzes, sections, stages, tasks } from "../db/schema.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 
 export interface StageContentSummary {
@@ -48,8 +40,7 @@ async function loadBatch(db: Db, summaries: Map<string, StageContentSummary>, id
         // 課題文と課題の問題ページも text として取り込まれる。
         texts: sql<number>`count(*) filter (where ${lessons.type} = 'text'
           and not exists (select 1 from ${tasks} where ${tasks.lessonId} = ${lessons.id})
-          and not exists (select 1 from ${taskProblemSteps}
-            where ${taskProblemSteps.stepLessonId} = ${lessons.id}))`,
+          and ${lessons.problemId} is null)`,
       })
       .from(sections)
       .innerJoin(lessons, eq(lessons.sectionId, sections.id))

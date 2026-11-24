@@ -6,15 +6,13 @@ import {
 } from "@stella/shared/tasks/problem-steps";
 import type { TaskProblem } from "@stella/shared/tasks/problems";
 import { lockKindOfLessonType, type LockStep } from "@stella/shared/tasks/step-lock";
-import { and, asc, eq, isNull, or } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
+import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   lessonProgress,
   lessons,
   sections,
   taskProblemResults,
-  taskProblemSteps,
   taskProgress,
   taskRevisions,
   tasks,
@@ -40,8 +38,6 @@ interface StageProblemTask {
   ready: boolean;
   steps: StageProblemStep[];
 }
-
-const afterLesson = alias(lessons, "after_lesson");
 
 export async function loadStageStepLocks(
   db: Db,
@@ -77,17 +73,14 @@ export async function loadStageStepLocks(
       .orderBy(asc(sections.order), asc(lessons.order)),
     db
       .select({
-        taskId: taskProblemSteps.taskId,
-        problemId: taskProblemSteps.problemId,
-        stepLessonId: taskProblemSteps.stepLessonId,
-        afterLessonId: taskProblemSteps.afterLessonId,
-        afterTitle: afterLesson.title,
+        taskId: lessons.problemTaskId,
+        problemId: lessons.problemId,
+        stepLessonId: lessons.id,
       })
-      .from(taskProblemSteps)
-      .innerJoin(tasks, eq(tasks.id, taskProblemSteps.taskId))
-      .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .leftJoin(afterLesson, eq(afterLesson.id, taskProblemSteps.afterLessonId))
-      .where(listedTasks),
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .innerJoin(tasks, eq(tasks.id, lessons.problemTaskId))
+      .where(and(listedTasks, isNotNull(lessons.problemId))),
     db
       .select({
         id: tasks.id,
@@ -158,9 +151,14 @@ export async function loadStageStepLocks(
     if (task) task.counted = countedProblemIds(rows, currentHash, taskPassed, hashes.get(taskId));
   }
 
-  const rowsByLesson = new Map<string, typeof stepRows>();
+  const problemLessons = stepRows.flatMap((row) =>
+    row.taskId !== null && row.problemId !== null
+      ? [{ taskId: row.taskId, problemId: row.problemId, stepLessonId: row.stepLessonId }]
+      : [],
+  );
+  const rowsByLesson = new Map<string, typeof problemLessons>();
   const rowCounts = new Map<string, number>();
-  for (const row of stepRows) {
+  for (const row of problemLessons) {
     const mappings = rowsByLesson.get(row.stepLessonId) ?? [];
     mappings.push(row);
     rowsByLesson.set(row.stepLessonId, mappings);
@@ -196,14 +194,14 @@ export async function loadStageStepLocks(
     for (const row of rowsByLesson.get(lesson.id) ?? []) {
       const problem = authoredByTask.get(row.taskId)?.get(row.problemId);
       if (!problem) continue;
+      const blocking = presented.blocking;
       byTask.get(row.taskId)?.steps.push({
         id: problem.id,
         title: problem.title,
         label: problemStepLabel(problem.title, problem.index),
         stepLessonId: lesson.id,
-        afterLessonId: presented.blocking?.id ?? row.afterLessonId,
-        afterTitle: presented.blocking?.title ?? row.afterTitle ?? "",
         ...presented,
+        ...(blocking ? { afterLessonId: blocking.id, afterTitle: blocking.title } : {}),
       });
     }
   }

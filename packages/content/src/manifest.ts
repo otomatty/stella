@@ -511,7 +511,7 @@ function insertProblemSteps(
         markdown: problemStepMarkdown(task, problem, title),
       });
       after.set(afterLessonId, insert);
-      return { problemId: problem.id, stepLessonId, afterLessonId };
+      return { problemId: problem.id, stepLessonId };
     });
   }
   for (const section of sections) {

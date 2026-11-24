@@ -182,6 +182,16 @@ for (const stage of content.stages) {
     }
   }
 }
+/** 問題のレッスン (`stageId:lessonId`) が指す課題と問題。seed はレッスンの列に書く。 */
+const problemByLessonKey = new Map<string, { taskId: string; problemId: string }>();
+for (const task of content.tasks) {
+  for (const step of task.problemSteps ?? []) {
+    problemByLessonKey.set(`${task.stageId}:${step.stepLessonId}`, {
+      taskId: task.definition.id,
+      problemId: step.problemId,
+    });
+  }
+}
 // VIDEO_MANIFEST は seed-d1.ts の process.env 経由で受け取る。
 const videoManifest: VideoManifest | null = process.env.VIDEO_MANIFEST
   ? JSON.parse(readFileSync(process.env.VIDEO_MANIFEST, "utf8"))
@@ -403,8 +413,9 @@ function emitLessonRevision(
 /**
  * レッスンの upsert。`public` (ログインなしで読める印。Issue #41) は教材が正本なので毎回
  * 教材の値に揃える (違えば書く) — `unit.json` から `public` を外したら、次の seed で公開 API から消える。
- * CMS で作ったレッスンは列の既定 (0) のまま公開されない。D1 専用の列なので legacy
- * Postgres には出さない。
+ * CMS で作ったレッスンは列の既定 (0) のまま公開されない。問題のレッスンは
+ * `problem_task_id` と `problem_id` を書き、問題でなくなったレッスンは null に戻す。
+ * D1 専用の列なので legacy Postgres には出さない。
  */
 function emitLesson(
   tenantId: Tenant["id"],
@@ -421,10 +432,14 @@ function emitLesson(
     videoManifest,
   );
   const videoScenes = scenes ? strLit(JSON.stringify(scenes)) : "null";
+  const problem = problemByLessonKey.get(`${stageId}:${lesson.id}`);
+  const problemSql = isSqlite
+    ? `, ${problem ? strLit(problem.taskId) : "null"}, ${problem ? strLit(problem.problemId) : "null"}`
+    : "";
   lines.push(
     [
-      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, video_issue, video_scenes, created_at, updated_at" : ""})`,
-      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${videoIssue === null ? "null" : strLit(videoIssue)}, ${videoScenes}, ${nowExpr()}, ${nowExpr()}` : ""}`,
+      `insert into ${tbl("lessons")} (id, section_id, title, type, "order", duration_label, video_path, pdf_path, markdown, assignment_id, total_pages, total_sec${isSqlite ? ", public, video_issue, video_scenes, problem_task_id, problem_id, created_at, updated_at" : ""})`,
+      `select '${id}', s.id, '${esc(lesson.title)}', '${lesson.type}', ${lessonOrder}, ${lesson.duration ? `'${esc(lesson.duration)}'` : "null"}, ${videoPath ? `'${esc(videoPath)}'` : "null"}, ${lesson.pdfPath ? `'${esc(lesson.pdfPath)}'` : "null"}, ${lesson.markdown ? `'${esc(lesson.markdown)}'` : "null"}, ${lesson.assignmentId ? `'${esc(lesson.assignmentId)}'` : "null"}, ${lesson.totalPages ?? "null"}, ${lesson.totalSec ?? "null"}${isSqlite ? `, ${lesson.public ? 1 : 0}, ${videoIssue === null ? "null" : strLit(videoIssue)}, ${videoScenes}${problemSql}, ${nowExpr()}, ${nowExpr()}` : ""}`,
       `from ${tbl("sections")} s`,
       `where s.id = '${sectionUuid}'`,
       `on conflict (id) ${doUpdate(
@@ -441,7 +456,14 @@ function emitLesson(
           "assignment_id",
           "total_pages",
           "total_sec",
-          ...(isSqlite ? ["public", ...(preserveVideoIssue ? [] : ["video_issue"])] : []),
+          ...(isSqlite
+            ? [
+                "public",
+                ...(preserveVideoIssue ? [] : ["video_issue"]),
+                "problem_task_id",
+                "problem_id",
+              ]
+            : []),
         ],
         isSqlite ? { touch: "updated_at" } : {},
       )};`,
@@ -640,6 +662,18 @@ function emitPdfMaterials() {
   }
 }
 
+if (isSqlite) {
+  // 問題でなくなったレッスンの列を、新しいレッスンへ同じ課題・問題を付け直す前に空にする。
+  const problemLessonIds = content.tasks.flatMap((task) =>
+    (task.problemSteps ?? []).map((step) =>
+      strLit(lessonUuid("ses", task.stageId, step.stepLessonId)),
+    ),
+  );
+  const keep = problemLessonIds.length > 0 ? ` and id not in (${problemLessonIds.join(", ")})` : "";
+  lines.push(
+    `update lessons set problem_task_id = null, problem_id = null where (problem_task_id is not null or problem_id is not null)${keep};`,
+  );
+}
 for (const c of content.stages) emitStage("ses", c);
 // 移したレッスンを先に新しい section へ結ぶ。元のステージを先に prune すると
 // ステージの走査順によって受験記録や進捗まで消してしまう。
@@ -692,21 +726,6 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${definition}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", '"order"', "lesson_id", "variant_of"])};`,
   );
-  const steps = task.problemSteps ?? [];
-  if (steps.length > 0) {
-    const values = steps.map(
-      ({ problemId, stepLessonId, afterLessonId }, position) =>
-        `(${strLit(d.id)}, ${strLit(problemId)}, ${strLit(lessonUuid("ses", task.stageId, stepLessonId))}, ${strLit(lessonUuid("ses", task.stageId, afterLessonId))}, ${position})`,
-    );
-    lines.push(
-      `insert into task_problem_steps (task_id, problem_id, step_lesson_id, after_lesson_id, position) values ${values.join(", ")} on conflict (task_id, problem_id) ${doUpdate("task_problem_steps", ["step_lesson_id", "after_lesson_id", "position"])};`,
-    );
-  }
-  const keepSteps =
-    steps.length > 0
-      ? ` and problem_id not in (${steps.map((step) => strLit(step.problemId)).join(", ")})`
-      : "";
-  lines.push(`delete from task_problem_steps where task_id = ${strLit(d.id)}${keepSteps};`);
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
@@ -787,9 +806,11 @@ for (const [order, task] of content.tasks.entries()) {
   );
 }
 
-lines.push(
-  "delete from task_problem_steps where task_id in (select id from tasks where active = 0);",
-);
+if (isSqlite) {
+  lines.push(
+    "update lessons set problem_task_id = null, problem_id = null where problem_task_id in (select id from tasks where active = 0);",
+  );
+}
 
 // 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。
 lines.push(

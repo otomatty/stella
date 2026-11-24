@@ -50,8 +50,12 @@ export function assertProgressSyncSize(count: number): void {
   }
 }
 
+/** 問題のレッスン (`lessons.problem_id`)。完了は提出で決める。 */
 export function isProblemStepLesson(lessonId: SQL) {
-  return sql<number>`exists (select 1 from task_problem_steps p where p.step_lesson_id = ${lessonId})`;
+  return sql<number>`exists (
+    select 1 from lessons problem_lesson
+    where problem_lesson.id = ${lessonId} and problem_lesson.problem_id is not null
+  )`;
 }
 
 /** 問題のステップは保存済みの完了フラグより、現在数えられる提出を優先する。 */
@@ -75,16 +79,17 @@ export async function loadCompletedProblemSteps(
     path: string;
     code: string;
   }>(sql`
-    select r.user_id userId, p.step_lesson_id lessonId, r.task_id taskId, r.problem_id problemId,
+    select r.user_id userId, p.id lessonId, r.task_id taskId, r.problem_id problemId,
       r.content_hash contentHash, t.content_hash currentHash, tp.status, r.updated_at updatedAt,
       r.source, r.path, r.code
     from task_problem_results r
     join tasks t on t.id = r.task_id
-    left join task_problem_steps p on p.task_id = r.task_id and p.problem_id = r.problem_id
+    left join lessons p on p.problem_task_id = r.task_id and p.problem_id = r.problem_id
     left join task_progress tp on tp.task_id = r.task_id and tp.user_id = r.user_id
     where r.user_id in (select value from json_each(${JSON.stringify(userIds)}))
-      and r.task_id in (select scope.task_id from task_problem_steps scope
-        ${lessonIds ? sql`where scope.step_lesson_id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``})
+      and r.task_id in (select scope.problem_task_id from lessons scope
+        where scope.problem_id is not null
+        ${lessonIds ? sql`and scope.id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``})
   `);
   const groups = new Map<string, typeof rows>();
   for (const row of rows) {

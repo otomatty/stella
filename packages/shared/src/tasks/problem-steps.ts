@@ -13,8 +13,9 @@ export interface TaskProblemStepSummary {
   title: string;
   label: string;
   stepLessonId: string;
-  afterLessonId: string;
-  afterTitle: string;
+  /** ロック中に止めているステップ。開いている・提出済みのときは付けない。 */
+  afterLessonId?: string;
+  afterTitle?: string;
   state: ProblemStepState;
 }
 

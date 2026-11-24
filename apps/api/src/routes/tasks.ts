@@ -240,8 +240,9 @@ async function problemResults(
           title,
           state,
           stepLessonId,
-          afterLessonId,
-          afterTitle,
+          ...(state === "locked-video" || state === "locked-previous"
+            ? { afterLessonId, afterTitle }
+            : {}),
         }))
       : problems.map(({ id, title }) => ({ id, title }));
     return c.json({
