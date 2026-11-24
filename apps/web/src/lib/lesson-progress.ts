@@ -573,7 +573,7 @@ export function resumeLessonId(
  */
 export function deriveStageProgress(stage: Stage, map: LessonProgressMap): Stage {
   const lessons = stage.sections?.flatMap((s) => s.lessons) ?? [];
-  if (lessons.length === 0) return stage;
+  if (lessons.length === 0 && stage.completed !== true) return stage;
   return {
     ...stage,
     progress: stageProgressPercent({

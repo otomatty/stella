@@ -430,12 +430,19 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     }
 
     const existingGrantIds = new Set<string>();
+    const manualGrantIds = new Set<string>();
     if (profileIds.length > 0) {
       const existingGrantRows = await db
-        .select({ profileId: stageGrants.profileId, ...guidanceColumns })
-        .from(stageGrants)
-        .where(eq(stageGrants.stageId, stageId));
-      for (const row of existingGrantRows) existingGrantIds.add(row.profileId);
+        .selectDistinct({
+          profileId: effectiveStageGrants.profileId,
+          groupId: effectiveStageGrants.groupId,
+        })
+        .from(effectiveStageGrants)
+        .where(eq(effectiveStageGrants.stageId, stageId));
+      for (const row of existingGrantRows) {
+        existingGrantIds.add(row.profileId);
+        if (row.groupId === null) manualGrantIds.add(row.profileId);
+      }
 
       const profileRows = await db
         .select({ id: profiles.id, role: profiles.role, disabled: profiles.disabled })
@@ -517,12 +524,19 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     const blockedByOtherVia = new Set(
       existingUnlocks.filter((row) => row.via !== "staff").map((row) => row.userId),
     );
+    const existingStaffIds = new Set(
+      existingUnlocks.filter((row) => row.via === "staff").map((row) => row.userId),
+    );
+    // GET に含まれるグループ由来の免除から手動の行を新設しない。
+    const manualUnlockRequests = requestedUnlocks?.filter(
+      (id) => !existingGrantIds.has(id) || manualGrantIds.has(id) || existingStaffIds.has(id),
+    );
     const savedUnlocks =
-      requestedUnlocks === undefined
+      manualUnlockRequests === undefined
         ? existingUnlocks
             .filter((row) => row.via === "staff" && assigned.has(row.userId))
             .map((row) => row.userId)
-        : requestedUnlocks.filter((id) => !blockedByOtherVia.has(id));
+        : manualUnlockRequests.filter((id) => !blockedByOtherVia.has(id));
     // 指定があるときは requestedUnlocks に無い人だけ消す (空なら staff をすべて)。
     // 省いたとき (古い画面) は、割当 (profileIds) から外した人だけ消す。
     const retainedStaffIds = requestedUnlocks ?? profileIds;
@@ -540,7 +554,7 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
               notInArray(stageUnlocks.userId, retainedStaffIds),
             ),
           );
-    const unlockInserts = (requestedUnlocks ?? []).map((userId) =>
+    const unlockInserts = (manualUnlockRequests ?? []).map((userId) =>
       db
         .insert(stageUnlocks)
         .values({

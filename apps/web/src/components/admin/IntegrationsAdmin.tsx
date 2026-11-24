@@ -250,11 +250,17 @@ function ClientCard({
           >
             トークンを作り直す
           </Button>
-          <Button asChild variant="ghost" className={BUTTON_CLASS}>
-            <Link to="/admin/groups" search={{ clientId: client.id }}>
+          {busy ? (
+            <Button type="button" variant="ghost" className={BUTTON_CLASS} disabled>
               グループを見る
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" className={BUTTON_CLASS}>
+              <Link to="/admin/groups" search={{ clientId: client.id }}>
+                グループを見る
+              </Link>
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

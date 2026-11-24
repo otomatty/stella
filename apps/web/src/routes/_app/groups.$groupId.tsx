@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { GroupPeerProgress } from "@stella/shared/groups/types";
 import { AccessDeniedScreen } from "@/components/common/AccessDeniedScreen";
@@ -28,7 +28,10 @@ const NOTICE =
 
 function GroupProgressPage() {
   const { groupId } = Route.useParams();
-  const { backendEnabled, currentUserId, profileRole } = useAppShell();
+  const { backendEnabled, currentUserId, myGroups, profileRole } = useAppShell();
+  const unavailable =
+    (myGroups.status === "ready" && !myGroups.groups.some((group) => group.id === groupId)) ||
+    (myGroups.status === "error" && myGroups.accessDenied);
   if (profileRole === "admin") return <AccessDeniedScreen allow={["learner"]} />;
 
   return (
@@ -36,7 +39,9 @@ function GroupProgressPage() {
       <GroupProgress
         key={JSON.stringify([currentUserId, groupId])}
         groupId={groupId}
-        enabled={backendEnabled && currentUserId !== null && profileRole === "student"}
+        enabled={
+          backendEnabled && currentUserId !== null && profileRole === "student" && !unavailable
+        }
       />
     </RoleGuard>
   );
@@ -47,24 +52,38 @@ type PeerResult = { data: GroupPeerProgress } | { error: string };
 function GroupProgress({ groupId, enabled }: { groupId: string; enabled: boolean }) {
   const [result, setResult] = useState<PeerResult | null>(null);
   useEffect(() => {
-    if (!enabled) return;
-    const controller = new AbortController();
-    const { signal } = controller;
-    void getGroupPeers(groupId, signal).then(
-      (data) => {
-        if (!signal.aborted) setResult({ data });
-      },
-      (error: unknown) => {
-        if (signal.aborted) return;
-        setResult({
-          error:
-            error instanceof ApiClientError && error.status === 404
-              ? "このグループは表示できません"
-              : "仲間の進捗を読み込めませんでした",
-        });
-      },
-    );
-    return () => controller.abort();
+    if (!enabled) {
+      setResult(null);
+      return;
+    }
+    let request: AbortController | undefined;
+    const load = () => {
+      request?.abort();
+      const controller = new AbortController();
+      request = controller;
+      const { signal } = controller;
+      void getGroupPeers(groupId, signal).then(
+        (data) => {
+          if (!signal.aborted) setResult({ data });
+        },
+        (error: unknown) => {
+          if (signal.aborted) return;
+          const status = error instanceof ApiClientError ? error.status : undefined;
+          setResult({
+            error:
+              status === 401 || status === 403 || status === 404
+                ? "このグループは表示できません"
+                : "仲間の進捗を読み込めませんでした",
+          });
+        },
+      );
+    };
+    load();
+    window.addEventListener("focus", load);
+    return () => {
+      window.removeEventListener("focus", load);
+      request?.abort();
+    };
   }, [enabled, groupId]);
 
   const progress = enabled && result && "data" in result ? result.data : null;
@@ -116,67 +135,78 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
     short: shorts[index] ?? String(index + 1),
   }));
   const occurrences = new Map<string, number>();
+  const hasHiddenStages = progress.hasHiddenStages;
+  const segmentCount = stages.length + Number(hasHiddenStages);
+  const segmentsWidth = 24 * (stages.length + (hasHiddenStages ? 1.6 : 0));
   return (
     <div className="space-y-4">
-      <section aria-label="仲間の進捗" className="space-y-2">
-        <BandLabels stages={stages} hasHiddenStages={progress.hasHiddenStages} mobile />
-        <div className="hidden items-end px-3 text-xs text-ink-3 sm:grid sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3">
-          <div>メンバー</div>
-          <div>いま</div>
-          <BandLabels stages={stages} hasHiddenStages={progress.hasHiddenStages} />
-        </div>
-        <ul className="space-y-2">
-          {progress.members.map((member) => {
-            const occurrence = (occurrences.get(member.name) ?? 0) + 1;
-            occurrences.set(member.name, occurrence);
-            const byId = new Map(member.stages.map((stage) => [stage.id, stage]));
-            const snapshots: DisplayStage[] = stages.map((stage) => {
-              const row = byId.get(stage.id);
-              return {
-                ...stage,
-                percent: row?.percent ?? 0,
-                cleared: row?.cleared ?? false,
-              };
-            });
-            const now = peerNow(snapshots, member.ahead);
-            return (
-              <li
-                key={JSON.stringify([member.name, occurrence])}
-                className={cn(
-                  "rounded-xl border border-border",
-                  member.isMe ? "bg-brand-soft" : "bg-card",
-                )}
-              >
-                <div className="grid grid-cols-1 items-center gap-2 px-3 py-2 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3 sm:py-3">
-                  <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-start">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate font-medium">{member.name}</span>
-                      {member.isMe ? <Badge variant="accent">あなた</Badge> : null}
+      <section aria-label="仲間の進捗" className="overflow-x-auto p-1 [container-type:inline-size]">
+        <div
+          className="min-w-[calc(var(--band-width)+26px)] space-y-2 [--band-gap:3px] sm:min-w-[calc(var(--band-width)+450px)] sm:[--band-gap:4px]"
+          style={
+            {
+              "--band-width": `calc(${segmentsWidth}px + ${Math.max(0, segmentCount - 1)} * var(--band-gap))`,
+            } as CSSProperties
+          }
+        >
+          <div className="grid items-end border border-transparent px-3 text-xs text-ink-3 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3">
+            <div className="hidden sm:block">メンバー</div>
+            <div className="hidden sm:block">いま</div>
+            <BandLabels stages={stages} hasHiddenStages={hasHiddenStages} />
+          </div>
+          <ul className="space-y-2">
+            {progress.members.map((member) => {
+              const occurrence = (occurrences.get(member.name) ?? 0) + 1;
+              occurrences.set(member.name, occurrence);
+              const byId = new Map(member.stages.map((stage) => [stage.id, stage]));
+              const snapshots: DisplayStage[] = stages.map((stage) => {
+                const row = byId.get(stage.id);
+                return {
+                  ...stage,
+                  percent: row?.percent ?? 0,
+                  cleared: row?.cleared ?? false,
+                };
+              });
+              const now = peerNow(snapshots, member.ahead);
+              return (
+                <li
+                  key={JSON.stringify([member.name, occurrence])}
+                  className={cn(
+                    "rounded-xl border border-border",
+                    member.isMe ? "bg-brand-soft" : "bg-card",
+                  )}
+                >
+                  <div className="grid grid-cols-1 items-center gap-2 px-3 py-2 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3 sm:py-3">
+                    <div className="flex min-w-0 items-center justify-between gap-2 max-sm:sticky max-sm:left-[17px] max-sm:max-w-[calc(100cqw-26px)] sm:justify-start">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate font-medium">{member.name}</span>
+                        {member.isMe ? <Badge variant="accent">あなた</Badge> : null}
+                      </div>
+                      <p
+                        className={cn(
+                          "max-w-[55%] shrink-0 truncate text-xs sm:hidden",
+                          nowTone(now),
+                        )}
+                      >
+                        {now.compact}
+                      </p>
                     </div>
-                    <p
-                      className={cn(
-                        "max-w-[55%] shrink-0 truncate text-xs sm:hidden",
-                        nowTone(now),
-                      )}
-                    >
-                      {now.compact}
-                    </p>
+                    <div className="hidden min-w-0 sm:block">
+                      <NowLines now={now} />
+                    </div>
+                    <Band
+                      stages={snapshots}
+                      ahead={member.ahead}
+                      hasHiddenStages={hasHiddenStages}
+                    />
                   </div>
-                  <div className="hidden min-w-0 sm:block">
-                    <NowLines now={now} />
-                  </div>
-                  <Band
-                    stages={snapshots}
-                    ahead={member.ahead}
-                    hasHiddenStages={progress.hasHiddenStages}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
-      <PeerLegend stages={stages} hasHiddenStages={progress.hasHiddenStages} />
+      <PeerLegend stages={stages} hasHiddenStages={hasHiddenStages} />
     </div>
   );
 }
@@ -219,28 +249,23 @@ function NowLines({ now }: { now: PeerNow }) {
 function BandLabels({
   stages,
   hasHiddenStages,
-  mobile = false,
 }: {
   stages: { id: string; short: string }[];
   hasHiddenStages: boolean;
-  mobile?: boolean;
 }) {
   if (stages.length === 0 && !hasHiddenStages) return null;
   return (
-    <div
-      className={cn("flex min-w-0 gap-[3px] sm:gap-1", mobile && "sm:hidden")}
-      aria-hidden="true"
-    >
+    <div className="flex min-w-0 gap-[var(--band-gap)]" aria-hidden="true">
       {stages.map((stage) => (
         <div
           key={stage.id}
-          className="min-w-0 flex-[1_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]"
+          className="min-w-[24px] flex-[1_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]"
         >
           {stage.short}
         </div>
       ))}
       {hasHiddenStages ? (
-        <div className="min-w-0 flex-[1.6_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]">
+        <div className="min-w-[24px] flex-[1.6_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]">
           その先 ››
         </div>
       ) : null}
@@ -259,7 +284,7 @@ function Band({
 }) {
   if (stages.length === 0 && !hasHiddenStages) return null;
   return (
-    <div className="flex min-w-0 gap-[3px] sm:gap-1">
+    <div className="flex min-w-0 gap-[var(--band-gap)]">
       {stages.map((stage) => (
         <SegmentButton
           key={stage.id}
@@ -288,40 +313,44 @@ function SegmentButton({
 }) {
   const [open, setOpen] = useState(false);
   const touch = useRef(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+
+  const openOnPointerEnter = (event: PointerEvent) => {
+    if (event.pointerType === "touch") return;
+    clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  const closeOnPointerLeave = (event: PointerEvent) => {
+    if (event.pointerType === "touch" || button.current?.matches(":focus-visible")) return;
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 180);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
         <button
+          ref={button}
           type="button"
           aria-label={label}
           aria-expanded={open}
           className={cn(
-            "relative flex h-3.5 min-w-0 items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:h-5",
+            "flex min-h-[24px] min-w-[24px] items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-brand",
             wide ? "flex-[1.6_1_0%]" : "flex-[1_1_0%]",
-            kind === "cleared" && "bg-success",
-            kind === "progress" && "bg-brand-soft",
-            kind === "idle" && "border border-border bg-card",
           )}
-          style={
-            kind === "hidden"
-              ? HATCH
-              : kind === "ahead"
-                ? { backgroundColor: "#4f46e5" }
-                : undefined
-          }
           onPointerDown={(event) => {
             touch.current = event.pointerType === "touch";
+            if (touch.current) clearTimeout(closeTimer.current);
           }}
-          onPointerEnter={(event) => {
-            if (event.pointerType !== "touch") setOpen(true);
-          }}
-          onPointerLeave={(event) => {
-            if (event.pointerType === "touch") return;
-            if (event.currentTarget === document.activeElement) return;
-            setOpen(false);
-          }}
+          onPointerEnter={openOnPointerEnter}
+          onPointerLeave={closeOnPointerLeave}
           onFocus={() => {
-            if (!touch.current) setOpen(true);
+            if (!touch.current) {
+              clearTimeout(closeTimer.current);
+              setOpen(true);
+            }
           }}
           onBlur={() => {
             setOpen(false);
@@ -332,23 +361,45 @@ function SegmentButton({
             touch.current = false;
           }}
         >
-          {kind === "progress" ? (
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-0 left-0 bg-brand"
-              style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
-            />
-          ) : null}
-          {kind === "ahead" ? (
-            <span aria-hidden="true" className="text-[10px] font-semibold text-white sm:text-xs">
-              ››
-            </span>
-          ) : null}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "relative flex h-3.5 w-full items-center justify-center overflow-hidden rounded-[4px] sm:h-5",
+              kind === "cleared" && "bg-success",
+              kind === "progress" && "bg-brand-soft",
+              kind === "idle" && "border border-border bg-card",
+            )}
+            style={
+              kind === "hidden"
+                ? HATCH
+                : kind === "ahead"
+                  ? { backgroundColor: "#4f46e5" }
+                  : undefined
+            }
+          >
+            {kind === "progress" ? (
+              <span
+                className="absolute inset-y-0 left-0 bg-brand"
+                style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+              />
+            ) : null}
+            {kind === "ahead" ? (
+              <span className="text-[10px] font-semibold text-white sm:text-xs">››</span>
+            ) : null}
+          </span>
         </button>
       </PopoverAnchor>
       <PopoverContent
         side="top"
+        sideOffset={0}
         className="w-auto max-w-48 px-2 py-1 text-center text-xs shadow-md"
+        onPointerEnter={openOnPointerEnter}
+        onPointerLeave={closeOnPointerLeave}
+        onInteractOutside={(event) => {
+          if (event.target instanceof Node && button.current?.contains(event.target)) {
+            event.preventDefault();
+          }
+        }}
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => event.preventDefault()}
       >

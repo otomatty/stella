@@ -338,7 +338,9 @@ const mockDb = {
   selectDistinct: (fields: Record<string, unknown>) =>
     selectWhereOnly(async (where) => {
       if (sqlSketch(where).includes("group_id is not null")) return [];
-      return "userId" in fields ? unlockSelect(where) : grantSelect();
+      if ("userId" in fields) return unlockSelect(where);
+      const rows = await grantSelect();
+      return "groupId" in fields ? rows.map((row) => ({ ...row, groupId: null })) : rows;
     }),
   delete: (table: unknown) => ({
     where: (where: unknown) => {

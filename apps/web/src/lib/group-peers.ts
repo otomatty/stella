@@ -30,12 +30,12 @@ export function peerNow(stages: readonly PeerStageSnapshot[], ahead: boolean): P
     };
   }
   if (ahead) return { kind: "ahead", label: AHEAD_LABEL, compact: AHEAD_LABEL };
-  let lastCleared: PeerStageSnapshot | undefined;
-  for (const stage of stages) {
-    if (stage.cleared) lastCleared = stage;
-  }
+  let index = stages.length - 1;
+  while (index >= 0 && !stages[index]?.cleared) index--;
+  const lastCleared = stages[index];
   if (lastCleared) {
-    const label = `✓ ${lastCleared.title}まで修了`;
+    const suffix = stages.slice(0, index).every((stage) => stage.cleared) ? "まで修了" : " 修了";
+    const label = `✓ ${lastCleared.title}${suffix}`;
     return { kind: "cleared", title: lastCleared.title, label, compact: label };
   }
   return { kind: "not-started", label: NOT_STARTED_LABEL, compact: NOT_STARTED_LABEL };

@@ -35,6 +35,7 @@ export function GroupMembers({
   const [results, setResults] = useState<AdminProfileRow[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [reloadFailed, setReloadFailed] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -69,16 +70,28 @@ export function GroupMembers({
   }
 
   async function changeMembers(change: "add" | "remove", ids: string[]) {
-    if (busy || ids.length === 0) return;
+    if (busy || reloadFailed || ids.length === 0) return;
     setBusy(true);
     setError(null);
     try {
       await request("/members", { method: "PATCH", body: { [change]: ids } });
-      setSelected([]);
-      await onMembersChanged();
-      toast.success(change === "add" ? "メンバーを追加しました" : "メンバーを外しました");
     } catch (err) {
       setError(err instanceof Error ? err.message : "メンバーを更新できませんでした");
+      setBusy(false);
+      return;
+    }
+    setSelected([]);
+    toast.success(change === "add" ? "メンバーを追加しました" : "メンバーを外しました");
+    await reloadMembers();
+  }
+
+  async function reloadMembers() {
+    setBusy(true);
+    try {
+      await onMembersChanged();
+      setReloadFailed(false);
+    } catch {
+      setReloadFailed(true);
     } finally {
       setBusy(false);
     }
@@ -161,7 +174,7 @@ export function GroupMembers({
                         className="min-h-11"
                         type="button"
                         aria-label={`${profile.display_name}を追加`}
-                        disabled={busy}
+                        disabled={busy || reloadFailed}
                         onClick={() => void changeMembers("add", [profile.id])}
                       >
                         追加
@@ -176,13 +189,27 @@ export function GroupMembers({
                 type="button"
                 className="min-h-11"
                 variant="outline"
-                disabled={busy || selected.length === 0}
+                disabled={busy || reloadFailed || selected.length === 0}
                 onClick={() => void changeMembers("remove", selected)}
               >
                 選んだメンバーを外す{selected.length > 0 ? `（${selected.length}人）` : ""}
               </Button>
             )}
           </>
+        )}
+        {reloadFailed && (
+          <div className="space-y-2">
+            <Notice role="alert">変更は保存しました。一覧の再読み込みに失敗しました</Notice>
+            <Button
+              type="button"
+              className="min-h-11"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void reloadMembers()}
+            >
+              一覧を再読み込み
+            </Button>
+          </div>
         )}
         {members.length === 0 ? (
           <p className="text-sm text-ink-2">メンバーはいません。</p>

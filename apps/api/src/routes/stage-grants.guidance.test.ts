@@ -840,6 +840,43 @@ it("公開外のExtraの受講登録も、通常の道の集約に混ぜない",
   expect(await mine()).toEqual({ stages: [] });
 });
 
+it("旧 API の GET を PUT に送り返してもグループ由来の割り当てと免除を手動にしない", async () => {
+  await db.insert(stages).values({
+    id: "child",
+    slug: "sample-child",
+    title: "後続ステージ",
+    status: "published",
+    audience: "granted",
+    parent: "sample-extra",
+    prerequisites: '["sample-extra"]',
+  });
+  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+  await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+  expect(
+    await replaceGroupStages(db, group, [
+      { slug: "sample-extra" },
+      { slug: "sample-child", exempt: true },
+    ]),
+  ).toMatchObject({ ok: true });
+  await grant("other", "child");
+  const path = "/api/stage-grants";
+  const listed = await json<{
+    stages: { id: string; profile_ids: string[]; unlocked_profile_ids: string[] }[];
+  }>(await call(path));
+  const child = listed.stages.find((stage) => stage.id === "child");
+  expect(child?.profile_ids).toEqual(expect.arrayContaining(["learner", "other"]));
+  expect(child?.unlocked_profile_ids).toEqual(["learner"]);
+
+  const response = await call(`${path}/child`, "PUT", child);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ ancestor_grants: [] });
+  expect(await db.select().from(stageGrants)).toMatchObject([
+    { stageId: "child", profileId: "other" },
+  ]);
+  expect(await db.select().from(stageUnlocks)).toEqual([]);
+  expect(await json(await call(path))).toEqual(listed);
+});
+
 it("PUTの読み取り後に案内が更新されても、残る人の案内と割り当ての記録を保持する", async () => {
   await grant();
   await grant("other");

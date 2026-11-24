@@ -997,7 +997,7 @@ function PcRoster({
                       {view.baseline.email ? (
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
-                      <AssignmentSources view={view} />
+                      <AssignmentSources view={view} hasChanges={changeCount > 0} />
                       {view.baseline.assigned &&
                       completionStageId &&
                       !saving &&
@@ -1314,7 +1314,7 @@ function MobileRoster({
                   </div>
                 )}
                 <div className="px-4">
-                  <AssignmentSources view={view} />
+                  <AssignmentSources view={view} hasChanges={changeCount > 0} />
                 </div>
                 {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
                   <Link
@@ -1345,7 +1345,7 @@ function MobileRoster({
   );
 }
 
-function AssignmentSources({ view }: { view: StageRosterView }) {
+function AssignmentSources({ view, hasChanges }: { view: StageRosterView; hasChanges: boolean }) {
   const row = view.baseline;
   const { groups, manual } = row.sources;
   return (
@@ -1358,6 +1358,9 @@ function AssignmentSources({ view }: { view: StageRosterView }) {
               key={group.id}
               to="/admin/groups/$groupId"
               params={{ groupId: group.id }}
+              onClick={(event) => {
+                if (hasChanges && !confirm(CLOSE_CONFIRM)) event.preventDefault();
+              }}
               className="inline-flex min-h-11 items-center text-brand underline"
             >
               <Badge variant="info" className="whitespace-normal break-words">

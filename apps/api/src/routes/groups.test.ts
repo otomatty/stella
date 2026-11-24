@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db/client.js";
 import {
   enrollments,
@@ -6,6 +6,7 @@ import {
   lessonProgress,
   lessons,
   sections,
+  stageGrants,
   stages,
   taskProgress,
   tasks,
@@ -634,6 +635,69 @@ describe("グループ API (実 SQLite)", () => {
     expect((await call(admin, path, "PATCH", { remove: ["profile-me"] })).status).toBe(200);
     expect(read()).toEqual([{ profile_id: "profile-outside", joined_at: expect.any(Number) }]);
   });
+
+  it("無効化中も開始済みの割り当てをメンバーから外すときに引き継ぐ", async () => {
+    await seedStages();
+    fixture.sqlite.exec(`
+      insert into group_members (group_id, profile_id, joined_at) values
+        ('another', 'profile-disabled', 1), ('another', 'profile-admin', 1);
+      insert into group_stages (group_id, stage_id) values
+        ('another', 'stage-a'), ('another', 'stage-b'), ('another', 'stage-z');
+    `);
+    const db = getDb(env);
+    await db.insert(enrollments).values([
+      { userId: "profile-disabled", stageId: "stage-a", status: "active" },
+      { userId: "profile-disabled", stageId: "stage-b", status: "completed" },
+      { userId: "profile-disabled", stageId: "stage-z", status: "expired" },
+      { userId: "profile-admin", stageId: "stage-a", status: "active" },
+    ]);
+
+    const response = await call(admin, `${ADMIN}/another/members`, "PATCH", {
+      remove: ["profile-disabled", "profile-admin"],
+    });
+    expect(response.status).toBe(200);
+    expect(
+      await db
+        .select({ profileId: stageGrants.profileId, stageId: stageGrants.stageId })
+        .from(stageGrants)
+        .orderBy(stageGrants.stageId),
+    ).toEqual([
+      { profileId: "profile-disabled", stageId: "stage-a" },
+      { profileId: "profile-disabled", stageId: "stage-b" },
+    ]);
+  });
+
+  it.each([
+    ["members", "PATCH", { add: ["profile-me"] }],
+    ["stages", "PUT", { stages: [] }],
+  ] as const)("存在するグループの %s に変更がなくても成功する", async (path, method, body) => {
+    expect((await call(admin, `${ADMIN}/another/${path}`, method, body)).status).toBe(200);
+  });
+
+  it.each([
+    ["members", "PATCH", { add: ["profile-outside"], remove: ["profile-me"] }],
+    ["stages", "PUT", { stages: [] }],
+    ["stages", "PUT", { stages: [{ slug: "extra-parent" }] }],
+  ] as const)(
+    "書き込みの直前にグループが削除された %s は 404 で監査を残さない",
+    async (path, method, body) => {
+      await seedStages();
+      const originalBatch = fixture.binding.batch.bind(fixture.binding);
+      const batch = vi
+        .spyOn(fixture.binding, "batch")
+        .mockImplementationOnce(async (statements) => {
+          fixture.sqlite.exec("delete from groups where id = 'another'");
+          return originalBatch(statements);
+        });
+      try {
+        expect((await call(admin, `${ADMIN}/another/${path}`, method, body)).status).toBe(404);
+        expect(batch).toHaveBeenCalledOnce();
+        expect(fixture.sqlite.prepare("select action from audit_logs").all()).toEqual([]);
+      } finally {
+        batch.mockRestore();
+      }
+    },
+  );
 
   it("D1 のバインド上限内で100人を一度に追加できる", async () => {
     addRoster();

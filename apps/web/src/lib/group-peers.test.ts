@@ -45,15 +45,21 @@ describe("peerNow", () => {
     });
   });
 
-  it("先に進んでいなければ、並び順で最後に修了したステージを出す", () => {
+  it("途中に未修了があれば、最後に修了したステージだけを表示する", () => {
     expect(
       peerNow([stage("00章", 100, true), stage("01章", 0), stage("02章", 100, true)], false),
     ).toEqual({
       kind: "cleared",
       title: "02章",
-      label: "✓ 02章まで修了",
-      compact: "✓ 02章まで修了",
+      label: "✓ 02章 修了",
+      compact: "✓ 02章 修了",
     });
+  });
+
+  it("前のステージがすべて修了なら「まで修了」と表示する", () => {
+    expect(
+      peerNow([stage("00章", 100, true), stage("01章", 100, true), stage("02章", 0)], false),
+    ).toMatchObject({ label: "✓ 01章まで修了", compact: "✓ 01章まで修了" });
   });
 
   it("どれも無ければまだ始めていない", () => {

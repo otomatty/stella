@@ -78,7 +78,6 @@ function retainStartedGrants(db: Db, groupId: string, removed: SQL) {
           and(
             eq(groupMembers.groupId, groupId),
             eq(profiles.role, "student"),
-            eq(profiles.disabled, false),
             inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
             removed,
           ),
@@ -130,11 +129,14 @@ export async function patchAdminGroupMembers(
     )`);
   // 受講者の状態を確認し、差分を適用するまでを同じ batch に入れる。
   // 不正な追加が一つでもあれば、削除・追加ともに行わない。
-  const valid = sql`not exists (${invalid.getSQL()}) and exists (
-    select 1 from ${groups} where ${groups.id} = ${groupId} and ${groups.clientId} is null
-  )`;
+  const adminGroup = db
+    .select({ id: groups.id })
+    .from(groups)
+    .where(and(eq(groups.id, groupId), isNull(groups.clientId)));
+  const valid = sql`not exists (${invalid.getSQL()}) and exists (${adminGroup.getSQL()})`;
   const removingMember = sql`${groupMembers.profileId} in (${removedIds}) and ${valid}`;
-  const [, invalidRows, removed, added] = await db.batch([
+  const [[group], , invalidRows, removed, added] = await db.batch([
+    adminGroup,
     retainStartedGrants(db, groupId, removingMember),
     invalid,
     db
@@ -149,6 +151,7 @@ export async function patchAdminGroupMembers(
       .onConflictDoNothing({ target: [groupMembers.groupId, groupMembers.profileId] })
       .returning({ id: groupMembers.profileId }),
   ]);
+  if (!group) throw new ApiError("Not found", 404);
   return {
     invalidIds: invalidRows.map((row) => row.id),
     added: added.length,
@@ -285,7 +288,9 @@ export async function replaceGroupStages(
   if (errors.length) return { ok: false as const, errors };
   const remove = db.delete(groupStages).where(eq(groupStages.groupId, group.id));
   const retainedStageIds = JSON.stringify(settings.map((setting) => setting.stageId));
-  await db.batch([
+  const groupExists = db.select({ id: groups.id }).from(groups).where(eq(groups.id, group.id));
+  const [[savedGroup]] = await db.batch([
+    groupExists,
     retainStartedGrants(
       db,
       group.id,
@@ -293,14 +298,12 @@ export async function replaceGroupStages(
     ),
     remove,
     ...settings.map((setting) =>
-      db.insert(groupStages).values({
-        groupId: group.id,
-        stageId: setting.stageId,
-        dueAt: setting.due_at,
-        message: setting.message,
-        exempt: setting.exempt,
-      }),
+      db.insert(groupStages).select(
+        sql`select ${group.id}, ${setting.stageId}, ${setting.due_at}, ${setting.message},
+          ${setting.exempt ? 1 : 0} where exists (${groupExists.getSQL()})`,
+      ),
     ),
   ]);
+  if (!savedGroup) throw new ApiError("Not found", 404);
   return { ok: true as const, stages: settings.map(({ stageId: _, ...setting }) => setting) };
 }
