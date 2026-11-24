@@ -479,6 +479,15 @@ interface Replacement {
   before?: Buffer;
 }
 
+interface Retirement {
+  rel: string;
+  before: Buffer;
+  backupRel: string;
+  data?: never;
+}
+
+type DistributionChange = Replacement | Retirement;
+
 const BACKUP_PREFIX = ".stella/previous/";
 
 async function readExisting(root: string, rel: string): Promise<Buffer | undefined> {
@@ -489,10 +498,10 @@ async function readExisting(root: string, rel: string): Promise<Buffer | undefin
 
 async function needsPublication(
   root: string,
-  { rel, before, data }: Replacement,
+  { rel, before, data }: DistributionChange,
 ): Promise<boolean> {
   const current = await readExisting(root, rel);
-  if (current?.equals(data)) return false;
+  if (data ? current?.equals(data) : current === undefined) return false;
   if (before ? !current?.equals(before) : current !== undefined)
     throw new TaskInstallConflict("occupied", root, [rel]);
   return true;
@@ -528,7 +537,7 @@ async function publishNewFile(root: string, source: string, write: Replacement):
 async function writeDistributionUpdate(
   base: string,
   root: string,
-  entries: Replacement[],
+  entries: DistributionChange[],
   previous: Receipt,
   receipt: Receipt,
   beforeUpdate?: InstallOptions["beforeUpdate"],
@@ -553,7 +562,7 @@ async function writeDistributionUpdate(
     };
     const writes = [...entries, record];
     for (const [i, { data }] of writes.entries())
-      await writeNewFile(base, staging, String(i), data);
+      if (data) await writeNewFile(base, staging, String(i), data);
     await beforeUpdate?.(root);
     if (JSON.stringify(await readReceipt(root)) !== JSON.stringify(previous))
       throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
@@ -579,6 +588,13 @@ async function writeDistributionUpdate(
         if (currentReceipt?.equals(record.data)) return;
         if (!currentReceipt?.equals(activeRecord))
           throw new TaskInstallConflict("occupied", root, [RECEIPT_PATH]);
+      }
+      if ("backupRel" in write) {
+        const backup = await readExisting(root, write.backupRel);
+        if (!backup?.equals(write.before))
+          throw new TaskInstallConflict("occupied", root, [write.backupRel]);
+        if (await needsPublication(root, write)) await rm(target);
+        continue;
       }
       if (!(await needsPublication(root, write))) continue;
       if (before) {
@@ -610,13 +626,13 @@ async function verifiedOldManifest(
   }
 }
 
-async function backupPath(root: string, rel: string, data: Buffer): Promise<string | undefined> {
+async function backupPath(root: string, rel: string, data: Buffer) {
   const suffix = sha256Hex(data).slice(0, 12);
   for (let attempt = 0; ; attempt++) {
     const candidate = attempt === 0 ? rel : `${rel}.${suffix}${attempt === 1 ? "" : `-${attempt}`}`;
     const existing = await readExisting(root, candidate);
-    if (!existing) return candidate;
-    if (existing.equals(data)) return undefined;
+    if (!existing || existing.equals(data))
+      return { rel: candidate, exists: existing !== undefined };
   }
 }
 
@@ -664,12 +680,33 @@ async function planReplacements(
         clashes.push(rel);
         continue;
       }
-      const backupRel = await backupPath(root, `${backupDir}/${rel}`, before);
-      if (backupRel) writes.push({ rel: backupRel, data: before });
+      const backup = await backupPath(root, `${backupDir}/${rel}`, before);
+      if (!backup.exists) writes.push({ rel: backup.rel, data: before });
     }
     writes.push({ rel, data, before });
   }
   if (clashes.length > 0) throw new TaskInstallConflict("updated", root, clashes);
+  return writes;
+}
+
+async function planRetirements(
+  root: string,
+  bundle: TaskBundle,
+  oldFiles: FileHashes,
+  backupDir: string,
+): Promise<DistributionChange[]> {
+  // 遅延配布もバンドルには含まれるので、引退するファイルにはならない。
+  const removed = Object.keys(oldFiles).filter((rel) => !Object.hasOwn(bundle.files, rel));
+  const retired = matchPatterns(removed, bundle.manifest.protected).files;
+  const writes: DistributionChange[] = [];
+  for (const rel of retired) {
+    const before = await readExisting(root, rel);
+    if (!before) continue;
+    const backup = await backupPath(root, `${backupDir}/${rel}`, before);
+    if (!backup.exists) writes.push({ rel: backup.rel, data: before });
+    // 中断しても元の内容が残るよう、写しを公開してから作業ツリーから外す。
+    writes.push({ rel, before, backupRel: backup.rel });
+  }
   return writes;
 }
 
@@ -762,7 +799,8 @@ async function updateDistribution(
             .catch(() => undefined);
     if (!isFileHashes(loaded))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
-    const legacy = await legacyDistribution(root, bundle.manifest, receipt);
+    const oldManifest = await verifiedOldManifest(root, loaded);
+    const legacy = await legacyDistribution(root, oldManifest ?? bundle.manifest, receipt);
     oldFiles = {
       ...Object.fromEntries(
         Object.entries(loaded).filter(([rel]) => !Object.hasOwn(legacy.deferred ?? {}, rel)),
@@ -785,10 +823,11 @@ async function updateDistribution(
     backupDir,
     receipt.updatingTo === bundle.contentHash ? "resume" : "update",
   );
+  const retirements = await planRetirements(root, bundle, oldFiles, backupDir);
   await writeDistributionUpdate(
     base,
     root,
-    writes,
+    [...retirements, ...writes],
     receipt,
     {
       taskId: receipt.taskId,
