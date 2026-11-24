@@ -1,9 +1,9 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問13 { q, limit } を「q=…&limit=…」にする。limit を省略したら 10
+//     例: queryText({ q: "ts" }) → "q=ts&limit=10"
+// 引数と戻り値には型注釈を付けてください。
+// オブジェクトは引数の位置で分割代入してください。
+// 省略できるプロパティには型で ? を付け、分割代入でデフォルト値を指定してください。
 
-// 問13
 export function queryText({ q, limit = 10 }: { q: string; limit?: number }): string {
   return `q=${q}&limit=${limit}`;
 }

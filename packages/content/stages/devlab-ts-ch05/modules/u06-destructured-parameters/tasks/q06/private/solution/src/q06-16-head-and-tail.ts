@@ -1,9 +1,7 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問16 配列を [head, ...tail] で受け取り、{ head, tail } を返す
+//     例: headAndTail([1, 2, 3]) → { head: 1, tail: [2, 3] }
+// 引数と戻り値には型注釈を付けてください。
 
-// 問16
 export function headAndTail([head, ...tail]: readonly number[]): {
   head: number | undefined;
   tail: number[];

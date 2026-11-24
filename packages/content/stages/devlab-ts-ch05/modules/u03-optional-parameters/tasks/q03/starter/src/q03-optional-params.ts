@@ -1,7 +1,3 @@
-// 05-q03 オプション引数
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
-//
 // 問題
 // 省略できる引数（オプション引数。name?: string のように ? を付ける）を使って、次の3つの関数を書いてください。
 // 引数と戻り値には型注釈を付けること。省略された引数の値は undefined になる。

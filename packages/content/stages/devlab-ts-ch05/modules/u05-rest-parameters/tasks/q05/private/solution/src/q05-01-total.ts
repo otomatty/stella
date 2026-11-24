@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問1 すべての数の合計。引数がなければ 0
+//     例: total(1, 2, 3) → 6
+// 引数と戻り値には型注釈を付けてください。
+// 個数が決まっていない引数は、...numbers: number[] のような残余引数で受け取ってください。
 
-// 問1
 export function total(...numbers: number[]): number {
   let sum = 0;
   for (const n of numbers) {

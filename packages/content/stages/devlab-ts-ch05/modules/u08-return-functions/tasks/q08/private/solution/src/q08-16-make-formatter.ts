@@ -1,9 +1,7 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問16 数を受け取り「数 + unit」の文字列を返す関数を返す
+//     例: makeFormatter("kg")(3) → "3kg"
+// 引数には型注釈を付け、戻り値の型は (x: number) => number のように書いてください。
 
-// 問16
 export function makeFormatter(unit: string): (n: number) => string {
   return (n) => `${n}${unit}`;
 }

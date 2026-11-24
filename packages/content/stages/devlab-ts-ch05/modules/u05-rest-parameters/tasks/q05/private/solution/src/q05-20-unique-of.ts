@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問20 重複を除いた配列を返す。順番は最初に出てきた順
+//     例: uniqueOf("a", "b", "a") → ["a", "b"]
+// 引数と戻り値には型注釈を付けてください。
+// 個数が決まっていない引数は、...numbers: number[] のような残余引数で受け取ってください。
 
-// 問20
 export function uniqueOf(...items: string[]): string[] {
   const result: string[] = [];
   for (const item of items) {

@@ -1,8 +1,3 @@
-// 05-q07 コールバック関数
-//
-// 教材: https://typescriptbook.jp/reference/functions/callback-functions
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
-//
 // 問題
 // 関数を引数として受け取る関数を書いてください。関数の型は (price: number) => number のように書く。
 // 中では map や filter を使わず、for-of で回して、受け取った関数を自分で呼ぶこと。

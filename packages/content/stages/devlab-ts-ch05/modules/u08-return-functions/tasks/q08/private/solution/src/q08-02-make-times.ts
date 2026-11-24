@@ -1,9 +1,7 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問2 受け取った数を n 倍する関数を返す
+//     例: makeTimes(2)(5) → 10
+// 引数には型注釈を付け、戻り値の型は (x: number) => number のように書いてください。
 
-// 問2
 export function makeTimes(n: number): (x: number) => number {
   return (x) => x * n;
 }

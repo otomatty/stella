@@ -1,7 +1,3 @@
-// 05-e02 発展問題 関数の型と、関数の組み合わせ
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-type-declaration
-//
 // 問題
 // 1. 型 NumberFn を、「数値を1つ受け取って数値を返す関数」の型として定義して export してください
 //    （type NumberFn = (x: number) => number）

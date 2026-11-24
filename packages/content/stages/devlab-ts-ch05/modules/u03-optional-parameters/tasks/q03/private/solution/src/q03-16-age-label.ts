@@ -1,8 +1,8 @@
-// 05-q03 オプション引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
+// 問16 省略できる age だけを受け取る。「30歳」、省略したら「年齢不明」
+//     例: ageLabel() → "年齢不明"
+// 引数と戻り値には型注釈を付けてください。
+// 省略できる引数は ? で宣言し、関数の中で ?? や === undefined で省略を扱ってください。
 
-// 問16
 export function ageLabel(age?: number): string {
   return age === undefined ? "年齢不明" : `${age}歳`;
 }

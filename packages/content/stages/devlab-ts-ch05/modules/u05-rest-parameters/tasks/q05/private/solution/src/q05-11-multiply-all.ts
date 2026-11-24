@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問11 すべての数を掛ける。引数がなければ 1
+//     例: multiplyAll(2, 3, 4) → 24
+// 引数と戻り値には型注釈を付けてください。
+// 個数が決まっていない引数は、...numbers: number[] のような残余引数で受け取ってください。
 
-// 問11
 export function multiplyAll(...numbers: number[]): number {
   let result = 1;
   for (const n of numbers) {

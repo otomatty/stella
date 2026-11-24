@@ -1,9 +1,8 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問6 呼ぶたびに真偽値を反転し、反転した後の値を返す関数を返す
+//     例: const toggle = makeToggle(false); toggle() → true、toggle() → false
+// 引数には型注釈を付け、戻り値の型は (x: number) => number のように書いてください。
+// 外側の関数に状態を持たせ、返す関数から読み書きしてください。
 
-// 問6
 export function makeToggle(initial: boolean): () => boolean {
   let state = initial;
   return () => {

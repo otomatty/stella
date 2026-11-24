@@ -1,7 +1,3 @@
-// 05-q05 残余引数
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
-//
 // 問題
 // いくつでも引数を受け取れる関数（残余引数。...numbers: number[] のように書く）を書いてください。
 // 引数と戻り値には型注釈を付けること。

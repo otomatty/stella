@@ -1,9 +1,6 @@
-// 05-q09 型ガード関数とアサーション関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
+// 問1 【型ガード】文字列か。戻り値の型は value is string
+//     例: isText("a") → true
 
-// 問1
 export function isText(value: unknown): value is string {
   return typeof value === "string";
 }

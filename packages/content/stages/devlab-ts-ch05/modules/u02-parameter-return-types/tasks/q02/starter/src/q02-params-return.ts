@@ -1,8 +1,3 @@
-// 05-q02 引数と戻り値の型、void
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//
 // 問題
 // 次の3つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //

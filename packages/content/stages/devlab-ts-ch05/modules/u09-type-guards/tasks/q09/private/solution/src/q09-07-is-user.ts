@@ -1,11 +1,9 @@
-// 05-q09 型ガード関数とアサーション関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
+// 問7 【型ガード】null でないオブジェクトで、name が文字列、age が数値か。戻り値の型は value is User
+//     例: isUser({ name: "山田", age: 30 }) → true
+// ファイル内に定義済みの User 型を使ってください。
 
 export type User = { name: string; age: number };
 
-// 問7
 export function isUser(value: unknown): value is User {
   return (
     typeof value === "object" &&
