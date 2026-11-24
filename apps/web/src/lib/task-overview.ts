@@ -25,17 +25,6 @@ export function taskOverviewStatusLabel(task: ProblemTask): string {
   return TASK_STATUS_LABELS[task.status];
 }
 
-export function problemStatementBody(markdown: string, lessonTitle: string) {
-  const heading = /^#[ \t]+([^\r\n]*)(?:\r?\n(?:[ \t]*\r?\n)*)?/.exec(markdown);
-  if (!heading) return { intro: "", body: markdown };
-
-  const headingText = heading[1].trim();
-  const intro = headingText.startsWith(lessonTitle)
-    ? headingText.slice(lessonTitle.length).trim()
-    : headingText;
-  return { intro, body: markdown.slice(heading[0].length) };
-}
-
 export function submittedProblemCount(problems: readonly TaskProblemItem[]): number {
   return problems.filter((problem) => problem.state === "submitted").length;
 }

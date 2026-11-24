@@ -8,6 +8,7 @@ import { PcHandoffButton } from "./PcHandoffButton";
 /**
  * 接続コード付きの URI で、指定されたレッスンまたはタスクを VS Code に開く (`lib/vscode-launch.ts`)。
  * 拡張機能が入っていなければ VS Code がインストールを尋ね、そのまま課題文まで開く。
+ * 提出済みの問題を見直すときは、呼び出し側からラベルとボタンの見た目を指定できる。
  *
  * スマートフォン・タブレットでは VS Code を開けないので、接続コードを発行せず、
  * ページのリンクをパソコンへ送るボタン (`PcHandoffButton`) に替える。
@@ -15,6 +16,7 @@ import { PcHandoffButton } from "./PcHandoffButton";
 export function OpenInVscodeButton(
   props: ({ stageId: string; lessonId: string } | { taskId: string; problemId?: string }) & {
     label?: string;
+    variant?: "accent" | "outline";
   },
 ) {
   const handheld = useIsHandheld();
@@ -34,7 +36,7 @@ export function OpenInVscodeButton(
     <Button
       data-testid="open-in-vscode"
       type="button"
-      variant="accent"
+      variant={props.variant ?? "accent"}
       onClick={() => void handleOpen()}
       disabled={opening}
     >

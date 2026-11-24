@@ -1,5 +1,6 @@
 import {
   lazy,
+  type ReactNode,
   Suspense,
   useCallback,
   useContext,
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import {
   Check,
   ChevronLeft,
+  Code,
   Download,
   FileText,
   Folder,
@@ -67,8 +69,9 @@ import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
 import { CodeLessonHandoff } from "./CodeLessonHandoff";
-import { TaskLessonHandoff } from "./TaskLessonHandoff";
-import { TaskProblemLesson, TaskProblemsOverview } from "./TaskProblemLessons";
+import { ProblemLessonHandoff, TaskLessonHandoff } from "./TaskLessonHandoff";
+import { TaskProblemsOverview } from "./TaskProblemLessons";
+import { TaskReferences } from "./TaskReferences";
 import {
   isProblemOverview,
   isTaskPassed,
@@ -136,6 +139,7 @@ export const LessonPlayer = ({
       ),
     [stageTasks],
   );
+  const problemLessonIds = useMemo(() => new Set(problemLessons.keys()), [problemLessons]);
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -172,11 +176,10 @@ export const LessonPlayer = ({
   const lessonId = lessonObj?.id ?? "";
   const problemLesson = problemLessons.get(lessonId);
   const problemOverview = problemOverviews.get(lessonId);
-  const problemTask = problemLesson
-    ? stageTasks?.find((task) => task.id === problemLesson.taskId)
-    : undefined;
-  const problemOverviewLesson = problemTask
-    ? allLessons.find((lesson) => lesson.id === problemTask.lessonId)
+  const problemSource = problemLesson
+    ? stageTasks
+        ?.find((task) => task.id === problemLesson.taskId)
+        ?.problem_items?.find((item) => item.id === problemLesson.problem.id)?.source
     : undefined;
   // 課題一覧が取れるまで、問題かもしれないテキストの完了を送らない。
   const trackTextProgress =
@@ -188,10 +191,7 @@ export const LessonPlayer = ({
     materials,
     loading: materialsLoading,
     error: materialsError,
-  } = useLessonMaterials(
-    lessonObj?.id ?? null,
-    materialsEnabled && !problemLesson && !problemOverview,
-  );
+  } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled && !problemOverview);
 
   const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
   const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
@@ -252,8 +252,6 @@ export const LessonPlayer = ({
   }, [sections, lessonObj]);
 
   const activeSection = sections[activeSectionIndex] ?? sections[0];
-  const lessonIndexInSection =
-    activeSection && lessonObj ? activeSection.lessons.findIndex((l) => l.id === lessonObj.id) : 0;
 
   // lessonObj が無いステージでも hook 順序を保つため空文字を渡す (内部で no-op)
   const { markComplete } = useLessonProgress(lessonObj?.id ?? "");
@@ -367,6 +365,7 @@ export const LessonPlayer = ({
   const isVideo = lessonObj.type === "video";
   const isSlides = lessonObj.type === "slides";
   const displayType = displayLessonType(lessonObj);
+  const problemState = problemLesson?.problem.state;
   const nextMeta = nextLesson
     ? nextLessonMeta(lessonTypeLabel[displayLessonType(nextLesson)], nextLesson.duration)
     : null;
@@ -484,16 +483,6 @@ export const LessonPlayer = ({
               stageTasks={stageTasks ?? []}
             />
           </div>
-        ) : problemLesson ? (
-          <div className="mx-auto w-full max-w-[880px] px-4 py-6 sm:px-10">
-            <TaskProblemLesson
-              lesson={lessonObj}
-              stageId={stage.id}
-              step={problemLesson}
-              overview={problemOverviewLesson}
-              task={problemTask && isProblemOverview(problemTask) ? problemTask : undefined}
-            />
-          </div>
         ) : (
           <>
             {showVideo && lessonObj.videoPath ? (
@@ -551,13 +540,19 @@ export const LessonPlayer = ({
                       variant="accent"
                       className="bg-sf-magenta-soft text-sf-magenta-ink font-bold"
                     >
-                      <LessonTypeIcon type={displayType} size={10} />
-                      {lessonTypeLabel[displayType]}
+                      {problemLesson ? (
+                        <>
+                          <Code size={10} aria-hidden="true" />
+                          問題
+                        </>
+                      ) : (
+                        <>
+                          <LessonTypeIcon type={displayType} size={10} />
+                          {lessonTypeLabel[displayType]}
+                        </>
+                      )}
                     </Badge>
-                    <span className="text-[11.5px] text-ink-3">
-                      {activeSection ? activeSection.title : ""} · {lessonIndexInSection + 1} /{" "}
-                      {activeSection ? activeSection.lessons.length : 0}
-                    </span>
+                    <span className="text-[11.5px] text-ink-3">{activeSection?.title}</span>
                     {showVideo ? (
                       <div className="ml-auto shrink-0">
                         {activeCompleted ? (
@@ -571,6 +566,24 @@ export const LessonPlayer = ({
                           </Button>
                         )}
                       </div>
+                    ) : problemState === "open" || problemState === "submitted" ? (
+                      <span
+                        className={cn(
+                          "ml-auto inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs",
+                          problemState === "submitted"
+                            ? "bg-success-soft text-success"
+                            : "bg-muted text-ink-2",
+                        )}
+                      >
+                        {problemState === "submitted" ? (
+                          <>
+                            <Check size={13} aria-hidden="true" />
+                            {problemLesson?.problem.manual ? "引き継ぎ" : "提出済み"}
+                          </>
+                        ) : (
+                          "未提出"
+                        )}
+                      </span>
                     ) : null}
                   </div>
                   <h1 className="text-[22px] font-black tracking-[0.01em] leading-[1.3]">
@@ -589,7 +602,7 @@ export const LessonPlayer = ({
                       </span>
                     ) : null}
                   </div>
-                  {stage.format === 2 && isText ? (
+                  {stage.format === 2 && isText && !problemLesson ? (
                     <TaskLessonHandoff
                       taskId={taskId}
                       problemId={firstOpenProblem(task?.problems)?.id}
@@ -673,7 +686,24 @@ export const LessonPlayer = ({
                     ) : isText ? (
                       <LessonReadable
                         lesson={lessonObj}
+                        isProblemLesson={Boolean(problemLesson)}
                         onComplete={trackTextProgress ? handleMarkComplete : undefined}
+                        afterContent={
+                          problemLesson ? (
+                            <>
+                              {problemSource ? (
+                                <p className="text-xs text-ink-2">
+                                  書くファイル{" "}
+                                  <code className="rounded bg-sunken px-2 py-1 text-foreground wrap-anywhere">
+                                    {problemSource}
+                                  </code>
+                                </p>
+                              ) : null}
+                              <TaskReferences refs={problemLesson.problem.refs} />
+                              <ProblemLessonHandoff {...problemLesson} />
+                            </>
+                          ) : null
+                        }
                       />
                     ) : isSlides && lessonObj.markdown ? (
                       <MarkdownSlides
@@ -686,7 +716,11 @@ export const LessonPlayer = ({
                     ) : isVideo || isSlides ? (
                       <LessonOverview lesson={lessonObj} onComplete={handleMarkComplete} />
                     ) : (
-                      <LessonReadable lesson={lessonObj} onComplete={handleMarkComplete} />
+                      <LessonReadable
+                        lesson={lessonObj}
+                        isProblemLesson={false}
+                        onComplete={handleMarkComplete}
+                      />
                     )}
                   </TabsContent>
                 )}
@@ -702,7 +736,8 @@ export const LessonPlayer = ({
           </>
         )}
 
-        {/* コーディング課題にも完了の CTA と前後ナビを出すため、上の分岐の外に置く。
+        {/* コーディング課題にも末尾ナビを出すため、上の分岐の外に置く。
+            完了直後の案内は末尾ナビにまとめ、動画の最後の教材だけ独立した案内を出す。
 
             ページ末尾はこのブロックなので、 下端に重なる固定要素のクリアランスもここが持つ。
             pb-24 (96px) は右下の開発者モード FAB (bottom-6 + h-12 = 下端から 72px) ぶん。 小テストは
@@ -717,7 +752,7 @@ export const LessonPlayer = ({
           {submissionTarget ? (
             <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
           ) : null}
-          {showCompleteCallout && (!showVideo || neighbors.next === null) ? (
+          {showCompleteCallout && showVideo && neighbors.next === null ? (
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
@@ -730,6 +765,9 @@ export const LessonPlayer = ({
               neighbors={neighbors}
               onSelectLesson={goToLesson}
               onBackToStage={handleBackToStage}
+              justCompleted={showCompleteCallout}
+              onDismissCompletion={() => setCalloutDismissed(true)}
+              problemLessonIds={problemLessonIds}
             />
           ) : null}
         </div>
@@ -922,7 +960,7 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
 
 /**
  * text レッスンの本文。 CMS (lessons.markdown) の実データを描画する。
- * 本文が未登録のレッスンではサンプルではなく準備中の空状態を表示する。
+ * 問題レッスンは補足がなくても状態カードで進められるため、空本文に準備中の案内を出さない。
  *
  * 画像パスは R2 のオブジェクトキーで入っているので、 `LessonMarkdown` が公開 URL へ解決する。
  *
@@ -930,7 +968,17 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
  * とする。 開いた時点で進捗行も作る (作らないと、 完了ボタンを押すまでサイドバーで
  * 「読みかけ」に見えず、 「続きから」の遷移先もこのレッスンを飛ばしてしまう)。
  */
-const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete?: () => void }) => {
+const LessonReadable = ({
+  lesson,
+  isProblemLesson,
+  onComplete,
+  afterContent,
+}: {
+  lesson: Lesson;
+  isProblemLesson: boolean;
+  onComplete?: () => void;
+  afterContent?: ReactNode;
+}) => {
   const { entry, markVisited } = useLessonProgress(lesson.id);
   const endRef = useRef<HTMLDivElement>(null);
   const isCompleted = entry?.completed === true;
@@ -951,34 +999,37 @@ const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete?: (
   }, [isCompleted, lesson.markdown, onComplete]);
 
   return (
-    <div data-testid="lesson-doc" className="prose-lms">
-      {lesson.markdown ? (
-        <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
-      ) : (
-        <div className="py-10 text-center text-[12.5px] text-ink-3">
-          <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">本文を準備中です</div>
-          この教材の本文はまだ登録されていません。 管理者が登録次第、 ここに表示されます。
-        </div>
-      )}
+    <>
+      <div data-testid="lesson-doc" className="prose-lms">
+        {lesson.markdown ? (
+          <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
+        ) : isProblemLesson ? null : (
+          <div className="py-10 text-center text-[12.5px] text-ink-3">
+            <div className="text-[13.5px] font-semibold text-ink-1 mb-1.5">本文を準備中です</div>
+            この教材の本文はまだ登録されていません。 管理者が登録次第、 ここに表示されます。
+          </div>
+        )}
 
-      <div ref={endRef} aria-hidden="true" />
-      {onComplete ? (
-        <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
-          <div className="flex-1" />
-          {isCompleted ? (
-            <span className="inline-flex items-center gap-1 text-success text-[12px]">
-              <Check size={13} aria-hidden="true" />
-              完了済み
-            </span>
-          ) : (
-            <Button variant="accent" onClick={onComplete}>
-              <Check size={13} aria-hidden="true" />
-              完了にする
-            </Button>
-          )}
-        </div>
-      ) : null}
-    </div>
+        <div ref={endRef} aria-hidden="true" />
+        {onComplete ? (
+          <div className="flex gap-2.5 items-center pt-6 border-t border-border mt-8">
+            <div className="flex-1" />
+            {isCompleted ? (
+              <span className="inline-flex items-center gap-1 text-success text-[12px]">
+                <Check size={13} aria-hidden="true" />
+                完了済み
+              </span>
+            ) : (
+              <Button variant="accent" onClick={onComplete}>
+                <Check size={13} aria-hidden="true" />
+                完了にする
+              </Button>
+            )}
+          </div>
+        ) : null}
+      </div>
+      {afterContent ? <div className="mt-4 space-y-4">{afterContent}</div> : null}
+    </>
   );
 };
 

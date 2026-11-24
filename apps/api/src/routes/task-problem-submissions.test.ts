@@ -1096,8 +1096,9 @@ describe("問題の提出", () => {
           problems_passed: 1,
           problem_items: [
             expect.objectContaining({ id: "q01-add", state: "open" }),
-            expect.objectContaining({ id: "q02-sub", state: "submitted" }),
+            expect.objectContaining({ id: "q02-sub", state: "submitted", manual: true, refs }),
           ],
+          problems_manual: 1,
           problems: [
             {
               id: "q02-sub",
@@ -1108,6 +1109,7 @@ describe("問題の提出", () => {
               afterTitle: "計算の基礎",
               state: "submitted",
               refs,
+              manual: true,
             },
             {
               id: "q01-add",
@@ -1131,6 +1133,19 @@ describe("問題の提出", () => {
         { state: "submitted", source: "tests" },
       ],
     });
+    const mixed = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+    expect(mixed.status).toBe(200);
+    const { tasks: summaries } = await json<{ tasks: TaskSummary[] }>(mixed);
+    const summary = summaries.find((task) => task.id === TASK_ID);
+    expect(summary).toMatchObject({
+      problems_manual: 1,
+      problems: [
+        { id: "q02-sub", state: "submitted", manual: true },
+        { id: "q01-add", state: "submitted" },
+      ],
+    });
+    expect(summary?.problems?.[1]).not.toHaveProperty("manual");
+    expect(summary?.problem_items?.[0]).not.toHaveProperty("manual");
     const old = await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.10.1`, {
       token,
     });
@@ -1830,6 +1845,10 @@ describe("問題の提出", () => {
     );
     expect(listed.tasks.find((task) => task.id === TASK_ID)).toMatchObject({
       problems_manual: 2,
+      problem_items: [
+        { id: "q01-add", state: "submitted", manual: true },
+        { id: "q02-sub", state: "submitted", manual: true },
+      ],
       manual_passed: true,
       status: "passed",
     });

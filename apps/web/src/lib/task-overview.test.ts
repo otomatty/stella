@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   type ProblemTask,
   problemCellState,
-  problemStatementBody,
   splitProblems,
   submittedProblemCount,
   taskNextAction,
@@ -41,40 +40,6 @@ const task = (id: string, status: TaskSummary["status"] = "not-started"): TaskSu
 const overview = (...problems: TaskProblemItem[]): ProblemTask => ({
   ...task("current"),
   problem_items: problems,
-});
-
-describe("問題文", () => {
-  const title = "問1 税込価格を返す";
-  const example = "例: addTax(1000) → 1100";
-
-  it("題に続く補足だけを本文の前に出す", () => {
-    const intro = "（税率10%。税額の1円未満は切り捨て）";
-    expect(problemStatementBody(`# ${title}${intro}\n\n${example}`, title)).toEqual({
-      intro,
-      body: example,
-    });
-  });
-
-  it("題と同じ見出しを省き、本文の改行とインデントを保つ", () => {
-    const body = "    addTax(1000)\r\n    addTax(2000)";
-    expect(problemStatementBody(`# ${title}\r\n\r\n${body}`, title)).toEqual({
-      intro: "",
-      body,
-    });
-    expect(problemStatementBody(`# ${title}`, title)).toEqual({ intro: "", body: "" });
-  });
-
-  it("題と異なる見出しは全文を本文の前に出す", () => {
-    expect(problemStatementBody(`# 税率は10%\n\n${example}`, title)).toEqual({
-      intro: "税率は10%",
-      body: example,
-    });
-  });
-
-  it("先頭にレベル1の見出しがなければ本文をそのまま返す", () => {
-    const body = `## 例\n\n${example}`;
-    expect(problemStatementBody(body, title)).toEqual({ intro: "", body });
-  });
 });
 
 describe("問題一覧の課題の状態", () => {

@@ -32,6 +32,8 @@ export interface TaskProblemItem {
   label: string;
   source: string;
   state: ProblemStepState;
+  /** 管理者が過去の学習から引き継いだ問題にだけ付ける。 */
+  manual?: boolean;
   afterLessonId?: string;
   afterTitle?: string;
   stepLessonId?: string;

@@ -5,12 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Lesson } from "@/data/types";
 import { Check, ChevronRight, Circle, Clock, Lock, Video } from "@/lib/icons";
-import type { ProblemLesson } from "@/lib/problem-lesson";
 import {
   isTaskPassed,
   type ProblemTask,
   problemCellState,
-  problemStatementBody,
   splitProblems,
   submittedProblemCount,
   taskNextAction,
@@ -19,11 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 import { LessonMarkdown } from "./MarkdownSlides";
 import { OpenInVscodeButton } from "./OpenInVscodeButton";
-import { ProblemLessonHandoff } from "./TaskLessonHandoff";
 import { TaskReferences } from "./TaskReferences";
 
 const lessonRoute = "/stages/$stageId/lessons/$lessonId";
-const textLink = "font-semibold text-brand-ink hover:underline focus-visible:outline-ring";
 const heading = "text-[22px] font-black leading-tight";
 
 const cellStyles = {
@@ -36,30 +32,22 @@ const cellStyles = {
 function TaskProblemProgress({
   problems,
   currentId,
-  overview,
 }: {
   problems: readonly TaskProblemItem[];
   currentId?: string;
-  overview?: { stageId: string; lessonId: string };
 }) {
   const { drills, applied } = splitProblems(problems);
   const submitted = submittedProblemCount(problems);
   return (
-    <section aria-label={overview ? "この課題の進み具合" : "進み具合"} className="space-y-2">
+    <section aria-label="進み具合" className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
         <span>
-          {overview ? "この課題 ・ " : ""}
           提出{" "}
           <strong className="tabular-nums">
             {submitted} / {problems.length}
           </strong>{" "}
           問
         </span>
-        {overview ? (
-          <Link to={lessonRoute} params={overview} className={textLink}>
-            問題の一覧
-          </Link>
-        ) : null}
       </div>
       <ul
         aria-label={`${problems.length} 問中 ${submitted} 問を提出済み`}
@@ -97,7 +85,7 @@ function ProblemRow({ problem, stageId }: { problem: TaskProblemItem; stageId: s
   const open = problem.state === "open";
   const Icon = submitted ? Check : open ? Circle : Lock;
   const status = {
-    submitted: "提出済み",
+    submitted: problem.manual ? "引き継ぎ" : "提出済み",
     open: "解ける",
     "locked-video": problem.afterTitle ? `「${problem.afterTitle}」のあと` : "動画のあと",
     "locked-previous": "前の問題のあと",
@@ -255,80 +243,6 @@ export function TaskProblemsOverview({
         <div data-testid="lesson-doc" className="prose-lms">
           <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
         </div>
-      ) : null}
-    </div>
-  );
-}
-
-export function TaskProblemLesson({
-  lesson,
-  stageId,
-  step,
-  overview,
-  task,
-}: {
-  lesson: Lesson;
-  stageId: string;
-  step: ProblemLesson;
-  overview?: Lesson;
-  task?: ProblemTask;
-}) {
-  const problems = task?.problem_items;
-  const index = problems?.findIndex((problem) => problem.id === step.problem.id) ?? -1;
-  const item = problems?.[index];
-  const overviewParams = overview ? { stageId, lessonId: overview.id } : undefined;
-  const { intro, body } = problemStatementBody(lesson.markdown ?? "", lesson.title);
-
-  return (
-    <div className="space-y-6">
-      <header>
-        {overview && overviewParams ? (
-          <nav
-            aria-label="パンくず"
-            className="mb-2 flex flex-wrap gap-x-2 gap-y-1 text-xs text-ink-2"
-          >
-            <Link to={lessonRoute} params={overviewParams} className={textLink}>
-              {overview.title}
-            </Link>
-            {problems && index >= 0 ? (
-              <span>
-                ・ 問題 {index + 1} / {problems.length}
-              </span>
-            ) : null}
-          </nav>
-        ) : null}
-        <h1 className={heading}>{lesson.title}</h1>
-      </header>
-
-      <section aria-label="問題文">
-        <Card className="space-y-4 p-4 sm:p-5">
-          {intro || body ? (
-            <div data-testid="lesson-doc" className="prose-lms [&>:first-child]:mt-0">
-              {intro ? <p>{intro}</p> : null}
-              {body ? <LessonMarkdown>{body}</LessonMarkdown> : null}
-            </div>
-          ) : null}
-          {item ? (
-            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-ink-2">
-              書くファイル{" "}
-              <code className="rounded bg-sunken px-2 py-1 text-foreground wrap-anywhere">
-                {item.source}
-              </code>
-            </p>
-          ) : null}
-        </Card>
-      </section>
-
-      <TaskReferences refs={item?.refs ?? step.problem.refs} />
-
-      <ProblemLessonHandoff {...step} />
-
-      {problems ? (
-        <TaskProblemProgress
-          problems={problems}
-          currentId={step.problem.id}
-          overview={overviewParams}
-        />
       ) : null}
     </div>
   );

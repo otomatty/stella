@@ -207,6 +207,16 @@ async function stageTaskList(
           p?.status === "passed" || p?.status === "ai-passed",
           hashes.get(task.id),
         );
+        const manualResults = new Set(
+          saved
+            .filter(
+              (row) =>
+                row.source === "manual" &&
+                passed.has(row.problemId) &&
+                problems.some((problem) => problem.id === row.problemId),
+            )
+            .map((row) => row.problemId),
+        );
         const steps = gatedTaskIds.has(task.id)
           ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
           : undefined;
@@ -224,6 +234,7 @@ async function stageTaskList(
               afterTitle,
               state,
               refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
+              ...(state === "submitted" && manualResults.has(problem.id) ? { manual: true } : {}),
             };
           },
         );
@@ -241,6 +252,7 @@ async function stageTaskList(
               source: paths.source,
               // ステップの準備が済むまでは、動画で解放する問題を開ける扱いにしない。
               state: passed.has(problem.id) ? "submitted" : problem.after ? "locked-video" : "open",
+              ...(manualResults.has(problem.id) ? { manual: true } : {}),
               refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
             },
           ];
@@ -249,12 +261,7 @@ async function stageTaskList(
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
           problem_items: problemItems,
-          problems_manual: saved.filter(
-            (row) =>
-              row.source === "manual" &&
-              passed.has(row.problemId) &&
-              problems.some((p) => p.id === row.problemId),
-          ).length,
+          problems_manual: manualResults.size,
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };

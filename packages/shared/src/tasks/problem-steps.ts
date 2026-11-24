@@ -26,6 +26,8 @@ export interface TaskProblemStepSummary {
   afterTitle: string;
   state: ProblemStepState;
   refs: TaskRefSummary[];
+  /** 管理者が過去の学習から引き継いだ問題にだけ付ける。 */
+  manual?: boolean;
 }
 
 /** 問番号は教材の problems の位置、提出の順序はレッスン一覧の位置で決まります。 */

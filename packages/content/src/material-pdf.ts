@@ -50,9 +50,8 @@ export interface PdfTarget {
   lessonTitle: string;
   kind: PdfKind;
   /**
-   * 生成元テキスト。slides / doc は D1 lessons.markdown と同じ文字列、
-   * practice は practice.md 全文 (QuizSeed.sourceText)。
-   * lesson_revisions のスナップショットとも一致する。
+   * 生成元テキスト。slides / doc / task は D1 lessons.markdown の本文を使い、
+   * 問題レッスンだけは題名を見出しに足す。practice は practice.md 全文 (QuizSeed.sourceText)。
    */
   source: string;
   /** 本文から参照される画像。ハッシュと描画の両方に使う。 */
@@ -134,7 +133,11 @@ export function collectPdfTargets(
           source = lesson.markdown;
         } else if (lesson.type === "text" && lesson.markdown) {
           kind = stage.format === 2 && lesson.id.startsWith("task-") ? "task" : "doc";
-          source = lesson.markdown;
+          // 問題の題名は Web では画面の見出しにあり、PDF では本文に足す。
+          source =
+            stage.format === 2 && lesson.id.startsWith("problem-")
+              ? `# ${lesson.title}\n\n${lesson.markdown}`
+              : lesson.markdown;
         } else if (lesson.type === "quiz") {
           const quiz = manifest.quizzes.find(
             (q) => q.stageId === stage.id && q.lessonId === lesson.id,

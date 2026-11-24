@@ -482,6 +482,29 @@ describe("seed の書き込み行数", () => {
   }, 120_000);
 
   it(
+    "空本文のリビジョンは lessons に入る null を空文字列として照合する",
+    async () => {
+      const emptyLesson = "doc-0-1";
+      const id = stableUuid(`lesson:ses:${COURSE}:${emptyLesson}`);
+      const empty = await exportSql((manifest) => {
+        const stage = manifest.stages.find((entry) => entry.id === COURSE);
+        const lesson = stage?.sections?.flatMap((s) => s.lessons).find((l) => l.id === emptyLesson);
+        if (!lesson) throw new Error("変える教材が見つかりません");
+        lesson.markdown = "";
+      });
+      const revision = splitSqlStatements(empty).find(
+        (statement) =>
+          statement.startsWith("insert into lesson_revisions ") &&
+          statement.includes(`select '${id}',`),
+      );
+      expect(revision).toContain(
+        `from lessons l where l.id = '${id}' and coalesce(l.markdown, '') = ''`,
+      );
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
     "進捗の版を付けた動画4本だけ UUID が変わり、再 seed が旧動画と進捗を片付ける",
     async () => {
       const stageSlug = "devlab-ts-ch01";

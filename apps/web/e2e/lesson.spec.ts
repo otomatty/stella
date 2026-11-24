@@ -33,6 +33,7 @@ test("課題だけの単元は問題の一覧で提出状況と次の問題を�
   const tupleStageId = "135c4094-456c-5e74-a3fb-93876e7900e3";
   const tupleLessonId = "6d139d0b-2554-50c3-b6df-f856996856fe";
   let firstSubmitted = false;
+  let inherited = false;
   await page.route(`**/api/tasks/for-stage/${tupleStageId}`, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
     const response = await route.fetch();
@@ -43,7 +44,9 @@ test("課題だけの単元は問題の一覧で提出状況と次の問題を�
     if (task) {
       task.status = "not-started";
       for (const problem of task.problem_items ?? []) {
-        problem.state = firstSubmitted && problem.id === "q06-01-make-pair" ? "submitted" : "open";
+        const first = problem.id === "q06-01-make-pair";
+        problem.state = firstSubmitted && first ? "submitted" : "open";
+        problem.manual = first && inherited ? true : undefined;
       }
     }
     await route.fulfill({ response, json: { tasks } });
@@ -69,6 +72,10 @@ test("課題だけの単元は問題の一覧で提出状況と次の問題を�
   const firstProblem = problems.getByRole("listitem").filter({ hasText: "名前と数を、" });
   await expect(firstProblem).toContainText("提出済み");
   await expect(firstProblem.getByRole("link")).toHaveCount(0);
+  inherited = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(firstProblem).toContainText("引き継ぎ");
+  await expect(firstProblem).not.toContainText("提出済み");
 
   const tocButton = page.getByRole("button", { name: "教材の目次を開く" });
   const usesTocDrawer = await tocButton.isVisible();
@@ -114,18 +121,19 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   await page.goto(`/stages/${problemStageId}/lessons/${problemLessonId}`);
   const lesson = page.getByTestId("lesson-screen");
   const handoff = lesson.getByTestId("lesson-problem-handoff");
-  const open = handoff.getByRole("button", { name: "VS Code で開く" });
+  const open = lesson.getByRole("button", { name: "VS Code で開く", exact: true });
   const statement = lesson.getByTestId("lesson-doc");
   await expect(statement).toBeVisible();
   await expect(lesson.getByRole("heading", { level: 1 })).toHaveText("問1 税込価格を返す");
   await expect(statement.getByRole("heading")).toHaveCount(0);
   await expect(
-    statement.getByRole("paragraph").filter({ hasText: "（税率10%。税額の1円未満は切り捨て）" }),
+    statement.getByRole("paragraph").filter({ hasText: "税率10%。税額の1円未満は切り捨て" }),
   ).toBeVisible();
   await expect(statement).toContainText("例: addTax(1000) → 1100");
   await expect(handoff).toContainText("の動画を見ると解けます");
   await expect(open).toHaveCount(0);
-  await expect(lesson.getByRole("tab")).toHaveCount(0);
+  await expect(lesson.getByRole("tab", { name: "教材" })).toBeVisible();
+  await expect(lesson.getByRole("tab", { name: /^資料/ })).toBeVisible();
   await expect(lesson.getByRole("navigation", { name: "パンくず" })).toHaveCount(0);
   await expect(lesson.getByRole("link", { name: "問題の一覧", exact: true })).toHaveCount(0);
   await expect(lesson.getByText("src/q01-01-add-tax.ts", { exact: true })).toBeVisible();
@@ -148,6 +156,7 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   state = "open";
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(open).toBeVisible();
+  await expect(lesson.getByText("未提出", { exact: true })).toBeVisible();
   await open.scrollIntoViewIfNeeded();
   await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
   const savedProgress = await page.evaluate((id) => {
@@ -159,10 +168,14 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
 
   state = "submitted";
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(handoff).toContainText("提出済み");
-  await expect(open).toBeVisible();
-
-  await expect(lesson.getByRole("list", { name: "21 問中 1 問を提出済み" })).toBeVisible();
+  await expect(lesson.getByText("提出済み", { exact: true })).toBeVisible();
+  await expect(handoff).not.toContainText("提出済み");
+  await expect(
+    handoff.getByRole("button", { name: "VS Code で見直す", exact: true }),
+  ).toBeVisible();
+  await expect(open).toHaveCount(0);
+  await expect(handoff).toContainText("この課題の問題 1 / 21");
+  await expect(handoff).toContainText("あと 20 問で課題を提出し終えます");
   await expect(lesson.getByRole("link", { name: "問題の一覧", exact: true })).toHaveCount(0);
 
   if (usesTocDrawer) await tocButton.click();

@@ -369,6 +369,7 @@ function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
  * A」という取り残しを防ぐ (CMS が勝った場合はこの insert が no-op になり、CMS 側の
  * リビジョンが最新のまま)。残る極小の交錯パターンでも、次の seed が本文を正本へ
  * 戻すと同時にリビジョンも追い付くので恒久的な食い違いにはならない。
+ * 空本文は lessons に null で入るため、照合時だけ空文字列として扱う。
  * 照合した本文はその行から読む。本文を SQL に二度埋め込むと、出典の多い教材で D1 の
  * 1 文 100KB 制限を超える。クイズの履歴には解答を含む別の正本を使用する。
  */
@@ -395,7 +396,7 @@ function emitLessonRevision(
     [
       "insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at)",
       `select '${id}', coalesce((select max(r.revision) from lesson_revisions r where r.lesson_id = '${id}'), 0) + 1, '${hash}', ${snapshot}, 'seed', null, ${nowExpr()}`,
-      `from lessons l where l.id = '${id}'${guardLessonMarkdown ? ` and l.markdown = ${literal}` : ""}`,
+      `from lessons l where l.id = '${id}'${guardLessonMarkdown ? ` and coalesce(l.markdown, '') = ${literal}` : ""}`,
       `and coalesce((${latestHash}), '') <> '${hash}';`,
     ].join(" "),
   );
