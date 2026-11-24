@@ -179,9 +179,8 @@ export interface TaskGuideInput {
   /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
   problems?: ProblemState[];
   problemProgress?: { passed: number; total: number };
-  nextProblemReason?: string;
-  problemPreparationError?: string;
-  unpreparedProblems?: ReadonlySet<string>;
+  /** 古い配布の控えを書き出せなかったとき。 */
+  releaseError?: string;
   os: OsName;
 }
 
@@ -360,18 +359,17 @@ function problemListHtml(
   items: readonly ProblemState[],
   current: ProblemState | undefined,
   progress?: TaskGuideInput["problemProgress"],
-  unprepared?: ReadonlySet<string>,
 ): string {
   const submitted = progress?.passed ?? items.filter((item) => item.status === "submitted").length;
   const total = progress?.total ?? items.length;
   const rows = items
     .map((item) => {
-      const label = PROBLEM_STATUS_LABELS[item.status];
       const title = escapeHtml(item.title);
-      const file = unprepared?.has(item.id)
-        ? title
-        : link("stella.openTaskFile", [root, item.source], title);
-      return `<li${item === current ? ' class="current" aria-current="step"' : ""}>${file} <code>${escapeHtml(item.source)}</code> <span class="problem-status ${item.status}">${label}</span></li>`;
+      const file = link("stella.openTaskFile", [root, item.source], title);
+      const status = item.lockReason
+        ? `<span class="problem-status locked">🔒 ${escapeHtml(item.lockReason)}</span>`
+        : `<span class="problem-status ${item.status}">${PROBLEM_STATUS_LABELS[item.status]}</span>`;
+      return `<li${item === current ? ' class="current" aria-current="step"' : ""}>${file} <code>${escapeHtml(item.source)}</code> ${status}</li>`;
     })
     .join("");
   return [
@@ -387,29 +385,28 @@ function buildProblemGuideHtml(input: TaskGuideInput, items: ProblemState[]): st
   const current = nextUnsubmittedProblem(items);
   let card =
     '<div class="now-card passed"><p class="now-title">✓ 全部の問題を提出しました</p></div>';
-  if (input.nextProblemReason || input.problemPreparationError) card = "";
-  if (current && !input.unpreparedProblems?.has(current.id)) {
+  if (current) {
     const source = link(
       "stella.openTaskFile",
       [root, current.source],
       `<code>${escapeHtml(current.source)}</code>`,
     );
     const checked = current.status === "local-passed";
-    const action = checked
-      ? "手元の確認は通っています。「提出する」を押すと"
-      : `${source} を書いて保存したら提出します。確認が通れば、そのまま`;
-    const nextAction = input.manifest.problemSteps
-      ? "送ります。解ける問題が増えたらお知らせします。"
-      : `送って${checked ? "、" : ""}次の問題を開きます。`;
-    const body = action + nextAction;
+    const body = current.lockReason
+      ? escapeHtml(current.lockReason)
+      : (checked
+          ? "手元の確認は通っています。「提出する」を押すと"
+          : `${source} を書いて保存したら提出します。確認が通れば、そのまま`) +
+        (input.manifest.problemSteps
+          ? "送ります。"
+          : `送って${checked ? "、" : ""}次の問題を開きます。`);
     card = `<div class="now-card"><p class="now-title">いまの問題: ${escapeHtml(current.title)}</p><p>${body}</p><p class="actions">${submitButton(root, current.id)} ${consultLink(root, current.id)}</p></div>`;
   }
   return [
     '<section class="guide" aria-label="この課題の進め方">',
     card,
-    input.nextProblemReason ? `<p>${escapeHtml(input.nextProblemReason)}</p>` : "",
-    input.problemPreparationError ? `<p>${escapeHtml(input.problemPreparationError)}</p>` : "",
-    problemListHtml(root, items, current, input.problemProgress, input.unpreparedProblems),
+    input.releaseError ? `<p>${escapeHtml(input.releaseError)}</p>` : "",
+    problemListHtml(root, items, current, input.problemProgress),
     helpLine(input),
     "</section>",
   ].join("\n");

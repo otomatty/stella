@@ -21,11 +21,10 @@ import {
   problemFileToOpen,
   problemForPath,
   problemWorkStatus,
-  recordProblemSubmission,
   type ProblemResults,
   type ProblemState,
 } from "./task-problems.js";
-import { installTask, protectedTaskFiles } from "./task-distribution.js";
+import { installTask } from "./task-distribution.js";
 import { loadTaskProblems as loadEditorTaskProblems } from "./task-update-guard.js";
 import type { SubmissionNotes } from "./task-submission.js";
 
@@ -452,19 +451,21 @@ describe("問題の段階", () => {
     ],
   };
 
-  it("サーバーの state で open と submitted を選び、ロックの理由を出す", async () => {
+  it("サーバーの state で全問を出し、ロックには理由を付ける", async () => {
     const root = await makeRoot();
     vi.mocked(apiRequest).mockResolvedValueOnce(server);
     const problems = await loadTaskProblems(root, staged);
     expect(problems.states.map(({ id, status }) => [id, status])).toEqual([
       ["q01-add", "submitted"],
       ["q02-sub", "not-submitted"],
+      ["q03-mult", "not-submitted"],
+      ["q04-div", "not-submitted"],
     ]);
-    expect(problems.nextReason).toBe("この問題を提出すると、次の問題が出ます");
-    expect(problems.blocked.get("q04-div")).toBe("次の問題は「割り算」の動画を見ると出ます");
-    expect(problemFileToOpen(problems.states, "q01-add")).toBe("src/q01-add.ts");
-    expect(problemFileToOpen(problems.states, "q04-div")).toBe("src/q02-sub.ts");
-    expect(problemFileToOpen(problems.states.slice(0, 1), "q04-div")).toBeUndefined();
+    expect(problems.blocked.get("q03-mult")).toBe("この問題を提出すると、次の問題が出ます");
+    expect(problems.blocked.get("q04-div")).toBe("「割り算」を終えると解けます");
+    expect(problems.states.find(({ id }) => id === "q02-sub")?.lockReason).toBeUndefined();
+    expect(problemFileToOpen(problems.states, "q04-div")).toBe("src/q04-div.ts");
+    expect(problems.progress).toEqual({ passed: 1, total: 4 });
   });
 
   function problemBundle(
@@ -492,48 +493,61 @@ describe("問題の段階", () => {
     };
   }
 
-  it("ハードリンクが使えなくても提出後に次の問題を受け取れる", async () => {
-    vi.mocked(link).mockRejectedValue(
-      Object.assign(new Error("hard link unsupported"), { code: "ENOTSUP" }),
+  async function deferSecondProblem(root: string, bundle: TaskBundle) {
+    await rm(path.join(root, "src/q02-sub.ts"));
+    await rm(path.join(root, "tests/q02-sub.test.ts"));
+    const receipt = JSON.parse(
+      await readFile(path.join(root, ".stella/distribution.json"), "utf8"),
+    ) as { files: Record<string, string> };
+    delete receipt.files["src/q02-sub.ts"];
+    delete receipt.files["tests/q02-sub.test.ts"];
+    await writeFile(
+      path.join(root, ".stella/distribution.json"),
+      JSON.stringify({
+        ...receipt,
+        deferred: { "src/q02-sub.ts": null, "tests/q02-sub.test.ts": null },
+      }),
     );
+    vi.mocked(apiRequest).mockImplementation(async (url: unknown) =>
+      String(url).includes("problem-results") ? server : { bundle },
+    );
+  }
+
+  it("問題の状態を読むと、控えてあったファイルを書き出して deferred を外す", async () => {
     const bundle = problemBundle(staged);
-    const root = await installTask(await makeRoot(), bundle, {
-      visibleProblems: new Set(["q01-add"]),
-    });
-    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockResolvedValueOnce({ bundle });
+    const root = await installTask(await makeRoot(), bundle);
+    await deferSecondProblem(root, bundle);
 
-    const result = await loadTaskProblems(root, staged, { afterSubmission: true });
+    const result = await loadTaskProblems(root, staged);
 
-    expect(result.preparationError).toBeUndefined();
+    expect(result.releaseError).toBeUndefined();
     expect(await readFile(path.join(root, "src/q02-sub.ts"), "utf8")).toBe("export const sub = 1;");
     expect(await readFile(path.join(root, "tests/q02-sub.test.ts"), "utf8")).toBe("test 2");
+    expect(
+      JSON.parse(await readFile(path.join(root, ".stella/distribution.json"), "utf8")).deferred,
+    ).toBeUndefined();
   });
 
-  it("提出後の次問追加も課題内の未保存文書があれば止める", async () => {
+  it("控えの書き出しも課題内の未保存文書があれば止め、保存後に続ける", async () => {
     const bundle = problemBundle(staged);
-    const root = await installTask(await makeRoot(), bundle, {
-      visibleProblems: new Set(["q01-add"]),
-    });
+    const root = await installTask(await makeRoot(), bundle);
+    await deferSecondProblem(root, bundle);
     const nextTest = path.join(root, "tests/q02-sub.test.ts");
     documents.push({
       isDirty: true,
       uri: { scheme: "file", fsPath: path.join(root, "src/q01-add.ts") },
     });
-    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockResolvedValueOnce({ bundle });
 
-    const blocked = await loadEditorTaskProblems(root, staged, { afterSubmission: true });
-    expect(blocked.preparationError).toContain("ファイルを保存してから");
+    const blocked = await loadEditorTaskProblems(root, staged);
+    expect(blocked.releaseError).toContain("ファイルを保存してから");
     await expect(readFile(nextTest)).rejects.toMatchObject({ code: "ENOENT" });
 
     documents.length = 0;
-    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockResolvedValueOnce({ bundle });
-    expect(
-      (await loadEditorTaskProblems(root, staged, { afterSubmission: true })).preparationError,
-    ).toBeUndefined();
+    expect((await loadEditorTaskProblems(root, staged)).releaseError).toBeUndefined();
     expect(await readFile(nextTest, "utf8")).toBe("test 2");
   });
 
-  it("全問配布から段階的配布に変わっても、第2問を更新して第1問の提出を照合できる", async () => {
+  it("教材の更新で第2問のテストを差し替え、第1問の提出を照合できる", async () => {
     const training = await makeRoot();
     const oldBundle = problemBundle(manifest);
     const root = await installTask(training, oldBundle);
@@ -550,7 +564,7 @@ describe("問題の段階", () => {
     const q02Test = "tests/q02-sub.test.ts";
     await writeFile(path.join(root, q02Source), "export const sub = 2;");
 
-    await installTask(training, updated, { visibleProblems: new Set(["q01-add"]) });
+    await installTask(training, updated);
 
     expect(await readFile(path.join(root, q02Source), "utf8")).toBe("export const sub = 2;");
     expect(await readFile(path.join(root, q02Test), "utf8")).toBe("new test 2");
@@ -581,55 +595,26 @@ describe("問題の段階", () => {
     }
   });
 
-  it("未配布のテストを書かずに、既存の提出照合を通せる", async () => {
-    const training = await makeRoot();
-    const bundle = problemBundle(staged);
-    const root = await installTask(training, bundle, { visibleProblems: new Set(["q01-add"]) });
-    const run = await passedRun(root, "q01-add");
-    const { references } = await protectedTaskFiles(
-      root,
-      staged,
-      ["tests/q01-add.test.ts"],
-      "q01-add",
-    );
-    run.protected.push(...references);
-    run.steps.unshift({ id: "deps", status: "skipped", label: "準備", summary: "", durationMs: 0 });
-    await mkdir(path.join(root, ".stella/problem-runs"));
-    await writeFile(path.join(root, ".stella/problem-runs/q01-add.json"), JSON.stringify(run));
-    const input = await prepareProblemSubmission(root, "q01-add", []);
-    expect((await verifyTaskSubmission(input, bundle)).check).toEqual({
-      matched: true,
-      reasons: [],
-    });
-    await expect(readFile(path.join(root, "tests/q02-sub.test.ts"))).rejects.toMatchObject({
-      code: "ENOENT",
-    });
-    await writeFile(path.join(root, "tests/q01-add.test.ts"), "modified");
-    await expect(prepareProblemSubmission(root, "q01-add", [])).rejects.toThrow(
-      "確認後にファイルが変わっています",
-    );
-  });
-
-  it("オフラインでは同じ版の前回の状態と手元の提出を使う", async () => {
+  it("オフラインでは控えを読まず、ロックなしで全問を出す", async () => {
     const root = await makeRoot();
-    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockRejectedValueOnce(new Error("offline"));
-    await loadTaskProblems(root, staged);
-    await recordProblemSubmission(root, hash, "q02-sub");
+    await writeFile(
+      path.join(root, ".stella/problem-steps.json"),
+      JSON.stringify({ contentHash: hash, server }),
+    );
+    await writeFile(
+      path.join(root, ".stella/submitted-q02-sub.json"),
+      JSON.stringify({ contentHash: hash }),
+    );
+    vi.mocked(apiRequest).mockRejectedValue(new Error("offline"));
     const problems = await loadTaskProblems(root, staged);
-    expect(problems.states.map(({ id, status }) => [id, status])).toEqual([
-      ["q01-add", "submitted"],
-      ["q02-sub", "submitted"],
+    expect(problems.states.map(({ id }) => id)).toEqual([
+      "q01-add",
+      "q02-sub",
+      "q03-mult",
+      "q04-div",
     ]);
-    expect(problems.blocked.has("q03-mult")).toBe(true);
-  });
-
-  it("提出記録だけがある場合は提出済みを出し、どちらの記録もない場合は全部出す", async () => {
-    const root = await makeRoot();
-    vi.mocked(apiRequest)
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockRejectedValueOnce(new Error("offline"));
-    expect((await loadTaskProblems(root, staged)).states).toHaveLength(4);
-    await recordProblemSubmission(root, hash, "q01-add");
-    expect((await loadTaskProblems(root, staged)).states).toEqual([state("q01-add", "submitted")]);
+    expect(problems.blocked.size).toBe(0);
+    expect(problems.states.every(({ status }) => status === "not-submitted")).toBe(true);
+    expect(problems.progress).toEqual({ passed: 0, total: 4 });
   });
 });

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { RunResult } from "@stella/shared/tasks/run-result";
@@ -195,7 +195,7 @@ describe("ステータスバーの課題のボタン", () => {
     expect(state.items[2]?.visible).toBe(false);
   });
 
-  it("段階がある課題では問題が解放されるまで提出を隠し、ウィンドウに戻ると更新する", async () => {
+  it("段階がある課題はロック中でも提出を出し、ウィンドウに戻ると件数を更新する", async () => {
     await writeFile(
       path.join(root, ".stella/task.json"),
       JSON.stringify({
@@ -221,14 +221,14 @@ describe("ステータスバーの課題のボタン", () => {
     state.activeFile = path.join(root, "index.html");
     registerTaskStatus(context);
     await state.editorListener?.(editor(state.activeFile));
-    expect(state.items[0]?.visible).toBe(false);
+    expect(state.items[0]?.visible).toBe(true);
     expect(state.items[1]?.visible).toBe(true);
     watched = true;
     state.focusListener?.({ focused: true });
     await vi.waitFor(() => expect(state.items[0]?.visible).toBe(true));
   });
 
-  it("課題内の未保存ファイルを保存すると、問題を用意して提出を再表示する", async () => {
+  it("古い deferred の書き出しが未保存で止まったら提出を隠し、保存すると出す", async () => {
     await rm(root, { recursive: true });
     const manifest: TaskManifest = {
       schemaVersion: 1,
@@ -254,7 +254,21 @@ describe("ステータスバーの課題のボタン", () => {
         }).map(([rel, data]) => [rel, Buffer.from(data).toString("base64")]),
       ),
     };
-    await installTask(workspace, bundle, { visibleProblems: new Set() });
+    const installed = await installTask(workspace, bundle);
+    await rm(path.join(installed, "src/q01.ts"));
+    await rm(path.join(installed, "tests/q01.test.ts"));
+    const receipt = JSON.parse(
+      await readFile(path.join(installed, ".stella/distribution.json"), "utf8"),
+    ) as { files: Record<string, string> };
+    delete receipt.files["src/q01.ts"];
+    delete receipt.files["tests/q01.test.ts"];
+    await writeFile(
+      path.join(installed, ".stella/distribution.json"),
+      JSON.stringify({
+        ...receipt,
+        deferred: { "src/q01.ts": null, "tests/q01.test.ts": null },
+      }),
+    );
     apiRequest.mockImplementation(async (...args: unknown[]) =>
       typeof args[0] === "string" && args[0].startsWith("/api/tasks/bundle")
         ? { bundle }

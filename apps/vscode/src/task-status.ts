@@ -172,7 +172,7 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
       const problems = await loadTaskProblems(root, loaded.manifest);
       if (ticket !== generation) return;
       problemProgress = problems.progress;
-      problemActionsAvailable = problems.states.some(({ id }) => !problems.unprepared.has(id));
+      problemActionsAvailable = !problems.releasePending;
       notifyProblemTaskOpened(root);
     } else if (loaded.ok && loaded.manifest.problems?.length) {
       notifyProblemTaskOpened(root);
@@ -224,7 +224,7 @@ async function refreshProblemActions(afterSave = false): Promise<void> {
   setCurrentTask({
     ...task,
     problemProgress: problems.progress,
-    problemActionsAvailable: problems.states.some(({ id }) => !problems.unprepared.has(id)),
+    problemActionsAvailable: !problems.releasePending,
   });
   notifyProblemTaskOpened(task.root);
 }

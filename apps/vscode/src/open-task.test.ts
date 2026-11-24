@@ -583,10 +583,10 @@ describe("学習フォルダーを唯一のフォルダーにする", () => {
 
 describe("課題を開いた画面", () => {
   it.each([
-    ["q01", "q01", undefined],
-    ["q02", "q02", undefined],
-    ["q03", "q02", "次の問題は「値と型」の動画を見ると出ます"],
-  ])("問題 %s のリンクをウィンドウの切り替え先で開く", async (requested, opened, notice) => {
+    ["q01", "q01"],
+    ["q02", "q02"],
+    ["q03", "q03"],
+  ])("問題 %s のリンクをウィンドウの切り替え先で開く", async (requested, opened) => {
     const problems = ["q01", "q02", "q03"].map((id) => ({ id, title: id }));
     const problemManifest = {
       ...manifest,
@@ -623,11 +623,16 @@ describe("課題を開いた画面", () => {
     );
     await openDistributedTask(context, taskId, requested);
     expect(openedFolder()).toBeDefined();
-    expect((await readdir(path.join(taskRoot(), "src"))).sort()).toEqual(["q01.ts", "q02.ts"]);
+    expect((await readdir(path.join(taskRoot(), "src"))).sort()).toEqual([
+      "q01.ts",
+      "q02.ts",
+      "q03.ts",
+    ]);
     expect((await readdir(path.join(taskRoot(), "tests"))).sort()).toEqual([
       "index.test.js",
       "q01.test.ts",
       "q02.test.ts",
+      "q03.test.ts",
     ]);
     registerTaskOpening(context);
     state.folders = [training];
@@ -636,19 +641,17 @@ describe("課題を開いた画面", () => {
       { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src", `${opened}.ts`) } },
       expect.anything(),
     );
-    if (notice) expect(state.showWarningMessage).toHaveBeenCalledWith(notice);
-    else expect(state.showWarningMessage).not.toHaveBeenCalled();
+    expect(state.showWarningMessage).not.toHaveBeenCalled();
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 
-  it("準備後に動画を見終えたら、ウィンドウを開くときに問題のファイルを足す", async () => {
+  it("ロック中でも最初の配布で問題のファイルを書き、指定したファイルを開く", async () => {
     const problemManifest = {
       ...manifest,
       problems: [{ id: "q01", title: "問1" }],
       problemSteps: true as const,
       submit: { files: ["src/**/*.ts"] },
     };
-    let videoCompleted = false;
     state.apiRequest.mockImplementation(async (url: string) =>
       url.includes("problem-results")
         ? {
@@ -656,13 +659,7 @@ describe("課題を開いた画面", () => {
             totalProblems: 1,
             passedProblems: 0,
             taskPassed: false,
-            problems: [
-              {
-                id: "q01",
-                state: videoCompleted ? "open" : "locked-video",
-                afterTitle: "導入",
-              },
-            ],
+            problems: [{ id: "q01", state: "locked-video", afterTitle: "導入" }],
           }
         : {
             bundle: {
@@ -680,22 +677,18 @@ describe("課題を開いた画面", () => {
           },
     );
     await openDistributedTask(context, taskId, "q01");
-    await expect(readFile(path.join(taskRoot(), "src/q01.ts"))).rejects.toMatchObject({
-      code: "ENOENT",
-    });
-    videoCompleted = true;
+    expect(await readFile(path.join(taskRoot(), "src/q01.ts"), "utf8")).toBe("starter");
+    expect(await readFile(path.join(taskRoot(), "tests/q01.test.ts"), "utf8")).toBe("test");
     registerTaskOpening(context);
     state.folders = [training];
     await focusWindow();
-    expect(await readFile(path.join(taskRoot(), "src/q01.ts"), "utf8")).toBe("starter");
-    expect(await readFile(path.join(taskRoot(), "tests/q01.test.ts"), "utf8")).toBe("test");
     expect(state.showTextDocument).toHaveBeenCalledWith(
       { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src/q01.ts") } },
       expect.anything(),
     );
   });
 
-  it("最初の動画を見ていない場合はファイルを開かず課題文を出す", async () => {
+  it("ロック中の問題もファイルを開いて課題文を出す", async () => {
     const problemManifest = {
       ...manifest,
       problems: [{ id: "q01", title: "問1" }],
@@ -727,8 +720,12 @@ describe("課題を開いた画面", () => {
           },
     );
     await openDistributedTask(context, taskId, "q01");
-    expect(state.showTextDocument).not.toHaveBeenCalled();
-    expect(state.showWarningMessage).toHaveBeenCalledWith("次の問題は「導入」の動画を見ると出ます");
+    expect(await readFile(path.join(taskRoot(), "src/q01.ts"), "utf8")).toBe("starter");
+    expect(state.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src/q01.ts") } },
+      expect.anything(),
+    );
+    expect(state.showWarningMessage).not.toHaveBeenCalled();
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 

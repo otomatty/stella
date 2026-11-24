@@ -422,7 +422,7 @@ describe("課題のテストビュー", () => {
     expect(children(items.get(root)).map((item) => item.label)).toEqual([sampleFile]);
   });
 
-  it("段階がある課題では解ける問題と提出済みの問題のテスト結果だけを復元する", async () => {
+  it("段階がある課題では控えがあっても全問のテスト結果を復元する", async () => {
     await savePrevious(
       problemRun("q01", [testCase("提出済み", "tests/q01.test.ts")]),
       problemRun("q02", [testCase("解ける", "tests/q02.test.ts")]),
@@ -465,6 +465,7 @@ describe("課題のテストビュー", () => {
     expect(children(items.get(root)).map((item) => item.label)).toEqual([
       "q01.test.ts",
       "q02.test.ts",
+      "q03.test.ts",
     ]);
   });
 

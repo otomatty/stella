@@ -591,28 +591,34 @@ describe("stripLeadingTitle", () => {
   });
 });
 
-it("段階がある課題の進め方は解ける問題だけを出し、次の動画を案内する", () => {
+it("段階がある課題の進め方は全問を出し、ロック中は鍵と理由を付ける", () => {
   const manifest: TaskManifest = {
     ...nodeManifest,
     problemSteps: true,
     problems: [
       { id: "q01", title: "最初の問題" },
-      { id: "q02", title: "まだ見せない題" },
+      { id: "q02", title: "まだ解けない題" },
     ],
   };
   const shared = guide({ manifest, problemProgress: { passed: 0, total: 2 } });
-  const nextProblemReason = "次の問題は「変数と定数」の動画を見ると出ます";
-  const waiting = buildTaskGuideHtml({ ...shared, problems: [], nextProblemReason });
-  expect(waiting).toContain(nextProblemReason);
-  expect(waiting).not.toContain("全部の問題を提出しました");
-  expect(waiting).not.toContain("command:stella.submitTask");
-  const open = buildTaskGuideHtml({
+  const lockReason = "「変数と定数」を終えると解けます";
+  const html = buildTaskGuideHtml({
     ...shared,
-    problems: [{ id: "q01", title: "最初の問題", source: "src/q01.ts", status: "not-submitted" }],
-    nextProblemReason,
+    problems: [
+      { id: "q01", title: "最初の問題", source: "src/q01.ts", status: "not-submitted" },
+      {
+        id: "q02",
+        title: "まだ解けない題",
+        source: "src/q02.ts",
+        status: "not-submitted",
+        lockReason,
+      },
+    ],
   });
-  expect(open).toContain("最初の問題");
-  expect(open).not.toContain("まだ見せない題");
-  expect(open).not.toContain("src/q02.ts");
-  expect(commandArgs(open, "stella.submitTask")).toEqual([[shared.root, "q01"]]);
+  expect(html).toContain("最初の問題");
+  expect(html).toContain("まだ解けない題");
+  expect(html).toContain(`🔒 ${lockReason}`);
+  expect(html).toContain("src/q02.ts");
+  expect(commandArgs(html, "stella.submitTask")).toEqual([[shared.root, "q01"]]);
+  expect(html).toContain('aria-label="2 問中 0 問を提出済み"');
 });
