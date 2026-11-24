@@ -5,12 +5,17 @@
  * 評価器の前でフィルタする — DEV_MODE でも未割り当ての専用星は出さない。
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, exists, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { isIslandWithoutRequirements } from "@stella/shared/skill-map/islands";
 
 import type { Db } from "../db/client.js";
 import { enrollments, effectiveStageGrants, stages } from "../db/schema.js";
+import {
+  effectiveGuidanceColumns,
+  firstGuidanceBy,
+  guidancePriority,
+} from "./stage-grant-guidance.js";
 
 export type StageAudience = "catalog" | "granted";
 
@@ -45,13 +50,49 @@ export function hasNoIslandPrerequisites(row: {
   );
 }
 
-/** caller に割り当てられた `audience = granted` ステージ id。 */
-export async function loadGrantedStageIds(db: Db, profileId: string): Promise<Set<string>> {
+/** 実効の割り当てと、公開中で読める受講登録がある Extra を受講者向けに読む。 */
+export async function loadLearnerExtraStages(db: Db, profileId: string) {
+  const readableEnrollment = db
+    .select({ exists: sql`1` })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.userId, profileId),
+        eq(enrollments.stageId, stages.id),
+        inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+      ),
+    );
   const rows = await db
-    .select({ stageId: effectiveStageGrants.stageId })
-    .from(effectiveStageGrants)
-    .where(eq(effectiveStageGrants.profileId, profileId));
-  return new Set(rows.map((r) => r.stageId));
+    .select({
+      stage_id: stages.id,
+      title: stages.title,
+      category: stages.category,
+      status: stages.status,
+      ...effectiveGuidanceColumns,
+    })
+    .from(stages)
+    .leftJoin(
+      effectiveStageGrants,
+      and(
+        eq(effectiveStageGrants.stageId, stages.id),
+        eq(effectiveStageGrants.profileId, profileId),
+      ),
+    )
+    .where(
+      and(
+        eq(stages.audience, "granted"),
+        or(
+          isNotNull(effectiveStageGrants.profileId),
+          and(eq(stages.status, "published"), exists(readableEnrollment)),
+        ),
+      ),
+    )
+    .orderBy(stages.title, stages.id, ...guidancePriority);
+  return firstGuidanceBy(rows, (row) => row.stage_id);
+}
+
+export async function loadGrantedStageIds(db: Db, profileId: string): Promise<Set<string>> {
+  return new Set((await loadLearnerExtraStages(db, profileId)).keys());
 }
 
 /**
@@ -115,19 +156,20 @@ export function filterStagesByAudience<T extends AudienceStageRow>(
 }
 
 /**
- * 親 slug が残った行に無い granted 星を落とす (島フィルタ後の孤児)。
+ * 親 slug が残った行に無い未受講の granted 星を落とす (島フィルタ後の孤児)。
  * 表示条件の無い島の前提なしの星は根として残す。
  * granted どうしの多段の鎖では、直接の親が同じ処理で落ちた子も残さない。
  * 落とすものが無くなるまで繰り返す。catalog は常に残す。
  */
 export function dropOrphanGrantedStages<T extends AudienceStageRow & { category?: string | null }>(
   rows: T[],
+  enrolledStageIds?: ReadonlySet<string>,
 ): T[] {
   let current = rows;
   for (;;) {
     const slugSet = new Set(current.map((row) => row.slug));
     const next = current.filter((row) => {
-      if (isCatalogAudience(row.audience)) return true;
+      if (isCatalogAudience(row.audience) || enrolledStageIds?.has(row.id)) return true;
       if (hasNoIslandPrerequisites(row)) return true;
       const parent = parentSlugFromRow(row);
       return parent !== undefined && slugSet.has(parent);

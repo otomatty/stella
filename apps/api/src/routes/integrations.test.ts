@@ -812,12 +812,24 @@ describe("外部連携の境界 (実 SQLite)", () => {
     const completion = "/api/certificates/completion/extra";
     const started = await request(app, env, completion, { token: studentToken });
     expect(await started.json()).toMatchObject({ completion: { stage_id: "extra" } });
-    const unstarted = await request(app, env, completion, {
-      token: await signAccessToken(SECRET, "outside", "outside@example.test"),
-    });
+    const outsideToken = await signAccessToken(SECRET, "outside", "outside@example.test");
+    const unstarted = await request(app, env, completion, { token: outsideToken });
     expect(await unstarted.json()).toEqual({ completion: null });
-    const mine = await request(app, env, "/api/stage-grants/mine", { token: studentToken });
-    expect(await mine.json()).toEqual({ stages: [] });
+    const mine = "/api/stage-grants/mine";
+    const startedGuidance = await request(app, env, mine, { token: studentToken });
+    expect(await startedGuidance.json()).toMatchObject({
+      stages: [
+        {
+          stage_id: "extra",
+          status: "in-progress",
+          source_name: null,
+          due_at: null,
+          message: null,
+        },
+      ],
+    });
+    const unstartedGuidance = await request(app, env, mine, { token: outsideToken });
+    expect(await unstartedGuidance.json()).toEqual({ stages: [] });
     expect(db.sqlite.prepare("select count(*) n from enrollments").get()?.n).toBe(1);
     expect(db.sqlite.prepare("select count(*) n from profiles").get()?.n).toBe(4);
     expect((await write(a.token, "members/inside", undefined, "DELETE")).status).toBe(404);

@@ -462,18 +462,24 @@ export function StageGrantEditor({
         key={`${epoch}:${stageId}`}
         stageId={stageId}
         summary={page.guidance_summary}
-        count={page.counts.assigned}
+        count={page.manual_assigned_count ?? 0}
         pending={changeCount > 0}
         disabled={loading || saving || guidanceBusy || error !== null}
         onBusy={(busy) => setGuidanceSaveCount((count) => Math.max(0, count + (busy ? 1 : -1)))}
-        onSaved={(guidance) => {
+        onSaved={(guidance, updated) => {
           setPage((current) =>
-            current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,
+            current
+              ? {
+                  ...current,
+                  manual_assigned_count: updated,
+                  guidance_summary: { uniform: true, guidance: updated > 0 ? guidance : null },
+                }
+              : null,
           );
           setLearners((current) =>
-            current.map((row) => (row.assigned ? { ...row, guidance } : row)),
+            current.map((row) => (row.sources.manual && updated > 0 ? { ...row, guidance } : row)),
           );
-          toast.success("案内を保存しました");
+          toast.success(`${updated} 人の案内を保存しました`);
           setReloadTick((n) => n + 1);
           onSaved();
         }}
@@ -642,29 +648,34 @@ function ExemptionField({
   }
   const name = view.baseline.display_name;
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={control.checked}
-      aria-label={`${name}の前提を免除`}
-      disabled={!control.enabled || saving}
-      onClick={() => onExempted(view.baseline, !control.checked)}
-      className={cn(
-        "relative inline-flex shrink-0 items-center rounded-full border transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "disabled:cursor-not-allowed disabled:opacity-40",
-        tall ? "h-11 w-14" : "h-7 w-12",
-        control.checked && control.enabled ? "border-primary bg-primary" : "border-border bg-muted",
-      )}
-    >
-      <span
-        aria-hidden="true"
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={control.checked}
+        aria-label={`${name}の前提を免除`}
+        disabled={!control.enabled || saving}
+        onClick={() => onExempted(view.baseline, !control.checked)}
         className={cn(
-          "inline-block size-5 rounded-full bg-card shadow transition-transform",
-          control.checked ? (tall ? "translate-x-7" : "translate-x-5") : "translate-x-1",
+          "relative inline-flex shrink-0 items-center rounded-full border transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "disabled:cursor-not-allowed disabled:opacity-40",
+          tall ? "h-11 w-14" : "h-7 w-12",
+          control.checked && control.enabled
+            ? "border-primary bg-primary"
+            : "border-border bg-muted",
         )}
-      />
-    </button>
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "inline-block size-5 rounded-full bg-card shadow transition-transform",
+            control.checked ? (tall ? "translate-x-7" : "translate-x-5") : "translate-x-1",
+          )}
+        />
+      </button>
+      {control.note ? <span className="text-[12px] text-ink-3">{control.note}</span> : null}
+    </div>
   );
 }
 

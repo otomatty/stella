@@ -314,6 +314,16 @@ const mockDb = {
     if (table === "certificates") {
       return selectWhereOnly(async (where) => readCertificateRows(where));
     }
+    if (table === "effective_stage_unlocks" && keys.includes("groupName")) {
+      return selectWhereOnly(async (where) =>
+        (await unlockSelect(where)).map(({ userId, via }) => ({
+          profileId: userId,
+          via,
+          groupId: null,
+          groupName: null,
+        })),
+      );
+    }
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
     }

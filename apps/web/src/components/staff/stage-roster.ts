@@ -26,7 +26,12 @@ export type RosterMark = "追加" | "外す" | "免除" | "免除を外す";
 
 export type ExemptionControl =
   | { kind: "text"; label: "前提を完了済み" | "腕試しで解放済み" }
-  | { kind: "switch"; checked: boolean; enabled: boolean };
+  | {
+      kind: "switch";
+      checked: boolean;
+      enabled: boolean;
+      note?: "グループで免除しています" | "外すと手動の免除だけが外れます";
+    };
 
 export interface StageRosterView {
   id: string;
@@ -66,35 +71,48 @@ export function effectiveRoster(row: StageRosterRow, change: StageRosterChange |
   const manual = change?.manual ?? row.sources.manual;
   const grouped = row.sources.groups.length > 0;
   const assigned = manual || grouped;
+  const manualExempted =
+    assigned && change?.manual !== false && (change?.exempted ?? row.exemption_sources.manual);
   return {
     assigned,
     assignmentChecked: manual || (grouped && !row.sources.manual),
-    exempted: assigned ? (change?.exempted ?? row.exempted) : false,
+    manualExempted,
+    exempted: assigned && (manualExempted || row.exemption_sources.groups.length > 0),
   };
 }
 
-export function rosterMarks(
-  row: StageRosterRow,
-  change: StageRosterChange | undefined,
-): RosterMark[] {
-  const next = effectiveRoster(row, change);
+export function rosterMarks(change: StageRosterChange | undefined): RosterMark[] {
   const marks: RosterMark[] = [];
   if (change?.manual === true) marks.push("追加");
   if (change?.manual === false) marks.push("外す");
-  if (next.assigned && next.exempted && !row.exempted) marks.push("免除");
-  if (next.assigned && !next.exempted && row.exempted) marks.push("免除を外す");
+  if (change?.exempted === true) marks.push("免除");
+  if (change?.exempted === false) marks.push("免除を外す");
   return marks;
 }
 
-/** 前提クリア済み、廃止前の腕試しで解放済みの場合は操作しない。スイッチは割り当て済みのときだけ押せる。 */
+/** グループ由来の免除があれば出どころを示し、重なっている手動分だけを操作する。 */
 export function exemptionControl(
-  row: Pick<StageRosterRow, "prerequisites_cleared" | "unlocked_by_skill_check">,
+  row: Pick<
+    StageRosterRow,
+    "prerequisites_cleared" | "unlocked_by_skill_check" | "exemption_sources"
+  >,
   assigned: boolean,
-  exempted: boolean,
+  manualExempted: boolean,
 ): ExemptionControl {
+  if (row.exemption_sources.groups.length > 0) {
+    if (!row.exemption_sources.manual) {
+      return { kind: "switch", checked: true, enabled: false, note: "グループで免除しています" };
+    }
+    return {
+      kind: "switch",
+      checked: manualExempted,
+      enabled: assigned,
+      note: "外すと手動の免除だけが外れます",
+    };
+  }
   if (row.prerequisites_cleared) return { kind: "text", label: "前提を完了済み" };
   if (row.unlocked_by_skill_check) return { kind: "text", label: "腕試しで解放済み" };
-  return { kind: "switch", checked: exempted, enabled: assigned };
+  return { kind: "switch", checked: manualExempted, enabled: assigned };
 }
 
 /** 無効なユーザーは、いま割り当て済みなら外すことだけできる。 */
@@ -109,7 +127,12 @@ function normalizeChange(row: StageRosterRow, change: StageRosterChange): StageR
     next.manual = change.manual;
   }
   const { assigned } = effectiveRoster(row, next);
-  if (assigned && change.exempted !== undefined && change.exempted !== row.exempted) {
+  if (
+    assigned &&
+    next.manual !== false &&
+    change.exempted !== undefined &&
+    change.exempted !== row.exemption_sources.manual
+  ) {
     next.exempted = change.exempted;
   }
   if (next.manual === undefined && next.exempted === undefined) return null;
@@ -152,7 +175,11 @@ export function setRosterExempted(
   const stored = pending.get(baseline.id)?.row ?? baseline;
   const current = pending.get(baseline.id)?.change;
   const effective = effectiveRoster(stored, current);
-  const control = exemptionControl(stored, effective.assigned, effective.exempted);
+  const control = exemptionControl(
+    stored,
+    effective.assigned && current?.manual !== false,
+    effective.manualExempted,
+  );
   if (control.kind !== "switch" || !control.enabled) return pending;
   return writePending(pending, stored, normalizeChange(stored, { ...current, exempted }));
 }
@@ -207,7 +234,7 @@ export function rosterDiff(pending: StageRosterPending): StageRosterDiff {
   const unexempt: string[] = [];
   const entries = [...pending.values()].sort((a, b) => a.row.id.localeCompare(b.row.id));
   for (const entry of entries) {
-    const marks = rosterMarks(entry.row, entry.change);
+    const marks = rosterMarks(entry.change);
     if (marks.includes("追加")) add.push(entry.row.id);
     if (marks.includes("外す")) remove.push(entry.row.id);
     if (marks.includes("免除")) exempt.push(entry.row.id);
@@ -327,9 +354,13 @@ function viewOf(baseline: StageRosterRow, pending: StageRosterPending): StageRos
     assigned: effective.assigned,
     assignmentChecked: effective.assignmentChecked,
     exempted: effective.exempted,
-    marks: rosterMarks(stored, change),
+    marks: rosterMarks(change),
     canAssign: canToggleAssignment(stored, effective.assignmentChecked),
-    exemption: exemptionControl(stored, effective.assigned, effective.exempted),
+    exemption: exemptionControl(
+      stored,
+      effective.assigned && change?.manual !== false,
+      effective.manualExempted,
+    ),
   };
 }
 

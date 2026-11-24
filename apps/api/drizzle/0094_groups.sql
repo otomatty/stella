@@ -46,6 +46,19 @@ SELECT group_id, stage_id, due_at, message, exempt FROM integration_group_stages
 --> statement-breakpoint
 DELETE FROM stage_unlocks WHERE source_group_id IS NOT NULL;
 --> statement-breakpoint
+-- 上書きされた案内を手動の割り当てとして保つ。所属や設定がなければ、案内がある行を残す。
+UPDATE stage_grants
+SET source_group_id = NULL
+WHERE source_group_id IS NOT NULL
+  AND COALESCE((
+    SELECT stage_grants.due_at IS NOT s.due_at OR stage_grants.message IS NOT s.message
+    FROM integration_group_stages s
+    JOIN integration_group_members m ON m.group_id = s.group_id
+    WHERE s.group_id = stage_grants.source_group_id
+      AND s.stage_id = stage_grants.stage_id
+      AND m.profile_id = stage_grants.profile_id
+  ), due_at IS NOT NULL OR message IS NOT NULL);
+--> statement-breakpoint
 DELETE FROM stage_grants WHERE source_group_id IS NOT NULL;
 --> statement-breakpoint
 -- どちらの表も他の表から参照されていないため、外部キーを有効にしたまま置き換える。

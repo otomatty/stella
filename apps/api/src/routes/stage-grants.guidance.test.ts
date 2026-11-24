@@ -22,7 +22,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { createOrRenameGroup, replaceGroupStages } from "../lib/groups.js";
+import { createOrRenameGroup, removeGroupMember, replaceGroupStages } from "../lib/groups.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
@@ -234,6 +234,88 @@ describe("割り当ての案内 (実 SQLite)", () => {
     expect(byId.get("admin")).toMatchObject({
       assigned: false,
       sources: { manual: false, groups: [] },
+    });
+  });
+
+  it("前提免除の出どころを名前順で返し、手動の免除だけ解除できる", async () => {
+    await grant();
+    const groupSources = [];
+    for (const name of ["Z グループ", "A グループ"]) {
+      const group = await createOrRenameGroup(db, { name, createdBy: "admin" });
+      groupSources.unshift({ id: group.id, name });
+      await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+      expect(
+        await replaceGroupStages(db, group, [{ slug: "sample-extra", exempt: true }]),
+      ).toMatchObject({ ok: true });
+    }
+
+    const path = "/api/stage-grants/extra";
+    const roster = async () => json(await call(`${path}/learners?q=learner&status=exempted`));
+    expect((await call(path, "PATCH", { exempt: ["learner"] })).status).toBe(200);
+    expect(await roster()).toMatchObject({
+      learners: [
+        {
+          id: "learner",
+          exempted: true,
+          exemption_sources: { manual: true, groups: groupSources },
+        },
+      ],
+    });
+
+    expect((await call(path, "PATCH", { unexempt: ["learner"] })).status).toBe(200);
+    expect(await db.select().from(stageUnlocks)).toEqual([]);
+    expect(await roster()).toMatchObject({
+      learners: [
+        {
+          id: "learner",
+          exempted: true,
+          exemption_sources: { manual: false, groups: groupSources },
+        },
+      ],
+    });
+  });
+
+  it("案内の対象人数と要約は検索やページに関係なく手動の割り当てだけで求める", async () => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+    expect(
+      await replaceGroupStages(db, group, [{ slug: "sample-extra", message: "グループの案内" }]),
+    ).toMatchObject({ ok: true });
+
+    const path = "/api/stage-grants/extra/learners";
+    expect(await json(await call(path))).toMatchObject({
+      counts: { assigned: 1 },
+      manual_assigned_count: 0,
+      guidance_summary: { uniform: true, guidance: null },
+    });
+
+    await grant("other");
+    for (let i = 0; i < 50; i++) {
+      const id = `manual-${i}`;
+      await db.insert(profiles).values({ id, displayName: id });
+      await grant(id);
+    }
+    expect(await json(await update({ all: true, ...guidance }))).toMatchObject({ updated: 51 });
+    const summary = {
+      manual_assigned_count: 51,
+      guidance_summary: { uniform: true, guidance: normalized },
+    };
+    expect(await json(await call(`${path}?status=assigned&limit=50`))).toMatchObject({
+      ...summary,
+      total: 52,
+      next_offset: 50,
+    });
+    expect(await json(await call(`${path}?status=assigned&limit=50&offset=50`))).toMatchObject({
+      ...summary,
+      next_offset: null,
+    });
+    expect(await json(await call(`${path}?q=learner`))).toMatchObject({
+      ...summary,
+      total: 1,
+      learners: [{ id: "learner", guidance: { message: "グループの案内" } }],
+    });
+    expect(await json(await call("/api/stage-grants"))).toMatchObject({
+      stages: [{ id: "extra", guidance_summary: summary.guidance_summary }],
     });
   });
 
@@ -674,6 +756,56 @@ it("始められるExtraは従来の候補に残し、新しいホームの候�
   }>(await call("/api/skill-map/mine?tiers=7", "GET", undefined, learner));
   expect(body.skill_map.next_stage_ids).toEqual(["basic", "extra"]);
   expect(body.skill_map.unguided_next_stage_ids).toEqual(["basic"]);
+});
+
+it("グループを外れても開始済みの Extra はマップとホームの案内に残る", async () => {
+  await db.insert(stages).values({
+    id: "extra-parent",
+    slug: "sample-parent",
+    title: "架空の前のステージ",
+    status: "published",
+    audience: "granted",
+    prerequisites: '["sample-basic"]',
+  });
+  await db.update(stages).set({ prerequisites: '["sample-parent"]' }).where(eq(stages.id, "extra"));
+  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+  await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+  expect(
+    await replaceGroupStages(db, group, [
+      { slug: "sample-parent", exempt: true },
+      { slug: "sample-extra", exempt: true, message: "グループの案内", due_at: "2026-12-01" },
+    ]),
+  ).toMatchObject({ ok: true });
+  expect((await call("/api/stages/extra/start", "POST", undefined, learner)).status).toBe(200);
+  await db.insert(lessonProgress).values({ userId: "learner", lessonId: "lesson-extra" });
+
+  await removeGroupMember(db, group.id, "learner");
+
+  const source = await loadSkillMapSource(db, caller);
+  expect(source.stages.map((stage) => stage.id)).toEqual(["basic", "extra"]);
+  expect(source.guidedStageIds).toEqual(new Set(["extra"]));
+  const map = await json<{
+    skill_map: {
+      active_stage_id: string | null;
+      has_unguided_enrollment: boolean;
+      stages: { id: string; visibility: string; enrolled?: boolean }[];
+    };
+  }>(await call("/api/skill-map/mine?tiers=7", "GET", undefined, learner));
+  expect(map.skill_map).toMatchObject({ active_stage_id: null, has_unguided_enrollment: false });
+  expect(map.skill_map.stages).toContainEqual(
+    expect.objectContaining({ id: "extra", visibility: "full", enrolled: true }),
+  );
+  expect(map.skill_map.stages.some(({ id }) => id === "extra-parent")).toBe(false);
+  expect(await mine()).toMatchObject({
+    stages: [{ stage_id: "extra", status: "in-progress", ...empty }],
+  });
+  expect(await json(await call("/api/stage-grants/extra/learners"))).toMatchObject({
+    counts: { assigned: 0, exempted: 0 },
+  });
+
+  await db.update(enrollments).set({ status: "expired" });
+  expect((await loadSkillMapSource(db, caller)).stages.map((stage) => stage.id)).toEqual(["basic"]);
+  expect(await mine()).toEqual({ stages: [] });
 });
 
 it("公開外のExtraの受講登録も、通常の道の集約に混ぜない", async () => {

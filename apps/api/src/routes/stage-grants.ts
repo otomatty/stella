@@ -35,6 +35,7 @@ import type { Db } from "../db/client.js";
 import {
   certificates,
   enrollments,
+  groups,
   profiles,
   effectiveStageGrants,
   effectiveStageUnlocks,
@@ -76,6 +77,7 @@ import {
 import type { Env } from "../env.js";
 
 import {
+  collectStageGrantSources,
   effectiveGuidanceColumns,
   firstGuidanceBy,
   guidancePriority,
@@ -258,6 +260,7 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
             .select({
               stageId: effectiveStageGrants.stageId,
               profileId: effectiveStageGrants.profileId,
+              groupId: effectiveStageGrants.groupId,
               ...effectiveGuidanceColumns,
             })
             .from(effectiveStageGrants)
@@ -354,7 +357,9 @@ stageGrantsRoute.get("/api/stage-grants", async (c) => {
         title: stage.title,
         category: stage.category,
         profile_ids: grantsByStage.get(stage.id) ?? [],
-        guidance_summary: summarizeGuidance(grantRows.filter((row) => row.stageId === stage.id)),
+        guidance_summary: summarizeGuidance(
+          grantRows.filter((row) => row.stageId === stage.id && row.groupId === null),
+        ),
         guidance_by_profile: grantRows
           .filter((row) => row.stageId === stage.id)
           .map((row) => ({ profile_id: row.profileId, ...guidanceOf(row) })),
@@ -704,25 +709,35 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
 
     const stage = await loadGrantStage(db, c.req.param("stageId"));
     const slugs = prerequisiteSlugsFromRow(stage);
-    const [profileRows, { guidanceByProfile, sourcesByProfile }, unlockRows, stagesBySlug] =
-      await Promise.all([
-        db
-          .select({
-            id: profiles.id,
-            display_name: profiles.displayName,
-            email: profiles.email,
-            role: profiles.role,
-            disabled: profiles.disabled,
-          })
-          .from(profiles)
-          .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
-        loadStageGuidance(db, stage.id),
-        db
-          .selectDistinct({ userId: effectiveStageUnlocks.userId, via: effectiveStageUnlocks.via })
-          .from(effectiveStageUnlocks)
-          .where(eq(effectiveStageUnlocks.stageId, stage.id)),
-        loadStagesBySlug(db, slugs),
-      ]);
+    const [
+      profileRows,
+      { guidanceByProfile, sourcesByProfile, manualRows },
+      unlockRows,
+      stagesBySlug,
+    ] = await Promise.all([
+      db
+        .select({
+          id: profiles.id,
+          display_name: profiles.displayName,
+          email: profiles.email,
+          role: profiles.role,
+          disabled: profiles.disabled,
+        })
+        .from(profiles)
+        .where(integrationGroupFilter(profiles.id, c.req.query("groupId"))),
+      loadStageGuidance(db, stage.id),
+      db
+        .select({
+          profileId: effectiveStageUnlocks.userId,
+          via: effectiveStageUnlocks.via,
+          groupId: effectiveStageUnlocks.groupId,
+          groupName: groups.name,
+        })
+        .from(effectiveStageUnlocks)
+        .leftJoin(groups, eq(groups.id, effectiveStageUnlocks.groupId))
+        .where(eq(effectiveStageUnlocks.stageId, stage.id)),
+      loadStagesBySlug(db, slugs),
+    ]);
     const prereqIds = [
       ...new Set(
         slugs.flatMap((slug) => {
@@ -732,15 +747,16 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       ),
     ];
     const progress = await loadPrerequisiteProgress(db, prereqIds);
+    const exemptionsByProfile = collectStageGrantSources(
+      unlockRows.filter((row) => row.via === "staff"),
+    );
     const listed = listStageGrantLearners(
       {
         profiles: profileRows,
         assignedIds: new Set(guidanceByProfile.keys()),
-        staffUnlockIds: new Set(
-          unlockRows.filter((row) => row.via === "staff").map((row) => row.userId),
-        ),
+        staffUnlockIds: new Set(exemptionsByProfile.keys()),
         skillCheckUnlockIds: new Set(
-          unlockRows.filter((row) => row.via === "skill_check").map((row) => row.userId),
+          unlockRows.filter((row) => row.via === "skill_check").map((row) => row.profileId),
         ),
         prerequisiteSlugs: slugs,
         stagesBySlug,
@@ -760,12 +776,14 @@ stageGrantsRoute.get("/api/stage-grants/:stageId/learners", async (c) => {
       counts: listed.counts,
       total: listed.total,
       next_offset: listed.next_offset,
-      guidance_summary: summarizeGuidance([...guidanceByProfile.values()]),
+      manual_assigned_count: manualRows.length,
+      guidance_summary: summarizeGuidance(manualRows),
       learners: listed.learners.map((row) => {
         const sources = sourcesByProfile.get(row.id) ?? { manual: false, groups: [] };
         return {
           ...row,
           sources,
+          exemption_sources: exemptionsByProfile.get(row.id) ?? { manual: false, groups: [] },
           source_group: sources.groups[0]?.name ?? null,
           guidance: row.assigned ? guidanceOf(guidanceByProfile.get(row.id)) : null,
         };

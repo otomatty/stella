@@ -122,6 +122,16 @@ export async function loadStageGuidance(db: Db, stageId: string) {
     .leftJoin(groups, eq(groups.id, effectiveStageGrants.groupId))
     .where(eq(effectiveStageGrants.stageId, stageId))
     .orderBy(...guidancePriority);
+  return {
+    guidanceByProfile: firstGuidanceBy(rows, (row) => row.profileId),
+    sourcesByProfile: collectStageGrantSources(rows),
+    manualRows: rows.filter((row) => row.groupId === null),
+  };
+}
+
+export function collectStageGrantSources(
+  rows: readonly { profileId: string; groupId: string | null; groupName: string | null }[],
+): Map<string, StageGrantSources> {
   const sourcesByProfile = new Map<string, StageGrantSources>();
   for (const row of rows) {
     let sources = sourcesByProfile.get(row.profileId);
@@ -135,7 +145,7 @@ export async function loadStageGuidance(db: Db, stageId: string) {
   for (const sources of sourcesByProfile.values()) {
     sources.groups.sort((a, b) => a.name.localeCompare(b.name, "ja") || a.id.localeCompare(b.id));
   }
-  return { guidanceByProfile: firstGuidanceBy(rows, (row) => row.profileId), sourcesByProfile };
+  return sourcesByProfile;
 }
 
 /** 新規行だけを受け取る。祖先の自動割り当ても、その祖先自身の案内を継承する。 */
