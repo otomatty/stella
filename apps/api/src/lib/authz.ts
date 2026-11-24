@@ -57,7 +57,9 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
  *   3. Local development and tests only: a self-signed HS256 token (`AUTH_JWT_SECRET`), accepted
  *      just for requests to localhost, so no production request can use it.
  */
-export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<{ sub: string }> {
+export async function verifyToken<E extends { Bindings: Env }>(
+  c: Context<E>,
+): Promise<{ sub: string }> {
   const auth = getAuth(c.env);
   if (auth) {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -86,7 +88,9 @@ export async function verifyToken(c: Context<{ Bindings: Env }>): Promise<{ sub:
  * JWT を検証し、 profiles から caller のロールを解決する。
  * 無効化済みアカウントは未失効 JWT を持っていても拒否する。
  */
-export async function getCaller(c: Context<{ Bindings: Env }>): Promise<{
+export async function getCaller<E extends { Bindings: Env }>(
+  c: Context<E>,
+): Promise<{
   caller: Caller;
   db: Db;
 }> {

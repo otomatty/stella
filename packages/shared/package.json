@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./progress/stage-progress": "./src/progress/stage-progress.ts",
     "./stage-grants/types": "./src/stage-grants/types.ts",
     "./types": "./src/types.ts",
     "./assignments": "./src/assignments.ts",

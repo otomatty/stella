@@ -107,6 +107,22 @@
 - 管理画面は必要な Extra の祖先を一覧に自動で含めて送ります。
 - 一覧を検査してから、1回の D1 batch で置き換えます。どれかが不正なら設定は更新しません。
 
+管理者向けの API はすべて管理者のみ利用できます。
+
+| API | 応答・操作 |
+| --- | --- |
+| `GET /api/admin/groups` | 管理者作成と連携のグループ一覧。 `clientId` で連携クライアントを絞り込めます |
+| `POST /api/admin/groups` | `{ name }` で管理者のグループを作成します |
+| `GET /api/admin/groups/:id` | グループの概要・メンバー・ステージ設定を返します |
+| `PATCH /api/admin/groups/:id` | `{ name?, shareProgress? }` で名前・進捗公開を変更します |
+| `DELETE /api/admin/groups/:id` | 管理者のグループを削除します |
+| `PATCH /api/admin/groups/:id/members` | `{ add?, remove? }` にプロフィール ID を合計 100 件まで指定し、所属を変更します |
+| `PATCH /api/admin/groups/:id/members/:profileId` | `{ peerName }` で呼び名を設定します。 `null` で解除します |
+| `PUT /api/admin/groups/:id/stages` | `{ stages: [{ slug, due_at?, message?, exempt? }] }` でステージ設定を置き換えます |
+| `GET /api/admin/groups/:id/progress` | 連携 API と同じ詳しい進捗を返します。 `stage` と `cursor` に対応し、進捗は現在の記録から求めます |
+
+連携のグループの名前・所属・ステージ設定を変更する操作と、グループを削除する操作には 403 を返します。
+
 ## 5. 仲間の進捗 (受講者向け)
 
 管理者がグループごとに `share_progress` をオンにしたときだけ公開します。
@@ -140,6 +156,7 @@
 ```
 
 - 名前は `peer_name ?? profiles.display_name` です。名前順に並べ、同名は内部 ID 順です。進捗順には並べません。
+- メンバーが200人を超えるときは、この並び順の先頭200人だけを返します。
 - 各メンバーについて対象ステージすべての `percent` と `cleared` を返します。`cleared` は受講登録の修了記録で判定します。
 - メール、外部 ID、プロフィール ID、最後の活動日、未着手と開始済みの区別、課題ごとの状態、提出、確認待ち、支援付きかどうか、ヒントを開いたかどうかは返しません。
 
@@ -152,7 +169,7 @@
 
 レッスンも課題もすべて済んでいても、修了の記録が無ければ `cleared` は `false` のままです。
 
-サーバーは `lesson_progress` の完了記録と対象ステージの課題の合格数から、メンバー全員分をまとめて計算します。
+サーバーは `GET /api/cms/stages/:id` のステージ詳細と同じレッスンを対象に、`lesson_progress` の完了記録と課題の合格数をメンバー全員分まとめて集計します。
 課題の合格は `GET /api/enrollments/mine` の `tasks_passed` と同じ数え方 (`passed` / `ai-passed`) です。
 分母・分子ともに、有効な通常課題だけを数えます。
 

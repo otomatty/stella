@@ -1,26 +1,22 @@
 import type { IntegrationStageInput } from "@stella/shared/integrations/types";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { groupMembers, groups, groupStages, stages } from "../db/schema.js";
+import { groupMembers, groups, groupStages, profiles, stages } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ApiError } from "./authz.js";
+import { learnerOnly } from "./learner-scope.js";
 import { hasNoIslandPrerequisites, parentSlugFromRow } from "./stage-audience.js";
 import { parseGuidance } from "./stage-grant-guidance.js";
 
-type GroupNameChange = { name: string } & (
-  | { clientId: string; externalKey: string }
-  | { createdBy: string }
-  | { id: string }
-);
+type GroupChanges = { name?: string; shareProgress?: boolean };
+type GroupNameChange =
+  | ({ name: string } & ({ clientId: string; externalKey: string } | { createdBy: string }))
+  | ({ id: string } & ({ name: string; shareProgress?: boolean } | { shareProgress: boolean }));
 
 export async function createOrRenameGroup(db: Db, group: GroupNameChange) {
   const [saved] =
     "id" in group
-      ? await db
-          .update(groups)
-          .set({ name: group.name, updatedAt: new Date() })
-          .where(and(eq(groups.id, group.id), isNull(groups.clientId)))
-          .returning()
+      ? await updateGroupSettings(db, group.id, group)
       : await db
           .insert(groups)
           .values(group)
@@ -31,6 +27,82 @@ export async function createOrRenameGroup(db: Db, group: GroupNameChange) {
           .returning();
   if (!saved) throw new ApiError("Not found", 404);
   return saved;
+}
+
+function updateGroupSettings(db: Db, id: string, { name, shareProgress }: GroupChanges) {
+  return db
+    .update(groups)
+    .set({ name, shareProgress, updatedAt: new Date() })
+    .where(and(eq(groups.id, id), name === undefined ? undefined : isNull(groups.clientId)))
+    .returning();
+}
+
+export async function deleteAdminGroup(db: Db, id: string) {
+  const [deleted] = await db
+    .delete(groups)
+    .where(and(eq(groups.id, id), isNull(groups.clientId)))
+    .returning({ id: groups.id });
+  if (!deleted) throw new ApiError("Not found", 404);
+}
+
+export async function setGroupPeerName(
+  db: Db,
+  groupId: string,
+  profileId: string,
+  peerName: string | null,
+) {
+  const [member] = await db
+    .update(groupMembers)
+    .set({ peerName })
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.profileId, profileId)))
+    .returning({ id: groupMembers.profileId });
+  if (!member) throw new ApiError("Not found", 404);
+}
+
+export async function patchAdminGroupMembers(
+  db: Db,
+  groupId: string,
+  add: readonly string[],
+  remove: readonly string[],
+) {
+  const addedIds = sql`json_each(${JSON.stringify(add)})`;
+  const removedIds = sql`select value from json_each(${JSON.stringify(remove)})`;
+  const invalid = db
+    .select({ id: sql<string>`requested.value` })
+    .from(sql`${addedIds} as requested`)
+    .where(sql`not exists (
+      select 1 from ${profiles} where ${profiles.id} = requested.value
+        and ${profiles.disabled} = 0 and ${learnerOnly(profiles.id)}
+    )`);
+  // 受講者の状態を確認し、差分を適用するまでを同じ batch に入れる。
+  // 不正な追加が一つでもあれば、削除・追加ともに行わない。
+  const valid = sql`not exists (${invalid.getSQL()}) and exists (
+    select 1 from ${groups} where ${groups.id} = ${groupId} and ${groups.clientId} is null
+  )`;
+  const [invalidRows, removed, added] = await db.batch([
+    invalid,
+    db
+      .delete(groupMembers)
+      .where(
+        and(
+          eq(groupMembers.groupId, groupId),
+          sql`${groupMembers.profileId} in (${removedIds}) and ${valid}`,
+        ),
+      )
+      .returning({ id: groupMembers.profileId }),
+    db
+      .insert(groupMembers)
+      .select(
+        sql`select ${groupId}, value, null, null, ${Date.now()} from ${addedIds} where ${valid}`,
+      )
+      .onConflictDoNothing({ target: [groupMembers.groupId, groupMembers.profileId] })
+      .returning({ id: groupMembers.profileId }),
+  ]);
+  return {
+    invalidIds: invalidRows.map((row) => row.id),
+    added: added.length,
+    removed: removed.length,
+  };
 }
 
 export function addGroupMemberStatement(

@@ -168,7 +168,7 @@ const liveProblemCandidate = sql`r.user_id,r.task_id,r.problem_id problemId,r.co
   ${problemCodeBytes(sql`r.source='tests' and r.content_hash<>t.content_hash and coalesce(tp.status,'') not in ('passed','ai-passed')`)} codeBytes`;
 
 /** 各集計クエリで同じメンバーページとグループのステージを結合する。 */
-export async function readIntegrationProgress(
+export async function readGroupProgress(
   db: Db,
   groupId: string,
   query: { stage?: string; at?: string; cursor?: string },

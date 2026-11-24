@@ -11,6 +11,7 @@
  *   巻き戻して push してしまうため (`mergeEntries` のコメント参照)。
  */
 
+import { stageProgressPercent } from "@stella/shared/progress/stage-progress";
 import { isBackendConfigured } from "@/lib/backend";
 import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
@@ -573,11 +574,14 @@ export function resumeLessonId(
 export function deriveStageProgress(stage: Stage, map: LessonProgressMap): Stage {
   const lessons = stage.sections?.flatMap((s) => s.lessons) ?? [];
   if (lessons.length === 0) return stage;
-  if (stage.completed) return { ...stage, progress: 100 };
-  const tasks = Math.max(stage.tasksCount ?? 0, 0);
-  const passedTasks = Math.min(Math.max(stage.tasksPassed ?? 0, 0), tasks);
-  const done = lessons.filter((l) => resolveLessonStatus(l, map) === "done").length + passedTasks;
-  const total = lessons.length + tasks;
-  const pct = done >= total ? 100 : Math.min(Math.floor((done / total) * 100), 99);
-  return { ...stage, progress: pct };
+  return {
+    ...stage,
+    progress: stageProgressPercent({
+      completed: stage.completed === true,
+      lessonsTotal: lessons.length,
+      lessonsDone: lessons.filter((l) => resolveLessonStatus(l, map) === "done").length,
+      tasksTotal: stage.tasksCount ?? 0,
+      tasksPassed: stage.tasksPassed ?? 0,
+    }),
+  };
 }

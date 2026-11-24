@@ -14,6 +14,12 @@ const LABELS = {
   integration_client_create: "連携クライアントの作成",
   integration_client_update: "連携クライアントの変更",
   integration_token_rotate: "連携トークンの再発行",
+  group_create: "グループの作成",
+  group_update: "グループ設定の変更",
+  group_delete: "グループの削除",
+  group_members_update: "グループの所属を変更",
+  group_peer_name_update: "グループ内の呼び名を変更",
+  group_stages_replace: "グループのステージ設定を変更",
   // 認証
   login: "ログイン",
   // ユーザー管理 (#22)

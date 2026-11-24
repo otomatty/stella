@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { and, eq, sql } from "drizzle-orm";
 import { isValidEmail } from "@stella/shared/admin/types";
 import type { IntegrationMemberResult } from "@stella/shared/integrations/types";
-import { readIntegrationProgress, readIntegrationEvents } from "../lib/integration-read.js";
+import { readGroupProgress, readIntegrationEvents } from "../lib/integration-read.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
   addGroupMemberStatement,
@@ -301,7 +301,7 @@ for (const kind of ["progress", "events"] as const) {
       c.set("integrationGroupId", group.id);
       return c.json(
         kind === "progress"
-          ? await readIntegrationProgress(db, group.id, {
+          ? await readGroupProgress(db, group.id, {
               stage: c.req.query("stage"),
               at: c.req.query("at"),
               cursor: c.req.query("cursor"),
