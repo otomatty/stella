@@ -61,7 +61,7 @@ export const s1Ch05NoteDefaultValue: Assignment = {
   ),
   tests: [
     {
-      name: "?? 版と if / else 版で同じ 2 行ずつが出力される",
+      name: "?? と if / else のどちらでも同じ 2 行ずつが出力される",
       expectedStdout: "領収書希望\n備考なし\n領収書希望\n備考なし",
     },
   ],

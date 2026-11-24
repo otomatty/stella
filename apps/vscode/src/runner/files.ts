@@ -11,7 +11,7 @@ import { constants } from "node:fs";
 import { lstat, mkdir, open, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
-import { TASK_STATE_DIR } from "@stella/shared/tasks/manifest";
+import { TASK_STATE_DIR, type TaskManifest } from "@stella/shared/tasks/manifest";
 import { isProblemId } from "@stella/shared/tasks/problems";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
 import picomatch from "picomatch";
@@ -86,6 +86,23 @@ export function matchPatterns(files: readonly string[], patterns: readonly strin
     for (const hit of hits) matched.add(hit);
   }
   return { files: [...matched].sort(), unmatched };
+}
+
+/** 提出対象のうち、配布されたテスト・設定を除いた編集対象。 */
+export function matchEditableFiles(files: readonly string[], manifest: TaskManifest): MatchResult {
+  const listed = files.filter(
+    (file) =>
+      !file
+        .split("/")
+        .slice(0, -1)
+        .some((dir) => SKIPPED_DIRS.has(dir)),
+  );
+  const submitted = matchPatterns(listed, manifest.submit.files);
+  const fixed = new Set(matchPatterns(files, manifest.protected).files);
+  return {
+    files: submitted.files.filter((file) => !fixed.has(file)),
+    unmatched: submitted.unmatched,
+  };
 }
 
 export function sha256Hex(bytes: Uint8Array): string {

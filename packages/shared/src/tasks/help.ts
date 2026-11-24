@@ -147,7 +147,7 @@ export const HELP_LOCK_LABELS: Readonly<Record<HelpLockReason, string>> = {
   // 拡張は not-offered の欄を隠す。この文言は API の 403 にだけ出る。
   "not-offered": "この課題では表示しません",
   // 受講者の手元の版に対応する素材の版が分からない (知らない版・素材の版を記録する前の版)。
-  "stale-version": "手元の課題が古い版です。最新を受け取り直すと開けます",
+  "stale-version": "手元の課題が古いバージョンです。最新バージョンを受け取り直すと開けます",
 };
 
 export type HelpAvailability = { open: true } | { open: false; reason: HelpLockReason };
@@ -486,7 +486,9 @@ export function parseHelpOpenRequest(raw: unknown): {
 export function parseHelpContentHash(raw: unknown): string | undefined {
   if (raw === undefined || raw === null || raw === "") return undefined;
   if (typeof raw !== "string" || !HELP_CONTENT_HASH.test(raw))
-    throw new Error("contentHash は課題の版 (16 進 64 文字) で送ってください");
+    throw new Error(
+      "contentHash は課題のバージョンを示すハッシュ (16 進 64 文字) で送ってください",
+    );
   return raw;
 }
 

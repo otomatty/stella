@@ -357,14 +357,22 @@ export function loadTaskProblems(
   {
     refresh = true,
     afterSubmission = false,
-  }: { refresh?: boolean; afterSubmission?: boolean } = {},
+    ...guards
+  }: {
+    refresh?: boolean;
+    afterSubmission?: boolean;
+  } & NonNullable<Parameters<typeof unlockTaskFiles>[3]> = {},
 ): Promise<TaskProblems> {
   if (!refresh || !manifest.problemSteps) return readTaskProblems(root, manifest, refresh);
   const key = JSON.stringify([root, manifest.id, apiSession()]);
   const inFlight = refreshing.get(key);
   if (inFlight)
-    return afterSubmission ? inFlight.then(() => loadTaskProblems(root, manifest)) : inFlight;
-  const pending = readTaskProblems(root, manifest, true).finally(() => refreshing.delete(key));
+    return afterSubmission
+      ? inFlight.then(() => loadTaskProblems(root, manifest, guards))
+      : inFlight;
+  const pending = readTaskProblems(root, manifest, true, guards).finally(() =>
+    refreshing.delete(key),
+  );
   refreshing.set(key, pending);
   return pending;
 }
@@ -373,6 +381,7 @@ async function readTaskProblems(
   root: string,
   manifest: TaskManifest,
   refresh: boolean,
+  guards?: Parameters<typeof unlockTaskFiles>[3],
 ): Promise<TaskProblems> {
   const session = apiSession();
   const fresh = refresh
@@ -413,7 +422,7 @@ async function readTaskProblems(
               throw new Error(
                 "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
               );
-            await unlockTaskFiles(root, bundle, visible);
+            await unlockTaskFiles(root, bundle, visible, guards);
             unprepared = [];
           }
         }
@@ -540,8 +549,8 @@ async function prepareProblemInput(
   )
     throw new Error(
       mode === "consult"
-        ? "確認した課題の版が変わっています。もう一度確認してください"
-        : "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+        ? "確認した課題のバージョンが変わっています。もう一度確認してください"
+        : "確認した課題のバージョンが変わっています。もう一度「提出する」を押してください",
     );
   return {
     taskId: manifest.id,

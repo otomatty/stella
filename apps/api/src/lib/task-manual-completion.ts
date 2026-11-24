@@ -230,7 +230,7 @@ export function planManualCompletion(
       item.problemIds &&
       (!problems || item.problemIds.some((pid) => !problems.some((p) => p.id === pid)))
     )
-      throw new ApiError("課題のいまの版にない問題は指定できません", 400);
+      throw new ApiError("課題のいまのバージョンにない問題は指定できません", 400);
     const selected = item.problemIds ?? problems?.map((p) => p.id) ?? [];
     const bundle = parsePublicTaskBundle(JSON.parse(entry.task.bundle));
     const paths = new Map(

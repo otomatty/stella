@@ -22,6 +22,10 @@ const state = vi.hoisted(() => ({
   folders: [] as string[],
   activeFile: undefined as string | undefined,
   items: [] as FakeItem[],
+  dirtyFile: undefined as string | undefined,
+  saveListener: undefined as
+    | ((document: { uri: { scheme: string; fsPath: string } }) => void | Promise<void>)
+    | undefined,
   focusListener: undefined as ((state: { focused: boolean }) => void) | undefined,
   editorListener: undefined as ((editor: unknown) => Promise<void>) | undefined,
   executeCommand: vi.fn(),
@@ -90,6 +94,19 @@ vi.mock("vscode", () => ({
     get workspaceFolders() {
       return state.folders.map((fsPath) => ({ uri: { fsPath } }));
     },
+    get textDocuments() {
+      return state.dirtyFile
+        ? [{ isDirty: true, uri: { scheme: "file", fsPath: state.dirtyFile } }]
+        : [];
+    },
+    onDidSaveTextDocument: (listener: NonNullable<typeof state.saveListener>) => {
+      state.saveListener = listener;
+      return {
+        dispose: () => {
+          state.saveListener = undefined;
+        },
+      };
+    },
     onDidChangeWorkspaceFolders: () => ({ dispose: () => undefined }),
   },
   commands: { executeCommand: state.executeCommand },
@@ -97,6 +114,8 @@ vi.mock("vscode", () => ({
 
 import { AuthStore } from "./auth.js";
 import { loadTask } from "./runner/run-task.js";
+import { installTask } from "./task-distribution.js";
+import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
 import {
   getTaskState,
@@ -116,6 +135,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   apiRequest.mockResolvedValue({});
   state.items = [];
+  state.dirtyFile = undefined;
   workspace = await mkdtemp(path.join(tmpdir(), "stella-status-"));
   root = path.join(workspace, "course", "unit", "q01");
   await mkdir(path.join(root, ".stella"), { recursive: true });
@@ -206,6 +226,67 @@ describe("ステータスバーの課題のボタン", () => {
     watched = true;
     state.focusListener?.({ focused: true });
     await vi.waitFor(() => expect(state.items[0]?.visible).toBe(true));
+  });
+
+  it("課題内の未保存ファイルを保存すると、問題を用意して提出を再表示する", async () => {
+    await rm(root, { recursive: true });
+    const manifest: TaskManifest = {
+      schemaVersion: 1,
+      id: taskId,
+      title: "計算",
+      kind: "basic",
+      runner: "node-test",
+      problemSteps: true,
+      problems: [{ id: "q01", title: "問1" }],
+      submit: { files: ["src/**/*.ts"] },
+      protected: ["tests/**"],
+      checks: { lint: false, format: false },
+    };
+    const bundle = {
+      manifest,
+      contentHash: "a".repeat(64),
+      files: Object.fromEntries(
+        Object.entries({
+          ".stella/task.json": JSON.stringify(manifest),
+          "README.md": "問題文",
+          "src/q01.ts": "starter",
+          "tests/q01.test.ts": "test",
+        }).map(([rel, data]) => [rel, Buffer.from(data).toString("base64")]),
+      ),
+    };
+    await installTask(workspace, bundle, { visibleProblems: new Set() });
+    apiRequest.mockImplementation(async (...args: unknown[]) =>
+      typeof args[0] === "string" && args[0].startsWith("/api/tasks/bundle")
+        ? { bundle }
+        : {
+            gated: true,
+            passedProblems: 0,
+            totalProblems: 1,
+            taskPassed: false,
+            problems: [{ id: "q01", state: "open" }],
+          },
+    );
+    state.activeFile = path.join(root, "README.md");
+    state.dirtyFile = state.activeFile;
+    registerTaskStatus(context);
+    await state.editorListener?.(editor(state.activeFile));
+    expect(state.items[0]?.visible).toBe(false);
+
+    const requestCount = apiRequest.mock.calls.length;
+    await state.saveListener?.({
+      uri: { scheme: "file", fsPath: path.join(workspace, "memo.txt") },
+    });
+    expect(apiRequest).toHaveBeenCalledTimes(requestCount);
+    state.dirtyFile = undefined;
+    const saved = { uri: { scheme: "file", fsPath: state.activeFile } };
+    await state.saveListener?.(saved);
+    expect(apiRequest.mock.calls.length).toBeGreaterThan(requestCount);
+    expect(state.items[0]?.visible).toBe(true);
+
+    const preparedRequestCount = apiRequest.mock.calls.length;
+    await state.saveListener?.(saved);
+    expect(apiRequest).toHaveBeenCalledTimes(preparedRequestCount);
+    expect(state.items[0]?.visible).toBe(true);
   });
 
   it("問題つきの課題は保存済みの結果の読み込みを知らせ、提出済みの件数を出す", async () => {

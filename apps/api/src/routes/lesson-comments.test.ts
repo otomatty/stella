@@ -270,7 +270,7 @@ describe("動画レッスンのコメント API", () => {
     for (const videoPath of [undefined, null, 123, ""]) {
       const missing = await post(learner, { videoPath, positionSec: 13 });
       expect(missing.status).toBe(400);
-      expect(await json(missing)).toEqual({ error: "動画の版を指定してください" });
+      expect(await json(missing)).toEqual({ error: "動画のバージョンを指定してください" });
     }
     expect((await list()).total).toBe(0);
     expect(await create(learner, { videoPath: "old.mp4", positionSec: 12 })).toMatchObject({

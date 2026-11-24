@@ -15,12 +15,8 @@ import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
-import {
-  fetchProblemResults,
-  loadProblemStates,
-  loadTaskProblems,
-  problemCountLabel,
-} from "./task-problems.js";
+import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
+import { loadTaskProblems } from "./task-update-guard.js";
 import {
   getTaskState,
   notifyProblemTaskOpened,
@@ -211,6 +207,28 @@ async function refreshCurrentTask(): Promise<void> {
   if (current?.taskId) await refreshTaskState(current.root, current.taskId);
 }
 
+let problemRefresh = 0;
+
+async function refreshProblemActions(afterSave = false): Promise<void> {
+  const task = current;
+  if (task?.problemActionsAvailable === undefined) return;
+  const ticket = generation;
+  const request = ++problemRefresh;
+  const loaded = await loadTask(task.root);
+  if (!loaded.ok || !loaded.manifest.problemSteps || ticket !== generation) return;
+  // 保存前に始まった準備で止まっていた場合も、保存した状態で確かめ直す。
+  const problems = await loadTaskProblems(task.root, loaded.manifest, {
+    afterSubmission: afterSave,
+  });
+  if (ticket !== generation || request !== problemRefresh) return;
+  setCurrentTask({
+    ...task,
+    problemProgress: problems.progress,
+    problemActionsAvailable: problems.states.some(({ id }) => !problems.unprepared.has(id)),
+  });
+  notifyProblemTaskOpened(task.root);
+}
+
 export function registerTaskStatus(context: vscode.ExtensionContext): void {
   submitItem = vscode.window.createStatusBarItem(
     "stella.submitTask",
@@ -246,22 +264,13 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     }),
     onDidChangeAuth(() => void refreshCurrentTask()),
     vscode.window.onDidChangeWindowState(({ focused }) => {
-      const task = current;
-      if (!focused || task?.problemActionsAvailable === undefined) return;
-      const ticket = generation;
-      void loadTask(task.root)
-        .then(async (loaded) => {
-          if (!loaded.ok || !loaded.manifest.problemSteps || ticket !== generation) return;
-          const problems = await loadTaskProblems(task.root, loaded.manifest);
-          if (ticket !== generation) return;
-          setCurrentTask({
-            ...task,
-            problemProgress: problems.progress,
-            problemActionsAvailable: problems.states.some(({ id }) => !problems.unprepared.has(id)),
-          });
-          notifyProblemTaskOpened(task.root);
-        })
-        .catch(() => undefined);
+      if (focused) void refreshProblemActions().catch(() => undefined);
+    }),
+    vscode.workspace.onDidSaveTextDocument(({ uri }) => {
+      if (current?.problemActionsAvailable !== false || uri.scheme !== "file") return;
+      const rel = path.relative(current.root, uri.fsPath);
+      if (rel && rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel))
+        return refreshProblemActions(true).catch(() => undefined);
     }),
     vscode.window.onDidChangeActiveTextEditor((editor) => followEditor(editor)),
     vscode.workspace.onDidChangeWorkspaceFolders(() =>

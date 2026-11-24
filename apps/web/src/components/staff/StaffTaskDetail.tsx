@@ -36,7 +36,7 @@ const tabs: { value: StaffTaskTab; label: string }[] = [
   { value: "statement", label: "課題文" },
   { value: "submissions", label: "提出の状況" },
   { value: "variants", label: "類題" },
-  { value: "revisions", label: "版の履歴" },
+  { value: "revisions", label: "バージョン履歴" },
 ];
 
 export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: string }) {
@@ -230,7 +230,7 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
                     <TableRow>
                       <TableHead>ハッシュ</TableHead>
                       <TableHead>日時</TableHead>
-                      <TableHead>版</TableHead>
+                      <TableHead>バージョン</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -242,14 +242,14 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
                         <TableCell>{dateLabel(revision.createdAt)}</TableCell>
                         <TableCell>
                           {revision.contentHash === data.task.contentHash ? (
-                            <Badge variant="success">いまの版</Badge>
+                            <Badge variant="success">いまのバージョン</Badge>
                           ) : null}
                         </TableCell>
                       </TableRow>
                     ))}
                     {data.revisions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3}>版の履歴はありません</TableCell>
+                        <TableCell colSpan={3}>バージョン履歴はありません</TableCell>
                       </TableRow>
                     ) : null}
                   </TableBody>
@@ -472,7 +472,7 @@ function Overview({ data, onStatement }: { data: Detail; onStatement: () => void
               <p className="text-ink-3">出典の指定なし</p>
             )}
           </Panel>
-          <Panel title="版">
+          <Panel title="バージョン">
             <p className="font-mono" title={task.contentHash}>
               {task.contentHash.slice(0, 8)}
             </p>

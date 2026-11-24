@@ -34,7 +34,7 @@ function formatReference(
     submittedAt: submittedAt.getTime(),
     version,
     ...(version === "latest"
-      ? { note: "提出時の版が分からないため、今の版の解答例を表示しています" }
+      ? { note: "提出時のバージョンが分からないため、今のバージョンの解答例を表示しています" }
       : {}),
     files,
     reviewGuide: decodeText(privateFiles["review.md"] ?? "") ?? "",
