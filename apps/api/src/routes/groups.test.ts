@@ -102,6 +102,8 @@ describe("グループ API (実 SQLite)", () => {
         title: "Intro",
         audience: "granted",
         status: "published",
+        // 仲間の進捗はスキルツリーに載るステージだけを返す。カタログの親があると載る。
+        parent: "basic",
       },
       {
         id: "stage-b",
@@ -220,6 +222,7 @@ describe("グループ API (実 SQLite)", () => {
     expect(payload).not.toMatch(/@example\.test|profile-|external-|Secret display name/);
     expect(JSON.parse(payload)).toEqual({
       group: { id: "shared", name: "Zoo Group" },
+      hasHiddenStages: false,
       stages: [
         { id: "stage-a", title: "Intro" },
         { id: "stage-b", title: "Intro" },
@@ -228,6 +231,7 @@ describe("グループ API (実 SQLite)", () => {
         {
           name: "Amy",
           isMe: false,
+          ahead: false,
           stages: [
             { id: "stage-a", percent: 100, cleared: false },
             { id: "stage-b", percent: 0, cleared: false },
@@ -236,6 +240,7 @@ describe("グループ API (実 SQLite)", () => {
         {
           name: "Amy",
           isMe: false,
+          ahead: false,
           stages: [
             { id: "stage-a", percent: 0, cleared: false },
             { id: "stage-b", percent: 0, cleared: false },
@@ -244,6 +249,7 @@ describe("グループ API (実 SQLite)", () => {
         {
           name: "Zoe",
           isMe: true,
+          ahead: false,
           stages: [
             { id: "stage-a", percent: 50, cleared: false },
             { id: "stage-b", percent: 100, cleared: true },
@@ -257,11 +263,16 @@ describe("グループ API (実 SQLite)", () => {
     addRoster();
     const res = await call(learner, `${LEARNER}/shared/peers`);
     expect(res.status).toBe(200);
-    const { members, stages } = await json<{ members: { name: string }[]; stages: [] }>(res);
+    const { members, stages, hasHiddenStages } = await json<{
+      members: { name: string }[];
+      stages: [];
+      hasHiddenStages: boolean;
+    }>(res);
     expect(stages).toEqual([]);
+    expect(hasHiddenStages).toBe(false);
     expect(members).toHaveLength(200);
     expect(members.slice(0, 2).map((member) => member.name)).toEqual(["Amy", "Amy"]);
-    expect(members[199]).toEqual({ name: "Roster 198", isMe: false, stages: [] });
+    expect(members[199]).toEqual({ name: "Roster 198", isMe: false, ahead: false, stages: [] });
   });
 
   it("本人のステージ詳細と受講一覧で使うレッスン・課題を数える", async () => {
@@ -290,6 +301,180 @@ describe("グループ API (実 SQLite)", () => {
       percent: 50,
       cleared: false,
     });
+  });
+
+  it("見えないステージの題名と割合は返さず、先に進んだ人だけ ahead にする", async () => {
+    await seedProgress();
+    const db = getDb(env);
+    await db.insert(stages).values({
+      id: "stage-locked",
+      slug: "extra-locked",
+      title: "Locked Title XYZ",
+      audience: "granted",
+      status: "published",
+      parent: "extra-parent",
+      prerequisites: '["extra-parent"]',
+    });
+    fixture.sqlite.exec(`
+      insert into group_stages (group_id, stage_id) values ('shared', 'stage-locked');
+      insert into profiles (id, tenant_id, display_name, email, role, disabled, created_at) values
+        ('profile-lesson', 'ses', 'Lesson Person', 'lesson@example.test', 'student', 0, 1),
+        ('profile-task', 'ses', 'Task Person', 'task@example.test', 'student', 0, 1);
+      insert into group_members (group_id, profile_id, peer_name, joined_at) values
+        ('shared', 'profile-lesson', 'Lesson', 1),
+        ('shared', 'profile-task', 'Task', 1);
+    `);
+    await db
+      .insert(sections)
+      .values({ id: "unit-locked", stageId: "stage-locked", title: "Locked unit" });
+    await db.insert(lessons).values({
+      id: "lesson-locked",
+      sectionId: "unit-locked",
+      title: "Locked lesson",
+      type: "text",
+    });
+    await db.insert(lessonProgress).values({
+      userId: "profile-lesson",
+      lessonId: "lesson-locked",
+      completed: true,
+    });
+    await db.insert(tasks).values({
+      id: "task-locked",
+      sectionId: "unit-locked",
+      title: "task-locked",
+      kind: "practice",
+      pattern: "example",
+      estimatedMinutes: 5,
+      order: 1,
+      contentHash: "current",
+      definition: "{}",
+      bundle: "{}",
+      active: true,
+    });
+    await db.insert(taskProgress).values({
+      userId: "profile-task",
+      taskId: "task-locked",
+      status: "passed",
+      contentHash: "current",
+    });
+    await db.insert(enrollments).values({ userId: "profile-peer-a", stageId: "stage-locked" });
+
+    const res = await call(learner, `${LEARNER}/shared/peers`);
+    expect(res.status).toBe(200);
+    const payload = await res.text();
+    expect(payload).not.toContain("stage-locked");
+    expect(payload).not.toContain("Locked Title XYZ");
+    expect(payload).not.toContain("lesson@example.test");
+    expect(payload).not.toContain("task@example.test");
+    const body = JSON.parse(payload) as {
+      hasHiddenStages: boolean;
+      stages: { id: string }[];
+      members: {
+        name: string;
+        isMe: boolean;
+        ahead: boolean;
+        stages: { id: string; percent: number }[];
+      }[];
+    };
+    expect(body.hasHiddenStages).toBe(true);
+    expect(body.stages.map((stage) => stage.id)).toEqual(["stage-a", "stage-b"]);
+    for (const member of body.members) {
+      expect(member.stages.map((stage) => stage.id)).toEqual(["stage-a", "stage-b"]);
+    }
+    const enrolled = body.members.find(
+      (member) => member.name === "Amy" && member.stages.some((stage) => stage.percent === 100),
+    );
+    const idle = body.members.find(
+      (member) => member.name === "Amy" && member.stages.every((stage) => stage.percent === 0),
+    );
+    expect(enrolled?.ahead).toBe(true);
+    expect(idle?.ahead).toBe(false);
+    expect(body.members.find((member) => member.name === "Lesson")?.ahead).toBe(true);
+    expect(body.members.find((member) => member.name === "Task")?.ahead).toBe(true);
+    expect(body.members.find((member) => member.isMe)?.ahead).toBe(false);
+  });
+
+  it("一度に 1 つずつ見せるコースでは、前の章を終えると次の章が見える", async () => {
+    const db = getDb(env);
+    await db.insert(stages).values([
+      {
+        id: "stage-lab-0",
+        slug: "lab-00",
+        title: "Later 00章",
+        category: "開発ラボG",
+        audience: "granted",
+        status: "published",
+        prerequisites: "[]",
+      },
+      {
+        id: "stage-lab-1",
+        slug: "lab-01",
+        title: "Earlier 01章",
+        category: "開発ラボG",
+        audience: "granted",
+        status: "published",
+        parent: "lab-00",
+        prerequisites: '["lab-00"]',
+      },
+      {
+        id: "stage-lab-2",
+        slug: "lab-02",
+        title: "Concealed 02章",
+        category: "開発ラボG",
+        audience: "granted",
+        status: "published",
+        parent: "lab-01",
+        prerequisites: '["lab-01"]',
+      },
+    ]);
+    fixture.sqlite.exec(`
+      insert into group_members (group_id, profile_id, peer_name, joined_at)
+        values ('another', 'profile-peer-a', 'Mina', 1);
+      insert into group_stages (group_id, stage_id) values
+        ('another', 'stage-lab-0'), ('another', 'stage-lab-1'), ('another', 'stage-lab-2');
+    `);
+    await db.insert(enrollments).values({ userId: "profile-peer-a", stageId: "stage-lab-1" });
+
+    const before = await call(learner, `${LEARNER}/another/peers`);
+    expect(before.status).toBe(200);
+    const beforeText = await before.text();
+    expect(beforeText).not.toContain("stage-lab-1");
+    expect(beforeText).not.toContain("Earlier 01章");
+    expect(beforeText).not.toContain("stage-lab-2");
+    expect(beforeText).not.toContain("Concealed 02章");
+    const hidden = JSON.parse(beforeText) as {
+      hasHiddenStages: boolean;
+      stages: { id: string }[];
+      members: { name: string; isMe: boolean; ahead: boolean }[];
+    };
+    expect(hidden.hasHiddenStages).toBe(true);
+    expect(hidden.stages.map((stage) => stage.id)).toEqual(["stage-lab-0"]);
+    expect(hidden.members.find((member) => member.name === "Mina")?.ahead).toBe(true);
+    expect(hidden.members.find((member) => member.isMe)?.ahead).toBe(false);
+
+    await db.insert(enrollments).values({
+      userId: "profile-me",
+      stageId: "stage-lab-0",
+      status: "completed",
+      completedAt: new Date(1),
+    });
+    const after = await call(learner, `${LEARNER}/another/peers`);
+    expect(after.status).toBe(200);
+    const afterText = await after.text();
+    expect(afterText).not.toContain("stage-lab-2");
+    expect(afterText).not.toContain("Concealed 02章");
+    const opened = JSON.parse(afterText) as {
+      hasHiddenStages: boolean;
+      stages: { id: string; title: string }[];
+      members: { name: string; ahead: boolean; stages: { id: string }[] }[];
+    };
+    expect(opened.stages.map((stage) => stage.id)).toEqual(["stage-lab-0", "stage-lab-1"]);
+    expect(opened.stages.map((stage) => stage.title)).toEqual(["Later 00章", "Earlier 01章"]);
+    expect(opened.hasHiddenStages).toBe(true);
+    expect(opened.members.find((member) => member.name === "Mina")?.ahead).toBe(false);
+    for (const member of opened.members) {
+      expect(member.stages.map((stage) => stage.id)).toEqual(["stage-lab-0", "stage-lab-1"]);
+    }
   });
 
   it("管理 API の全操作を管理者に限定する", async () => {

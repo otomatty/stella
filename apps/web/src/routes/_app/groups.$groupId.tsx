@@ -1,25 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { GroupPeerProgress } from "@stella/shared/groups/types";
 import { AccessDeniedScreen } from "@/components/common/AccessDeniedScreen";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { RoleGuard } from "@/components/shell/RoleGuard";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { ApiClientError } from "@/lib/api-client";
+import {
+  peerHiddenBubble,
+  peerLegendTitles,
+  peerNow,
+  peerStageBubble,
+  peerStageShortLabels,
+  stripSharedTitlePrefix,
+  type PeerNow,
+} from "@/lib/group-peers";
 import { getGroupPeers } from "@/lib/groups-api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/groups/$groupId")({
   component: GroupProgressPage,
 });
+
+const NOTICE =
+  "このグループのメンバーには、あなたの表示名・修了したステージ・進捗の割合が見えます。まだ開いていないステージの進み具合は「先に進んでいます」とだけ表示されます。";
 
 function GroupProgressPage() {
   const { groupId } = Route.useParams();
@@ -73,12 +78,11 @@ function GroupProgress({ groupId, enabled }: { groupId: string; enabled: boolean
       </Link>
       <header className="space-y-2">
         <h1 className="break-words text-2xl font-bold">{progress?.group.name ?? "グループ"}</h1>
-        <p className="text-sm text-ink-3">
-          このグループのメンバーには、あなたの表示名・修了したステージ・進捗の割合が見えます。
-        </p>
+        {progress ? <p className="text-sm text-ink-3">{progress.members.length} 人</p> : null}
+        <p className="text-sm text-ink-3">{NOTICE}</p>
       </header>
       {progress ? (
-        <PeerTable progress={progress} />
+        <PeerBands progress={progress} />
       ) : error ? (
         <p role="alert">{error}</p>
       ) : (
@@ -88,76 +92,332 @@ function GroupProgress({ groupId, enabled }: { groupId: string; enabled: boolean
   );
 }
 
-function PeerTable({ progress }: { progress: GroupPeerProgress }) {
-  // API はプロフィール ID を返さないので、同名のメンバーは応答内の出現順で区別する。
+interface DisplayStage {
+  id: string;
+  title: string;
+  short: string;
+  percent: number;
+  cleared: boolean;
+}
+
+const HATCH: CSSProperties = {
+  backgroundColor: "var(--bg-muted)",
+  backgroundImage:
+    "repeating-linear-gradient(-45deg, transparent, transparent 3px, var(--line-strong) 3px, var(--line-strong) 4px)",
+};
+
+function PeerBands({ progress }: { progress: GroupPeerProgress }) {
+  const titles = progress.stages.map((stage) => stage.title);
+  const displayTitles = stripSharedTitlePrefix(titles);
+  const shorts = peerStageShortLabels(titles);
+  const stages = progress.stages.map((stage, index) => ({
+    id: stage.id,
+    title: displayTitles[index] ?? stage.title,
+    short: shorts[index] ?? String(index + 1),
+  }));
   const occurrences = new Map<string, number>();
   return (
-    <section
-      aria-label="仲間の進捗"
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: キーボードで表を横スクロールできるようにする。
-      tabIndex={0}
-      className="overflow-x-auto rounded-xl border border-border bg-card focus-visible:outline-2 focus-visible:outline-brand"
-    >
-      <Table aria-label="ステージの進捗" containerClassName="overflow-visible">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="sticky left-0 z-10 w-36 min-w-32">メンバー</TableHead>
-            {progress.stages.map((stage) => (
-              <TableHead key={stage.id} className="min-w-36 whitespace-normal">
-                {stage.title}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div className="space-y-4">
+      <section aria-label="仲間の進捗" className="space-y-2">
+        <BandLabels stages={stages} hasHiddenStages={progress.hasHiddenStages} mobile />
+        <div className="hidden items-end px-3 text-xs text-ink-3 sm:grid sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3">
+          <div>メンバー</div>
+          <div>いま</div>
+          <BandLabels stages={stages} hasHiddenStages={progress.hasHiddenStages} />
+        </div>
+        <ul className="space-y-2">
           {progress.members.map((member) => {
             const occurrence = (occurrences.get(member.name) ?? 0) + 1;
             occurrences.set(member.name, occurrence);
-            const progressByStage = new Map(member.stages.map((stage) => [stage.id, stage]));
+            const byId = new Map(member.stages.map((stage) => [stage.id, stage]));
+            const snapshots: DisplayStage[] = stages.map((stage) => {
+              const row = byId.get(stage.id);
+              return {
+                ...stage,
+                percent: row?.percent ?? 0,
+                cleared: row?.cleared ?? false,
+              };
+            });
+            const now = peerNow(snapshots, member.ahead);
             return (
-              <TableRow
+              <li
                 key={JSON.stringify([member.name, occurrence])}
-                className={member.isMe ? "bg-brand-soft" : undefined}
+                className={cn(
+                  "rounded-xl border border-border",
+                  member.isMe ? "bg-brand-soft" : "bg-card",
+                )}
               >
-                <th
-                  scope="row"
-                  className={cn(
-                    "sticky left-0 z-10 border-b border-border px-4 py-3 text-left font-medium [tr:last-child_&]:border-b-0",
-                    member.isMe ? "bg-brand-soft" : "bg-card",
-                  )}
-                >
-                  <span className="block max-w-40 break-words">{member.name}</span>
-                  {member.isMe && <Badge variant="accent">あなた</Badge>}
-                </th>
-                {progress.stages.map(({ id }) => {
-                  const stage = progressByStage.get(id);
-                  return (
-                    <TableCell key={id}>
-                      {stage && (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 tabular-nums">
-                            <span>{stage.percent}%</span>
-                            {stage.cleared && <Badge variant="success">修了</Badge>}
-                          </div>
-                          <div
-                            aria-hidden="true"
-                            className="h-1 overflow-hidden rounded-full bg-muted"
-                          >
-                            <div
-                              className="h-full bg-brand"
-                              style={{ width: `${stage.percent}%` }}
-                            />
-                          </div>
-                        </div>
+                <div className="grid grid-cols-1 items-center gap-2 px-3 py-2 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3 sm:py-3">
+                  <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-start">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate font-medium">{member.name}</span>
+                      {member.isMe ? <Badge variant="accent">あなた</Badge> : null}
+                    </div>
+                    <p
+                      className={cn(
+                        "max-w-[55%] shrink-0 truncate text-xs sm:hidden",
+                        nowTone(now),
                       )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
+                    >
+                      {now.compact}
+                    </p>
+                  </div>
+                  <div className="hidden min-w-0 sm:block">
+                    <NowLines now={now} />
+                  </div>
+                  <Band
+                    stages={snapshots}
+                    ahead={member.ahead}
+                    hasHiddenStages={progress.hasHiddenStages}
+                  />
+                </div>
+              </li>
             );
           })}
-        </TableBody>
-      </Table>
-    </section>
+        </ul>
+      </section>
+      <PeerLegend stages={stages} hasHiddenStages={progress.hasHiddenStages} />
+    </div>
+  );
+}
+
+function nowTone(now: PeerNow): string {
+  if (now.kind === "ahead") return "text-[#4f46e5]";
+  if (now.kind === "cleared") return "text-success";
+  if (now.kind === "not-started") return "text-ink-3";
+  return "text-ink";
+}
+
+function NowLines({ now }: { now: PeerNow }) {
+  if (now.kind === "progress") {
+    return (
+      <div className="min-w-0">
+        <p className="truncate text-[13px]">{now.title}</p>
+        <p className="text-[12px] text-ink-3 tabular-nums">{now.percent}%</p>
+      </div>
+    );
+  }
+  if (now.kind === "ahead") {
+    return (
+      <span className="inline-flex max-w-full items-center rounded-full bg-[#4f46e5] px-2 py-0.5 text-[11px] font-medium text-white">
+        {now.label}
+      </span>
+    );
+  }
+  return (
+    <p
+      className={cn(
+        "break-words text-[13px]",
+        now.kind === "cleared" ? "text-success" : "text-ink-3",
+      )}
+    >
+      {now.label}
+    </p>
+  );
+}
+
+function BandLabels({
+  stages,
+  hasHiddenStages,
+  mobile = false,
+}: {
+  stages: { id: string; short: string }[];
+  hasHiddenStages: boolean;
+  mobile?: boolean;
+}) {
+  if (stages.length === 0 && !hasHiddenStages) return null;
+  return (
+    <div
+      className={cn("flex min-w-0 gap-[3px] sm:gap-1", mobile && "sm:hidden")}
+      aria-hidden="true"
+    >
+      {stages.map((stage) => (
+        <div
+          key={stage.id}
+          className="min-w-0 flex-[1_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]"
+        >
+          {stage.short}
+        </div>
+      ))}
+      {hasHiddenStages ? (
+        <div className="min-w-0 flex-[1.6_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]">
+          その先 ››
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Band({
+  stages,
+  ahead,
+  hasHiddenStages,
+}: {
+  stages: DisplayStage[];
+  ahead: boolean;
+  hasHiddenStages: boolean;
+}) {
+  if (stages.length === 0 && !hasHiddenStages) return null;
+  return (
+    <div className="flex min-w-0 gap-[3px] sm:gap-1">
+      {stages.map((stage) => (
+        <SegmentButton
+          key={stage.id}
+          label={peerStageBubble(stage)}
+          kind={stage.cleared ? "cleared" : stage.percent > 0 ? "progress" : "idle"}
+          percent={stage.percent}
+        />
+      ))}
+      {hasHiddenStages ? (
+        <SegmentButton label={peerHiddenBubble(ahead)} kind={ahead ? "ahead" : "hidden"} wide />
+      ) : null}
+    </div>
+  );
+}
+
+function SegmentButton({
+  label,
+  kind,
+  percent = 0,
+  wide = false,
+}: {
+  label: string;
+  kind: "cleared" | "progress" | "idle" | "hidden" | "ahead";
+  percent?: number;
+  wide?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const touch = useRef(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-expanded={open}
+          className={cn(
+            "relative flex h-3.5 min-w-0 items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:h-5",
+            wide ? "flex-[1.6_1_0%]" : "flex-[1_1_0%]",
+            kind === "cleared" && "bg-success",
+            kind === "progress" && "bg-brand-soft",
+            kind === "idle" && "border border-border bg-card",
+          )}
+          style={
+            kind === "hidden"
+              ? HATCH
+              : kind === "ahead"
+                ? { backgroundColor: "#4f46e5" }
+                : undefined
+          }
+          onPointerDown={(event) => {
+            touch.current = event.pointerType === "touch";
+          }}
+          onPointerEnter={(event) => {
+            if (event.pointerType !== "touch") setOpen(true);
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "touch") return;
+            if (event.currentTarget === document.activeElement) return;
+            setOpen(false);
+          }}
+          onFocus={() => {
+            if (!touch.current) setOpen(true);
+          }}
+          onBlur={() => {
+            setOpen(false);
+            touch.current = false;
+          }}
+          onClick={() => {
+            if (touch.current) setOpen((value) => !value);
+            touch.current = false;
+          }}
+        >
+          {kind === "progress" ? (
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-0 bg-brand"
+              style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+            />
+          ) : null}
+          {kind === "ahead" ? (
+            <span aria-hidden="true" className="text-[10px] font-semibold text-white sm:text-xs">
+              ››
+            </span>
+          ) : null}
+        </button>
+      </PopoverAnchor>
+      <PopoverContent
+        side="top"
+        className="w-auto max-w-48 px-2 py-1 text-center text-xs shadow-md"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
+        {label}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PeerLegend({
+  stages,
+  hasHiddenStages,
+}: {
+  stages: { id: string; short: string; title: string }[];
+  hasHiddenStages: boolean;
+}) {
+  const legendTitles = peerLegendTitles(
+    stages.map((stage) => stage.title),
+    stages.map((stage) => stage.short),
+  );
+  return (
+    <div className="space-y-3 text-xs text-ink-2">
+      <ul className="flex flex-wrap gap-x-4 gap-y-2">
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-5 rounded-[4px] bg-success" aria-hidden="true" />
+          修了
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span
+            className="relative h-3 w-5 overflow-hidden rounded-[4px] bg-brand-soft"
+            aria-hidden="true"
+          >
+            <span className="absolute inset-y-0 left-0 w-1/2 bg-brand" />
+          </span>
+          受講中 (塗りが進捗の割合)
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-5 rounded-[4px] border border-border bg-card" aria-hidden="true" />
+          未着手
+        </li>
+        {hasHiddenStages ? (
+          <>
+            <li className="flex items-center gap-1.5">
+              <span className="h-3 w-5 rounded-[4px]" style={HATCH} aria-hidden="true" />
+              その先 (まだ開いていないステージ)
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span
+                className="flex h-3 w-5 items-center justify-center rounded-[4px] text-[8px] font-semibold text-white"
+                style={{ backgroundColor: "#4f46e5" }}
+                aria-hidden="true"
+              >
+                ››
+              </span>
+              先に進んでいます
+            </li>
+          </>
+        ) : null}
+      </ul>
+      {stages.length > 0 ? (
+        <ul aria-label="段のラベル" className="flex flex-wrap gap-x-4 gap-y-1 text-ink-3">
+          {stages.map((stage, index) => (
+            <li key={stage.id}>
+              <span className="font-medium text-ink-2">{stage.short}</span>
+              <span className="ml-1">{legendTitles[index]}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }

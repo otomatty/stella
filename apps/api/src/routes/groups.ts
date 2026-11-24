@@ -1,10 +1,17 @@
 import type { GroupPeerProgress, LearnerGroup } from "@stella/shared/groups/types";
 import { stageProgressPercent } from "@stella/shared/progress/stage-progress";
+import {
+  isRevealOneAtATimeIsland,
+  parentSlugOf,
+  type SkillMapStage,
+} from "@stella/shared/skill-map/evaluate";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { learnerOnly } from "../lib/learner-scope.js";
+import { loadSkillMapSource } from "../lib/skill-map-data.js";
+import { evaluateSkillMapFor } from "./skill-map.js";
 
 export const groupsRoute = new Hono<{ Bindings: Env }>();
 groupsRoute.onError((err, c) => errorResponse(c, err));
@@ -36,12 +43,110 @@ interface PeerProgressRow {
   profileId: string;
   peerName: string;
   stageId: string | null;
-  stageTitle: string | null;
   lessonsTotal: number;
   lessonsDone: number;
   tasksTotal: number;
   tasksPassed: number;
   cleared: 0 | 1;
+  enrolled: 0 | 1;
+}
+
+interface StageActivity {
+  percent: number;
+  cleared: boolean;
+  started: boolean;
+}
+
+/** 修了・受講中・始められる星だけ。段階表示の島はスキルツリーの full に合わせる。 */
+function peerStageVisible(
+  stage: SkillMapStage,
+  evaluated: ReturnType<typeof evaluateSkillMapFor>,
+): boolean {
+  const state = evaluated.states.get(stage.id);
+  if (state !== "cleared" && state !== "active" && state !== "unlocked") return false;
+  if (isRevealOneAtATimeIsland(stage.category)) {
+    return evaluated.visibility.get(stage.id) === "full";
+  }
+  return true;
+}
+
+/** 見えるステージを、親が先・同じ段は題名順に並べる。 */
+function orderVisibleStages(stages: SkillMapStage[]): { id: string; title: string }[] {
+  const bySlug = new Map(stages.map((stage) => [stage.slug, stage]));
+  const depth = new Map<string, number>();
+  const visiting = new Set<string>();
+  const depthOf = (stage: SkillMapStage): number => {
+    const known = depth.get(stage.id);
+    if (known !== undefined) return known;
+    if (visiting.has(stage.id)) return 0;
+    visiting.add(stage.id);
+    const parentSlug = parentSlugOf(stage);
+    const parent = parentSlug === undefined ? undefined : bySlug.get(parentSlug);
+    const value = parent ? depthOf(parent) + 1 : 0;
+    visiting.delete(stage.id);
+    depth.set(stage.id, value);
+    return value;
+  };
+  for (const stage of stages) depthOf(stage);
+  return [...stages]
+    .sort((a, b) => {
+      const byDepth = (depth.get(a.id) ?? 0) - (depth.get(b.id) ?? 0);
+      if (byDepth !== 0) return byDepth;
+      const byTitle = a.title.localeCompare(b.title, "ja");
+      if (byTitle !== 0) return byTitle;
+      return a.id.localeCompare(b.id);
+    })
+    .map((stage) => ({ id: stage.id, title: stage.title }));
+}
+
+function buildPeerProgress(
+  rows: PeerProgressRow[],
+  callerId: string,
+  visible: { id: string; title: string }[],
+  hiddenIds: ReadonlySet<string>,
+): GroupPeerProgress {
+  const first = rows[0];
+  if (!first) throw new ApiError("Not found", 404);
+  const members = new Map<
+    string,
+    { name: string; isMe: boolean; activity: Map<string, StageActivity> }
+  >();
+  for (const row of rows) {
+    let member = members.get(row.profileId);
+    if (!member) {
+      member = {
+        name: row.peerName,
+        isMe: row.profileId === callerId,
+        activity: new Map(),
+      };
+      members.set(row.profileId, member);
+    }
+    if (row.stageId === null) continue;
+    const cleared = row.cleared === 1;
+    member.activity.set(row.stageId, {
+      percent: stageProgressPercent({ ...row, completed: cleared }),
+      cleared,
+      started: row.enrolled === 1 || row.lessonsDone > 0 || row.tasksPassed > 0,
+    });
+  }
+  return {
+    group: { id: first.groupId, name: first.groupName },
+    hasHiddenStages: hiddenIds.size > 0,
+    stages: visible,
+    members: [...members.values()].map((member) => ({
+      name: member.name,
+      isMe: member.isMe,
+      ahead: !member.isMe && [...hiddenIds].some((id) => member.activity.get(id)?.started === true),
+      stages: visible.map((stage) => {
+        const activity = member.activity.get(stage.id);
+        return {
+          id: stage.id,
+          percent: activity?.percent ?? 0,
+          cleared: activity?.cleared ?? false,
+        };
+      }),
+    })),
+  };
 }
 
 groupsRoute.get("/api/groups/:id/peers", async (c) => {
@@ -65,7 +170,7 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
       order by name, p.id
       limit 200
     ), published_stages as (
-      select s.id, s.title from shared_group g
+      select s.id from shared_group g
       join group_stages gs on gs.group_id = g.id
       join stages s on s.id = gs.stage_id
       where s.status = 'published'
@@ -94,10 +199,11 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
       group by p.id, t.stage_id
     )
     select g.id groupId, g.name groupName, p.id profileId, p.name peerName,
-      s.id stageId, s.title stageTitle,
+      s.id stageId,
       coalesce(lt.total, 0) lessonsTotal, coalesce(lc.done, 0) lessonsDone,
       coalesce(tt.total, 0) tasksTotal, coalesce(tc.passed, 0) tasksPassed,
-      e.completed_at is not null cleared
+      e.completed_at is not null cleared,
+      e.id is not null enrolled
     from shared_group g cross join peers p
     left join published_stages s on true
     left join lesson_totals lt on lt.stage_id = s.id
@@ -105,31 +211,21 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
     left join lesson_counts lc on lc.stage_id = s.id and lc.profile_id = p.id
     left join task_counts tc on tc.stage_id = s.id and tc.profile_id = p.id
     left join enrollments e on e.stage_id = s.id and e.user_id = p.id
-    order by p.name, p.id, s.title, s.id
+    order by p.name, p.id, s.id
   `);
   const first = rows[0];
   if (!first) throw new ApiError("Not found", 404);
 
-  const stages = new Map<string, GroupPeerProgress["stages"][number]>();
-  const members = new Map<string, GroupPeerProgress["members"][number]>();
-  for (const row of rows) {
-    let member = members.get(row.profileId);
-    if (!member) {
-      member = { name: row.peerName, isMe: row.profileId === caller.id, stages: [] };
-      members.set(row.profileId, member);
-    }
-    if (row.stageId === null || row.stageTitle === null) continue;
-    stages.set(row.stageId, { id: row.stageId, title: row.stageTitle });
-    const cleared = row.cleared === 1;
-    member.stages.push({
-      id: row.stageId,
-      percent: stageProgressPercent({ ...row, completed: cleared }),
-      cleared,
-    });
-  }
-  return c.json({
-    group: { id: first.groupId, name: first.groupName },
-    stages: [...stages.values()],
-    members: [...members.values()],
-  } satisfies GroupPeerProgress);
+  const publishedIds = new Set(rows.flatMap((row) => (row.stageId === null ? [] : [row.stageId])));
+  const source = await loadSkillMapSource(db, caller);
+  const evaluated = evaluateSkillMapFor(source);
+  const byId = new Map(source.stages.map((stage) => [stage.id, stage]));
+  const visibleStages = [...publishedIds].flatMap((id) => {
+    const stage = byId.get(id);
+    return stage !== undefined && peerStageVisible(stage, evaluated) ? [stage] : [];
+  });
+  const visible = orderVisibleStages(visibleStages);
+  const visibleIds = new Set(visible.map((stage) => stage.id));
+  const hiddenIds = new Set([...publishedIds].filter((id) => !visibleIds.has(id)));
+  return c.json(buildPeerProgress(rows, caller.id, visible, hiddenIds) satisfies GroupPeerProgress);
 });
