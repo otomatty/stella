@@ -1,11 +1,8 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問13 型 ClickHandler を、関数 handleClick の型として作る（typeof handleClick）
+// 定義済みの関数は書き換えません。
 
 export function handleClick(x: number, y: number): string {
   return `${x},${y}`;
 }
 
-// 問13
 export type ClickHandler = typeof handleClick;

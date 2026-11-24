@@ -1,11 +1,9 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問13 user の、keys に並べたプロパティの値を、その順に並べた配列を返す。keys は readonly (keyof User)[]
+//     例: valuesOf(user, ["name", "age"]) → ["山田", 30]
+// 引数と戻り値に型注釈を付けます。
 
 export type User = { id: number; name: string; email: string; age: number };
 
-// 問13
 export function valuesOf(user: User, keys: readonly (keyof User)[]): (string | number)[] {
   return keys.map((key) => user[key]);
 }

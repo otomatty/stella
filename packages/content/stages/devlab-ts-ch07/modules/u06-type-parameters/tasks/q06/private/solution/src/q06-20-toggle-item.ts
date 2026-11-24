@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問20 item が含まれていれば除き、なければ末尾に足した新しい配列
+//     例: toggleItem(["a", "b"], "a") → ["b"]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問20
 export function toggleItem<T>(items: readonly T[], item: T): T[] {
   return items.includes(item) ? items.filter((x) => x !== item) : [...items, item];
 }

@@ -1,9 +1,3 @@
-// 07-q03 Partial・Required・Readonly
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
-//
 // 問題
 // ユーティリティ型を使うと、ある型をもとに、少しだけ違う型を作れます。
 //   Partial<T>: すべてのプロパティを省略できるようにした型
@@ -20,6 +14,7 @@
 //
 // 4. changedKeys(before, after) を書く。値が違うプロパティ名を、name、email、bio、age の順で並べて返す。
 //    戻り値は (keyof Profile)[]
+// 引数と戻り値に型注釈を付けます。
 
 export type Profile = { name: string; email: string; bio: string; age: number };
 

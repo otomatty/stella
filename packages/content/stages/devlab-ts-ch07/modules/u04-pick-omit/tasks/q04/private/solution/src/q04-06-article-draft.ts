@@ -1,7 +1,5 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問6 型 ArticleDraft を、Article から id と publishedAt を除いて作る
+// プロパティを手で書き並べず、Omit で型を作ります。
 
 export type Article = {
   id: number;
@@ -11,5 +9,4 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問6
 export type ArticleDraft = Omit<Article, "id" | "publishedAt">;

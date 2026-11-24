@@ -1,11 +1,9 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問8 User から password を除いたオブジェクトを返す。戻り値は Omit<User, "password">
+//     例: toSafeUser(user) → password のない User
+// 引数と戻り値に型注釈を付けます。
 
 export type User = { id: number; name: string; email: string; password: string; age: number };
 
-// 問8
 export function toSafeUser(user: User): Omit<User, "password"> {
   return { id: user.id, name: user.name, email: user.email, age: user.age };
 }

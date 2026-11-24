@@ -1,8 +1,8 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問3 length が長い方を返す（同じなら a）
+//     例: longer([1, 2], [3]) → [1, 2]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 引数の型は length: number を持つ型に限ります。
 
-// 問3
 export function longer<T extends { length: number }>(a: T, b: T): T {
   return b.length > a.length ? b : a;
 }

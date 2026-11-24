@@ -1,8 +1,3 @@
-// 07-q06 型変数（ジェネリクス）
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
-//
 // 問題
 // function first<T>(items: readonly T[]): T | undefined のように、型を引数のように受け取る（型変数 T）と、
 // どんな型の配列にも使え、しかも戻り値の型が「渡した配列の要素の型」になる関数を書けます。
@@ -16,6 +11,7 @@
 //
 // どの関数も、テストは「数値の配列なら number、文字列の配列なら string」のように、
 // 渡した型に合わせて戻り値の型が変わるかを確かめます
+// first と last の配列の引数は readonly T[] にします。
 
 export function first() {}
 

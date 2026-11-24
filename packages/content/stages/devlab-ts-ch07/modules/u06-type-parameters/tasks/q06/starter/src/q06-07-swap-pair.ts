@@ -1,12 +1,6 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
-//
-// 型変数（<T> など）を使って書いてください。any や unknown で逃げないこと。
-// テストは、数値の配列を渡せば number、文字列の配列を渡せば string のように、渡した型に合わせて戻り値の型が変わるかを確かめます。
-// 引数の配列は readonly T[] にする。
-
 // 問7 タプル [a, b] を [b, a] にする
 //     例: swapPair(["a", 1]) → [1, "a"]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 引数は読み取り専用のタプルにします。
+
 export function swapPair() {}

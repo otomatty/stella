@@ -1,8 +1,8 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問6 オブジェクトに id を足した新しいオブジェクト。戻り値の型は T & { id: number }
+//     例: addId({ name: "山田" }, 1) → { name: "山田", id: 1 }
+// 型変数を使い、unknown で型を置き換えないでください。
+// 引数の型は T extends object でオブジェクトに限ります。
 
-// 問6
 export function addId<T extends object>(value: T, id: number): T & { id: number } {
   return { ...value, id };
 }

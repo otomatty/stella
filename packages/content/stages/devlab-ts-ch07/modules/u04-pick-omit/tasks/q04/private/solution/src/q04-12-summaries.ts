@@ -1,7 +1,6 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問12 Article の配列を Pick<Article, "id" | "title"> の配列にする
+//     例: summaries(articles) → [{ id, title }, …]
+// 引数と戻り値に型注釈を付けます。
 
 export type Article = {
   id: number;
@@ -11,7 +10,6 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問12
 export function summaries(articles: readonly Article[]): Pick<Article, "id" | "title">[] {
   return articles.map((a) => ({ id: a.id, title: a.title }));
 }

@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問14 a と b で値が違うプロパティだけを、b の値で持つ Partial<Options> を返す
+//     例: diffOptions(a, { ...a, size: 20 }) → { size: 20 }
+// 引数と戻り値に型注釈を付けます。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問14
 export function diffOptions(a: Options, b: Options): Partial<Options> {
   const result: Partial<Options> = {};
   if (a.size !== b.size) {

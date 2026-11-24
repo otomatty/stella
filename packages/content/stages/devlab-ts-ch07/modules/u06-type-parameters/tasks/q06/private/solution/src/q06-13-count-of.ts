@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問13 target と同じ要素の数（=== で比べる）
+//     例: countOf(["a", "b", "a"], "a") → 2
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問13
 export function countOf<T>(items: readonly T[], target: T): number {
   let count = 0;
   for (const item of items) {

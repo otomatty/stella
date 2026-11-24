@@ -1,7 +1,6 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問11 下書き Omit<Article, "id" | "publishedAt"> に id と publishedAt を足して Article を作る
+//     例: publish(draft, 1, 日時).id → 1
+// 引数と戻り値に型注釈を付けます。
 
 export type Article = {
   id: number;
@@ -11,7 +10,6 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問11
 export function publish(draft: Omit<Article, "id" | "publishedAt">, id: number, at: Date): Article {
   return { ...draft, id, publishedAt: at };
 }

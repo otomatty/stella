@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問18 predicate が true の最初の要素。なければ undefined
+//     例: firstWhere([1, 4, 6], (n) => n % 2 === 0) → 4
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問18
 export function firstWhere<T>(items: readonly T[], predicate: (item: T) => boolean): T | undefined {
   for (const item of items) {
     if (predicate(item)) {
