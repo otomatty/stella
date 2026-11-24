@@ -30,7 +30,6 @@ import {
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
-import { planProblemStepProgressWrites } from "../lib/lesson-progress-write.js";
 import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "../lib/task-problem-steps.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
@@ -94,8 +93,6 @@ async function stageTaskList(
     const locks = rows.length
       ? await loadStageStepLocks(db, caller.id, stageId, { hashCache })
       : null;
-    const changedCompletions: string[] = [];
-    const completedSteps = new Set<string>();
     const possibleCompletions: { summary: TaskSummary; contentHash: string }[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
@@ -113,12 +110,7 @@ async function stageTaskList(
         if (!problemTask) return base;
         const { problems, saved, counted: passed, ready, steps } = problemTask;
         const problemSteps = ready
-          ? steps.map(({ blocking: _blocking, stepCompleted, ...step }) => {
-              if (step.state === "submitted") completedSteps.add(step.stepLessonId);
-              if ((step.state === "submitted") !== Boolean(stepCompleted))
-                changedCompletions.push(step.stepLessonId);
-              return step;
-            })
+          ? steps.map(({ blocking: _blocking, ...step }) => step)
           : undefined;
         const summary = {
           ...base,
@@ -144,14 +136,6 @@ async function stageTaskList(
         }
         return summary;
       });
-    for (const write of planProblemStepProgressWrites(
-      db,
-      caller.id,
-      changedCompletions,
-      undefined,
-      completedSteps,
-    ))
-      await write;
     let completedTask = false;
     let refresh = false;
     for (const { summary, contentHash } of possibleCompletions) {
@@ -250,21 +234,6 @@ async function problemResults(
     }
     if (problemTask.gated && !problemTask.ready) throw new ApiError(PROBLEM_STEPS_NOT_READY, 503);
     const steps = problemTask.ready ? problemTask.steps : undefined;
-    const completedSteps = new Set(
-      steps?.filter((step) => step.state === "submitted").map((step) => step.stepLessonId),
-    );
-    const changedCompletions =
-      steps
-        ?.filter((step) => completedSteps.has(step.stepLessonId) !== Boolean(step.stepCompleted))
-        .map((step) => step.stepLessonId) ?? [];
-    for (const write of planProblemStepProgressWrites(
-      db,
-      caller.id,
-      changedCompletions,
-      undefined,
-      completedSteps,
-    ))
-      await write;
     const entries = steps
       ? steps.map(({ id, title, state, stepLessonId, afterLessonId, afterTitle }) => ({
           id,

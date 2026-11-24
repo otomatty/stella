@@ -2,7 +2,7 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
 import { lessonProgress, lessons, submissions } from "../db/schema.js";
-import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
+import { isProblemStepLesson } from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -60,20 +60,19 @@ export async function reviewedPassLessonIds(
 
 export interface ReviewedProgress {
   rows: NormalizedProgressRow[];
-  /** 完了をレビューや問題の提出から決めたレッスン。 */
+  /** 完了をレビューの合格から決めたコードレッスン。 */
   reviewedLessonIds: Set<string>;
-  problemStepLessonIds: Set<string>;
 }
 
-/** 現存するレッスンの進捗を返す。コードはレビュー、問題のステップは提出で完了を決める。 */
+/** 現存するレッスンの進捗を返す。コードはレビューの合格で完了を決め、問題のレッスンは捨てる。 */
 export async function reviewedProgressRows(
   db: Db,
   userId: string,
   rows: NormalizedProgressRow[],
 ): Promise<ReviewedProgress> {
   const existing = new Set<string>();
+  const problemSteps = new Set<string>();
   const reviewed = new Set<string>();
-  const problemStepLessonIds = new Set<string>();
   const passed = new Set<string>();
   for (const ids of chunk(
     rows.map((r) => r.lessonId),
@@ -90,31 +89,22 @@ export async function reviewedProgressRows(
     const codeLessonIds: string[] = [];
     for (const row of existingLessons) {
       existing.add(row.id);
-      if (row.type !== "code" && !row.problemStep) continue;
+      if (row.problemStep) {
+        problemSteps.add(row.id);
+        continue;
+      }
+      if (row.type !== "code") continue;
       reviewed.add(row.id);
-      if (row.problemStep) problemStepLessonIds.add(row.id);
-      else codeLessonIds.push(row.id);
+      codeLessonIds.push(row.id);
     }
     const ok = await reviewedPassLessonIds(db, userId, codeLessonIds);
     for (const id of ok) passed.add(id);
   }
-  for (const row of await loadCompletedProblemSteps(db, [userId], [...problemStepLessonIds])) {
-    passed.add(row.lessonId);
-  }
   return {
     rows: rows
-      .filter((r) => existing.has(r.lessonId))
-      .map((r) =>
-        reviewed.has(r.lessonId)
-          ? {
-              ...r,
-              completed: passed.has(r.lessonId),
-              countsTowardActivity: !problemStepLessonIds.has(r.lessonId) && r.countsTowardActivity,
-            }
-          : r,
-      ),
+      .filter((r) => existing.has(r.lessonId) && !problemSteps.has(r.lessonId))
+      .map((r) => (reviewed.has(r.lessonId) ? { ...r, completed: passed.has(r.lessonId) } : r)),
     reviewedLessonIds: reviewed,
-    problemStepLessonIds,
   };
 }
 

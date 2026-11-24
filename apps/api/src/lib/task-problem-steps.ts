@@ -29,8 +29,7 @@ type SavedProblem = Pick<
   "problemId" | "contentHash" | "source" | "path" | "code" | "firstPassedAt"
 >;
 
-type StageProblemStep = TaskProblemStepSummary &
-  PresentedProblemStep & { stepCompleted: boolean | null };
+type StageProblemStep = TaskProblemStepSummary & PresentedProblemStep;
 
 interface StageProblemTask {
   problems: TaskProblem[];
@@ -204,7 +203,6 @@ export async function loadStageStepLocks(
         stepLessonId: lesson.id,
         afterLessonId: presented.blocking?.id ?? row.afterLessonId,
         afterTitle: presented.blocking?.title ?? row.afterTitle ?? "",
-        stepCompleted: lesson.completed,
         ...presented,
       });
     }

@@ -21,7 +21,6 @@ import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { withResourceLock } from "./resource-lock.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
-import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import {
   loadTaskProblemHashes,
   loadProblemRevisionHashes,
@@ -31,6 +30,7 @@ import {
   type SavedProblemResult,
   type ProblemRevisionHashes,
 } from "./task-problem-hashes.js";
+import { autoCompleteStagesIfMet } from "./stage-auto-complete.js";
 import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "./task-problem-steps.js";
 import {
   recomputeTaskProgress,
@@ -407,6 +407,7 @@ export async function completeCarriedProblemTask(
  * 問題つきの課題の提出。照合に落ちたら何も書かない。AI の待ち行列には積まない。
  * 数える問題が全部そろって、まだ合格していなければ、課題の提出を 1 行作って
  * ロックの外で `tests` として確定する (同じロックを取り直す)。
+ * 合格にした直後に、その課題のステージの修了を判定する。
  */
 export async function submitTaskProblem(
   db: Db,
@@ -479,7 +480,6 @@ export async function submitTaskProblem(
       const canReplaceManualPass =
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual");
-      let stepLessonId: string | undefined;
       let hashes: ProblemRevisionHashes | undefined;
       if (bundle.manifest.problemSteps) {
         const locks = await loadStageStepLocks(db, caller.id, task.stageId, {
@@ -497,7 +497,6 @@ export async function submitTaskProblem(
             409,
           );
         }
-        stepLessonId = step.stepLessonId;
         hashes = locks.hashes.get(task.id);
       } else {
         hashes = await loadTaskProblemHashes(db, {
@@ -585,8 +584,6 @@ export async function submitTaskProblem(
             setWhere: sql`${taskProgress.status} not in ('passed', 'ai-passed')`,
           }),
       ];
-      if (stepLessonId)
-        writes.push(...planProblemStepProgressWrites(db, caller.id, [stepLessonId], now));
       const personalIds = canReplaceManualPass
         ? countedProblemIds(
             submitted.filter((row) => row.source === "tests"),
@@ -629,6 +626,12 @@ export async function submitTaskProblem(
   if (locked.value.completionId) {
     await reviewTaskSubmission(db, caller, locked.value.completionId, "pass", "", "tests");
     taskPassed = true;
+    // 合格で修了条件が揃ったらステージをクリアにする。判定の失敗は関数内で握る。
+    await autoCompleteStagesIfMet(db, {
+      actor: caller,
+      userId: caller.id,
+      stageIds: [task.stageId],
+    });
   }
   return {
     problemId,
