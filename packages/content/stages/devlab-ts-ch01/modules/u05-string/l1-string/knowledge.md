@@ -19,7 +19,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 
 </details>
 
-### Q2. `"ORD-001".indexOf("#")` は何を返しますか？
+### Q2. `"ORD-001".indexOf("/")` は何を返しますか？
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
 - A. `0`
@@ -49,15 +49,15 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-string]
 ### Q4. `"A-1-B-2"` の置き換えについて、正しいものをすべて選んでください。
 <!-- kind: multiple; skills: devlab-ts-ch01 -->
 
-- A. `.replace("-", "")` は `"A1-B-2"` を返す
+- A. `.replaceAll("-", "/")` は `"A/1/B/2"` を返す
 - B. `.replaceAll("-", "")` は `"A1B2"` を返す
 - C. `.replace(/[0-9]/g, "")` は `"A--B-"` を返す
-- D. `.replace("-", "")` は `"A1B2"` を返す
+- D. `.replace(/[0-9]/g, "")` は `"A--B-2"` を返す
 
 <details>
 <summary>解答</summary>
 
-**A, B, C** — 文字列を渡した replace は最初だけ、replaceAll はすべての一致を置き換えます。正規表現は、探す文字の種類や並びを表す書き方です。g も、すべての一致を扱います。
+**A, B, C** — `replaceAll` に文字列を渡すと、決まった文字をすべて置き換えます。`[0-9]` は半角数字のどれか一文字を表し、`g` を付けると当てはまる文字をすべて置き換えます。
 
 </details>
 

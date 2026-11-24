@@ -53,6 +53,15 @@ export const MOTIONS = {
   "empty-card": { title: "空の名札と1文字目", beats: 4, seconds: [2.5, 4.0, 4.1, 6.7] },
   "whiteboard-note": { title: "書き換えるホワイトボード", beats: 4, seconds: [2.5, 4.8, 5.2, 5.7] },
   "price-tag-round": { title: "体重計の小数表示", beats: 4, seconds: [2.5, 3.6, 4.7, 5.8] },
+  "tape-cut": { title: "文字テープを切る", beats: 4, seconds: [2.5, 4.0, 5.5, 4.8] },
+  "mail-sort": { title: "封筒の仕分け", beats: 4, seconds: [2.5, 3.6, 4.3, 4.8] },
+  "name-case": { title: "名前を小文字にそろえる", beats: 4, seconds: [2.5, 4.7, 4.8, 5.2] },
+  "file-icons": { title: "写真ファイルを見分ける", beats: 4, seconds: [2.5, 4.3, 5.0, 4.5] },
+  "form-trim": { title: "入力欄の前後の空白", beats: 4, seconds: [2.5, 4.1, 3.8, 4.5] },
+  "date-replace": { title: "日付の区切りを替える", beats: 4, seconds: [2.5, 4.7, 5.5, 5.5] },
+  "card-find-at": { title: "文字カードから位置を探す", beats: 4, seconds: [2.5, 3.8, 4.7, 5.0] },
+  "dot-last": { title: "ファイル名の最後の点", beats: 4, seconds: [2.5, 4.0, 4.3, 5.7] },
+  "digit-sieve": { title: "ふるいで数字を取り除く", beats: 4, seconds: [2.5, 5.0, 4.8, 5.5] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;

@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u05-string@6",
-  "contentHash": "4aabb8b9b462ab0f4224f3c5cd17d8dd29f98aa2d259e71b10b61ab354a6e9cb",
+  "unitId": "devlab-ts-ch01/u05-string@7",
+  "contentHash": "9dc45ef5a8ece0700080381bff3b4f8731b3cb43d2388a485c20451ff58caa61",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-string/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と課題のヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -15,31 +15,79 @@
     {
       "contentId": "l1-string/knowledge.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "文字列の操作についての理解を確かめる教材独自の問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t1-search/slides.md",
+      "contentId": "l1-string/t1-slice/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t2-pick/slides.md",
+      "contentId": "l1-string/t2-starts-with/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-string/t3-tidy-replace/slides.md",
+      "contentId": "l1-string/t3-to-lower-case/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
-      "usedFor": "string 型と表記の背景。文字列の操作・業務サンプル・問題別ヒントは書き方ガイドを素材に再構成し、動画はコードと値の動きで独自制作。知識問題は理解の自己確認用。",
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t4-ends-with/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t5-trim/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t6-replace-all/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t7-index-of/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t8-last-index-of/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-string/t9-regex-replace/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-string"],
+      "usedFor": "string 型と表記の背景。文字列の操作を示す教材独自の例と図解。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
