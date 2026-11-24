@@ -515,10 +515,19 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
       db.insert(stageGrants).values(valuesFor(row)).onConflictDoNothing(),
     );
 
-    const existingUnlocks = await db
-      .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
-      .from(stageUnlocks)
-      .where(eq(stageUnlocks.stageId, stageId));
+    const [existingUnlocks, groupUnlocks] = await Promise.all([
+      db
+        .select({ userId: stageUnlocks.userId, via: stageUnlocks.via })
+        .from(stageUnlocks)
+        .where(eq(stageUnlocks.stageId, stageId)),
+      db
+        .selectDistinct({ userId: effectiveStageUnlocks.userId })
+        .from(effectiveStageUnlocks)
+        .where(
+          and(eq(effectiveStageUnlocks.stageId, stageId), isNotNull(effectiveStageUnlocks.groupId)),
+        ),
+    ]);
+    const groupExemptIds = new Set(groupUnlocks.map((row) => row.userId));
     const assigned = new Set(profileIds);
     // 一意制約は user × stage。旧飛び級の行がある人へ staff は入らない (上書きしない)。
     const blockedByOtherVia = new Set(
@@ -529,7 +538,9 @@ stageGrantsRoute.put("/api/stage-grants/:stageId", async (c) => {
     );
     // GET に含まれるグループ由来の免除から手動の行を新設しない。
     const manualUnlockRequests = requestedUnlocks?.filter(
-      (id) => !existingGrantIds.has(id) || manualGrantIds.has(id) || existingStaffIds.has(id),
+      (id) =>
+        existingStaffIds.has(id) ||
+        (!groupExemptIds.has(id) && (!existingGrantIds.has(id) || manualGrantIds.has(id))),
     );
     const savedUnlocks =
       manualUnlockRequests === undefined

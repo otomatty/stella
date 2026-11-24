@@ -877,6 +877,51 @@ it("旧 API の GET を PUT に送り返してもグループ由来の割り当�
   expect(await json(await call(path))).toEqual(listed);
 });
 
+it("旧 API の PUT は手動の割り当てがあってもグループの免除を手動にしない", async () => {
+  await grant();
+  await grant("other");
+  await grant("new");
+  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+  await db.insert(groupMembers).values([
+    { groupId: group.id, profileId: "learner" },
+    { groupId: group.id, profileId: "other" },
+  ]);
+  expect(
+    await replaceGroupStages(db, group, [{ slug: "sample-extra", exempt: true }]),
+  ).toMatchObject({ ok: true });
+  await db.insert(stageUnlocks).values({
+    stageId: "extra",
+    userId: "other",
+    via: "staff",
+    unlockedAt: new Date("2026-01-01T00:00:00Z"),
+  });
+  const readManualUnlocks = () => db.select().from(stageUnlocks).orderBy(stageUnlocks.userId);
+  const before = await readManualUnlocks();
+  const path = "/api/stage-grants";
+  const listed = await json<{
+    stages: { id: string; profile_ids: string[]; unlocked_profile_ids: string[] }[];
+  }>(await call(path));
+  const extra = listed.stages.find((stage) => stage.id === "extra");
+  if (!extra) throw new Error("割り当て一覧に extra がありません");
+  expect(extra.profile_ids).toHaveLength(3);
+  expect(extra.unlocked_profile_ids).toHaveLength(2);
+  expect(extra.unlocked_profile_ids).toEqual(expect.arrayContaining(["learner", "other"]));
+
+  const roundTrip = await call(`${path}/extra`, "PUT", extra);
+  expect(roundTrip.status).toBe(200);
+  expect(await readManualUnlocks()).toEqual(before);
+
+  const addManualUnlock = await call(`${path}/extra`, "PUT", {
+    profile_ids: extra.profile_ids,
+    unlocked_profile_ids: [...extra.unlocked_profile_ids, "new"],
+  });
+  expect(addManualUnlock.status).toBe(200);
+  expect(await readManualUnlocks()).toEqual([
+    expect.objectContaining({ stageId: "extra", userId: "new", via: "staff" }),
+    ...before,
+  ]);
+});
+
 it("PUTの読み取り後に案内が更新されても、残る人の案内と割り当ての記録を保持する", async () => {
   await grant();
   await grant("other");
