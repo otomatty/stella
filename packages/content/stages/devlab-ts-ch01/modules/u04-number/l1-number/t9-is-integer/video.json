@@ -149,20 +149,26 @@
       ]
     },
     "practice": {
-      "cols": 3,
+      "cols": 5,
       "rows": 1,
       "nodes": [
         {
           "id": "a",
-          "label": "元の真偽値",
+          "label": "入力した個数",
           "art": "is-integer-example-1",
           "at": [1, 1]
         },
         {
           "id": "b",
-          "label": "反対の値",
-          "art": "is-integer-example-3",
+          "label": "整数か",
+          "art": "is-integer-example-2",
           "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "整数でないか",
+          "art": "is-integer-example-3",
+          "at": [5, 1]
         }
       ],
       "links": [
@@ -170,6 +176,11 @@
           "id": "ab",
           "from": "a",
           "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
         }
       ]
     },
@@ -504,7 +515,7 @@
           "say": "ここからは、画面の例を見て考えましょう。",
           "focus": [1],
           "figure": {
-            "show": ["a", "b", "ab"],
+            "show": ["a"],
             "tag": {
               "a": "22"
             }
@@ -513,19 +524,21 @@
         {
           "say": "まず、整数かどうかを確かめた結果を見ます。",
           "figure": {
-            "pulse": ["a"]
+            "show": ["b", "ab"],
+            "pulse": ["b"]
           }
         },
         {
           "say": "二十二個の注文は、整数でないと判定されるでしょうか？",
           "figure": {
+            "show": ["c", "bc"],
             "mark": [
               {
-                "on": "b",
+                "on": "c",
                 "kind": "question"
               }
             ],
-            "pulse": ["b"]
+            "pulse": ["c"]
           }
         }
       ]
@@ -548,12 +561,13 @@
           "figure": {
             "mark": [
               {
-                "on": "b",
+                "on": "c",
                 "kind": "check"
               }
             ],
             "tag": {
-              "b": "false"
+              "b": "true",
+              "c": "false"
             }
           },
           "pause": 1
@@ -580,7 +594,7 @@
             "text": "Number.isInteger"
           },
           "figure": {
-            "pulse": ["a"]
+            "pulse": ["b"]
           }
         },
         {
@@ -591,7 +605,7 @@
             "text": "!"
           },
           "figure": {
-            "pulse": ["b"]
+            "pulse": ["c"]
           }
         },
         {
@@ -602,7 +616,7 @@
             "note": "修正が必要か"
           },
           "figure": {
-            "pulse": ["b", "ab"]
+            "pulse": ["c", "bc"]
           },
           "pause": 1
         }
