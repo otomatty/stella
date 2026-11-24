@@ -1,6 +1,5 @@
 import {
   lazy,
-  type ReactNode,
   Suspense,
   useCallback,
   useContext,
@@ -22,7 +21,7 @@ import {
   User,
   X,
 } from "@/lib/icons";
-import type { Stage, Section, Lesson } from "@/data/types";
+import type { Stage, Section, Lesson, LessonStatus } from "@/data/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -43,7 +42,6 @@ import { LessonComments } from "./LessonComments";
 import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
-import type { LessonProgressMap } from "@/lib/lesson-progress";
 import { resolveLessonNeighbors } from "@/lib/lesson-navigation";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
@@ -69,7 +67,14 @@ import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
 import { CodeLessonHandoff } from "./CodeLessonHandoff";
-import { ProblemLessonHandoff, TaskLessonHandoff } from "./TaskLessonHandoff";
+import { TaskLessonHandoff } from "./TaskLessonHandoff";
+import { TaskProblemLesson, TaskProblemsOverview } from "./TaskProblemLessons";
+import {
+  isProblemOverview,
+  isTaskPassed,
+  type ProblemTask,
+  submittedProblemCount,
+} from "@/lib/task-overview";
 import { SubmissionHistory } from "./SubmissionHistory";
 import { LessonMarkdown, MarkdownSlides } from "./MarkdownSlides";
 import { QuizPlayer } from "./QuizPlayer";
@@ -122,6 +127,15 @@ export const LessonPlayer = ({
   const tasksEnabled = stage.format === 2 && isBackendConfigured();
   const stageTasks = useStageTasks(stage.id, tasksEnabled, true);
   const problemLessons = useMemo(() => problemLessonsById(stageTasks), [stageTasks]);
+  const problemOverviews = useMemo(
+    () =>
+      new Map(
+        stageTasks
+          ?.filter(isProblemOverview)
+          .flatMap((task) => (task.lessonId === null ? [] : [[task.lessonId, task] as const])),
+      ),
+    [stageTasks],
+  );
 
   // 適用済みの「外からの選択」を id:seq で覚えておく。 これによりサイドバー操作は
   // 上書きせず、 同じレッスンを選び直した場合 (seq が変わる) には再適用できる。
@@ -134,11 +148,17 @@ export const LessonPlayer = ({
 
   const progressMap = useLessonProgressMap();
 
+  const lessonStatus = useCallback(
+    (lesson: Lesson): LessonStatus => {
+      const task = problemOverviews.get(lesson.id);
+      if (task) return isTaskPassed(task) ? "done" : "todo";
+      return resolveLessonStatus(lesson, progressMap, problemLessons);
+    },
+    [problemOverviews, progressMap, problemLessons],
+  );
   const completedLessonCount = useMemo(
-    () =>
-      allLessons.filter((l) => resolveLessonStatus(l, progressMap, problemLessons) === "done")
-        .length,
-    [allLessons, progressMap, problemLessons],
+    () => allLessons.filter((lesson) => lessonStatus(lesson) === "done").length,
+    [allLessons, lessonStatus],
   );
   const progressPercent = allLessons.length
     ? Math.round((completedLessonCount / allLessons.length) * 100)
@@ -149,18 +169,30 @@ export const LessonPlayer = ({
     [allLessons, activeLesson],
   );
 
+  const lessonId = lessonObj?.id ?? "";
+  const problemLesson = problemLessons.get(lessonId);
+  const problemOverview = problemOverviews.get(lessonId);
+  const problemTask = problemLesson
+    ? stageTasks?.find((task) => task.id === problemLesson.taskId)
+    : undefined;
+  const problemOverviewLesson = problemTask
+    ? allLessons.find((lesson) => lesson.id === problemTask.lessonId)
+    : undefined;
+  // 課題一覧が取れるまで、問題かもしれないテキストの完了を送らない。
+  const trackTextProgress =
+    !problemLesson && !problemOverview && (!tasksEnabled || stageTasks != null);
+
   // 配布資料は CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
-  const materialsEnabled = isBackendConfigured() && UUID_RE.test(lessonObj?.id ?? "");
+  const materialsEnabled = isBackendConfigured() && UUID_RE.test(lessonId);
   const {
     materials,
     loading: materialsLoading,
     error: materialsError,
-  } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled);
+  } = useLessonMaterials(
+    lessonObj?.id ?? null,
+    materialsEnabled && !problemLesson && !problemOverview,
+  );
 
-  const lessonId = lessonObj?.id ?? "";
-  const problemLesson = problemLessons.get(lessonId);
-  // 課題一覧が取れるまで、問題のステップかもしれないテキストの完了を送らない。
-  const trackTextProgress = !problemLesson && (!tasksEnabled || stageTasks != null);
   const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
   const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
   const video = useVideoLessonComments(
@@ -280,7 +312,9 @@ export const LessonPlayer = ({
   const progressReady = useProgressReady();
   const activeCompleted = problemLesson
     ? problemLesson.problem.state === "submitted"
-    : progressMap[activeLesson]?.completed === true;
+    : problemOverview
+      ? isTaskPassed(problemOverview)
+      : progressMap[activeLesson]?.completed === true;
   const completionReady =
     progressReady && (lessonObj?.type !== "text" || !tasksEnabled || stageTasks != null);
   const completionWatchRef = useRef<{ lessonId: string; wasCompleted: boolean } | null>(null);
@@ -302,7 +336,7 @@ export const LessonPlayer = ({
     if (activeCompleted && !completionWatchRef.current.wasCompleted) setJustCompleted(true);
   }, [activeLesson, activeCompleted, completionReady]);
 
-  const showCompleteCallout = justCompleted && !calloutDismissed;
+  const showCompleteCallout = !problemOverview && justCompleted && !calloutDismissed;
 
   // lg 未満 (VSCode 拡張のパネル等も含む) では目次をドロワーで開く。 パネル幅の変更で
   // lg 境界を跨いだら常設パネル側に切り替わるので、 ドロワーは閉じておく。
@@ -354,7 +388,8 @@ export const LessonPlayer = ({
             stage={stage}
             sections={sections}
             progressPercent={progressPercent}
-            progressMap={progressMap}
+            lessonStatus={lessonStatus}
+            problemOverviews={problemOverviews}
             problemLessons={problemLessons}
             activeLesson={activeLesson}
             onSelectLesson={goToLesson}
@@ -412,7 +447,8 @@ export const LessonPlayer = ({
               stage={stage}
               sections={sections}
               progressPercent={progressPercent}
-              progressMap={progressMap}
+              lessonStatus={lessonStatus}
+              problemOverviews={problemOverviews}
               problemLessons={problemLessons}
               activeLesson={activeLesson}
               onSelectLesson={(lessonId) => {
@@ -439,6 +475,25 @@ export const LessonPlayer = ({
             lessonId={lessonObj.id}
             assignmentTitle={lessonObj.title}
           />
+        ) : problemOverview ? (
+          <div className="mx-auto w-full max-w-[880px] px-4 py-6 sm:px-10">
+            <TaskProblemsOverview
+              lesson={lessonObj}
+              stageId={stage.id}
+              task={problemOverview}
+              stageTasks={stageTasks ?? []}
+            />
+          </div>
+        ) : problemLesson ? (
+          <div className="mx-auto w-full max-w-[880px] px-4 py-6 sm:px-10">
+            <TaskProblemLesson
+              lesson={lessonObj}
+              stageId={stage.id}
+              step={problemLesson}
+              overview={problemOverviewLesson}
+              task={problemTask && isProblemOverview(problemTask) ? problemTask : undefined}
+            />
+          </div>
         ) : (
           <>
             {showVideo && lessonObj.videoPath ? (
@@ -534,7 +589,7 @@ export const LessonPlayer = ({
                       </span>
                     ) : null}
                   </div>
-                  {stage.format === 2 && isText && !problemLesson ? (
+                  {stage.format === 2 && isText ? (
                     <TaskLessonHandoff
                       taskId={taskId}
                       problemId={firstOpenProblem(task?.problems)?.id}
@@ -619,9 +674,6 @@ export const LessonPlayer = ({
                       <LessonReadable
                         lesson={lessonObj}
                         onComplete={trackTextProgress ? handleMarkComplete : undefined}
-                        afterContent={
-                          problemLesson ? <ProblemLessonHandoff {...problemLesson} /> : null
-                        }
                       />
                     ) : isSlides && lessonObj.markdown ? (
                       <MarkdownSlides
@@ -694,7 +746,8 @@ const LessonToc = ({
   stage,
   sections,
   progressPercent,
-  progressMap,
+  lessonStatus,
+  problemOverviews,
   problemLessons,
   activeLesson,
   onSelectLesson,
@@ -703,7 +756,8 @@ const LessonToc = ({
   stage: Stage;
   sections: Section[];
   progressPercent: number;
-  progressMap: LessonProgressMap;
+  lessonStatus: (lesson: Lesson) => LessonStatus;
+  problemOverviews: ReadonlyMap<string, ProblemTask>;
   problemLessons: ReadonlyMap<string, ProblemLesson>;
   activeLesson: string;
   onSelectLesson: (lessonId: string) => void;
@@ -728,9 +782,7 @@ const LessonToc = ({
     </div>
 
     {sections.map((s) => {
-      const doneCount = s.lessons.filter(
-        (l) => resolveLessonStatus(l, progressMap, problemLessons) === "done",
-      ).length;
+      const doneCount = s.lessons.filter((lesson) => lessonStatus(lesson) === "done").length;
       return (
         <div key={s.id} className="py-2.5">
           <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
@@ -741,8 +793,17 @@ const LessonToc = ({
           </div>
           {s.lessons.map((l) => {
             const isActive = l.id === activeLesson;
-            const status = resolveLessonStatus(l, progressMap, problemLessons);
-            const lockReason = problemLockReason(problemLessons.get(l.id)?.problem);
+            const status = lessonStatus(l);
+            const overview = problemOverviews.get(l.id);
+            const step = problemLessons.get(l.id)?.problem;
+            const lockReason = problemLockReason(step);
+            const details = overview
+              ? `課題 ・ 提出 ${submittedProblemCount(overview.problem_items)}/${overview.problem_items.length}`
+              : step?.state === "submitted"
+                ? "問題 ・ 提出済み"
+                : step
+                  ? "問題"
+                  : l.duration;
             return (
               <button
                 type="button"
@@ -765,7 +826,7 @@ const LessonToc = ({
                 )}
               >
                 <span className="shrink-0 mt-0.5 text-ink-3">
-                  {isActive && (status === "todo" || !problemLessons.has(l.id)) ? (
+                  {isActive && !overview && (status === "todo" || !step) ? (
                     <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
                   ) : (
                     <LessonStatusIcon status={status} />
@@ -775,8 +836,8 @@ const LessonToc = ({
                   <div className="truncate">{l.title}</div>
                   <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
                     <LessonTypeIcon type={displayLessonType(l)} size={10} />
-                    <span>{l.duration}</span>
-                    {isActive && l.progress !== undefined ? (
+                    <span>{details}</span>
+                    {!overview && !step && isActive && l.progress !== undefined ? (
                       <>
                         <span>·</span>
                         <span>進捗 {l.progress}%</span>
@@ -869,15 +930,7 @@ const LessonOverview = ({ lesson, onComplete }: { lesson: Lesson; onComplete: ()
  * とする。 開いた時点で進捗行も作る (作らないと、 完了ボタンを押すまでサイドバーで
  * 「読みかけ」に見えず、 「続きから」の遷移先もこのレッスンを飛ばしてしまう)。
  */
-const LessonReadable = ({
-  lesson,
-  onComplete,
-  afterContent,
-}: {
-  lesson: Lesson;
-  onComplete?: () => void;
-  afterContent?: ReactNode;
-}) => {
+const LessonReadable = ({ lesson, onComplete }: { lesson: Lesson; onComplete?: () => void }) => {
   const { entry, markVisited } = useLessonProgress(lesson.id);
   const endRef = useRef<HTMLDivElement>(null);
   const isCompleted = entry?.completed === true;
@@ -924,9 +977,7 @@ const LessonReadable = ({
             </Button>
           )}
         </div>
-      ) : (
-        afterContent
-      )}
+      ) : null}
     </div>
   );
 };

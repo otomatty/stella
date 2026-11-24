@@ -33,8 +33,11 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     const response = await route.fetch();
     const { tasks } = (await response.json()) as { tasks: TaskSummary[] };
     for (const task of tasks) {
-      const problem = task.problems?.find((step) => step.stepLessonId === problemLessonId);
-      if (problem) problem.state = state;
+      if (!task.problems?.some((step) => step.stepLessonId === problemLessonId)) continue;
+      task.status = "not-started";
+      for (const problem of [...task.problems, ...(task.problem_items ?? [])]) {
+        problem.state = problem.stepLessonId === problemLessonId ? state : "locked-previous";
+      }
     }
     await route.fulfill({ response, json: { tasks } });
   });
@@ -50,9 +53,22 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   const lesson = page.getByTestId("lesson-screen");
   const handoff = lesson.getByTestId("lesson-problem-handoff");
   const open = handoff.getByRole("button", { name: "VS Code で開く" });
-  await expect(lesson.getByTestId("lesson-doc")).toBeVisible();
+  const statement = lesson.getByTestId("lesson-doc");
+  await expect(statement).toBeVisible();
+  await expect(lesson.getByRole("heading", { level: 1 })).toHaveText("問1 税込価格を返す");
+  await expect(statement.getByRole("heading")).toHaveCount(0);
+  await expect(
+    statement.getByRole("paragraph").filter({ hasText: "（税率10%。税額の1円未満は切り捨て）" }),
+  ).toBeVisible();
+  await expect(statement).toContainText("例: addTax(1000) → 1100");
   await expect(handoff).toContainText("の動画を見ると解けます");
   await expect(open).toHaveCount(0);
+  await expect(lesson.getByRole("tab")).toHaveCount(0);
+  await expect(lesson.getByRole("navigation", { name: "パンくず" })).toContainText("問題 1 / 21");
+  await expect(lesson.getByText("src/q01-01-add-tax.ts", { exact: true })).toBeVisible();
+  await expect(lesson.getByRole("region", { name: "手がかり" })).toContainText(
+    "この問題の直前の動画",
+  );
 
   const tocButton = page.getByRole("button", { name: "教材の目次を開く" });
   const usesTocDrawer = await tocButton.isVisible();
@@ -82,4 +98,46 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(handoff).toContainText("提出済み");
   await expect(open).toBeVisible();
+
+  await lesson.getByRole("link", { name: "問題の一覧", exact: true }).click();
+  await expect(lesson.getByRole("heading", { level: 1 })).toHaveText(/letとconst.*の問題/);
+  await expect(lesson.getByRole("list", { name: "21 問中 1 問を提出済み" })).toBeVisible();
+  await expect(lesson.getByText("取り組み中", { exact: true })).toBeVisible();
+  await expect(lesson.getByRole("tab")).toHaveCount(0);
+  await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
+  const problems = lesson.getByRole("region", { name: "問題の一覧" });
+  const firstProblem = problems.getByRole("link", { name: /税込価格を返す/ });
+  await expect(firstProblem).toHaveAttribute(
+    "href",
+    `/stages/${problemStageId}/lessons/${problemLessonId}`,
+  );
+  await expect(firstProblem).toContainText("提出済み");
+  await expect(problems.getByText("前の問題のあと")).toHaveCount(20);
+
+  if (usesTocDrawer) await tocButton.click();
+  await expect(tocRow).toContainText("問題 ・ 提出済み");
+  const overviewId = await lesson.getAttribute("data-lesson-id");
+  const overviewRow = page.locator(
+    `[data-testid="lesson-toc-text"][data-lesson-id="${overviewId}"]`,
+  );
+  await expect(overviewRow).toContainText("課題 ・ 提出 1/21");
+  if (usesTocDrawer) {
+    await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
+  }
+
+  const nextAction = lesson.getByRole("region", { name: "いまやること" });
+  state = "open";
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(nextAction.getByRole("button", { name: "VS Code で開く" })).toBeVisible();
+
+  state = "locked-video";
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(firstProblem).toHaveCount(0);
+  const video = nextAction.getByRole("link", { name: "動画を見る" });
+  await expect(video).toBeVisible();
+  const videoPath = await video.getAttribute("href");
+  expect(videoPath).toBeTruthy();
+  await video.click();
+  await expect(page).toHaveURL(new RegExp(`${videoPath}$`));
+  await expect(nextAction).toHaveCount(0);
 });
