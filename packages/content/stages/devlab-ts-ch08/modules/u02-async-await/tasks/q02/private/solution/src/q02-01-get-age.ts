@@ -1,7 +1,7 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問1 fetchUser で取得して、年齢を返す
+//     例: getAge(1) → 34 で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +20,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問1
 export async function getAge(id: number): Promise<number> {
   const user = await fetchUser(id);
   return user.age;

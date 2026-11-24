@@ -1,7 +1,6 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問1 getUser と getPosts を同時に呼び（Promise.all）、{ user, posts } を返す。どちらかが失敗したら、その失敗を投げる
+//     例: userWithPosts(2) → { user: { id: 2, name: "佐藤" }, posts: [id 12 の投稿] } で解決する
+// async と await を使ってください。
 
 export type User = { id: number; name: string };
 
@@ -36,7 +35,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問1
 export async function userWithPosts(id: number): Promise<{ user: User; posts: Post[] }> {
   const [user, posts] = await Promise.all([getUser(id), getPosts(id)]);
   return { user, posts };

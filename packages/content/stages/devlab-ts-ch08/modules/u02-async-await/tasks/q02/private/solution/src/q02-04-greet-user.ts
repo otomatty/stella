@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問4 取得して、"こんにちは、山田さん" の形のあいさつを返す
+//     例: greetUser(3) → "こんにちは、鈴木さん" で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問4
 export async function greetUser(id: number): Promise<string> {
   const user = await fetchUser(id);
   return `こんにちは、${user.name}さん`;

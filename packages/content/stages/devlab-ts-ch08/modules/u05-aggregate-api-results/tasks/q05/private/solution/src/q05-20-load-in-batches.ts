@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問20 ids を size 人ずつに区切り、区切りの中は同時に、区切りどうしは順番に取得して、名前の配列を返す（ids の順）。size が1未満なら Error
+//     例: loadInBatches([1, 2, 3, 4], 3) → [1, 2, 3] を同時に取得してから [4] を取得し、["山田", "佐藤", "鈴木", "田中"] で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -20,7 +21,6 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問20
 export async function loadInBatches(ids: readonly number[], size: number): Promise<string[]> {
   if (size < 1) {
     throw new Error("size は1以上にしてください");

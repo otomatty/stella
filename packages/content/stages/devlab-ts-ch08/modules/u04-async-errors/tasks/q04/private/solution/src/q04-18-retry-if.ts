@@ -1,11 +1,10 @@
-// 08-q04 非同期のエラー処理 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://typescriptbook.jp/reference/statements/exception
+// 問18 retry と同じだが、失敗したときに shouldRetry(error) が false なら、やり直さずにその失敗をすぐ投げる
+//     例: retryIf(task, 3, (error) => error instanceof TypeError) → TypeError のときだけやり直す
+// async と await を使ってください。
+// 失敗は try・catch で受け止めてください。
 
 export type Task = () => Promise<number>;
 
-// 問18
 export async function retryIf(
   task: Task,
   attempts: number,

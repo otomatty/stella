@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問13 try・catch で、取得できれば名前、失敗したら "不明" を返す
+//     例: safeName(9) → "不明" で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問13
 export async function safeName(id: number): Promise<string> {
   try {
     const user = await fetchUser(id);

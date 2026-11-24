@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問7 ids のユーザーを同時に取得し、取得できなかった id の配列を返す（ids の順）
+//     例: missingIds([1, 9, 2, 8]) → [9, 8] で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
+// 同時に始めた取得は Promise.allSettled で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -20,7 +21,6 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問7
 export async function missingIds(ids: readonly number[]): Promise<number[]> {
   const results = await Promise.allSettled(ids.map((id) => getUser(id)));
   return ids.filter((_, i) => results[i]?.status === "rejected");

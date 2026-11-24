@@ -1,7 +1,7 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問3 ユーザーの投稿のタイトルの配列を返す
+//     例: postTitles(2) → ["非同期処理のまとめ"] で解決する
+// async と await を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -19,7 +19,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問3
 export async function postTitles(userId: number): Promise<string[]> {
   const posts = await getPosts(userId);
   return posts.map((p) => p.title);

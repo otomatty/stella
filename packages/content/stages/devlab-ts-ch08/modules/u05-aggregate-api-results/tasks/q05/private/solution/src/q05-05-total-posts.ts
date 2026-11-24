@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問5 ids のユーザーの投稿を同時に取得し、投稿の数の合計を返す
+//     例: totalPosts([1, 2]) → 4 で解決する
+// async と await を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -19,7 +20,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問5
 export async function totalPosts(ids: readonly number[]): Promise<number> {
   const lists = await Promise.all(ids.map((id) => getPosts(id)));
   return lists.reduce((sum, posts) => sum + posts.length, 0);

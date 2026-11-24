@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問4 ids のユーザーを同時に取得し、名前の配列を返す（ids の順）。1人でも失敗したら、その失敗を投げる
+//     例: namesOf([3, 1]) → ["鈴木", "山田"] で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -20,7 +21,6 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問4
 export async function namesOf(ids: readonly number[]): Promise<string[]> {
   const users = await Promise.all(ids.map((id) => getUser(id)));
   return users.map((u) => u.name);

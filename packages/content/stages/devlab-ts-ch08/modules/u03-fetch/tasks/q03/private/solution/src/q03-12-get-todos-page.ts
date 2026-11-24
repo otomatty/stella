@@ -1,7 +1,8 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問12 `${API}/todos?page=2&per_page=10` の形の URL で取得し、Todo の配列を返す。クエリは URLSearchParams で作る。形が違えば "TODO の形が違います" の Error
+//     例: getTodosPage(2, 10) → `${API}/todos?page=2&per_page=10` を取得する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れ、形を確かめてから使ってください。
+// TODO の形は定義済みの isTodo で確かめてください。
 
 export const API = "https://api.example.com";
 
@@ -20,7 +21,6 @@ export function isTodo(value: unknown): value is Todo {
   );
 }
 
-// 問12
 export async function getTodosPage(page: number, perPage: number): Promise<Todo[]> {
   const query = new URLSearchParams({ page: String(page), per_page: String(perPage) });
   const res = await fetch(`${API}/todos?${query.toString()}`);

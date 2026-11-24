@@ -1,8 +1,3 @@
-// 08-q01 Promise
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous
-//       https://typescriptbook.jp/reference/asynchronous/promise
-//
 // 問題
 // 次の関数を書いてください。このファイルでは async と await を使わず、
 // new Promise、then・catch・finally、Promise.all・Promise.race などで書くこと（async/await は q02 で扱う）。
