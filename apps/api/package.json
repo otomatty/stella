@@ -21,13 +21,13 @@
     "r2:orphans": "bun run scripts/r2-orphans.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.8.0",
+    "@anthropic-ai/sdk": "^1.12.0",
     "@stella/shared": "workspace:*",
-    "better-auth": "1.7.22",
+    "better-auth": "1.7.27",
     "drizzle-orm": "^0.45.4",
-    "hono": "^4.13.18",
-    "jose": "^6.2.17",
-    "openai": "^7.56.0"
+    "hono": "^4.13.19",
+    "jose": "^6.2.18",
+    "openai": "^7.62.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261112.1",

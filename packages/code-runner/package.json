@@ -17,14 +17,14 @@
   },
   "dependencies": {
     "@stella/shared": "workspace:*",
-    "eslint-linter-browserify": "^10.14.0",
+    "eslint-linter-browserify": "^10.15.0",
     "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
     "quickjs-emscripten-core": "^0.32.0",
-    "sql.js": "^1.16.0",
+    "sql.js": "^1.17.0",
     "typescript-transpiler": "npm:typescript@^5.9.3"
   },
   "devDependencies": {
-    "@types/sql.js": "^1.4.11",
+    "@types/sql.js": "^1.16.0",
     "typescript": "^7.0.2"
   }
 }
