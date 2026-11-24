@@ -1,7 +1,3 @@
-// 09-q05 ★総合問題 モジュールに分ける
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
-//
 // 問題
 // q05-modules.ts から、型 CartItem と、addItem・cartTotal・cartSummary をこのファイルに移し、名前付き export にする。
 // q05-modules-price.ts と q05-modules-format.ts から、使うものを import する。

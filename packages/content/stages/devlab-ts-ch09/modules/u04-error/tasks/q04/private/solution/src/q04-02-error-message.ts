@@ -1,9 +1,8 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問2 error が Error ならその message、そうでなければ "不明なエラー" を返す
+//     例: errorMessage(new Error("x")) → "x"
+// 引数と戻り値に型注釈を付けます。
+// エラーの種類は instanceof で見分けます。
 
-// 問2
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "不明なエラー";
 }

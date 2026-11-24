@@ -1,8 +1,7 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問7 value を取り除いた新しい Set を返す（元の Set は変えない）
+//     例: withRemoved(Set { "a", "b" }, "a") → Set { "b" }
+// 引数と戻り値に型注釈を付けます。
 
-// 問7
 export function withRemoved(set: Set<string>, value: string): Set<string> {
   const result = new Set(set);
   result.delete(value);

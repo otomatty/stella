@@ -1,8 +1,7 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問1 [名前, 点数] の配列から Map を作る
+//     例: toMap([["山田", 80], ["佐藤", 65]]) → Map { "山田" => 80, "佐藤" => 65 }
+// 引数と戻り値に型注釈を付けます。
 
-// 問1
 export function toMap(pairs: [string, number][]): Map<string, number> {
   return new Map(pairs);
 }

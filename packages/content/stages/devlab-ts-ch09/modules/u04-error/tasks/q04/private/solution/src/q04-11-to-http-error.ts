@@ -1,7 +1,7 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問11 status が 404 なら NotFoundError("ページ")、それ以外なら HttpError(status, `HTTP ${status}`) を作って返す（投げずに返す）
+//     例: toHttpError(500).message → "HTTP 500"
+// 引数と戻り値に型注釈を付けます。
+// 定義済みのエラークラスを使います。
 
 export class HttpError extends Error {
   readonly status: number;
@@ -20,7 +20,6 @@ export class NotFoundError extends HttpError {
   }
 }
 
-// 問11
 export function toHttpError(status: number): HttpError {
   return status === 404 ? new NotFoundError("ページ") : new HttpError(status, `HTTP ${status}`);
 }
