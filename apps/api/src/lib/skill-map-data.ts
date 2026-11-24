@@ -10,7 +10,7 @@
  * 修了証を revoke したステージで判定が食い違う。
  */
 
-import { and, count, countDistinct, desc, eq, gte, inArray, max, sql } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, max, notInArray } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 import type { SkillMapStage } from "@stella/shared/skill-map/evaluate";
@@ -35,11 +35,7 @@ import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
 import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
-import {
-  dropOrphanGrantedStages,
-  filterStagesByAudience,
-  loadGrantedStageIds,
-} from "./stage-audience.js";
+import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
 /**
  * 「いま進めている星」の候補として見る、直近に進捗が付いたステージの数。
@@ -182,7 +178,7 @@ export interface SkillMapLoadOptions {
 
 export interface SkillMapSource {
   stages: SkillMapStage[];
-  /** 通常のホームの道から分ける、本人に割り当てられた、または読める受講登録がある Extra。 */
+  /** 通常のホームの道から分ける、本人に割り当てられた Extra。 */
   guidedStageIds?: Set<string>;
   clearedStageIds: Set<string>;
   activeStageId?: string;
@@ -194,7 +190,7 @@ export interface SkillMapSource {
   /** 受講登録があるステージ (道の上で「始められる星」を描き分けるのに使う)。 */
   enrolledStageIds?: Set<string>;
   /**
-   * 前提免除や廃止前の飛び級で開いた星と、読める受講登録のある Extra。前提が未充足でも `unlocked` になり、
+   * 前提の免除や廃止前の飛び級で開いた星。前提が未充足でも `unlocked` になり、
    * 視界の起点にもなる (評価器の `unlockedStageIds`)。
    *
    * **クリアではない** — この星を前提に持つ次の星は開かない。
@@ -224,33 +220,27 @@ export async function loadSkillMapSource(
     .from(stages)
     .where(eq(stages.status, "published"));
 
-  const grantedStageIds = await loadGrantedStageIds(db, caller.id);
+  // 公開外の Extra に受講登録が残っていても、通常の道の集約には混ぜない。
+  const grantRows = await db
+    .select({ stageId: effectiveStageGrants.stageId })
+    .from(effectiveStageGrants)
+    .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
+    .where(and(eq(effectiveStageGrants.profileId, caller.id), eq(stages.audience, "granted")));
+  const grantedStageIds = new Set(grantRows.map((row) => row.stageId));
   const audienceRows = filterStagesByAudience(stageRows, grantedStageIds);
 
   const clearedStageIds = await loadClearedStageIds(db, caller);
   const enrolledStageIds = await loadEnrolledStageIds(db, caller);
   const unlockedStageIds = await loadUnlockedStageIds(db, caller);
 
-  // 読める受講登録を持つ Extra は、グループを外れてもツリーと再開候補に残す。
-  const enrolledExtraIds = new Set(
-    audienceRows
-      .filter((row) => row.audience === "granted" && enrolledStageIds.has(row.id))
-      .map((row) => row.id),
-  );
-  for (const id of enrolledExtraIds) unlockedStageIds.add(id);
-
   // 島 (資格 / Python / DevOps / 案件 / C# / 開発ラボG) は表示条件を満たすまで存在ごと返さない。ここ (評価器入力の
   // 組み立て口) で落とすので、スキルマップ・開始・発見教材のどの API も
   // 同じ星を同じ条件で伏せる — 経路ごとに緩みが生まれない。
-  // 受講済みの Extra は残す。開発モード (`showAllIslands`) では島の条件を省く。
+  // 開発モード (`showAllIslands`) だけは素通しにして、島の中身を作りながら確かめられるようにする。
   const islandRows = opts?.showAllIslands
     ? audienceRows
     : filterIslandStages(audienceRows, clearedStageIds);
-  const islandStageIds = new Set(islandRows.map((row) => row.id));
-  const visibleRows = dropOrphanGrantedStages(
-    audienceRows.filter((row) => islandStageIds.has(row.id) || enrolledExtraIds.has(row.id)),
-    enrolledExtraIds,
-  );
+  const visibleRows = dropOrphanGrantedStages(islandRows);
 
   const mapStages: SkillMapStage[] = visibleRows.map((row) => ({
     id: row.id,
@@ -270,7 +260,6 @@ export async function loadSkillMapSource(
     caller,
     clearedStageIds,
     enrolledStageIds,
-    grantedStageIds,
     selectableActiveStages(mapStages, clearedStageIds, unlockedStageIds, enrolledStageIds),
   );
 
@@ -451,7 +440,6 @@ async function resolveActiveStage(
   caller: Caller,
   clearedStageIds: Set<string>,
   enrolledStageIds: Set<string>,
-  guidedStageIds: Set<string>,
   /** 視界の規則で「進行中」に据えてよい星か (`selectableActiveStages`)。 */
   isSelectable: (stageId: string) => boolean,
 ): Promise<{ stageId?: string; source: "chosen" | "derived" }> {
@@ -461,13 +449,7 @@ async function resolveActiveStage(
   }
   // 視界の判定は候補を走査しながら掛ける — 先頭 1 件で打ち切ると、据えてよい古い星が
   // あっても「進行中なし」になる (`pickActiveStageId` の JSDoc)。
-  const derived = await findActiveStageId(
-    db,
-    caller,
-    clearedStageIds,
-    guidedStageIds,
-    isSelectable,
-  );
+  const derived = await findActiveStageId(db, caller, clearedStageIds, isSelectable);
   return { ...(derived !== undefined ? { stageId: derived } : {}), source: "derived" };
 }
 
@@ -590,7 +572,6 @@ async function findActiveStageId(
   db: Db,
   caller: Caller,
   clearedStageIds: Set<string>,
-  guidedStageIds: Set<string>,
   /** 視界の規則で「進行中」に据えてよい星か (`selectableActiveStages`)。 */
   isSelectable: (stageId: string) => boolean,
 ): Promise<string | undefined> {
@@ -603,7 +584,16 @@ async function findActiveStageId(
     .where(
       and(
         eq(lessonProgress.userId, caller.id),
-        sql`${sections.stageId} not in (select value from json_each(${JSON.stringify([...guidedStageIds])}))`,
+        notInArray(
+          sections.stageId,
+          db
+            .select({ id: effectiveStageGrants.stageId })
+            .from(effectiveStageGrants)
+            .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
+            .where(
+              and(eq(effectiveStageGrants.profileId, caller.id), eq(stages.audience, "granted")),
+            ),
+        ),
       ),
     )
     .groupBy(sections.stageId)

@@ -4,18 +4,45 @@ import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import type { GuidedStagesResponse } from "@stella/shared/stage-grants/types";
 import { evaluateSkillMapFor, isLockReasonNameVisible } from "../routes/skill-map.js";
 import type { Db } from "../db/client.js";
-import { sections, taskProblemResults, taskProgress, taskRevisions, tasks } from "../db/schema.js";
+import {
+  sections,
+  effectiveStageGrants,
+  stages,
+  taskProblemResults,
+  taskProgress,
+  taskRevisions,
+  tasks,
+} from "../db/schema.js";
 import type { Caller } from "./authz.js";
 import { loadSkillMapSource } from "./skill-map-data.js";
-import { loadLearnerExtraStages } from "./stage-audience.js";
+import {
+  effectiveGuidanceColumns,
+  firstGuidanceBy,
+  guidancePriority,
+} from "./stage-grant-guidance.js";
 import { loadProblemRevisionHashes } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 /** 割り当ての件数によらず、ステージ・課題・問題をそれぞれまとめて読む。 */
 export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedStagesResponse> {
-  const grants = [...(await loadLearnerExtraStages(db, caller.id)).values()].filter(
-    (row) => row.status === "published",
-  );
+  const grantRows = await db
+    .select({
+      stage_id: effectiveStageGrants.stageId,
+      title: stages.title,
+      category: stages.category,
+      ...effectiveGuidanceColumns,
+    })
+    .from(effectiveStageGrants)
+    .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
+    .where(
+      and(
+        eq(effectiveStageGrants.profileId, caller.id),
+        eq(stages.status, "published"),
+        eq(stages.audience, "granted"),
+      ),
+    )
+    .orderBy(stages.title, stages.id, ...guidancePriority);
+  const grants = [...firstGuidanceBy(grantRows, (row) => row.stage_id).values()];
   if (grants.length === 0) return { stages: [] };
   // 島の条件で伏せられている割り当ても案内するが、始められるとは言わない。
   const source = await loadSkillMapSource(db, caller, { showAllIslands: true });
@@ -120,7 +147,7 @@ export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedSt
     progress.set(row.stageId, entry);
   }
   return {
-    stages: visibleGrants.map(({ category: _category, status: _status, ...grant }) => {
+    stages: visibleGrants.map(({ category: _category, ...grant }) => {
       const id = grant.stage_id;
       const enrolled = source.enrolledStageIds?.has(id) ?? false;
       const available = visibleIds.has(id) && evaluated.states.get(id) === "unlocked";

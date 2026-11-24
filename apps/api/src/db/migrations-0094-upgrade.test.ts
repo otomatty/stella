@@ -167,7 +167,7 @@ it("0094: 外部キーを有効にしたまま所属と設定を移し、実効�
   }
 });
 
-it("0094: 上書きした案内と所属や設定がなくても値がある案内を手動で残す", () => {
+it("0094: 上書きした案内と、所属や設定がなくても案内か受講登録がある割り当てを手動で残す", () => {
   const { sqlite } = sqliteD1({ beforeMigration: "0094_groups" });
   try {
     sqlite.exec(`
@@ -176,7 +176,9 @@ it("0094: 上書きした案内と所属や設定がなくても値がある案�
         ('extended', 'ses', 'student', '期限を延ばした受講者', 1),
         ('cleared', 'ses', 'student', '案内文を消した受講者', 1),
         ('former-empty', 'ses', 'student', 'グループを外れた受講者', 1),
-        ('former-with-guidance', 'ses', 'student', 'グループを外れた受講者B', 1);
+        ('former-with-guidance', 'ses', 'student', 'グループを外れた受講者B', 1),
+        ('former-started', 'ses', 'student', 'グループを外れた開始済みの受講者', 1),
+        ('unstarted', 'ses', 'student', '未着手の受講者', 1);
       insert into stages (id, tenant_id, slug, title, audience, created_at, updated_at) values
         ('extra', 'ses', 'extra', '専用ステージ', 'granted', 1, 1),
         ('removed', 'ses', 'removed', '設定から外したステージ', 'granted', 1, 1);
@@ -185,17 +187,20 @@ it("0094: 上書きした案内と所属や設定がなくても値がある案�
       insert into integration_groups (id, client_id, external_key, name, created_at, updated_at)
         values ('group', 'client', 'external-key', '連携グループ', 1, 2);
       insert into integration_group_members (group_id, profile_id, joined_at) values
-        ('group', 'extended', 3), ('group', 'cleared', 3);
+        ('group', 'extended', 3), ('group', 'cleared', 3), ('group', 'unstarted', 3);
       insert into integration_group_stages (group_id, stage_id, due_at, message)
         values ('group', 'extra', '2026-12-10T00:00:00.000Z', 'グループの案内');
       insert into enrollments (id, tenant_id, user_id, stage_id, enrolled_at)
-        values ('started-before-removal', 'ses', 'extended', 'removed', 4);
+        values ('started-before-removal', 'ses', 'extended', 'removed', 4),
+               ('started-before-leaving', 'ses', 'former-started', 'extra', 4);
       insert into stage_grants (id, tenant_id, stage_id, profile_id, source_group_id, source_name, due_at, message, granted_at) values
         ('extended', 'ses', 'extra', 'extended', 'group', '以前の連携元', '2026-12-20T00:00:00.000Z', 'グループの案内', 5),
         ('cleared', 'ses', 'extra', 'cleared', 'group', '連携元', '2026-12-10T00:00:00.000Z', null, 5),
-        ('removed-empty', 'ses', 'removed', 'extended', 'group', '連携元', null, null, 5),
+        ('removed-empty', 'ses', 'removed', 'unstarted', 'group', null, null, null, 5),
+        ('removed-started', 'ses', 'removed', 'extended', 'group', null, null, null, 5),
         ('removed-with-guidance', 'ses', 'removed', 'cleared', 'group', '連携元', null, '個別の案内', 5),
         ('former-empty', 'ses', 'extra', 'former-empty', 'group', '連携元', null, null, 5),
+        ('former-started', 'ses', 'extra', 'former-started', 'group', null, null, null, 5),
         ('former-with-guidance', 'ses', 'extra', 'former-with-guidance', 'group', '連携元', '2026-12-10T00:00:00.000Z', 'グループの案内', 5);
     `);
 
@@ -217,11 +222,18 @@ it("0094: 上書きした案内と所属や設定がなくても値がある案�
         source_name: "以前の連携元",
       },
       {
+        id: "former-started",
+        due_at: null,
+        message: null,
+        source_name: null,
+      },
+      {
         id: "former-with-guidance",
         due_at: "2026-12-10T00:00:00.000Z",
         message: "グループの案内",
         source_name: "連携元",
       },
+      { id: "removed-started", due_at: null, message: null, source_name: null },
       { id: "removed-with-guidance", due_at: null, message: "個別の案内", source_name: "連携元" },
     ]);
     sqlite.exec("delete from group_members where group_id = 'group'");

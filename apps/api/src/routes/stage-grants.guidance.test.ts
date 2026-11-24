@@ -22,10 +22,11 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
-import { createOrRenameGroup, removeGroupMember, replaceGroupStages } from "../lib/groups.js";
+import { createOrRenameGroup, replaceGroupStages } from "../lib/groups.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
+import { adminGroupsRoute } from "./admin-groups.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 import { skillMapRoute } from "./skill-map.js";
 import { stageStartRoute } from "./stage-start.js";
@@ -36,6 +37,7 @@ let admin: string;
 let learner: string;
 let db: ReturnType<typeof getDb>;
 const app = mountTestApp({} as Env, stageGrantsRoute, skillMapRoute, stageStartRoute).app;
+app.route("/", adminGroupsRoute);
 const empty = { source_name: null, due_at: null, message: null };
 const guidance = {
   source_name: "架空の案内元",
@@ -758,55 +760,73 @@ it("始められるExtraは従来の候補に残し、新しいホームの候�
   expect(body.skill_map.unguided_next_stage_ids).toEqual(["basic"]);
 });
 
-it("グループを外れても開始済みの Extra はマップとホームの案内に残る", async () => {
-  await db.insert(stages).values({
-    id: "extra-parent",
-    slug: "sample-parent",
-    title: "架空の前のステージ",
-    status: "published",
-    audience: "granted",
-    prerequisites: '["sample-basic"]',
-  });
-  await db.update(stages).set({ prerequisites: '["sample-parent"]' }).where(eq(stages.id, "extra"));
-  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
-  await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
-  expect(
-    await replaceGroupStages(db, group, [
-      { slug: "sample-parent", exempt: true },
-      { slug: "sample-extra", exempt: true, message: "グループの案内", due_at: "2026-12-01" },
-    ]),
-  ).toMatchObject({ ok: true });
-  expect((await call("/api/stages/extra/start", "POST", undefined, learner)).status).toBe(200);
-  await db.insert(lessonProgress).values({ userId: "learner", lessonId: "lesson-extra" });
+it.each(["メンバー削除", "ステージ設定削除", "グループ削除"])(
+  "%s で開始済みの Extra だけを手動の割り当てに残す",
+  async (operation) => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await db
+      .insert(groupMembers)
+      .values(["learner", "other", "new"].map((profileId) => ({ groupId: group.id, profileId })));
+    expect(
+      await replaceGroupStages(db, group, [
+        { slug: "sample-extra", exempt: true, message: "グループの案内", due_at: "2026-12-01" },
+      ]),
+    ).toMatchObject({ ok: true });
+    expect((await call("/api/stages/extra/start", "POST", undefined, learner)).status).toBe(200);
+    await db.insert(enrollments).values({ userId: "new", stageId: "extra", status: "expired" });
+    expect(await db.select().from(stageGrants)).toEqual([]);
 
-  await removeGroupMember(db, group.id, "learner");
+    const path = `/api/admin/groups/${group.id}`;
+    const remove = ["learner", "other", "new"];
+    if (operation === "メンバー削除") {
+      expect((await call(`${path}/members`, "PATCH", { add: ["missing"], remove })).status).toBe(
+        400,
+      );
+      expect(await db.select().from(stageGrants)).toEqual([]);
+    }
+    const res =
+      operation === "メンバー削除"
+        ? await call(`${path}/members`, "PATCH", { remove })
+        : operation === "ステージ設定削除"
+          ? await call(`${path}/stages`, "PUT", { stages: [] })
+          : await call(path, "DELETE");
+    expect(res.status).toBe(200);
+    expect(await db.select().from(stageGrants)).toMatchObject([
+      { profileId: "learner", stageId: "extra", sourceName: null, dueAt: null, message: null },
+    ]);
 
-  const source = await loadSkillMapSource(db, caller);
-  expect(source.stages.map((stage) => stage.id)).toEqual(["basic", "extra"]);
-  expect(source.guidedStageIds).toEqual(new Set(["extra"]));
-  const map = await json<{
-    skill_map: {
-      active_stage_id: string | null;
-      has_unguided_enrollment: boolean;
-      stages: { id: string; visibility: string; enrolled?: boolean }[];
+    const mapStages = async (token: string) => {
+      const res = await call("/api/skill-map/mine?tiers=7", "GET", undefined, token);
+      expect(res.status).toBe(200);
+      return (await json<{ skill_map: { stages: { id: string }[] } }>(res)).skill_map.stages;
     };
-  }>(await call("/api/skill-map/mine?tiers=7", "GET", undefined, learner));
-  expect(map.skill_map).toMatchObject({ active_stage_id: null, has_unguided_enrollment: false });
-  expect(map.skill_map.stages).toContainEqual(
-    expect.objectContaining({ id: "extra", visibility: "full", enrolled: true }),
-  );
-  expect(map.skill_map.stages.some(({ id }) => id === "extra-parent")).toBe(false);
-  expect(await mine()).toMatchObject({
-    stages: [{ stage_id: "extra", status: "in-progress", ...empty }],
-  });
-  expect(await json(await call("/api/stage-grants/extra/learners"))).toMatchObject({
-    counts: { assigned: 0, exempted: 0 },
-  });
+    expect(await mapStages(learner)).toContainEqual(
+      expect.objectContaining({ id: "extra", visibility: "full", enrolled: true }),
+    );
+    expect(await mine()).toMatchObject({
+      stages: [{ stage_id: "extra", status: "in-progress", ...empty }],
+    });
+    expect(await json(await call("/api/stage-grants/extra/learners"))).toMatchObject({
+      counts: { assigned: 1, exempted: 0 },
+      learners: expect.arrayContaining([
+        expect.objectContaining({ id: "learner", sources: { manual: true, groups: [] } }),
+      ]),
+    });
 
-  await db.update(enrollments).set({ status: "expired" });
-  expect((await loadSkillMapSource(db, caller)).stages.map((stage) => stage.id)).toEqual(["basic"]);
-  expect(await mine()).toEqual({ stages: [] });
-});
+    const other = await signAccessToken("test-secret", "other", "other@example.invalid");
+    expect((await mapStages(other)).map(({ id }) => id)).not.toContain("extra");
+    expect(await json(await call("/api/stage-grants/mine", "GET", undefined, other))).toEqual({
+      stages: [],
+    });
+
+    expect((await call("/api/stage-grants/extra", "PATCH", { remove: ["learner"] })).status).toBe(
+      200,
+    );
+    expect((await loadSkillMapSource(db, caller)).enrolledStageIds?.has("extra")).toBe(true);
+    expect((await mapStages(learner)).map(({ id }) => id)).not.toContain("extra");
+    expect(await mine()).toEqual({ stages: [] });
+  },
+);
 
 it("公開外のExtraの受講登録も、通常の道の集約に混ぜない", async () => {
   await grant();

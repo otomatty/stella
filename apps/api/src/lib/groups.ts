@@ -1,7 +1,16 @@
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import type { IntegrationStageInput } from "@stella/shared/integrations/types";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { groupMembers, groups, groupStages, profiles, stages } from "../db/schema.js";
+import {
+  enrollments,
+  groupMembers,
+  groups,
+  groupStages,
+  profiles,
+  stageGrants,
+  stages,
+} from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ApiError } from "./authz.js";
 import { learnerOnly } from "./learner-scope.js";
@@ -37,11 +46,56 @@ function updateGroupSettings(db: Db, id: string, { name, shareProgress }: GroupC
     .returning();
 }
 
+// グループ由来の割り当てを外す前に、開始済みの分を案内なしの手動割り当てとして残す。
+function retainStartedGrants(db: Db, groupId: string, removed: SQL) {
+  return db
+    .insert(stageGrants)
+    .select(
+      db
+        .select({
+          id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
+          tenantId: enrollments.tenantId,
+          stageId: enrollments.stageId,
+          profileId: enrollments.userId,
+          sourceName: sql<null>`null`.as("source_name"),
+          dueAt: sql<null>`null`.as("due_at"),
+          message: sql<null>`null`.as("message"),
+          grantedBy: sql<null>`null`.as("granted_by"),
+          grantedAt: sql<number>`${Date.now()}`.as("granted_at"),
+        })
+        .from(groupMembers)
+        .innerJoin(groups, eq(groups.id, groupMembers.groupId))
+        .innerJoin(groupStages, eq(groupStages.groupId, groupMembers.groupId))
+        .innerJoin(
+          enrollments,
+          and(
+            eq(enrollments.userId, groupMembers.profileId),
+            eq(enrollments.stageId, groupStages.stageId),
+          ),
+        )
+        .innerJoin(profiles, eq(profiles.id, groupMembers.profileId))
+        .where(
+          and(
+            eq(groupMembers.groupId, groupId),
+            eq(profiles.role, "student"),
+            eq(profiles.disabled, false),
+            inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+            removed,
+          ),
+        ),
+    )
+    .onConflictDoNothing({ target: [stageGrants.stageId, stageGrants.profileId] });
+}
+
 export async function deleteAdminGroup(db: Db, id: string) {
-  const [deleted] = await db
-    .delete(groups)
-    .where(and(eq(groups.id, id), isNull(groups.clientId)))
-    .returning({ id: groups.id });
+  const adminOwned = isNull(groups.clientId);
+  const [, [deleted]] = await db.batch([
+    retainStartedGrants(db, id, adminOwned),
+    db
+      .delete(groups)
+      .where(and(eq(groups.id, id), adminOwned))
+      .returning({ id: groups.id }),
+  ]);
   if (!deleted) throw new ApiError("Not found", 404);
 }
 
@@ -79,16 +133,13 @@ export async function patchAdminGroupMembers(
   const valid = sql`not exists (${invalid.getSQL()}) and exists (
     select 1 from ${groups} where ${groups.id} = ${groupId} and ${groups.clientId} is null
   )`;
-  const [invalidRows, removed, added] = await db.batch([
+  const removingMember = sql`${groupMembers.profileId} in (${removedIds}) and ${valid}`;
+  const [, invalidRows, removed, added] = await db.batch([
+    retainStartedGrants(db, groupId, removingMember),
     invalid,
     db
       .delete(groupMembers)
-      .where(
-        and(
-          eq(groupMembers.groupId, groupId),
-          sql`${groupMembers.profileId} in (${removedIds}) and ${valid}`,
-        ),
-      )
+      .where(and(eq(groupMembers.groupId, groupId), removingMember))
       .returning({ id: groupMembers.profileId }),
     db
       .insert(groupMembers)
@@ -133,9 +184,11 @@ export function addGroupMemberStatement(
 }
 
 export async function removeGroupMember(db: Db, groupId: string, profileId: string) {
-  await db
-    .delete(groupMembers)
-    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.profileId, profileId)));
+  const member = eq(groupMembers.profileId, profileId);
+  await db.batch([
+    retainStartedGrants(db, groupId, member),
+    db.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), member)),
+  ]);
 }
 
 function parseGroupStage(value: unknown): Required<IntegrationStageInput> {
@@ -231,7 +284,13 @@ export async function replaceGroupStages(
   for (const slug of missingParents) errors.push({ slug, code: "parent_not_included" });
   if (errors.length) return { ok: false as const, errors };
   const remove = db.delete(groupStages).where(eq(groupStages.groupId, group.id));
+  const retainedStageIds = JSON.stringify(settings.map((setting) => setting.stageId));
   await db.batch([
+    retainStartedGrants(
+      db,
+      group.id,
+      sql`${groupStages.stageId} not in (select value from json_each(${retainedStageIds}))`,
+    ),
     remove,
     ...settings.map((setting) =>
       db.insert(groupStages).values({

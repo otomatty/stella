@@ -772,26 +772,39 @@ describe("外部連携の境界 (実 SQLite)", () => {
       stages: [{ stage_id: "extra", due_at: expected }],
     });
   });
-  it("設定を外すと所属由来の割り当てと免除が消え、手動の行と開始済みの受講登録は残る", async () => {
+  it("設定を外すと開始済みの割り当てを手動で残し、グループ由来の免除は消える", async () => {
     const a = await setupWrite();
     await write(a.token, "members", {
       members: [{ email: "inside@example.test" }, { email: "outside@example.test" }],
     });
     await write(a.token, "stages", { stages: [setting] });
-    await getDb(env).insert(enrollments).values({ userId: "inside", stageId: "extra" });
+    await getDb(env)
+      .insert(enrollments)
+      .values({ userId: "inside", stageId: "extra", status: "completed" });
     await getDb(env)
       .insert(stageUnlocks)
       .values({ userId: "inside", stageId: "extra", via: "staff" });
+    expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);
+    expect(db.sqlite.prepare("select * from stage_grants").all()).toEqual([]);
     expect((await write(a.token, "stages", { stages: [] })).status).toBe(200);
-    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([]);
+    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([
+      {
+        stage_id: "extra",
+        profile_id: "inside",
+        group_id: null,
+        source_name: null,
+        due_at: null,
+        message: null,
+      },
+    ]);
     expect(
       db.sqlite.prepare("select user_id, group_id from effective_stage_unlocks").all(),
     ).toEqual([{ user_id: "inside", group_id: null }]);
     expect(db.sqlite.prepare("select count(*) n from enrollments").get()?.n).toBe(1);
     await write(a.token, "stages", { stages: [setting] });
-    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(3);
   });
-  it("外部IDで外した後も、開始済みのステージを受講登録で読める", async () => {
+  it("メンバーを外した後も、開始済みの割り当てが手動で残る", async () => {
     const a = await setupWrite();
     await write(a.token, "members", {
       members: [
@@ -808,7 +821,21 @@ describe("外部連携の境界 (実 SQLite)", () => {
       { profile_id: "inside" },
     ]);
     expect((await write(a.token, "members/inside", undefined, "DELETE")).status).toBe(200);
-    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([]);
+    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([
+      {
+        stage_id: "extra",
+        profile_id: "inside",
+        group_id: null,
+        source_name: null,
+        due_at: null,
+        message: null,
+      },
+    ]);
+    const map = await request(app, env, "/api/skill-map/mine?tiers=7", { token: studentToken });
+    expect(map.status).toBe(200);
+    expect(await map.json()).toMatchObject({
+      skill_map: { stages: expect.arrayContaining([expect.objectContaining({ id: "extra" })]) },
+    });
     const completion = "/api/certificates/completion/extra";
     const started = await request(app, env, completion, { token: studentToken });
     expect(await started.json()).toMatchObject({ completion: { stage_id: "extra" } });
