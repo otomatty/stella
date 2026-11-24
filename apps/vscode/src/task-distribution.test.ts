@@ -700,6 +700,34 @@ describe("課題の配布", () => {
     });
   });
 
+  it.each(["replace", "retire"])(
+    "未保存の確認中に保存された内容を公開直前の照合で保持する (%s)",
+    async (kind) => {
+      const training = await root();
+      const { old, updated } = testRenameBundles();
+      const original = kind === "retire" ? old : bundle;
+      const taskRoot = await installTask(training, original);
+      const changed = kind === "retire" ? updated : nextBundle({ "index.js": "new starter" });
+      const file = kind === "retire" ? retiredTest : "index.js";
+      const contents = "saved during the guard";
+
+      const conflict = await conflictOf(
+        installTask(training, changed, {
+          beforeReplace: async (root, rel) => {
+            if (rel === file) await writeFile(path.join(root, rel), contents);
+          },
+        }),
+      );
+
+      expect(conflict).toMatchObject({ reason: "occupied", files: [file] });
+      expect(await readFile(path.join(taskRoot, file), "utf8")).toBe(contents);
+      expect(await readReceipt(taskRoot)).toMatchObject({
+        contentHash: original.contentHash,
+        updatingTo: changed.contentHash,
+      });
+    },
+  );
+
   it("新規公開の直前に同じファイルができても上書きせずに続ける", async () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);

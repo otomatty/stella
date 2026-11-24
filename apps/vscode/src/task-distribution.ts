@@ -594,15 +594,13 @@ async function writeDistributionUpdate(
         const backup = await readExisting(root, write.backupRel);
         if (!backup?.equals(write.before))
           throw new TaskInstallConflict("occupied", root, [write.backupRel]);
-        if (await needsPublication(root, write)) {
-          await guards.beforeReplace?.(root, rel);
-          await rm(target);
-        }
+        await guards.beforeReplace?.(root, rel);
+        if (await needsPublication(root, write)) await rm(target);
         continue;
       }
+      if (before && rel !== RECEIPT_PATH) await guards.beforeReplace?.(root, rel);
       if (!(await needsPublication(root, write))) continue;
       if (before) {
-        if (rel !== RECEIPT_PATH) await guards.beforeReplace?.(root, rel);
         await rename(source, target);
       } else {
         await publishNewFile(root, source, write);
