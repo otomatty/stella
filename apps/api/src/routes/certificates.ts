@@ -38,7 +38,12 @@ import type { Caller } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "../lib/enrollment-bulk.js";
 import { learnerOnly } from "../lib/learner-scope.js";
-import { isProblemStepLesson, loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
+import {
+  isProblemStepLesson,
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "../lib/lesson-progress-write.js";
 import { passCountsForLesson } from "../lib/reviewed-progress.js";
 import { isCatalogAudience, learnerCanSeeGrantedStage } from "../lib/stage-audience.js";
 import {
@@ -152,6 +157,7 @@ async function batchComputeCompletions(
       id: lessons.id,
       type: lessons.type,
       problemStep: isProblemStepLesson(sql`lessons.id`),
+      problemOverview: isProblemTaskOverviewLesson(sql`lessons.id`),
     })
     .from(lessons)
     .innerJoin(sections, eq(sections.id, lessons.sectionId))
@@ -187,6 +193,7 @@ async function batchComputeCompletions(
           and(
             eq(lessonProgress.completed, true),
             sql`not ${isProblemStepLesson(sql`lessons.id`)}`,
+            sql`not ${isProblemTaskOverviewLesson(sql`lessons.id`)}`,
             inArray(lessonProgress.userId, userIdChunk),
             eq(sections.stageId, stageId),
           ),
@@ -248,6 +255,13 @@ async function batchComputeCompletions(
       userIds,
       lessonRows.filter((row) => row.problemStep).map((row) => row.id),
       cache,
+    )),
+  );
+  progressRows.push(
+    ...(await loadPassedOverviewLessons(
+      db,
+      userIds,
+      lessonRows.filter((row) => row.problemOverview).map((row) => row.id),
     )),
   );
   const doneByUser = setBy(

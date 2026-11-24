@@ -31,7 +31,12 @@ import {
 import { ApiError, type Caller, isStaffRole, loadActiveStaffIds } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { loadClearedStageIds, loadSkillMapSource, parsePrerequisites } from "./skill-map-data.js";
-import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
+import {
+  isProblemStepLesson,
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "./lesson-progress-write.js";
 import { loadProblemRevisionHashes, type ProblemHashCache } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
@@ -216,6 +221,7 @@ export async function loadLearningPace(
           duration: lessons.durationLabel,
           completed: lessonProgress.completed,
           problemStep: isProblemStepLesson(sql`lessons.id`),
+          problemOverview: isProblemTaskOverviewLesson(sql`lessons.id`),
         })
         .from(lessons)
         .innerJoin(sections, eq(sections.id, lessons.sectionId))
@@ -266,14 +272,24 @@ export async function loadLearningPace(
       lessonRows.filter((row) => row.problemStep).map((row) => row.id),
       cache,
     );
-    const doneSteps = new Set(completedSteps.map((row) => row.lessonId));
+    const passedOverviews = await loadPassedOverviewLessons(
+      db,
+      [learner.id],
+      lessonRows.filter((row) => row.problemOverview).map((row) => row.id),
+    );
+    const derivedCompleted = new Set(
+      [...completedSteps, ...passedOverviews].map((row) => row.lessonId),
+    );
     for (const lesson of lessonRows) {
       const match = /^(\d+(?:\.\d+)?)分$/.exec(lesson.duration ?? "");
       units.get(lesson.unitId)?.lessons.push({
         id: lesson.id,
         title: lesson.title,
         minutes: match ? Number(match[1]) : 1,
-        completed: lesson.problemStep ? doneSteps.has(lesson.id) : lesson.completed === true,
+        completed:
+          lesson.problemStep || lesson.problemOverview
+            ? derivedCompleted.has(lesson.id)
+            : lesson.completed === true,
       });
     }
     for (const task of taskRows) {
