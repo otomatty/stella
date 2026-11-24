@@ -18,7 +18,7 @@
  * 配信は upload-videos.ts がこの生成処理を呼び、R2 と seed 用 manifest に登録する。
  */
 
-import { buildSceneTopic, planSceneTopic } from "./build-scene-video.js";
+import { buildSceneTopic, planSceneTopic, sceneTopicTtsSpeeches } from "./build-scene-video.js";
 import { touchVideoCacheFile } from "./lib/scene-cache.js";
 import { createHash } from "node:crypto";
 import {
@@ -82,12 +82,15 @@ import {
 import {
   collectNarrationTopics,
   type NarrationTopic,
+  selectTopicsById,
+  topicIdsFromArgs,
   validateTopic,
 } from "./lib/narration-topics.js";
 import { AUTOSCALE_SCRIPT, escapeHtml, slidesHtml, splitLessonSlides } from "./lib/slide-html.js";
 import {
   QuotaExhaustedError,
   createTtsProvider,
+  lessonVideoTtsCacheDir,
   logVideoTts,
   prepareOpenJtalk,
   cueHash,
@@ -117,6 +120,24 @@ export interface VideoPlan {
   stageSlug: string;
   id: string;
   sourceHash: string;
+}
+
+/** 台帳で作ると決めたトピックと、合成前に数える読み上げ。 */
+export interface PendingVideoTts {
+  stageSlug: string;
+  id: string;
+  sourceHash: string;
+  kind: "scene" | "narration" | "recorded";
+  speeches: string[];
+}
+
+function narrationTtsSpeeches(
+  cues: ReadonlyArray<{ speech: string }>,
+  unit: "cue" | "topic",
+): string[] {
+  if (cues.length === 0) return [];
+  if (unit === "topic") return [cues.map((cue) => cue.speech).join("\n\n")];
+  return cues.map((cue) => cue.speech);
 }
 
 interface BuildOptions {
@@ -160,7 +181,10 @@ export interface VideoFailure {
 export const formatVideoFailure = (failure: VideoFailure): string =>
   `${failure.stageSlug}/${failure.id}: ${failure.reason}`;
 
-function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: VideoFailure[] } {
+function collectTopics(listed: NarrationTopic[]): {
+  topics: VideoTopic[];
+  invalid: VideoFailure[];
+} {
   const slidesTargets = new Map(
     collectPdfTargets(undefined, { includeFormat2Slides: true })
       .filter((t) => t.kind === "slides")
@@ -169,7 +193,7 @@ function collectTopics(selectors: string[]): { topics: VideoTopic[]; invalid: Vi
   const topics: VideoTopic[] = [];
   const invalid: VideoFailure[] = [];
   // ponytail: 収録版も narration.json が必須で、無ければエラー。台本なしを許可するなら検査と対象の列挙を一緒に見直す。
-  for (const topic of collectNarrationTopics(selectors)) {
+  for (const topic of listed) {
     if (existsSync(join(topic.topicDir, "video.json"))) continue;
     const label = `${topic.stageSlug}/${topic.id}`;
     if (topic.parseError !== undefined) {
@@ -707,30 +731,39 @@ export function videoTtsOf(args: string[], remote = false): TtsProviderName | un
 }
 
 /** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
+export function videoSelectorsFromArgs(args: readonly string[]): string[] {
+  const valueFlags = ["--tts", "--out", "--concurrency", "--topics"];
+  return args.filter(
+    (arg, i) =>
+      arg.trim() !== "" && !arg.startsWith("--") && !valueFlags.includes(args[i - 1] ?? ""),
+  );
+}
+
 export async function buildVideos(
   args: string[] = [],
   skip: (plan: VideoPlan) => boolean = () => false,
+  beforeGenerate?: (pending: readonly PendingVideoTts[]) => Promise<void> | void,
 ): Promise<{ reports: TopicReport[]; failures: VideoFailure[] }> {
   function argValue(name: string): string | null {
     const i = args.indexOf(name);
     return i !== -1 && args[i + 1] ? args[i + 1] : null;
   }
-  const VALUE_FLAGS = ["--tts", "--out", "--concurrency"];
   const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "video"));
-  const cacheDir = join(contentRoot, "dist", "video-cache", "tts");
+  const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const concurrency = Number(argValue("--concurrency") ?? 2);
   const captioned = args.includes("--captioned");
   const force = args.includes("--force");
   const keepWork = args.includes("--keep-work");
-  const selectors = args.filter(
-    (a, i) => !a.startsWith("--") && !VALUE_FLAGS.includes(args[i - 1] ?? ""),
-  );
+  const topicIds = topicIdsFromArgs(args);
+  const selectors = videoSelectorsFromArgs(args);
 
   validatePublishedVideoVoice(args);
 
   const voice = loadVideoVoice(videoTtsOf(args));
   const provider = createTtsProvider(voice);
-  const { topics, invalid } = collectTopics(selectors);
+  const listed = collectNarrationTopics(selectors);
+  const selected = topicIds ? selectTopicsById(listed, topicIds) : listed;
+  const { topics, invalid } = collectTopics(selected);
   const failures: VideoFailure[] = [...invalid];
 
   // 台本の検証 (エラーのあるトピックは作らない)
@@ -774,9 +807,17 @@ export async function buildVideos(
   }
 
   const scenePlans: { topic: NarrationTopic; sourceHash: string }[] = [];
-  for (const topic of collectNarrationTopics(selectors).filter((t) =>
-    existsSync(join(t.topicDir, "video.json")),
-  )) {
+  const sceneTopics = selected.filter((topic) => existsSync(join(topic.topicDir, "video.json")));
+  if (topicIds) {
+    const covered = new Set([
+      ...topics.map((topic) => topic.id),
+      ...invalid.map((failure) => failure.id),
+      ...sceneTopics.map((topic) => topic.id),
+    ]);
+    const uncovered = topicIds.filter((id) => !covered.has(id));
+    if (uncovered.length > 0) throw new Error(`動画の対象ではありません: ${uncovered.join(", ")}`);
+  }
+  for (const topic of sceneTopics) {
     try {
       scenePlans.push({ topic, sourceHash: planSceneTopic(topic, provider.identity) });
     } catch (error) {
@@ -815,6 +856,25 @@ export async function buildVideos(
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
     return report.sourceHash !== sourceHash;
   });
+  if (beforeGenerate) {
+    const pendingTts: PendingVideoTts[] = [
+      ...pendingScenes.map(({ topic, sourceHash }) => ({
+        stageSlug: topic.stageSlug,
+        id: topic.id,
+        sourceHash,
+        kind: "scene" as const,
+        speeches: sceneTopicTtsSpeeches(topic, provider.unit),
+      })),
+      ...pending.map(({ topic, sourceHash, recorded, cues }) => ({
+        stageSlug: topic.stageSlug,
+        id: topic.id,
+        sourceHash,
+        kind: recorded ? ("recorded" as const) : ("narration" as const),
+        speeches: recorded ? [] : narrationTtsSpeeches(cues, provider.unit),
+      })),
+    ];
+    await beforeGenerate(pendingTts);
+  }
   if (voice.provider === "openjtalk" && (pendingScenes.length || pending.some((p) => !p.recorded)))
     prepareOpenJtalk();
   console.log(
@@ -858,6 +918,7 @@ export async function buildVideos(
             tts: voice.provider,
             ttsModel: undefined,
             out: outDir,
+            topicIds: null,
             refreshAudio: [],
           },
           topic,

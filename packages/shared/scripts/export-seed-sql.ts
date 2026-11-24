@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 
 import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
-import { videoManifestKey, type VideoManifest } from "../../content/src/material-video.js";
+import type { VideoManifest } from "../../content/src/material-video.js";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
@@ -29,6 +29,8 @@ import { RETIRED_STAGES } from "../src/curriculum/retired-stages.js";
 import { problemFingerprints } from "../src/tasks/problems.js";
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
+import { lessonNamespace, lessonUuid as revisedLessonUuid, stableUuid } from "./seed-ids.js";
+import { lessonVideoColumns } from "./lesson-video-sql.js";
 import { lessonIdRemapStatements } from "./lesson-id-remap.js";
 import {
   DEVLAB_TASK_PROBLEM_MOVES,
@@ -138,46 +140,13 @@ function doUpdate(
   return `do update set ${assignments.join(", ")}${where}`;
 }
 
-/** 名前空間キーから安定した UUID 文字列を作る（再 seed で ID がずれないようにする）。 */
-function stableUuid(key: string): string {
-  const h = createHash("sha1").update(key).digest();
-  const bytes = Uint8Array.from(h.subarray(0, 16));
-  const ver = bytes[6];
-  const variant = bytes[8];
-  if (ver === undefined || variant === undefined) {
-    throw new Error("sha1 digest too short");
-  }
-  bytes[6] = (ver & 0x0f) | 0x50; // version 5-ish
-  bytes[8] = (variant & 0x3f) | 0x80; // RFC 4122 variant
-  const hex = Buffer.from(bytes).toString("hex");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-// 3 ステージへの分割で模試へ移ったレッスン。配布済みのリンク、解答、資料の版を
-// 引き継ぐため、これらの UUID には引き続き元のステージの名前を使う。
-const transferredExamLessons = new Set([
-  "9-1-1",
-  "doc-9-1",
-  "quiz-9-1",
-  "10-3-1",
-  "doc-10-3",
-  "quiz-10-3",
-  "10-4-1",
-  "doc-10-4",
-  "quiz-10-4",
-]);
-
-function lessonNamespace(stageId: string, lessonId: string): string {
-  return stageId === "claude-developer-mock-exam" && transferredExamLessons.has(lessonId)
-    ? "claude-developer-foundations"
-    : stageId;
-}
-
-/** レッスン ID はステージ内で一意。セクションをキーに含めると移動時に履歴が切れる。 */
 function lessonUuid(tenantId: string, stageId: string, lessonId: string): string {
-  const revision = progressRevisions.get(`${stageId}:${lessonId}`);
-  const key = revision === undefined ? lessonId : `${lessonId}@r${revision}`;
-  return stableUuid(`lesson:${tenantId}:${lessonNamespace(stageId, lessonId)}:${key}`);
+  return revisedLessonUuid(
+    tenantId,
+    stageId,
+    lessonId,
+    progressRevisions.get(`${stageId}:${lessonId}`),
+  );
 }
 
 /** 以前の section 込みキー。初回 seed で進捗を新 UUID へ付け替えるために残す。 */
@@ -445,25 +414,12 @@ function emitLesson(
   lesson: Lesson,
 ) {
   const id = lessonUuid(tenantId, stageId, lesson.id);
-  // 台本を削除したら解除。manifest が無い／対象外なら既存値を保持する。
-  // ステージ slug とトピック ID の組で、自分のステージの項目を引く。
-  const videoEntry = videoManifest?.[videoManifestKey(stageId, lesson.id)];
-  const manifestVideo = videoEntry && "video" in videoEntry ? videoEntry : undefined;
-  const videoFailure =
-    videoEntry && "error" in videoEntry && videoEntry.stageSlug === stageId
-      ? videoEntry
-      : undefined;
-  const narratedSlides = lesson.type === "slides" && lesson.hasNarration;
-  const ownedVideo =
-    narratedSlides &&
-    manifestVideo?.video?.startsWith(`lesson-video/${tenantId}/${stageId}/${lesson.id}/`)
-      ? manifestVideo
-      : undefined;
-  const preserveVideo = narratedSlides && !ownedVideo;
-  const preserveVideoIssue = preserveVideo && !videoFailure;
-  const videoIssue = preserveVideo && videoFailure ? videoFailure.error : null;
-  const videoPath = lesson.type === "slides" ? ownedVideo?.video : lesson.videoPath;
-  const scenes = ownedVideo?.scenes;
+  const { preserveVideo, preserveVideoIssue, videoIssue, videoPath, scenes } = lessonVideoColumns(
+    tenantId,
+    stageId,
+    lesson,
+    videoManifest,
+  );
   const videoScenes = scenes ? strLit(JSON.stringify(scenes)) : "null";
   lines.push(
     [

@@ -122,10 +122,11 @@ function wranglerClient(bucket: string): R2Client {
       try {
         await run(["get", `${bucket}/${key}`, "--file", tmp]);
         return new Uint8Array(readFileSync(tmp));
-      } catch {
-        // wrangler は「無い」も他の失敗も同じ非ゼロ終了。台帳の読み出しは
-        // 「無ければ全件」に倒す使い方なので、ここでは区別せず null を返す。
-        return null;
+      } catch (error) {
+        // 固定の欠損メッセージは wrangler がローカル R2 の get が null のときだけ出す。
+        const stderr = (error as { stderr?: string }).stderr;
+        if (stderr?.includes("The specified key does not exist.")) return null;
+        throw error;
       } finally {
         rmSync(tmp, { force: true });
       }

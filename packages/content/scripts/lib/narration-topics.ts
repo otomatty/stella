@@ -185,3 +185,40 @@ export function validateTopic(topic: NarrationTopic, narration: NarrationFile): 
     readings: topic.readings,
   });
 }
+
+/** `--topics` の値。カンマ区切りのトピック ID。 */
+export function parseTopicIdList(value: string | undefined): string[] {
+  if (!value || value.startsWith("--"))
+    throw new Error("--topics にトピック ID をカンマ区切りで指定してください");
+  const ids = value
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+  if (ids.length === 0) throw new Error("--topics にトピック ID をカンマ区切りで指定してください");
+  const invalid = ids.filter((id) => !/^[\w.-]+$/.test(id));
+  if (invalid.length > 0) throw new Error(`トピック ID が不正です: ${invalid.join(", ")}`);
+  const duplicate = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+  if (duplicate.length > 0)
+    throw new Error(`トピック ID が重複しています: ${duplicate.join(", ")}`);
+  return ids;
+}
+
+/** 引数の `--topics`。無ければ null。 */
+export function topicIdsFromArgs(args: readonly string[]): string[] | null {
+  const indexes = args.flatMap((arg, index) => (arg === "--topics" ? [index] : []));
+  if (indexes.length === 0) return null;
+  if (indexes.length > 1) throw new Error("--topics は1回だけ指定してください");
+  return parseTopicIdList(args[indexes[0] + 1]);
+}
+
+/** 指定した ID を、選んだステージのトピックから残す。無い ID は誤り。 */
+export function selectTopicsById<T extends { id: string }>(
+  topics: readonly T[],
+  ids: readonly string[],
+): T[] {
+  const known = new Set(topics.map((topic) => topic.id));
+  const missing = ids.filter((id) => !known.has(id));
+  if (missing.length > 0) throw new Error(`トピックが見つかりません: ${missing.join(", ")}`);
+  const wanted = new Set(ids);
+  return topics.filter((topic) => wanted.has(topic.id));
+}

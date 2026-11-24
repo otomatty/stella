@@ -1062,3 +1062,21 @@ for (const unit of ["topic", "cue"] as const)
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+it("--topics を読み、知らない ID と動画の対象でない ID はブラウザの前に拒む", async () => {
+  expect(argumentsOf(["stage", "--topics", "1-1-9,1-2-3"]).topicIds).toEqual(["1-1-9", "1-2-3"]);
+  expect(argumentsOf(["stage"]).topicIds).toBeNull();
+  vi.mocked(collectNarrationTopics).mockReturnValue([
+    { id: "1-1-9", topicDir: "/tmp/stella-no-video", stageSlug: "stage" } as ReturnType<
+      typeof collectNarrationTopics
+    >[number],
+  ]);
+  await expect(buildSceneVideos(["stage", "--topics", "missing"])).rejects.toThrow(
+    "トピックが見つかりません: missing",
+  );
+  await expect(buildSceneVideos(["stage", "--topics", "1-1-9"])).rejects.toThrow(
+    "動画の対象ではありません: 1-1-9",
+  );
+  expect(chromium.launch).not.toHaveBeenCalled();
+  expect(synthesizeCached).not.toHaveBeenCalled();
+});

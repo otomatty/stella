@@ -2,17 +2,23 @@ import { describe, expect, it } from "vitest";
 import { buildContentManifest } from "./manifest.js";
 import { collectPdfTargets } from "./material-pdf.js";
 import {
+  addTtsUsage,
+  DEFAULT_VIDEO_TTS_DAILY_LIMIT,
   hasVideo,
   mergeVideoFailure,
+  pacificDate,
   serializeVideoManifest,
   slideAssetHashes,
   slideVideoScenes,
   storyboardVideoScenes,
   summarizeVideoError,
+  ttsUsageToday,
   videoKeyHash,
   videoKeys,
   videoManifestKey,
   videoSceneHash,
+  videoTtsAllowance,
+  videoTtsDailyLimit,
   type VideoManifest,
   type VideoState,
 } from "./material-video.js";
@@ -315,5 +321,41 @@ describe("教材動画の場面", () => {
     expect(updated[1]).toEqual(original[1]);
     expect(scenes({ [image]: "a".repeat(64), [unused]: "d".repeat(64) })).toEqual(original);
     expect(original[1].hash).toBe(videoSceneHash(["説明", "説明します。", "本文"]));
+  });
+});
+
+describe("Gemini の読み上げ回数", () => {
+  it("太平洋時間の日付が変わると残りを 0 から数える", () => {
+    const beforePst = new Date("2026-11-23T07:59:59.000Z");
+    const afterPst = new Date("2026-11-23T08:00:00.000Z");
+    expect(pacificDate(beforePst)).toBe("2026-11-22");
+    expect(pacificDate(afterPst)).toBe("2026-11-23");
+    const beforePdt = new Date("2026-07-01T06:59:59.000Z");
+    const afterPdt = new Date("2026-07-01T07:00:00.000Z");
+    expect(pacificDate(beforePdt)).toBe("2026-06-30");
+    expect(pacificDate(afterPdt)).toBe("2026-07-01");
+    const usage = { day: "2026-11-22", requests: 40 };
+    expect(ttsUsageToday(usage, beforePst)).toEqual({ day: "2026-11-22", requests: 40 });
+    expect(ttsUsageToday(usage, afterPst)).toEqual({ day: "2026-11-23", requests: 0 });
+    expect(videoTtsAllowance(usage, 100, beforePst)).toEqual({
+      day: "2026-11-22",
+      used: 40,
+      remaining: 60,
+    });
+    expect(videoTtsAllowance(usage, 100, afterPst).remaining).toBe(100);
+    expect(addTtsUsage(usage, 3, beforePst)).toEqual({ day: "2026-11-22", requests: 43 });
+    expect(addTtsUsage(usage, 3, afterPst)).toEqual({ day: "2026-11-23", requests: 3 });
+    expect(ttsUsageToday({ day: "2026-11-22", requests: -1 }, beforePst)).toEqual({
+      day: "2026-11-22",
+      requests: 0,
+    });
+  });
+
+  it("上限は未設定なら 100 で、正の整数以外は拒む", () => {
+    expect(videoTtsDailyLimit(undefined)).toBe(DEFAULT_VIDEO_TTS_DAILY_LIMIT);
+    expect(videoTtsDailyLimit("  ")).toBe(100);
+    expect(videoTtsDailyLimit("80")).toBe(80);
+    expect(() => videoTtsDailyLimit("0")).toThrow("VIDEO_TTS_DAILY_LIMIT");
+    expect(() => videoTtsDailyLimit("10.5")).toThrow("VIDEO_TTS_DAILY_LIMIT");
   });
 });

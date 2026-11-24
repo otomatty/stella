@@ -50,7 +50,12 @@ import {
   toPosterJpeg,
   writeNarrationWav,
 } from "./lib/ffmpeg.js";
-import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
+import {
+  collectNarrationTopics,
+  contentRoot,
+  selectTopicsById,
+  topicIdsFromArgs,
+} from "./lib/narration-topics.js";
 import { sceneCacheHash, sceneVideoSourceHash, touchVideoCacheFile } from "./lib/scene-cache.js";
 import { sceneHtml, textSceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
 import {
@@ -61,6 +66,7 @@ import {
 } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
+  lessonVideoTtsCacheDir,
   QuotaExhaustedError,
   mapPool,
   synthesizeCached,
@@ -93,6 +99,7 @@ export function prepareSceneStills(outputRoot: string, stage: string, topic: str
 export function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const refreshAudio: string[] = [];
+  const topicIds = topicIdsFromArgs(args);
   let stills = false,
     burnCaptions = false,
     tts: TtsProviderName | undefined,
@@ -111,6 +118,8 @@ export function argumentsOf(args: string[]) {
       if (ids.includes("summary"))
         throw new Error("summary の場面は廃止されました。--refresh-audio には指定できません");
       refreshAudio.push(...ids);
+    } else if (a === "--topics") {
+      i += 1;
     } else if (a === "--tts") {
       const name = args[++i];
       if (!["gemini", "openjtalk", "fake"].includes(name))
@@ -138,8 +147,45 @@ export function argumentsOf(args: string[]) {
     tts,
     ttsModel,
     out,
+    topicIds,
     refreshAudio: [...new Set(refreshAudio)],
   };
+}
+
+/** 場面の読み上げ。Gemini (unit が topic) は場面ごとに 1 回、それ以外は文ごと。 */
+export function sceneTtsSpeeches(
+  scene: Scene | TextScene,
+  readings: Record<string, string>,
+  unit: "cue" | "topic",
+): string[] {
+  const speeches = sceneSpeeches(scene, readings);
+  return unit === "topic" ? [speeches.join("\n\n")] : speeches;
+}
+
+/** 生成が sceneAudio に渡すのと同じ読み上げ。タイトル画面を含む。 */
+export function sceneTopicTtsSpeeches(
+  topic: ReturnType<typeof collectNarrationTopics>[number],
+  unit: "cue" | "topic",
+): string[] {
+  const json = JSON.parse(readFileSync(join(topic.topicDir, "video.json"), "utf8"));
+  const assets = storyboardAssets(contentRoot, topic.topicDir, json, { onlyReferenced: true });
+  const { storyboard, issues } = parseStoryboard(json, assets.context);
+  if (!storyboard || issues.some((issue) => issue.message.includes("イラストがまだありません")))
+    throw new Error(issues.map((issue) => `${issue.path}: ${issue.message}`).join(" / "));
+  const estimates = storyboard.scenes.map((scene) =>
+    scene.beats.map((beat) =>
+      estimateSpeechSeconds(speechOf({ text: beat.say, speech: beat.speech }, topic.readings)),
+    ),
+  );
+  const sequence = sceneVideoSequence(
+    storyboard.scenes,
+    estimates,
+    topic,
+    assets.context.clips,
+    undefined,
+    storyboard.schema,
+  );
+  return sequence.flatMap(({ scene }) => sceneTtsSpeeches(scene, topic.readings, unit));
 }
 
 /** 壊れた復元音声は捨てて再合成する。合成そのもののエラーは呼び出し元へ返す。 */
@@ -169,10 +215,10 @@ export async function sceneAudio(
   cache: string,
   refresh = false,
 ): Promise<Int16Array[]> {
-  const speeches = sceneSpeeches(scene, readings);
-  const weights = speeches.map(estimateSpeechSeconds);
+  const speeches = sceneTtsSpeeches(scene, readings, provider.unit);
+  const weights = sceneSpeeches(scene, readings).map(estimateSpeechSeconds);
   if (provider.unit === "topic") {
-    const speech = speeches.join("\n\n");
+    const speech = speeches[0] ?? "";
     let problems: string[] = [];
     for (let attempt = 0; attempt < 2; attempt++) {
       const pcm = await cachedScenePcm(
@@ -480,7 +526,7 @@ export async function buildSceneTopic(
           scene,
           topic.readings,
           provider,
-          join(contentRoot, "dist/video-cache/tts"),
+          lessonVideoTtsCacheDir(contentRoot),
           options.refreshAudio.includes(scene.id),
         ),
       );
@@ -703,9 +749,15 @@ export async function buildSceneTopic(
 }
 export async function buildSceneVideos(args: string[]) {
   const options = argumentsOf(args);
-  const topics = collectNarrationTopics(options.selectors).filter((t) =>
-    existsSync(join(t.topicDir, "video.json")),
-  );
+  const listed = collectNarrationTopics(options.selectors);
+  const selected = options.topicIds ? selectTopicsById(listed, options.topicIds) : listed;
+  const topics = selected.filter((topic) => existsSync(join(topic.topicDir, "video.json")));
+  if (options.topicIds) {
+    const missing = selected
+      .filter((topic) => !existsSync(join(topic.topicDir, "video.json")))
+      .map((topic) => topic.id);
+    if (missing.length > 0) throw new Error(`動画の対象ではありません: ${missing.join(", ")}`);
+  }
   if (options.refreshAudio.length) {
     const known = new Set(
       topics.flatMap((topic) => {

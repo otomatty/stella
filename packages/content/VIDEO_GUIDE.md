@@ -357,7 +357,7 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 
 ## 公開のされ方
 
-`main` に入ると、CI の `video:sync --remote --tts gemini` が `video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は CI のキャッシュで使い回します。
+デプロイ (main への push) では動画を作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を main で手動実行します。実行は `video:sync --remote --tts gemini` で、`video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。作る前に Gemini TTS の呼び出し回数を数え、`VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら 1 本も作りません。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は videos.yml のキャッシュで使い回します。
 
 手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。`video:sync --remote` の既定は Gemini です。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
 

@@ -15,9 +15,11 @@ vi.mock("node:child_process", async (original) => ({
 }));
 
 import {
+  countTtsCalls,
   createTtsProvider,
   cueHash,
   findOpenJtalkPython,
+  hasCachedTts,
   openJtalkScript,
   geminiAudioField,
   grokAudioField,
@@ -25,8 +27,10 @@ import {
   parseQuotaError,
   pcmToWav,
   QuotaExhaustedError,
+  readGeminiTtsCalls,
   RetryableError,
   synthesizeCached,
+  trackGeminiTtsCalls,
   type TtsProvider,
   withRetry,
 } from "./tts.js";
@@ -652,6 +656,89 @@ describe("ローカルの WAV", () => {
       }
     },
   );
+});
+
+describe("読み上げ回数の数え方", () => {
+  afterEach(() => {
+    trackGeminiTtsCalls(false);
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("キャッシュにある場面は数えず、同じ読み上げと収録版も 1 回にまとめる", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tts-count-"));
+    const identity = "gemini/count-test";
+    const provider: TtsProvider = {
+      unit: "topic",
+      identity,
+      concurrency: 1,
+      nondeterministic: false,
+      synthesize: async () => ({ bytes: Uint8Array.from([1, 2, 3]), ext: "wav" }),
+    };
+    try {
+      const scenes = ["場面1", "場面2", "場面3"];
+      expect(
+        countTtsCalls(
+          [{ stageSlug: "stage", id: "1-1", kind: "scene", speeches: scenes }],
+          identity,
+          dir,
+        ),
+      ).toEqual({
+        topics: [{ stageSlug: "stage", id: "1-1", kind: "scene", calls: 3 }],
+        needed: 3,
+      });
+      await synthesizeCached(provider, "場面2", dir);
+      expect(hasCachedTts(identity, "場面2", dir)).toBe(true);
+      writeFileSync(join(dir, `${cueHash(identity, "空")}.wav`), Buffer.alloc(0));
+      expect(hasCachedTts(identity, "空", dir)).toBe(false);
+      writeFileSync(join(dir, `${cueHash(identity, "mp3")}.mp3`), Buffer.from([9]));
+      expect(hasCachedTts(identity, "mp3", dir)).toBe(true);
+      const counted = countTtsCalls(
+        [
+          { stageSlug: "stage", id: "1-1", kind: "scene", speeches: scenes },
+          { stageSlug: "stage", id: "1-2", kind: "narration", speeches: ["トピックの読み"] },
+          { stageSlug: "stage", id: "1-3", kind: "narration", speeches: ["トピックの読み"] },
+          { stageSlug: "stage", id: "rec", kind: "recorded", speeches: [] },
+        ],
+        identity,
+        dir,
+      );
+      expect(counted.topics.map((topic) => topic.calls)).toEqual([2, 1, 0, 0]);
+      expect(counted.needed).toBe(3);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("数えるあいだの失敗した Gemini リクエストだけを足す", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                details: [
+                  {
+                    "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                    violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel" }],
+                  },
+                ],
+              },
+            }),
+            { status: 429 },
+          ),
+      ),
+    );
+    const provider = createTtsProvider({ provider: "gemini" });
+    trackGeminiTtsCalls(true);
+    await expect(provider.synthesize("文")).rejects.toThrow("429");
+    expect(readGeminiTtsCalls()).toBe(1);
+    trackGeminiTtsCalls(false);
+    await expect(provider.synthesize("文")).rejects.toThrow("429");
+    expect(readGeminiTtsCalls()).toBe(1);
+  });
 });
 
 describe("video:tts:setup", () => {

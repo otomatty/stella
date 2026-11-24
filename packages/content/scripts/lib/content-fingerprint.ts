@@ -95,6 +95,8 @@ export const SEED_INPUT_PATHS = [
   "packages/content/scripts/lib/wrangler-config.ts",
   "packages/content/scripts/pdf/print-doc.css",
   "packages/shared/scripts/export-seed-sql.ts",
+  "packages/shared/scripts/lesson-video-sql.ts",
+  "packages/shared/scripts/seed-ids.ts",
   "packages/shared/scripts/lesson-id-remap.ts",
   "packages/shared/scripts/task-problem-carryover.ts",
   "packages/shared/src/problems",

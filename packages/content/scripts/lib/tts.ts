@@ -162,7 +162,31 @@ export async function withRetry<T>(
   }
 }
 
+/**
+ * video:sync が台帳に足す回数。有効なあいだの Gemini TTS の HTTP リクエスト
+ * (失敗と再試行を含む) だけを数える。手元の `--tts gemini` や、同じ API キーの
+ * 別用途 (清書・イラスト・チュートリアル収録) はここを有効にしないので数えない。
+ */
+let geminiCallCounting = false;
+let geminiCallCount = 0;
+
+let onGeminiCall: (() => void) | undefined;
+
+export function trackGeminiTtsCalls(enabled: boolean, onCall?: () => void): void {
+  geminiCallCounting = enabled;
+  onGeminiCall = enabled ? onCall : undefined;
+  if (enabled) geminiCallCount = 0;
+}
+
+export function readGeminiTtsCalls(): number {
+  return geminiCallCount;
+}
+
 async function checkedFetch(label: string, url: string, init: RequestInit): Promise<Response> {
+  if (label === "gemini" && geminiCallCounting) {
+    geminiCallCount += 1;
+    onGeminiCall?.();
+  }
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal: AbortSignal.timeout(60_000) });
@@ -480,6 +504,81 @@ export function cueHash(identity: string, speech: string): string {
   return createHash("sha256").update(`${identity}\n${speech}`).digest("hex").slice(0, 32);
 }
 
+/** build-video と場面動画が synthesizeCached に渡すディレクトリ。 */
+export function lessonVideoTtsCacheDir(contentRoot: string): string {
+  return join(contentRoot, "dist/video-cache/tts");
+}
+
+function ttsCacheFiles(identity: string, speech: string, cacheDir: string): string[] {
+  const hash = cueHash(identity, speech);
+  return (["wav", "mp3"] as const).map((ext) => join(cacheDir, `${hash}.${ext}`));
+}
+
+/**
+ * 合成せずに、キャッシュが使えるかを返す。キーと拡張子と空ファイルの扱いは
+ * synthesizeCached と同じ。壊れたローカル wav はヒットにしない。
+ * removeStale のときだけ、合成の直前に壊れたファイルを消す (回数の確認では消さない)。
+ */
+function cachedTtsHit(
+  identity: string,
+  speech: string,
+  cacheDir: string,
+  removeStale: boolean,
+): string | null {
+  const localWav = /^(openjtalk|fake)\//.test(identity);
+  for (const file of ttsCacheFiles(identity, speech, cacheDir)) {
+    if (!existsSync(file)) continue;
+    const bytes = readFileSync(file);
+    if (localWav && file.endsWith(".wav") && !isWave(bytes)) {
+      if (removeStale) rmSync(file, { force: true });
+      continue;
+    }
+    if (bytes.length > 0) return file;
+  }
+  return null;
+}
+
+export function hasCachedTts(identity: string, speech: string, cacheDir: string): boolean {
+  return cachedTtsHit(identity, speech, cacheDir, false) !== null;
+}
+
+export interface TtsTopicPlan {
+  stageSlug: string;
+  id: string;
+  kind: "scene" | "narration" | "recorded";
+  speeches: readonly string[];
+}
+
+export interface TtsCallTopic {
+  stageSlug: string;
+  id: string;
+  kind: TtsTopicPlan["kind"];
+  calls: number;
+}
+
+/**
+ * 実際に外部 TTS を呼ぶ回数。キャッシュにある音声と、同じ読み上げの 2 件目以降は数えない。
+ * 新方式は場面ごと、旧方式で Gemini (unit が topic) のときはトピックごとに 1 件の speech を渡す。
+ */
+export function countTtsCalls(
+  topics: readonly TtsTopicPlan[],
+  identity: string,
+  cacheDir: string,
+): { topics: TtsCallTopic[]; needed: number } {
+  const seen = new Set<string>();
+  const rows = topics.map((topic) => {
+    let calls = 0;
+    for (const speech of topic.speeches) {
+      const hash = cueHash(identity, speech);
+      if (seen.has(hash)) continue;
+      seen.add(hash);
+      if (!hasCachedTts(identity, speech, cacheDir)) calls += 1;
+    }
+    return { stageSlug: topic.stageSlug, id: topic.id, kind: topic.kind, calls };
+  });
+  return { topics: rows, needed: rows.reduce((sum, row) => sum + row.calls, 0) };
+}
+
 export interface CachedTts {
   file: string;
   cached: boolean;
@@ -543,21 +642,14 @@ async function synthesizeUncached(
   cacheDir: string,
   refresh: boolean,
 ): Promise<CachedTts> {
-  const hash = cueHash(provider.identity, speech);
-  const localWav = /^(openjtalk|fake)\//.test(provider.identity);
-  for (const ext of ["wav", "mp3"] as const) {
-    const file = join(cacheDir, `${hash}.${ext}`);
-    if (refresh || !existsSync(file)) continue;
-    const bytes = readFileSync(file);
-    if (localWav && ext === "wav" && !isWave(bytes)) {
-      rmSync(file, { force: true });
-    } else if (bytes.length > 0) {
-      return { file, cached: true };
-    }
+  if (!refresh) {
+    const file = cachedTtsHit(provider.identity, speech, cacheDir, true);
+    if (file) return { file, cached: true };
   }
   const audio = await synthesizeLimited(provider, speech);
   if (audio.bytes.length === 0) throw new Error("TTS の結果が空でした");
   mkdirSync(cacheDir, { recursive: true });
+  const hash = cueHash(provider.identity, speech);
   const file = join(cacheDir, `${hash}.${audio.ext}`);
   writeFileSync(file, audio.bytes);
   return { file, cached: false };
