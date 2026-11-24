@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 非同期処理: 砂時計 -->
+  <path d="M5 3 H19"/>
+  <path d="M5 21 H19"/>
+  <path d="M7 3 V6.5 C7 8.5 12 11 12 12 C12 11 17 8.5 17 6.5 V3"/>
+  <path d="M7 21 V17.5 C7 15.5 12 13 12 12 C12 13 17 15.5 17 17.5 V21"/>
+</svg>

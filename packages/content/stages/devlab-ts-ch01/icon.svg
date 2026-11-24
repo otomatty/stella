@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 値・型・変数: 値に付ける型タグ -->
+  <path d="M12.2 3 H5 a2 2 0 0 0-2 2 v7.2 a2 2 0 0 0 .6 1.4 l7.2 7.2 a2 2 0 0 0 2.8 0 l7.2-7.2 a2 2 0 0 0 0-2.8 l-7.2-7.2 a2 2 0 0 0-1.4-.6 Z"/>
+  <circle cx="7.5" cy="7.5" r="1.4" fill="currentColor" stroke="none"/>
+</svg>
