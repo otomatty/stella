@@ -1,9 +1,3 @@
-// 06-q02 アクセス修飾子と readonly
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/class/access-modifiers
-//       https://typescriptbook.jp/reference/object-oriented/class/readonly-modifier-in-classes
-//       https://typescriptbook.jp/reference/object-oriented/class/constructor-shorthand
-//
 // 問題
 // 銀行口座を表すクラス BankAccount を書いてください。
 // 外から直接さわらせたくないものは private に、後から変えないものは readonly にする。
