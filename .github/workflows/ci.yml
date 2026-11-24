@@ -229,6 +229,70 @@ jobs:
       - name: Browser E2E
         run: bun run --filter=@stella/web e2e
 
+      - name: List release screenshots
+        id: shots
+        if: ${{ !cancelled() }}
+        run: |
+          status=0
+          for product in web vscode; do
+            version=$(node -p "require('./apps/$product/package.json').version")
+            if names=$(bun run --silent release:shots list --changelog "apps/$product/CHANGELOG.md" --version "$version"); then
+              printf '%s=%s\n' "$product" "$names" >> "$GITHUB_OUTPUT"
+            else
+              status=1
+            fi
+          done
+          exit "$status"
+
+      - name: Capture Web release screenshots
+        id: capture_web_shots
+        if: ${{ !cancelled() && steps.shots.outputs.web != '' }}
+        env:
+          RELEASE_SHOTS: ${{ steps.shots.outputs.web }}
+          RELEASE_SHOTS_OUT: ${{ runner.temp }}/release-shots/web
+        # Browser E2E の失敗ログを Playwright の出力先の初期化から守る。
+        run: bun run --filter=@stella/web release:shots --output "$RUNNER_TEMP/release-shots-web-test-results"
+
+      - name: Capture VS Code release screenshots
+        id: capture_vscode_shots
+        if: ${{ !cancelled() && steps.shots.outputs.vscode != '' }}
+        env:
+          RELEASE_SHOTS: ${{ steps.shots.outputs.vscode }}
+          RELEASE_SHOTS_OUT: ${{ runner.temp }}/release-shots/vscode
+        run: bun run --filter=stella-lms release:shots
+
+      - name: Upload release screenshots
+        id: upload_shots
+        if: ${{ !cancelled() && (steps.shots.outputs.web != '' || steps.shots.outputs.vscode != '') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-shots
+          path: ${{ runner.temp }}/release-shots/
+          if-no-files-found: ignore
+
+      - name: Summarize release screenshots
+        if: ${{ !cancelled() && (steps.shots.outputs.web != '' || steps.shots.outputs.vscode != '') }}
+        env:
+          WEB_SHOTS: ${{ steps.shots.outputs.web }}
+          VSCODE_SHOTS: ${{ steps.shots.outputs.vscode }}
+          WEB_CAPTURE: ${{ steps.capture_web_shots.outcome }}
+          VSCODE_CAPTURE: ${{ steps.capture_vscode_shots.outcome }}
+          ARTIFACT_ID: ${{ steps.upload_shots.outputs.artifact-id }}
+        run: |
+          summarize() {
+            local product="$1" names="$2" capture="$3"
+            if [[ -z "$names" ]]; then return; fi
+            if [[ "$capture" == 'success' && -n "$ARTIFACT_ID" ]]; then
+              printf 'リリースのお知らせのスクリーンショット: 成果物 `release-shots` に %s: %s を書き出しました\n\n' "$product" "$names"
+            else
+              printf 'リリースのお知らせのスクリーンショット: %s: %s の撮影または成果物のアップロードに失敗しました\n\n' "$product" "$names"
+            fi
+          }
+          {
+            summarize Web "$WEB_SHOTS" "$WEB_CAPTURE"
+            summarize 'VS Code 拡張' "$VSCODE_SHOTS" "$VSCODE_CAPTURE"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload E2E failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v7

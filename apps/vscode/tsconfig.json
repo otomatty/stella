@@ -4,7 +4,7 @@
     "lib": ["ES2023", "DOM"],
     "types": ["vscode", "node"],
     "noEmit": true,
-    "rootDir": "."
+    "rootDir": ".."
   },
-  "include": ["src/**/*.ts", "grader-webview/**/*.ts"]
+  "include": ["src/**/*.ts", "grader-webview/**/*.ts", "scripts/**/*.ts"]
 }

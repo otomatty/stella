@@ -6,10 +6,10 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
-| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify`（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）、`core-loop`（API スモーク）、`e2e`（PR のブラウザー E2E） |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版の GitHub Release に更新の要点を添付 |
+| `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify`（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）、`core-loop`（API スモーク）、`e2e`（PR のブラウザー E2E とリリースのお知らせ用スクリーンショットの撮影） |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版のスクリーンショットを撮影・公開し、GitHub Release に更新の要点を添付 |
 | `.github/workflows/videos.yml` | 手動 (`workflow_dispatch`、main のみ) | 教材動画。既定は台帳に今の内容ハッシュが無いトピック。`stage` / `topics` / `force` / `dry_run`。作る前に Gemini TTS の回数を数え、`VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら作らない。manifest があれば、本番の教材指紋が一致するときだけ D1 の既存レッスンの動画列を更新する。`concurrency` は `lesson-videos` (`cancel-in-progress: false`)。deploy の `deploy-main` とは分ける |
-| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → `.vsix` を GitHub Release（タグ `vscode-v<版>`）に添付 → 未掲載の版を Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 → 公開できた版の Release に更新の要点を添付 |
+| `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → 新しい版のスクリーンショットを撮影・公開 → `.vsix` を GitHub Release（タグ `vscode-v<版>`）に添付 → 未掲載の版を Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 → 公開できた版の Release に更新の要点を添付 |
 | `.github/workflows/release-announce.yml` | 毎日 7:50（日本時間）または手動（main のみ） | 送信待ちの版をまとめて Google Chat に投稿（任意） |
 
 検証ゲートの定義は `ci.yml` の 1 か所だけに置き、`deploy.yml` / `release-vscode.yml` は
@@ -112,17 +112,38 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 Release の本文は CHANGELOG の該当節を AI で要約し、全文も折りたたみに残す。既定のモデルは `claude-opus-5-5` で、`prepare` を実行する環境の `RELEASE_NOTES_MODEL` で変更できる。要約用の `ANTHROPIC_API_KEY` が空か、要約に失敗した場合は、該当節をそのまま本文に使う。
 
-Google Chat のお知らせは毎日 7:50（日本時間）に起動する。GitHub の定時実行は遅れることがある。前回のお知らせから出た版をまとめて 1 通にし、送る版が無い日は投稿しない。VS Code 拡張は Marketplace に公開できた版だけを載せる。
+Google Chat のお知らせは毎日 7:50（日本時間）に起動する。GitHub の定時実行は遅れることがある。送信待ちの版を 1 つのスレッドにまとめ、親メッセージには更新のお知らせと製品ごとの最新版を載せる。CHANGELOG の項目は書いた文章のままカードで 1 通ずつ返信し、公開 URL があるスクリーンショットはカードに添える。項目の文章は AI 要約を使わない。最後に製品ごとの反映方法と Release へのリンクを返信する。スレッドは合計 30 通までとし、省略した項目があれば最後の案内の直前に残りの件数を載せる。送る版が無い日は投稿しない。VS Code 拡張は Marketplace に公開できた版だけを載せる。
 
 VS Code 拡張の Release を作るときは `release-summary.pending.json` を添付し、Marketplace に公開できたら同じ要点を `release-summary.json` として添付する。公開や添付に失敗しても、再実行時に Release の添付を確認して続きから進める。
 
-Release に `release-summary.json` があり、`release-announced.json` が無い版を送信待ちとする。Chat の投稿に成功したら、対象の各 Release に `release-announced.json` を添付する。定時実行が飛んだ日や投稿に失敗した日の分は翌日に送る。投稿後に印の添付だけが失敗した版は、翌日に重ねて送られることがある。今すぐ送るには、Actions の「Release announcement」で **Run workflow** を選ぶ（main のみ）。
+Release に `release-summary.json` があり、`release-announced.json` が無い版を送信待ちとする。送信待ちのタグの組み合わせから `threadKey` を作り、各メッセージの `messageId` はそのハッシュと通し番号で決める。途中で送信に失敗したら印を付けずに止める。同じタグの組み合わせで再実行すると同じ ID で送り直し、HTTP 409 は送信済みとして次の投稿へ進む。全通を送れたら、対象の各 Release に `release-announced.json` を添付する。印の添付が一部だけ失敗した場合など、再実行時に送信待ちの版が変わると、新しいスレッドに重ねて載ることがある。今すぐ送るには、Actions の「Release announcement」で **Run workflow** を選ぶ（main のみ）。
 
 Chat のスペースの「アプリと統合」→「Webhook」で作った URL を Repository secret `GOOGLE_CHAT_WEBHOOK_URL` に登録する。未設定の場合は送信待ちのまま残る。
 
 リリースのトリガは `main` への push のみ。やり直しは Actions の Re-run で行う。
 
 受講者への配布は Visual Studio Marketplace に寄せる（Web の「VS Code で開く」で VS Code がインストールを尋ねる。受講者に `.vsix` を配らない）。Marketplace への公開もこのワークフローが行う。Release に付けた `.vsix` を `vsce publish --oidc --packagePath` で出し、同じ版は `--skip-duplicate` で飛ばす。認証は GitHub Actions の OIDC で、PAT は置かない。初回だけ、publisher `saedgewell` の Trusted Publishing に owner `otomatty`、repository `stella`、workflow `release-vscode.yml`、environment なしを登録する（手順は `apps/vscode/README.md` の「Marketplace 公開」）。Release の `.vsix` は控え。
+
+### スクリーンショットの撮影
+
+お知らせに画面を添えるときは、CHANGELOG の該当項目に `![説明](shot:名前)` を単独の行で書く。場面の登録簿は [Web](../apps/web/release-shots/scenarios.ts) と [VS Code 拡張](../apps/vscode/scripts/release-shots/scenarios.ts) にある。新しい場面を使うときは、同じ PR で製品の登録簿にも追加する。
+
+PR では `e2e` ジョブが、両製品の現在の版の CHANGELOG に指定された場面をブラウザー E2E の後で撮る。画像は Actions の成果物 `release-shots` で確認できる。新しい版のリリースでは撮り直して公開 R2 にアップロードし、画像の URL を Release 本文と Google Chat のお知らせに使う。撮影の準備・撮影・アップロードに失敗した場合は画像なしでリリースを続ける。同じ版の再 push で Release が作成済みなら撮影を省く。
+
+Marketplace の変更履歴で表示できるよう、VSIX に同梱する CHANGELOG からは `![説明](shot:名前)` だけの行を取り除く。
+
+Web は 1280×800、VS Code 拡張は WebView の場面ごとの幅と高さで撮る。共通の設定はライトテーマ、倍率 2、日本語（`ja-JP`）、日本時間（`Asia/Tokyo`）。アニメーションを止め、入力欄のキャレットを隠す。撮影対象を指定した場合は四辺に 24 px の余白を付け、ページ内に収める。強調箇所にはオレンジ色の枠を付ける。
+
+手元で撮るには Playwright の Chromium と日本語フォント（Noto Sans CJK JP など）を用意する。Web は `apps/api/.dev.vars.example` を `apps/api/.dev.vars` にコピーし、`AUTH_JWT_SECRET` と `ALLOWED_ORIGINS` を確認する。`ALLOWED_ORIGINS` には `http://127.0.0.1:4173` を追加する。リポジトリのルートで `bun run db:migrate` と `bun run db:seed` を実行し、別の端末で `bun run dev:api` を起動してから撮影する。
+
+```sh
+RELEASE_SHOTS=learner-home RELEASE_SHOTS_OUT=/tmp/shots bun run --filter=@stella/web release:shots
+RELEASE_SHOTS=submission-form RELEASE_SHOTS_OUT=/tmp/shots bun run --filter=stella-lms release:shots
+```
+
+両方の製品を撮るときは、アップロード時に画像が混ざらないよう撮影先を分ける。
+
+`bun run release:shots list --changelog <path> --version <版>` は撮影する名前をカンマ区切りで出す。撮影後は `bun run release:shots upload --product <web|vscode> --version <版> --dir <撮影先> --out <images.json>` で教材と同じ公開バケット `stella-materials-public` にアップロードする。R2 のキーは `release-notes/<product>/<版>/<名前>-<内容の SHA-256 の先頭 16 文字>.png`。公開 URL は HTTPS の `MATERIALS_BASE_URL` の末尾のスラッシュを除いた値に `/` とキーをつないだもの。アップロードは `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を使い、`release:notes prepare --images` に渡す JSON を出力する。
 
 ## 必須ステータスチェック設定
 
@@ -159,6 +180,7 @@ Settings → Secrets and variables → Actions で設定する。
 `VITE_SERVER_URL` は受講者用の Web のオリジン (`https://stella.saedgewell.workers.dev`) で、正本の `healthOrigin` と揃える。
 Web の Worker (`apps/web/worker`) が `/api/*` を API へ中継するので、画面と API は同じオリジンになる (ログインの Cookie のため)。旧ホスト `stella-web` は同じ `deploy:web` で新しいオリジンへ 308 する (`apps/web/wrangler.legacy.toml`)。
 教材の配信 URL は `VITE_MATERIALS_BASE_URL` に入れる。
+Web と VS Code 拡張のリリースワークフローも、スクリーンショットを公開 R2 にアップロードするときに `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID`・`VITE_MATERIALS_BASE_URL` を読む。
 
 `BETTER_AUTH_SECRET` (ログインの署名鍵。`openssl rand -base64 32` で作る。変えると全員のセッションが切れる) と
 `ANTHROPIC_API_KEY` は deploy が `stella-api` Worker の Secret に同期する。

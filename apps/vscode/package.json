@@ -240,6 +240,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "typecheck": "tsc --noEmit",
+    "release:shots": "bun run scripts/release-shots/capture.ts",
     "package": "bun run build && bunx @vscode/vsce package --no-dependencies --readme-path MARKETPLACE.md"
   },
   "dependencies": {
@@ -253,6 +254,7 @@
     "@types/picomatch": "^4",
     "@types/vscode": "1.96.0",
     "esbuild": "^0.28.2",
+    "playwright": "1.65.0",
     "typescript": "^7.0.2"
   }
 }
