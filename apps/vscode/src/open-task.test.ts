@@ -862,9 +862,9 @@ describe("課題を開いた画面", () => {
       ["a", "b", "c", "a"].map((name) => path.join(taskRoot(), "src", `${name}.js`)),
     );
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
-    // 学習ガイドを課題の単元へ寄せ、エクスプローラーへ切り替えずに編集を始める。
+    // 学習ガイドの現在地を更新し、サイドバーを開かずに編集を始める。
     expect(state.executeCommand.mock.calls[0]).toEqual(["stella.revealTask", taskId]);
-    expect(state.executeCommand.mock.calls[1]).toEqual(["stella.lessons.focus"]);
+    expect(state.executeCommand).not.toHaveBeenCalledWith("stella.lessons.focus");
     expect(state.executeCommand).not.toHaveBeenCalledWith("revealInExplorer", expect.anything());
   });
 

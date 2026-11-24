@@ -4,10 +4,11 @@
  * 出典の HTTP(S) リンクと、許可した再実行・ログ表示のコマンドだけを使う。
  * 課題文 (README.md) を OS のタブ付きで開くパネル (先頭に「進め方」) も、ここに置く。
  *
- * 課題のパネル (課題文・確認の結果・ヒント) は、左の列でファイルを開いていれば右の列 (2 列目) に
- * まとめる (`sideColumn`)。パネルから操作するたびに列が増えないようにするため。
+ * 課題のパネル (課題文・確認の結果・ヒント) は、狭いときは同じグループのタブにまとめる。
+ * 広いときは、左の列でファイルを開いていれば右の列 (2 列目) にそろえる (`sideColumn`)。
  */
 
+import { randomBytes } from "node:crypto";
 import { type CiRunClaim, safeHttpsHref } from "@stella/shared/tasks/ci-run";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
@@ -47,11 +48,32 @@ import {
 } from "./task-run-summary.js";
 import { expectedActual } from "./task-test-message.js";
 
-/** 左の列 (1 列目) でテキストのファイルを開いているか。 */
-function hasLeftEditor(): boolean {
-  return (vscode.window.visibleTextEditors ?? []).some(
+export const NARROW_WIDTH = 420;
+export const WIDE_WIDTH = 900;
+let compact = false;
+
+export function decideReadmeLayout(input: {
+  compact: boolean;
+  width: number;
+  inSideColumn: boolean;
+  hasLeftEditor: boolean;
+  groupHasOtherTabs: boolean;
+}): "collapse" | "expand" | "stay" {
+  if (!input.compact && input.inSideColumn && input.hasLeftEditor && input.width < NARROW_WIDTH)
+    return "collapse";
+  if (input.compact && input.width >= WIDE_WIDTH && input.groupHasOtherTabs) return "expand";
+  return "stay";
+}
+
+/** 左の列 (1 列目) で開いているテキストエディター。 */
+function leftTextEditor(): vscode.TextEditor | undefined {
+  return vscode.window.visibleTextEditors?.find(
     (editor) => editor.viewColumn === vscode.ViewColumn.One,
   );
+}
+
+function hasLeftEditor(): boolean {
+  return leftTextEditor() !== undefined;
 }
 
 /**
@@ -59,6 +81,7 @@ function hasLeftEditor(): boolean {
  * パネルのリンクから開くたびに「隣」へ 3 列目・4 列目を作らないため。
  */
 export function sideColumn(): vscode.ViewColumn {
+  if (compact) return vscode.ViewColumn.Active;
   return hasLeftEditor() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside;
 }
 
@@ -471,6 +494,7 @@ export interface TaskReadmeInput {
  * 課題文の中のリンクは HTTP(S) と mailto だけで、コマンドのリンクは「進め方」にしか出ない。
  */
 export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
+  const nonce = randomBytes(16).toString("base64");
   const os = input.os ?? defaultOsForPlatform();
   const guide = input.guide;
   const body = guide
@@ -486,7 +510,7 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'nonce-${nonce}';" />
   <title>${escapeHtml(input.title)}</title>
   <style>
     body {
@@ -524,8 +548,54 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
 </head>
 <body>
 ${body}
+<script nonce="${nonce}">
+  const vscode = acquireVsCodeApi();
+  const reportWidth = () => vscode.postMessage({ type: "layout", width: Math.round(window.innerWidth) });
+  let resizeTimer;
+  reportWidth();
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(reportWidth, 150);
+  });
+</script>
 </body>
 </html>`;
+}
+
+function updateReadmeLayout(panel: vscode.WebviewPanel, message: unknown): void {
+  if (
+    !panel.visible ||
+    !message ||
+    typeof message !== "object" ||
+    !("type" in message) ||
+    message.type !== "layout" ||
+    !("width" in message) ||
+    typeof message.width !== "number" ||
+    !Number.isFinite(message.width) ||
+    message.width <= 0
+  )
+    return;
+
+  const editor = leftTextEditor();
+  const group = vscode.window.tabGroups.all.find((group) => group.viewColumn === panel.viewColumn);
+  const layout = decideReadmeLayout({
+    compact,
+    width: message.width,
+    inSideColumn: panel.viewColumn !== vscode.ViewColumn.One,
+    hasLeftEditor: editor !== undefined,
+    groupHasOtherTabs: group !== undefined && group.tabs.length > 1,
+  });
+  if (layout === "collapse" && editor) {
+    compact = true;
+    const document = editor.document;
+    panel.reveal(vscode.ViewColumn.One, true);
+    void vscode.window
+      .showTextDocument(document, { viewColumn: vscode.ViewColumn.One, preview: false })
+      .then(undefined, () => undefined);
+  } else if (layout === "expand") {
+    compact = false;
+    panel.reveal(vscode.ViewColumn.Two, true);
+  }
 }
 
 /** いま課題文のパネルが出している課題フォルダー。閉じていれば undefined。 */
@@ -534,9 +604,9 @@ export function taskReadmeRoot(): string | undefined {
 }
 
 /**
- * 課題文のパネルを開く (描き直す)。スクリプトは動かさず、コマンドのリンクは「進め方」の
- * 固定のコマンドだけを許す。左の列でファイルを開いていれば右の列に出し、フォーカスは
- * ファイルに残す (`reveal: false` なら前面に出さずに描き直すだけ)。
+ * 課題文のパネルを開く (描き直す)。スクリプトは幅の通知だけを行い、コマンドのリンクは
+ * 「進め方」の固定のコマンドだけを許す。広いときは右の列に出してファイルにフォーカスを残す。
+ * `reveal: false` なら前面に出さずに描き直す。
  */
 export function showTaskReadme(
   input: TaskReadmeInput & { root?: string },
@@ -548,25 +618,30 @@ export function showTaskReadme(
   if (options.reveal === false && (!readmePanel || readmeRoot !== input.root)) return;
   const html = buildTaskReadmeHtml(input);
   const title = `課題: ${input.title}`;
-  const beside = hasLeftEditor();
+  const beside = hasLeftEditor() && !compact;
   readmeRoot = input.root;
   if (!readmePanel) {
-    readmePanel = vscode.window.createWebviewPanel(
+    const panel = vscode.window.createWebviewPanel(
       README_VIEW_TYPE,
       title,
       {
         viewColumn: beside ? vscode.ViewColumn.Two : vscode.ViewColumn.Active,
         preserveFocus: beside,
       },
-      { enableScripts: false, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
+      { enableScripts: true, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
     );
-    readmePanel.onDidDispose(() => {
+    readmePanel = panel;
+    const messages = panel.webview.onDidReceiveMessage((message: unknown) => {
+      updateReadmeLayout(panel, message);
+    });
+    panel.onDidDispose(() => {
+      messages.dispose();
       readmePanel = undefined;
       readmeRoot = undefined;
     });
-    let wasVisible = readmePanel.visible;
+    let wasVisible = panel.visible;
     const refreshedAt = new Map<string, number>();
-    readmePanel.onDidChangeViewState(({ webviewPanel }) => {
+    panel.onDidChangeViewState(({ webviewPanel }) => {
       const becameVisible = webviewPanel.visible && !wasVisible;
       wasVisible = webviewPanel.visible;
       const root = readmeRoot;
