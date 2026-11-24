@@ -14,6 +14,7 @@ import {
   bundleSizeProblem,
   parsePublicTaskBundle,
   type TaskBundleResponse,
+  type TaskProblemItem,
   type TaskSummary,
 } from "@stella/shared/tasks/catalog";
 import {
@@ -24,7 +25,8 @@ import {
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
-import type { TaskProblem } from "@stella/shared/tasks/problems";
+import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
+import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
@@ -124,12 +126,12 @@ async function stageTaskList(
             .where(
               and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
             );
-    const problemTasks = new Map<string, TaskProblem[]>();
+    const problemTasks = new Map<string, { problems: TaskProblem[]; plan?: RunnerPlanKind }>();
     const gatedTaskIds = new Set<string>();
     for (const row of definitions) {
-      const problems = readTaskDefinition(row.definition).problems;
+      const { problems, runner } = readTaskDefinition(row.definition);
       if (!problems) continue;
-      problemTasks.set(row.id, problems);
+      problemTasks.set(row.id, { problems, plan: runner && RUNNERS[runner].plan });
       if (problems.some((problem) => problem.after)) gatedTaskIds.add(row.id);
     }
     const resultsByTask = new Map<string, SavedProblemResult[]>();
@@ -194,8 +196,9 @@ async function stageTaskList(
           status,
           refs: refsByTask?.get(task.id)?.get("") ?? [],
         };
-        const problems = problemTasks.get(task.id);
-        if (!problems) return base;
+        const problemTask = problemTasks.get(task.id);
+        if (!problemTask) return base;
+        const { problems, plan } = problemTask;
         const saved = resultsByTask.get(task.id) ?? [];
         const passed = countedProblemIds(
           saved,
@@ -223,9 +226,28 @@ async function stageTaskList(
             };
           },
         );
+        const stepByProblem = new Map(problemSteps?.map((step) => [step.id, step]));
+        const problemItems = problems.flatMap<TaskProblemItem>((problem, index) => {
+          const paths = plan && problemFiles(plan, problem.id);
+          if (!paths) return [];
+          const step = stepByProblem.get(problem.id);
+          if (step) return [{ ...step, source: paths.source }];
+          return [
+            {
+              id: problem.id,
+              title: problem.title,
+              label: problemStepLabel(problem.title, index),
+              source: paths.source,
+              // ステップの準備が済むまでは、動画で解放する問題を開ける扱いにしない。
+              state: passed.has(problem.id) ? "submitted" : problem.after ? "locked-video" : "open",
+              refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
+            },
+          ];
+        });
         const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
+          problem_items: problemItems,
           problems_manual: saved.filter(
             (row) =>
               row.source === "manual" &&

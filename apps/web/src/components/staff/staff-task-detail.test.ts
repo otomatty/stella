@@ -3,10 +3,35 @@ import {
   firstReadmeParagraph,
   parseStaffTaskTab,
   staffTaskCounts,
+  staffTaskStatement,
   taskGithubUrl,
 } from "./staff-task-detail";
 
 describe("課題詳細の表示", () => {
+  it("問題つきの課題は問題数と一覧へのボタンを表示する", () => {
+    expect(
+      staffTaskStatement({
+        readme: "# 課題文\n\n従来の説明",
+        problems: [
+          { id: "q01", title: "足す", label: "問1", source: "src/q01.ts", statement: null },
+        ],
+      }),
+    ).toEqual({
+      label: "問題",
+      note: "受講者には問題ファイルのコメントが出る",
+      summary: "全 1 問",
+      action: "問題の一覧を見る",
+    });
+  });
+
+  it("問題のない課題は課題文の最初の段落を表示する", () => {
+    expect(staffTaskStatement({ readme: "# 課題文\n\n従来の説明" })).toEqual({
+      label: "課題文",
+      note: "受講者には課題文の教材と VS Code の課題パネルで同じ文章が出る",
+      summary: "従来の説明",
+      action: "課題文を全部読む",
+    });
+  });
   it("READMEの見出し・空行・コードを飛ばして最初の段落だけ平文にする", () => {
     expect(
       firstReadmeParagraph(

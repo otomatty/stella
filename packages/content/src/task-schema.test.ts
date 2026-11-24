@@ -339,9 +339,7 @@ describe("問題つきの課題のファイル", () => {
       "task-u02-first-task-q02-problems",
       "problem-u02-first-task-q02-problems-q02-split-bill",
     ]);
-    expect(earlier[video + 2].markdown).toBe(
-      "# 問2 割り勘\n\nVS Code で開いて解き、確認して提出します。",
-    );
+    expect(earlier[video + 2].markdown).toBe("# 問2 割り勘");
 
     const taskFile = join(root, unit, "task.json");
     writeFileSync(
@@ -395,7 +393,7 @@ describe("問題つきの課題のファイル", () => {
     expect(() => build(root)).toThrow(/q02-problems.*同じ単元か前の単元.*9-9-9/);
   });
 
-  it("問題つきの課題は README を省いても課題文のレッスンと参照元の対応が残る", () => {
+  it("問題つきの課題は README を省いても問題一覧のレッスンと参照元の対応が残る", () => {
     const root = place({}, problemTask({ environment: "static-web-02" }));
     const readme = join(root, unit, "README.md");
     const before = build(root).tasks.find((t) => t.definition.id === problemTask().id);
@@ -405,7 +403,12 @@ describe("問題つきの課題のファイル", () => {
     expect(task?.bundle.files).not.toHaveProperty("README.md");
     expect(task?.lessonId).toBe(before?.lessonId);
     expect(manifest.stages[0].sections?.flatMap((s) => s.lessons)).toContainEqual(
-      expect.objectContaining({ id: task?.lessonId, title: "問題 課題文", markdown: "" }),
+      expect.objectContaining({
+        id: task?.lessonId,
+        title: "問題の問題",
+        duration: "2 問",
+        markdown: "",
+      }),
     );
 
     const unitDir = dirname(dirname(join(root, unit)));

@@ -33,6 +33,20 @@ export function problemStepLabel(title: string, index: number): string {
   return title.includes("応用問題") ? "応用" : `問${index + 1}`;
 }
 
+/** ファイル冒頭の行コメントから、問題の見出しと本文を読む。 */
+export function problemStatementFromSource(
+  code: string,
+): { heading: string; details: string[] } | undefined {
+  const statement: string[] = [];
+  for (const sourceLine of code.split(/\r?\n/)) {
+    const line = sourceLine.trim();
+    if (!line.startsWith("//") && (line || statement.length)) break;
+    if (statement.length || /^\/\/\s+(?:問|Q\d)/.test(line)) statement.push(line.slice(2).trim());
+  }
+  const [heading, ...details] = statement;
+  return heading ? { heading, details } : undefined;
+}
+
 export function problemStepStates(
   steps: readonly ProblemStep[],
   completedLessonIds: ReadonlySet<string>,

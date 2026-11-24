@@ -26,7 +26,10 @@ import {
   referenceNotesMarkdown,
   referencesMarkdown,
 } from "./source-references.js";
-import { problemStepLabel } from "../../shared/src/tasks/problem-steps.js";
+import {
+  problemStatementFromSource,
+  problemStepLabel,
+} from "../../shared/src/tasks/problem-steps.js";
 import { problemFiles, type TaskProblem } from "../../shared/src/tasks/problems.js";
 import { RUNNERS } from "../../shared/src/tasks/runners.js";
 import type { PublicSourceReference } from "../../shared/src/tasks/source-reference.js";
@@ -452,17 +455,11 @@ function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string
   const path = problemFiles(plan, problem.id)?.source;
   const file = path ? task.bundle.files[path] : undefined;
   const source = file ? Buffer.from(file, "base64").toString("utf8") : "";
-  const body: string[] = [];
-  for (const line of source.split(/\r?\n/).map((value) => value.trim())) {
-    if (!line.startsWith("//") && (line || body.length)) break;
-    if (body.length || line.startsWith("// 問")) body.push(line.slice(2).trim());
-  }
-  const [heading = title, ...details] = body;
-  return [
-    `# ${heading}`,
-    ...(details.length ? [details.join("  \n")] : []),
-    "VS Code で開いて解き、確認して提出します。",
-  ].join("\n\n");
+  const { heading, details } = problemStatementFromSource(source) ?? {
+    heading: title,
+    details: [],
+  };
+  return [`# ${heading}`, ...(details.length ? [details.join("  \n")] : [])].join("\n\n");
 }
 
 /** 指定された動画の単元に問題を置き、提出順をレッスンの位置から決めます。 */
@@ -756,17 +753,19 @@ function buildOneStage(
     }
 
     if (config.format === 2) {
-      // 類題 (#39) は課題文のレッスンを作らない。出題した受講者にだけ拡張が配る。
+      // 類題 (#39) は出題した受講者にだけ拡張が配る。
       for (const task of tasks.filter((t) => t.unitId === moduleDir)) {
         if (task.lessonId === null) continue;
         const readme = task.bundle.files["README.md"];
+        const problems = task.definition.problems;
         const lesson: Lesson = {
           id: task.lessonId,
-          title: `${task.definition.title} 課題文`,
+          title: problems ? `${task.definition.title}の問題` : `${task.definition.title} 課題文`,
           type: "text",
-          duration: "5分",
+          duration: problems ? `${problems.length} 問` : "5分",
           status: "todo",
-          markdown: readme === undefined ? "" : Buffer.from(readme, "base64").toString("utf8"),
+          markdown:
+            problems || readme === undefined ? "" : Buffer.from(readme, "base64").toString("utf8"),
         };
         if (task.bundle.manifest.problemSteps) taskLessons.set(task.lessonId, lesson);
         else lessons.push(lesson);

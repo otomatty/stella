@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { TaskProblem } from "@stella/shared/tasks/problems";
+import { isRunnerId, type RunnerId } from "@stella/shared/tasks/runners";
 import { parsePublicTaskBundle, type TaskBundle } from "@stella/shared/tasks/catalog";
 import { verifyTaskSubmission, type TaskSubmissionInput } from "@stella/shared/tasks/submission";
 import type { Db } from "../db/client.js";
@@ -65,6 +66,7 @@ export function countedProblemIds(
 export interface TaskDefinitionView {
   problems: TaskProblem[] | null;
   assesses: string[];
+  runner?: RunnerId;
 }
 
 /** 版の definition から、今数える問題と評価するスキルを読む。壊れていれば問題なし。 */
@@ -76,7 +78,11 @@ export function readTaskDefinition(definition: string): TaskDefinitionView {
     return { problems: null, assesses: [] };
   }
   if (!parsed || typeof parsed !== "object") return { problems: null, assesses: [] };
-  const record = parsed as { problems?: unknown; skills?: { assesses?: unknown } };
+  const record = parsed as {
+    problems?: unknown;
+    runner?: unknown;
+    skills?: { assesses?: unknown };
+  };
   const assesses = Array.isArray(record.skills?.assesses)
     ? record.skills.assesses.filter((id): id is string => typeof id === "string")
     : [];
@@ -93,7 +99,11 @@ export function readTaskDefinition(definition: string): TaskDefinitionView {
     const after = "after" in item && typeof item.after === "string" ? item.after : "";
     problems.push({ id, title, ...(after ? { after } : {}) });
   }
-  return { problems: problems.length > 0 ? problems : null, assesses };
+  return {
+    problems: problems.length > 0 ? problems : null,
+    assesses,
+    ...(isRunnerId(record.runner) ? { runner: record.runner } : {}),
+  };
 }
 
 async function sha256Hex(text: string): Promise<string> {

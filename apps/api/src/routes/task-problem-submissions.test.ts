@@ -5,7 +5,7 @@ import {
   type TaskSubmissionInput,
 } from "@stella/shared/tasks/submission";
 import { parseTaskManifest, type TaskManifest } from "@stella/shared/tasks/manifest";
-import type { TaskBundle } from "@stella/shared/tasks/catalog";
+import type { TaskBundle, TaskSummary } from "@stella/shared/tasks/catalog";
 import type { GradebookEntry, StageCompletion } from "@stella/shared/cms/types";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
@@ -534,7 +534,34 @@ describe("問題の提出", () => {
       expect(catalog.status, await catalog.clone().text()).toBe(200);
       expect(await catalog.json()).toMatchObject({
         tasks: [
-          { id: TASK_ID, ...expected },
+          {
+            id: TASK_ID,
+            ...expected,
+            problem_items: [
+              {
+                id: "q01-add",
+                title: "足す",
+                label: "問1",
+                source: "src/q01-add.ts",
+                stepLessonId: "step-add",
+                afterLessonId: "video",
+                afterTitle: "計算の基礎",
+                state: staff ? "locked-previous" : "locked-video",
+                refs: [auto],
+              },
+              {
+                id: "q02-sub",
+                title: "引く",
+                label: "問2",
+                source: "src/q02-sub.ts",
+                stepLessonId: "step-sub",
+                afterLessonId: "video",
+                afterTitle: "計算の基礎",
+                state: staff ? "open" : "locked-video",
+                refs: [auto, previous, summary],
+              },
+            ],
+          },
           { id: plain.input.taskId, refs: [] },
         ],
       });
@@ -588,6 +615,44 @@ describe("問題の提出", () => {
       ],
     });
     expect(body).not.toHaveProperty("gated");
+
+    await submitProblem("q01-add");
+    const stage = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+    expect(stage.status).toBe(200);
+    const catalog = await json<{ tasks: TaskSummary[] }>(stage);
+    const task = catalog.tasks.find(({ id }) => id === TASK_ID);
+    expect(task).toMatchObject({ problems_total: 2, problems_passed: 1 });
+    expect(task?.problem_items).toEqual([
+      {
+        id: "q01-add",
+        title: "足す",
+        label: "問1",
+        source: "src/q01-add.ts",
+        state: "submitted",
+        refs: [
+          {
+            lessonId: "summary",
+            stageId: "stage",
+            title: "まとめ",
+            lessonType: "text",
+            completed: false,
+            accessible: true,
+          },
+        ],
+      },
+      {
+        id: "q02-sub",
+        title: "引く",
+        label: "問2",
+        source: "src/q02-sub.ts",
+        state: "open",
+        refs: [],
+      },
+    ]);
+    expect(task).not.toHaveProperty("problems");
+    expect(catalog.tasks.find(({ id }) => id === plain.input.taskId)).not.toHaveProperty(
+      "problem_items",
+    );
   });
 
   async function stepProgress(lessonId: string) {
@@ -1028,6 +1093,10 @@ describe("問題の提出", () => {
           id: TASK_ID,
           problems_total: 2,
           problems_passed: 1,
+          problem_items: [
+            expect.objectContaining({ id: "q01-add", state: "open" }),
+            expect.objectContaining({ id: "q02-sub", state: "submitted" }),
+          ],
           problems: [
             {
               id: "q02-sub",
@@ -1214,6 +1283,12 @@ describe("問題の提出", () => {
     const pending = view.tasks.find((task) => task.id === TASK_ID);
     expect(pending).toMatchObject({ problems_total: 2, problems_passed: 1 });
     expect(pending).not.toHaveProperty("problems");
+    expect(pending).toMatchObject({
+      problem_items: [
+        { id: "q01-add", state: "locked-video" },
+        { id: "q02-sub", state: "submitted" },
+      ],
+    });
     expect(view.tasks.some((task) => task.id === plain.input.taskId)).toBe(true);
     expect((await problemResults()).status).toBe(503);
     expect((await post(input)).status).toBe(503);
