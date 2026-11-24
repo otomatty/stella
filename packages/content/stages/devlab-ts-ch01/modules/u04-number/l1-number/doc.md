@@ -158,7 +158,7 @@ const fractional = !Number.isInteger(orderCount);
 ## もっと知りたい人へ
 
 - [サバイバルTypeScript「number型」](https://typescriptbook.jp/reference/values-types-variables/number)
-- [知識問題](knowledge.md)で理解を確かめ、この単元の「01章 q04 number型」に取り組みます。
+- レッスン一覧の「確認クイズ」で理解を確かめ、この単元の「01章 q04 number型」に取り組みます。
 
 ## 問題ごとのヒント
 
