@@ -560,13 +560,15 @@ function SearchField({
   value,
   onChange,
   tall,
+  className,
 }: {
   value: string;
   onChange: (value: string) => void;
   tall?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className={cn("relative min-w-0 flex-1", className)}>
       <Search
         size={16}
         aria-hidden="true"
@@ -884,7 +886,7 @@ function PcRoster({
       </DialogHeader>
       <div className="flex shrink-0 flex-col gap-2 border-b px-6 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <SearchField value={queryText} onChange={onQueryText} />
+          <SearchField value={queryText} onChange={onQueryText} className="min-w-64 basis-64" />
           {prerequisiteTitles.length > 0 ? (
             <label
               className="flex items-center gap-1.5 text-[12px] text-ink-3"
