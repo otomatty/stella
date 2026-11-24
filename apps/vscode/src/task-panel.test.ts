@@ -6,15 +6,31 @@ import { GUIDE_COMMANDS } from "./task-guide.js";
 import {
   buildTaskPanelHtml,
   buildTaskReadmeHtml,
+  decideReadmeLayout,
   onTaskReadmeVisible,
   showTaskPanel,
   showTaskReadme,
+  sideColumn,
 } from "./task-panel.js";
 import { expectedActual } from "./task-test-message.js";
 
 vi.mock("vscode", () => ({
-  window: { createWebviewPanel: vi.fn() },
-  ViewColumn: { Beside: 2 },
+  window: {
+    createWebviewPanel: vi.fn(),
+    showTextDocument: vi.fn(),
+    get visibleTextEditors() {
+      return [];
+    },
+    tabGroups: {
+      get activeTabGroup() {
+        return undefined;
+      },
+      get all() {
+        return [];
+      },
+    },
+  },
+  ViewColumn: { Active: -1, Beside: -2, One: 1, Two: 2 },
 }));
 
 const manifest: TaskManifest = {
@@ -167,7 +183,7 @@ describe("buildTaskPanelHtml", () => {
     expect(createPanel).toHaveBeenCalledTimes(1);
     expect(panel.reveal).not.toHaveBeenCalled();
     expect(panel.webview.html).toContain("手元の確認はすべて通りました。");
-    panel.onDidDispose.mock.calls[0]?.[0]();
+    for (const [listener] of panel.onDidDispose.mock.calls) listener();
     createPanel.mockClear();
   });
 
@@ -558,6 +574,44 @@ describe("課題文のパネル", () => {
     ":::",
   ].join("\n");
 
+  function mockReadmePanel() {
+    const disposeMessages = vi.fn();
+    return {
+      title: "",
+      visible: true,
+      viewColumn: vscode.ViewColumn.Two,
+      webview: {
+        html: "",
+        onDidReceiveMessage: vi.fn((_listener: (message: unknown) => void) => ({
+          dispose: disposeMessages,
+        })),
+      },
+      disposeMessages,
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+      onDidChangeViewState: vi.fn(),
+    };
+  }
+
+  it.each([
+    { compact: false, width: 419, expected: "collapse" },
+    { compact: false, width: 420, expected: "stay" },
+    { compact: true, width: 899, expected: "stay" },
+    { compact: true, width: 900, expected: "expand" },
+    { compact: false, width: 419, hasLeftEditor: false, expected: "stay" },
+    { compact: false, width: 419, inSideColumn: false, expected: "stay" },
+    { compact: true, width: 900, groupHasOtherTabs: false, expected: "stay" },
+  ])("配置を判定する (%j)", ({ expected, ...input }) => {
+    expect(
+      decideReadmeLayout({
+        inSideColumn: !input.compact,
+        hasLeftEditor: true,
+        groupHasOtherTabs: true,
+        ...input,
+      }),
+    ).toBe(expected);
+  });
+
   it("OS のタブ付きで描き、指定した OS のタブを開いておく", () => {
     const html = buildTaskReadmeHtml({ title: "最初のページ", markdown, os: "macos" });
     expect(html).toMatch(/value="macos" checked/);
@@ -565,10 +619,12 @@ describe("課題文のパネル", () => {
     expect(html).toContain("Finder で");
   });
 
-  it("スクリプトを含めず、生の HTML は文字のまま出す", () => {
+  it("幅を通知するスクリプトだけに nonce を付け、生の HTML は文字のまま出す", () => {
     const html = buildTaskReadmeHtml({ title: "<課題>", markdown, os: "windows" });
-    expect(html).not.toMatch(/<script/i);
-    expect(html).toContain("&lt;script&gt;");
+    const nonce = html.match(/script-src 'nonce-([A-Za-z0-9+/=]+)';/)?.[1];
+    expect(nonce).toBeDefined();
+    expect(html.match(/<script\b[^>]*>/gi)).toEqual([`<script nonce="${nonce}">`]);
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain("<title>&lt;課題&gt;</title>");
   });
 
@@ -578,18 +634,24 @@ describe("課題文のパネル", () => {
       manifest: { ...manifest, problems: [{ id: "q01", title: "値を選ぶ" }] },
       edit: { files: [], missing: [] },
     };
-    const html = buildTaskReadmeHtml({ title: manifest.title, markdown, guide });
-    expect(html).toBe(buildTaskReadmeHtml({ title: manifest.title, markdown: "", guide }));
+    const withoutNonce = (html: string) =>
+      html.replace(/(nonce-|nonce=")[A-Za-z0-9+/=]+/g, "$1NONCE");
+    const html = withoutNonce(buildTaskReadmeHtml({ title: manifest.title, markdown, guide }));
+    expect(html).toBe(
+      withoutNonce(buildTaskReadmeHtml({ title: manifest.title, markdown: "", guide })),
+    );
     expect(html).toContain("<h1>整数から &lt;k&gt; 以上を選ぶ</h1>");
     expect(html).toContain('aria-label="いまやること"');
-    expect(html).not.toMatch(/<script|class="(?:meta|readme-title)"|ヒント・解答・レビューの結果/);
+    expect(html).not.toMatch(/class="(?:meta|readme-title)"|ヒント・解答・レビューの結果/);
     expect(html).not.toContain("参照元");
     expect(
-      buildTaskReadmeHtml({
-        title: manifest.title,
-        markdown: "",
-        guide: { ...guide, manifest: { ...guide.manifest, references: [] } },
-      }),
+      withoutNonce(
+        buildTaskReadmeHtml({
+          title: manifest.title,
+          markdown: "",
+          guide: { ...guide, manifest: { ...guide.manifest, references: [] } },
+        }),
+      ),
     ).toBe(html);
   });
 
@@ -652,13 +714,7 @@ describe("課題文のパネル", () => {
   });
 
   it("確認のあとの描き直しは、別の課題に切り替えたパネルを上書きしない", () => {
-    const panel = {
-      title: "",
-      webview: { html: "" },
-      reveal: vi.fn(),
-      onDidDispose: vi.fn(),
-      onDidChangeViewState: vi.fn(),
-    };
+    const panel = mockReadmePanel();
     vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
     showTaskReadme({ title: "課題B", markdown: "B の本文", root: "/b" });
     expect(panel.webview.html).toContain("B の本文");
@@ -666,7 +722,7 @@ describe("課題文のパネル", () => {
       expect.any(String),
       expect.any(String),
       expect.any(Object),
-      { enableScripts: false, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
+      { enableScripts: true, localResourceRoots: [], enableCommandUris: [...GUIDE_COMMANDS] },
     );
     // 課題 A の確認のあとの描き直しが、読み込みを待つ間に B へ切り替わったパネルに届く。
     showTaskReadme({ title: "課題A", markdown: "A の本文", root: "/a" }, { reveal: false });
@@ -677,17 +733,88 @@ describe("課題文のパネル", () => {
     expect(panel.webview.html).toContain("B の新しい本文");
     expect(panel.reveal).not.toHaveBeenCalled();
     panel.onDidDispose.mock.calls[0]?.[0]();
+    expect(panel.disposeMessages).toHaveBeenCalledOnce();
+  });
+
+  it("課題文の幅で配置を切り替え、まとめたときはコードを前面に戻す", () => {
+    const panel = mockReadmePanel();
+    const resultPanel = mockReadmePanel();
+    const closedPanel = mockReadmePanel();
+    const input = { title: "課題A", markdown, root: "/a" };
+    const resultInput = { kind: "result" as const, manifest, result: result() };
+    const editor = { viewColumn: vscode.ViewColumn.One, document: {} } as vscode.TextEditor;
+    const editors = vi.spyOn(vscode.window, "visibleTextEditors", "get").mockReturnValue([editor]);
+    const groups = vi.spyOn(vscode.window.tabGroups, "all", "get");
+    const activeGroup = vi.spyOn(vscode.window.tabGroups, "activeTabGroup", "get");
+    const showDocument = vi.mocked(vscode.window.showTextDocument).mockResolvedValue(editor);
+    const createPanel = vi.mocked(vscode.window.createWebviewPanel);
+    try {
+      createPanel.mockReturnValueOnce(closedPanel as never);
+      showTaskPanel(resultInput);
+      for (const [listener] of closedPanel.onDidDispose.mock.calls) listener();
+      createPanel.mockReturnValueOnce(resultPanel as never);
+      showTaskPanel(resultInput);
+      createPanel.mockReturnValueOnce(panel as never);
+      showTaskReadme(input);
+      expect(createPanel).toHaveBeenLastCalledWith(
+        "stella.taskReadme",
+        "課題: 課題A",
+        { viewColumn: vscode.ViewColumn.Two, preserveFocus: true },
+        expect.any(Object),
+      );
+      const receive = panel.webview.onDidReceiveMessage.mock.calls[0]?.[0];
+      for (const message of [
+        null,
+        { type: "other", width: 300 },
+        { type: "layout", width: "300" },
+        { type: "layout", width: NaN },
+        { type: "layout", width: Infinity },
+        { type: "layout", width: 0 },
+      ]) {
+        receive?.(message);
+      }
+      panel.visible = false;
+      receive?.({ type: "layout", width: 300 });
+      expect(panel.reveal).not.toHaveBeenCalled();
+      expect(showDocument).not.toHaveBeenCalled();
+
+      panel.visible = true;
+      receive?.({ type: "layout", width: 300 });
+      expect(resultPanel.reveal).toHaveBeenCalledExactlyOnceWith(vscode.ViewColumn.One, true);
+      expect(resultPanel.reveal).toHaveBeenCalledBefore(panel.reveal);
+      expect(closedPanel.reveal).not.toHaveBeenCalled();
+      expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.One, true);
+      expect(showDocument).toHaveBeenCalledExactlyOnceWith(editor.document, {
+        viewColumn: vscode.ViewColumn.One,
+        preview: false,
+      });
+      expect(sideColumn()).toBe(vscode.ViewColumn.Active);
+      activeGroup.mockReturnValue({ viewColumn: vscode.ViewColumn.Two } as vscode.TabGroup);
+      expect(sideColumn()).toBe(vscode.ViewColumn.Two);
+
+      panel.viewColumn = vscode.ViewColumn.One;
+      showTaskReadme(input);
+      expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.Two, false);
+      groups.mockReturnValue([{ viewColumn: vscode.ViewColumn.One, tabs: [{}] }] as never);
+      receive?.({ type: "layout", width: 900 });
+      expect(panel.reveal).toHaveBeenCalledTimes(2);
+
+      groups.mockReturnValue([{ viewColumn: vscode.ViewColumn.One, tabs: [{}, {}] }] as never);
+      receive?.({ type: "layout", width: 900 });
+      expect(panel.reveal).toHaveBeenLastCalledWith(vscode.ViewColumn.Two, true);
+      expect(sideColumn()).toBe(vscode.ViewColumn.Two);
+    } finally {
+      panel.onDidDispose.mock.calls[0]?.[0]();
+      for (const [listener] of resultPanel.onDidDispose.mock.calls) listener();
+      editors.mockRestore();
+      groups.mockRestore();
+      activeGroup.mockRestore();
+      showDocument.mockReset();
+    }
   });
 
   it("非表示から戻った課題を通知し、同じ課題は 30 秒に 1 回にする", () => {
-    const panel = {
-      title: "",
-      visible: true,
-      webview: { html: "" },
-      reveal: vi.fn(),
-      onDidDispose: vi.fn(),
-      onDidChangeViewState: vi.fn(),
-    };
+    const panel = mockReadmePanel();
     const setVisible = (visible: boolean) => {
       panel.visible = visible;
       panel.onDidChangeViewState.mock.calls[0]?.[0]({ webviewPanel: panel });
@@ -772,8 +899,10 @@ describe("課題文のパネル", () => {
       expect(html.slice(0, html.indexOf('<h2 class="readme-title">'))).toContain(
         "command:stella.runTask",
       );
-      expect(html).not.toMatch(/<script/i);
-      expect(html).toContain("default-src 'none'; style-src 'unsafe-inline'; img-src data:");
+      expect(html.match(/<script\b/gi)).toHaveLength(1);
+      expect(html).toContain(
+        "default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'nonce-",
+      );
     });
 
     it("前回の結果は課題文の上の枠に件数と手順だけを表示する", () => {

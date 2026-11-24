@@ -24,6 +24,7 @@ import { DevModeFab } from "@/components/common/DevModeFab";
 import { TweaksPanel } from "@/components/common/TweaksPanel";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { usePendingReviewCount, useSubmissionsAutoRefresh } from "@/hooks/useSubmissions";
+import { useMyGroups } from "@/hooks/useMyGroups";
 import { useMyCertificates } from "@/hooks/useMyCertificates";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -90,6 +91,7 @@ function loadSaved(): PersistedState | null {
 const PATH_BY_PAGE: Record<string, string> = {
   dash: "/",
   stages: "/stages",
+  "learner-groups": "/groups",
   cert: "/certificates",
   "review-queue": "/review-queue",
   // デイリー復習 (SRS)。 未登録だと fallback でキーが "review" (添削詳細 = flush) に
@@ -100,6 +102,7 @@ const PATH_BY_PAGE: Record<string, string> = {
   discovery: "/discovery",
   // 管理者専用ページは `/admin/*` 配下 (ガードは `_app/admin.tsx` に集約)。
   users: "/admin/users",
+  groups: "/admin/groups",
   integrations: "/admin/integrations",
   enrollments: "/admin/enrollments",
   audit: "/admin/audit",
@@ -112,6 +115,8 @@ function pageKeyFromPath(path: string): string {
   if (path.startsWith("/stages/")) {
     return path.includes("/lessons/") ? "lesson" : "stage-detail";
   }
+  if (path.startsWith("/groups/")) return "learner-groups";
+  if (path.startsWith("/admin/groups/")) return "groups";
   if (path.startsWith("/reviews/")) return "review";
   if (path.startsWith("/submissions/")) return "submission-result";
   // 一覧 (`/certificates`) と詳細 (`/certificates/$certId`) のどちらも「修了証」。
@@ -239,6 +244,9 @@ export function AppShell() {
   useSubmissionsAutoRefresh(backendEnabled && effectiveRole === "admin");
   // サイドバーのバッジ件数は固定モック値ではなく実データで出す。
   const myCertificates = useMyCertificates(session?.user.id ?? null, effectiveRole === "learner");
+  const myGroups = useMyGroups(
+    effectiveRole === "learner" && profile?.role === "student" ? (session?.user.id ?? null) : null,
+  );
   const sidebarCounts =
     effectiveRole === "learner"
       ? {
@@ -559,6 +567,7 @@ export function AppShell() {
     onActiveLessonChange: handleActiveLessonChange,
     currentUserId: session?.user.id ?? null,
     backendEnabled,
+    myGroups,
     onOpenReview,
     studentName: effectiveUser.name,
     studentInitials: effectiveUser.initials,
@@ -584,6 +593,7 @@ export function AppShell() {
           setPage={setPage}
           user={effectiveUser}
           counts={sidebarCounts}
+          hasLearnerGroups={myGroups.status === "ready" && myGroups.groups.length > 0}
           profileRole={profile?.role}
           canSwitchToLearner={canSwitchToLearner}
           onSwitchToLearner={switchToLearnerView}

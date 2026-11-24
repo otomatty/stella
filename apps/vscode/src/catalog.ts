@@ -27,6 +27,8 @@ export interface CatalogLesson {
    * 課題フォルダーを準備し、編集するファイルと課題文 (進め方つき) を並べる。
    */
   task?: { id: string; status: TaskStatus };
+  /** 動画のあとに出る問題レッスンなら、開く課題と問題。 */
+  problem?: { taskId: string; id: string };
 }
 
 export interface CatalogSection {
@@ -111,11 +113,13 @@ function enrolledStageIds(enrollments: EnrollmentRow[]): string[] {
 
 /** 課題文レッスン (`lessonId`) → 課題。 */
 type TasksByLesson = ReadonlyMap<string, { id: string; status: TaskStatus }>;
+type ProblemsByLesson = ReadonlyMap<string, NonNullable<CatalogLesson["problem"]>>;
 
 export function toCatalogStage(
   detail: StageWithChildren,
   completedIds: ReadonlySet<string>,
   tasksByLesson: TasksByLesson = new Map(),
+  problemsByLesson: ProblemsByLesson = new Map(),
 ): CatalogStage | null {
   if (detail.stage.status !== "published") {
     return null;
@@ -124,7 +128,14 @@ export function toCatalogStage(
     .slice()
     .sort((a, b) => a.section.order - b.section.order)
     .map(({ section, lessons }) =>
-      toCatalogSection(detail.stage.id, section, lessons, completedIds, tasksByLesson),
+      toCatalogSection(
+        detail.stage.id,
+        section,
+        lessons,
+        completedIds,
+        tasksByLesson,
+        problemsByLesson,
+      ),
     );
   return {
     id: detail.stage.id,
@@ -139,6 +150,7 @@ function toCatalogSection(
   lessons: LessonRow[],
   completedIds: ReadonlySet<string>,
   tasksByLesson: TasksByLesson,
+  problemsByLesson: ProblemsByLesson,
 ): CatalogSection {
   return {
     id: section.id,
@@ -148,6 +160,7 @@ function toCatalogSection(
       .sort((a, b) => a.order - b.order)
       .map((lesson) => {
         const task = tasksByLesson.get(lesson.id);
+        const problem = problemsByLesson.get(lesson.id);
         return {
           id: lesson.id,
           stageId,
@@ -156,6 +169,7 @@ function toCatalogSection(
           completed: completedIds.has(lesson.id),
           ...(lesson.assignment_id ? { assignmentId: lesson.assignment_id } : {}),
           ...(task ? { task } : {}),
+          ...(problem ? { problem } : {}),
         };
       }),
   };
@@ -186,22 +200,30 @@ async function fetchStageDetail(stageId: string): Promise<StageWithChildren | nu
 }
 
 /**
- * 新形式のステージ (format 2) の課題と、その課題文レッスン。
+ * 新形式のステージ (format 2) の課題文レッスンと問題レッスン。
  * 課題を取得できなかったレッスンは Web で開く。
  */
-async function fetchTasksByLesson(detail: StageWithChildren | null): Promise<TasksByLesson> {
-  const map = new Map<string, { id: string; status: TaskStatus }>();
-  if (detail?.stage.format !== 2 || detail.stage.status !== "published") return map;
+async function fetchTasksByLesson(
+  detail: StageWithChildren | null,
+): Promise<{ tasksByLesson: TasksByLesson; problemsByLesson: ProblemsByLesson }> {
+  const tasksByLesson = new Map<string, NonNullable<CatalogLesson["task"]>>();
+  const problemsByLesson = new Map<string, NonNullable<CatalogLesson["problem"]>>();
+  if (detail?.stage.format !== 2 || detail.stage.status !== "published")
+    return { tasksByLesson, problemsByLesson };
   try {
     const { tasks } = await apiRequest<{ tasks: TaskSummary[] }>(
       `/api/tasks/for-stage/${encodeURIComponent(detail.stage.id)}`,
     );
-    for (const task of tasks ?? [])
-      if (task.lessonId) map.set(task.lessonId, { id: task.id, status: task.status });
+    for (const task of tasks ?? []) {
+      if (task.lessonId) tasksByLesson.set(task.lessonId, { id: task.id, status: task.status });
+      for (const { stepLessonId, id } of task.problems ?? []) {
+        problemsByLesson.set(stepLessonId, { taskId: task.id, id });
+      }
+    }
   } catch (err) {
     if (err instanceof AuthExpiredError) throw err;
   }
-  return map;
+  return { tasksByLesson, problemsByLesson };
 }
 
 /** Fetch enrollments / progress in parallel, then each stage detail (and its tasks). */
@@ -222,7 +244,8 @@ export async function loadCatalog(): Promise<CatalogStage[]> {
   const catalog: CatalogStage[] = [];
   for (const [index, detail] of details.entries()) {
     if (!detail) continue;
-    const stage = toCatalogStage(detail, completedIds, tasks[index]);
+    const { tasksByLesson, problemsByLesson } = tasks[index];
+    const stage = toCatalogStage(detail, completedIds, tasksByLesson, problemsByLesson);
     if (stage) catalog.push(stage);
   }
   cachedCatalog = catalog;

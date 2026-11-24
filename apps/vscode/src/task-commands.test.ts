@@ -1461,6 +1461,21 @@ describe("問題つきの課題", () => {
 
   it("提出後の更新で解放された問題を知らせ、選ぶと開く", async () => {
     const root = await problemRoot(undefined, "passed", true);
+    vscodeMock.getCachedCatalog.mockReturnValue([
+      {
+        sections: [
+          {
+            lessons: [
+              {
+                stageId: "stage",
+                id: "problem-add",
+                problem: { taskId: problemTask.id, id: "q01-add" },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
     let submitted = false;
     apiRequest.mockImplementation(async (url: unknown) => {
       if (url === "/api/submissions") {
@@ -1480,6 +1495,14 @@ describe("問題つきの課題", () => {
     });
     vscodeMock.showInformationMessage.mockImplementation(async (...args: string[]) => args[1]);
     await run("stella.submitTask", root);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      "提出しました (1/2 問)",
+      "Web で開く",
+    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/stages/stage/lessons/problem-add",
+    });
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
       "次の問題「問2 引く」が出ました",
       "ファイルを開く",
@@ -1791,6 +1814,47 @@ describe("問題つきの課題", () => {
     });
     expect(vscodeMock.sendTaskSubmission).not.toHaveBeenCalled();
     expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { problemIds: ["q02-sub", "q01-add"], lessonId: "problem-q01-add" },
+    { problemIds: ["q02-sub", "q03-other"], lessonId: "problem-q02-sub" },
+    { problemIds: [], lessonId: "task-lesson" },
+  ])("問題の相談後に Web の $lessonId を開く", async ({ problemIds, lessonId }) => {
+    const root = await problemRoot(undefined, "failed");
+    const stageId = "stage";
+    vscodeMock.getCachedCatalog.mockReturnValue([
+      {
+        sections: [
+          {
+            lessons: [
+              ...(problemIds.length === 0
+                ? [{ stageId, id: "task-lesson", task: { id: problemTask.id } }]
+                : []),
+              { stageId, id: "other-lesson", problem: { taskId: "other-task", id: "q01-add" } },
+              ...problemIds.map((id) => ({
+                stageId,
+                id: `problem-${id}`,
+                problem: { taskId: problemTask.id, id },
+              })),
+            ],
+          },
+        ],
+      },
+    ]);
+    vscodeMock.showInformationMessage.mockResolvedValue("Web で開く");
+    apiRequest.mockResolvedValue({ row: { id: "consultation", attempt: 1 } });
+
+    await run("stella.consultTask", root, "q01-add");
+    const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+      submit: (draft: { explanation: string }) => Promise<void>;
+    };
+    await actions.submit({ explanation: "足す処理を相談します。" });
+
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: `https://stella.example/stages/${stageId}/lessons/${lessonId}`,
+    });
   });
 
   it("相談する問題が手元で合格していたら、提出を案内して入力欄を出さない", async () => {

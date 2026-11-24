@@ -38,6 +38,7 @@ import {
 import { resolveFileInRoot } from "./runner/files.js";
 import { taskBundleUrl, taskFixedStartUrl, taskRevisionFilesUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
+import { isCompactTaskLayout } from "./task-panel.js";
 import {
   fetchProblemResults,
   problemFileToOpen,
@@ -113,7 +114,7 @@ async function filesToOpen(
 ): Promise<string[]> {
   if (!loaded.ok) return [];
   if (loaded.manifest.problems?.length) {
-    const { states, blocked, unprepared, preparationError } = await loadTaskProblems(
+    const { states, blocked, unprepared, preparationError, progress } = await loadTaskProblems(
       taskRoot,
       loaded.manifest,
     );
@@ -128,6 +129,7 @@ async function filesToOpen(
     const file = problemFileToOpen(
       states.filter(({ id }) => !unprepared.has(id)),
       loaded.manifest.problemSteps ? requestedProblem : undefined,
+      progress.total,
     );
     return file && opensAsText(file) ? [file] : [];
   }
@@ -153,8 +155,8 @@ async function openInLeftColumn(taskRoot: string, rel: string): Promise<vscode.U
 }
 
 /**
- * 課題を開いた画面にする: 左の列に編集するファイル、右の列に課題文のパネル (進め方つき)。
- * フォーカスは最初のファイルに置き、すぐに書き始められるようにする。
+ * 編集するファイルを 1 列目に開き、最初のファイルにフォーカスを置く。
+ * 課題文のパネル (進め方つき) の配置は task-panel が決める。
  */
 async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<void> {
   const loaded = await loadTask(taskRoot);
@@ -174,21 +176,17 @@ async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<vo
   const rels = await filesToOpen(taskRoot, loaded, problem);
   const receipt = await readDistribution(taskRoot).catch(() => undefined);
   if (receipt) await vscode.commands.executeCommand("stella.revealTask", receipt.taskId);
-  // 教材の現在地を学習ガイドで示す。ファイルを開く前に行い、編集へのフォーカスは残す。
-  await vscode.commands.executeCommand("stella.lessons.focus").then(
-    () => undefined,
-    () => undefined,
-  );
   const opened: string[] = [];
   for (const rel of rels) if (await openInLeftColumn(taskRoot, rel)) opened.push(rel);
   // 複数のファイルを開いたら、最初のファイルを前に戻す。
   const first = opened[0];
   if (first && opened.length > 1) await openInLeftColumn(taskRoot, first);
-  // 課題文 (進め方つき) は右の列に出し、フォーカスはファイルに残す (ファイルが無ければこの列に)。
+  // 課題文 (進め方つき) の配置は課題文パネルが決める。
   await vscode.commands.executeCommand("stella.showTaskReadme", taskRoot).then(
     () => undefined,
     () => undefined,
   );
+  if (first && isCompactTaskLayout()) await openInLeftColumn(taskRoot, first);
 }
 
 /**

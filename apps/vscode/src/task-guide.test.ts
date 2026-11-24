@@ -506,8 +506,10 @@ describe("buildTaskGuideHtml", () => {
     expect(problemNow(input).kind).toBe("passed");
     expect(html).toContain("問2 は確認が通りましたが、まだ提出していません");
     expect(html).toContain('aria-label="3 問中 1 問を提出済み"');
+    expect(html).toContain("提出済み");
+    expect(html).not.toContain("手元で合格");
     expect(html).toContain('class="problem-status submitted">提出済み');
-    expect(html).toContain('class="problem-status local-passed">手元で合格');
+    expect(html).toContain('class="problem-status local-passed">未提出');
     expect(html).toContain('class="problem-status not-submitted">未提出');
     expect(html).toMatch(/<li class="current"[^>]*>.*<a [^>]*>引く<\/a>/);
     expect(html).toContain("提出する");

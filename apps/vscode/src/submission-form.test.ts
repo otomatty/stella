@@ -16,7 +16,7 @@ vi.mock("./auth.js", () => ({
     return { dispose: vi.fn() };
   },
 }));
-vi.mock("./task-panel.js", () => ({ sideColumn: () => 2 }));
+vi.mock("./task-panel.js", () => ({ sideColumn: () => 2, trackTaskSidePanel: vi.fn() }));
 vi.mock("vscode", () => ({
   Uri: {
     joinPath: (_root: unknown, ...parts: string[]) => ({

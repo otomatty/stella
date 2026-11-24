@@ -535,7 +535,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   return {
     stageId,
     unitId,
-    lessonId: parent ? null : `task-${unitId}-${taskId}`,
+    lessonId: parent || manifest.problemSteps ? null : `task-${unitId}-${taskId}`,
     ...(parent ? { variantOf: parent.definition.id } : {}),
     definition,
     bundle: { manifest, contentHash, files },

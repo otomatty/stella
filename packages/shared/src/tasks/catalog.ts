@@ -18,7 +18,7 @@ export const TASK_STATUSES = [
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   "not-started": "未着手",
-  "local-passed": "手元で合格",
+  "local-passed": "未提出",
   // 提出を受けたら AI が一次レビューする。人に回すと「講師の確認待ち」になる (07 §6.3)。
   submitted: "AI が確認中",
   "ai-passed": "AI で合格",

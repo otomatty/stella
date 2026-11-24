@@ -37,7 +37,7 @@ export interface AuditEntry {
 }
 
 /** リクエスト元 IP を Cloudflare のヘッダから取り出す。 */
-export function clientIp(c: Context<{ Bindings: Env }>): string | null {
+export function clientIp<E extends { Bindings: Env }>(c: Context<E>): string | null {
   return (
     c.req.header("cf-connecting-ip") ??
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??

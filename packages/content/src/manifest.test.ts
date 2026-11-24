@@ -38,11 +38,21 @@ describe("buildContentManifest", () => {
     expect(sample.title).toBe("Salesforce 開発 入門");
   });
 
-  it("q01 の問題一覧と問題を動画の直後に置き、動画順に提出する", () => {
+  it("動画のあとに出す課題は課題文レッスンを持たず、問題は動画順に置く", () => {
     const stage = stages.find((item) => item.id === "devlab-ts-ch01");
+    const gated = tasks.filter(
+      (task) => task.stageId === stage?.id && task.bundle.manifest.problemSteps,
+    );
+    const lessonIds = stage?.sections?.flatMap((section) => section.lessons.map(({ id }) => id));
+    for (const task of gated) {
+      expect(task.lessonId).toBeNull();
+      const taskId = task.definition.id.split("/").at(-1);
+      expect(lessonIds).not.toContain(`task-${task.unitId}-${taskId}`);
+    }
     const lessons = stage?.sections?.find((section) => section.id === "u01-let-const")?.lessons;
     const task = tasks.find((item) => item.definition.id === "devlab-ts-ch01/u01-let-const/q01");
-    expect(lessons?.slice(0, 13).map((lesson) => lesson.id)).toEqual([
+    expect(task?.lessonId).toBeNull();
+    expect(lessons?.slice(0, 12).map((lesson) => lesson.id)).toEqual([
       "1-1-1",
       "1-1-2",
       "1-1-3",
@@ -50,7 +60,6 @@ describe("buildContentManifest", () => {
       "1-1-5",
       "1-1-6",
       "1-1-7",
-      "task-u01-let-const-q01",
       "problem-u01-let-const-q01-q01-01-add-tax",
       "1-1-8",
       "1-1-9",
@@ -58,11 +67,6 @@ describe("buildContentManifest", () => {
       "problem-u01-let-const-q01-q01-02-split-bill",
     ]);
     expect(lessons?.[7]).toMatchObject({
-      title: `${task?.definition.title}の問題`,
-      duration: "21 問",
-      markdown: "",
-    });
-    expect(lessons?.[8]).toMatchObject({
       title: "問1 税込価格を返す",
       type: "text",
       markdown:

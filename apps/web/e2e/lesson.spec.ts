@@ -25,15 +25,61 @@ test("受講中のステージのまとめを読める", async ({ page }) => {
 const problemStageId = "1a628d2a-96a5-5fce-a148-b9e92b3a92bf";
 const problemLessonId = "a28a17f0-8787-56fc-bff3-170300ca754e";
 
-test("課題だけの単元は問題の一覧の末尾で参照元を読める", async ({ page }) => {
+test("課題だけの単元は問題の一覧で提出状況と次の問題を確認し、末尾で参照元を読める", async ({
+  page,
+}) => {
   await signInAs(page, "seed-learner");
   // 開発ラボG 02章 u06-tuples の課題レッスンの安定 UUID。
-  await page.goto(
-    "/stages/135c4094-456c-5e74-a3fb-93876e7900e3/lessons/6d139d0b-2554-50c3-b6df-f856996856fe",
-  );
+  const tupleStageId = "135c4094-456c-5e74-a3fb-93876e7900e3";
+  const tupleLessonId = "6d139d0b-2554-50c3-b6df-f856996856fe";
+  let firstSubmitted = false;
+  await page.route(`**/api/tasks/for-stage/${tupleStageId}`, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    const { tasks } = (await response.json()) as { tasks: TaskSummary[] };
+    const task = tasks.find(({ lessonId }) => lessonId === tupleLessonId);
+    expect(task?.problem_items).toHaveLength(21);
+    expect(task?.problems).toBeUndefined();
+    if (task) {
+      task.status = "not-started";
+      for (const problem of task.problem_items ?? []) {
+        problem.state = firstSubmitted && problem.id === "q06-01-make-pair" ? "submitted" : "open";
+      }
+    }
+    await route.fulfill({ response, json: { tasks } });
+  });
+  await page.goto(`/stages/${tupleStageId}/lessons/${tupleLessonId}`);
 
   const lesson = page.getByTestId("lesson-screen");
-  await expect(lesson.getByRole("region", { name: "問題の一覧" })).toBeVisible();
+  await expect(lesson.getByRole("heading", { level: 1 })).toHaveText("02章 q06 タプルの問題");
+  await expect(lesson.getByRole("tab")).toHaveCount(0);
+  await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
+  const nextAction = lesson.getByRole("region", { name: "いまやること" });
+  await expect(nextAction).toContainText("問1 名前と数を、[名前, 数] のタプルにする");
+  await expect(nextAction.getByRole("button", { name: "VS Code で開く" })).toBeVisible();
+  await expect(lesson.getByRole("list", { name: "21 問中 0 問を提出済み" })).toBeVisible();
+
+  firstSubmitted = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(lesson.getByRole("list", { name: "21 問中 1 問を提出済み" })).toBeVisible();
+  await expect(lesson.getByText("取り組み中", { exact: true })).toBeVisible();
+  await expect(nextAction).toContainText("問2 [数, 名前] を [名前, 数] に並べ替える");
+  const problems = lesson.getByRole("region", { name: "問題の一覧" });
+  await expect(problems.getByRole("listitem")).toHaveCount(21);
+  const firstProblem = problems.getByRole("listitem").filter({ hasText: "名前と数を、" });
+  await expect(firstProblem).toContainText("提出済み");
+  await expect(firstProblem.getByRole("link")).toHaveCount(0);
+
+  const tocButton = page.getByRole("button", { name: "教材の目次を開く" });
+  const usesTocDrawer = await tocButton.isVisible();
+  if (usesTocDrawer) await tocButton.click();
+  await expect(
+    page.locator(`[data-testid="lesson-toc-text"][data-lesson-id="${tupleLessonId}"]`),
+  ).toContainText("課題 ・ 提出 1/21");
+  if (usesTocDrawer) {
+    await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
+  }
+
   const references = lesson.getByTestId("lesson-doc");
   await expect(references.getByRole("heading", { name: "単元の参照元" })).toBeVisible();
   await expect(
@@ -80,11 +126,12 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   await expect(handoff).toContainText("の動画を見ると解けます");
   await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("tab")).toHaveCount(0);
-  await expect(lesson.getByRole("navigation", { name: "パンくず" })).toContainText("問題 1 / 21");
+  await expect(lesson.getByRole("navigation", { name: "パンくず" })).toHaveCount(0);
+  await expect(lesson.getByRole("link", { name: "問題の一覧", exact: true })).toHaveCount(0);
   await expect(lesson.getByText("src/q01-01-add-tax.ts", { exact: true })).toBeVisible();
-  await expect(lesson.getByRole("region", { name: "手がかり" })).toContainText(
-    "この問題の直前の動画",
-  );
+  const references = lesson.getByRole("region", { name: "手がかり" });
+  const precedingVideo = references.getByRole("link", { name: /この問題の直前の動画/ });
+  await expect(precedingVideo).toBeVisible();
 
   const tocButton = page.getByRole("button", { name: "教材の目次を開く" });
   const usesTocDrawer = await tocButton.isVisible();
@@ -115,45 +162,18 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   await expect(handoff).toContainText("提出済み");
   await expect(open).toBeVisible();
 
-  await lesson.getByRole("link", { name: "問題の一覧", exact: true }).click();
-  await expect(lesson.getByRole("heading", { level: 1 })).toHaveText(/letとconst.*の問題/);
   await expect(lesson.getByRole("list", { name: "21 問中 1 問を提出済み" })).toBeVisible();
-  await expect(lesson.getByText("取り組み中", { exact: true })).toBeVisible();
-  await expect(lesson.getByRole("tab")).toHaveCount(0);
-  await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
-  const problems = lesson.getByRole("region", { name: "問題の一覧" });
-  const firstProblem = problems.getByRole("link", { name: /税込価格を返す/ });
-  await expect(firstProblem).toHaveAttribute(
-    "href",
-    `/stages/${problemStageId}/lessons/${problemLessonId}`,
-  );
-  await expect(firstProblem).toContainText("提出済み");
-  await expect(problems.getByText("前の問題のあと")).toHaveCount(20);
+  await expect(lesson.getByRole("link", { name: "問題の一覧", exact: true })).toHaveCount(0);
 
   if (usesTocDrawer) await tocButton.click();
   await expect(tocRow).toContainText("問題 ・ 提出済み");
-  const overviewId = await lesson.getAttribute("data-lesson-id");
-  const overviewRow = page.locator(
-    `[data-testid="lesson-toc-text"][data-lesson-id="${overviewId}"]`,
-  );
-  await expect(overviewRow).toContainText("課題 ・ 提出 1/21");
   if (usesTocDrawer) {
     await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
   }
 
-  const nextAction = lesson.getByRole("region", { name: "いまやること" });
-  state = "open";
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(nextAction.getByRole("button", { name: "VS Code で開く" })).toBeVisible();
-
-  state = "locked-video";
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(firstProblem).toHaveCount(0);
-  const video = nextAction.getByRole("link", { name: "動画を見る" });
-  await expect(video).toBeVisible();
-  const videoPath = await video.getAttribute("href");
+  const videoPath = await precedingVideo.getAttribute("href");
   expect(videoPath).toBeTruthy();
-  await video.click();
-  await expect(page).toHaveURL(new RegExp(`${videoPath}$`));
-  await expect(nextAction).toHaveCount(0);
+  await precedingVideo.click();
+  await expect(page).toHaveURL((url) => url.pathname === videoPath);
+  await expect(handoff).toHaveCount(0);
 });

@@ -227,6 +227,10 @@ describe("問題つきの課題のファイル", () => {
     expect(added?.definition.problems).toHaveLength(2);
     expect(added?.definition.review).toEqual({ rubric: [], escalateWhen: [] });
     expect(added?.bundle.manifest.problems).toHaveLength(2);
+    expect(added?.lessonId).toBe("task-u02-first-task-q02-problems");
+    expect(manifest.stages[0].sections?.flatMap((section) => section.lessons)).toContainEqual(
+      expect.objectContaining({ id: added?.lessonId }),
+    );
     expect(plain?.bundle.contentHash).toBe(
       "af1c1c897fba146143de2b36ab7ae6677c41c78e7f6475b5662b1933ff9faef8",
     );
@@ -333,12 +337,11 @@ describe("問題つきの課題のファイル", () => {
     const sections = build(root).stages[0].sections;
     const earlier = sections?.find((section) => section.id === "u01-vscode-setup")?.lessons ?? [];
     const video = earlier.findIndex((lesson) => lesson.id === "01-1-3");
-    expect(earlier.slice(video, video + 3).map((lesson) => lesson.id)).toEqual([
+    expect(earlier.slice(video, video + 2).map((lesson) => lesson.id)).toEqual([
       "01-1-3",
-      "task-u02-first-task-q02-problems",
       "problem-u02-first-task-q02-problems-q02-split-bill",
     ]);
-    expect(earlier[video + 2].markdown).toBe("# 問2 割り勘");
+    expect(earlier[video + 1].markdown).toBe("# 問2 割り勘");
 
     const taskFile = join(root, unit, "task.json");
     writeFileSync(

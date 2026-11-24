@@ -199,6 +199,12 @@ describe("resolveLessonStatus / deriveStageProgress", () => {
     expect(deriveStageProgress(many, all).progress).toBe(99);
     expect(deriveStageProgress({ ...many, completed: true }, {}).progress).toBe(100);
   });
+
+  it("レッスンがないときも修了済みなら100%、未修了なら既存の進捗を保つ", () => {
+    const noLessons = { ...stage, sections: [], progress: 40, completed: false };
+    expect(deriveStageProgress(noLessons, {})).toBe(noLessons);
+    expect(deriveStageProgress({ ...noLessons, completed: true }, {}).progress).toBe(100);
+  });
 });
 
 describe("問題のステップのレッスン", () => {

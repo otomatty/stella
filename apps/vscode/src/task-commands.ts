@@ -30,7 +30,7 @@ import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiSession } from "./api.js";
 import { AuthSessionChanged, type AuthStore, onDidChangeAuthSession } from "./auth.js";
-import { getCachedCatalog } from "./catalog.js";
+import { type CatalogLesson, getCachedCatalog } from "./catalog.js";
 import { stellaUrl } from "./config.js";
 import { findTestLine } from "./find-test-line.js";
 import { sendLocalRunReport } from "./local-run-report.js";
@@ -91,7 +91,35 @@ import { refreshLearningSidebar } from "./tree.js";
 
 let running = false;
 let submitting = false;
+const OPEN_SUBMISSION_WEB = "Web で開く";
 export { helpUrl } from "./task-state.js";
+
+function findSubmissionLesson(
+  lessons: readonly CatalogLesson[],
+  taskId: string,
+  problemId?: string,
+): CatalogLesson | undefined {
+  if (problemId !== undefined) {
+    const problemLessons = lessons.filter((lesson) => lesson.problem?.taskId === taskId);
+    const problemLesson =
+      problemLessons.find((lesson) => lesson.problem?.id === problemId) ?? problemLessons[0];
+    if (problemLesson) return problemLesson;
+  }
+  return lessons.find((lesson) => lesson.task?.id === taskId);
+}
+
+function submissionWebUrl(taskId: string, problemId?: string): string {
+  // レッスン ID は課題一覧の応答から作ったカタログにあり、配布記録には含まれない。
+  const lessons = getCachedCatalog().flatMap((stage) =>
+    stage.sections.flatMap((section) => section.lessons),
+  );
+  const lesson = findSubmissionLesson(lessons, taskId, problemId);
+  return `${stellaUrl("webUrl")}${
+    lesson?.stageId && lesson.id
+      ? `/stages/${encodeURIComponent(lesson.stageId)}/lessons/${encodeURIComponent(lesson.id)}`
+      : "/"
+  }`;
+}
 
 export function workspaceRoots(): string[] {
   return (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
@@ -720,21 +748,20 @@ async function submitTaskCommand(
           if (taskReadmeRoot() === root) {
             void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
           }
-          const lesson = taskLesson(manifest.id);
-          const webLesson = lesson?.stageId && lesson.id ? lesson : undefined;
-          const web = "Web で開く";
+          const webUrl = submissionWebUrl(manifest.id, problem?.id);
           const result = "結果を見る";
           void vscode.window
             .showInformationMessage(
               mode === "consult"
                 ? "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。"
                 : "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
-              ...(mode === "consult" ? [web] : [result, web]),
+              ...(mode === "consult" ? [OPEN_SUBMISSION_WEB] : [result, OPEN_SUBMISSION_WEB]),
             )
             .then(async (choice) => {
               if (choice === result)
                 await vscode.commands.executeCommand("stella.showTaskHelp", root);
-              else if (choice === web) await openTaskWebPage(webLesson?.stageId, webLesson?.id);
+              else if (choice === OPEN_SUBMISSION_WEB)
+                await vscode.env.openExternal(vscode.Uri.parse(webUrl));
             });
         },
       },
@@ -767,11 +794,18 @@ async function submitProblemTask(
     if (receipt?.taskId === manifest.id)
       await recordProblemSubmission(root, receipt.contentHash, problemId);
     if (session !== apiSession()) return;
-    void vscode.window.showInformationMessage(
-      response.taskPassed
-        ? "課題に合格しました"
-        : `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
-    );
+    const webUrl = submissionWebUrl(manifest.id, problemId);
+    void vscode.window
+      .showInformationMessage(
+        response.taskPassed
+          ? "課題に合格しました"
+          : `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
+        OPEN_SUBMISSION_WEB,
+      )
+      .then(async (choice) => {
+        if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
+          await vscode.env.openExternal(vscode.Uri.parse(webUrl));
+      });
     const refreshed = await loadTaskProblems(root, manifest, { afterSubmission: true });
     if (session !== apiSession()) return;
     setCurrentTask({

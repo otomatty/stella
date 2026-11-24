@@ -88,11 +88,12 @@ describe("問題一覧の課題の状態", () => {
   it.each([
     ["passed", "合格"],
     ["ai-passed", "AI で合格"],
-    ["local-passed", "手元で合格"],
+    ["local-passed", "未提出"],
     ["submitted", "AI が確認中"],
     ["instructor-pending", "管理者の確認待ち"],
     ["resubmit", "再提出"],
   ] as const)("%s のラベルは提出件数で変えない", (status, label) => {
+    expect(taskOverviewStatusLabel({ ...overview(problem("1", "open")), status })).toBe(label);
     expect(taskOverviewStatusLabel({ ...overview(problem("1", "submitted")), status })).toBe(label);
   });
 });

@@ -95,7 +95,9 @@ export interface StageGrantLearnerProfile {
 
 export interface StageGrantLearnerSource {
   profiles: readonly StageGrantLearnerProfile[];
+  /** 手動と所属グループを合わせた実効の割り当て。 */
   assignedIds: ReadonlySet<string>;
+  /** 手動と所属グループを合わせた実効の前提免除。 */
   staffUnlockIds: ReadonlySet<string>;
   skillCheckUnlockIds: ReadonlySet<string>;
   /** ステージに書いた順。解けない slug も残す (クリア判定は未達)。 */

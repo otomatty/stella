@@ -5,9 +5,9 @@ import { getDb } from "../db/client.js";
 import {
   certificates,
   integrationClients,
-  integrationGroups,
-  integrationGroupMembers,
-  integrationGroupStages,
+  groups,
+  groupMembers,
+  groupStages,
   profiles,
   stages,
   sections,
@@ -76,17 +76,17 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       scopes: ["progress:read", "events:read"],
     });
     await db
-      .insert(integrationGroups)
-      .values({ id: "group", clientId: "client", key: "sample", name: "fixture" });
+      .insert(groups)
+      .values({ id: "group", clientId: "client", externalKey: "sample", name: "fixture" });
     await db
-      .insert(integrationGroupMembers)
+      .insert(groupMembers)
       .values({ groupId: "group", profileId: "inside", externalId: "external-1" });
     await db
       .insert(stages)
       .values(
         ["stage", "other"].map((id) => ({ id, slug: id, title: id, audience: "granted" as const })),
       );
-    await db.insert(integrationGroupStages).values({ groupId: "group", stageId: "stage" });
+    await db.insert(groupStages).values({ groupId: "group", stageId: "stage" });
     await db.insert(sections).values(
       ["stage", "other"].map((id) => ({
         id: `unit-${id}`,
@@ -1021,7 +1021,7 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
           )
           .bind(T2 + 1000),
         sqlite.binding.prepare(
-          "insert into integration_group_members(group_id,profile_id) values ('missing','inside')",
+          "insert into group_members(group_id,profile_id,joined_at) values ('missing','inside',1)",
         ),
       ]),
     ).rejects.toThrow();
@@ -1292,7 +1292,7 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
     for (let i = 0; i < 201; i++) {
       const id = `fixture-${String(i).padStart(3, "0")}`;
       await db.insert(profiles).values({ id, email: `${id}@example.test`, displayName: id });
-      await db.insert(integrationGroupMembers).values({ groupId: "group", profileId: id });
+      await db.insert(groupMembers).values({ groupId: "group", profileId: id });
       await db.insert(enrollments).values({
         userId: id,
         stageId: "stage",
