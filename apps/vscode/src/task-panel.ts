@@ -432,7 +432,7 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
   const os = input.os ?? defaultOsForPlatform();
   const guide = input.guide;
   const body = guide?.manifest.problems?.length
-    ? buildTaskGuideHtml({ ...guide, os })
+    ? `${buildTaskGuideHtml({ ...guide, os })}\n${referencesHtml(guide.manifest.references)}`
     : guide
       ? [
           `<h1>${escapeHtml(input.title)}</h1>`,
@@ -469,6 +469,8 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
     code { font-family: var(--vscode-editor-font-family); font-size: 0.9em; }
     a { color: var(--vscode-textLink-foreground); }
     ul, ol { padding-left: 1.4rem; }
+    .references { overflow-wrap: anywhere; }
+    .references h2 { font-size: 1em; }
     blockquote {
       margin: 0.75rem 0;
       padding: 0.15rem 0 0.15rem 0.9rem;

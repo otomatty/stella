@@ -774,7 +774,7 @@ function buildOneStage(
 
     if (referenceMap) {
       const lastText = [...lessons].reverse().find((lesson) => lesson.type === "text");
-      if (lastText?.markdown)
+      if (lastText?.markdown !== undefined)
         lastText.markdown += referencesMarkdown(
           publicReferences(referenceMap, sourceRegistry),
           "単元の参照元",

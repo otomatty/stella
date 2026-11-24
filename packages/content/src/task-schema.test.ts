@@ -407,7 +407,7 @@ describe("問題つきの課題のファイル", () => {
         id: task?.lessonId,
         title: "問題の問題",
         duration: "2 問",
-        markdown: "",
+        markdown: expect.stringMatching(/^\s*## 単元の参照元\n/),
       }),
     );
 

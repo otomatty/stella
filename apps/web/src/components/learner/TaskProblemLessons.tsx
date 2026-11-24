@@ -251,6 +251,11 @@ export function TaskProblemsOverview({
       </section>
 
       <TaskReferences refs={task.refs} />
+      {lesson.markdown?.trim() ? (
+        <div data-testid="lesson-doc" className="prose-lms">
+          <LessonMarkdown>{lesson.markdown}</LessonMarkdown>
+        </div>
+      ) : null}
     </div>
   );
 }

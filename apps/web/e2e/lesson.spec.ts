@@ -25,6 +25,22 @@ test("受講中のステージのまとめを読める", async ({ page }) => {
 const problemStageId = "1a628d2a-96a5-5fce-a148-b9e92b3a92bf";
 const problemLessonId = "a28a17f0-8787-56fc-bff3-170300ca754e";
 
+test("課題だけの単元は問題の一覧の末尾で参照元を読める", async ({ page }) => {
+  await signInAs(page, "seed-learner");
+  // 開発ラボG 02章 u06-tuples の課題レッスンの安定 UUID。
+  await page.goto(
+    "/stages/135c4094-456c-5e74-a3fb-93876e7900e3/lessons/6d139d0b-2554-50c3-b6df-f856996856fe",
+  );
+
+  const lesson = page.getByTestId("lesson-screen");
+  await expect(lesson.getByRole("region", { name: "問題の一覧" })).toBeVisible();
+  const references = lesson.getByTestId("lesson-doc");
+  await expect(references.getByRole("heading", { name: "単元の参照元" })).toBeVisible();
+  await expect(
+    references.getByRole("link", { name: "サバイバルTypeScript: タプル (tuple)", exact: true }),
+  ).toHaveAttribute("href", "https://typescriptbook.jp/reference/values-types-variables/tuple");
+});
+
 test("問題のレッスンは解放状態を取り直し、閲覧では完了にならない", async ({ page }) => {
   await signInAs(page, "seed-learner");
   let state: ProblemStepState = "locked-video";

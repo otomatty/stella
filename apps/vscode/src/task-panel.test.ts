@@ -572,7 +572,7 @@ describe("課題文のパネル", () => {
     expect(html).toContain("<title>&lt;課題&gt;</title>");
   });
 
-  it("問題つきの課題は README の有無にかかわらず見出しといまやることだけを出す", () => {
+  it("問題つきの課題は README を出さず、参照元が未指定か空なら参照元も出さない", () => {
     const guide = {
       root: "/w/task",
       manifest: { ...manifest, problems: [{ id: "q01", title: "値を選ぶ" }] },
@@ -583,6 +583,67 @@ describe("課題文のパネル", () => {
     expect(html).toContain("<h1>整数から &lt;k&gt; 以上を選ぶ</h1>");
     expect(html).toContain('aria-label="いまやること"');
     expect(html).not.toMatch(/<script|class="(?:meta|readme-title)"|ヒント・解答・レビューの結果/);
+    expect(html).not.toContain("参照元");
+    expect(
+      buildTaskReadmeHtml({
+        title: manifest.title,
+        markdown: "",
+        guide: { ...guide, manifest: { ...guide.manifest, references: [] } },
+      }),
+    ).toBe(html);
+  });
+
+  it("問題つきの課題は実行ログの下に公開の出典リンクと帰属表示を出す", () => {
+    const reference = {
+      id: "SRC-example",
+      title: "サンプル & 練習",
+      url: "https://example.org/exercises",
+      publisher: "教材チーム",
+      section: "配列",
+      documentVersion: "更新型",
+      checkedAt: "2026-10-05",
+      environmentRef: "ts-test-01@1",
+      usedFor: "練習問題",
+      authorship: "original-exercise",
+      reuse: "concept-reference",
+    };
+    const html = buildTaskReadmeHtml({
+      title: manifest.title,
+      markdown: "",
+      guide: {
+        root: "/w/task",
+        manifest: {
+          ...manifest,
+          problems: [{ id: "q01", title: "値を選ぶ" }],
+          references: [
+            {
+              ...reference,
+              attribution: "CC BY-SA 4.0 / <原作者>",
+              attributionTerms: {
+                creator: "原作者",
+                scope: "練習問題",
+                conditionsUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+                checkedAt: "2026-10-05",
+              },
+            },
+            { ...reference, id: "SRC-local", title: "ローカルの資料", url: "file:///source.md" },
+          ],
+        },
+        edit: { files: [], missing: [] },
+      },
+    });
+    const section = '<section class="references"><h2>参照元</h2>';
+    expect(html).toContain('>管理者に相談</a> ・ <a href="command:stella.showRunLog">実行ログ</a>');
+    expect(html.indexOf(section)).toBeGreaterThan(html.indexOf(">実行ログ</a>"));
+    expect(html).toContain(
+      '<a href="https://example.org/exercises">サンプル &amp; 練習</a> — 教材チーム / 配列',
+    );
+    expect(html).toContain("CC BY-SA 4.0 / &lt;原作者&gt;");
+    expect(html).toContain("原作者: 原作者 / 再利用範囲: 練習問題");
+    expect(html).toContain('href="https://creativecommons.org/licenses/by-sa/4.0/"');
+    expect(html).toContain("条件確認日: 2026-10-05");
+    expect(html).toContain("<li>ローカルの資料 — 教材チーム / 配列");
+    expect(html).not.toContain('href="file:///source.md"');
   });
 
   it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
