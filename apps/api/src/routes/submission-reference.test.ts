@@ -180,7 +180,7 @@ describe("GET /api/submissions/:id/reference", () => {
         available: true,
         submittedAt: submittedAt.getTime(),
         version: "latest",
-        note: "提出時の版が分からないため、今の版の解答例を表示しています",
+        note: "提出時のバージョンが分からないため、今のバージョンの解答例を表示しています",
         files: [{ path: "src/checks.js", text: latestSolution }],
         reviewGuide: "",
       });

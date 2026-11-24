@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 import {
   TASK_BUNDLE_LIMITS,
@@ -133,6 +134,13 @@ describe("課題の配布 API (実 SQLite)", () => {
         token: as,
       },
     );
+  const revisionFiles = (contentHash = fixture.bundle.contentHash, as = token) =>
+    request(
+      app(),
+      env,
+      `/api/tasks/revision-files?${new URLSearchParams({ taskId: fixture.input.taskId, contentHash })}`,
+      { token: as },
+    );
   const useTypeScriptBundle = async (withProblems = false) => {
     const { bundle } = await submissionFixture({
       runner: "ts-test",
@@ -227,6 +235,49 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect(JSON.stringify(body)).not.toContain(encode(PRIVATE_MARKER));
   });
 
+  it("指定した過去のバージョンから公開ファイルのハッシュだけを返す", async () => {
+    const legacyHash = "b".repeat(64);
+    const legacyFiles = { ...fixture.bundle.files, "README.md": encode("\ufeff過去の課題文\r\n") };
+    await db.insert(taskRevisions).values({
+      taskId: fixture.input.taskId,
+      contentHash: legacyHash,
+      definition: JSON.stringify(fixture.bundle.manifest),
+      bundle: JSON.stringify({ ...fixture.bundle, contentHash: legacyHash, files: legacyFiles }),
+    });
+    const response = await revisionFiles(legacyHash);
+    expect(response.status, await response.clone().text()).toBe(200);
+    const body = await json<{ files: Record<string, string> }>(response);
+    expect(Object.keys(body)).toEqual(["files"]);
+    expect(Object.keys(body.files).sort()).toEqual(Object.keys(fixture.bundle.files).sort());
+    expect(body.files["README.md"]).toBe(
+      createHash("sha256").update("過去の課題文\n").digest("hex"),
+    );
+    expect(JSON.stringify(body)).not.toMatch(/private|hints.md|PRIVATE/);
+  });
+
+  it("参照できない課題と存在しないバージョンのハッシュ一覧は 404", async () => {
+    expect((await revisionFiles(fixture.bundle.contentHash, otherToken)).status).toBe(404);
+    expect((await revisionFiles("f".repeat(64))).status).toBe(404);
+  });
+
+  it.each(["private/solution/index.html", "hints.md"])(
+    "履歴に %s が混ざっていたらハッシュも返さない",
+    async (rel) => {
+      await db
+        .update(taskRevisions)
+        .set({
+          bundle: JSON.stringify({
+            ...fixture.bundle,
+            files: { ...fixture.bundle.files, [rel]: encode(PRIVATE_MARKER) },
+          }),
+        })
+        .where(eq(taskRevisions.taskId, fixture.input.taskId));
+      const response = await revisionFiles();
+      expect(response.status).toBeGreaterThanOrEqual(400);
+      expect(await response.text()).not.toContain(rel);
+    },
+  );
+
   it("ts-test の課題は版の申告がない拡張に更新を案内する", async () => {
     await useTypeScriptBundle();
     const response = await bundleOf();
@@ -244,7 +295,7 @@ describe("課題の配布 API (実 SQLite)", () => {
     const response = await bundleOf(token, "0.7.0");
     expect(response.status).toBe(426);
     expect(await json<{ error: string }>(response)).toEqual({
-      error: expect.stringContaining("0.8.0 以上に更新してください"),
+      error: expect.stringContaining("バージョン 0.8.0 以上に更新してください"),
     });
   });
 

@@ -12,13 +12,17 @@ import { DigitBlocks, digitBlocksText } from "./digit-blocks";
 import { DigitalClock, digitalClockText } from "./digital-clock";
 import { DrinkWater, drinkWaterText } from "./drink-water";
 import { Elevator, elevatorText } from "./elevator";
+import { EmptyCard, emptyCardText } from "./empty-card";
+import { EmptyLocker, emptyLockerText } from "./empty-locker";
 import { EntryForm, entryFormText } from "./entry-form";
 import { FoldPaper, foldPaperText } from "./fold-paper";
+import { ForkRoad, forkRoadText } from "./fork-road";
 import { FreeShipping, freeShippingText } from "./free-shipping";
 import { FruitCount, fruitCountText } from "./fruit-count";
 import { HeightCompare, heightCompareText } from "./height-compare";
 import { HeightGate, heightGateText } from "./height-gate";
 import { JumpRope, jumpRopeText } from "./jump-rope";
+import { LabelMaker, labelMakerText } from "./label-maker";
 import { Laps, lapsText } from "./laps";
 import { LetterCards, letterCardsText } from "./letter-cards";
 import { LetterIndex, letterIndexText } from "./letter-index";
@@ -32,7 +36,9 @@ import { PiggyBank, piggyBankText } from "./piggy-bank";
 import { PizzaShare, pizzaShareText } from "./pizza-share";
 import { PlatformSign, platformSignText } from "./platform-sign";
 import { PriceComma, priceCommaText } from "./price-comma";
+import { PriceTagRound, priceTagRoundText } from "./price-tag-round";
 import { QuoteMarks, quoteMarksText } from "./quote-marks";
+import { ReceiptPrinter, receiptPrinterText } from "./receipt-printer";
 import { RocketCountdown, rocketCountdownText } from "./rocket-countdown";
 import { RouteSearch, routeSearchText } from "./route-search";
 import { Scoreboard, scoreboardText } from "./scoreboard";
@@ -43,9 +49,11 @@ import { Stairs, stairsText } from "./stairs";
 import { StampRepeat, stampRepeatText } from "./stamp-repeat";
 import { TestTotal, testTotalText } from "./test-total";
 import { TileSquares, tileSquaresText } from "./tile-squares";
+import { TrafficLight, trafficLightText } from "./traffic-light";
 import { UmbrellaChoice, umbrellaChoiceText } from "./umbrella-choice";
 import { VendingChange, vendingText } from "./vending-change";
 import { VendingOutput, vendingOutputText } from "./vending-output";
+import { WhiteboardNote, whiteboardNoteText } from "./whiteboard-note";
 
 export type MotionProps = {
   beats: { start: number; end: number }[];
@@ -99,4 +107,12 @@ export const motionComponents = {
   "price-comma": { Component: PriceComma, text: priceCommaText },
   "password-count": { Component: PasswordCount, text: passwordCountText },
   "shop-sign": { Component: ShopSign, text: shopSignText },
+  "label-maker": { Component: LabelMaker, text: labelMakerText },
+  "receipt-printer": { Component: ReceiptPrinter, text: receiptPrinterText },
+  "traffic-light": { Component: TrafficLight, text: trafficLightText },
+  "fork-road": { Component: ForkRoad, text: forkRoadText },
+  "empty-locker": { Component: EmptyLocker, text: emptyLockerText },
+  "empty-card": { Component: EmptyCard, text: emptyCardText },
+  "whiteboard-note": { Component: WhiteboardNote, text: whiteboardNoteText },
+  "price-tag-round": { Component: PriceTagRound, text: priceTagRoundText },
 } satisfies Record<MotionId, { Component: ComponentType<MotionProps>; text: string }>;

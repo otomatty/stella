@@ -142,8 +142,8 @@ export async function prepareLocalTaskSubmission(
   )
     throw new Error(
       mode === "consult"
-        ? "確認した課題の版が変わっています。もう一度確認してください"
-        : "確認した課題の版が変わっています。もう一度「提出する」を押してください",
+        ? "確認した課題のバージョンが変わっています。もう一度確認してください"
+        : "確認した課題のバージョンが変わっています。もう一度「提出する」を押してください",
     );
   return {
     taskId: loaded.manifest.id,

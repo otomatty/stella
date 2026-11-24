@@ -741,7 +741,9 @@ export const ReviewEditor = ({ submissionId, setPage }: ReviewEditorProps) => {
                 <span className="font-semibold text-brand-ink">参考の書き方</span>
                 <span className="min-w-0 break-words text-ink-3">
                   解答例 ·{" "}
-                  {reference.version === "submitted" ? "提出時の版" : (reference.note ?? "今の版")}{" "}
+                  {reference.version === "submitted"
+                    ? "提出時のバージョン"
+                    : (reference.note ?? "今のバージョン")}{" "}
                   · 受講者には表示しません
                 </span>
                 {chooseReferenceFile ? (

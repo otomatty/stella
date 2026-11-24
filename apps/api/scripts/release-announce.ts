@@ -1,26 +1,33 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveReleaseNotesModel, summarizeChangelog } from "./lib/release-notes-ai.js";
 import {
-  buildDigestMessage,
+  buildDigestMessages,
   buildReleaseBody,
+  changelogWithoutShots,
+  collectShotNames,
   type DigestEntry,
   extractChangelogSection,
   fallbackSummary,
   isGoogleChatWebhookUrl,
+  isHttpsUrl,
+  parseChangelogItems,
+  type ReleaseItem,
   type ReleaseProduct,
 } from "./lib/release-notes.js";
 
 const usage = `使い方
-  bun run release:notes prepare --product <web|vscode> --version <v> --changelog <path> --commit <sha> --out-dir <dir>
+  bun run release:notes prepare --product <web|vscode> --version <v> --changelog <path> --commit <sha> --out-dir <dir> [--images <path>]
   bun run release:notes digest`;
 
 interface Dependencies {
   env: Record<string, string | undefined>;
   fetch: typeof fetch;
   now: () => Date;
+  sleep: (ms: number) => Promise<void>;
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<void>;
   makeDir: (path: string) => Promise<unknown>;
@@ -35,6 +42,7 @@ const defaultDeps: Dependencies = {
   env: process.env,
   fetch: (url, init) => fetch(url, init),
   now: () => new Date(),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   readFile: (path) => readFile(path, "utf8"),
   writeFile: (path, content) => writeFile(path, content, "utf8"),
   makeDir: (path) => mkdir(path, { recursive: true }),
@@ -47,10 +55,26 @@ interface PrepareArgs {
   changelog: string;
   commit: string;
   outDir: string;
+  images?: string;
 }
 
 function isProduct(value: unknown): value is ReleaseProduct {
   return value === "web" || value === "vscode";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseShotUrls(text: string): Map<string, string> {
+  const value: unknown = JSON.parse(text);
+  if (!isRecord(value) || !isRecord(value.shots)) throw new Error("Invalid image manifest");
+  const shotUrls = new Map<string, string>();
+  for (const [name, shot] of Object.entries(value.shots)) {
+    if (!isRecord(shot) || !isHttpsUrl(shot.url)) throw new Error("Invalid image URL");
+    shotUrls.set(name, shot.url);
+  }
+  return shotUrls;
 }
 
 async function prepare(args: PrepareArgs, deps: Dependencies): Promise<number> {
@@ -63,6 +87,35 @@ async function prepare(args: PrepareArgs, deps: Dependencies): Promise<number> {
     return 1;
   }
 
+  const { items, errors } = parseChangelogItems(section);
+  if (errors.length > 0) {
+    for (const error of errors) console.error(`::error::${error}`);
+    return 1;
+  }
+
+  let shotUrls = new Map<string, string>();
+  if (args.images !== undefined) {
+    try {
+      shotUrls = parseShotUrls(await deps.readFile(args.images));
+    } catch {
+      console.error("::error::--images の JSON を読み取れないか、画像 URL の形式が不正です");
+      return 1;
+    }
+  }
+  for (const name of collectShotNames(items)) {
+    if (!shotUrls.has(name)) {
+      console.warn(`::warning::${name} のスクリーンショットが無いので、画像なしで載せます`);
+    }
+  }
+  const releaseItems: ReleaseItem[] = items.map(({ title, body, shots }) => ({
+    title,
+    body,
+    images: shots.flatMap(({ name, alt }) => {
+      const url = shotUrls.get(name);
+      return url === undefined ? [] : [{ url, alt }];
+    }),
+  }));
+  const textSection = changelogWithoutShots(section);
   const apiKey = deps.env.ANTHROPIC_API_KEY;
   let result: Awaited<ReturnType<typeof summarizeChangelog>> = null;
   if (apiKey) {
@@ -73,7 +126,7 @@ async function prepare(args: PrepareArgs, deps: Dependencies): Promise<number> {
         model: resolveReleaseNotesModel(deps.env),
         product,
         version,
-        section,
+        section: textSection,
       });
     } catch {
       // SDK の初期化に失敗したときも CHANGELOG で準備を続ける。
@@ -81,18 +134,18 @@ async function prepare(args: PrepareArgs, deps: Dependencies): Promise<number> {
   }
   if (!result) {
     console.warn("::warning::AI の要約を使えなかったので CHANGELOG をそのまま使います");
-    result = fallbackSummary(section);
+    result = fallbackSummary(textSection);
   }
 
   const { summary, points } = result;
   await deps.makeDir(outDir);
   await deps.writeFile(
     join(outDir, "release-body.md"),
-    buildReleaseBody({ product, summary, section, commitSha: commit }),
+    buildReleaseBody({ product, summary, section, commitSha: commit, shotUrls }),
   );
   await deps.writeFile(
     join(outDir, "release-summary.json"),
-    `${JSON.stringify({ product, version, points }, null, 2)}\n`,
+    `${JSON.stringify({ product, version, points, items: releaseItems }, null, 2)}\n`,
   );
   return 0;
 }
@@ -110,9 +163,40 @@ interface GitHubRelease {
   assets: { id: number; name: string }[];
 }
 
+function parseReleaseItems(value: unknown): ReleaseItem[] | null {
+  if (!Array.isArray(value)) return null;
+  const items: ReleaseItem[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) return null;
+    const { title, body, images } = item;
+    if (
+      (typeof title !== "string" && title !== null) ||
+      typeof body !== "string" ||
+      !Array.isArray(images)
+    ) {
+      return null;
+    }
+    items.push({
+      title,
+      body,
+      images: images
+        .flatMap((image: unknown) =>
+          isRecord(image) &&
+          isHttpsUrl(image.url) &&
+          typeof image.alt === "string" &&
+          image.alt.trim()
+            ? [{ url: image.url, alt: image.alt }]
+            : [],
+        )
+        .slice(0, 2),
+    });
+  }
+  return items;
+}
+
 function parseReleaseSummary(
   text: string,
-): Pick<DigestEntry, "product" | "version" | "points"> | null {
+): Pick<DigestEntry, "product" | "version" | "items"> | null {
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -120,20 +204,27 @@ function parseReleaseSummary(
     return null;
   }
   if (
-    typeof value !== "object" ||
-    value === null ||
-    !("product" in value) ||
+    !isRecord(value) ||
     !isProduct(value.product) ||
-    !("version" in value) ||
     typeof value.version !== "string" ||
     !value.version.trim() ||
-    !("points" in value) ||
     !Array.isArray(value.points) ||
     !value.points.every((point: unknown) => typeof point === "string")
   ) {
     return null;
   }
-  return { product: value.product, version: value.version, points: value.points };
+  const { product, version, points } = value;
+  const items = parseReleaseItems(value.items);
+  if (!items && "items" in value) {
+    console.warn(
+      `::warning::${product}-v${version} の項目の形式が不正なので、従来の要点を載せます`,
+    );
+  }
+  return {
+    product,
+    version,
+    items: items ?? points.map((body) => ({ title: null, body, images: [] })),
+  };
 }
 
 async function digest(deps: Dependencies): Promise<number> {
@@ -219,21 +310,30 @@ async function digest(deps: Dependencies): Promise<number> {
     return 1;
   }
 
-  const text = buildDigestMessage(
+  const messages = buildDigestMessages(
     pending.map(({ entry }) => entry),
     deps.now(),
   );
+  const tags = pending.map(({ release }) => release.tag_name).sort();
+  const hash = createHash("sha256").update(tags.join("\n")).digest("hex").slice(0, 24);
+  const thread = { threadKey: `stella-release-${hash}` };
+  const webhook = new URL(url);
+  webhook.searchParams.set("messageReplyOption", "REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD");
   try {
-    const response = await deps.fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=UTF-8" },
-      body: JSON.stringify({ text }),
-      signal: AbortSignal.timeout(15_000),
-      redirect: "manual",
-    });
-    if (!response.ok) {
-      console.error(`::error::HTTP ${response.status}`);
-      return 1;
+    for (const [index, message] of messages.entries()) {
+      if (index > 0) await deps.sleep(1100);
+      webhook.searchParams.set("messageId", `client-${hash}-${index}`);
+      const response = await deps.fetch(webhook.href, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=UTF-8" },
+        body: JSON.stringify({ ...message, thread }),
+        signal: AbortSignal.timeout(15_000),
+        redirect: "manual",
+      });
+      if (!response.ok && response.status !== 409) {
+        console.error(`::error::HTTP ${response.status}`);
+        return 1;
+      }
     }
   } catch {
     console.error("::error::HTTP ステータスを取得できませんでした");
@@ -275,7 +375,7 @@ export async function main(argv: string[], deps: Dependencies = defaultDeps): Pr
   const [command, ...args] = argv;
   if (command === "digest") return args.length === 0 ? digest(deps) : usageError();
   if (command !== "prepare") return usageError();
-  const names = ["product", "version", "changelog", "commit", "out-dir"];
+  const names = ["product", "version", "changelog", "commit", "out-dir", "images"];
 
   let values: Record<string, string | undefined>;
   try {
@@ -286,7 +386,8 @@ export async function main(argv: string[], deps: Dependencies = defaultDeps): Pr
     });
     if (
       parsed.tokens.some((token) => token.kind !== "option" || token.inlineValue) ||
-      parsed.tokens.length !== names.length
+      new Set(parsed.tokens.map((token) => token.kind === "option" && token.name)).size !==
+        parsed.tokens.length
     ) {
       return usageError();
     }
@@ -296,11 +397,11 @@ export async function main(argv: string[], deps: Dependencies = defaultDeps): Pr
   }
 
   try {
-    const { product, version, changelog, commit, "out-dir": outDir } = values;
+    const { product, version, changelog, commit, "out-dir": outDir, images } = values;
     if (!isProduct(product) || !version?.trim() || !changelog || !commit || !outDir) {
       return usageError();
     }
-    return await prepare({ product, version, changelog, commit, outDir }, deps);
+    return await prepare({ product, version, changelog, commit, outDir, images }, deps);
   } catch {
     console.error("::error::リリースノートを準備できませんでした");
     return 1;

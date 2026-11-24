@@ -105,7 +105,7 @@ function TaskRow({
       </p>
       {task.obsoleteManualProblems > 0 ? (
         <p className="text-sm text-ink-3">
-          いまの版に無い問題の手で済みが {task.obsoleteManualProblems} 件あります
+          いまのバージョンに無い問題の手で済みが {task.obsoleteManualProblems} 件あります
         </p>
       ) : null}
       {reasons.mixed || reasons.reason ? (
@@ -425,7 +425,7 @@ export function ManualCompletionPage({ userId, stageId }: { userId: string; stag
             <DialogDescription>
               {selectionCount} 件（{items.length} 課題）を操作します。
               {mode === "revoke"
-                ? "課題の合格が戻り、修了証が取り消されることがあります。本人の提出やレビューで合格した課題では、いまの版に無い問題の手で済みだけを取り消せます。"
+                ? "課題の合格が戻り、修了証が取り消されることがあります。本人の提出やレビューで合格した課題では、いまのバージョンに無い問題の手で済みだけを取り消せます。"
                 : "理由を入力してください（必須・1,000文字まで）。"}
             </DialogDescription>
           </DialogHeader>

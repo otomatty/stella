@@ -1,0 +1,705 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "let に型を書かないと、あとで入れ直せるよう string や number の型になります。",
+    "stuck": "受付の案内は、開場すると表示が変わります。最初に入れた文字列を書き換えるには、どんな変数を使うでしょうか。",
+    "points": ["let に型を書かないと、あとで入れ直せるよう string や number の型になります。"],
+    "leaveOut": ["型を明示して初期値とは別の型を許す方法"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "lobbynotice": {
+      "prompt": "A freestanding blue lobby noticeboard with a blank white writing surface. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "noticeeraser": {
+      "prompt": "A soft violet eraser beside a blue dry erase marker. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "changednotice": {
+      "prompt": "A white board with a fresh blank magenta notice card clipped at the corner. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fullwaitingroom": {
+      "prompt": "Visitors seated in a row of blue waiting chairs. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waitingcounter": {
+      "prompt": "A small electronic people counter with a blank display. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lesswaiting": {
+      "prompt": "A row of waiting chairs with empty blue seats near the end. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "let-inference-use1": {
+      "prompt": "A blank violet notice stand next to a lobby entrance. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "let-inference-use2": {
+      "prompt": "A small group of seated visitors beside an empty chair. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "let-inference-use3": {
+      "prompt": "A shop shelf with a few violet boxes and empty spaces. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "最初の表示",
+          "art": "lobbynotice",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "書き換え",
+          "art": "noticeeraser",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "更新した表示",
+          "art": "changednotice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "最初の値",
+          "art": "lobbynotice",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "推論した型",
+          "art": "noticeeraser",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "入れ直した値",
+          "art": "changednotice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "最初の人数",
+          "art": "fullwaitingroom",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "推論した型",
+          "art": "waitingcounter",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "変更後の人数",
+          "art": "lesswaiting",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受付の表示",
+          "art": "let-inference-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "待つ人数",
+          "art": "let-inference-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "在庫数",
+          "art": "let-inference-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "判定のラベル",
+          "art": "lobbynotice",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "入れ直す値",
+          "art": "changednotice",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "whiteboard-note",
+      "beats": [
+        {
+          "say": "この動画では、let の型が広くなる理由を学びます。",
+          "speech": "この動画では、レットの型が広くなる理由を学びます。"
+        },
+        {
+          "say": "ホワイトボードは、あとから別のことを書き直せる道具です。"
+        },
+        {
+          "say": "今は「肥満」と書いてありますが、「普通」に書き換えます。"
+        },
+        {
+          "say": "let は書き換えられるので、型は string です。",
+          "speech": "レットは書き換えられるので、型はストリングです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "案内板を書き換える",
+      "board": "example",
+      "beats": [
+        {
+          "say": "開場する前に、案内板を出しました。",
+          "show": ["a"]
+        },
+        {
+          "say": "最初の表示は、準備中です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "開場したら、表示を受付中に書き換えます。",
+          "show": ["c", "bc"]
+        },
+        {
+          "say": "表示を入れ替える仕組みを、コードで見ましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "文字列を入れ直せる変数を作る",
+      "code": [
+        "// 会場の案内表示に初めの文字列を入れる",
+        "let notice = \"準備中\";",
+        "// 開場後の表示に入れ直す",
+        "notice = \"受付中\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "あとで値を入れ直す変数は、let で作ります。",
+          "speech": "あとで値を入れ直す変数は、レットで作ります。",
+          "part": {
+            "line": 1,
+            "text": "let"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "最初に入れた値は、準備中という文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"準備中\""
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "a": "準備中"
+            }
+          }
+        },
+        {
+          "say": "入れ直せるように、型は string になります。",
+          "speech": "入れ直せるように、型はストリングになります。",
+          "part": {
+            "line": 1,
+            "text": "notice"
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "string"
+            }
+          }
+        },
+        {
+          "say": "別の文字列も、同じ変数に入れられる型です。",
+          "part": {
+            "line": 3,
+            "text": "\"受付中\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "受付中"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 会場の案内表示に初めの文字列を入れる",
+        "let notice = \"準備中\";",
+        "// 開場後の表示に入れ直す",
+        "notice = \"受付中\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "変数を作る部分と、選べる部分に分けます。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "let と等号は、決まった書き方です。",
+          "speech": "レットと等号は、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "let"
+              },
+              {
+                "line": 1,
+                "text": "="
+              },
+              {
+                "line": 3,
+                "text": "="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "表示を表す名前と、入れる文字列を決めましょう。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "notice"
+              },
+              {
+                "line": 1,
+                "text": "\"準備中\""
+              },
+              {
+                "line": 3,
+                "text": "\"受付中\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "入れ直しても型は string",
+      "code": [
+        "// 会場の案内表示に初めの文字列を入れる",
+        "let notice = \"準備中\";",
+        "// 開場後の表示に入れ直す",
+        "notice = \"受付中\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "準備中を、変数の最初の値として入れます。",
+          "part": {
+            "line": 1,
+            "text": "\"準備中\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "準備中"
+            }
+          }
+        },
+        {
+          "say": "推論された型は、文字列全体を表す string です。",
+          "speech": "推論された型は、文字列全体を表すストリングです。",
+          "part": {
+            "line": 1,
+            "text": "notice",
+            "note": "案内表示"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "string"
+            }
+          }
+        },
+        {
+          "say": "受付が始まったら、別の文字列を入れましょう。",
+          "part": {
+            "line": 3,
+            "text": "\"受付中\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "受付中"
+            }
+          }
+        },
+        {
+          "say": "値が変わっても、変数に付いた型はそのままです。",
+          "part": {
+            "line": 3,
+            "text": "notice"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "人を数える変数の型は？",
+      "code": [
+        "// 呼び出しを待つ人の数を入れる",
+        "let waiting = 43;",
+        "// 待つ人が減ったあとの数に入れ直す",
+        "waiting = 41;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、順番を待つ人の数を入れます。",
+          "part": {
+            "line": 1,
+            "text": "43"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "43"
+            }
+          }
+        },
+        {
+          "say": "人を呼び出したあとは、待つ人の数が変わりました。",
+          "part": {
+            "line": 3,
+            "text": "41"
+          },
+          "figure": {
+            "tag": {
+              "b": "41"
+            }
+          }
+        },
+        {
+          "say": "この変数には、どんな型が付くでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": [
+        "// 呼び出しを待つ人の数を入れる",
+        "let waiting = 43;",
+        "// 待つ人が減ったあとの数に入れ直す",
+        "waiting = 41;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "推論される型は、number です。",
+          "speech": "推論される型は、ナンバーです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "number"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "別の数を入れても同じ型",
+      "code": [
+        "// 呼び出しを待つ人の数を入れる",
+        "let waiting = 43;",
+        "// 待つ人が減ったあとの数に入れ直す",
+        "waiting = 41;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "最初に入れる値は、43 です。",
+          "speech": "最初に入れる値は、よんじゅうさんです。",
+          "part": {
+            "line": 1,
+            "text": "43"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "待つ人が減ったら、41 を入れます。",
+          "speech": "待つ人が減ったら、よんじゅういちを入れます。",
+          "part": {
+            "line": 3,
+            "text": "41"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "どちらも、number に含まれる値です。",
+          "speech": "どちらも、ナンバーに含まれる値です。",
+          "part": {
+            "line": 1,
+            "text": "waiting"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "受付が始まると、案内の文字列が変わります。",
+          "show": ["a"]
+        },
+        {
+          "say": "人を呼ぶたびに変わる値は、待つ人の数です。",
+          "show": ["b"]
+        },
+        {
+          "say": "店で品物が売れたら、在庫数を入れ直しましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "応用問題で使う",
+      "code": ["// 2. bmiReport(heightCm, weightKg)", "export function bmiReport() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "応用問題には、判定を付けた文を返す関数があります。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "条件に合わせて入れ直すのは、判定のラベルです。",
+          "part": {
+            "line": 0,
+            "text": "bmiReport"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "let"
+            }
+          }
+        },
+        {
+          "say": "ラベルを入れる変数は、let で作りましょう。",
+          "speech": "ラベルを入れる変数は、レットで作りましょう。",
+          "part": {
+            "line": 1,
+            "text": "{}"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "再代入"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e973aa5bda3f536255452921d249c7d103a9e99acae3912f6c29cee45ede1a9f"
+  }
+}

@@ -1,0 +1,684 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "const に型を書かないと、値そのものが型になります。",
+    "stuck": "画面の見出しに使う倉庫の名前を、別のファイルでも使い回したいときがあります。",
+    "points": ["const に型を書かないと、値そのものが型になります。"],
+    "leaveOut": ["変更できる変数の型"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "warehousebox": {
+      "prompt": "A closed cardboard produce box on a low violet shelf. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "applecrate": {
+      "prompt": "An open cardboard crate filled with red apples in natural colors. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "warehouselabel": {
+      "prompt": "A blank blue hanging label tied to the handle of a cardboard box. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "receptiondesk": {
+      "prompt": "A blue reception booth with a blank plaque. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "assignedplaque": {
+      "prompt": "A small desk plaque with a blank violet face. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "plaquecheck": {
+      "prompt": "A blank card beside a blue desk plaque. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "const-inference-use1": {
+      "prompt": "A blue web browser window with a wide blank heading area. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "const-inference-use2": {
+      "prompt": "A reception desk with a standing blank blue plaque. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "const-inference-use3": {
+      "prompt": "A violet wayfinding sign with a blank inset panel. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "札のない箱",
+          "art": "warehousebox",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "箱の中身",
+          "art": "applecrate",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "付けた札",
+          "art": "warehouselabel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "定数",
+          "art": "warehousebox",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "入れた値",
+          "art": "applecrate",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "推論した型",
+          "art": "warehouselabel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "窓口の定数",
+          "art": "receptiondesk",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "入れた数",
+          "art": "assignedplaque",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "推論した型",
+          "art": "plaquecheck",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "画面の見出し",
+          "art": "const-inference-use1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "窓口の番号",
+          "art": "const-inference-use2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "案内の行き先",
+          "art": "const-inference-use3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "指定された名前",
+          "art": "warehousebox",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "指定された値",
+          "art": "warehouselabel",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "label-maker",
+      "beats": [
+        {
+          "say": "この動画では、型を書かずに定数を作る方法を学びます。"
+        },
+        {
+          "say": "荷物を札なしで棚に置くと、中身を見て札が付く仕組みです。"
+        },
+        {
+          "say": "りんごの箱には、「りんご」の札がそのまま付きました。"
+        },
+        {
+          "say": "const も、入れた値がそのまま型になります。",
+          "speech": "コンストも、入れた値がそのまま型になります。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "箱の中身から札を作る",
+      "board": "example",
+      "beats": [
+        {
+          "say": "棚に、まだ札の付いていない箱を置きます。",
+          "show": ["a"]
+        },
+        {
+          "say": "ふたを開けて見えた中身は、りんごです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "中身を見て、箱にりんごの札を付けました。",
+          "show": ["c", "bc"]
+        },
+        {
+          "say": "中身に合わせて札が決まる流れを、コードで見ましょう。",
+          "pulse": ["a", "c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "定数の値から型を決める",
+      "code": [
+        "// 倉庫の名前を別のファイルでも使える定数にする",
+        "export const DEPOT = \"北倉庫\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "値から型を決めることを、型推論と呼びます。",
+          "part": {
+            "line": 1,
+            "text": "const"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          },
+          "term": {
+            "text": "型推論",
+            "ruby": "かたすいろん",
+            "note": "値から型を決めること"
+          }
+        },
+        {
+          "say": "export const は、別のファイルでも使える定数です。",
+          "speech": "エクスポートコンストは、別のファイルでも使える定数です。",
+          "part": {
+            "line": 1,
+            "text": "export const"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "a": "DEPOT"
+            }
+          },
+          "term": {
+            "text": "export",
+            "ruby": "エクスポート",
+            "note": "別のファイルに公開"
+          }
+        },
+        {
+          "say": "定数の値として、北倉庫を入れました。",
+          "part": {
+            "line": 1,
+            "text": "\"北倉庫\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "b": "\"北倉庫\""
+            }
+          }
+        },
+        {
+          "say": "値ひとつを表す型を、リテラル型と呼びます。",
+          "part": {
+            "line": 1,
+            "text": "\"北倉庫\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"北倉庫\""
+            }
+          },
+          "term": {
+            "text": "リテラル型",
+            "ruby": "リテラルがた",
+            "note": "値ひとつを表す型"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": [
+        "// 倉庫の名前を別のファイルでも使える定数にする",
+        "export const DEPOT = \"北倉庫\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "定数の書き方を、二つの色に分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "export const と等号は、決まった書き方です。",
+          "speech": "エクスポートコンストと等号は、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "export const"
+              },
+              {
+                "line": 1,
+                "text": "="
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "定数に付ける名前と、中に入れる値は自分で決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "DEPOT"
+              },
+              {
+                "line": 1,
+                "text": "\"北倉庫\""
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "定数の型は \"北倉庫\"",
+      "code": [
+        "// 倉庫の名前を別のファイルでも使える定数にする",
+        "export const DEPOT = \"北倉庫\";"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "倉庫の名前を使い回すために、定数を用意しました。",
+          "part": {
+            "line": 1,
+            "text": "DEPOT",
+            "note": "倉庫"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "DEPOT"
+            }
+          }
+        },
+        {
+          "say": "等号の右にあるのは、北倉庫という文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"北倉庫\""
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "\"北倉庫\""
+            }
+          }
+        },
+        {
+          "say": "この値ひとつを表す型が、定数に付きます。",
+          "part": {
+            "line": 1,
+            "text": "\"北倉庫\""
+          },
+          "figure": {
+            "pulse": ["c"],
+            "tag": {
+              "c": "\"北倉庫\""
+            }
+          }
+        },
+        {
+          "say": "型注釈を足さずに、値だけを書きましょう。",
+          "part": {
+            "line": 1,
+            "text": " = "
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "窓口の番号にはどんな型が付く？",
+      "code": ["// 受付窓口の番号を定数にする", "export const DESK = 37;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "受付窓口の番号を、定数にしました。",
+          "part": {
+            "line": 1,
+            "text": "export const"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "DESK"
+            }
+          }
+        },
+        {
+          "say": "入れた値は 37 です。",
+          "speech": "入れた値は、さんじゅうななです。",
+          "part": {
+            "line": 1,
+            "text": "DESK"
+          },
+          "figure": {
+            "tag": {
+              "b": "37"
+            }
+          }
+        },
+        {
+          "say": "この定数には、どんな型が付くでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 受付窓口の番号を定数にする", "export const DESK = 37;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "付く型は、37 です。",
+          "speech": "付く型は、さんじゅうななです。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "37"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "入れた値がそのまま定数の型になる",
+      "code": ["// 受付窓口の番号を定数にする", "export const DESK = 37;"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "まず、ここは定数を作る書き方です。",
+          "part": {
+            "line": 1,
+            "text": "export const"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "等号の右に、窓口の番号を入れました。",
+          "part": {
+            "line": 1,
+            "text": "DESK"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "定数には、この番号ひとつを表す型が付きます。",
+          "part": {
+            "line": 1,
+            "text": "37"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "画面の見出しに、共通の名前を使えます。",
+          "show": ["a"]
+        },
+        {
+          "say": "受付の窓口にも、それぞれ決まった番号がある例です。",
+          "show": ["b"]
+        },
+        {
+          "say": "案内で使う行き先も、定数にしておきましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1で使う",
+      "code": [
+        "// 問1 定数 SITE_NAME を宣言する。値は \"Agora\"。推論される型は \"Agora\"",
+        "// ここに SITE_NAME を宣言する",
+        "export const"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "beats": [
+        {
+          "say": "問1では、サイトの名前を定数にします。",
+          "speech": "問いちでは、サイトの名前を定数にします。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "名前と値は、スターターのコメントにある指定どおりです。",
+          "part": {
+            "line": 1,
+            "text": "// ここに SITE_NAME を宣言する"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "型注釈を付けず、別のファイルから使える形で書きましょう。",
+          "part": {
+            "line": 2,
+            "text": "export const"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "5f6f9243e03e44f6032016910e25fa0481e1965ba9683a5ecc4643f3511ba05d"
+  }
+}

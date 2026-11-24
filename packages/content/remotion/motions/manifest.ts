@@ -45,6 +45,14 @@ export const MOTIONS = {
   "price-comma": { title: "値札のカンマ", beats: 4, seconds: [2.5, 4.0, 4.7, 6.0] },
   "password-count": { title: "パスワードの文字数", beats: 4, seconds: [2.5, 4.0, 4.3, 3.8] },
   "shop-sign": { title: "お店の看板", beats: 4, seconds: [2.5, 4.5, 4.3, 5.0] },
+  "label-maker": { title: "りんごの箱と札", beats: 4, seconds: [2.5, 5.2, 4.8, 4.5] },
+  "receipt-printer": { title: "レジのレシート", beats: 4, seconds: [2.5, 4.1, 3.6, 3.6] },
+  "traffic-light": { title: "信号の三色", beats: 4, seconds: [2.5, 3.8, 4.3, 5.2] },
+  "fork-road": { title: "天気で選ぶ持ち物", beats: 4, seconds: [2.5, 3.8, 3.8, 4.1] },
+  "empty-locker": { title: "空のロッカー", beats: 4, seconds: [2.5, 4.8, 4.3, 4.5] },
+  "empty-card": { title: "空の名札と1文字目", beats: 4, seconds: [2.5, 4.0, 4.1, 6.7] },
+  "whiteboard-note": { title: "書き換えるホワイトボード", beats: 4, seconds: [2.5, 4.8, 5.2, 5.7] },
+  "price-tag-round": { title: "体重計の小数表示", beats: 4, seconds: [2.5, 3.6, 4.7, 5.8] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;

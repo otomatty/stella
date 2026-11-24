@@ -827,7 +827,7 @@ function MaterialItem({
             title={
               material.source === "upload"
                 ? "管理者が配信から外した資料です。受講者の資料タブとダウンロードには出ません。"
-                : "教材から作らなくなった資料です。受講者の資料タブには出ません。版履歴から旧版を取得できます。"
+                : "教材から作らなくなった資料です。受講者の資料タブには出ません。バージョン履歴から以前のバージョンを取得できます。"
             }
           >
             {material.source === "upload" ? "配信から外した" : "アーカイブ"}
@@ -856,7 +856,7 @@ function MaterialItem({
               setOpen(!open);
             }}
           >
-            版履歴
+            バージョン履歴
           </Button>
         ) : null}
       </div>
@@ -879,7 +879,8 @@ function MaterialVersionHistory({ material }: { material: StageMaterialRow }) {
       </p>
     );
   if (!data) return <SkeletonRows rows={2} />;
-  if (data.length === 0) return <p className="mt-2 text-xs text-ink-3">版履歴はまだありません</p>;
+  if (data.length === 0)
+    return <p className="mt-2 text-xs text-ink-3">バージョン履歴はまだありません</p>;
   return (
     <ul className="mt-3 divide-y divide-border">
       {data.map((v, index) => (

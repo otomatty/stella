@@ -102,7 +102,7 @@ describe("extensionSatisfies", () => {
 describe("extensionUpgradeMessage", () => {
   it("必要な版と、更新して Web から開き直す手順を案内する", () => {
     expect(extensionUpgradeMessage("0.8.0")).toBe(
-      "この課題を開くには、VS Code の STELLA 拡張を 0.8.0 以上に更新してください。VS Code の拡張機能ビュー (Ctrl+Shift+X、Mac は Cmd+Shift+X) で「STELLA」を開いて更新し、もう一度 Web の「VS Code で開く」から開いてください。",
+      "この課題を開くには、VS Code の STELLA 拡張をバージョン 0.8.0 以上に更新してください。VS Code の拡張機能ビュー (Ctrl+Shift+X、Mac は Cmd+Shift+X) で「STELLA」を開いて更新し、もう一度 Web の「VS Code で開く」から開いてください。",
     );
     expect(EXTENSION_VERSION_PARAM).toBe("extension");
   });

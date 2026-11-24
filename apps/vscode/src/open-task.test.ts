@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
 import { version as extensionVersion } from "../package.json";
 import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
+import { requireSavedTaskFile } from "./task-update-guard.js";
 
 const state = vi.hoisted(() => ({
   home: "",
   folders: [] as string[],
   activeFile: undefined as string | undefined,
+  dirtyFiles: [] as string[],
   memento: new Map<string, unknown>(),
   commands: new Map<string, () => Promise<void>>(),
   windowListeners: [] as ((windowState: { focused: boolean }) => void)[],
@@ -58,6 +60,9 @@ vi.mock("vscode", () => ({
     },
   },
   workspace: {
+    get textDocuments() {
+      return state.dirtyFiles.map((fsPath) => ({ isDirty: true, uri: { scheme: "file", fsPath } }));
+    },
     get workspaceFolders() {
       return state.folders.map((fsPath) => ({ uri: { fsPath } }));
     },
@@ -136,6 +141,7 @@ beforeEach(async () => {
   state.log = [];
   state.folders = [];
   state.activeFile = undefined;
+  state.dirtyFiles = [];
   state.unopenable.clear();
   state.home = await mkdtemp(path.join(tmpdir(), "stella-home-"));
   training = path.join(state.home, "web-training");
@@ -430,6 +436,91 @@ describe("課題を開く", () => {
     expect(await samePath(missing, missingLower, "linux")).toBe(false);
     expect(await samePath(missing, `${missing}${path.sep}`, "linux")).toBe(true);
   });
+  it("古い配布記録を API で照合し、新しいバージョンと写しの場所を知らせる", async () => {
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    const task = taskRoot();
+    const receipt = path.join(task, ".stella/distribution.json");
+    const old = JSON.parse(await readFile(receipt, "utf8"));
+    await writeFile(receipt, JSON.stringify({ taskId, contentHash: old.contentHash }));
+    await writeFile(path.join(task, "index.js"), "learner code");
+    await writeFile(path.join(task, "README.md"), "learner notes");
+    state.apiRequest
+      .mockResolvedValueOnce({
+        bundle: {
+          ...bundle,
+          contentHash: "b".repeat(64),
+          files: { ...bundle.files, "README.md": Buffer.from("new readme").toString("base64") },
+        },
+      })
+      .mockResolvedValueOnce({ files: old.files });
+    await openDistributedTask(context, taskId);
+    expect(state.apiRequest).toHaveBeenLastCalledWith(
+      `/api/tasks/revision-files?${new URLSearchParams({ taskId, contentHash: bundle.contentHash })}`,
+      { signal: expect.any(AbortSignal) },
+    );
+    const backup = path.join(task, ".stella/previous", bundle.contentHash.slice(0, 12));
+    expect(await readFile(path.join(task, "index.js"), "utf8")).toBe("learner code");
+    expect(await readFile(path.join(backup, "README.md"), "utf8")).toBe("learner notes");
+    expect(state.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `課題を新しいバージョンにしました。あなたのコードはそのまま残しています。 編集した配布ファイルの写しは ${backup} にあります。`,
+      ),
+    );
+  });
+
+  it("別のパスで開いた未保存の文書も、実体が置き換え対象なら止める", async () => {
+    const folder = path.join(state.home, "task");
+    await mkdir(folder);
+    await writeFile(path.join(folder, "index.js"), "starter");
+    await writeFile(path.join(folder, "other.js"), "other");
+    const alias = path.join(state.home, "alias");
+    await symlink(folder, alias, "junction");
+    state.dirtyFiles = [path.join(alias, "index.js")];
+
+    await expect(requireSavedTaskFile(folder, "other.js")).resolves.toBeUndefined();
+    await expect(requireSavedTaskFile(folder, "index.js")).rejects.toMatchObject({
+      reason: "unsaved",
+      files: ["index.js"],
+    });
+  });
+
+  it("課題フォルダーに未保存の文書があれば保存を案内し、保存後は更新できる", async () => {
+    state.folders = [training];
+    await openDistributedTask(context, taskId);
+    const task = taskRoot();
+    const code = path.join(task, "index.js");
+    const readme = path.join(task, "README.md");
+    const outside = path.join(`${task}-other`, "index.js");
+    const updated = {
+      ...bundle,
+      contentHash: "b".repeat(64),
+      files: { ...bundle.files, "README.md": Buffer.from("new readme").toString("base64") },
+    };
+    state.apiRequest.mockResolvedValue({ bundle: updated });
+    state.dirtyFiles = [code, outside];
+
+    await openDistributedTask(context, taskId);
+
+    expect(state.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringContaining("未保存のファイル"),
+      expect.objectContaining({ detail: expect.stringContaining("保存してから、もう一度") }),
+      "一覧を表示",
+      "準備先を表示",
+    );
+    expect(await readFile(readme, "utf8")).toBe("課題文");
+    expect(await readFile(path.join(task, ".stella/distribution.json"), "utf8")).toContain(
+      bundle.contentHash,
+    );
+    expect(state.showTextDocument).toHaveBeenCalledTimes(1);
+
+    await writeFile(code, "saved learner code");
+    state.dirtyFiles = [outside];
+    await openDistributedTask(context, taskId);
+    expect(await readFile(code, "utf8")).toBe("saved learner code");
+    expect(await readFile(readme, "utf8")).toBe("new readme");
+  });
+
   it("課題文が消えた課題フォルダーを「今のフォルダーを開く」ときは、フォルダーを示す", async () => {
     state.folders = [training];
     await openDistributedTask(context, taskId);

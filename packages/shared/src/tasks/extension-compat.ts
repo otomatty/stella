@@ -52,5 +52,5 @@ export function extensionSatisfies(declared: string | undefined, required: strin
 }
 
 export function extensionUpgradeMessage(required: string): string {
-  return `この課題を開くには、VS Code の STELLA 拡張を ${required} 以上に更新してください。VS Code の拡張機能ビュー (Ctrl+Shift+X、Mac は Cmd+Shift+X) で「STELLA」を開いて更新し、もう一度 Web の「VS Code で開く」から開いてください。`;
+  return `この課題を開くには、VS Code の STELLA 拡張をバージョン ${required} 以上に更新してください。VS Code の拡張機能ビュー (Ctrl+Shift+X、Mac は Cmd+Shift+X) で「STELLA」を開いて更新し、もう一度 Web の「VS Code で開く」から開いてください。`;
 }

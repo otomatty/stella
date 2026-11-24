@@ -181,8 +181,6 @@ interface SkillTreeProps {
   showIslandChips?: boolean;
   /** 左上に浮くカードがチップと重なる幅のとき、チップをカードの下へ下げる。盤面の上端からの距離 (px)。 */
   chipsTop?: number;
-  /** 状態の凡例を出す。講師の管理画面では出さない。 */
-  showLegend?: boolean;
   /**
    * 最初に描けたとき 1 回だけ全体表示にする。
    * true のときは `initialFocusStageId` へ寄せない。
@@ -453,7 +451,6 @@ export const SkillTree = ({
   mainlandTitle = "開発スキル",
   showIslandChips = true,
   chipsTop,
-  showLegend = true,
   initialFit = false,
   selectedIslandKey = null,
   showSelectedIslandPrerequisite = true,
@@ -1086,25 +1083,6 @@ export const SkillTree = ({
       className={className}
       overlay={
         <>
-          {showLegend && !isMobile ? (
-            <aside
-              className="tree-legend pointer-events-none absolute bottom-9 flex items-center gap-3 rounded-xl border px-3 py-2 text-xs"
-              style={{ left: viewInset + 12 }}
-              aria-label="凡例"
-            >
-              {[
-                ["cleared", "完了"],
-                ["active", "進行中"],
-                ["open", "始められる"],
-                ["locked", "ロック"],
-              ].map(([state, label]) => (
-                <span key={state} className="flex items-center gap-1.5 whitespace-nowrap">
-                  <span className={`tree-legend-dot tree-legend-${state}`} aria-hidden="true" />
-                  {label}
-                </span>
-              ))}
-            </aside>
-          ) : null}
           {overviewLabels.map((region) => (
             <button
               key={region.key}

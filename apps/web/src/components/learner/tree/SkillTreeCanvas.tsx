@@ -658,8 +658,8 @@ export const SkillTreeCanvas = ({
 
       {/* 操作の案内。スマホ・タブレットではガイドのカードが下端に浮くので出さない。 */}
       <div
-        className="tree-hint pointer-events-none absolute bottom-2 hidden text-[10.5px] lg:block"
-        style={{ left: insetLeft + 12 }}
+        className="tree-hint pointer-events-none absolute bottom-2 hidden text-center text-[10.5px] lg:block"
+        style={{ left: insetLeft, right: 0 }}
       >
         ドラッグで移動 · ホイール / ピンチで拡大縮小
       </div>

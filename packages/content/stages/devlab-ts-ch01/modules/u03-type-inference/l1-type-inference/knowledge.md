@@ -35,11 +35,9 @@ function deliveryClass(weight: number) {
   if (weight < 2) {
     // 軽量という文字を返す
     return "軽量";
-    // 条件の中身はここまで
   }
   // 通常という文字を返す
   return "通常";
-  // 関数の中身はここまで
 }
 ```
 
@@ -63,7 +61,7 @@ function deliveryClass(weight: number) {
 <details>
 <summary>解答</summary>
 
-**A** — 番号は 0 からです。空の文字列には 0 番目の文字がありません。
+**A** — 番号は 0 からです。空の文字列には 0 番目の文字がありません。この課題の設定では、添字で取り出す値の型は `string | undefined` です。
 
 </details>
 
@@ -73,12 +71,12 @@ function deliveryClass(weight: number) {
 - A. `export const LIMIT = 12` の LIMIT の型は `12`
 - B. `export const IS_OPEN = false` の値は文字列である
 - C. `(25).toFixed(1)` は `"25.0"`
-- D. `else if` は、前の条件に合わなかったときに確かめる
+- D. 条件演算子では、条件に合わないときにコロンの後ろの値が選ばれる
 
 <details>
 <summary>解答</summary>
 
-**A, C, D** — const は値そのものの型です。false は引用符がない真偽値です。toFixed の結果は文字列です。
+**A, C, D** — const は値そのものの型です。false は引用符がない真偽値です。toFixed の結果は文字列です。条件に合わないときはコロンの後ろの値です。
 
 </details>
 
@@ -94,15 +92,12 @@ function parcelSize(weight: number) {
   if (weight < 2) {
     // 小に入れ直す
     size = "小";
-    // そうでなく、もし5より小さいなら
   } else if (weight < 5) {
     // 中に入れ直す
     size = "中";
-    // 条件の中身はここまで
   }
   // サイズを返す
   return size;
-  // 関数の中身はここまで
 }
 // 重さ1で呼び出す
 parcelSize(1);

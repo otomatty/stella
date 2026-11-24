@@ -417,7 +417,7 @@ function parsePost(input: unknown) {
     throw new ApiError("parentId の指定が不正です", 400);
   }
   if (parentId === undefined && (typeof videoPath !== "string" || !videoPath.trim())) {
-    throw new ApiError("動画の版を指定してください", 400);
+    throw new ApiError("動画のバージョンを指定してください", 400);
   }
   if (
     parentId === undefined &&

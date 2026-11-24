@@ -40,12 +40,16 @@ import { taskBundleUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import {
   fetchProblemResults,
-  loadTaskProblems,
   problemFileToOpen,
   readProblemStepResults,
   saveProblemStepResults,
   visibleProblemIds,
 } from "./task-problems.js";
+import {
+  requireSavedTaskDocuments,
+  requireSavedTaskFile,
+  loadTaskProblems,
+} from "./task-update-guard.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -72,7 +76,7 @@ function preparationLog(): vscode.OutputChannel {
 
 function isInside(dir: string, target: string): boolean {
   const rel = path.relative(dir, target);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));
 }
 
 /**
@@ -246,7 +250,8 @@ const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {
   occupied:
     "準備先のファイルを別の場所へ移すか、フォルダーの名前を変えてから、もう一度「VS Code で開く」を押してください。",
   updated:
-    "今の課題フォルダーは前の版のまま開いて、続きの作業と提出ができます (問題つきの課題は、前の版のままでは提出できません)。新しい版で始めるときは、課題フォルダーの名前を変えてから開き直してください。自分のファイルは名前を変えたフォルダーに残ります。必要なファイルは、新しく準備された課題フォルダーへ写してください。",
+    "自動更新を止めました。今の課題フォルダーを開いて作業を続けられます。新しいバージョンで始めるには、課題フォルダーの名前を変えてからもう一度「VS Code で開く」を押し、必要なファイルを新しいフォルダーに写してください。問題つきの課題を提出するには、新しいバージョンが必要です。",
+  unsaved: "ファイルを保存してから、もう一度「VS Code で開く」を押してください。",
   damaged:
     "足りないファイルは自動では戻しません。課題フォルダーの名前を変えてから開き直すと、新しく準備します。自分のファイルは名前を変えたフォルダーに残ります。",
 };
@@ -273,7 +278,9 @@ async function showConflict(
   const showList = "一覧を表示";
   const reveal = "準備先を表示";
   const actions =
-    conflict.reason === "occupied" ? [showList, reveal] : [openExisting, showList, reveal];
+    conflict.reason === "occupied" || conflict.reason === "unsaved"
+      ? [showList, reveal]
+      : [openExisting, showList, reveal];
   const choice = await vscode.window.showWarningMessage(
     `${conflict.summary}。受講者のファイルは上書きしません`,
     {
@@ -319,6 +326,24 @@ async function prepareAndOpen(
     const visible = visibleProblemIds(server);
     taskRoot = await installTask(trainingRoot, bundle, {
       variant,
+      loadRevisionFiles: async (taskId, contentHash) => {
+        const query = new URLSearchParams({ taskId, contentHash });
+        const { files } = await apiRequest<{ files: unknown }>(
+          `/api/tasks/revision-files?${query}`,
+          {
+            signal: AbortSignal.timeout(4_000),
+          },
+        );
+        return files;
+      },
+      beforeUpdate: requireSavedTaskDocuments,
+      beforeReplace: requireSavedTaskFile,
+      onUpdated: (backupDir) => {
+        const backup = backupDir ? ` 編集した配布ファイルの写しは ${backupDir} にあります。` : "";
+        void vscode.window.showInformationMessage(
+          `課題を新しいバージョンにしました。あなたのコードはそのまま残しています。${backup}`,
+        );
+      },
       ...(visible ? { visibleProblems: visible } : {}),
     });
     if (fresh) await saveProblemStepResults(taskRoot, bundle.contentHash, fresh);

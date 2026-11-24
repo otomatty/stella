@@ -1,29 +1,77 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u03-type-inference@5",
-  "contentHash": "c68fc1551e283bdeda175c248bbd43c81a65368422c6a5793f07f737e299afcc",
+  "unitId": "devlab-ts-ch01/u03-type-inference@6",
+  "contentHash": "337508daf08b0468c0bd072c3d8aca01072ed5ab9ff3369c5c4c581688029fb0",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-type-inference/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
-      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "型推論の概念の背景。例と説明は教材用に作成し、問題のヒントは課題の仕様と既存のガイドをもとに構成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-type-inference/t1-inference/slides.md",
+      "contentId": "l1-type-inference/t1-const-inference/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
-      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-type-inference/t2-index-elseif/slides.md",
+      "contentId": "l1-type-inference/t2-return-inference/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
-      "usedFor": "型推論の概念の背景。業務の例と動画は独自作成。問題ごとの値とヒントは書き方ガイドを素材にMarkdownで再構成。知識問題は理解の自己確認。",
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t3-union-return/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t4-conditional/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t5-undefined/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t6-index-undefined/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t7-let-inference/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-type-inference/t8-to-fixed/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-type-inference"],
+      "usedFor": "型推論の概念の背景。説明とコード例は教材用に作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

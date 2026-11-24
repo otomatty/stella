@@ -177,7 +177,7 @@ export function TaskBoardPanel({
                           </div>
                           {item.current ? null : (
                             // ルーブリックの改訂で今の版から外れた項目 (題名は判定した時点のもの)。
-                            <Badge className="mt-0.5">前の版の項目</Badge>
+                            <Badge className="mt-0.5">前のバージョンの項目</Badge>
                           )}
                         </TableCell>
                         <TableCell>{item.met}</TableCell>
@@ -193,7 +193,7 @@ export function TaskBoardPanel({
                             title={
                               item.current
                                 ? undefined
-                                : "前の版の項目は発見教材に回せません (今の課題の項目で回してください)"
+                                : "前のバージョンの項目は発見教材に回せません (今の課題の項目で回してください)"
                             }
                             onClick={() => void toDiscovery(item.id)}
                           >

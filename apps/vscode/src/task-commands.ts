@@ -55,7 +55,6 @@ import {
 } from "./task-panel.js";
 import {
   chooseProblem,
-  loadTaskProblems,
   nextUnsubmittedProblem,
   prepareProblemSubmission,
   problemCountLabel,
@@ -68,6 +67,7 @@ import {
   type ProblemState,
   type TaskProblems,
 } from "./task-problems.js";
+import { loadTaskProblems } from "./task-update-guard.js";
 import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
 import {
   getTaskState,
