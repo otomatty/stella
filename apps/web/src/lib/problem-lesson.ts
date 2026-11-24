@@ -5,13 +5,14 @@ import type { LessonStatus } from "@/data/types";
 export interface ProblemLesson {
   taskId: string;
   problem: TaskProblemStepSummary;
+  problems?: readonly TaskProblemStepSummary[];
 }
 
 export function problemLessonsById(tasks: readonly TaskSummary[] | null | undefined) {
   const lessons = new Map<string, ProblemLesson>();
   for (const task of tasks ?? []) {
     for (const problem of task.problems ?? []) {
-      lessons.set(problem.stepLessonId, { taskId: task.id, problem });
+      lessons.set(problem.stepLessonId, { taskId: task.id, problem, problems: task.problems });
     }
   }
   return lessons;

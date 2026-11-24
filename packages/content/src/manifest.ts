@@ -447,6 +447,22 @@ function assertPublicUnitStage(
     );
 }
 
+/** 先頭の括弧が末尾で閉じる場合だけ外し、括弧が並ぶ補足はそのまま残す。 */
+function unwrapProblemIntroduction(text: string): string {
+  const open = text[0];
+  const close = open === "（" ? "）" : open === "(" ? ")" : undefined;
+  if (!close || !text.endsWith(close)) return text;
+
+  let depth = 1;
+  for (let index = 1; index < text.length; index++) {
+    if (text[index] === open) depth++;
+    if (text[index] === close) depth--;
+    if (depth === 0) return index === text.length - 1 ? text.slice(1, -1).trim() : text;
+  }
+  return text;
+}
+
+/** 画面に題名があるので、雛形のコメントから問題を解くための補足だけを本文にする。 */
 function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string): string {
   const plan = RUNNERS[task.definition.runner].plan;
   const path = problemFiles(plan, problem.id)?.source;
@@ -457,12 +473,16 @@ function problemStepMarkdown(task: TaskSeed, problem: TaskProblem, title: string
     if (!line.startsWith("//") && (line || body.length)) break;
     if (body.length || line.startsWith("// 問")) body.push(line.slice(2).trim());
   }
-  const [heading = title, ...details] = body;
-  return [
-    `# ${heading}`,
-    ...(details.length ? [details.join("  \n")] : []),
-    "VS Code で開いて解き、確認して提出します。",
-  ].join("\n\n");
+  const [firstLine = title, ...details] = body;
+  const introduction = firstLine.startsWith(title)
+    ? unwrapProblemIntroduction(firstLine.slice(title.length).replace(/^[。、.,\s]+/, ""))
+    : firstLine;
+  const paragraphs = introduction ? [introduction] : [];
+  const supplementalLines = details.filter((line) => line !== title);
+  if (supplementalLines.some((line) => line !== "")) {
+    paragraphs.push(supplementalLines.join("  \n"));
+  }
+  return paragraphs.join("\n\n");
 }
 
 /** 指定された動画の単元に問題を置き、提出順をレッスンの位置から決めます。 */

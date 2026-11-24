@@ -5,7 +5,7 @@ import {
   type TaskSubmissionInput,
 } from "@stella/shared/tasks/submission";
 import { parseTaskManifest, type TaskManifest } from "@stella/shared/tasks/manifest";
-import type { TaskBundle } from "@stella/shared/tasks/catalog";
+import type { TaskBundle, TaskSummary } from "@stella/shared/tasks/catalog";
 import type { GradebookEntry, StageCompletion } from "@stella/shared/cms/types";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
 import { getDb } from "../db/client.js";
@@ -869,6 +869,7 @@ describe("問題の提出", () => {
           id: TASK_ID,
           problems_total: 2,
           problems_passed: 1,
+          problems_manual: 1,
           problems: [
             {
               id: "q02-sub",
@@ -878,6 +879,7 @@ describe("問題の提出", () => {
               afterLessonId: "video",
               afterTitle: "計算の基礎",
               state: "submitted",
+              manual: true,
             },
             {
               id: "q01-add",
@@ -900,6 +902,18 @@ describe("問題の提出", () => {
         { state: "submitted", source: "tests" },
       ],
     });
+    const mixed = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+    expect(mixed.status).toBe(200);
+    const { tasks: summaries } = await json<{ tasks: TaskSummary[] }>(mixed);
+    const summary = summaries.find((task) => task.id === TASK_ID);
+    expect(summary).toMatchObject({
+      problems_manual: 1,
+      problems: [
+        { id: "q02-sub", state: "submitted", manual: true },
+        { id: "q01-add", state: "submitted" },
+      ],
+    });
+    expect(summary?.problems?.[1]).not.toHaveProperty("manual");
     const old = await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.10.1`, {
       token,
     });

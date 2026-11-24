@@ -49,7 +49,7 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
   await page.goto(`/stages/${problemStageId}/lessons/${problemLessonId}`);
   const lesson = page.getByTestId("lesson-screen");
   const handoff = lesson.getByTestId("lesson-problem-handoff");
-  const open = handoff.getByRole("button", { name: "VS Code で開く" });
+  const open = lesson.getByRole("button", { name: "VS Code で開く", exact: true });
   await expect(lesson.getByTestId("lesson-doc")).toBeVisible();
   await expect(handoff).toContainText("の動画を見ると解けます");
   await expect(open).toHaveCount(0);
@@ -80,6 +80,10 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
 
   state = "submitted";
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(handoff).toContainText("提出済み");
-  await expect(open).toBeVisible();
+  await expect(lesson.getByText("提出済み", { exact: true })).toBeVisible();
+  await expect(handoff).not.toContainText("提出済み");
+  await expect(
+    handoff.getByRole("button", { name: "VS Code で見直す", exact: true }),
+  ).toBeVisible();
+  await expect(open).toHaveCount(0);
 });

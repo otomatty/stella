@@ -198,6 +198,12 @@ async function stageTaskList(
           p?.status === "passed" || p?.status === "ai-passed",
           hashes.get(task.id),
         );
+        const manualResults = saved.filter(
+          (row) =>
+            row.source === "manual" &&
+            passed.has(row.problemId) &&
+            problems.some((problem) => problem.id === row.problemId),
+        );
         const steps = gatedTaskIds.has(task.id)
           ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
           : undefined;
@@ -214,18 +220,16 @@ async function stageTaskList(
               afterLessonId,
               afterTitle,
               state,
+              ...(state === "submitted" && manualResults.some((row) => row.problemId === problem.id)
+                ? { manual: true }
+                : {}),
             };
           },
         );
         const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
-          problems_manual: saved.filter(
-            (row) =>
-              row.source === "manual" &&
-              passed.has(row.problemId) &&
-              problems.some((p) => p.id === row.problemId),
-          ).length,
+          problems_manual: manualResults.length,
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
