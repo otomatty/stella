@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u03-type-inference@6",
-  "contentHash": "337508daf08b0468c0bd072c3d8aca01072ed5ab9ff3369c5c4c581688029fb0",
+  "unitId": "devlab-ts-ch01/u03-type-inference@7",
+  "contentHash": "45659426bb4d9a6a853a57a387682d7073a6351b164d23ba4f83817f909a232a",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

@@ -93,7 +93,7 @@ describe("buildContentManifest", () => {
     const task = tasks.find(
       ({ definition }) => definition.id === "csharp-foundations/m13-date-check/q01-check-date8",
     );
-    expect(task?.bundle.files["README.md"]).toBeTruthy();
+    expect(task?.bundle.files).not.toHaveProperty("README.md");
     const lesson = stages
       .find(({ id }) => id === task?.stageId)
       ?.sections?.find(({ id }) => id === task?.unitId)

@@ -300,7 +300,8 @@ export function readUnit(
 
 /**
  * 課題の `private/variants/` を読む。予備の類題は 1 問 1 フォルダーで、中身は課題と同じ形
- * (task.json・README.md・hints.md・starter/・tests/・private/)。空の在庫は `.gitkeep` だけを置く。
+ * (task.json・hints.md・starter/・tests/・private/ と、問題の無い類題には README.md)。
+ * 空の在庫は `.gitkeep` だけを置く。
  */
 function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
   const variantsRoot = join(parent.directory, "private/variants");
@@ -425,10 +426,14 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   }
   const readmePath = join(taskDir, "README.md");
   const hasReadme = lstatSync(readmePath, { throwIfNoEntry: false }) !== undefined;
+  if (definition.problems && hasReadme)
+    throw new Error(
+      `問題つきの課題には README.md を置きません。問題文と条件は問題ファイルの // 問N のコメントに、手がかりは task.json の refs に書きます (類題では refs は使えません)。課題 ID ${definition.id}`,
+    );
   for (const rel of parent ? TASK_REQUIRED_PATHS : [...TASK_REQUIRED_PATHS, "private/variants"]) {
     // 問題つきの課題は AI の一次レビューを通さないので、観点の review.md は置かない。
     if (rel === "private/review.md" && definition.problems) continue;
-    if (rel === "README.md" && definition.problems && !hasReadme) continue;
+    if (rel === "README.md" && definition.problems) continue;
     if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
       throw new Error(`${label}に ${rel} が必要です: ${definition.id}`);
   }

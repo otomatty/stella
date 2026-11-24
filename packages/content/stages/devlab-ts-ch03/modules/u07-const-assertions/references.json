@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch03/u07-const-assertions@1",
-  "contentHash": "18dec3043c23a64bc148f6f7a1da6393fc18ec58b784765f8a7c3bd5085ccd20",
+  "unitId": "devlab-ts-ch03/u07-const-assertions@2",
+  "contentHash": "09dd5d460299daf75a497be10616106b0d007501459d368b7a546711f2a0f599",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

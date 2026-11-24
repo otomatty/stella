@@ -197,7 +197,6 @@ describe("問題つきの課題のファイル", () => {
       cpSync(join(content, name), join(root, name), { recursive: true });
     }
     const body: Record<string, string> = {
-      "README.md": "課題\n",
       "hints.md": "",
       "starter/src/q01-add-tax.ts": "export const tax = 1;\n",
       "starter/src/q02-split-bill.ts": "export const split = 1;\n",
@@ -393,15 +392,31 @@ describe("問題つきの課題のファイル", () => {
     expect(() => build(root)).toThrow(/q02-problems.*同じ単元か前の単元.*9-9-9/);
   });
 
-  it("問題つきの課題は README を省いても問題一覧のレッスンと参照元の対応が残る", () => {
+  it("問題つきの課題に README.md を置けない", () => {
+    const root = place({ "README.md": "課題\n" });
+    expect(() => build(root)).toThrow(
+      /問題つきの課題には README\.md を置きません。.*\/\/ 問N.*refs.*dev-env-basics\/u02-first-task\/q02-problems/,
+    );
+  });
+
+  it("問題つきの類題に README.md を置けない", () => {
+    const root = place({
+      "private/variants/v01/README.md": "類題\n",
+      "private/variants/v01/task.json": JSON.stringify(
+        problemTask({ id: "dev-env-basics/u02-first-task/v01" }),
+      ),
+    });
+    expect(() => build(root)).toThrow(
+      /問題つきの課題には README\.md を置きません。.*dev-env-basics\/u02-first-task\/v01/,
+    );
+  });
+
+  it("README の無い問題つきの課題にも問題一覧のレッスンと参照元の対応がある", () => {
     const root = place({}, problemTask({ environment: "static-web-02" }));
-    const readme = join(root, unit, "README.md");
-    const before = build(root).tasks.find((t) => t.definition.id === problemTask().id);
-    rmSync(readme);
     const manifest = build(root);
     const task = manifest.tasks.find((t) => t.definition.id === problemTask().id);
     expect(task?.bundle.files).not.toHaveProperty("README.md");
-    expect(task?.lessonId).toBe(before?.lessonId);
+    expect(task?.lessonId).toBe("task-u02-first-task-q02-problems");
     expect(manifest.stages[0].sections?.flatMap((s) => s.lessons)).toContainEqual(
       expect.objectContaining({
         id: task?.lessonId,

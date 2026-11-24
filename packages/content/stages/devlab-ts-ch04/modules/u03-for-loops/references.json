@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch04/u03-for-loops@1",
-  "contentHash": "5780f8da5725a0b5c4bca7af741cb41cb57148e78f40b89b5980ec2dd401f8bf",
+  "unitId": "devlab-ts-ch04/u03-for-loops@2",
+  "contentHash": "b621865ed2e7ba19e3ec4401619c3d7e3f90aab6d76b3e67a8b1db3a34396767",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
