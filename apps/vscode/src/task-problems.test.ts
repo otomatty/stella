@@ -26,7 +26,13 @@ import {
   type ProblemState,
 } from "./task-problems.js";
 import { installTask, protectedTaskFiles } from "./task-distribution.js";
+import { loadTaskProblems as loadEditorTaskProblems } from "./task-update-guard.js";
 import type { SubmissionNotes } from "./task-submission.js";
+
+const documents = vi.hoisted(
+  () => [] as { isDirty: boolean; uri: { scheme: string; fsPath: string } }[],
+);
+vi.mock("vscode", () => ({ workspace: { textDocuments: documents } }));
 
 vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => 1 }));
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -64,6 +70,7 @@ function state(id: string, status: ProblemState["status"], source = `src/${id}.t
 
 const roots: string[] = [];
 afterEach(async () => {
+  documents.length = 0;
   vi.mocked(link).mockReset();
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
@@ -501,6 +508,30 @@ describe("問題の段階", () => {
     expect(await readFile(path.join(root, "src/q02-sub.ts"), "utf8")).toBe("export const sub = 1;");
     expect(await readFile(path.join(root, "tests/q02-sub.test.ts"), "utf8")).toBe("test 2");
     expect(link).not.toHaveBeenCalled();
+  });
+
+  it("提出後の次問追加も課題内の未保存文書があれば止める", async () => {
+    const bundle = problemBundle(staged);
+    const root = await installTask(await makeRoot(), bundle, {
+      visibleProblems: new Set(["q01-add"]),
+    });
+    const nextTest = path.join(root, "tests/q02-sub.test.ts");
+    documents.push({
+      isDirty: true,
+      uri: { scheme: "file", fsPath: path.join(root, "src/q01-add.ts") },
+    });
+    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockResolvedValueOnce({ bundle });
+
+    const blocked = await loadEditorTaskProblems(root, staged, { afterSubmission: true });
+    expect(blocked.preparationError).toContain("ファイルを保存してから");
+    await expect(readFile(nextTest)).rejects.toMatchObject({ code: "ENOENT" });
+
+    documents.length = 0;
+    vi.mocked(apiRequest).mockResolvedValueOnce(server).mockResolvedValueOnce({ bundle });
+    expect(
+      (await loadEditorTaskProblems(root, staged, { afterSubmission: true })).preparationError,
+    ).toBeUndefined();
+    expect(await readFile(nextTest, "utf8")).toBe("test 2");
   });
 
   it("全問配布から段階的配布に変わっても、第2問を更新して第1問の提出を照合できる", async () => {

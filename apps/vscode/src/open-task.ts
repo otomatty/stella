@@ -18,7 +18,7 @@
  * (同じ課題文がタブに 2 つ並ぶと、どれを読めばよいか分からなくなるため)。
  */
 
-import { lstat, realpath } from "node:fs/promises";
+import { lstat } from "node:fs/promises";
 import path from "node:path";
 import {
   parsePublicTaskBundle,
@@ -40,12 +40,12 @@ import { taskBundleUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import {
   fetchProblemResults,
-  loadTaskProblems,
   problemFileToOpen,
   readProblemStepResults,
   saveProblemStepResults,
   visibleProblemIds,
 } from "./task-problems.js";
+import { requireSavedTaskDocuments, loadTaskProblems } from "./task-update-guard.js";
 import { readDistribution } from "./task-submission.js";
 import { resolveTrainingRoot, samePath } from "./training-folder.js";
 
@@ -332,22 +332,7 @@ async function prepareAndOpen(
         );
         return files;
       },
-      beforeUpdate: async (root) => {
-        const unsaved = [];
-        for (const { isDirty, uri } of vscode.workspace.textDocuments) {
-          if (!isDirty || uri.scheme !== "file") continue;
-          if (isInside(root, uri.fsPath)) unsaved.push(path.relative(root, uri.fsPath));
-          else {
-            const [actualRoot, actualFile] = await Promise.all([
-              realpath(root),
-              realpath(uri.fsPath).catch(() => uri.fsPath),
-            ]);
-            if (isInside(actualRoot, actualFile))
-              unsaved.push(path.relative(actualRoot, actualFile));
-          }
-        }
-        if (unsaved.length > 0) throw new TaskInstallConflict("unsaved", root, unsaved);
-      },
+      beforeUpdate: requireSavedTaskDocuments,
       onUpdated: (backupDir) => {
         const backup = backupDir ? ` 編集した配布ファイルの写しは ${backupDir} にあります。` : "";
         void vscode.window.showInformationMessage(

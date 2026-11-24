@@ -15,12 +15,8 @@ import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
-import {
-  fetchProblemResults,
-  loadProblemStates,
-  loadTaskProblems,
-  problemCountLabel,
-} from "./task-problems.js";
+import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
+import { loadTaskProblems } from "./task-update-guard.js";
 import {
   getTaskState,
   notifyProblemTaskOpened,
