@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u04-number@3",
-  "contentHash": "1850378919a4f9e9ec868ebc71e65797bc786f17726b86d6c325fa0a5b990f8f",
+  "unitId": "devlab-ts-ch01/u04-number@4",
+  "contentHash": "519cad360ab7bfb26c594de72e548df6d1aad1c640f6e763c8c225d5bbcc1654",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -21,25 +21,73 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-number/t1-math-tools/slides.md",
+      "contentId": "l1-number/t1-abs/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-number/t2-throw/slides.md",
+      "contentId": "l1-number/t2-power/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-number/t3-parse-number/slides.md",
+      "contentId": "l1-number/t3-sqrt/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
-      "usedFor": "number型の概念を参照。説明と業務の例・動画・自己確認の問題は教材用に独自作成。課題の値と日本語の手順はリポジトリ内の書き方ガイドを素材にMarkdownで再構成。",
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t4-throw/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t5-min-max/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t6-parse-int/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t7-is-finite/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t8-hypot/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-number/t9-is-integer/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-number"],
+      "usedFor": "number型の概念を参照。スライドの説明・例は教材用に独自作成。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

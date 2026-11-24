@@ -14,87 +14,108 @@
   "problems": [
     {
       "id": "q04-01-round-off",
-      "title": "小数点以下を四捨五入する"
+      "title": "小数点以下を四捨五入する",
+      "after": "4-1-1"
     },
     {
       "id": "q04-02-floor-to10",
-      "title": "1の位を切り捨てる"
+      "title": "1の位を切り捨てる",
+      "after": "4-1-1"
     },
     {
       "id": "q04-03-ceil-to100",
-      "title": "100の倍数に切り上げる"
+      "title": "100の倍数に切り上げる",
+      "after": "4-1-1"
     },
     {
       "id": "q04-04-abs-diff",
-      "title": "2つの数の差の大きさを返す"
+      "title": "2つの数の差の大きさを返す",
+      "after": "4-1-1"
     },
     {
       "id": "q04-05-remainder",
-      "title": "a を b で割った余りを返す"
+      "title": "a を b で割った余りを返す",
+      "after": "4-1-1"
     },
     {
       "id": "q04-06-is-multiple-of",
-      "title": "n が base の倍数なら true を返す"
+      "title": "n が base の倍数なら true を返す",
+      "after": "4-1-1"
     },
     {
       "id": "q04-07-cube",
-      "title": "3乗した数を返す"
+      "title": "3乗した数を返す",
+      "after": "4-1-2"
     },
     {
       "id": "q04-08-square-root",
-      "title": "平方根を返す"
+      "title": "平方根を返す",
+      "after": "4-1-4"
     },
     {
       "id": "q04-09-clamp",
-      "title": "value を min 以上 max 以下に収める"
+      "title": "value を min 以上 max 以下に収める",
+      "after": "4-1-5"
     },
     {
       "id": "q04-10-to-fixed1",
-      "title": "小数第1位までの文字列にする"
+      "title": "小数第1位までの文字列にする",
+      "after": "4-1-5"
     },
     {
       "id": "q04-11-parse-int-or-zero",
-      "title": "文字列の先頭の整数を取り出す"
+      "title": "文字列の先頭の整数を取り出す",
+      "after": "4-1-6"
     },
     {
       "id": "q04-12-is-finite-number",
-      "title": "NaN でも Infinity でもない数なら true を返す"
+      "title": "NaN でも Infinity でもない数なら true を返す",
+      "after": "4-1-7"
     },
     {
       "id": "q04-13-percent-of",
-      "title": "part が total の何パーセントかを、整数に四捨五入して返す"
+      "title": "part が total の何パーセントかを、整数に四捨五入して返す",
+      "after": "4-1-7"
     },
     {
       "id": "q04-14-average2",
-      "title": "2つの数の平均を返す"
+      "title": "2つの数の平均を返す",
+      "after": "4-1-7"
     },
     {
       "id": "q04-15-minutes-to-seconds",
-      "title": "分を秒に変える"
+      "title": "分を秒に変える",
+      "after": "4-1-7"
     },
     {
       "id": "q04-16-km-to-meters",
-      "title": "km を m に変える"
+      "title": "km を m に変える",
+      "after": "4-1-7"
     },
     {
       "id": "q04-17-hypotenuse",
-      "title": "直角三角形の2辺から、斜辺の長さを返す"
+      "title": "直角三角形の2辺から、斜辺の長さを返す",
+      "after": "4-1-8"
     },
     {
       "id": "q04-18-digit-count",
-      "title": "0以上の整数の桁数を返す"
+      "title": "0以上の整数の桁数を返す",
+      "after": "4-1-8"
     },
     {
       "id": "q04-19-round-to2",
-      "title": "小数第2位までに四捨五入する"
+      "title": "小数第2位までに四捨五入する",
+      "after": "4-1-8"
     },
     {
       "id": "q04-20-fahrenheit-to-celsius",
-      "title": "華氏を摂氏に変え、小数第1位までに四捨五入する"
+      "title": "華氏を摂氏に変え、小数第1位までに四捨五入する",
+      "after": "4-1-8"
     },
     {
       "id": "q04-number",
-      "title": "number型（応用問題）"
+      "title": "number型（応用問題）",
+      "after": "4-1-9"
     }
   ],
   "submit": {

@@ -1,0 +1,624 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "正方形の面積から一辺の長さを求められます。",
+    "stuck": "正方形の花壇の 1 辺の長さを、面積から求めたいときがあります。",
+    "points": ["Math.sqrt(数) で、2回掛けるとその数になる数 (平方根) になります。"],
+    "leaveOut": ["負の数を受け取ったときの扱い"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "sqrt-example-1": {
+      "prompt": "Overhead view of a square flowerbed with small blossoms. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sqrt-example-2": {
+      "prompt": "Overhead view of a filled square grid of tiny seedlings. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sqrt-example-3": {
+      "prompt": "One straight row of seedlings on a strip of soil. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sqrt-use-1": {
+      "prompt": "A square raised garden bed with green plants. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sqrt-use-2": {
+      "prompt": "A folded square of blue fabric beside scissors. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sqrt-use-3": {
+      "prompt": "An overhead view of a square grassy lot. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "正方形の花壇",
+          "art": "sqrt-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "全体の面積",
+          "art": "sqrt-example-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "一辺の長さ",
+          "art": "sqrt-example-3",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "面積",
+          "art": "sqrt-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "一辺の長さ",
+          "art": "sqrt-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "面積",
+          "art": "sqrt-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "一辺の長さ",
+          "art": "sqrt-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "面積",
+          "art": "sqrt-example-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "一辺の長さ",
+          "art": "sqrt-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "花壇の一列",
+          "art": "sqrt-use-1",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "布の裁断",
+          "art": "sqrt-use-2",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "正方形の敷地",
+          "art": "sqrt-use-3",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値・条件",
+          "art": "sqrt-example-3",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "square-garden",
+      "beats": [
+        {
+          "say": "この動画では、面積から正方形の 1 辺を求める方法を学びます。",
+          "speech": "この動画では、面積から正方形のいっぺんを求める方法を学びます。"
+        },
+        {
+          "say": "面積が 25 の、正方形の花壇がありました。",
+          "speech": "面積がにじゅうごの、正方形の花壇がありました。"
+        },
+        {
+          "say": "5 × 5 = 25 なので、1 辺の長さは 5 です。",
+          "speech": "ごかけるごはにじゅうごなので、いっぺんの長さはごです。"
+        },
+        {
+          "say": "2 回掛けてその数になる数を、Math.sqrt で求めます。",
+          "speech": "にかい掛けてその数になる数を、マスドットスクエアルートで求めます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "花壇の 1 辺の長さを求める",
+      "board": "example",
+      "beats": [
+        {
+          "say": "正方形の花壇に、同じ大きさの苗を並べます。",
+          "show": ["a"]
+        },
+        {
+          "say": "苗は縦と横に、同じ数ずつです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "全体の個数から、一列に並ぶ個数を求めましょう。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "書き方",
+      "code": ["// 面積から正方形の一辺を求める", "const edge = Math.sqrt(49);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "平方根は、二乗すると元の数になる数です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "平方根",
+            "ruby": "へいほうこん",
+            "note": "二乗すると元の数"
+          }
+        },
+        {
+          "say": "Math.sqrt は、かっこに渡した数の平方根を返します。",
+          "speech": "マスドットスクエアルートは、かっこに渡した数の平方根を返します。",
+          "part": {
+            "line": 1,
+            "text": "49"
+          },
+          "figure": {
+            "pulse": ["a"],
+            "tag": {
+              "a": "49"
+            }
+          }
+        },
+        {
+          "say": "ここでは、ゼロ以上の平方根である七が答えです。",
+          "part": {
+            "line": 1,
+            "text": "Math.sqrt"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "7"
+            }
+          }
+        },
+        {
+          "say": "結果を入れる変数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "edge",
+            "note": "一辺"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "決まった書き方と自分で決める部分",
+      "code": ["// 面積から正方形の一辺を求める", "const edge = Math.sqrt(49);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "色を分けて、決まっている部分を見ましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この色で示した部分が、決まった書き方です。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "Math.sqrt"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "渡す値は、求めたいものに合わせて決めます。",
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "49"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "例をコードで確かめる",
+      "code": [
+        "// 花壇に並べる苗の総数を入れる",
+        "const seedlings = 121;",
+        "// 正方形に並べたときの一列の数を求める",
+        "const perRow = Math.sqrt(seedlings);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "apply"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "苗を百二十一個、正方形に並べます。",
+          "part": {
+            "line": 1,
+            "text": "seedlings",
+            "note": "苗"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "121"
+            }
+          }
+        },
+        {
+          "say": "かっこの中に渡すのは、苗全体の数です。",
+          "part": {
+            "line": 3,
+            "text": "seedlings"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "十一の二乗が百二十一なので、一列は十一個になります。",
+          "part": {
+            "line": 3,
+            "text": "Math.sqrt(seedlings)"
+          },
+          "figure": {
+            "pulse": ["b"],
+            "tag": {
+              "b": "11"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "布の一辺はいくつ？",
+      "code": ["// 正方形の布の面積から一辺を求める", "const clothEdge = Math.sqrt(36);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "think": 8,
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここからは、画面の例を見て考えましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "36"
+            }
+          }
+        },
+        {
+          "say": "かっこに渡す数は、布全体の面積です。",
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "正方形の布の一辺は、どれくらいでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答え合わせ",
+      "code": ["// 正方形の布の面積から一辺を求める", "const clothEdge = Math.sqrt(36);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "六を二乗すると三十六なので、一辺は六です。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "6"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "答えまでの手順",
+      "code": ["// 正方形の布の面積から一辺を求める", "const clothEdge = Math.sqrt(36);"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "かっこの中には、布の面積を渡しました。",
+          "part": {
+            "line": 1,
+            "text": "36"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "同じ数を二つ掛けると、三十六になる数を探します。",
+          "part": {
+            "line": 1,
+            "text": "Math.sqrt"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "長さとして返るのは、六です。",
+          "part": {
+            "line": 1,
+            "text": "clothEdge",
+            "note": "布の一辺"
+          },
+          "figure": {
+            "pulse": ["b", "ab"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "花壇に苗を正方形に並べるときに使えます。",
+          "show": ["a"]
+        },
+        {
+          "say": "正方形の布を裁断するときは、一辺が必要です。",
+          "show": ["b"]
+        },
+        {
+          "say": "面積しか分からない敷地でも、長さを見積もれます。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問8 で使う",
+      "code": ["//     例: squareRoot(9) → 3", "export function squareRoot() {}"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問8では、渡された数の平方根を返します。",
+          "speech": "問いはちでは、渡された数の平方根を返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "この例で返す値は、二乗すると渡された数になる数です。",
+          "part": {
+            "line": 0,
+            "text": "//     例: squareRoot(9) → 3"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "まず、かっこの中に渡す値を見つけましょう。",
+          "part": {
+            "line": 1,
+            "text": "export function squareRoot() {}"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a18d6a4c11e4fc1c48ee3c016aedb60efe6dc40bbe70ade44d25ae0758e14112"
+  }
+}
