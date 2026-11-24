@@ -134,14 +134,22 @@ describe("課題の配布 API (実 SQLite)", () => {
         token: as,
       },
     );
-  const revisionFiles = (contentHash = fixture.bundle.contentHash, as = token) =>
+  const revisionFiles = (
+    contentHash = fixture.bundle.contentHash,
+    as = token,
+    extension?: string,
+  ) =>
     request(
       app(),
       env,
-      `/api/tasks/revision-files?${new URLSearchParams({ taskId: fixture.input.taskId, contentHash })}`,
+      `/api/tasks/revision-files?${new URLSearchParams({
+        taskId: fixture.input.taskId,
+        contentHash,
+        ...(extension === undefined ? {} : { extension }),
+      })}`,
       { token: as },
     );
-  const useTypeScriptBundle = async (withProblems = false) => {
+  const useTypeScriptBundle = async (withProblems = false, withReadme = true) => {
     const { bundle } = await submissionFixture({
       runner: "ts-test",
       submit: { files: ["src/**/*.ts"] },
@@ -156,18 +164,26 @@ describe("課題の配布 API (実 SQLite)", () => {
       checks: { lint: true, format: false },
       ...(withProblems ? { problems: [{ id: "q01", title: "値を返す" }] } : {}),
     });
+    if (!withReadme) delete bundle.files["README.md"];
     await db
       .update(tasks)
       .set({ bundle: JSON.stringify(bundle) })
       .where(eq(tasks.id, fixture.input.taskId));
     return bundle;
   };
-  const fixedStart = (as = token, taskId = fixture.input.taskId) =>
-    request(app(), env, "/api/tasks/fixed-start", {
-      method: "POST",
-      token: as,
-      body: JSON.stringify({ taskId }),
-    });
+  const fixedStart = (as = token, taskId = fixture.input.taskId, extension?: string) =>
+    request(
+      app(),
+      env,
+      extension === undefined
+        ? "/api/tasks/fixed-start"
+        : `/api/tasks/fixed-start?${new URLSearchParams({ extension })}`,
+      {
+        method: "POST",
+        token: as,
+        body: JSON.stringify({ taskId }),
+      },
+    );
   const addFixedStart = (contentHash = fixture.bundle.contentHash) =>
     db.insert(taskFixedStarts).values({
       taskId: fixture.input.taskId,
@@ -260,6 +276,27 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect((await revisionFiles("f".repeat(64))).status).toBe(404);
   });
 
+  it("ハッシュ一覧は指定された履歴に README がなければ 0.12.0 を要求する", async () => {
+    const current = await useTypeScriptBundle(true);
+    const contentHash = "b".repeat(64);
+    const { "README.md": _readme, ...files } = current.files;
+    await db.insert(taskRevisions).values({
+      taskId: fixture.input.taskId,
+      contentHash,
+      definition: JSON.stringify(current.manifest),
+      bundle: JSON.stringify({ ...current, contentHash, files }),
+    });
+    const outdated = await revisionFiles(contentHash, token, "0.11.2");
+    expect(outdated.status).toBe(426);
+    expect(await outdated.json()).toEqual({ error: expect.stringContaining("0.12.0") });
+    const supported = await revisionFiles(contentHash, token, "0.12.0");
+    expect(supported.status).toBe(200);
+    expect(Object.keys((await json<{ files: Record<string, string> }>(supported)).files)).toEqual(
+      Object.keys(files),
+    );
+    expect((await revisionFiles()).status).toBe(200);
+  });
+
   it.each(["private/solution/index.html", "hints.md"])(
     "履歴に %s が混ざっていたらハッシュも返さない",
     async (rel) => {
@@ -316,6 +353,16 @@ describe("課題の配布 API (実 SQLite)", () => {
       bundle: fixture.bundle,
       fixedStart: false,
     });
+  });
+
+  it("README のない問題つきの通常配布物には 0.12.0 を要求する", async () => {
+    const bundle = await useTypeScriptBundle(true, false);
+    const outdated = await bundleOf(token, "0.11.2");
+    expect(outdated.status).toBe(426);
+    expect(await outdated.json()).toEqual({ error: expect.stringContaining("0.12.0") });
+    const supported = await bundleOf(token, "0.12.0");
+    expect(supported.status).toBe(200);
+    expect(await json<TaskBundleResponse>(supported)).toEqual({ bundle, fixedStart: false });
   });
 
   it("版の要件がある課題もアクセスできない受講者には 404 を返す", async () => {
@@ -399,6 +446,26 @@ describe("課題の配布 API (実 SQLite)", () => {
     expect(error).toHaveBeenCalled();
     error.mockRestore();
     expect(await db.select().from(taskFixedStartUses)).toEqual([]);
+  });
+
+  it("README のない固定した開始点は 0.12.0 を要求し、配れなければ利用を記録しない", async () => {
+    await useTypeScriptBundle(true);
+    delete fixedStartFiles["README.md"];
+    await addFixedStart();
+    const outdated = await fixedStart(token, fixture.input.taskId, "0.11.2");
+    expect(outdated.status).toBe(426);
+    expect(await outdated.json()).toEqual({ error: expect.stringContaining("0.12.0") });
+    expect(await db.select().from(taskFixedStartUses)).toEqual([]);
+    const supported = await fixedStart(token, fixture.input.taskId, "0.12.0");
+    expect(supported.status).toBe(200);
+    expect((await json<TaskBundleResponse>(supported)).bundle.files).toEqual(fixedStartFiles);
+    expect(await db.select().from(taskFixedStartUses)).toHaveLength(1);
+  });
+
+  it("通常配布物に README がなくても、README つきの固定した開始点は申告なしで配る", async () => {
+    await useTypeScriptBundle(true, false);
+    await addFixedStart();
+    expect((await fixedStart()).status).toBe(200);
   });
 
   it("受講を終えた受講者には開始点を渡さない (課題は読める)", async () => {

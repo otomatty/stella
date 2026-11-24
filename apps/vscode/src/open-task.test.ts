@@ -456,7 +456,7 @@ describe("課題を開く", () => {
       .mockResolvedValueOnce({ files: old.files });
     await openDistributedTask(context, taskId);
     expect(state.apiRequest).toHaveBeenLastCalledWith(
-      `/api/tasks/revision-files?${new URLSearchParams({ taskId, contentHash: bundle.contentHash })}`,
+      `/api/tasks/revision-files?${new URLSearchParams({ taskId, contentHash: bundle.contentHash, extension: extensionVersion })}`,
       { signal: expect.any(AbortSignal) },
     );
     const backup = path.join(task, ".stella/previous", bundle.contentHash.slice(0, 12));
@@ -751,7 +751,6 @@ describe("課題を開いた画面", () => {
           "src/q01-add.ts": Buffer.from("a").toString("base64"),
           "src/q02-sub.ts": Buffer.from("b").toString("base64"),
           "tests/q01-add.test.ts": Buffer.from("t").toString("base64"),
-          "README.md": bundle.files["README.md"] ?? "",
           ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString("base64"),
         },
       };
@@ -780,6 +779,9 @@ describe("課題を開いた画面", () => {
         (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
       );
       expect(opened).toEqual([path.join(taskRoot(), "src", "q02-sub.ts")]);
+      await expect(readFile(path.join(taskRoot(), "README.md"))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
       expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
     },
   );
@@ -887,10 +889,13 @@ describe("固定した開始点から始める", () => {
       2,
       `/api/tasks/bundle?taskId=course%2Funit%2Fq1&extension=${extensionVersion}`,
     );
-    expect(state.apiRequest).toHaveBeenLastCalledWith("/api/tasks/fixed-start", {
-      method: "POST",
-      body: { taskId },
-    });
+    expect(state.apiRequest).toHaveBeenLastCalledWith(
+      `/api/tasks/fixed-start?extension=${extensionVersion}`,
+      {
+        method: "POST",
+        body: { taskId },
+      },
+    );
     const fixed = path.join(training, "course/unit/q1-fixed-start");
     expect(await readFile(path.join(fixed, "index.js"), "utf8")).toBe("works so far");
     expect(JSON.parse(await readFile(path.join(fixed, ".stella/support.json"), "utf8"))).toEqual([
@@ -904,7 +909,10 @@ describe("固定した開始点から始める", () => {
     state.showWarningMessage.mockResolvedValueOnce(undefined);
     await run();
     expect(state.apiRequest).toHaveBeenCalledTimes(2);
-    expect(state.apiRequest).not.toHaveBeenCalledWith("/api/tasks/fixed-start", expect.anything());
+    expect(state.apiRequest).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/tasks/fixed-start"),
+      expect.anything(),
+    );
   });
   it("開始点の無い課題では案内だけを出す", async () => {
     state.apiRequest.mockResolvedValueOnce({ bundle, fixedStart: false });

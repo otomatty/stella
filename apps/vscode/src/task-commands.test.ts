@@ -67,7 +67,10 @@ vi.mock("vscode", () => ({
       }
     }
   },
-  Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }), parse: (url: string) => url },
+  Uri: {
+    file: (fsPath: string) => ({ scheme: "file", fsPath }),
+    parse: (url: string) => ({ scheme: new URL(url).protocol.slice(0, -1), url }),
+  },
   env: { openExternal: vscodeMock.openExternal },
   ViewColumn: { One: 1, Two: 2 },
   window: {
@@ -650,9 +653,10 @@ describe("提出後の案内", () => {
       },
     ]);
     await submit("submit", "Web で開く");
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith(
-      "https://stella.example/stages/stage%2F1/lessons/lesson%3F2",
-    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/stages/stage%2F1/lessons/lesson%3F2",
+    });
   });
 
   it("別の課題の ID しかなければホームを開く", async () => {
@@ -660,7 +664,10 @@ describe("提出後の案内", () => {
       { sections: [{ lessons: [{ stageId: "stage", id: "lesson", task: { id: "other" } }] }] },
     ]);
     await submit("submit", "Web で開く");
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/",
+    });
   });
 
   it("相談後は返事が届く場所を示し、Web のボタンだけを出す。ID が無ければホームへ戻る", async () => {
@@ -669,7 +676,10 @@ describe("提出後の案内", () => {
       "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。",
       "Web で開く",
     );
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/",
+    });
     expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
   });
 });
@@ -1344,8 +1354,20 @@ describe("問題つきの課題", () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
+  it("Web の課題リンクは設定のオリジンと ID から開く", async () => {
+    await run("stella.openTaskWebPage", "stage-1", "lesson-2");
+    await run("stella.openTaskWebPage", "stage-1");
+    await run("stella.openTaskWebPage", "..");
+    await run("stella.openTaskWebPage", "stage-1", "https://example.org");
+    expect(vscodeMock.openExternal.mock.calls).toEqual([
+      [{ scheme: "https", url: "https://stella.example/stages/stage-1/lessons/lesson-2" }],
+      [{ scheme: "https", url: "https://stella.example/stages/stage-1" }],
+    ]);
+  });
+
   it("課題文は問題ごとの状態を取得する", async () => {
     const root = await problemRoot();
+    await unlink(path.join(root, "README.md"));
     await run("stella.showTaskReadme", root);
     expect(apiRequest.mock.calls).toEqual([
       [`/api/tasks/problem-results?taskId=${encodeURIComponent(problemTask.id)}`],
@@ -1355,6 +1377,25 @@ describe("問題つきの課題", () => {
         expect.objectContaining({ id: "q01-add" }),
         expect.objectContaining({ id: "q02-sub" }),
       ],
+    });
+  });
+
+  it("refs の無い応答でも、未解放の問題を課題パネルに渡す", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    apiRequest.mockResolvedValue({
+      gated: true,
+      passedProblems: 1,
+      totalProblems: 2,
+      taskPassed: false,
+      problems: [
+        { id: "q01-add", status: "passed", state: "submitted" },
+        { id: "q02-sub", state: "locked-video", afterLessonId: "video-2", afterTitle: "引き算" },
+      ],
+    });
+    await run("stella.showTaskReadme", root);
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).toMatchObject({
+      problems: [expect.objectContaining({ id: "q01-add", status: "submitted" })],
+      problemResults: { problems: [expect.anything(), { id: "q02-sub", state: "locked-video" }] },
     });
   });
 
@@ -1702,10 +1743,13 @@ describe("問題つきの課題", () => {
     expect(runTask).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ problem: "q01-add" }),
     );
-    expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
+    expect(vscodeMock.showTaskReadme).toHaveBeenCalledWith(
       expect.objectContaining({
-        result: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+        guide: expect.objectContaining({
+          problemRun: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+        }),
       }),
+      {},
     );
     expect(apiRequest.mock.calls.filter(([url]) => url === "/api/tasks/local-runs")).toHaveLength(
       1,

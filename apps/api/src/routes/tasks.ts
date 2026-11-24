@@ -22,6 +22,7 @@ import {
   extensionSatisfies,
   extensionUpgradeMessage,
   requiredExtensionVersion,
+  requiredExtensionVersionForFiles,
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
@@ -440,6 +441,11 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
 }
 tasksRoute.get("/api/tasks/problem-results", (c) => problemResults(c, true));
 
+function requireTaskExtensionVersion(c: Context<{ Bindings: Env }>, required: string | null) {
+  if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
+    throw new ApiError(extensionUpgradeMessage(required), 426);
+}
+
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
  * 固定した開始点は返さない。固定した開始点は「あるか」だけを返し、本体は下の POST で渡す。
@@ -465,9 +471,10 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
     // 予備の類題は出題した受講者にだけ配る (#39)。
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
     const bundle = parsePublicTaskBundle(JSON.parse(row.bundle));
-    const required = requiredExtensionVersion(bundle.manifest);
-    if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
-      throw new ApiError(extensionUpgradeMessage(required), 426);
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersion(bundle.manifest, Object.keys(bundle.files)),
+    );
     const response: TaskBundleResponse = {
       bundle,
       fixedStart: row.fixedStartHash === row.contentHash,
@@ -501,7 +508,8 @@ tasksRoute.get("/api/tasks/revision-files", async (c) => {
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
-    const { files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const { manifest, files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    requireTaskExtensionVersion(c, requiredExtensionVersionForFiles(manifest, Object.keys(files)));
     const hashes = await Promise.all(
       Object.entries(files).map(async ([rel, encoded]) => {
         const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
@@ -570,6 +578,10 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       contentHash: row.contentHash,
       files: JSON.parse(row.files),
     });
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersionForFiles(manifest, Object.keys(bundle.files)),
+    );
     // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
     const tooLarge = bundleSizeProblem(bundle.files);
     if (tooLarge) {

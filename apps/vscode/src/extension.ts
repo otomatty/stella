@@ -41,6 +41,7 @@ import {
 } from "./grader.js";
 import type { ExecutionResult } from "./grader-protocol.js";
 import { initGraderHost } from "./grader-host.js";
+import { registerTaskCodeLens } from "./task-code-lens.js";
 import { registerTaskCommands } from "./task-commands.js";
 import { registerTaskDiagnostics } from "./task-diagnostics.js";
 import { registerTaskHelp } from "./task-help.js";
@@ -329,6 +330,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const grader = initGraderHost(context.extensionUri);
   registerLearningSidebar(context, auth);
   registerTaskCommands(context, auth);
+  registerTaskCodeLens(context);
   registerTaskDiagnostics(context);
   registerTaskTests(context);
   // 課題パネルのヒント・解答例・解説・レビューの結果 (#36)。

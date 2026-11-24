@@ -572,6 +572,19 @@ describe("課題文のパネル", () => {
     expect(html).toContain("<title>&lt;課題&gt;</title>");
   });
 
+  it("問題つきの課題は README の有無にかかわらず見出しといまやることだけを出す", () => {
+    const guide = {
+      root: "/w/task",
+      manifest: { ...manifest, problems: [{ id: "q01", title: "値を選ぶ" }] },
+      edit: { files: [], missing: [] },
+    };
+    const html = buildTaskReadmeHtml({ title: manifest.title, markdown, guide });
+    expect(html).toBe(buildTaskReadmeHtml({ title: manifest.title, markdown: "", guide }));
+    expect(html).toContain("<h1>整数から &lt;k&gt; 以上を選ぶ</h1>");
+    expect(html).toContain('aria-label="いまやること"');
+    expect(html).not.toMatch(/<script|class="(?:meta|readme-title)"|ヒント・解答・レビューの結果/);
+  });
+
   it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
     showTaskReadme({ title: "最初のページ", markdown, root: "/x" }, { reveal: false });
     expect(vscode.window.createWebviewPanel).not.toHaveBeenCalled();
