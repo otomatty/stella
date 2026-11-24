@@ -23,14 +23,14 @@ export function resolveLearningLocation(
   selection: LearningSelection,
 ): { stage?: CatalogStage; section?: CatalogSection; lesson?: CatalogLesson } {
   // Web から開いた課題は、ウィンドウの読み込み直し後もその単元へ寄せる。
-  const targetStage = catalog.find((stage) =>
-    stage.sections.some((section) =>
-      section.lessons.some((lesson) =>
-        selection.taskId
-          ? lesson.task?.id === selection.taskId
-          : stage.id === selection.stageId && lesson.id === selection.lessonId,
-      ),
-    ),
+  const matchesSelection = (lesson: CatalogLesson) =>
+    selection.taskId
+      ? lesson.task?.id === selection.taskId || lesson.problem?.taskId === selection.taskId
+      : lesson.id === selection.lessonId;
+  const targetStage = catalog.find(
+    (stage) =>
+      (selection.taskId || stage.id === selection.stageId) &&
+      stage.sections.some((section) => section.lessons.some(matchesSelection)),
   );
   const stage =
     targetStage ??
@@ -41,19 +41,18 @@ export function resolveLearningLocation(
       ),
     ) ??
     catalog[0];
-  const targetSection = targetStage?.sections.find((section) =>
-    section.lessons.some((lesson) =>
-      selection.taskId ? lesson.task?.id === selection.taskId : lesson.id === selection.lessonId,
-    ),
+  const matches = targetStage?.sections.flatMap((section) =>
+    section.lessons.filter(matchesSelection).map((lesson) => ({ section, lesson })),
   );
+  const problems = selection.taskId ? matches?.filter(({ lesson }) => lesson.problem) : undefined;
+  const target =
+    problems?.find(({ lesson }) => !lesson.completed) ?? problems?.at(-1) ?? matches?.[0];
   const section =
-    targetSection ??
+    target?.section ??
     stage?.sections.find((item) => item.id === selection.sectionId) ??
     stage?.sections.find((item) => item.lessons.some((lesson) => !learningItemComplete(lesson))) ??
     stage?.sections[0];
-  const lesson = section?.lessons.find((item) =>
-    selection.taskId ? item.task?.id === selection.taskId : item.id === selection.lessonId,
-  );
+  const lesson = target?.lesson ?? section?.lessons.find(matchesSelection);
   return { stage, section, lesson };
 }
 
@@ -97,14 +96,14 @@ function icon(className: "kind-icon" | "web-icon", shapes: string): string {
 }
 
 function itemKind(lesson: CatalogLesson): string {
-  const kind = lessonKinds[lesson.task ? "assignment" : lesson.type];
+  const kind = lessonKinds[lesson.task || lesson.problem ? "assignment" : lesson.type];
   return `<span class="lesson-kind">${icon("kind-icon", kind.icon)}${kind.label}</span>`;
 }
 
 const webIndicator = `${icon("web-icon", '<path d="M7 3H3v10h10V9M9 3h4v4m0-4L7 9"/>')}<span class="sr-only">Web で受講</span>`;
 
 function opensInWeb(lesson: CatalogLesson): boolean {
-  return !lesson.task && lesson.type !== "code";
+  return !lesson.task && !lesson.problem && lesson.type !== "code";
 }
 
 const taskStatusTones = {
@@ -153,20 +152,22 @@ function nextStep(
     const title = waiting ? "レビューの状況" : "次にやること";
     const description = waiting
       ? "提出した課題の確認が終わると、Web に結果が届きます。"
-      : next.task
+      : next.task || next.problem
         ? "編集するファイルと課題文を並べて開きます。"
         : opensInWeb(next)
           ? "ブラウザーの STELLA で進めます。終わったら、この画面に戻れます。"
           : "VS Code で課題を開いて進めます。";
     const label = waiting
       ? "Web で状況を見る"
-      : next.task
-        ? next.task.status === "local-passed"
-          ? "課題を開いて提出する"
-          : "課題に取り組む"
-        : opensInWeb(next)
-          ? "Web で進める"
-          : "課題を開く";
+      : next.problem
+        ? "問題に取り組む"
+        : next.task
+          ? next.task.status === "local-passed"
+            ? "課題を開いて提出する"
+            : "課題に取り組む"
+          : opensInWeb(next)
+            ? "Web で進める"
+            : "課題を開く";
     return `<section class="next-step" aria-labelledby="next-title"><p class="eyebrow">${title}</p><h2 id="next-title">${escapeHtml(next.title)}</h2>${next.task ? taskStatusPill(next.task.status) : ""}<p class="hint">${description}</p>${lessonButton(next, label, true)}</section>`;
   }
   const index = stage.sections.indexOf(section);

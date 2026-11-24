@@ -171,6 +171,13 @@ describe("問題の状態", () => {
     expect(problemFileToOpen(done)).toBe("src/q01-add.ts");
     expect(problemCountLabel(12, 20)).toBe("12/20 問");
   });
+
+  it("配布済みの問題だけ提出済みなら、問題の指定がないときはファイルを選ばない", () => {
+    const done = [state("q01-add", "submitted"), state("q02-sub", "submitted")];
+    expect(problemFileToOpen(done, undefined, 3)).toBeUndefined();
+    expect(problemFileToOpen(done, "q02-sub", 3)).toBe("src/q02-sub.ts");
+    expect(problemFileToOpen(done, undefined, 2)).toBe("src/q01-add.ts");
+  });
 });
 
 describe("ファイルから問題を決める", () => {

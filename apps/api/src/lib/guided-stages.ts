@@ -6,7 +6,7 @@ import { evaluateSkillMapFor, isLockReasonNameVisible } from "../routes/skill-ma
 import type { Db } from "../db/client.js";
 import {
   sections,
-  stageGrants,
+  effectiveStageGrants,
   stages,
   taskProblemResults,
   taskProgress,
@@ -15,29 +15,34 @@ import {
 } from "../db/schema.js";
 import type { Caller } from "./authz.js";
 import { loadSkillMapSource } from "./skill-map-data.js";
-import { guidanceColumns } from "./stage-grant-guidance.js";
+import {
+  effectiveGuidanceColumns,
+  firstGuidanceBy,
+  guidancePriority,
+} from "./stage-grant-guidance.js";
 import { loadProblemRevisionHashes } from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 /** 割り当ての件数によらず、ステージ・課題・問題をそれぞれまとめて読む。 */
 export async function loadGuidedStages(db: Db, caller: Caller): Promise<GuidedStagesResponse> {
-  const grants = await db
+  const grantRows = await db
     .select({
-      stage_id: stageGrants.stageId,
+      stage_id: effectiveStageGrants.stageId,
       title: stages.title,
       category: stages.category,
-      ...guidanceColumns,
+      ...effectiveGuidanceColumns,
     })
-    .from(stageGrants)
-    .innerJoin(stages, eq(stages.id, stageGrants.stageId))
+    .from(effectiveStageGrants)
+    .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
     .where(
       and(
-        eq(stageGrants.profileId, caller.id),
+        eq(effectiveStageGrants.profileId, caller.id),
         eq(stages.status, "published"),
         eq(stages.audience, "granted"),
       ),
     )
-    .orderBy(stages.title, stages.id);
+    .orderBy(stages.title, stages.id, ...guidancePriority);
+  const grants = [...firstGuidanceBy(grantRows, (row) => row.stage_id).values()];
   if (grants.length === 0) return { stages: [] };
   // 島の条件で伏せられている割り当ても案内するが、始められるとは言わない。
   const source = await loadSkillMapSource(db, caller, { showAllIslands: true });

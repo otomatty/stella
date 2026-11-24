@@ -565,24 +565,6 @@ export async function submitTaskProblem(
               attempts: sql`${taskProblemResults.attempts} + 1`,
             },
           }),
-        db
-          .insert(taskProgress)
-          .values({
-            userId: caller.id,
-            taskId: task.id,
-            contentHash: input.contentHash,
-            status: "local-passed",
-            updatedAt: now,
-          })
-          .onConflictDoUpdate({
-            target: [taskProgress.userId, taskProgress.taskId],
-            set: {
-              contentHash: input.contentHash,
-              status: "local-passed",
-              updatedAt: now,
-            },
-            setWhere: sql`${taskProgress.status} not in ('passed', 'ai-passed')`,
-          }),
       ];
       const personalIds = canReplaceManualPass
         ? countedProblemIds(

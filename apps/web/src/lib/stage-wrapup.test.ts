@@ -39,7 +39,9 @@ describe("stageWrapupOf", () => {
 
   it("手元で合格しただけ・再提出も受講者の番 (手元の合格ではクリアにならない)", () => {
     expect(stageWrapupOf([task("a", "local-passed")])?.learnerTurn).toBe(true);
-    expect(stageWrapupOf([task("a", "local-passed")])?.detail).toContain("VS Code から提出");
+    expect(stageWrapupOf([task("a", "local-passed")])?.detail).toContain(
+      "まだ提出されていません。VS Code で確認して提出しましょう。",
+    );
     expect(stageWrapupOf([task("a", "resubmit")])?.learnerTurn).toBe(true);
   });
 
@@ -68,7 +70,7 @@ describe("stageWrapupOf", () => {
 
   it("問題つきの課題は取り組み中と読み、残りの問題数を添え、AI の確認待ちは出さない", () => {
     const working = stageWrapupOf([
-      task("a", "local-passed", {
+      task("a", "not-started", {
         title: "計算",
         problems_total: 20,
         problems_passed: 5,

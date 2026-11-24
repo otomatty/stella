@@ -477,18 +477,24 @@ export function StageGrantEditor({
         key={`${epoch}:${stageId}`}
         stageId={stageId}
         summary={page.guidance_summary}
-        count={page.counts.assigned}
+        count={page.manual_assigned_count ?? 0}
         pending={changeCount > 0}
         disabled={loading || saving || guidanceBusy || error !== null}
         onBusy={(busy) => setGuidanceSaveCount((count) => Math.max(0, count + (busy ? 1 : -1)))}
-        onSaved={(guidance) => {
+        onSaved={(guidance, updated) => {
           setPage((current) =>
-            current ? { ...current, guidance_summary: { uniform: true, guidance } } : null,
+            current
+              ? {
+                  ...current,
+                  manual_assigned_count: updated,
+                  guidance_summary: { uniform: true, guidance: updated > 0 ? guidance : null },
+                }
+              : null,
           );
           setLearners((current) =>
-            current.map((row) => (row.assigned ? { ...row, guidance } : row)),
+            current.map((row) => (row.sources.manual && updated > 0 ? { ...row, guidance } : row)),
           );
-          toast.success("案内を保存しました");
+          toast.success(`${updated} 人の案内を保存しました`);
           setReloadTick((n) => n + 1);
           onSaved();
         }}
@@ -649,29 +655,34 @@ function ExemptionField({
   }
   const name = view.baseline.display_name;
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={control.checked}
-      aria-label={`${name}の前提を免除`}
-      disabled={!control.enabled || saving}
-      onClick={() => onExempted(view.baseline, !control.checked)}
-      className={cn(
-        "relative inline-flex shrink-0 items-center rounded-full border transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        "disabled:cursor-not-allowed disabled:opacity-40",
-        tall ? "h-11 w-14" : "h-7 w-12",
-        control.checked && control.enabled ? "border-primary bg-primary" : "border-border bg-muted",
-      )}
-    >
-      <span
-        aria-hidden="true"
+    <div className="flex flex-col items-start gap-1">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={control.checked}
+        aria-label={`${name}の前提を免除`}
+        disabled={!control.enabled || saving}
+        onClick={() => onExempted(view.baseline, !control.checked)}
         className={cn(
-          "inline-block size-5 rounded-full bg-card shadow transition-transform",
-          control.checked ? (tall ? "translate-x-7" : "translate-x-5") : "translate-x-1",
+          "relative inline-flex shrink-0 items-center rounded-full border transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "disabled:cursor-not-allowed disabled:opacity-40",
+          tall ? "h-11 w-14" : "h-7 w-12",
+          control.checked && control.enabled
+            ? "border-primary bg-primary"
+            : "border-border bg-muted",
         )}
-      />
-    </button>
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "inline-block size-5 rounded-full bg-card shadow transition-transform",
+            control.checked ? (tall ? "translate-x-7" : "translate-x-5") : "translate-x-1",
+          )}
+        />
+      </button>
+      {control.note ? <span className="text-[12px] text-ink-3">{control.note}</span> : null}
+    </div>
   );
 }
 
@@ -977,9 +988,9 @@ function PcRoster({
                       <input
                         id={inputId}
                         type="checkbox"
-                        checked={view.assigned}
+                        checked={view.assignmentChecked}
                         disabled={!view.canAssign || saving}
-                        onChange={() => onAssigned(view.baseline, !view.assigned)}
+                        onChange={() => onAssigned(view.baseline, !view.assignmentChecked)}
                       />
                     </TableCell>
                     <TableCell>
@@ -996,7 +1007,7 @@ function PcRoster({
                       {view.baseline.email ? (
                         <p className="text-[12px] text-ink-3">{view.baseline.email}</p>
                       ) : null}
-                      <GuidanceDue row={view.baseline} />
+                      <AssignmentSources view={view} hasChanges={changeCount > 0} />
                       {view.baseline.assigned &&
                       completionStageId &&
                       !saving &&
@@ -1282,9 +1293,9 @@ function MobileRoster({
                     <input
                       type="checkbox"
                       className="size-5 shrink-0"
-                      checked={view.assigned}
+                      checked={view.assignmentChecked}
                       disabled={!view.canAssign || saving}
-                      onChange={() => onAssigned(view.baseline, !view.assigned)}
+                      onChange={() => onAssigned(view.baseline, !view.assignmentChecked)}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-1">
@@ -1316,7 +1327,7 @@ function MobileRoster({
                   </div>
                 )}
                 <div className="px-4">
-                  <GuidanceDue row={view.baseline} />
+                  <AssignmentSources view={view} hasChanges={changeCount > 0} />
                 </div>
                 {view.baseline.assigned && completionStageId && !saving && changeCount === 0 ? (
                   <Link
@@ -1347,10 +1358,40 @@ function MobileRoster({
   );
 }
 
-function GuidanceDue({ row }: { row: StageRosterRow }) {
+function AssignmentSources({ view, hasChanges }: { view: StageRosterView; hasChanges: boolean }) {
+  const row = view.baseline;
+  const { groups, manual } = row.sources;
   return (
     <>
-      {row.source_group ? <p className="text-xs text-ink-3">グループ: {row.source_group}</p> : null}
+      {(manual || groups.length > 0) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-2">
+          {manual && view.assignmentChecked && <Badge>手動</Badge>}
+          {groups.map((group) => (
+            <Link
+              key={group.id}
+              to="/admin/groups/$groupId"
+              params={{ groupId: group.id }}
+              onClick={(event) => {
+                if (hasChanges && !confirm(CLOSE_CONFIRM)) event.preventDefault();
+              }}
+              className="inline-flex min-h-11 items-center text-brand underline"
+            >
+              <Badge variant="info" className="whitespace-normal break-words">
+                グループ: {group.name}
+              </Badge>
+            </Link>
+          ))}
+        </div>
+      )}
+      {groups.length > 0 && (
+        <p className="text-xs text-ink-3">
+          {!manual
+            ? "グループで管理しています"
+            : view.assignmentChecked
+              ? "外すと手動の割り当てだけが外れます"
+              : "保存後もグループの割り当ては残ります"}
+        </p>
+      )}
       {row.guidance?.due_at ? (
         <p className="text-xs text-ink-3">案内の期限 {guidanceDate(row.guidance.due_at)}</p>
       ) : null}

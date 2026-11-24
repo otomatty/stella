@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   commands: new Map<string, () => Promise<void>>(),
   windowListeners: [] as ((windowState: { focused: boolean }) => void)[],
   apiRequest: vi.fn(),
+  isCompactTaskLayout: vi.fn(() => false),
   executeCommand: vi.fn(async (..._args: unknown[]) => undefined),
   showTextDocument: vi.fn(async (..._args: unknown[]) => undefined),
   showQuickPick: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock("node:os", async (importOriginal) => {
   return { ...actual, homedir: () => state.home };
 });
 vi.mock("./api.js", () => ({ apiRequest: state.apiRequest, apiSession: () => undefined }));
+vi.mock("./task-panel.js", () => ({ isCompactTaskLayout: state.isCompactTaskLayout }));
 vi.mock("vscode", () => ({
   Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }) },
   ViewColumn: { One: 1, Two: 2 },
@@ -645,6 +647,109 @@ describe("課題を開いた画面", () => {
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 
+  it.each([
+    { lastState: "locked-video", opened: "q02" },
+    { lastState: "submitted", opened: "q01" },
+  ])("問題を指定せずに開く (最後の問題: $lastState)", async ({ lastState, opened }) => {
+    const problems = [
+      { id: "q01", title: "問1" },
+      { id: "q02", title: "問2" },
+    ];
+    const problemManifest = {
+      ...manifest,
+      problems,
+      problemSteps: true as const,
+      submit: { files: ["src/**/*.ts"] },
+    };
+    const files = {
+      ...bundle.files,
+      ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString("base64"),
+      ...Object.fromEntries(
+        problems.flatMap(({ id }) =>
+          [`src/${id}.ts`, `tests/${id}.test.ts`].map((rel) => [
+            rel,
+            Buffer.from(id).toString("base64"),
+          ]),
+        ),
+      ),
+    };
+    state.folders = [training];
+    state.apiRequest.mockImplementation(async (url: string) =>
+      url.includes("problem-results")
+        ? {
+            gated: true,
+            totalProblems: 2,
+            passedProblems: lastState === "submitted" ? 2 : 1,
+            taskPassed: lastState === "submitted",
+            problems: [
+              { id: "q01", state: "submitted" },
+              { id: "q02", state: lastState, afterTitle: "計算の順番" },
+            ],
+          }
+        : { bundle: { ...bundle, manifest: problemManifest, files } },
+    );
+    await openDistributedTask(context, taskId);
+    expect((await readdir(path.join(taskRoot(), "src"))).sort()).toEqual(["q01.ts", "q02.ts"]);
+    const openedFiles = state.showTextDocument.mock.calls.map(
+      (call) => (call[0] as { uri: { fsPath: string } }).uri.fsPath,
+    );
+    expect(openedFiles).toEqual([path.join(taskRoot(), "src", `${opened}.ts`)]);
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+
+  it("ロック中でも問題のファイルは最初からあり、動画を見終えても同じファイルを開く", async () => {
+    const problemManifest = {
+      ...manifest,
+      problems: [{ id: "q01", title: "問1" }],
+      problemSteps: true as const,
+      submit: { files: ["src/**/*.ts"] },
+    };
+    let videoCompleted = false;
+    state.apiRequest.mockImplementation(async (url: string) =>
+      url.includes("problem-results")
+        ? {
+            gated: true,
+            totalProblems: 1,
+            passedProblems: 0,
+            taskPassed: false,
+            problems: [
+              {
+                id: "q01",
+                state: videoCompleted ? "open" : "locked-video",
+                afterTitle: "導入",
+              },
+            ],
+          }
+        : {
+            bundle: {
+              ...bundle,
+              manifest: problemManifest,
+              files: {
+                ...bundle.files,
+                "src/q01.ts": Buffer.from("starter").toString("base64"),
+                "tests/q01.test.ts": Buffer.from("test").toString("base64"),
+                ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString(
+                  "base64",
+                ),
+              },
+            },
+          },
+    );
+    await openDistributedTask(context, taskId, "q01");
+    expect(await readFile(path.join(taskRoot(), "src/q01.ts"), "utf8")).toBe("starter");
+    expect(await readFile(path.join(taskRoot(), "tests/q01.test.ts"), "utf8")).toBe("test");
+    videoCompleted = true;
+    registerTaskOpening(context);
+    state.folders = [training];
+    state.showTextDocument.mockClear();
+    await focusWindow();
+    expect(await readFile(path.join(taskRoot(), "src/q01.ts"), "utf8")).toBe("starter");
+    expect(state.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src/q01.ts") } },
+      expect.anything(),
+    );
+  });
+
   it("ロック中でも最初の配布で問題のファイルを書き、指定したファイルを開く", async () => {
     const problemManifest = {
       ...manifest,
@@ -810,9 +915,9 @@ describe("課題を開いた画面", () => {
       ["a", "b", "c", "a"].map((name) => path.join(taskRoot(), "src", `${name}.js`)),
     );
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
-    // 学習ガイドを課題の単元へ寄せ、エクスプローラーへ切り替えずに編集を始める。
+    // 学習ガイドの現在地を更新し、サイドバーを開かずに編集を始める。
     expect(state.executeCommand.mock.calls[0]).toEqual(["stella.revealTask", taskId]);
-    expect(state.executeCommand.mock.calls[1]).toEqual(["stella.lessons.focus"]);
+    expect(state.executeCommand).not.toHaveBeenCalledWith("stella.lessons.focus");
     expect(state.executeCommand).not.toHaveBeenCalledWith("revealInExplorer", expect.anything());
   });
 
@@ -840,6 +945,32 @@ describe("課題を開いた画面", () => {
     expect(opened).toEqual([path.join(taskRoot(), "notes.js")]);
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
+
+  it.each([true, false])(
+    "課題文を開いたあとの編集ファイルの表示 (compact: %s)",
+    async (compact) => {
+      state.isCompactTaskLayout.mockReturnValueOnce(compact);
+      state.folders = [training];
+      await openDistributedTask(context, taskId);
+
+      const readmeCallIndex = state.executeCommand.mock.calls.findIndex(
+        ([command]) => command === "stella.showTaskReadme",
+      );
+      const readmeCallOrder = state.executeCommand.mock.invocationCallOrder[readmeCallIndex];
+      const editorCallOrder = state.showTextDocument.mock.invocationCallOrder;
+      readmeOpened(taskRoot());
+      expect(editorCallOrder).toHaveLength(compact ? 2 : 1);
+      expect(editorCallOrder[0]).toBeLessThan(readmeCallOrder);
+      if (compact) {
+        expect(editorCallOrder[1]).toBeGreaterThan(readmeCallOrder);
+        expect(state.showTextDocument).toHaveBeenNthCalledWith(
+          2,
+          { uri: { scheme: "file", fsPath: path.join(taskRoot(), "index.js") } },
+          { viewColumn: 1, preview: false },
+        );
+      }
+    },
+  );
 
   it("課題の定義を読めなければ、課題文のパネルだけを開く", async () => {
     state.apiRequest.mockResolvedValue({

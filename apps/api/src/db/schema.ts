@@ -9,12 +9,14 @@
 
 import { sql } from "drizzle-orm";
 import {
+  check,
   customType,
   index,
   integer,
   primaryKey,
   real,
   sqliteTable,
+  sqliteView,
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
@@ -273,7 +275,7 @@ export const stages = sqliteTable(
     theme: text("theme"),
     /**
      * スキルツリーのカタログ掲載範囲。`catalog` = 全受講者 (既定)。
-     * `granted` = `stage_grants` がある受講者だけカタログに載る (Git 正本の専用のステージ)。
+     * `granted` = 実効の割り当てがある受講者だけカタログに載る (Git 正本の専用のステージ)。
      */
     audience: text("audience", { enum: ["catalog", "granted"] })
       .notNull()
@@ -1144,7 +1146,6 @@ export const stageUnlocks = sqliteTable(
     via: text("via", { enum: ["skill_check", "staff"] })
       .notNull()
       .default("skill_check"),
-    sourceGroupId: text("source_group_id").references(() => integrationGroups.id),
     unlockedAt: tsNow("unlocked_at"),
   },
   (t) => ({
@@ -2044,7 +2045,6 @@ export const stageGrants = sqliteTable(
     profileId: text("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    sourceGroupId: text("source_group_id").references(() => integrationGroups.id),
     sourceName: text("source_name"),
     dueAt: text("due_at"),
     message: text("message"),
@@ -2158,45 +2158,58 @@ export const integrationClients = sqliteTable("integration_clients", {
   createdAt: tsNow("created_at"),
   updatedAt: tsNowUpd("updated_at"),
 });
-export const integrationGroups = sqliteTable(
-  "integration_groups",
+export const groups = sqliteTable(
+  "groups",
   {
     id: uuid(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => integrationClients.id, { onDelete: "cascade" }),
-    key: text("external_key").notNull(),
+    clientId: text("client_id").references(() => integrationClients.id, { onDelete: "cascade" }),
+    externalKey: text("external_key"),
+    shareProgress: integer("share_progress", { mode: "boolean" }).notNull().default(false),
+    createdBy: text("created_by").references(() => profiles.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
-  (t) => [uniqueIndex("integration_groups_client_key").on(t.clientId, t.key)],
+  (t) => [
+    uniqueIndex("groups_client_key").on(t.clientId, t.externalKey),
+    check(
+      "groups_client_external_key_pair",
+      sql`(${t.clientId} IS NULL) = (${t.externalKey} IS NULL)`,
+    ),
+    check(
+      "groups_external_key_check",
+      sql`length(${t.externalKey}) BETWEEN 1 AND 100 AND ${t.externalKey} NOT GLOB '*[^A-Za-z0-9:_-]*'`,
+    ),
+    check("groups_share_progress_check", sql`${t.shareProgress} IN (0, 1)`),
+  ],
 );
-export const integrationGroupMembers = sqliteTable(
-  "integration_group_members",
+export const groupMembers = sqliteTable(
+  "group_members",
   {
     groupId: text("group_id")
       .notNull()
-      .references(() => integrationGroups.id, { onDelete: "cascade" }),
+      .references(() => groups.id, { onDelete: "cascade" }),
     profileId: text("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     externalId: text("external_id"),
+    peerName: text("peer_name"),
     joinedAt: tsNow("joined_at"),
   },
   (t) => [
     primaryKey({ columns: [t.groupId, t.profileId] }),
-    index("integration_members_profile").on(t.profileId),
-    uniqueIndex("integration_members_external_unique").on(t.groupId, t.externalId),
+    index("group_members_profile").on(t.profileId),
+    uniqueIndex("group_members_external_unique").on(t.groupId, t.externalId),
+    check("group_members_peer_name_check", sql`length(${t.peerName}) BETWEEN 1 AND 50`),
   ],
 );
 
-export const integrationGroupStages = sqliteTable(
-  "integration_group_stages",
+export const groupStages = sqliteTable(
+  "group_stages",
   {
     groupId: text("group_id")
       .notNull()
-      .references(() => integrationGroups.id, { onDelete: "cascade" }),
+      .references(() => groups.id, { onDelete: "cascade" }),
     stageId: text("stage_id")
       .notNull()
       .references(() => stages.id, { onDelete: "cascade" }),
@@ -2204,8 +2217,27 @@ export const integrationGroupStages = sqliteTable(
     message: text("message"),
     exempt: integer("exempt", { mode: "boolean" }).notNull().default(false),
   },
-  (t) => [primaryKey({ columns: [t.groupId, t.stageId] })],
+  (t) => [
+    primaryKey({ columns: [t.groupId, t.stageId] }),
+    check("group_stages_exempt_check", sql`${t.exempt} IN (0, 1)`),
+  ],
 );
+
+export const effectiveStageGrants = sqliteView("effective_stage_grants", {
+  stageId: text("stage_id").notNull(),
+  profileId: text("profile_id").notNull(),
+  dueAt: text("due_at"),
+  message: text("message"),
+  sourceName: text("source_name"),
+  groupId: text("group_id"),
+}).existing();
+
+export const effectiveStageUnlocks = sqliteView("effective_stage_unlocks", {
+  stageId: text("stage_id").notNull(),
+  userId: text("user_id").notNull(),
+  via: text("via", { enum: ["skill_check", "staff"] }).notNull(),
+  groupId: text("group_id"),
+}).existing();
 
 /** 連携用の不変の出来事索引。既存テーブルのトリガーが同じトランザクションで記録する。 */
 export const integrationEvents = sqliteTable(

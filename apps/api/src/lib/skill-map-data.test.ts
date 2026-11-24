@@ -196,13 +196,13 @@ describe("loadStaffSkillMapRows", () => {
     const { db, all } = recordingDb();
     await loadStaffSkillMapRows(db);
     const queries = all();
-    const stageQuery = queries.find(
-      (query) => query.sql.includes('"stages"') && !query.sql.includes("stage_grants"),
-    );
+    const stageQuery = queries.find((query) => query.sql.includes('from "stages"'));
     expect(stageQuery).toBeDefined();
     expect(stageQuery?.sql.toLowerCase()).not.toContain("where");
     expect(stageQuery?.sql).toContain('"status"');
-    expect(queries.some((query) => query.sql.includes('"stage_grants"'))).toBe(true);
+    const grantQuery = queries.find((query) => query.sql.includes('from "effective_stage_grants"'));
+    expect(grantQuery?.sql).toContain('count(distinct "profile_id")');
+    expect(grantQuery?.sql).toContain('group by "effective_stage_grants"."stage_id"');
     expect(queries.some((query) => query.sql.includes('"enrollments"'))).toBe(true);
   });
 });

@@ -696,7 +696,7 @@ export async function reviewTaskSubmission(
           row.taskContentHash !== currentHash ||
           !problems?.every((problem) => counted.has(problem.id))
         ) {
-          // 確認中の表示や人の一覧に取り残さず、残っている提出・問題の結果から状態を付け直す。
+          // 残っている課題の提出から状態を付け直し、本人の問題だけが残る場合は未提出に戻す。
           const scope = { studentId: row.studentId, taskId: row.taskId };
           const statements: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [
             db.delete(submissions).where(eq(submissions.id, row.id)),
@@ -719,7 +719,7 @@ export async function reviewTaskSubmission(
                   userId: row.studentId,
                   taskId: row.taskId,
                   contentHash: current?.hash ?? row.taskContentHash ?? "",
-                  status: "local-passed",
+                  status: "not-started",
                   updatedAt: now,
                 })
                 .onConflictDoNothing({ target: [taskProgress.userId, taskProgress.taskId] }),

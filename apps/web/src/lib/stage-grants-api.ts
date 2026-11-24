@@ -2,6 +2,7 @@ import type {
   StageGrantGuidance,
   StageGrantGuidanceRequest,
   StageGrantGuidanceSummary,
+  StageGrantSources,
 } from "@stella/shared/stage-grants/types";
 import { apiFetch } from "./api-client";
 
@@ -19,7 +20,8 @@ export interface StageGrantLearnerCounts {
 }
 
 export interface StageGrantLearnerDetail {
-  source_group?: string | null;
+  sources: StageGrantSources;
+  exemption_sources: StageGrantSources;
   guidance?: StageGrantGuidance | null;
   id: string;
   display_name: string;
@@ -34,6 +36,7 @@ export interface StageGrantLearnerDetail {
 }
 
 export interface StageGrantLearnerPage {
+  manual_assigned_count?: number;
   guidance_summary?: StageGrantGuidanceSummary;
   stage: {
     id: string;
@@ -129,8 +132,11 @@ export async function updateStageGrants(
 }
 
 export function updateStageGrantGuidance(stageId: string, guidance: StageGrantGuidanceRequest) {
-  return apiFetch(`/api/stage-grants/${encodeURIComponent(stageId)}/guidance`, {
-    method: "PATCH",
-    body: guidance,
-  });
+  return apiFetch<{ updated: number; guidance: StageGrantGuidance }>(
+    `/api/stage-grants/${encodeURIComponent(stageId)}/guidance`,
+    {
+      method: "PATCH",
+      body: guidance,
+    },
+  );
 }

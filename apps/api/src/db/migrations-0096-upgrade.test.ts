@@ -3,12 +3,12 @@ import { URL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 
-const TAG = "0095_lesson_problem_columns";
+const TAG = "0096_lesson_problem_columns";
 const migration = readFileSync(new URL(`../../drizzle/${TAG}.sql`, import.meta.url), "utf8");
 let database: ReturnType<typeof sqliteD1> | undefined;
 afterEach(() => database?.sqlite.close());
 
-describe("0095: 問題の対応を lessons の列へ移し、task_problem_steps は残す", () => {
+describe("0096: 問題の対応を lessons の列へ移し、task_problem_steps は残す", () => {
   it("既存の対応を写し、表は残し、null は一意制約の対象外", () => {
     database = sqliteD1({ beforeMigration: TAG });
     const sqlite = database.sqlite;

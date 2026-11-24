@@ -37,7 +37,7 @@ export type ProblemWorkStatus = "not-submitted" | "local-passed" | "submitted";
 
 export const PROBLEM_STATUS_LABELS: Readonly<Record<ProblemWorkStatus, string>> = {
   "not-submitted": "未提出",
-  "local-passed": "手元で合格",
+  "local-passed": "未提出",
   submitted: "提出済み",
 };
 
@@ -82,7 +82,7 @@ export function problemCountLabel(passed: number, total: number): string {
   return `${passed}/${total} 問`;
 }
 
-/** サーバーが提出済みなら提出済み。そうでなく手元が合格なら手元で合格。ほかは未提出。 */
+/** 手元の合格は次の操作の案内に使い、提出するまでは「未提出」と表示する。 */
 export function problemWorkStatus(
   serverPassed: boolean,
   localOutcome: RunResult["outcome"] | undefined,
@@ -118,15 +118,16 @@ export function nextUnsubmittedProblem(states: readonly ProblemState[]): Problem
   return states.find((state) => state.status !== "submitted");
 }
 
-/** 開くファイル。次の未提出。全部提出済みなら 1 問目。 */
+/** 開くファイル。次の未提出。全問が配布・提出済みなら 1 問目。 */
 export function problemFileToOpen(
   states: readonly ProblemState[],
   requested?: string,
+  totalProblems = states.length,
 ): string | undefined {
   return (
     states.find(({ id }) => id === requested) ??
     nextUnsubmittedProblem(states) ??
-    (requested === undefined ? states[0] : undefined)
+    (requested === undefined && states.length === totalProblems ? states[0] : undefined)
   )?.source;
 }
 

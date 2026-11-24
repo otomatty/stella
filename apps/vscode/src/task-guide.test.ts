@@ -497,7 +497,7 @@ describe("buildTaskGuideHtml", () => {
     const html = buildTaskGuideHtml(input);
     expect(html).toContain("1/3 問");
     expect(html).toContain("提出済み");
-    expect(html).toContain("手元で合格");
+    expect(html).not.toContain("手元で合格");
     expect(html).toContain("未提出");
     expect(html).toContain('<p class="now-title">いまの問題: 引く</p>');
     expect(html).toContain(
@@ -507,7 +507,7 @@ describe("buildTaskGuideHtml", () => {
       'class="pbar" role="img" aria-label="3 問中 1 問を提出済み"><i style="width:33.3%"></i>',
     );
     expect(html).toContain('class="problem-status submitted">提出済み');
-    expect(html).toContain('class="problem-status local-passed">手元で合格');
+    expect(html).toContain('class="problem-status local-passed">未提出');
     expect(html).toContain('class="problem-status not-submitted">未提出');
     expect(html).toMatch(/<li class="current"[^>]*><a [^>]*>引く<\/a>/);
     expect(html).toContain("提出する");

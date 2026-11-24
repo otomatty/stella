@@ -101,6 +101,7 @@ export function prepareStageGrantDiff(
   profiles: ReadonlyMap<string, { role: string; disabled: boolean }>,
   assigned: ReadonlySet<string>,
   otherViaUnlocks: ReadonlySet<string>,
+  groupAssigned?: ReadonlySet<string>,
 ): StageGrantParse<PreparedStageGrantDiff> {
   for (const id of diff.add) {
     const profile = profiles.get(id);
@@ -117,7 +118,7 @@ export function prepareStageGrantDiff(
   const finalAssigned = new Set(assigned);
   for (const id of diff.remove) finalAssigned.delete(id);
   for (const id of diff.add) finalAssigned.add(id);
-  if (diff.exempt.some((id) => !finalAssigned.has(id))) {
+  if (diff.exempt.some((id) => !finalAssigned.has(id) && !groupAssigned?.has(id))) {
     return { ok: false, error: EXEMPT_REQUIRES_GRANT };
   }
   return {

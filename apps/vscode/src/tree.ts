@@ -13,7 +13,7 @@ import {
   type LearningSidebarState,
 } from "./learning-sidebar.js";
 
-export type LessonContextValue = "lesson-code" | "lesson-web" | "lesson-task";
+export type LessonContextValue = "lesson-code" | "lesson-web" | "lesson-task" | "lesson-problem";
 
 export interface LessonNode {
   kind: "lesson";
@@ -26,6 +26,7 @@ export interface LessonNode {
   assignmentId?: string;
   /** 新形式の課題の課題文レッスンなら、その課題。開くと課題フォルダーを準備して並べる。 */
   task?: { id: string; status: TaskStatus };
+  problem?: CatalogLesson["problem"];
 }
 
 function contextValueFor(type: LessonType): LessonContextValue {
@@ -52,10 +53,15 @@ export function toLessonNode(lesson: CatalogLesson): LessonNode {
     stageId: lesson.stageId,
     title: lesson.title,
     lessonType: lesson.type,
-    contextValue: lesson.task ? "lesson-task" : contextValueFor(lesson.type),
+    contextValue: lesson.problem
+      ? "lesson-problem"
+      : lesson.task
+        ? "lesson-task"
+        : contextValueFor(lesson.type),
     completed: lesson.completed,
     ...(lesson.assignmentId ? { assignmentId: lesson.assignmentId } : {}),
     ...(lesson.task ? { task: lesson.task } : {}),
+    ...(lesson.problem ? { problem: lesson.problem } : {}),
   };
 }
 
@@ -78,6 +84,12 @@ export function lessonCommand(node: LessonNode): vscode.Command {
         command: "stella.openTask",
         title: "課題に取り組む",
         arguments: [node.task?.id],
+      };
+    case "lesson-problem":
+      return {
+        command: "stella.openTask",
+        title: "問題に取り組む",
+        arguments: [node.problem?.taskId, node.problem?.id],
       };
     default: {
       const _exhaustive: never = node.contextValue;

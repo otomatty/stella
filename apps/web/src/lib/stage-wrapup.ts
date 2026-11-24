@@ -53,7 +53,8 @@ function statusSentence(task: TaskSummary): string {
     if (
       task.status === "local-passed" ||
       task.status === "submitted" ||
-      task.status === "instructor-pending"
+      task.status === "instructor-pending" ||
+      (task.status === "not-started" && (task.problems_passed ?? 0) > 0)
     ) {
       return `課題「${title}」は取り組み中です。${rest}`;
     }
@@ -64,7 +65,7 @@ function statusSentence(task: TaskSummary): string {
   }
   switch (task.status) {
     case "local-passed":
-      return `課題「${title}」は手元の確認に通っています。VS Code から提出しましょう。`;
+      return `課題「${title}」はまだ提出されていません。VS Code で確認して提出しましょう。`;
     case "resubmit":
       return `課題「${title}」は再提出になっています。レビューの返信を読んで直し、もう一度提出しましょう。`;
     case "submitted":

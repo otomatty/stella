@@ -611,6 +611,20 @@ describe("export-seed-sql (sqlite)", () => {
       db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
         values ('retained-progress', 'ses', 'upgrade-learner', ?, 1, 1)`).run(retainedLesson.id);
 
+      const problemTaskId = "devlab-ts-ch01/u01-let-const/q01";
+      const oldTaskLesson = stableUuid("lesson:ses:devlab-ts-ch01:task-u01-let-const-q01");
+      db.prepare(`insert into lessons (id, section_id, title, type, created_at, updated_at)
+        select ?, section_id, '旧課題文', 'text', 1, 1 from tasks where id = ?`).run(
+        oldTaskLesson,
+        problemTaskId,
+      );
+      db.prepare("update tasks set lesson_id = ? where id = ?").run(oldTaskLesson, problemTaskId);
+      db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+        values ('task-lesson-progress', 'ses', 'upgrade-learner', ?, 0, 1)`).run(oldTaskLesson);
+      db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+        select 'problem-lesson-progress', 'ses', 'upgrade-learner', id, 1, 1
+        from lessons where problem_task_id = ? order by "order" limit 1`).run(problemTaskId);
+
       // 同じ seed を再適用しても削除・履歴作成が増殖しない。
       db.exec(sql);
       const revisions = db.prepare("select count(*) as count from lesson_revisions").get();
@@ -622,6 +636,8 @@ describe("export-seed-sql (sqlite)", () => {
         ["sections", "id", "reused-old-section"],
         ["lessons", "id", "reused-old-lesson"],
         ["lesson_progress", "id", "reused-old-progress"],
+        ["lessons", "id", oldTaskLesson],
+        ["lesson_progress", "id", "task-lesson-progress"],
         ["submissions", "id", "reused-old-submission"],
         ["lessons", "id", "old-lesson"],
         ["lesson_progress", "id", "old-progress"],
@@ -663,6 +679,14 @@ describe("export-seed-sql (sqlite)", () => {
       expect(
         db.prepare("select lesson_id from lesson_progress where id = 'retained-progress'").get(),
       ).toEqual({ lesson_id: retainedLesson.id });
+      expect(db.prepare("select lesson_id from tasks where id = ?").get(problemTaskId)).toEqual({
+        lesson_id: null,
+      });
+      expect(
+        db
+          .prepare("select completed from lesson_progress where id = 'problem-lesson-progress'")
+          .get(),
+      ).toEqual({ completed: 1 });
       expect(db.prepare("pragma foreign_key_check").all()).toEqual([]);
     } finally {
       db.close();

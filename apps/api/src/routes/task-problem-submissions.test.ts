@@ -27,6 +27,7 @@ import {
   studyActivity,
   submissionReviews,
   submissions,
+  taskLocalRuns,
   taskProblemResults,
   taskProgress,
   taskRevisions,
@@ -789,7 +790,7 @@ describe("問題の提出", () => {
           });
         } else {
           expect(body).toMatchObject({
-            tasks: [{ id: TASK_ID, status: "local-passed", problems_passed: 1 }, {}],
+            tasks: [{ id: TASK_ID, status: "not-started", problems_passed: 1 }, {}],
           });
         }
         expect(finalize).toHaveBeenCalledTimes(1);
@@ -1837,7 +1838,7 @@ describe("問題の提出", () => {
       { problemId: "q02-sub", source: "tests" },
     ]);
     expect((await db.select().from(taskProgress))[0]).toMatchObject({
-      status: "local-passed",
+      status: "not-started",
       passedAt: null,
     });
   });
@@ -1852,7 +1853,7 @@ describe("問題の提出", () => {
     expect(await db.select().from(submissions)).toEqual([]);
     expect(await db.select().from(skillEvidence)).toEqual([]);
     expect((await db.select().from(taskProgress))[0]).toMatchObject({
-      status: "local-passed",
+      status: "not-started",
       passedAt: null,
     });
   });
@@ -1962,7 +1963,7 @@ describe("問題の提出", () => {
       {
         taskId: TASK_ID,
         userId: "learner",
-        status: "local-passed",
+        status: "not-started",
         contentHash: CURRENT,
         passedAt: null,
       },
@@ -2080,6 +2081,17 @@ describe("問題の提出", () => {
   });
 
   it("問題が揃うまで課題の提出を作らず、最後の問題でテスト確定する", async () => {
+    const localResult = await request(app(), env, "/api/tasks/local-result", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ taskId: TASK_ID, contentHash: CURRENT, outcome: "passed" }),
+    });
+    expect(localResult.status, await localResult.clone().text()).toBe(200);
+    expect(await db.select().from(taskLocalRuns)).toMatchObject([
+      { taskId: TASK_ID, passedRuns: 1 },
+    ]);
+    expect(await db.select().from(taskProgress)).toEqual([]);
+
     const first = await submitProblem("q01-add", "export const add = 1;\n");
     expect(first).toEqual({
       problemId: "q01-add",
@@ -2101,7 +2113,7 @@ describe("問題の提出", () => {
       code: "export const add = 1;\n",
     });
     const passedAt = saved[0]?.firstPassedAt.getTime();
-    expect((await db.select().from(taskProgress))[0]?.status).toBe("local-passed");
+    expect(await db.select().from(taskProgress)).toEqual([]);
 
     const again = await submitProblem("q01-add", "export const add = 2;\n");
     expect(again.taskPassed).toBe(false);
@@ -2116,7 +2128,11 @@ describe("問題の提出", () => {
     );
     const problemTask = stage.tasks.find((task) => task.id === TASK_ID);
     const plainTask = stage.tasks.find((task) => task.id === plain.input.taskId);
-    expect(problemTask).toMatchObject({ problems_total: 2, problems_passed: 1 });
+    expect(problemTask).toMatchObject({
+      status: "not-started",
+      problems_total: 2,
+      problems_passed: 1,
+    });
     expect(plainTask).not.toHaveProperty("problems_total");
     expect(plainTask).not.toHaveProperty("problems_passed");
 
@@ -2375,7 +2391,7 @@ describe("問題の提出", () => {
       taskPassed: false,
     });
     expect(await db.select().from(submissions)).toEqual([]);
-    expect((await db.select().from(taskProgress))[0]?.status).toBe("local-passed");
+    expect(await db.select().from(taskProgress)).toEqual([]);
 
     const listed = await json<{
       problems: { id: string; status: string; firstPassedAt: string | null }[];

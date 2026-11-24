@@ -323,7 +323,7 @@ export const LessonPlayer = ({
   }
 
   const task = presentedTasks?.find((item) => item.lessonId === lessonObj.id);
-  const taskId = task?.id ?? null;
+  const taskId = task?.id ?? problemLesson?.taskId ?? null;
   const submissionTarget = lessonSubmissionTarget({
     format: stage.format,
     lesson: lessonObj,

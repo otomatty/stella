@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./progress/stage-progress": "./src/progress/stage-progress.ts",
     "./stage-grants/types": "./src/stage-grants/types.ts",
     "./types": "./src/types.ts",
     "./assignments": "./src/assignments.ts",
@@ -86,6 +87,7 @@
     "./markdown/tutorial-blocks": "./src/markdown/tutorial-blocks.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
     "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
+    "./groups/types": "./src/groups/types.ts",
     "./integrations/types": "./src/integrations/types.ts"
   },
   "scripts": {

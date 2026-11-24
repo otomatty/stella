@@ -643,14 +643,21 @@
       "idx": 92,
       "version": "6",
       "when": 1795046400010,
-      "tag": "0094_drop_problem_step_lesson_progress",
+      "tag": "0094_groups",
       "breakpoints": true
     },
     {
       "idx": 93,
       "version": "6",
       "when": 1795046400011,
-      "tag": "0095_lesson_problem_columns",
+      "tag": "0095_drop_problem_step_lesson_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "6",
+      "when": 1795046400012,
+      "tag": "0096_lesson_problem_columns",
       "breakpoints": true
     }
   ]
