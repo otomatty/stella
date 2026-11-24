@@ -702,7 +702,7 @@ it("札を使わない schema 1 の概念図を白い地に描く", () => {
     "file:///font/$1",
   );
   expect(createHash("sha256").update(html).digest("hex")).toBe(
-    "7b18da3e84f4c1d77675acbccf0a3a6acc4b51afba62bde6818f4c734bebe132",
+    "a509b1434505096543e8a00884447a7808f7d2e9711543663aa42ab2a34e9860",
   );
 });
 

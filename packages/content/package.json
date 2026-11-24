@@ -60,7 +60,7 @@
     "typescript": "^7.0.2",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.2.0",
-    "lucide-static": "0.468.0",
+    "lucide-static": "1.77.0",
     "remotion": "4.0.545",
     "@remotion/bundler": "4.0.545",
     "@remotion/renderer": "4.0.545",
