@@ -523,7 +523,9 @@ export async function loadFocusCompletions(
         sql`not ${isProblemTaskOverviewLesson(sql`lessons.id`)}`,
       ),
     );
-  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id]);
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
   return [
     ...rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) })),
     ...passedOverviews
@@ -659,7 +661,9 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
         sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
       ),
     );
-  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id]);
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })

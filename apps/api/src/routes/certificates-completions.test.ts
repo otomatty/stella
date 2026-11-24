@@ -25,6 +25,7 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { loadFocusCompletions, loadSkillProfileCounts } from "../lib/skill-map-data.js";
 import {
   autoCompleteStagesIfMet,
   reclaimAutoCertificatesIfUnmet,
@@ -81,9 +82,13 @@ describe("GET /api/certificates/completions", () => {
   });
 });
 
-it.each(["passed", "ai-passed"] as const)(
-  "問題一覧は課題の %s で完了し、合格の取り消しで未完了に戻る",
-  async (status) => {
+it.each([
+  ["passed", "tests"],
+  ["passed", "manual"],
+  ["ai-passed", "ai"],
+] as const)(
+  "課題の %s (%s) を問題一覧の完了に数え、合格の出所に応じて学習活動に数える",
+  async (status, reviewSource) => {
     const overviewId = "00000000-0000-4000-8000-000000000001";
     const userId = "learner";
     const stageId = "active";
@@ -181,7 +186,9 @@ it.each(["passed", "ai-passed"] as const)(
     expect(storedOverview?.completed).toBe(false);
     await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, overviewId));
 
-    await db.insert(lessonProgress).values({ userId, lessonId: "plain", completed: true });
+    await db
+      .insert(lessonProgress)
+      .values({ userId, lessonId: "plain", completed: true, updatedAt: new Date(0) });
     const now = new Date();
     await db.insert(taskProblemResults).values({
       userId,
@@ -197,14 +204,47 @@ it.each(["passed", "ai-passed"] as const)(
     await expectCompletion(2, false);
     expect(await autoCompleteStagesIfMet(db, input)).toEqual([]);
 
-    await db.update(taskProgress).set({ status }).where(eq(taskProgress.taskId, "overview"));
+    const passedAt = new Date("2026-11-24T06:00:00Z");
+    // 引き継ぎ済みの一覧に保存済みの完了フラグがあっても、フォーカスや XP には数えない。
+    if (reviewSource === "manual") {
+      await db.insert(lessonProgress).values({
+        userId,
+        lessonId: overviewId,
+        completed: true,
+        updatedAt: passedAt,
+      });
+    }
+    await db.insert(submissions).values({
+      studentId: userId,
+      taskId: "overview",
+      assignmentTitle: "課題",
+      stageTitle: "星",
+      code: "",
+      verdict: "pass",
+      reviewSource,
+    });
+    await db
+      .update(taskProgress)
+      .set({ status, updatedAt: passedAt })
+      .where(eq(taskProgress.taskId, "overview"));
+    const learner = { ...input.actor, role: "student" as const, email: null };
+    // 「plain」と「step」は別の日の完了としてこの範囲から外す。
+    expect(await loadFocusCompletions(db, learner, passedAt.getTime())).toEqual(
+      reviewSource === "manual" ? [] : [{ stageId, date: "2026-11-24" }],
+    );
+    expect((await loadSkillProfileCounts(db, learner)).completedLessons).toBe(
+      reviewSource === "manual" ? 2 : 3,
+    );
     expect(await progress()).toEqual({ [overviewId]: true, plain: true, step: true });
     await expectCompletion(3, true);
     expect(await autoCompleteStagesIfMet(db, input)).toHaveLength(1);
     expect(await db.select().from(enrollments)).toMatchObject([{ status: "completed" }]);
     expect(await db.select().from(certificates)).toMatchObject([{ stageId, revoked: false }]);
 
-    await db.insert(lessonProgress).values({ userId, lessonId: overviewId, completed: true });
+    await db
+      .insert(lessonProgress)
+      .values({ userId, lessonId: overviewId, completed: true })
+      .onConflictDoNothing();
     await db
       .update(taskProgress)
       .set({ status: "resubmit" })
