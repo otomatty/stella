@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useId, useRef, useState } from "react";
 import type {
   StageGrantGuidance,
@@ -22,7 +23,7 @@ export function StageGrantGuidanceEditor({
   count: number;
   pending: boolean;
   disabled: boolean;
-  onSaved: (guidance: StageGrantGuidance) => void;
+  onSaved: (guidance: StageGrantGuidance, updated: number) => void;
   onBusy: (busy: boolean) => void;
 }) {
   const current = summary.uniform ? summary.guidance : null;
@@ -57,15 +58,17 @@ export function StageGrantGuidanceEditor({
       setBusy(true);
       started = true;
       onBusy(true);
-      await updateStageGrantGuidance(stageId, { all: true, ...guidance });
+      const result = await updateStageGrantGuidance(stageId, { all: true, ...guidance });
       if (clear) {
         setSourceName("");
         setDate("");
         setMessage("");
       }
-      setSaved(clear ? `${count} 人の案内を消しました` : `${count} 人に案内を入れました`);
+      setSaved(
+        clear ? `${result.updated} 人の案内を消しました` : `${result.updated} 人に案内を入れました`,
+      );
       setExpanded(false);
-      onSaved(guidance);
+      onSaved(result.guidance, result.updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "案内の保存に失敗しました");
     } finally {
@@ -87,11 +90,18 @@ export function StageGrantGuidanceEditor({
       : "まだありません";
   return (
     <section
-      aria-label="案内の内容"
+      aria-label="手動で割り当てた人への案内"
       data-testid="stage-grant-guidance"
       className="m-3 rounded-lg border border-border p-3 text-xs"
     >
-      <h3 className="font-bold">案内の内容</h3>
+      <h3 className="font-bold">手動で割り当てた人への案内</h3>
+      <p className="mt-1 text-ink-3">
+        グループの案内は
+        <Link to="/admin/groups" search={{}} className="underline">
+          グループ設定
+        </Link>
+        で変更できます。
+      </p>
       <div className="mt-1 flex min-w-0 items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-ink-3" title={summaryText}>
           {summaryText}
@@ -142,10 +152,10 @@ export function StageGrantGuidanceEditor({
               onChange={(e) => setMessage(e.target.value)}
             />
           </label>
-          <p>割り当て済みの全員（{count} 人）に反映します。すべての欄は任意です。</p>
+          <p>手動で割り当てた人（{count} 人）に反映します。すべての欄は任意です。</p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={count === 0} onClick={() => void save(false)}>
-              割り当て済みの全員に入れる
+              手動で割り当てた人に入れる
             </Button>
             <Button
               size="sm"

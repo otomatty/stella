@@ -1,5 +1,5 @@
 /**
- * スキルツリーのカタログ掲載範囲 (`stages.audience` + `stage_grants`)。
+ * スキルツリーのカタログ掲載範囲 (`stages.audience` + `effective_stage_grants`)。
  *
  * `catalog` = 全受講者のカタログ候補。`granted` = 割当がある受講者だけ。
  * 評価器の前でフィルタする — DEV_MODE でも未割り当ての専用星は出さない。
@@ -10,7 +10,7 @@ import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { isIslandWithoutRequirements } from "@stella/shared/skill-map/islands";
 
 import type { Db } from "../db/client.js";
-import { enrollments, stageGrants, stages } from "../db/schema.js";
+import { enrollments, effectiveStageGrants, stages } from "../db/schema.js";
 
 export type StageAudience = "catalog" | "granted";
 
@@ -48,9 +48,9 @@ export function hasNoIslandPrerequisites(row: {
 /** caller に割り当てられた `audience = granted` ステージ id。 */
 export async function loadGrantedStageIds(db: Db, profileId: string): Promise<Set<string>> {
   const rows = await db
-    .select({ stageId: stageGrants.stageId })
-    .from(stageGrants)
-    .where(eq(stageGrants.profileId, profileId));
+    .select({ stageId: effectiveStageGrants.stageId })
+    .from(effectiveStageGrants)
+    .where(eq(effectiveStageGrants.profileId, profileId));
   return new Set(rows.map((r) => r.stageId));
 }
 
@@ -72,9 +72,11 @@ export async function learnerCanSeeGrantedStage(
   stageId: string,
 ): Promise<boolean> {
   const grantRows = await db
-    .select({ stageId: stageGrants.stageId })
-    .from(stageGrants)
-    .where(and(eq(stageGrants.profileId, userId), eq(stageGrants.stageId, stageId)))
+    .select({ stageId: effectiveStageGrants.stageId })
+    .from(effectiveStageGrants)
+    .where(
+      and(eq(effectiveStageGrants.profileId, userId), eq(effectiveStageGrants.stageId, stageId)),
+    )
     .limit(1);
   if (grantRows[0]) return true;
   const enrolled = await db

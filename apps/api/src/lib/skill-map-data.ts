@@ -27,7 +27,7 @@ import {
   lessons,
   quizAttempts,
   sections,
-  stageGrants,
+  effectiveStageGrants,
   stages,
   studyActivity,
 } from "../db/schema.js";
@@ -222,10 +222,10 @@ export async function loadSkillMapSource(
 
   // 公開外の Extra に受講登録が残っていても、通常の道の集約には混ぜない。
   const grantRows = await db
-    .select({ stageId: stageGrants.stageId })
-    .from(stageGrants)
-    .innerJoin(stages, eq(stages.id, stageGrants.stageId))
-    .where(and(eq(stageGrants.profileId, caller.id), eq(stages.audience, "granted")));
+    .select({ stageId: effectiveStageGrants.stageId })
+    .from(effectiveStageGrants)
+    .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
+    .where(and(eq(effectiveStageGrants.profileId, caller.id), eq(stages.audience, "granted")));
   const grantedStageIds = new Set(grantRows.map((row) => row.stageId));
   const audienceRows = filterStagesByAudience(stageRows, grantedStageIds);
 
@@ -294,7 +294,7 @@ export interface StaffSkillMapStageRow {
   iconPath: string | null;
   audience: "catalog" | "granted";
   status: "draft" | "published" | "archived";
-  /** `stage_grants` の件数。catalog でも数えたまま返し、0 にするのはルート。 */
+  /** 実効の割り当てがある人数。catalog でも数えたまま返し、0 にするのはルート。 */
   grantedCount: number;
   /** `enrollments` の件数。 */
   enrolledCount: number;
@@ -319,9 +319,12 @@ export async function loadStaffSkillMapRows(db: Db): Promise<StaffSkillMapStageR
     .from(stages);
 
   const grantRows = await db
-    .select({ stageId: stageGrants.stageId, n: count() })
-    .from(stageGrants)
-    .groupBy(stageGrants.stageId);
+    .select({
+      stageId: effectiveStageGrants.stageId,
+      n: countDistinct(effectiveStageGrants.profileId),
+    })
+    .from(effectiveStageGrants)
+    .groupBy(effectiveStageGrants.stageId);
 
   const enrollmentRows = await db
     .select({ stageId: enrollments.stageId, n: count() })
@@ -584,10 +587,12 @@ async function findActiveStageId(
         notInArray(
           sections.stageId,
           db
-            .select({ id: stageGrants.stageId })
-            .from(stageGrants)
-            .innerJoin(stages, eq(stages.id, stageGrants.stageId))
-            .where(and(eq(stageGrants.profileId, caller.id), eq(stages.audience, "granted"))),
+            .select({ id: effectiveStageGrants.stageId })
+            .from(effectiveStageGrants)
+            .innerJoin(stages, eq(stages.id, effectiveStageGrants.stageId))
+            .where(
+              and(eq(effectiveStageGrants.profileId, caller.id), eq(stages.audience, "granted")),
+            ),
         ),
       ),
     )

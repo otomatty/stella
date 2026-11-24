@@ -2,25 +2,16 @@ import { INTEGRATION_GROUP_KEY } from "@stella/shared/integrations/types";
 import { Hono } from "hono";
 import { and, eq, sql } from "drizzle-orm";
 import { isValidEmail } from "@stella/shared/admin/types";
-import type {
-  IntegrationMemberResult,
-  IntegrationStageInput,
-} from "@stella/shared/integrations/types";
-import { readIntegrationProgress, readIntegrationEvents } from "../lib/integration-read.js";
-import { hasNoIslandPrerequisites, parentSlugFromRow } from "../lib/stage-audience.js";
+import type { IntegrationMemberResult } from "@stella/shared/integrations/types";
+import { readGroupProgress, readIntegrationEvents } from "../lib/integration-read.js";
 import { inviteUser } from "../lib/auth-users.js";
 import {
-  applyGroupStageStatements,
-  removeGroupGrantStatements,
-  parseIntegrationStage,
-} from "../lib/integration-write.js";
-import {
-  integrationGroups,
-  integrationGroupMembers,
-  integrationGroupStages,
-  profiles,
-  stages,
-} from "../db/schema.js";
+  addGroupMemberStatement,
+  createOrRenameGroup,
+  removeGroupMember,
+  replaceGroupStages,
+} from "../lib/groups.js";
+import { groupMembers, groupStages, profiles, stages } from "../db/schema.js";
 import { errorResponse } from "../lib/authz.js";
 import {
   authenticateIntegration,
@@ -60,17 +51,14 @@ integrationsRoute.put(
         return c.json({ error: "Invalid key or name" }, 400);
       const db = c.get("integrationDb");
       const clientId = c.get("integrationClient").id;
-      await db
-        .insert(integrationGroups)
-        .values({ clientId, key, name: body.name.trim() })
-        .onConflictDoUpdate({
-          target: [integrationGroups.clientId, integrationGroups.key],
-          set: { name: body.name.trim(), updatedAt: new Date() },
-        });
-      const group = await requireOwnGroup(db, clientId, key);
+      const group = await createOrRenameGroup(db, {
+        clientId,
+        externalKey: key,
+        name: body.name.trim(),
+      });
       c.set("integrationGroupId", group.id);
       c.set("integrationCounts", { groups: 1 });
-      return c.json({ group: { key: group.key, name: group.name } });
+      return c.json({ group: { key: group.externalKey, name: group.name } });
     } catch (err) {
       return errorResponse(c, err);
     }
@@ -91,8 +79,8 @@ integrationsRoute.put(
     const results: IntegrationMemberResult[] = [];
     const currentMembers = await db
       .select()
-      .from(integrationGroupMembers)
-      .where(eq(integrationGroupMembers.groupId, group.id));
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, group.id));
     const memberIds = new Set(currentMembers.map((member) => member.profileId));
     const externalByProfile = new Map(
       currentMembers.map((member) => [member.profileId, member.externalId]),
@@ -102,7 +90,7 @@ integrationsRoute.put(
         member.externalId === null ? [] : [[member.externalId, member.profileId] as const],
       ),
     );
-    const membershipStatements: D1PreparedStatement[] = [];
+    const membershipWrites: { index: number; statement: D1PreparedStatement }[] = [];
     for (const [index, raw] of body.members.entries()) {
       const row =
         raw && typeof raw === "object" && !Array.isArray(raw)
@@ -115,7 +103,14 @@ integrationsRoute.put(
         fail("invalid_email");
         continue;
       }
+      const peerName = typeof row.peerName === "string" ? row.peerName.trim() : row.peerName;
       if (
+        (peerName !== undefined &&
+          peerName !== null &&
+          (typeof peerName !== "string" ||
+            peerName.length === 0 ||
+            [...peerName].length > 50 ||
+            peerName.includes("\0"))) ||
         (row.displayName !== undefined &&
           (typeof row.displayName !== "string" || row.displayName.length > 200)) ||
         (row.externalId !== undefined &&
@@ -173,13 +168,10 @@ integrationsRoute.put(
           if (externalId !== null) {
             const owner = profileByExternal.get(externalId);
             const [savedOwner] = await db
-              .select({ profileId: integrationGroupMembers.profileId })
-              .from(integrationGroupMembers)
+              .select({ profileId: groupMembers.profileId })
+              .from(groupMembers)
               .where(
-                and(
-                  eq(integrationGroupMembers.groupId, group.id),
-                  eq(integrationGroupMembers.externalId, externalId),
-                ),
+                and(eq(groupMembers.groupId, group.id), eq(groupMembers.externalId, externalId)),
               )
               .limit(1);
             if (
@@ -201,27 +193,27 @@ integrationsRoute.put(
         externalByProfile.set(id, externalId);
         if (externalId !== null) profileByExternal.set(externalId, id);
       }
-      const binding = c.env.DB;
-      const membership =
-        row.externalId === undefined
-          ? binding.prepare(
-              "INSERT INTO integration_group_members(group_id, profile_id, external_id, joined_at) VALUES (?, ?, ?, ?) ON CONFLICT(group_id, profile_id) DO NOTHING",
-            )
-          : binding.prepare(
-              "INSERT INTO integration_group_members(group_id, profile_id, external_id, joined_at) VALUES (?, ?, ?, ?) ON CONFLICT(group_id, profile_id) DO UPDATE SET external_id = excluded.external_id",
-            );
-      membershipStatements.push(membership.bind(group.id, id, externalId, Date.now()));
+      membershipWrites.push({
+        index,
+        statement: addGroupMemberStatement(c.env.DB, group.id, id, {
+          externalId: row.externalId === undefined ? undefined : externalId,
+          peerName,
+        }),
+      });
       results.push({
         index,
         id,
         status: alreadyMember ? "already_member" : existing ? "existing" : "invited",
       });
     }
-    if (membershipStatements.length > 0)
-      await c.env.DB.batch([
-        ...membershipStatements,
-        ...applyGroupStageStatements(c.env.DB, group.id, client.name),
-      ]);
+    if (membershipWrites.length > 0) {
+      const writes = await c.env.DB.batch(membershipWrites.map(({ statement }) => statement));
+      for (const [position, { index }] of membershipWrites.entries()) {
+        if (writes[position]?.results.length === 0) {
+          results[index] = { index, status: "failed", id: null, code: "not_invitable" };
+        }
+      }
+    }
     c.set("integrationCounts", {
       requested: body.members.length,
       succeeded: results.filter((r) => r.status !== "failed").length,
@@ -241,26 +233,19 @@ integrationsRoute.delete(
     if (by !== undefined && by !== "external") return c.json({ error: "Invalid by" }, 400);
     const [member] = await db
       .select()
-      .from(integrationGroupMembers)
+      .from(groupMembers)
       .where(
         and(
-          eq(integrationGroupMembers.groupId, group.id),
+          eq(groupMembers.groupId, group.id),
           eq(
-            by === "external"
-              ? integrationGroupMembers.externalId
-              : integrationGroupMembers.profileId,
+            by === "external" ? groupMembers.externalId : groupMembers.profileId,
             c.req.param("id"),
           ),
         ),
       )
       .limit(1);
     if (!member) return c.json({ error: "Not found" }, 404);
-    await c.env.DB.batch([
-      ...removeGroupGrantStatements(c.env.DB, group.id, member.profileId),
-      c.env.DB.prepare(
-        "DELETE FROM integration_group_members WHERE group_id = ? AND profile_id = ?",
-      ).bind(group.id, member.profileId),
-    ]);
+    await removeGroupMember(db, group.id, member.profileId);
     c.set("integrationCounts", { removed: 1 });
     return c.json({ removed: true });
   },
@@ -276,13 +261,13 @@ integrationsRoute.get(
     const rows = await db
       .select({
         slug: stages.slug,
-        due_at: integrationGroupStages.dueAt,
-        message: integrationGroupStages.message,
-        exempt: integrationGroupStages.exempt,
+        due_at: groupStages.dueAt,
+        message: groupStages.message,
+        exempt: groupStages.exempt,
       })
-      .from(integrationGroupStages)
-      .innerJoin(stages, eq(stages.id, integrationGroupStages.stageId))
-      .where(eq(integrationGroupStages.groupId, group.id))
+      .from(groupStages)
+      .innerJoin(stages, eq(stages.id, groupStages.stageId))
+      .where(eq(groupStages.groupId, group.id))
       .orderBy(stages.slug);
     return c.json({ stages: rows });
   },
@@ -299,77 +284,10 @@ integrationsRoute.put(
     const body = await c.req.json<Record<string, unknown>>().catch(() => null);
     if (!body || !Array.isArray(body.stages) || body.stages.length > 100)
       return c.json({ error: "stages must be an array of at most 100 stages" }, 400);
-    const errors: { slug: unknown; code: string }[] = [];
-    const settings: (Required<IntegrationStageInput> & { stageId: string })[] = [];
-    const seen = new Set<string>();
-    const stageRows = new Map<string, typeof stages.$inferSelect>();
-    for (const raw of body.stages) {
-      let input: Required<IntegrationStageInput>;
-      try {
-        input = parseIntegrationStage(raw);
-      } catch {
-        errors.push({
-          slug:
-            raw && typeof raw === "object" ? ((raw as Record<string, unknown>).slug ?? null) : null,
-          code: "invalid_stage",
-        });
-        continue;
-      }
-      if (seen.has(input.slug)) {
-        errors.push({ slug: input.slug, code: "duplicate_slug" });
-        continue;
-      }
-      seen.add(input.slug);
-      if (!client.allowedStagePrefixes.some((prefix) => input.slug.startsWith(prefix))) {
-        errors.push({ slug: input.slug, code: "prefix_not_allowed" });
-        continue;
-      }
-      const [stage] = await db.select().from(stages).where(eq(stages.slug, input.slug)).limit(1);
-      if (stage?.audience !== "granted") {
-        errors.push({ slug: input.slug, code: "not_granted" });
-        continue;
-      }
-      stageRows.set(stage.slug, stage);
-      settings.push({ ...input, stageId: stage.id });
-    }
-    if (errors.length) return c.json({ error: "Invalid stages", errors }, 400);
-    // 親を自動で割り当てると、クライアントに許した接頭辞の外まで広がりうる。
-    // 同じ要求に granted の祖先がすべて含まれることを、書き込み前に確かめる。
-    const included = new Set(settings.map((setting) => setting.slug));
-    const missingParents = new Set<string>();
-    for (const setting of settings) {
-      let row = stageRows.get(setting.slug);
-      const visited = new Set<string>([setting.slug]);
-      while (row && !hasNoIslandPrerequisites(row)) {
-        const parentSlug = parentSlugFromRow(row);
-        if (!parentSlug || visited.has(parentSlug)) break;
-        visited.add(parentSlug);
-        row = stageRows.get(parentSlug);
-        if (!row) {
-          [row] = await db.select().from(stages).where(eq(stages.slug, parentSlug)).limit(1);
-          if (row) stageRows.set(parentSlug, row);
-        }
-        if (row?.audience === "granted" && !included.has(parentSlug))
-          missingParents.add(parentSlug);
-      }
-    }
-    for (const slug of missingParents) errors.push({ slug, code: "parent_not_included" });
-    if (errors.length) return c.json({ error: "Invalid stages", errors }, 400);
-    const binding = c.env.DB;
-    await binding.batch([
-      binding.prepare("DELETE FROM integration_group_stages WHERE group_id = ?").bind(group.id),
-      ...settings.map((s) =>
-        binding
-          .prepare(
-            "INSERT INTO integration_group_stages(group_id, stage_id, due_at, message, exempt) VALUES (?, ?, ?, ?, ?)",
-          )
-          .bind(group.id, s.stageId, s.due_at, s.message, s.exempt ? 1 : 0),
-      ),
-      ...removeGroupGrantStatements(binding, group.id),
-      ...applyGroupStageStatements(binding, group.id, client.name),
-    ]);
-    c.set("integrationCounts", { stages: settings.length });
-    return c.json({ stages: settings.map(({ stageId: _, ...setting }) => setting) });
+    const result = await replaceGroupStages(db, group, body.stages, client.allowedStagePrefixes);
+    if (!result.ok) return c.json({ error: "Invalid stages", errors: result.errors }, 400);
+    c.set("integrationCounts", { stages: result.stages.length });
+    return c.json({ stages: result.stages });
   },
 );
 
@@ -383,7 +301,7 @@ for (const kind of ["progress", "events"] as const) {
       c.set("integrationGroupId", group.id);
       return c.json(
         kind === "progress"
-          ? await readIntegrationProgress(db, group.id, {
+          ? await readGroupProgress(db, group.id, {
               stage: c.req.query("stage"),
               at: c.req.query("at"),
               cursor: c.req.query("cursor"),

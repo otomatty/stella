@@ -7,6 +7,7 @@ describe("navForRole", () => {
   it("受講者には管理者専用の項目を出さない", () => {
     const items = ids("learner");
     expect(items).not.toContain("users");
+    expect(items).not.toContain("groups");
     expect(items).not.toContain("audit");
     expect(items).not.toContain("integrations");
   });
@@ -30,6 +31,21 @@ describe("navForRole", () => {
     const admin = ids("admin");
     expect(admin.indexOf("review-queue")).toBe(admin.indexOf("discovery") + 1);
     expect(ids("learner")).not.toContain("review-queue");
+  });
+
+  it("グループはユーザー管理の直後に出す", () => {
+    const admin = navForRole("admin");
+    const users = admin.findIndex((item) => item.id === "users");
+    expect(admin[users + 1]).toMatchObject({ id: "groups", label: "グループ" });
+  });
+
+  it("公開中の所属グループがある受講者にだけ、修了証の前にグループを出す", () => {
+    expect(navForRole("learner", false).map((item) => item.id)).not.toContain("learner-groups");
+    expect(navForRole("learner", true).slice(-2)).toMatchObject([
+      { id: "learner-groups", label: "グループ" },
+      { id: "cert" },
+    ]);
+    expect(navForRole("admin", true)).toEqual(navForRole("admin"));
   });
 
   it("外部連携は管理者の監査ログの直後に出す", () => {

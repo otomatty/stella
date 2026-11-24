@@ -1,10 +1,11 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import type {
   StageGrantGuidance,
   StageGrantGuidanceSummary,
+  StageGrantSources,
 } from "@stella/shared/stage-grants/types";
 import type { Db } from "../db/client.js";
-import { stageGrants } from "../db/schema.js";
+import { effectiveStageGrants, groups, stageGrants } from "../db/schema.js";
 import { ApiError } from "./authz.js";
 import { chunk } from "./enrollment-bulk.js";
 
@@ -13,6 +14,29 @@ export const guidanceColumns = {
   due_at: stageGrants.dueAt,
   message: stageGrants.message,
 };
+
+export const effectiveGuidanceColumns = {
+  source_name: effectiveStageGrants.sourceName,
+  due_at: effectiveStageGrants.dueAt,
+  message: effectiveStageGrants.message,
+};
+
+export const guidancePriority = [
+  sql`${effectiveStageGrants.groupId} is not null`,
+  sql`${effectiveStageGrants.dueAt} is null`,
+  effectiveStageGrants.dueAt,
+  effectiveStageGrants.groupId,
+] as const;
+
+/** 優先順位で並べた行から、各組の最初の案内を選ぶ。 */
+export function firstGuidanceBy<T, K>(rows: readonly T[], keyOf: (row: T) => K): Map<K, T> {
+  const selected = new Map<K, T>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    if (!selected.has(key)) selected.set(key, row);
+  }
+  return selected;
+}
 
 export function guidanceOf(row?: Partial<StageGrantGuidance>): StageGrantGuidance {
   return {
@@ -87,10 +111,41 @@ export function parseGuidance(body: unknown): {
 }
 
 export async function loadStageGuidance(db: Db, stageId: string) {
-  return db
-    .select({ profileId: stageGrants.profileId, ...guidanceColumns })
-    .from(stageGrants)
-    .where(eq(stageGrants.stageId, stageId));
+  const rows = await db
+    .select({
+      profileId: effectiveStageGrants.profileId,
+      groupId: effectiveStageGrants.groupId,
+      groupName: groups.name,
+      ...effectiveGuidanceColumns,
+    })
+    .from(effectiveStageGrants)
+    .leftJoin(groups, eq(groups.id, effectiveStageGrants.groupId))
+    .where(eq(effectiveStageGrants.stageId, stageId))
+    .orderBy(...guidancePriority);
+  return {
+    guidanceByProfile: firstGuidanceBy(rows, (row) => row.profileId),
+    sourcesByProfile: collectStageGrantSources(rows),
+    manualRows: rows.filter((row) => row.groupId === null),
+  };
+}
+
+export function collectStageGrantSources(
+  rows: readonly { profileId: string; groupId: string | null; groupName: string | null }[],
+): Map<string, StageGrantSources> {
+  const sourcesByProfile = new Map<string, StageGrantSources>();
+  for (const row of rows) {
+    let sources = sourcesByProfile.get(row.profileId);
+    if (!sources) {
+      sources = { manual: false, groups: [] };
+      sourcesByProfile.set(row.profileId, sources);
+    }
+    if (row.groupId == null) sources.manual = true;
+    else if (row.groupName !== null) sources.groups.push({ id: row.groupId, name: row.groupName });
+  }
+  for (const sources of sourcesByProfile.values()) {
+    sources.groups.sort((a, b) => a.name.localeCompare(b.name, "ja") || a.id.localeCompare(b.id));
+  }
+  return sourcesByProfile;
 }
 
 /** 新規行だけを受け取る。祖先の自動割り当ても、その祖先自身の案内を継承する。 */

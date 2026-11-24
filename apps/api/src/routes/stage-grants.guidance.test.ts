@@ -5,6 +5,7 @@ import { getDb } from "../db/client.js";
 import {
   auditLogs,
   enrollments,
+  groupMembers,
   learnerFocus,
   lessonProgress,
   lessons,
@@ -21,9 +22,11 @@ import {
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { createOrRenameGroup, replaceGroupStages } from "../lib/groups.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
+import { adminGroupsRoute } from "./admin-groups.js";
 import { stageGrantsRoute } from "./stage-grants.js";
 import { skillMapRoute } from "./skill-map.js";
 import { stageStartRoute } from "./stage-start.js";
@@ -34,6 +37,7 @@ let admin: string;
 let learner: string;
 let db: ReturnType<typeof getDb>;
 const app = mountTestApp({} as Env, stageGrantsRoute, skillMapRoute, stageStartRoute).app;
+app.route("/", adminGroupsRoute);
 const empty = { source_name: null, due_at: null, message: null };
 const guidance = {
   source_name: "架空の案内元",
@@ -183,6 +187,180 @@ describe("割り当ての案内 (実 SQLite)", () => {
       expect(rows.find((r) => r.profileId === "learner")?.sourceName).toBe(guidance.source_name);
     },
   );
+  it("割り当ての出どころに手動とすべてのグループを返す", async () => {
+    await grant("learner");
+    await grant("new");
+    await db
+      .insert(profiles)
+      .values({ id: "grouped", displayName: "架空の受講者", role: "student" });
+    const ids = new Map<string, string>();
+    for (const [name, members, due_at] of [
+      ["Z グループ", ["other", "new", "grouped"], "2026-12-01T00:00:00Z"],
+      ["A グループ", ["grouped"], null],
+    ] as const) {
+      const group = await createOrRenameGroup(db, { name, createdBy: "admin" });
+      expect(
+        await replaceGroupStages(db, group, [{ slug: "sample-extra", due_at }], []),
+      ).toMatchObject({ ok: true });
+      await db
+        .insert(groupMembers)
+        .values(members.map((profileId) => ({ groupId: group.id, profileId })));
+      ids.set(name, group.id);
+    }
+    const res = await call("/api/stage-grants/extra/learners");
+    expect(res.status).toBe(200);
+    const { learners } = await json<{
+      learners: { id: string; assigned: boolean; sources: unknown; source_group: string | null }[];
+    }>(res);
+    const byId = new Map(learners.map(({ id, ...row }) => [id, row]));
+    const groupA = { id: ids.get("A グループ"), name: "A グループ" };
+    const groupZ = { id: ids.get("Z グループ"), name: "Z グループ" };
+    expect(byId.get("learner")).toMatchObject({
+      assigned: true,
+      sources: { manual: true, groups: [] },
+    });
+    expect(byId.get("other")).toMatchObject({
+      assigned: true,
+      sources: { manual: false, groups: [groupZ] },
+    });
+    expect(byId.get("new")).toMatchObject({
+      assigned: true,
+      sources: { manual: true, groups: [groupZ] },
+    });
+    expect(byId.get("grouped")).toMatchObject({
+      assigned: true,
+      sources: { manual: false, groups: [groupA, groupZ] },
+      source_group: groupA.name,
+      guidance: { due_at: "2026-12-01T00:00:00.000Z" },
+    });
+    expect(byId.get("admin")).toMatchObject({
+      assigned: false,
+      sources: { manual: false, groups: [] },
+    });
+  });
+
+  it("前提免除の出どころを名前順で返し、手動の免除だけ解除できる", async () => {
+    await grant();
+    const groupSources = [];
+    for (const name of ["Z グループ", "A グループ"]) {
+      const group = await createOrRenameGroup(db, { name, createdBy: "admin" });
+      groupSources.unshift({ id: group.id, name });
+      await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+      expect(
+        await replaceGroupStages(db, group, [{ slug: "sample-extra", exempt: true }]),
+      ).toMatchObject({ ok: true });
+    }
+
+    const path = "/api/stage-grants/extra";
+    const roster = async () => json(await call(`${path}/learners?q=learner&status=exempted`));
+    expect((await call(path, "PATCH", { exempt: ["learner"] })).status).toBe(200);
+    expect(await roster()).toMatchObject({
+      learners: [
+        {
+          id: "learner",
+          exempted: true,
+          exemption_sources: { manual: true, groups: groupSources },
+        },
+      ],
+    });
+
+    expect((await call(path, "PATCH", { unexempt: ["learner"] })).status).toBe(200);
+    expect(await db.select().from(stageUnlocks)).toEqual([]);
+    expect(await roster()).toMatchObject({
+      learners: [
+        {
+          id: "learner",
+          exempted: true,
+          exemption_sources: { manual: false, groups: groupSources },
+        },
+      ],
+    });
+  });
+
+  it("案内の対象人数と要約は検索やページに関係なく手動の割り当てだけで求める", async () => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+    expect(
+      await replaceGroupStages(db, group, [{ slug: "sample-extra", message: "グループの案内" }]),
+    ).toMatchObject({ ok: true });
+
+    const path = "/api/stage-grants/extra/learners";
+    expect(await json(await call(path))).toMatchObject({
+      counts: { assigned: 1 },
+      manual_assigned_count: 0,
+      guidance_summary: { uniform: true, guidance: null },
+    });
+
+    await grant("other");
+    for (let i = 0; i < 50; i++) {
+      const id = `manual-${i}`;
+      await db.insert(profiles).values({ id, displayName: id });
+      await grant(id);
+    }
+    expect(await json(await update({ all: true, ...guidance }))).toMatchObject({ updated: 51 });
+    const summary = {
+      manual_assigned_count: 51,
+      guidance_summary: { uniform: true, guidance: normalized },
+    };
+    expect(await json(await call(`${path}?status=assigned&limit=50`))).toMatchObject({
+      ...summary,
+      total: 52,
+      next_offset: 50,
+    });
+    expect(await json(await call(`${path}?status=assigned&limit=50&offset=50`))).toMatchObject({
+      ...summary,
+      next_offset: null,
+    });
+    expect(await json(await call(`${path}?q=learner`))).toMatchObject({
+      ...summary,
+      total: 1,
+      learners: [{ id: "learner", guidance: { message: "グループの案内" } }],
+    });
+    expect(await json(await call("/api/stage-grants"))).toMatchObject({
+      stages: [{ id: "extra", guidance_summary: summary.guidance_summary }],
+    });
+  });
+
+  it("手動の割り当て・免除を解除しても、管理者グループの分は残る", async () => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await createOrRenameGroup(db, { id: group.id, name: "管理者のグループ" });
+    await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+    expect(
+      await replaceGroupStages(
+        db,
+        group,
+        [{ slug: "sample-extra", message: "グループの案内", exempt: true }],
+        [],
+      ),
+    ).toMatchObject({ ok: true });
+
+    expect(await mine()).toMatchObject({
+      stages: [{ status: "available", source_name: null, message: "グループの案内" }],
+    });
+    const path = "/api/stage-grants/extra";
+    expect((await call(path, "PATCH", { exempt: ["learner"] })).status).toBe(200);
+    expect((await call(path, "PATCH", { add: ["learner"] })).status).toBe(200);
+    expect(await db.select().from(stageGrants)).toHaveLength(1);
+    expect(await db.select().from(stageUnlocks)).toHaveLength(1);
+    expect(await mine()).toMatchObject({ stages: [empty] });
+
+    const removed = await call(path, "PATCH", { remove: ["learner"] });
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toMatchObject({ counts: { assigned: 1, exempted: 1 } });
+    expect(await db.select().from(stageGrants)).toEqual([]);
+    expect(await db.select().from(stageUnlocks)).toEqual([]);
+    expect(await mine()).toMatchObject({
+      stages: [{ status: "available", message: "グループの案内" }],
+    });
+
+    const roster = await call(`${path}/learners?status=assigned`);
+    expect(roster.status).toBe(200);
+    expect(await roster.json()).toMatchObject({
+      learners: [
+        { id: "learner", assigned: true, exempted: true, source_group: "管理者のグループ" },
+      ],
+    });
+  });
   it("割り当てなし・他人だけの割り当ては空、免除・受講・修了を評価する", async () => {
     expect(await mine()).toEqual({ stages: [] });
     await grant("other");
@@ -582,6 +760,74 @@ it("始められるExtraは従来の候補に残し、新しいホームの候�
   expect(body.skill_map.unguided_next_stage_ids).toEqual(["basic"]);
 });
 
+it.each(["メンバー削除", "ステージ設定削除", "グループ削除"])(
+  "%s で開始済みの Extra だけを手動の割り当てに残す",
+  async (operation) => {
+    const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+    await db
+      .insert(groupMembers)
+      .values(["learner", "other", "new"].map((profileId) => ({ groupId: group.id, profileId })));
+    expect(
+      await replaceGroupStages(db, group, [
+        { slug: "sample-extra", exempt: true, message: "グループの案内", due_at: "2026-12-01" },
+      ]),
+    ).toMatchObject({ ok: true });
+    expect((await call("/api/stages/extra/start", "POST", undefined, learner)).status).toBe(200);
+    await db.insert(enrollments).values({ userId: "new", stageId: "extra", status: "expired" });
+    expect(await db.select().from(stageGrants)).toEqual([]);
+
+    const path = `/api/admin/groups/${group.id}`;
+    const remove = ["learner", "other", "new"];
+    if (operation === "メンバー削除") {
+      expect((await call(`${path}/members`, "PATCH", { add: ["missing"], remove })).status).toBe(
+        400,
+      );
+      expect(await db.select().from(stageGrants)).toEqual([]);
+    }
+    const res =
+      operation === "メンバー削除"
+        ? await call(`${path}/members`, "PATCH", { remove })
+        : operation === "ステージ設定削除"
+          ? await call(`${path}/stages`, "PUT", { stages: [] })
+          : await call(path, "DELETE");
+    expect(res.status).toBe(200);
+    expect(await db.select().from(stageGrants)).toMatchObject([
+      { profileId: "learner", stageId: "extra", sourceName: null, dueAt: null, message: null },
+    ]);
+
+    const mapStages = async (token: string) => {
+      const res = await call("/api/skill-map/mine?tiers=7", "GET", undefined, token);
+      expect(res.status).toBe(200);
+      return (await json<{ skill_map: { stages: { id: string }[] } }>(res)).skill_map.stages;
+    };
+    expect(await mapStages(learner)).toContainEqual(
+      expect.objectContaining({ id: "extra", visibility: "full", enrolled: true }),
+    );
+    expect(await mine()).toMatchObject({
+      stages: [{ stage_id: "extra", status: "in-progress", ...empty }],
+    });
+    expect(await json(await call("/api/stage-grants/extra/learners"))).toMatchObject({
+      counts: { assigned: 1, exempted: 0 },
+      learners: expect.arrayContaining([
+        expect.objectContaining({ id: "learner", sources: { manual: true, groups: [] } }),
+      ]),
+    });
+
+    const other = await signAccessToken("test-secret", "other", "other@example.invalid");
+    expect((await mapStages(other)).map(({ id }) => id)).not.toContain("extra");
+    expect(await json(await call("/api/stage-grants/mine", "GET", undefined, other))).toEqual({
+      stages: [],
+    });
+
+    expect((await call("/api/stage-grants/extra", "PATCH", { remove: ["learner"] })).status).toBe(
+      200,
+    );
+    expect((await loadSkillMapSource(db, caller)).enrolledStageIds?.has("extra")).toBe(true);
+    expect((await mapStages(learner)).map(({ id }) => id)).not.toContain("extra");
+    expect(await mine()).toEqual({ stages: [] });
+  },
+);
+
 it("公開外のExtraの受講登録も、通常の道の集約に混ぜない", async () => {
   await grant();
   await db.insert(enrollments).values({ userId: "learner", stageId: "extra" });
@@ -592,6 +838,88 @@ it("公開外のExtraの受講登録も、通常の道の集約に混ぜない",
   expect(body.skill_map.has_enrollment).toBe(true);
   expect(body.skill_map.has_unguided_enrollment).toBe(false);
   expect(await mine()).toEqual({ stages: [] });
+});
+
+it("旧 API の GET を PUT に送り返してもグループ由来の割り当てと免除を手動にしない", async () => {
+  await db.insert(stages).values({
+    id: "child",
+    slug: "sample-child",
+    title: "後続ステージ",
+    status: "published",
+    audience: "granted",
+    parent: "sample-extra",
+    prerequisites: '["sample-extra"]',
+  });
+  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+  await db.insert(groupMembers).values({ groupId: group.id, profileId: "learner" });
+  expect(
+    await replaceGroupStages(db, group, [
+      { slug: "sample-extra" },
+      { slug: "sample-child", exempt: true },
+    ]),
+  ).toMatchObject({ ok: true });
+  await grant("other", "child");
+  const path = "/api/stage-grants";
+  const listed = await json<{
+    stages: { id: string; profile_ids: string[]; unlocked_profile_ids: string[] }[];
+  }>(await call(path));
+  const child = listed.stages.find((stage) => stage.id === "child");
+  expect(child?.profile_ids).toEqual(expect.arrayContaining(["learner", "other"]));
+  expect(child?.unlocked_profile_ids).toEqual(["learner"]);
+
+  const response = await call(`${path}/child`, "PUT", child);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ ancestor_grants: [] });
+  expect(await db.select().from(stageGrants)).toMatchObject([
+    { stageId: "child", profileId: "other" },
+  ]);
+  expect(await db.select().from(stageUnlocks)).toEqual([]);
+  expect(await json(await call(path))).toEqual(listed);
+});
+
+it("旧 API の PUT は手動の割り当てがあってもグループの免除を手動にしない", async () => {
+  await grant();
+  await grant("other");
+  await grant("new");
+  const group = await createOrRenameGroup(db, { name: "グループ", createdBy: "admin" });
+  await db.insert(groupMembers).values([
+    { groupId: group.id, profileId: "learner" },
+    { groupId: group.id, profileId: "other" },
+  ]);
+  expect(
+    await replaceGroupStages(db, group, [{ slug: "sample-extra", exempt: true }]),
+  ).toMatchObject({ ok: true });
+  await db.insert(stageUnlocks).values({
+    stageId: "extra",
+    userId: "other",
+    via: "staff",
+    unlockedAt: new Date("2026-01-01T00:00:00Z"),
+  });
+  const readManualUnlocks = () => db.select().from(stageUnlocks).orderBy(stageUnlocks.userId);
+  const before = await readManualUnlocks();
+  const path = "/api/stage-grants";
+  const listed = await json<{
+    stages: { id: string; profile_ids: string[]; unlocked_profile_ids: string[] }[];
+  }>(await call(path));
+  const extra = listed.stages.find((stage) => stage.id === "extra");
+  if (!extra) throw new Error("割り当て一覧に extra がありません");
+  expect(extra.profile_ids).toHaveLength(3);
+  expect(extra.unlocked_profile_ids).toHaveLength(2);
+  expect(extra.unlocked_profile_ids).toEqual(expect.arrayContaining(["learner", "other"]));
+
+  const roundTrip = await call(`${path}/extra`, "PUT", extra);
+  expect(roundTrip.status).toBe(200);
+  expect(await readManualUnlocks()).toEqual(before);
+
+  const addManualUnlock = await call(`${path}/extra`, "PUT", {
+    profile_ids: extra.profile_ids,
+    unlocked_profile_ids: [...extra.unlocked_profile_ids, "new"],
+  });
+  expect(addManualUnlock.status).toBe(200);
+  expect(await readManualUnlocks()).toEqual([
+    expect.objectContaining({ stageId: "extra", userId: "new", via: "staff" }),
+    ...before,
+  ]);
 });
 
 it("PUTの読み取り後に案内が更新されても、残る人の案内と割り当ての記録を保持する", async () => {

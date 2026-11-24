@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 
-import { buildHomeGuide, startableStageIds } from "./home-guide";
+import {
+  buildHomeGuide,
+  isGuidedStageStep,
+  pickGuidedStage,
+  startableStageIds,
+} from "./home-guide";
 import { buildTodayPlan } from "./today-plan";
 
 const node = (id: string, over: Partial<SkillMapStageNode> = {}): SkillMapStageNode => ({
@@ -83,6 +88,34 @@ describe("buildHomeGuide", () => {
       "miss",
       "choose",
     ]);
+  });
+
+  it("期限や案内元がなくても受講中の Extra の続きへ案内する", () => {
+    const guidedStage = pickGuidedStage(
+      [
+        {
+          stage_id: "extra",
+          title: ACTIVE.stageTitle,
+          status: "in-progress",
+          source_name: null,
+          message: null,
+          due_at: null,
+          prerequisite_titles: [],
+          progress: { unit: "tasks", passed: 0, total: 1 },
+        },
+      ],
+      null,
+    );
+    expect(guidedStage?.stage_id).toBe("extra");
+    const guide = buildHomeGuide({
+      ...base,
+      hasEnrollment: false,
+      guidedStage,
+      plan: buildTodayPlan({ srsDueCount: 0, activeStage: ACTIVE }),
+      startableStageIds: ["basic"],
+    });
+    expect(guide.steps[0]).toMatchObject({ kind: "plan", item: { kind: "lesson" } });
+    expect(guidedStage && isGuidedStageStep(guide.steps[0], guidedStage)).toBe(true);
   });
 
   it("今日のプランの順をそのまま手順にする (先頭が「次にやること」)", () => {

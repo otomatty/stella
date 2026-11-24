@@ -35,6 +35,8 @@ export type NavId =
   | "gradebook"
   | "integrations"
   | "users"
+  | "groups"
+  | "learner-groups"
   | "enrollments"
   | "report"
   | "audit"
@@ -54,6 +56,7 @@ const NAV: Record<Role, NavItem[]> = {
   learner: [
     { id: "dash", label: "ステージ一覧", icon: Compass },
     { id: "lesson", label: "現在の教材", icon: Play },
+    { id: "learner-groups", label: "グループ", icon: Users },
     { id: "cert", label: "修了証", icon: Award },
   ],
   admin: [
@@ -65,6 +68,7 @@ const NAV: Record<Role, NavItem[]> = {
     { id: "enrollments", label: "受講状況", icon: ClipboardList },
     { id: "gradebook", label: "成績台帳", icon: GraduationCap },
     { id: "users", label: "ユーザー管理", icon: Users },
+    { id: "groups", label: "グループ", icon: Users },
     { id: "report", label: "レポート", icon: FileText },
     { id: "audit", label: "監査ログ", icon: Shield },
     { id: "integrations", label: "外部連携", icon: Shield },
@@ -72,6 +76,6 @@ const NAV: Record<Role, NavItem[]> = {
 };
 
 /** 表示するナビ項目。 */
-export function navForRole(role: Role): NavItem[] {
-  return NAV[role];
+export function navForRole(role: Role, hasLearnerGroups = false): NavItem[] {
+  return NAV[role].filter((item) => item.id !== "learner-groups" || hasLearnerGroups);
 }

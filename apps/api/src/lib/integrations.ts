@@ -4,15 +4,11 @@ import { and, eq, isNull, lt, or, sql, type AnyColumn, type SQL } from "drizzle-
 import { createMiddleware } from "hono/factory";
 import type { Db } from "../db/client.js";
 import { getDb } from "../db/client.js";
-import {
-  integrationClients,
-  integrationGroups,
-  integrationGroupMembers,
-  profiles,
-} from "../db/schema.js";
+import { groupMembers, groups, integrationClients, profiles } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse } from "./authz.js";
 import { recordAudit } from "./audit.js";
+import { learnerOnly } from "./learner-scope.js";
 import { enforceIntegrationRateLimit } from "./rate-limit.js";
 
 export const INTEGRATION_TOKEN_PATTERN = /^stella_int_[a-f0-9]{64}$/;
@@ -113,8 +109,8 @@ export function requireScope(scope: IntegrationScope) {
 export async function requireOwnGroup(db: Db, clientId: string, key: string) {
   const [group] = await db
     .select()
-    .from(integrationGroups)
-    .where(and(eq(integrationGroups.clientId, clientId), eq(integrationGroups.key, key)))
+    .from(groups)
+    .where(and(eq(groups.clientId, clientId), eq(groups.externalKey, key)))
     .limit(1);
   if (!group) throw new ApiError("Not found", 404);
   return group;
@@ -129,12 +125,12 @@ export async function requireOwnGroupMember(
   const group = await requireOwnGroup(db, clientId, key);
   const [member] = await db
     .select({ id: profiles.id })
-    .from(integrationGroupMembers)
-    .innerJoin(profiles, eq(profiles.id, integrationGroupMembers.profileId))
+    .from(groupMembers)
+    .innerJoin(profiles, eq(profiles.id, groupMembers.profileId))
     .where(
       and(
-        eq(integrationGroupMembers.groupId, group.id),
-        eq(integrationGroupMembers.profileId, profileId),
+        eq(groupMembers.groupId, group.id),
+        eq(groupMembers.profileId, profileId),
         eq(profiles.role, "student"),
       ),
     )
@@ -148,18 +144,18 @@ export function integrationGroupFilter(
   groupId?: string,
 ): SQL | undefined {
   if (!groupId) return undefined;
-  return sql`${profileId} in (select ${integrationGroupMembers.profileId} from ${integrationGroupMembers} where ${integrationGroupMembers.groupId} = ${groupId})`;
+  return sql`${profileId} in (select ${groupMembers.profileId} from ${groupMembers} where ${groupMembers.groupId} = ${groupId})`;
 }
 export async function listIntegrationGroups(db: Db, clientId?: string) {
   return db
     .select({
-      id: integrationGroups.id,
-      clientId: integrationGroups.clientId,
-      key: integrationGroups.key,
-      name: integrationGroups.name,
-      memberCount: sql<number>`(select count(*) from integration_group_members m inner join profiles p on p.id = m.profile_id where m.group_id = integration_groups.id and p.role = 'student')`,
+      id: groups.id,
+      clientId: groups.clientId,
+      key: groups.externalKey,
+      name: groups.name,
+      memberCount: sql<number>`(select count(*) from ${groupMembers} where ${groupMembers.groupId} = ${groups.id} and ${learnerOnly(groupMembers.profileId)})`,
     })
-    .from(integrationGroups)
-    .where(clientId ? eq(integrationGroups.clientId, clientId) : undefined)
-    .orderBy(integrationGroups.name, integrationGroups.id);
+    .from(groups)
+    .where(clientId ? eq(groups.clientId, clientId) : undefined)
+    .orderBy(groups.name, groups.id);
 }

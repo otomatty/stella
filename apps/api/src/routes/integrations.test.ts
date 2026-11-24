@@ -10,7 +10,8 @@ import {
   enrollments,
   stageGrants,
   stageUnlocks,
-  integrationGroupMembers,
+  groupMembers,
+  groups,
 } from "../db/schema.js";
 import * as authUsers from "../lib/auth-users.js";
 import { getDb } from "../db/client.js";
@@ -161,26 +162,26 @@ describe("外部連携の境界 (実 SQLite)", () => {
   it("所有グループとメンバーの範囲外は404。/meは人数だけを返す", async () => {
     const a = await create();
     const b = await create();
-    await put(a.token);
-    const own = await requireOwnGroup(getDb(env), a.client.id, "sample:term-1");
+    const key = "sample:term-1";
+    await put(a.token, key);
+    const own = await requireOwnGroup(getDb(env), a.client.id, key);
+    expect(own.externalKey).toBe(key);
     db.sqlite
-      .prepare(
-        "insert into integration_group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)",
-      )
+      .prepare("insert into group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)")
       .run(own.id);
-    await expect(requireOwnGroup(getDb(env), b.client.id, own.key)).rejects.toMatchObject({
+    await expect(requireOwnGroup(getDb(env), b.client.id, key)).rejects.toMatchObject({
       status: 404,
     });
     await expect(
-      requireOwnGroupMember(getDb(env), b.client.id, own.key, "inside"),
+      requireOwnGroupMember(getDb(env), b.client.id, key, "inside"),
     ).rejects.toMatchObject({ status: 404 });
     await expect(
-      requireOwnGroupMember(getDb(env), a.client.id, own.key, "outside"),
+      requireOwnGroupMember(getDb(env), a.client.id, key, "outside"),
     ).rejects.toMatchObject({ status: 404 });
     await expect(
-      requireOwnGroupMember(getDb(env), a.client.id, own.key, "absent"),
+      requireOwnGroupMember(getDb(env), a.client.id, key, "absent"),
     ).rejects.toMatchObject({ status: 404 });
-    expect(await requireOwnGroupMember(getDb(env), a.client.id, own.key, "inside")).toEqual({
+    expect(await requireOwnGroupMember(getDb(env), a.client.id, key, "inside")).toEqual({
       id: "inside",
     });
     const aMe = await request(app, env, `${API}/me`, { token: a.token });
@@ -192,7 +193,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     expect(await bMe.json()).toMatchObject({ groups: [] });
     // 同じ外部キーを別のクライアントが自分用に作れる。
     expect((await put(b.token)).status).toBe(200);
-    expect(db.sqlite.prepare("select count(*) n from integration_groups").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from groups").get()?.n).toBe(2);
   });
   it("将来のルートにもmiddlewareと所有権チェックを組み合わせられる", async () => {
     const a = await create();
@@ -245,9 +246,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     await put(a.token);
     const group = await requireOwnGroup(getDb(env), a.client.id, "sample:term-1");
     db.sqlite
-      .prepare(
-        "insert into integration_group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)",
-      )
+      .prepare("insert into group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)")
       .run(group.id);
     const path = `/api/admin/users?groupId=${group.id}`;
     const res = await request(app, env, path, { token: adminToken });
@@ -259,7 +258,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
       body: JSON.stringify({ userId: "inside", confirmEmail: "inside@example.test" }),
     });
     expect(deleted.status).toBe(200);
-    expect(db.sqlite.prepare("select count(*) n from integration_group_members").get()?.n).toBe(0);
+    expect(db.sqlite.prepare("select count(*) n from group_members").get()?.n).toBe(0);
   });
   it("成績台帳・割り当てもグループで絞り、staffを受講者の成績に数えない", async () => {
     const a = await create();
@@ -279,9 +278,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     }
     for (const id of ["inside", "admin"])
       db.sqlite
-        .prepare(
-          "insert into integration_group_members (group_id,profile_id,joined_at) values (?, ?, 1)",
-        )
+        .prepare("insert into group_members (group_id,profile_id,joined_at) values (?, ?, 1)")
         .run(group.id, id);
     const gradePath = `/api/certificates/gradebook/extra?groupId=${group.id}`;
     const grade = await request(app, env, gradePath, { token: adminToken });
@@ -318,14 +315,46 @@ describe("外部連携の境界 (実 SQLite)", () => {
     const one = await requireOwnGroup(getDb(env), a.client.id, "sample:term-1");
     const two = await requireOwnGroup(getDb(env), a.client.id, "sample:term-2");
     const insert = db.sqlite.prepare(
-      "insert into integration_group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)",
+      "insert into group_members (group_id,profile_id,joined_at) values (?, 'inside', 1)",
     );
     insert.run(one.id);
     insert.run(two.id);
     expect(() => insert.run(one.id)).toThrow();
     db.sqlite.prepare("delete from profiles where id='inside'").run();
-    expect(db.sqlite.prepare("select count(*) n from integration_group_members").get()?.n).toBe(0);
+    expect(db.sqlite.prepare("select count(*) n from group_members").get()?.n).toBe(0);
     expect(db.sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
+  });
+  it("管理者向けの一覧は両方の種類を返し、連携の一覧は自分のグループだけを返す", async () => {
+    const a = await create();
+    await put(a.token);
+    const orm = getDb(env);
+    await orm
+      .insert(groups)
+      .values({ id: "staff-group", name: "管理者のグループ", createdBy: "admin" });
+    await orm.insert(groupMembers).values({ groupId: "staff-group", profileId: "inside" });
+
+    const all = await request(app, env, "/api/admin/integration-groups", { token: adminToken });
+    expect(all.status).toBe(200);
+    expect(await all.json()).toMatchObject({
+      groups: expect.arrayContaining([
+        { id: "staff-group", clientId: null, key: null, name: "管理者のグループ", memberCount: 1 },
+        {
+          id: expect.any(String),
+          clientId: a.client.id,
+          key: "sample:term-1",
+          name: "テストグループ",
+          memberCount: 0,
+        },
+      ]),
+    });
+    const own = await request(app, env, `${API}/me`, { token: a.token });
+    expect(await own.json()).toMatchObject({ groups: [{ key: "sample:term-1" }] });
+    const staffUsers = await request(app, env, "/api/admin/users?groupId=staff-group", {
+      token: adminToken,
+    });
+    expect(await staffUsers.json()).toMatchObject({
+      rows: [expect.objectContaining({ id: "inside" })],
+    });
   });
   it("キー・名前・scopeを検査する", async () => {
     const a = await create();
@@ -394,7 +423,9 @@ describe("外部連携の境界 (実 SQLite)", () => {
   };
   it.each(["先に参加", "後から参加"])("連携で作る日時をミリ秒で保存する (%s)", async (order) => {
     const a = await setupWrite();
-    const before = Date.now();
+    const before = (
+      await requireOwnGroup(getDb(env), a.client.id, "sample:term-1")
+    ).createdAt.getTime();
     const addMember = () =>
       write(a.token, "members", { members: [{ email: "inside@example.test" }] });
     if (order === "先に参加") expect((await addMember()).status).toBe(200);
@@ -402,10 +433,11 @@ describe("外部連携の境界 (実 SQLite)", () => {
     if (order === "後から参加") expect((await addMember()).status).toBe(200);
     const after = Date.now();
     const orm = getDb(env);
-    const [member] = await orm.select().from(integrationGroupMembers);
-    const [grant] = await orm.select().from(stageGrants);
-    const [unlock] = await orm.select().from(stageUnlocks);
-    for (const date of [member?.joinedAt, grant?.grantedAt, unlock?.unlockedAt]) {
+    const [member] = await orm.select().from(groupMembers);
+    const group = await requireOwnGroup(orm, a.client.id, "sample:term-1");
+    expect(await orm.select().from(stageGrants)).toEqual([]);
+    expect(await orm.select().from(stageUnlocks)).toEqual([]);
+    for (const date of [member?.joinedAt, group.updatedAt]) {
       expect(date).toBeInstanceOf(Date);
       expect.soft(date?.getUTCFullYear()).toBe(new Date(before).getUTCFullYear());
       expect.soft(date?.getTime()).toBeGreaterThanOrEqual(before);
@@ -428,13 +460,13 @@ describe("外部連携の境界 (実 SQLite)", () => {
       error: "Invalid stages",
       errors: [{ slug: "sample-extra", code: "parent_not_included" }],
     });
-    expect(db.sqlite.prepare("select stage_id from integration_group_stages").all()).toEqual([
+    expect(db.sqlite.prepare("select stage_id from group_stages").all()).toEqual([
       { stage_id: "extra" },
     ]);
-    expect(db.sqlite.prepare("select stage_id from stage_grants").all()).toEqual([
+    expect(db.sqlite.prepare("select stage_id from effective_stage_grants").all()).toEqual([
       { stage_id: "extra" },
     ]);
-    expect(db.sqlite.prepare("select stage_id from stage_unlocks").all()).toEqual([
+    expect(db.sqlite.prepare("select stage_id from effective_stage_unlocks").all()).toEqual([
       { stage_id: "extra" },
     ]);
   });
@@ -471,7 +503,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
       error: "Invalid stages",
       errors: [{ slug: "other-extra", code: "parent_not_included" }],
     });
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(0);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(0);
   });
   it("granted の親子を順序にかかわらず設定でき、両方がツリーに出て免除した子を始められる", async () => {
     const a = await setupWrite();
@@ -518,9 +550,9 @@ describe("外部連携の境界 (実 SQLite)", () => {
 
     const configure = await write(a.token, "stages", { stages: [{ slug: "sample-extra" }] });
     expect(configure.status).toBe(200);
-    expect(
-      db.sqlite.prepare("select stage_id, exempt from integration_group_stages").all(),
-    ).toEqual([{ stage_id: "extra", exempt: 0 }]);
+    expect(db.sqlite.prepare("select stage_id, exempt from group_stages").all()).toEqual([
+      { stage_id: "extra", exempt: 0 },
+    ]);
 
     const readMap = async () => {
       const response = await request(app, env, "/api/skill-map/mine?tiers=7", {
@@ -576,7 +608,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
     expect(started.status).toBe(200);
     expect(await started.json()).toMatchObject({ created: true, state: "unlocked" });
   });
-  it("招待・既存・再送・行ごとの失敗。既存の名前と手動割り当てを保護する", async () => {
+  it("招待・既存・再送・行ごとの失敗。既存の名前を保ち、手動とグループの割り当てが両方効く", async () => {
     const a = await setupWrite();
     await getDb(env)
       .insert(stageGrants)
@@ -612,22 +644,26 @@ describe("外部連携の境界 (実 SQLite)", () => {
         { status: "already_member", id: "inside" },
       ],
     });
-    expect(db.sqlite.prepare("select count(*) n from integration_group_members").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from group_members").get()?.n).toBe(2);
     expect(
       db.sqlite.prepare("select count(*) n from profiles where email='new@example.test'").get()?.n,
     ).toBe(1);
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(3);
     expect(
       db.sqlite.prepare("select display_name from profiles where id='inside'").get()?.display_name,
     ).toBe("受講者の例A");
     expect(
       db.sqlite
-        .prepare("select source_group_id, message from stage_grants where profile_id='inside'")
+        .prepare(
+          "select group_id, message from effective_stage_grants where profile_id='inside' and group_id is null",
+        )
         .get(),
-    ).toMatchObject({ source_group_id: null, message: "手動の案内" });
+    ).toMatchObject({ group_id: null, message: "手動の案内" });
     expect(
-      db.sqlite.prepare("select count(*) n from stage_unlocks where user_id='inside'").get()?.n,
-    ).toBe(0);
+      db.sqlite
+        .prepare("select count(*) n from effective_stage_unlocks where user_id='inside'")
+        .get()?.n,
+    ).toBe(1);
     expect(
       db.sqlite.prepare("select count(*) n from auth_users where email='new@example.test'").get()
         ?.n,
@@ -636,6 +672,28 @@ describe("外部連携の境界 (実 SQLite)", () => {
     for (const email of ["new@example.test", "inside@example.test", "admin@example.test"])
       expect(audit).not.toContain(email);
     expect(audit).toContain("succeeded");
+  });
+  it("peerName の空白を除き、省略で保持し、null で解除する", async () => {
+    const a = await setupWrite();
+    const email = "inside@example.test";
+    const send = (member: object) => write(a.token, "members", { members: [{ email, ...member }] });
+    const saved = () => db.sqlite.prepare("select peer_name, external_id from group_members").get();
+    expect((await send({ peerName: " すばる ", externalId: "app-1" })).status).toBe(200);
+    expect(saved()).toEqual({ peer_name: "すばる", external_id: "app-1" });
+    expect((await send({})).status).toBe(200);
+    expect(saved()).toEqual({ peer_name: "すばる", external_id: "app-1" });
+    for (const peerName of [" ", "星".repeat(51), 1]) {
+      const response = await send({ peerName });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        results: [{ index: 0, id: null, status: "failed", code: "invalid_member" }],
+      });
+      expect(saved()).toEqual({ peer_name: "すばる", external_id: "app-1" });
+    }
+    expect((await send({ peerName: "🌟".repeat(50) })).status).toBe(200);
+    expect(saved()?.peer_name).toBe("🌟".repeat(50));
+    expect((await send({ peerName: null })).status).toBe(200);
+    expect(saved()).toEqual({ peer_name: null, external_id: "app-1" });
   });
   it("ステージの設定・更新・後からの参加・読み取り・前提免除", async () => {
     const a = await setupWrite();
@@ -647,9 +705,10 @@ describe("外部連携の境界 (実 SQLite)", () => {
       stages: [{ ...setting, due_at: "2026-12-10T14:59:59.000Z" }],
     });
     await write(a.token, "members", { members: [{ email: "outside@example.test" }] });
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(2);
     expect(
-      db.sqlite.prepare("select count(*) n from stage_unlocks where via='staff'").get()?.n,
+      db.sqlite.prepare("select count(*) n from effective_stage_unlocks where via='staff'").get()
+        ?.n,
     ).toBe(2);
     expect(db.sqlite.prepare("select count(*) n from enrollments").get()?.n).toBe(0);
     const source = await loadSkillMapSource(getDb(env), {
@@ -663,19 +722,30 @@ describe("外部連携の境界 (実 SQLite)", () => {
     const mine = await request(app, env, "/api/stage-grants/mine", { token: studentToken });
     expect(mine.status).toBe(200);
     expect(await mine.text()).toContain("架空の案内");
-    const roster = await request(app, env, "/api/stage-grants/extra/learners", {
-      token: adminToken,
-    });
+    const roster = await request(
+      app,
+      env,
+      "/api/stage-grants/extra/learners?status=exempted&prereq=not_done",
+      {
+        token: adminToken,
+      },
+    );
     expect(await roster.json()).toMatchObject({
       learners: expect.arrayContaining([
-        expect.objectContaining({ id: "inside", source_group: "テストグループ" }),
+        expect.objectContaining({
+          id: "inside",
+          assigned: true,
+          exempted: true,
+          source_group: "テストグループ",
+        }),
       ]),
     });
     await write(a.token, "stages", { stages: [{ ...setting, message: "変更", exempt: false }] });
-    expect(db.sqlite.prepare("select count(*) n from stage_unlocks").get()?.n).toBe(0);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_unlocks").get()?.n).toBe(0);
     expect(
-      db.sqlite.prepare("select message from stage_grants where profile_id='inside'").get()
-        ?.message,
+      db.sqlite
+        .prepare("select message from effective_stage_grants where profile_id='inside'")
+        .get()?.message,
     ).toBe("変更");
   });
   it.each([
@@ -690,10 +760,10 @@ describe("外部連携の境界 (実 SQLite)", () => {
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ stages: [{ due_at: expected }] });
-    expect(db.sqlite.prepare("select due_at from integration_group_stages").all()).toEqual([
+    expect(db.sqlite.prepare("select due_at from group_stages").all()).toEqual([
       { due_at: expected },
     ]);
-    expect(db.sqlite.prepare("select due_at from stage_grants").all()).toEqual([
+    expect(db.sqlite.prepare("select due_at from effective_stage_grants").all()).toEqual([
       { due_at: expected },
     ]);
     const mine = await request(app, env, "/api/stage-grants/mine", { token: studentToken });
@@ -702,25 +772,39 @@ describe("外部連携の境界 (実 SQLite)", () => {
       stages: [{ stage_id: "extra", due_at: expected }],
     });
   });
-  it("置換から外したら未着手だけ削除。開始済みの案内を消し、手動の免除は残す", async () => {
+  it("設定を外すと開始済みの割り当てを手動で残し、グループ由来の免除は消える", async () => {
     const a = await setupWrite();
     await write(a.token, "members", {
       members: [{ email: "inside@example.test" }, { email: "outside@example.test" }],
     });
     await write(a.token, "stages", { stages: [setting] });
-    await getDb(env).insert(enrollments).values({ userId: "inside", stageId: "extra" });
+    await getDb(env)
+      .insert(enrollments)
+      .values({ userId: "inside", stageId: "extra", status: "completed" });
+    await getDb(env)
+      .insert(stageUnlocks)
+      .values({ userId: "inside", stageId: "extra", via: "staff" });
+    expect((await write(a.token, "stages", { stages: [setting] })).status).toBe(200);
+    expect(db.sqlite.prepare("select * from stage_grants").all()).toEqual([]);
     expect((await write(a.token, "stages", { stages: [] })).status).toBe(200);
-    expect(
-      db.sqlite.prepare("select profile_id, due_at, message, source_name from stage_grants").all(),
-    ).toEqual([{ profile_id: "inside", due_at: null, message: null, source_name: null }]);
-    expect(db.sqlite.prepare("select user_id from stage_unlocks").all()).toEqual([
-      { user_id: "inside" },
+    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([
+      {
+        stage_id: "extra",
+        profile_id: "inside",
+        group_id: null,
+        source_name: null,
+        due_at: null,
+        message: null,
+      },
     ]);
+    expect(
+      db.sqlite.prepare("select user_id, group_id from effective_stage_unlocks").all(),
+    ).toEqual([{ user_id: "inside", group_id: null }]);
     expect(db.sqlite.prepare("select count(*) n from enrollments").get()?.n).toBe(1);
     await write(a.token, "stages", { stages: [setting] });
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(3);
   });
-  it("外部IDで外す。未着手だけ削除し、開始済みとグループ外の存在を守る", async () => {
+  it("メンバーを外した後も、開始済みの割り当てが手動で残る", async () => {
     const a = await setupWrite();
     await write(a.token, "members", {
       members: [
@@ -733,21 +817,59 @@ describe("外部連携の境界 (実 SQLite)", () => {
     expect((await write(a.token, "members/app-2?by=external", undefined, "DELETE")).status).toBe(
       200,
     );
-    expect(db.sqlite.prepare("select profile_id from stage_grants").all()).toEqual([
+    expect(db.sqlite.prepare("select profile_id from effective_stage_grants").all()).toEqual([
       { profile_id: "inside" },
     ]);
     expect((await write(a.token, "members/inside", undefined, "DELETE")).status).toBe(200);
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(1);
+    expect(db.sqlite.prepare("select * from effective_stage_grants").all()).toEqual([
+      {
+        stage_id: "extra",
+        profile_id: "inside",
+        group_id: null,
+        source_name: null,
+        due_at: null,
+        message: null,
+      },
+    ]);
+    const map = await request(app, env, "/api/skill-map/mine?tiers=7", { token: studentToken });
+    expect(map.status).toBe(200);
+    expect(await map.json()).toMatchObject({
+      skill_map: { stages: expect.arrayContaining([expect.objectContaining({ id: "extra" })]) },
+    });
+    const completion = "/api/certificates/completion/extra";
+    const started = await request(app, env, completion, { token: studentToken });
+    expect(await started.json()).toMatchObject({ completion: { stage_id: "extra" } });
+    const outsideToken = await signAccessToken(SECRET, "outside", "outside@example.test");
+    const unstarted = await request(app, env, completion, { token: outsideToken });
+    expect(await unstarted.json()).toEqual({ completion: null });
+    const mine = "/api/stage-grants/mine";
+    const startedGuidance = await request(app, env, mine, { token: studentToken });
+    expect(await startedGuidance.json()).toMatchObject({
+      stages: [
+        {
+          stage_id: "extra",
+          status: "in-progress",
+          source_name: null,
+          due_at: null,
+          message: null,
+        },
+      ],
+    });
+    const unstartedGuidance = await request(app, env, mine, { token: outsideToken });
+    expect(await unstartedGuidance.json()).toEqual({ stages: [] });
     expect(db.sqlite.prepare("select count(*) n from enrollments").get()?.n).toBe(1);
     expect(db.sqlite.prepare("select count(*) n from profiles").get()?.n).toBe(4);
     expect((await write(a.token, "members/inside", undefined, "DELETE")).status).toBe(404);
     expect((await write(a.token, "members/admin", undefined, "DELETE")).status).toBe(404);
   });
-  it("手動と別グループの割り当て・免除を変更しない", async () => {
+  it("手動と複数グループの和集合から、残っている出どころの案内を選び直す", async () => {
     const a = await setupWrite();
-    await getDb(env)
-      .insert(stageGrants)
-      .values({ profileId: "inside", stageId: "extra", message: "手動" });
+    await getDb(env).insert(stageGrants).values({
+      profileId: "inside",
+      stageId: "extra",
+      message: "手動",
+      sourceName: "手動の案内元",
+    });
     db.sqlite.exec(
       "insert into stage_unlocks(id,tenant_id,user_id,stage_id,via,unlocked_at) values ('manual','ses','outside','extra','staff',1)",
     );
@@ -759,10 +881,37 @@ describe("外部連携の境界 (実 SQLite)", () => {
     await write(
       a.token,
       "members",
-      { members: [{ email: "outside@example.test" }] },
+      { members: [{ email: "outside@example.test" }, { email: "inside@example.test" }] },
       "PUT",
       "sample:term-2",
     );
+    await write(
+      a.token,
+      "stages",
+      { stages: [{ ...setting, message: "別グループ", due_at: "2026-12-01" }] },
+      "PUT",
+      "sample:term-2",
+    );
+    const mine = async (token: string) => {
+      const res = await request(app, env, "/api/stage-grants/mine", { token });
+      expect(res.status).toBe(200);
+      return res.json();
+    };
+    const outsideToken = await signAccessToken(SECRET, "outside", "outside@example.test");
+    expect(await mine(studentToken)).toMatchObject({
+      stages: [{ message: "手動", due_at: null, source_name: "手動の案内元" }],
+    });
+    expect(await mine(outsideToken)).toMatchObject({
+      stages: [
+        { message: "別グループ", due_at: "2026-12-01T14:59:59.000Z", source_name: "テスト連携" },
+      ],
+    });
+    const groupId = (key: string) => requireOwnGroup(getDb(env), a.client.id, key);
+    const [groupA, groupB] = await Promise.all([
+      groupId("sample:term-1"),
+      groupId("sample:term-2"),
+    ]);
+    const firstMessage = groupA.id < groupB.id ? setting.message : "別グループ";
     await write(
       a.token,
       "stages",
@@ -770,14 +919,19 @@ describe("外部連携の境界 (実 SQLite)", () => {
       "PUT",
       "sample:term-2",
     );
-    expect(
-      db.sqlite.prepare("select message from stage_grants where profile_id='outside'").get()
-        ?.message,
-    ).toBe(setting.message);
+    expect(await mine(outsideToken)).toMatchObject({ stages: [{ message: firstMessage }] });
+    const staffMap = await request(app, env, "/api/skill-map/staff", { token: adminToken });
+    expect(await staffMap.json()).toMatchObject({
+      stages: expect.arrayContaining([expect.objectContaining({ id: "extra", granted_count: 2 })]),
+    });
+    await write(a.token, "stages", { stages: [{ ...setting, due_at: null }] });
+    expect(await mine(outsideToken)).toMatchObject({ stages: [{ message: "別グループ" }] });
     await write(a.token, "stages", { stages: [] }, "PUT", "sample:term-2");
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(2);
+    expect(await mine(outsideToken)).toMatchObject({ stages: [{ message: setting.message }] });
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(3);
     await write(a.token, "stages", { stages: [] });
-    expect(db.sqlite.prepare("select message from stage_grants").all()).toEqual([
+    expect(await mine(outsideToken)).toEqual({ stages: [] });
+    expect(db.sqlite.prepare("select message from effective_stage_grants").all()).toEqual([
       { message: "手動" },
     ]);
     expect(db.sqlite.prepare("select id from stage_unlocks").all()).toEqual([{ id: "manual" }]);
@@ -808,7 +962,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
       expect(await res.json()).toMatchObject({
         errors: [expect.objectContaining({ slug: invalid.slug })],
       });
-      expect(db.sqlite.prepare("select stage_id from integration_group_stages").all()).toEqual([
+      expect(db.sqlite.prepare("select stage_id from group_stages").all()).toEqual([
         { stage_id: "extra" },
       ]);
     }
@@ -834,26 +988,26 @@ describe("外部連携の境界 (実 SQLite)", () => {
     expect(
       (await write(a.token, "stages", { stages: [setting, { slug: "sample-other" }] })).status,
     ).toBe(200);
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(200);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(200);
     expect(
       (await write(a.token, "members", { members: [...members, { email: "over@example.test" }] }))
         .status,
     ).toBe(400);
     expect(db.sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
   });
-  it("割り当て書き込みで失敗したら設定と割り当ての変更をまとめて戻す", async () => {
+  it("設定の一部が書けなければ置き換えをまとめて戻す", async () => {
     const a = await setupWrite();
     await write(a.token, "members", { members: [{ email: "inside@example.test" }] });
     await write(a.token, "stages", { stages: [{ slug: "sample-other" }] });
     db.sqlite.exec(
-      "CREATE TRIGGER fail_unlock BEFORE INSERT ON stage_unlocks BEGIN SELECT RAISE(ABORT, 'fixture failure'); END",
+      "CREATE TRIGGER fail_setting BEFORE INSERT ON group_stages WHEN NEW.stage_id = 'extra' BEGIN SELECT RAISE(ABORT, 'fixture failure'); END",
     );
-    const res = await write(a.token, "stages", { stages: [setting] });
+    const res = await write(a.token, "stages", { stages: [{ slug: "sample-other" }, setting] });
     expect(res.status).toBe(500);
-    expect(db.sqlite.prepare("select stage_id from integration_group_stages").all()).toEqual([
+    expect(db.sqlite.prepare("select stage_id from group_stages").all()).toEqual([
       { stage_id: "extra2" },
     ]);
-    expect(db.sqlite.prepare("select stage_id from stage_grants").all()).toEqual([
+    expect(db.sqlite.prepare("select stage_id from effective_stage_grants").all()).toEqual([
       { stage_id: "extra2" },
     ]);
   });
@@ -897,12 +1051,13 @@ describe("外部連携の境界 (実 SQLite)", () => {
       ).toBe("先に招待された名前");
       expect(
         db.sqlite
-          .prepare("select external_id from integration_group_members where profile_id=?")
+          .prepare("select external_id from group_members where profile_id=?")
           .get(recoveredId)?.external_id,
       ).toBe("race-external");
       expect(
-        db.sqlite.prepare("select count(*) n from stage_grants where profile_id=?").get(recoveredId)
-          ?.n,
+        db.sqlite
+          .prepare("select count(*) n from effective_stage_grants where profile_id=?")
+          .get(recoveredId)?.n,
       ).toBe(1);
     } finally {
       invite.mockRestore();
@@ -925,11 +1080,11 @@ describe("外部連携の境界 (実 SQLite)", () => {
           if (kind === "external-conflict") {
             // この要求がメンバー一覧を読み終えた後、別の要求が外部IDを取得した状況。
             const ownGroup = db.sqlite
-              .prepare("select id from integration_groups where external_key='sample:term-1'")
+              .prepare("select id from groups where external_key='sample:term-1'")
               .get();
             db.sqlite
               .prepare(
-                "insert into integration_group_members(group_id,profile_id,external_id,joined_at) values (?, 'inside', 'race-external', ?)",
+                "insert into group_members(group_id,profile_id,external_id,joined_at) values (?, 'inside', 'race-external', ?)",
               )
               .run(String(ownGroup?.id), Date.now());
           }
@@ -952,9 +1107,7 @@ describe("外部連携の境界 (実 SQLite)", () => {
         });
         expect(
           db.sqlite
-            .prepare(
-              "select count(*) n from integration_group_members where profile_id='race-profile'",
-            )
+            .prepare("select count(*) n from group_members where profile_id='race-profile'")
             .get()?.n,
         ).toBe(0);
       } finally {
@@ -1005,11 +1158,11 @@ describe("外部連携の境界 (実 SQLite)", () => {
     );
     expect(db.sqlite.prepare("pragma foreign_key_check").all()).toEqual([]);
   });
-  it("メンバーと割り当ての反映は、全員を同じbatchで書き、失敗時にまとめて戻す", async () => {
+  it("メンバーは全員を同じbatchで書き、失敗時は実効の割り当てにも出ない", async () => {
     const a = await setupWrite();
     await write(a.token, "stages", { stages: [setting] });
     db.sqlite.exec(
-      "CREATE TRIGGER fail_unlock BEFORE INSERT ON stage_unlocks BEGIN SELECT RAISE(ABORT, 'fixture failure'); END",
+      "CREATE TRIGGER fail_member BEFORE INSERT ON group_members WHEN NEW.profile_id = 'outside' BEGIN SELECT RAISE(ABORT, 'fixture failure'); END",
     );
     expect(
       (
@@ -1018,9 +1171,9 @@ describe("外部連携の境界 (実 SQLite)", () => {
         })
       ).status,
     ).toBe(500);
-    expect(db.sqlite.prepare("select count(*) n from integration_group_members").get()?.n).toBe(0);
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(0);
-    db.sqlite.exec("DROP TRIGGER fail_unlock");
+    expect(db.sqlite.prepare("select count(*) n from group_members").get()?.n).toBe(0);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(0);
+    db.sqlite.exec("DROP TRIGGER fail_member");
     const retry = await write(a.token, "members", {
       members: [
         { email: "inside@example.test" },
@@ -1032,6 +1185,6 @@ describe("外部連携の境界 (実 SQLite)", () => {
     expect(await retry.json()).toMatchObject({
       results: [{ status: "existing" }, { status: "already_member" }, { status: "existing" }],
     });
-    expect(db.sqlite.prepare("select count(*) n from stage_grants").get()?.n).toBe(2);
+    expect(db.sqlite.prepare("select count(*) n from effective_stage_grants").get()?.n).toBe(2);
   });
 });

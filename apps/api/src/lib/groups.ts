@@ -1,0 +1,309 @@
+import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
+import type { IntegrationStageInput } from "@stella/shared/integrations/types";
+import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
+import type { Db } from "../db/client.js";
+import {
+  enrollments,
+  groupMembers,
+  groups,
+  groupStages,
+  profiles,
+  stageGrants,
+  stages,
+} from "../db/schema.js";
+import type { Env } from "../env.js";
+import { ApiError } from "./authz.js";
+import { learnerOnly } from "./learner-scope.js";
+import { hasNoIslandPrerequisites, parentSlugFromRow } from "./stage-audience.js";
+import { parseGuidance } from "./stage-grant-guidance.js";
+
+type GroupChanges = { name?: string; shareProgress?: boolean };
+type GroupNameChange =
+  | ({ name: string } & ({ clientId: string; externalKey: string } | { createdBy: string }))
+  | ({ id: string } & ({ name: string; shareProgress?: boolean } | { shareProgress: boolean }));
+
+export async function createOrRenameGroup(db: Db, group: GroupNameChange) {
+  const [saved] =
+    "id" in group
+      ? await updateGroupSettings(db, group.id, group)
+      : await db
+          .insert(groups)
+          .values(group)
+          .onConflictDoUpdate({
+            target: [groups.clientId, groups.externalKey],
+            set: { name: group.name, updatedAt: new Date() },
+          })
+          .returning();
+  if (!saved) throw new ApiError("Not found", 404);
+  return saved;
+}
+
+function updateGroupSettings(db: Db, id: string, { name, shareProgress }: GroupChanges) {
+  return db
+    .update(groups)
+    .set({ name, shareProgress, updatedAt: new Date() })
+    .where(and(eq(groups.id, id), name === undefined ? undefined : isNull(groups.clientId)))
+    .returning();
+}
+
+// グループ由来の割り当てを外す前に、開始済みの分を案内なしの手動割り当てとして残す。
+function retainStartedGrants(db: Db, groupId: string, removed: SQL) {
+  return db
+    .insert(stageGrants)
+    .select(
+      db
+        .select({
+          id: sql<string>`lower(hex(randomblob(16)))`.as("id"),
+          tenantId: enrollments.tenantId,
+          stageId: enrollments.stageId,
+          profileId: enrollments.userId,
+          sourceName: sql<null>`null`.as("source_name"),
+          dueAt: sql<null>`null`.as("due_at"),
+          message: sql<null>`null`.as("message"),
+          grantedBy: sql<null>`null`.as("granted_by"),
+          grantedAt: sql<number>`${Date.now()}`.as("granted_at"),
+        })
+        .from(groupMembers)
+        .innerJoin(groups, eq(groups.id, groupMembers.groupId))
+        .innerJoin(groupStages, eq(groupStages.groupId, groupMembers.groupId))
+        .innerJoin(
+          enrollments,
+          and(
+            eq(enrollments.userId, groupMembers.profileId),
+            eq(enrollments.stageId, groupStages.stageId),
+          ),
+        )
+        .innerJoin(profiles, eq(profiles.id, groupMembers.profileId))
+        .where(
+          and(
+            eq(groupMembers.groupId, groupId),
+            eq(profiles.role, "student"),
+            inArray(enrollments.status, [...READABLE_ENROLLMENT_STATUSES]),
+            removed,
+          ),
+        ),
+    )
+    .onConflictDoNothing({ target: [stageGrants.stageId, stageGrants.profileId] });
+}
+
+export async function deleteAdminGroup(db: Db, id: string) {
+  const adminOwned = isNull(groups.clientId);
+  const [, [deleted]] = await db.batch([
+    retainStartedGrants(db, id, adminOwned),
+    db
+      .delete(groups)
+      .where(and(eq(groups.id, id), adminOwned))
+      .returning({ id: groups.id }),
+  ]);
+  if (!deleted) throw new ApiError("Not found", 404);
+}
+
+export async function setGroupPeerName(
+  db: Db,
+  groupId: string,
+  profileId: string,
+  peerName: string | null,
+) {
+  const [member] = await db
+    .update(groupMembers)
+    .set({ peerName })
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.profileId, profileId)))
+    .returning({ id: groupMembers.profileId });
+  if (!member) throw new ApiError("Not found", 404);
+}
+
+export async function patchAdminGroupMembers(
+  db: Db,
+  groupId: string,
+  add: readonly string[],
+  remove: readonly string[],
+) {
+  const addedIds = sql`json_each(${JSON.stringify(add)})`;
+  const removedIds = sql`select value from json_each(${JSON.stringify(remove)})`;
+  const invalid = db
+    .select({ id: sql<string>`requested.value` })
+    .from(sql`${addedIds} as requested`)
+    .where(sql`not exists (
+      select 1 from ${profiles} where ${profiles.id} = requested.value
+        and ${profiles.disabled} = 0 and ${learnerOnly(profiles.id)}
+    )`);
+  // 受講者の状態を確認し、差分を適用するまでを同じ batch に入れる。
+  // 不正な追加が一つでもあれば、削除・追加ともに行わない。
+  const adminGroup = db
+    .select({ id: groups.id })
+    .from(groups)
+    .where(and(eq(groups.id, groupId), isNull(groups.clientId)));
+  const valid = sql`not exists (${invalid.getSQL()}) and exists (${adminGroup.getSQL()})`;
+  const removingMember = sql`${groupMembers.profileId} in (${removedIds}) and ${valid}`;
+  const [[group], , invalidRows, removed, added] = await db.batch([
+    adminGroup,
+    retainStartedGrants(db, groupId, removingMember),
+    invalid,
+    db
+      .delete(groupMembers)
+      .where(and(eq(groupMembers.groupId, groupId), removingMember))
+      .returning({ id: groupMembers.profileId }),
+    db
+      .insert(groupMembers)
+      .select(
+        sql`select ${groupId}, value, null, null, ${Date.now()} from ${addedIds} where ${valid}`,
+      )
+      .onConflictDoNothing({ target: [groupMembers.groupId, groupMembers.profileId] })
+      .returning({ id: groupMembers.profileId }),
+  ]);
+  if (!group) throw new ApiError("Not found", 404);
+  return {
+    invalidIds: invalidRows.map((row) => row.id),
+    added: added.length,
+    removed: removed.length,
+  };
+}
+
+export function addGroupMemberStatement(
+  binding: Env["DB"],
+  groupId: string,
+  profileId: string,
+  fields: { externalId?: string | null; peerName?: string | null },
+) {
+  // 招待やプロフィール検索の後で無効化・昇格されたアカウントも追加しない。
+  return binding
+    .prepare(
+      `INSERT INTO group_members (group_id, profile_id, external_id, peer_name, joined_at)
+      SELECT ?, id, ?, ?, ? FROM profiles WHERE id = ? AND role = 'student' AND disabled = 0
+      ON CONFLICT(group_id, profile_id) DO UPDATE SET
+        external_id = CASE WHEN ? THEN excluded.external_id ELSE group_members.external_id END,
+        peer_name = CASE WHEN ? THEN excluded.peer_name ELSE group_members.peer_name END
+      RETURNING profile_id`,
+    )
+    .bind(
+      groupId,
+      fields.externalId ?? null,
+      fields.peerName ?? null,
+      Date.now(),
+      profileId,
+      fields.externalId !== undefined ? 1 : 0,
+      fields.peerName !== undefined ? 1 : 0,
+    );
+}
+
+export async function removeGroupMember(db: Db, groupId: string, profileId: string) {
+  const member = eq(groupMembers.profileId, profileId);
+  await db.batch([
+    retainStartedGrants(db, groupId, member),
+    db.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), member)),
+  ]);
+}
+
+function parseGroupStage(value: unknown): Required<IntegrationStageInput> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new ApiError("Invalid stage", 400);
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.slug !== "string" ||
+    !/^[a-z0-9][a-z0-9-]{0,199}$/.test(row.slug) ||
+    (row.exempt !== undefined && typeof row.exempt !== "boolean")
+  )
+    throw new ApiError("Invalid slug or exempt", 400);
+  let due = row.due_at ?? null;
+  // 日付だけの場合は、管理画面と同じ日本時間のその日の終わりとして扱う。
+  if (typeof due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(due)) due = `${due}T23:59:59+09:00`;
+  const { guidance } = parseGuidance({
+    source_name: null,
+    due_at: due,
+    message: row.message ?? null,
+    all: true,
+  });
+  return {
+    slug: row.slug,
+    due_at: guidance.due_at,
+    message: guidance.message,
+    exempt: row.exempt === true,
+  };
+}
+
+export async function replaceGroupStages(
+  db: Db,
+  group: Pick<typeof groups.$inferSelect, "id" | "clientId">,
+  inputs: readonly unknown[],
+  prefixes?: readonly string[],
+) {
+  const allowedStagePrefixes = group.clientId === null ? undefined : (prefixes ?? []);
+  const errors: { slug: unknown; code: string }[] = [];
+  const settings: (Required<IntegrationStageInput> & { stageId: string })[] = [];
+  const seen = new Set<string>();
+  const stageRows = new Map<string, typeof stages.$inferSelect>();
+  for (const raw of inputs) {
+    let input: Required<IntegrationStageInput>;
+    try {
+      input = parseGroupStage(raw);
+    } catch {
+      errors.push({
+        slug:
+          raw && typeof raw === "object" ? ((raw as Record<string, unknown>).slug ?? null) : null,
+        code: "invalid_stage",
+      });
+      continue;
+    }
+    if (seen.has(input.slug)) {
+      errors.push({ slug: input.slug, code: "duplicate_slug" });
+      continue;
+    }
+    seen.add(input.slug);
+    if (
+      allowedStagePrefixes !== undefined &&
+      !allowedStagePrefixes.some((prefix) => input.slug.startsWith(prefix))
+    ) {
+      errors.push({ slug: input.slug, code: "prefix_not_allowed" });
+      continue;
+    }
+    const [stage] = await db.select().from(stages).where(eq(stages.slug, input.slug)).limit(1);
+    if (stage?.audience !== "granted") {
+      errors.push({ slug: input.slug, code: "not_granted" });
+      continue;
+    }
+    stageRows.set(stage.slug, stage);
+    settings.push({ ...input, stageId: stage.id });
+  }
+  if (errors.length) return { ok: false as const, errors };
+  // 親を自動で割り当てると、クライアントに許した接頭辞の外まで広がりうる。
+  // 同じ要求に granted の祖先がすべて含まれることを、書き込み前に確かめる。
+  const included = new Set(settings.map((setting) => setting.slug));
+  const missingParents = new Set<string>();
+  for (const setting of settings) {
+    let row = stageRows.get(setting.slug);
+    const visited = new Set<string>([setting.slug]);
+    while (row && !hasNoIslandPrerequisites(row)) {
+      const parentSlug = parentSlugFromRow(row);
+      if (!parentSlug || visited.has(parentSlug)) break;
+      visited.add(parentSlug);
+      row = stageRows.get(parentSlug);
+      if (!row) {
+        [row] = await db.select().from(stages).where(eq(stages.slug, parentSlug)).limit(1);
+        if (row) stageRows.set(parentSlug, row);
+      }
+      if (row?.audience === "granted" && !included.has(parentSlug)) missingParents.add(parentSlug);
+    }
+  }
+  for (const slug of missingParents) errors.push({ slug, code: "parent_not_included" });
+  if (errors.length) return { ok: false as const, errors };
+  const remove = db.delete(groupStages).where(eq(groupStages.groupId, group.id));
+  const retainedStageIds = JSON.stringify(settings.map((setting) => setting.stageId));
+  const groupExists = db.select({ id: groups.id }).from(groups).where(eq(groups.id, group.id));
+  const [[savedGroup]] = await db.batch([
+    groupExists,
+    retainStartedGrants(
+      db,
+      group.id,
+      sql`${groupStages.stageId} not in (select value from json_each(${retainedStageIds}))`,
+    ),
+    remove,
+    ...settings.map((setting) =>
+      db.insert(groupStages).select(
+        sql`select ${group.id}, ${setting.stageId}, ${setting.due_at}, ${setting.message},
+          ${setting.exempt ? 1 : 0} where exists (${groupExists.getSQL()})`,
+      ),
+    ),
+  ]);
+  if (!savedGroup) throw new ApiError("Not found", 404);
+  return { ok: true as const, stages: settings.map(({ stageId: _, ...setting }) => setting) };
+}

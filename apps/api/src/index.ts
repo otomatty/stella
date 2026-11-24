@@ -54,6 +54,8 @@ import { submissionsRoute } from "./routes/submissions.js";
 import { supportRoute } from "./routes/support.js";
 
 import { integrationsRoute } from "./routes/integrations.js";
+import { adminGroupsRoute } from "./routes/admin-groups.js";
+import { groupsRoute } from "./routes/groups.js";
 import { adminIntegrationsRoute } from "./routes/admin-integrations.js";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -72,6 +74,8 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/", integrationsRoute);
 app.route("/", adminIntegrationsRoute);
+app.route("/", adminGroupsRoute);
+app.route("/", groupsRoute);
 app.route("/", healthzRoute);
 app.route("/", authRoute);
 app.route("/", reviewDraftRoute);

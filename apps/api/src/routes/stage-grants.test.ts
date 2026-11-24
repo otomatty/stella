@@ -265,13 +265,17 @@ function selectWithLimit(resolver: () => Promise<unknown>) {
 }
 
 function selectWhereOnly(resolver: (where?: unknown) => Promise<unknown>) {
-  const chain = {
-    where: (where?: unknown) => resolver(where),
-    // biome-ignore lint/suspicious/noThenProperty: drizzle のクエリは thenable。where の無い select もある。
+  const query = (where?: unknown) => ({
+    orderBy: () => resolver(where),
+    // biome-ignore lint/suspicious/noThenProperty: drizzle のクエリは thenable。
     then: (onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) =>
-      resolver().then(onFulfilled, onRejected),
+      resolver(where).then(onFulfilled, onRejected),
+  });
+  const chain = {
+    ...query(),
+    where: (where?: unknown) => query(where),
   };
-  return { from: () => chain };
+  return { from: () => ({ ...chain, leftJoin: () => chain }) };
 }
 
 const DRIZZLE_TABLE_NAME = Symbol.for("drizzle:Name");
@@ -310,6 +314,16 @@ const mockDb = {
     if (table === "certificates") {
       return selectWhereOnly(async (where) => readCertificateRows(where));
     }
+    if (table === "effective_stage_unlocks" && keys.includes("groupName")) {
+      return selectWhereOnly(async (where) =>
+        (await unlockSelect(where)).map(({ userId, via }) => ({
+          profileId: userId,
+          via,
+          groupId: null,
+          groupName: null,
+        })),
+      );
+    }
     if (keys.includes("userId")) {
       return selectWhereOnly(unlockSelect);
     }
@@ -321,6 +335,13 @@ const mockDb = {
     }
     return selectWhereOnly(profileLookup);
   },
+  selectDistinct: (fields: Record<string, unknown>) =>
+    selectWhereOnly(async (where) => {
+      if (sqlSketch(where).includes("group_id is not null")) return [];
+      if ("userId" in fields) return unlockSelect(where);
+      const rows = await grantSelect();
+      return "groupId" in fields ? rows.map((row) => ({ ...row, groupId: null })) : rows;
+    }),
   delete: (table: unknown) => ({
     where: (where: unknown) => {
       deleted.push({ table, where });

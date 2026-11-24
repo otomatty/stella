@@ -43,10 +43,14 @@ import { Route as AppAdminUsersRouteImport } from './routes/_app/admin/users'
 import { Route as AppCertificatesIndexRouteImport } from './routes/_app/certificates.index'
 import { Route as AppCertificatesCertIdRouteImport } from './routes/_app/certificates.$certId'
 import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses.index'
+import { Route as AppGroupsIndexRouteImport } from './routes/_app/groups.index'
+import { Route as AppGroupsGroupIdRouteImport } from './routes/_app/groups.$groupId'
 import { Route as AppLibrarySplatRouteImport } from './routes/_app/library.$'
 import { Route as AppReviewsSubmissionIdRouteImport } from './routes/_app/reviews.$submissionId'
 import { Route as AppStagesIndexRouteImport } from './routes/_app/stages.index'
 import { Route as AppSubmissionsSubmissionIdRouteImport } from './routes/_app/submissions.$submissionId'
+import { Route as AppAdminGroupsIndexRouteImport } from './routes/_app/admin/groups.index'
+import { Route as AppAdminGroupsGroupIdRouteImport } from './routes/_app/admin/groups.$groupId'
 import { Route as AppCoursesCourseIdIndexRouteImport } from './routes/_app/courses.$courseId.index'
 import { Route as AppStagesStageIdIndexRouteImport } from './routes/_app/stages.$stageId.index'
 import { Route as AppCoursesCourseIdLessonsLessonIdRouteImport } from './routes/_app/courses.$courseId.lessons.$lessonId'
@@ -222,6 +226,16 @@ const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
   path: '/courses/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGroupsIndexRoute = AppGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGroupsGroupIdRoute = AppGroupsGroupIdRouteImport.update({
+  id: '/groups/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLibrarySplatRoute = AppLibrarySplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -243,6 +257,16 @@ const AppSubmissionsSubmissionIdRoute =
     path: '/submissions/$submissionId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppAdminGroupsIndexRoute = AppAdminGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminGroupsGroupIdRoute = AppAdminGroupsGroupIdRouteImport.update({
+  id: '/groups/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppCoursesCourseIdIndexRoute = AppCoursesCourseIdIndexRouteImport.update({
   id: '/courses/$courseId/',
   path: '/courses/$courseId/',
@@ -303,13 +327,17 @@ export interface FileRoutesByFullPath {
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/certificates/$certId': typeof AppCertificatesCertIdRoute
+  '/groups/$groupId': typeof AppGroupsGroupIdRoute
   '/library/$': typeof AppLibrarySplatRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin/': typeof AppAdminIndexRoute
   '/certificates/': typeof AppCertificatesIndexRoute
   '/courses/': typeof AppCoursesIndexRoute
+  '/groups/': typeof AppGroupsIndexRoute
   '/stages/': typeof AppStagesIndexRoute
+  '/admin/groups/$groupId': typeof AppAdminGroupsGroupIdRoute
+  '/admin/groups/': typeof AppAdminGroupsIndexRoute
   '/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -346,13 +374,17 @@ export interface FileRoutesByTo {
   '/admin/report': typeof AppAdminReportRoute
   '/admin/users': typeof AppAdminUsersRoute
   '/certificates/$certId': typeof AppCertificatesCertIdRoute
+  '/groups/$groupId': typeof AppGroupsGroupIdRoute
   '/library/$': typeof AppLibrarySplatRoute
   '/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/admin': typeof AppAdminIndexRoute
   '/certificates': typeof AppCertificatesIndexRoute
   '/courses': typeof AppCoursesIndexRoute
+  '/groups': typeof AppGroupsIndexRoute
   '/stages': typeof AppStagesIndexRoute
+  '/admin/groups/$groupId': typeof AppAdminGroupsGroupIdRoute
+  '/admin/groups': typeof AppAdminGroupsIndexRoute
   '/courses/$courseId': typeof AppCoursesCourseIdIndexRoute
   '/stages/$stageId': typeof AppStagesStageIdIndexRoute
   '/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -392,13 +424,17 @@ export interface FileRoutesById {
   '/_app/admin/report': typeof AppAdminReportRoute
   '/_app/admin/users': typeof AppAdminUsersRoute
   '/_app/certificates/$certId': typeof AppCertificatesCertIdRoute
+  '/_app/groups/$groupId': typeof AppGroupsGroupIdRoute
   '/_app/library/$': typeof AppLibrarySplatRoute
   '/_app/reviews/$submissionId': typeof AppReviewsSubmissionIdRoute
   '/_app/submissions/$submissionId': typeof AppSubmissionsSubmissionIdRoute
   '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/certificates/': typeof AppCertificatesIndexRoute
   '/_app/courses/': typeof AppCoursesIndexRoute
+  '/_app/groups/': typeof AppGroupsIndexRoute
   '/_app/stages/': typeof AppStagesIndexRoute
+  '/_app/admin/groups/$groupId': typeof AppAdminGroupsGroupIdRoute
+  '/_app/admin/groups/': typeof AppAdminGroupsIndexRoute
   '/_app/courses/$courseId/': typeof AppCoursesCourseIdIndexRoute
   '/_app/stages/$stageId/': typeof AppStagesStageIdIndexRoute
   '/_app/courses/$courseId/lessons/$lessonId': typeof AppCoursesCourseIdLessonsLessonIdRoute
@@ -438,13 +474,17 @@ export interface FileRouteTypes {
     | '/admin/report'
     | '/admin/users'
     | '/certificates/$certId'
+    | '/groups/$groupId'
     | '/library/$'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin/'
     | '/certificates/'
     | '/courses/'
+    | '/groups/'
     | '/stages/'
+    | '/admin/groups/$groupId'
+    | '/admin/groups/'
     | '/courses/$courseId/'
     | '/stages/$stageId/'
     | '/courses/$courseId/lessons/$lessonId'
@@ -481,13 +521,17 @@ export interface FileRouteTypes {
     | '/admin/report'
     | '/admin/users'
     | '/certificates/$certId'
+    | '/groups/$groupId'
     | '/library/$'
     | '/reviews/$submissionId'
     | '/submissions/$submissionId'
     | '/admin'
     | '/certificates'
     | '/courses'
+    | '/groups'
     | '/stages'
+    | '/admin/groups/$groupId'
+    | '/admin/groups'
     | '/courses/$courseId'
     | '/stages/$stageId'
     | '/courses/$courseId/lessons/$lessonId'
@@ -526,13 +570,17 @@ export interface FileRouteTypes {
     | '/_app/admin/report'
     | '/_app/admin/users'
     | '/_app/certificates/$certId'
+    | '/_app/groups/$groupId'
     | '/_app/library/$'
     | '/_app/reviews/$submissionId'
     | '/_app/submissions/$submissionId'
     | '/_app/admin/'
     | '/_app/certificates/'
     | '/_app/courses/'
+    | '/_app/groups/'
     | '/_app/stages/'
+    | '/_app/admin/groups/$groupId'
+    | '/_app/admin/groups/'
     | '/_app/courses/$courseId/'
     | '/_app/stages/$stageId/'
     | '/_app/courses/$courseId/lessons/$lessonId'
@@ -789,6 +837,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCoursesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/groups/': {
+      id: '/_app/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof AppGroupsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/groups/$groupId': {
+      id: '/_app/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof AppGroupsGroupIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/library/$': {
       id: '/_app/library/$'
       path: '/$'
@@ -816,6 +878,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/submissions/$submissionId'
       preLoaderRoute: typeof AppSubmissionsSubmissionIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/admin/groups/': {
+      id: '/_app/admin/groups/'
+      path: '/groups'
+      fullPath: '/admin/groups/'
+      preLoaderRoute: typeof AppAdminGroupsIndexRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/groups/$groupId': {
+      id: '/_app/admin/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/admin/groups/$groupId'
+      preLoaderRoute: typeof AppAdminGroupsGroupIdRouteImport
+      parentRoute: typeof AppAdminRoute
     }
     '/_app/courses/$courseId/': {
       id: '/_app/courses/$courseId/'
@@ -863,6 +939,8 @@ interface AppAdminRouteChildren {
   AppAdminReportRoute: typeof AppAdminReportRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
+  AppAdminGroupsGroupIdRoute: typeof AppAdminGroupsGroupIdRoute
+  AppAdminGroupsIndexRoute: typeof AppAdminGroupsIndexRoute
 }
 
 const AppAdminRouteChildren: AppAdminRouteChildren = {
@@ -873,6 +951,8 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminReportRoute: AppAdminReportRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,
+  AppAdminGroupsGroupIdRoute: AppAdminGroupsGroupIdRoute,
+  AppAdminGroupsIndexRoute: AppAdminGroupsIndexRoute,
 }
 
 const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
@@ -911,10 +991,12 @@ interface AppRouteChildren {
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCertificatesCertIdRoute: typeof AppCertificatesCertIdRoute
+  AppGroupsGroupIdRoute: typeof AppGroupsGroupIdRoute
   AppReviewsSubmissionIdRoute: typeof AppReviewsSubmissionIdRoute
   AppSubmissionsSubmissionIdRoute: typeof AppSubmissionsSubmissionIdRoute
   AppCertificatesIndexRoute: typeof AppCertificatesIndexRoute
   AppCoursesIndexRoute: typeof AppCoursesIndexRoute
+  AppGroupsIndexRoute: typeof AppGroupsIndexRoute
   AppStagesIndexRoute: typeof AppStagesIndexRoute
   AppCoursesCourseIdIndexRoute: typeof AppCoursesCourseIdIndexRoute
   AppStagesStageIdIndexRoute: typeof AppStagesStageIdIndexRoute
@@ -943,10 +1025,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppCertificatesCertIdRoute: AppCertificatesCertIdRoute,
+  AppGroupsGroupIdRoute: AppGroupsGroupIdRoute,
   AppReviewsSubmissionIdRoute: AppReviewsSubmissionIdRoute,
   AppSubmissionsSubmissionIdRoute: AppSubmissionsSubmissionIdRoute,
   AppCertificatesIndexRoute: AppCertificatesIndexRoute,
   AppCoursesIndexRoute: AppCoursesIndexRoute,
+  AppGroupsIndexRoute: AppGroupsIndexRoute,
   AppStagesIndexRoute: AppStagesIndexRoute,
   AppCoursesCourseIdIndexRoute: AppCoursesCourseIdIndexRoute,
   AppStagesStageIdIndexRoute: AppStagesStageIdIndexRoute,
