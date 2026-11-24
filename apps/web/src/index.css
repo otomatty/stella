@@ -1047,53 +1047,6 @@
   color: rgba(210, 220, 245, 0.78);
 }
 
-.tree-legend {
-  border-color: var(--line);
-  background: rgb(255 255 255 / 0.92);
-  color: var(--ink-2);
-}
-
-.dark .tree-legend {
-  border-color: rgb(255 255 255 / 0.12);
-  background: rgba(12, 14, 24, 0.8);
-}
-
-.tree-legend-dot {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-}
-
-.tree-legend-cleared {
-  background: var(--tree-cleared-base);
-}
-
-.tree-legend-active,
-.tree-legend-open {
-  border: 3px solid var(--brand);
-  background: var(--bg-raised);
-}
-
-.tree-legend-open {
-  box-shadow: 0 0 0 3px rgb(87 73 219 / 0.16);
-}
-
-.tree-legend-locked {
-  border: 1.5px solid var(--line-2);
-  background: var(--bg-muted);
-}
-
-.dark .tree-legend-locked {
-  border-color: rgba(190, 205, 240, 0.5);
-  background: rgba(16, 20, 36, 0.9);
-}
-
-.tree-legend-fog {
-  border: 1px dashed var(--ink-3);
-  background: var(--bg-muted);
-}
-
 /* ステージアイコン (単色シルエット SVG)。img ではなく mask + currentColor で塗る —
    色は星の状態クラス (.tree-star-*) の color を継承する。外部 SVG をマスクにすると
    輝度マスク扱いになり currentColor→黒で消えることがあるので alpha を明示する。 */
