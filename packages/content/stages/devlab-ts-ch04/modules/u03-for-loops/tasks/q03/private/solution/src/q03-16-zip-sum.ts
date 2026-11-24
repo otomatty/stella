@@ -1,9 +1,7 @@
-// 04-q03 for文と for-of文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/for-of
-//       https://jsprimer.net/basic/loop/
-
-// 問16
+// 問16 2つの配列の同じ番号どうしを足した配列を返す。長さが違えば短い方に合わせる
+//     例: zipSum([1, 2, 3], [10, 20]) → [11, 22]
+// 引数と戻り値に型注釈を付けます。
+// 番号も使うところは for 文か for-of 文で回します。map や filter などでループを置き換えないでください。
 export function zipSum(a: readonly number[], b: readonly number[]): number[] {
   const result: number[] = [];
   const length = Math.min(a.length, b.length);

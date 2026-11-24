@@ -1,9 +1,7 @@
-// 04-q03 for文と for-of文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/for-of
-//       https://jsprimer.net/basic/loop/
-
-// 問3
+// 問3 いちばん長い単語を返す。同じ長さなら先に出てきた方。空の配列なら空の文字列
+//     例: longestWord(["a", "abc", "ab"]) → "abc"
+// 引数と戻り値に型注釈を付けます。
+// for 文か for-of 文で回します。map や filter などでループを置き換えないでください。
 export function longestWord(words: readonly string[]): string {
   let longest = "";
   for (const word of words) {

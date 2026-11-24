@@ -1,9 +1,7 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問17
+// 問17 前後の空白を取り除き、最初の単語を小文字にして返す。空なら "コマンドがありません" の Error
+//     例: commandName("  ADD 1 2") → "add"
+// 引数と戻り値に型注釈を付けます。
+// 文字列を split で区切ります。
 export function commandName(text: string): string {
   const first = text.trim().split(/\s+/)[0] ?? "";
   if (first === "") {

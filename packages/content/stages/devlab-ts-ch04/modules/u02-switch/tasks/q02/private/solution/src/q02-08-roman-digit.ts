@@ -1,9 +1,8 @@
-// 04-q02 switch文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-
-// 問8
+// 問8 1〜5 をローマ数字 "I"〜"V" にする。それ以外は空の文字列
+//     例: romanDigit(4) → "IV"
+// 引数と戻り値に型注釈を付けます。
+// switch 文で分けます。
+// どの case にも当てはまらない値は default で扱います。
 export function romanDigit(n: number): string {
   switch (n) {
     case 1:

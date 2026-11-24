@@ -1,9 +1,6 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問3
+// 問3 "true"、"yes"、"1" は true、"false"、"no"、"0" は false にする（大文字小文字は問わない）。それ以外は "真偽値ではありません: <text>" の Error
+//     例: parseYesNo("YES") → true
+// 引数と戻り値に型注釈を付けます。
 export function parseYesNo(text: string): boolean {
   switch (text.toLowerCase()) {
     case "true":

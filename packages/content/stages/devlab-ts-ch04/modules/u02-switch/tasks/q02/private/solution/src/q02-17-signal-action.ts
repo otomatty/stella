@@ -1,9 +1,7 @@
-// 04-q02 switch文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-
-// 問17
+// 問17 信号 "red"、"yellow"、"green" を "止まれ"、"注意"、"進め" にする
+//     例: signalAction("yellow") → "注意"
+// 引数と戻り値に型注釈を付けます。
+// switch 文で分けます。
 export function signalAction(light: "red" | "yellow" | "green"): "止まれ" | "注意" | "進め" {
   switch (light) {
     case "red":

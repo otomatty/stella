@@ -1,9 +1,8 @@
-// 04-q02 switch文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-
-// 問19
+// 問19 星座 "牡羊"、"獅子"、"射手" は "火"、"牡牛"、"乙女"、"山羊" は "地" を返す
+//     例: elementOf("乙女") → "地"
+// 引数と戻り値に型注釈を付けます。
+// switch 文で分けます。
+// 同じ処理になる case は続けて並べます。
 export function elementOf(sign: "牡羊" | "獅子" | "射手" | "牡牛" | "乙女" | "山羊"): "火" | "地" {
   switch (sign) {
     case "牡羊":
