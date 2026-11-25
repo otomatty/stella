@@ -229,12 +229,16 @@ export async function problemFingerprints(
   if (plan === "dotnet") return Object.fromEntries(ownHashes);
 
   const decoder = new TextDecoder();
+  const starterPaths = new Set(problems.map(({ paths }) => paths[0]));
   const importsByPath = new Map<string, string[]>();
   const importsOf = (path: string) => {
     const cached = importsByPath.get(path);
     if (cached) return cached;
     if (!/\.[cm]?[jt]sx?$/.test(path)) return [];
-    const code = decoder.decode(Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)));
+    const decoded = decoder.decode(
+      Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)),
+    );
+    const code = starterPaths.has(path) ? withoutLineComments(decoded) : decoded;
     const paths = relativeImportSpecifiers(code).flatMap((specifier) => {
       const dependency = resolveRelativeImport(path, specifier, distributedPaths);
       return dependency ? [dependency] : [];

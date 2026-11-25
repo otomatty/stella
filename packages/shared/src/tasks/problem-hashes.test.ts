@@ -219,4 +219,14 @@ describe("相対 import", () => {
       }),
     ).not.toEqual(original);
   });
+
+  it("雛形のコメント行に書いた import では指紋が変わらない", async () => {
+    const original = await problemFingerprints(definition, files);
+    expect(
+      await problemFingerprints(definition, {
+        ...files,
+        "src/q1.ts": btoa('// import "./q2";\nfirst starter'),
+      }),
+    ).toEqual(original);
+  });
 });

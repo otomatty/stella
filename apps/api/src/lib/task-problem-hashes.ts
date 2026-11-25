@@ -208,7 +208,7 @@ interface RevisionScope {
 }
 
 // 古い API は {version, hashes} を問題 ID の表として読み、64 桁が無いので空になり、前の版を数えない (安全側)。マイグレーションは足さない。
-function parseHashes(raw: string): ProblemHashes | undefined {
+export function parseHashes(raw: string): ProblemHashes | undefined {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
@@ -220,9 +220,13 @@ function parseHashes(raw: string): ProblemHashes | undefined {
       Array.isArray(record.hashes)
     )
       return;
-    const entries = Object.entries(record.hashes);
-    if (entries.every(([, hash]) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash)))
-      return Object.fromEntries(entries);
+    const hashes = Object.fromEntries(
+      Object.entries(record.hashes).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[1] === "string" && /^[a-f0-9]{64}$/.test(entry[1]),
+      ),
+    );
+    if (Object.keys(hashes).length > 0) return hashes;
   } catch {
     // 壊れた指紋では前の版を数えない。
   }

@@ -671,7 +671,8 @@ async function planReplacements(
     | { mode: "add"; adding?: FileHashes },
 ): Promise<Replacement[]> {
   const paths = entries.map(([rel]) => rel);
-  const editable = new Set(matchEditableFiles(paths, manifest).files);
+  const currentEditable = new Set(matchEditableFiles(paths, manifest).files);
+  const editable = new Set(currentEditable);
   if (policy.mode !== "add") for (const rel of policy.oldEditable ?? []) editable.add(rel);
 
   const clashes: string[] = [];
@@ -699,7 +700,12 @@ async function planReplacements(
         continue;
       if (currentHash !== previousHash) {
         const codeHashes = policy.mode === "add" ? undefined : policy.codeHashes;
-        if (codeHashes && (await starterCodeHash(data)) === codeHashes[rel]) continue;
+        if (
+          codeHashes &&
+          currentEditable.has(rel) &&
+          (await starterCodeHash(data)) === codeHashes[rel]
+        )
+          continue;
         clashes.push(rel);
         continue;
       }

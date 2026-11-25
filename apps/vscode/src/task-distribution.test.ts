@@ -224,6 +224,32 @@ describe("課題の配布", () => {
       files: makeHashes(updated.files),
     });
   });
+  it("新しい版で保護されたファイルはコメントだけの変更でも衝突する", async () => {
+    const training = await root();
+    const commented = "starter\r\n\r\n// note\r\n";
+    const first = {
+      ...bundle,
+      files: { ...bundle.files, "index.js": Buffer.from(commented).toString("base64") },
+    };
+    const taskRoot = await installTask(training, first);
+    await writeFile(path.join(taskRoot, "index.js"), "learner code");
+    const updated: TaskBundle = {
+      ...nextBundle({ "index.js": "starter\n" }),
+      manifest: {
+        ...bundle.manifest,
+        submit: { files: ["**/*"] },
+        protected: ["index.js"],
+      },
+    };
+    const loadRevisionFiles = vi.fn(async () => ({
+      files: makeHashes(first.files),
+      codeHashes: { "index.js": await starterCodeHash(Buffer.from(commented)) },
+    }));
+    const conflict = await conflictOf(installTask(training, updated, { loadRevisionFiles }));
+    expect(conflict.reason).toBe("updated");
+    expect(conflict.files).toEqual(["index.js"]);
+    expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
+  });
   it("雛形のコードが変わった編集中のファイルは衝突のまま残す", async () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);

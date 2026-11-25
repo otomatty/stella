@@ -124,6 +124,7 @@ export const SEED_INPUT_PATHS = [
   "packages/shared/src/tasks/runners.ts",
   "packages/shared/src/tasks/source-reference.ts",
   "packages/shared/src/tasks/step-lock.ts",
+  "packages/shared/src/tasks/starter-code.ts",
   "packages/shared/src/tasks/submission-support.ts",
   "packages/shared/src/tasks/submission.ts",
   "packages/shared/src/tasks/variants.ts",
