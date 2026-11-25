@@ -1365,19 +1365,94 @@ describe("問題つきの課題", () => {
     ]);
   });
 
-  it("課題文は問題ごとの状態を取得する", async () => {
+  const problemHelpEndpoint = `/api/tasks/help?taskId=${encodeURIComponent(problemTask.id)}&contentHash=${"ab".repeat(32)}`;
+
+  it("課題文は問題ごとの状態と、配布した版のヒント・解答の状態を取得する", async () => {
     const root = await problemRoot();
     await unlink(path.join(root, "README.md"));
     await run("stella.showTaskReadme", root);
-    expect(apiRequest.mock.calls).toEqual([
-      [`/api/tasks/problem-results?taskId=${encodeURIComponent(problemTask.id)}`],
-    ]);
+    expect(apiRequest.mock.calls).toHaveLength(2);
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/api/tasks/problem-results?taskId=${encodeURIComponent(problemTask.id)}`,
+    );
+    expect(apiRequest).toHaveBeenCalledWith(
+      problemHelpEndpoint,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).toMatchObject({
       problems: [
         expect.objectContaining({ id: "q01-add" }),
         expect.objectContaining({ id: "q02-sub" }),
       ],
     });
+  });
+
+  const notOffered = { state: "locked", reason: "not-offered" };
+  it.each([
+    ["ヒントあり", [{ state: "available", level: 1 }], notOffered, notOffered, "ヒント・解答"],
+    [
+      "合格後に解答例と解説を表示",
+      [],
+      { state: "locked", reason: "passed" },
+      { state: "locked", reason: "passed" },
+      "解答・解説",
+    ],
+    ["素材なし", [], notOffered, notOffered, undefined],
+    ["通信失敗", undefined, notOffered, notOffered, undefined],
+    ["未接続", undefined, notOffered, notOffered, undefined],
+  ] as const)(
+    "%s の課題パネルにヒント・解答の入口を出し分ける",
+    async (scenario, hints, solution, explanation, label) => {
+      const root = await problemRoot();
+      if (scenario === "未接続") vscodeMock.getSecret.mockResolvedValue(undefined);
+      apiRequest.mockImplementation(async (url) => {
+        if (url !== problemHelpEndpoint) return {};
+        if (!hints) throw new Error("offline");
+        return { hints, solution, explanation };
+      });
+      await run("stella.showTaskReadme", root);
+      const html = buildTaskGuideHtml({
+        ...vscodeMock.showTaskReadme.mock.lastCall?.[0].guide,
+        os: "windows",
+      });
+      if (label) {
+        const href = `command:stella.showTaskHelp?${encodeURIComponent(JSON.stringify([root]))}`;
+        expect(html).toContain(`<footer><p class="help"><a href="${href}">${label}</a>`);
+      } else {
+        expect(html).not.toContain("command:stella.showTaskHelp");
+      }
+      expect(html).toContain("管理者に相談");
+      expect(html).toContain("実行ログ");
+
+      state.readmeRoot = root;
+      const onVisible = vscodeMock.onTaskReadmeVisible.mock.lastCall?.[0];
+      onVisible(root);
+      await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(2));
+      expect(apiRequest.mock.calls.filter(([url]) => url === problemHelpEndpoint)).toHaveLength(
+        scenario === "未接続" ? 0 : 1,
+      );
+    },
+  );
+
+  it("接続が切り替わると、問題つきの課題のヒント・解答の状態を取り直す", async () => {
+    const root = await problemRoot();
+    apiRequest.mockImplementation(async (url) =>
+      url === problemHelpEndpoint ? { hints: [{ state: "available", level: 1 }] } : {},
+    );
+    await run("stella.showTaskReadme", root);
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide.helpLabel).toBe("ヒント・解答");
+
+    state.readmeRoot = root;
+    apiRequest.mockResolvedValue({ hints: [], solution: notOffered, explanation: notOffered });
+    await auth.setToken("new-token");
+    await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(2));
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).not.toHaveProperty("helpLabel");
+
+    const onVisible = vscodeMock.onTaskReadmeVisible.mock.lastCall?.[0];
+    onVisible(root);
+    await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(3));
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).not.toHaveProperty("helpLabel");
+    expect(apiRequest.mock.calls.filter(([url]) => url === problemHelpEndpoint)).toHaveLength(2);
   });
 
   it("refs の無い応答でも、未解放の問題を課題パネルに渡す", async () => {
@@ -1749,6 +1824,9 @@ describe("問題つきの課題", () => {
 
   it("ファイルが変わっていて確認に通らなければ問題を送らない", async () => {
     const root = await problemRoot(undefined, "failed");
+    apiRequest.mockImplementation(async (url) =>
+      url === problemHelpEndpoint ? { hints: [{ state: "available", level: 1 }] } : {},
+    );
     const failed = JSON.parse(
       await readFile(path.join(root, ".stella", "problem-runs", "q01-add.json"), "utf8"),
     );
@@ -1770,6 +1848,7 @@ describe("問題つきの課題", () => {
       expect.objectContaining({
         guide: expect.objectContaining({
           problemRun: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+          helpLabel: "ヒント・解答",
         }),
       }),
       {},

@@ -179,6 +179,8 @@ export interface TaskGuideInput {
   edit: EditFiles;
   lastRun?: GuideRun;
   taskStatus?: TaskStatus;
+  /** 問題つきの課題で、LMS が案内するヒント・解答例・解説へのリンクの文言。 */
+  helpLabel?: string;
   /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
   problems?: ProblemState[];
   problemResults?: ProblemResults;
@@ -678,11 +680,12 @@ function problemNowHtml(input: TaskGuideInput, now: ReturnType<typeof problemNow
 }
 
 function buildProblemGuideHtml(input: TaskGuideInput): string {
-  const { root, manifest, problemResults } = input;
+  const { root, manifest, problemResults, helpLabel } = input;
   const items = guideProblems(input);
   const now = problemNow(input, items);
   const activeId = now.current?.id ?? (now.kind === "video" ? now.item.id : undefined);
   const refs = problemResults?.problems.find(({ id }) => id === activeId)?.refs;
+  const help = helpLabel ? `${link("stella.showTaskHelp", [root], escapeHtml(helpLabel))} ・ ` : "";
   return [
     `<header class="problem-header"><h1>${escapeHtml(manifest.title)}</h1>${link("stella.showTaskReadme", [root], "表示を更新する")}</header>`,
     '<div class="guide problem-guide">',
@@ -690,7 +693,7 @@ function buildProblemGuideHtml(input: TaskGuideInput): string {
     problemNowHtml(input, now),
     problemRefsHtml(refs),
     problemListHtml(input, items, now.current),
-    `<footer><p class="help">${consultLink(root, now.current?.id)} ・ ${logLink()}</p>${problemRefsHtml(problemResults?.refs)}</footer>`,
+    `<footer><p class="help">${help}${consultLink(root, now.current?.id)} ・ ${logLink()}</p>${problemRefsHtml(problemResults?.refs)}</footer>`,
     "</div>",
   ].join("\n");
 }

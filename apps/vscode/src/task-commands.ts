@@ -948,7 +948,7 @@ async function renderTaskReadme(
   const [edit, problems] = await Promise.all([
     manifest.problems?.length ? { files: [], missing: [] } : resolveEditFiles(root, manifest),
     manifest.problems?.length ? (problemSnapshot ?? loadTaskProblems(root, manifest)) : undefined,
-    refreshTaskState(root, manifest.id, manifest.problems ? { skipLms: true } : refresh),
+    refreshTaskState(root, manifest.id, refresh),
   ]);
   const current = problems && problemToWorkOn(problems.states, problems.unprepared);
   const problemRun =
@@ -958,7 +958,7 @@ async function renderTaskReadme(
       : await readProblemRun(root, manifest.id, current.id));
   const problemTestLines = await failedTestLines(root, problemRun);
   if (problems && session !== apiSession()) return;
-  const { lastRun, lmsStatus } = getTaskState(root, manifest.id) ?? {};
+  const { lastRun, lmsStatus, helpLabel } = getTaskState(root, manifest.id) ?? {};
   const server = problems?.server;
   const stageId =
     problems &&
@@ -982,7 +982,8 @@ async function renderTaskReadme(
         ...(problems?.preparationError
           ? { problemPreparationError: problems.preparationError }
           : {}),
-        ...(lmsStatus && !refresh.skipLms && session === apiSession()
+        ...(problems && helpLabel && !refresh.skipLms ? { helpLabel } : {}),
+        ...(!manifest.problems && lmsStatus && !refresh.skipLms && session === apiSession()
           ? { taskStatus: lmsStatus }
           : {}),
       },
