@@ -1,11 +1,10 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問11 User のプロパティ名を日本語にする。id は "ID"、name は "名前"、email は "メール"、age は "年齢"（switch ですべての場合を書く）
+//     例: fieldLabel("email") → "メール"
+// 引数と戻り値に型注釈を付けます。
+// 引数の型に keyof User を使います。
 
 export type User = { id: number; name: string; email: string; age: number };
 
-// 問11
 export function fieldLabel(key: keyof User): string {
   switch (key) {
     case "id":

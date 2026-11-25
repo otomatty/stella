@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問12 ids のユーザーを同時に取得し、年齢の平均を返す。ids が空なら 0
+//     例: averageAge([1, 2]) → 26.5 で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問12
 export async function averageAge(ids: readonly number[]): Promise<number> {
   if (ids.length === 0) {
     return 0;

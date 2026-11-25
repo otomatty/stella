@@ -1,8 +1,9 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
+// 問19 いちばん新しい（後の）Date を返す。空なら undefined
+//     例: latest([4月1日, 4月3日, 4月2日]) → 4月3日
+// 引数と戻り値に型注釈を付けます。
+// 配列の中の Date は変更しません。
+// 引数の配列は変更しません。
 
-// 問19
 export function latest(dates: Date[]): Date | undefined {
   let result: Date | undefined;
   for (const date of dates) {

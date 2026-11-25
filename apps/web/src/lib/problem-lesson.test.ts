@@ -26,6 +26,7 @@ function problem(
     afterLessonId: "server-after",
     afterTitle: "サーバーの題",
     state,
+    refs: [],
   };
 }
 

@@ -1,8 +1,6 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問18
+// 問18 0以上の整数の桁数を返す
+//     例: digitCount(12345) → 5
+// 戻り値には型注釈を付けてください。
 export function digitCount(n: number): number {
   return String(n).length;
 }

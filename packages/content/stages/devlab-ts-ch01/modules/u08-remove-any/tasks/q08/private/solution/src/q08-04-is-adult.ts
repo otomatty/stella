@@ -1,8 +1,5 @@
-// 01-q08 any をなくす ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/any
-
-// 問4
+// 問4 20歳以上なら true を返す
+//     例: isAdult(20) → true
 export function isAdult(age: number): boolean {
   return age >= 20;
 }

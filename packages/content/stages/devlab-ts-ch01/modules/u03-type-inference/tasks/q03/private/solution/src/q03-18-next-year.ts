@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問18
+// 問18 次の年を返す
+//     例: nextYear(2026) → 2027
+// 戻り値の型は推論に任せてください。
 export function nextYear(year: number) {
   return year + 1;
 }

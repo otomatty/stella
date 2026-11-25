@@ -1,9 +1,7 @@
-// 02-q01 オブジェクトの型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/type-annotation-of-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/shorthand-property-names
-
-// 問8
+// 問8 title と price から、本のオブジェクト { title, price } を作る
+//     例: makeBook("React入門", 2400) → { title: "React入門", price: 2400 }
+// 引数と戻り値には型注釈を付けます。
+// オブジェクトの型は { name: string; age: number } のように書きます。型に type で名前を付けてもかまいません。
 export function makeBook(title: string, price: number): { title: string; price: number } {
   return { title, price };
 }

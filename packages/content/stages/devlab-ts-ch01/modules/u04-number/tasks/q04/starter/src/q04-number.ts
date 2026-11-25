@@ -1,7 +1,3 @@
-// 01-q04 number型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-//
 // 問題
 // 次の2つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //

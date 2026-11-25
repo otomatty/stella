@@ -31,7 +31,7 @@ import { savePendingTaskOpen, takePendingTaskOpen } from "./pending-task-open.js
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
 import { installTask, TaskInstallConflict, type TaskVariant } from "./task-distribution.js";
 import { resolveFileInRoot } from "./runner/files.js";
-import { taskBundleUrl } from "./task-bundle-url.js";
+import { taskBundleUrl, taskFixedStartUrl, taskRevisionFilesUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import { isCompactTaskLayout } from "./task-panel.js";
 import { problemFileToOpen, type ProblemState } from "./task-problems.js";
@@ -172,8 +172,9 @@ async function showTaskWorkspace(
   trainingRoot: string | undefined,
   problem?: string,
 ): Promise<void> {
-  const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
-  if (!(await isPlainFile(readme.fsPath))) {
+  const loaded = await loadTask(taskRoot);
+  const hasProblems = loaded.ok && (loaded.manifest.problems?.length ?? 0) > 0;
+  if (!hasProblems && !(await isPlainFile(path.join(taskRoot, "README.md")))) {
     // 課題文が消えた・壊れた課題フォルダー (「今のフォルダーを開く」から来る) は、
     // 開けない README の代わりに課題フォルダーをエクスプローラーで示す。
     await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(taskRoot)).then(
@@ -331,9 +332,8 @@ async function prepareAndOpen(
     taskRoot = await installTask(trainingRoot, bundle, {
       variant,
       loadRevisionFiles: async (taskId, contentHash) => {
-        const query = new URLSearchParams({ taskId, contentHash });
         const { files } = await apiRequest<{ files: unknown }>(
-          `/api/tasks/revision-files?${query}`,
+          taskRevisionFilesUrl(taskId, contentHash),
           {
             signal: AbortSignal.timeout(4_000),
           },
@@ -418,7 +418,7 @@ async function startFromFixedStart(store: TaskOpenStore): Promise<void> {
     use,
   );
   if (choice !== use) return;
-  const { bundle } = await apiRequest<{ bundle: TaskBundle }>("/api/tasks/fixed-start", {
+  const { bundle } = await apiRequest<{ bundle: TaskBundle }>(taskFixedStartUrl(), {
     method: "POST",
     body: { taskId },
   });

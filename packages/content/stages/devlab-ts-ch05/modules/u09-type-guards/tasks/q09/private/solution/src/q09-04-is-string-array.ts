@@ -1,9 +1,6 @@
-// 05-q09 型ガード関数とアサーション関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
+// 問4 【型ガード】すべての要素が文字列の配列か。戻り値の型は value is string[]
+//     例: isStringArray(["a", "b"]) → true
 
-// 問4
 export function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }

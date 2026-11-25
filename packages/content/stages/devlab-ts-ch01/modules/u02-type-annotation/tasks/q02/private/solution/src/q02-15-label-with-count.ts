@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問15
+// 問15 ラベルの後ろに件数を「（◯件）」の形で付ける
+//     例: labelWithCount("メッセージ", 3) → "メッセージ（3件）"
+// 戻り値には型注釈を付けてください。
 export function labelWithCount(label: string, count: number): string {
   return `${label}（${count}件）`;
 }

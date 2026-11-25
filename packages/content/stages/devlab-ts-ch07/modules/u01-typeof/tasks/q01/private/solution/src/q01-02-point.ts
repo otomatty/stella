@@ -1,9 +1,7 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問2 型 Point を ORIGIN から作る
+// 定義済みの定数は書き換えません。
+// 型は手で書き写さず、typeof で作ります。
 
 export const ORIGIN = { x: 0, y: 0 };
 
-// 問2
 export type Point = typeof ORIGIN;

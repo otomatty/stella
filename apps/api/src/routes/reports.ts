@@ -10,7 +10,7 @@
  */
 
 import { Hono } from "hono";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
   isReportType,
   reportDayBoundaryToIso,
@@ -40,7 +40,11 @@ import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.j
 import type { Env } from "../env.js";
 
 import { learnerOnly, learnerOrUnknown } from "../lib/learner-scope.js";
-import { loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
+import {
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "../lib/lesson-progress-write.js";
 
 export const reportsRoute = new Hono<{ Bindings: Env }>();
 
@@ -239,10 +243,17 @@ async function enrollmentsReport(
         db
           .select({ userId: lessonProgress.userId, lessonId: lessonProgress.lessonId })
           .from(lessonProgress)
-          .where(and(inArray(lessonProgress.userId, ids), eq(lessonProgress.completed, true))),
+          .where(
+            and(
+              inArray(lessonProgress.userId, ids),
+              eq(lessonProgress.completed, true),
+              sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
+            ),
+          ),
       ),
     )
   ).flat();
+  const passedOverviews = await loadPassedOverviewLessons(db, userIds, [...pageLessonIds]);
   const completedByUser = new Map<string, Set<string>>();
   const markCompleted = (userId: string, lessonId: string) => {
     if (!pageLessonIds.has(lessonId)) return;
@@ -263,6 +274,7 @@ async function enrollmentsReport(
       }
     }
   }
+  for (const row of passedOverviews) markCompleted(row.userId, row.lessonId);
 
   const rows: EnrollmentReportRow[] = page.map((r) => {
     const lessonIds = lessonIdsByStage.get(r.stageId) ?? [];

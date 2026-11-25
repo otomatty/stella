@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問13 email を返す。なければ "email がありません" の Error を投げる
+//     例: requireEmail({ name: "山田" }) → Error
+// 引数と戻り値に型注釈を付けます。
 
 export type Profile = { name: string; email?: string; age?: number };
 
-// 問13
 export function requireEmail(profile: Profile): string {
   if (profile.email === undefined) {
     throw new Error("email がありません");

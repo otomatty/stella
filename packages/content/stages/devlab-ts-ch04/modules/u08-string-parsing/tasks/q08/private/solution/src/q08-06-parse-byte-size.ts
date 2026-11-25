@@ -1,9 +1,7 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問6
+// 問6 "10KB" をバイト数にする。単位は "B"、"KB"（1024）、"MB"（1024 × 1024）。それ以外は "大きさではありません: <text>" の Error
+//     例: parseByteSize("2KB") → 2048
+// 引数と戻り値に型注釈を付けます。
+// 取り出した数値の文字列は Number で変換します。
 export function parseByteSize(text: string): number {
   const match = /^(\d+)(B|KB|MB)$/.exec(text);
   if (match === null) {

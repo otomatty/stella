@@ -120,6 +120,7 @@ describe("resolveLessonNeighbors", () => {
       afterLessonId: "server-after",
       afterTitle: "サーバーの題",
       state: "locked-video",
+      refs: [],
     });
     const tasks: TaskSummary[] = [
       {

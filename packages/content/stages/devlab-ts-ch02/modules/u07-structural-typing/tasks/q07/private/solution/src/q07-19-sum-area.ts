@@ -1,12 +1,11 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問19 width × height の合計を返す。Box と Paper が混ざった配列も渡せる
+//     例: sumArea([{ width: 2, height: 3 }, { width: 1, height: 1 }]) → 7
+// 引数と戻り値には型注釈を付けます。
 
 export type Box = { width: number; height: number; depth: number };
 
 export type Paper = { width: number; height: number };
 
-// 問19
 export function sumArea(items: readonly { width: number; height: number }[]): number {
   let total = 0;
   for (const item of items) {

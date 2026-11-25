@@ -1,8 +1,8 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問7 キーの配列を返す（入れた順）
+//     例: namesOf(scores) → ["山田", "佐藤"]
+// 引数と戻り値に型注釈を付けます。
+// keys() で入れた順に取り出し、スプレッド構文で配列にします。
 
-// 問7
 export function namesOf(scores: Map<string, number>): string[] {
   return [...scores.keys()];
 }

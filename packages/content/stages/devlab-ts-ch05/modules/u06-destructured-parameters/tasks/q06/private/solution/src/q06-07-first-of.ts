@@ -1,9 +1,7 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問7 配列を [first] で受け取り、最初の要素を返す。なければ undefined
+//     例: firstOf(["a", "b"]) → "a"
+// 引数と戻り値には型注釈を付けてください。
 
-// 問7
 export function firstOf([first]: readonly string[]): string | undefined {
   return first;
 }

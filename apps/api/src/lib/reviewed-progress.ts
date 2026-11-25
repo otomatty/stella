@@ -2,7 +2,11 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { NormalizedProgressRow } from "@stella/shared/study/progress-sync";
 import type { Db } from "../db/client.js";
 import { lessonProgress, lessons, submissions } from "../db/schema.js";
-import { isProblemStepLesson } from "./lesson-progress-write.js";
+import {
+  isProblemStepLesson,
+  isProblemTaskOverviewLesson,
+  loadPassedOverviewLessons,
+} from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
 
 /**
@@ -60,11 +64,11 @@ export async function reviewedPassLessonIds(
 
 export interface ReviewedProgress {
   rows: NormalizedProgressRow[];
-  /** 完了をレビューの合格から決めたコードレッスン。 */
+  /** 完了をレビューの合格、または課題の一覧の合格から決めたレッスン。問題のレッスンは含めない。 */
   reviewedLessonIds: Set<string>;
 }
 
-/** 現存するレッスンの進捗を返す。コードはレビューの合格で完了を決め、問題のレッスンは捨てる。 */
+/** 現存するレッスンの進捗を返す。コードはレビュー、一覧は課題の合格で完了を決め、問題のレッスンは捨てる。 */
 export async function reviewedProgressRows(
   db: Db,
   userId: string,
@@ -73,6 +77,7 @@ export async function reviewedProgressRows(
   const existing = new Set<string>();
   const problemSteps = new Set<string>();
   const reviewed = new Set<string>();
+  const problemOverviewLessonIds = new Set<string>();
   const passed = new Set<string>();
   for (const ids of chunk(
     rows.map((r) => r.lessonId),
@@ -83,6 +88,7 @@ export async function reviewedProgressRows(
         id: lessons.id,
         type: lessons.type,
         problemStep: isProblemStepLesson(sql`lessons.id`),
+        problemOverview: isProblemTaskOverviewLesson(sql`lessons.id`),
       })
       .from(lessons)
       .where(inArray(lessons.id, ids));
@@ -93,6 +99,11 @@ export async function reviewedProgressRows(
         problemSteps.add(row.id);
         continue;
       }
+      if (row.problemOverview) {
+        reviewed.add(row.id);
+        problemOverviewLessonIds.add(row.id);
+        continue;
+      }
       if (row.type !== "code") continue;
       reviewed.add(row.id);
       codeLessonIds.push(row.id);
@@ -100,10 +111,22 @@ export async function reviewedProgressRows(
     const ok = await reviewedPassLessonIds(db, userId, codeLessonIds);
     for (const id of ok) passed.add(id);
   }
+  for (const row of await loadPassedOverviewLessons(db, [userId], [...problemOverviewLessonIds])) {
+    passed.add(row.lessonId);
+  }
   return {
     rows: rows
       .filter((r) => existing.has(r.lessonId) && !problemSteps.has(r.lessonId))
-      .map((r) => (reviewed.has(r.lessonId) ? { ...r, completed: passed.has(r.lessonId) } : r)),
+      .map((r) =>
+        reviewed.has(r.lessonId)
+          ? {
+              ...r,
+              completed: passed.has(r.lessonId),
+              countsTowardActivity:
+                !problemOverviewLessonIds.has(r.lessonId) && r.countsTowardActivity,
+            }
+          : r,
+      ),
     reviewedLessonIds: reviewed,
   };
 }

@@ -1,7 +1,3 @@
-// 07-q07 型引数の制約
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
-//
 // 問題
 // <T extends { length: number }> のように書くと、T に渡せる型を「length を持つ型」に限れます。
 // そのおかげで、関数の中で T の値の length を使えるようになります。
@@ -20,6 +16,8 @@
 //    戻り値の型は T & { id: number }
 //
 // テストは、制約に合わない呼び出しが型エラーになることも確かめます
+// 型変数を使い、unknown で型を置き換えないでください。
+// pluck の key は、配列の要素の型のプロパティ名に限ります。
 
 export function getProperty() {}
 

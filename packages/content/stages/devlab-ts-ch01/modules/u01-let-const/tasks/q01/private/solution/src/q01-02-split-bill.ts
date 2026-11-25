@@ -1,9 +1,5 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問2
+// 問2 割り勘で1人が払う金額を返す（100円単位に切り上げ）
+//     例: splitBill(10000, 3) → 3400
 export function splitBill(total: number, people: number): number {
   const perPerson = total / people;
   return Math.ceil(perPerson / 100) * 100;

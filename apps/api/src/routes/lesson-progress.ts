@@ -22,7 +22,9 @@ import {
   executeLessonProgressWrites,
   assertProgressSyncSize,
   isProblemStepLesson,
+  isProblemTaskOverviewLesson,
   loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
 } from "../lib/lesson-progress-write.js";
 import {
   autoCompleteStagesIfMet,
@@ -49,27 +51,34 @@ const SELECT = {
 lessonProgressRoute.get("/api/lesson-progress", async (c) => {
   try {
     const { caller, db } = await getCaller(c);
-    const [stored, completedSteps] = await Promise.all([
+    const [stored, completedSteps, passedOverviews] = await Promise.all([
       db
-        .select({ ...SELECT, problemStep: isProblemStepLesson(sql`lesson_progress.lesson_id`) })
+        .select({
+          ...SELECT,
+          problemStep: isProblemStepLesson(sql`lesson_progress.lesson_id`),
+          problemOverview: isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`),
+        })
         .from(lessonProgress)
         .where(eq(lessonProgress.userId, caller.id)),
       loadCompletedProblemSteps(db, [caller.id]),
+      loadPassedOverviewLessons(db, [caller.id]),
     ]);
-    const stepsByLesson = new Map(completedSteps.map((step) => [step.lessonId, step]));
-    const rows = stored.map(({ problemStep, ...row }) => {
-      if (problemStep) row.completed = stepsByLesson.delete(row.lesson_id);
+    const derivedByLesson = new Map(
+      [...passedOverviews, ...completedSteps].map((row) => [row.lessonId, row]),
+    );
+    const rows = stored.map(({ problemStep, problemOverview, ...row }) => {
+      if (problemStep || problemOverview) row.completed = derivedByLesson.delete(row.lesson_id);
       return row;
     });
-    for (const step of stepsByLesson.values()) {
+    for (const row of derivedByLesson.values()) {
       rows.push({
-        user_id: step.userId,
-        lesson_id: step.lessonId,
+        user_id: row.userId,
+        lesson_id: row.lessonId,
         completed: true,
         last_page: null,
         viewed_pages: [],
         watched_sec: null,
-        updated_at: new Date(step.updatedAt),
+        updated_at: new Date(row.updatedAt),
       });
     }
     return c.json({ rows });

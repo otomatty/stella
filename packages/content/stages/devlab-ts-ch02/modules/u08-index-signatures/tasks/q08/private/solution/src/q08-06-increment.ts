@@ -1,9 +1,8 @@
-// 02-q08 インデックス型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/index-signature
-//       https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object
-
-// 問6
+// 問6 key の値を1増やした、新しいオブジェクトを返す。key がなければ 1 にする
+//     例: increment({ a: 1 }, "a") → { a: 2 }
+// 引数と戻り値には型注釈を付けます。
+// キーが自由なオブジェクトの型は { [key: string]: number } の形で書きます。
+// キーがない場合の値は ?? で補えます。
 export function increment(
   counts: { [key: string]: number },
   key: string,

@@ -1,8 +1,5 @@
-// 07-q05 Record ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/record
+// 問2 型 Schedule を、キーが Weekday、値が文字列の配列の Record として作る
 
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri";
 
-// 問2
 export type Schedule = Record<Weekday, string[]>;

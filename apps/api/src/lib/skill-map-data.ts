@@ -21,6 +21,7 @@ import {
   isNull,
   max,
   notInArray,
+  sql,
 } from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
@@ -45,7 +46,11 @@ import {
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
-import { loadCompletedProblemSteps } from "./lesson-progress-write.js";
+import {
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "./lesson-progress-write.js";
 import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
@@ -521,6 +526,7 @@ export async function loadFocusCompletions(
         eq(lessonProgress.completed, true),
         isNull(lessons.problemId),
         gte(lessonProgress.updatedAt, new Date(fromMs)),
+        sql`not ${isProblemTaskOverviewLesson(sql`lessons.id`)}`,
       ),
     );
   const completions: FocusCompletion[] = rows.map((row) => ({
@@ -529,7 +535,6 @@ export async function loadFocusCompletions(
   }));
   // 問題のレッスンは lesson_progress の写しを使わず、提出の日時を完了日にする。
   const steps = await loadCompletedProblemSteps(db, [caller.id]);
-  if (steps.length === 0) return completions;
   const stageByLesson = new Map<string, string>();
   for (const part of chunk(
     [...new Set(steps.map((step) => step.lessonId))],
@@ -547,6 +552,13 @@ export async function loadFocusCompletions(
     const stageId = stageByLesson.get(step.lessonId);
     if (!stageId) continue;
     completions.push({ stageId, date: toStudyDate(step.updatedAt) });
+  }
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
+  for (const row of passedOverviews) {
+    if (row.updatedAt < fromMs) continue;
+    completions.push({ stageId: row.stageId, date: toStudyDate(row.updatedAt) });
   }
   return completions;
 }
@@ -679,12 +691,17 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
         eq(lessonProgress.userId, caller.id),
         eq(lessonProgress.completed, true),
         isNull(lessons.problemId),
+        sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
       ),
     );
   const problemLessonIds = new Set(
     (await loadCompletedProblemSteps(db, [caller.id])).map((step) => step.lessonId),
   );
-  const completedLessons = Number(lessonCount?.n ?? 0) + problemLessonIds.size;
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
+  const completedLessons =
+    Number(lessonCount?.n ?? 0) + problemLessonIds.size + passedOverviews.length;
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })

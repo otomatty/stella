@@ -1,7 +1,7 @@
 {
   "name": "@stella/web",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "STELLA — LMS web app",
   "scripts": {

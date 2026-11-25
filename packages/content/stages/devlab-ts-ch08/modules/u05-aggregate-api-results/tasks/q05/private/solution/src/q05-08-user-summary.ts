@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問8 ユーザーと投稿を同時に取得し、"山田（投稿 3件）" の形の文字列を返す
+//     例: userSummary(1) → "山田（投稿 3件）" で解決する
+// async と await を使ってください。
+// ユーザーと投稿の取得には定義済みの getUser と getPosts を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -36,7 +37,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問8
 export async function userSummary(id: number): Promise<string> {
   const [user, posts] = await Promise.all([getUser(id), getPosts(id)]);
   return `${user.name}（投稿 ${posts.length}件）`;

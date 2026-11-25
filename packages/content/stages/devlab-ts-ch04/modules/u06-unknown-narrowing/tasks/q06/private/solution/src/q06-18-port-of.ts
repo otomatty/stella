@@ -1,9 +1,7 @@
-// 04-q06 unknown型と型の絞り込み ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/unknown
-//       https://typescriptbook.jp/reference/statements/control-flow-analysis-and-type-guard
-
-// 問18
+// 問18 オブジェクトで port プロパティが数値ならそれを、そうでなければ 3000 を返す
+//     例: portOf({ port: 8080 }) → 8080
+// 引数と戻り値に型注釈を付けます。
+// プロパティの有無は in で確かめます。
 export function portOf(config: unknown): number {
   if (
     typeof config === "object" &&

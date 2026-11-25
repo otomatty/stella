@@ -1,9 +1,7 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問11
+// 問11 "a=1&b=2" を { a: "1", b: "2" } にする。空の文字列なら {}。「=」のない部分は値を空の文字列にする
+//     例: parseQuery("a=1&b=2") → { a: "1", b: "2" }
+// 引数と戻り値に型注釈を付けます。
+// 文字列を split で区切ります。
 export function parseQuery(text: string): { [key: string]: string } {
   const result: { [key: string]: string } = {};
   if (text === "") {

@@ -1,8 +1,3 @@
-// 04-q03 for文と for-of文
-//
-// 教材: https://typescriptbook.jp/reference/statements/for-of
-//       https://jsprimer.net/basic/loop/
-//
 // 問題
 // 次の3つの関数を、for 文か for-of 文を使って書いてください。引数と戻り値には型注釈を付けること。
 //
@@ -18,6 +13,7 @@
 //
 // 3. multiplicationTable(n)
 //    n の段の九九を、"3 × 1 = 3" の形で 1〜9 まで並べた配列を返す
+// map や filter などでループを置き換えないでください。
 
 export function chunk() {}
 

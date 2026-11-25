@@ -15,7 +15,7 @@ import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
 import { findTaskRoot, loadTask } from "./runner/run-task.js";
-import { fetchProblemResults, loadProblemStates, problemCountLabel } from "./task-problems.js";
+import { problemTaskProgress } from "./task-problems.js";
 import { loadTaskProblems } from "./task-update-guard.js";
 import {
   getTaskState,
@@ -31,6 +31,10 @@ export interface CurrentTask {
   taskId?: string;
   /** 問題つきの課題の、提出済みと全部の件数。 */
   problemProgress?: { passed: number; total: number };
+  problemTaskCode?: string;
+  currentProblem?: { id: string; label: string };
+  problemSteps?: true;
+  /** 古い配布の書き出しが終わるまで、確認と提出を出さない。 */
   problemActionsAvailable?: boolean;
 }
 
@@ -39,7 +43,6 @@ let inTask = false;
 let stateItem: vscode.StatusBarItem | undefined;
 let submitItem: vscode.StatusBarItem | undefined;
 let readmeItem: vscode.StatusBarItem | undefined;
-let progressItem: vscode.StatusBarItem | undefined;
 /** 開いているファイルが変わるたびに増やし、古い問い合わせの結果で上書きしない。 */
 let generation = 0;
 
@@ -107,13 +110,17 @@ function renderState(item: vscode.StatusBarItem, task: CurrentTask): boolean {
 }
 
 function render(): void {
+  void vscode.commands.executeCommand(
+    "setContext",
+    "stella.problemTask",
+    inTask && Boolean(current?.problemProgress),
+  );
   void vscode.commands.executeCommand("setContext", "stella.inTask", inTask);
-  if (!stateItem || !submitItem || !readmeItem || !progressItem) return;
+  if (!stateItem || !submitItem || !readmeItem) return;
   if (!current) {
     stateItem.hide();
     submitItem.hide();
     readmeItem.hide();
-    progressItem.hide();
     return;
   }
   submitItem.text = "$(cloud-upload) 提出する";
@@ -131,20 +138,34 @@ function render(): void {
     arguments: [current.root],
   };
   const progress = current.problemProgress;
-  if (progress && progress.total > 0) {
-    progressItem.text = problemCountLabel(progress.passed, progress.total);
-    progressItem.tooltip = `「${current.title}」の提出済み ${progressItem.text}`;
-    progressItem.command = {
+  if (progress) {
+    const { currentProblem } = current;
+    const label = [current.problemTaskCode ?? current.title, currentProblem?.label]
+      .filter(Boolean)
+      .join(" ");
+    stateItem.text = `$(star) ${label} ・ 提出 ${progress.passed}/${progress.total}`;
+    stateItem.tooltip = `「${current.title}」の進み具合を表示します`;
+    readmeItem.text = "$(book) 課題";
+    readmeItem.tooltip = `「${current.title}」の進み具合といまやることを表示します`;
+    stateItem.command = readmeItem.command = {
       command: "stella.showTaskReadme",
-      title: "課題文を表示する",
+      title: "課題を表示する",
       arguments: [current.root],
     };
-    progressItem.show();
-  } else {
-    progressItem.hide();
-  }
-  if (renderState(stateItem, current) || current.problemActionsAvailable === false)
-    submitItem.hide();
+    stateItem.show();
+    // 解ける問題が無いあいだは出さない。古い deferred の書き出し待ちも出さない。
+    if (current.problemActionsAvailable === false || !currentProblem) submitItem.hide();
+    else {
+      submitItem.text = "$(play) 確認して提出";
+      submitItem.tooltip = `${currentProblem.label}を確認して提出します`;
+      submitItem.command = {
+        command: "stella.submitTask",
+        title: "確認して提出",
+        arguments: [current.root, currentProblem.id],
+      };
+      submitItem.show();
+    }
+  } else if (renderState(stateItem, current)) submitItem.hide();
   else submitItem.show();
   readmeItem.show();
 }
@@ -173,40 +194,21 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
     const loaded = await loadTask(root);
     if (ticket !== generation) return;
     const title = loaded.ok ? loaded.manifest.title : path.basename(root);
-    let problemProgress: CurrentTask["problemProgress"];
-    let problemActionsAvailable: boolean | undefined;
-    if (loaded.ok && loaded.manifest.problemSteps) {
+    if (loaded.ok && loaded.manifest.problems?.length) {
       const problems = await loadTaskProblems(root, loaded.manifest, {
         trainingRoot: trainingRootOf(root),
       });
       if (ticket !== generation) return;
-      problemProgress = problems.progress;
-      problemActionsAvailable = !problems.releasePending;
+      current = {
+        root,
+        title,
+        ...problemTaskProgress(loaded.manifest, problems),
+        problemActionsAvailable: !problems.releasePending,
+      };
       notifyProblemTaskOpened(root);
-    } else if (loaded.ok && loaded.manifest.problems?.length) {
-      notifyProblemTaskOpened(root);
-      try {
-        const states = await loadProblemStates(
-          root,
-          loaded.manifest,
-          await fetchProblemResults(loaded.manifest.id),
-        );
-        if (ticket !== generation) return;
-        problemProgress = {
-          passed: states.filter((item) => item.status === "submitted").length,
-          total: states.length,
-        };
-      } catch {
-        problemProgress = undefined;
-      }
+    } else {
+      current = { root, title, ...(loaded.ok ? { taskId: loaded.manifest.id } : {}) };
     }
-    current = {
-      root,
-      title,
-      ...(loaded.ok && !loaded.manifest.problems ? { taskId: loaded.manifest.id } : {}),
-      ...(problemProgress ? { problemProgress } : {}),
-      ...(problemActionsAvailable === undefined ? {} : { problemActionsAvailable }),
-    };
   }
   render();
   await refreshCurrentTask();
@@ -220,11 +222,11 @@ let problemRefresh = 0;
 
 async function refreshProblemActions(afterSave = false): Promise<void> {
   const task = current;
-  if (task?.problemActionsAvailable === undefined) return;
+  if (!task?.problemProgress) return;
   const ticket = generation;
   const request = ++problemRefresh;
   const loaded = await loadTask(task.root);
-  if (!loaded.ok || !loaded.manifest.problemSteps || ticket !== generation) return;
+  if (!loaded.ok || !loaded.manifest.problems?.length || ticket !== generation) return;
   // 保存前に始まった準備で止まっていた場合も、保存した状態で確かめ直す。
   const problems = await loadTaskProblems(task.root, loaded.manifest, {
     afterSubmission: afterSave,
@@ -233,7 +235,7 @@ async function refreshProblemActions(afterSave = false): Promise<void> {
   if (ticket !== generation || request !== problemRefresh) return;
   setCurrentTask({
     ...task,
-    problemProgress: problems.progress,
+    ...problemTaskProgress(loaded.manifest, problems),
     problemActionsAvailable: !problems.releasePending,
   });
   notifyProblemTaskOpened(task.root);
@@ -252,12 +254,6 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     49,
   );
   readmeItem.name = "STELLA: 課題文";
-  progressItem = vscode.window.createStatusBarItem(
-    "stella.problemProgress",
-    vscode.StatusBarAlignment.Left,
-    48,
-  );
-  progressItem.name = "STELLA: 問題の件数";
   stateItem = vscode.window.createStatusBarItem(
     "stella.taskState",
     vscode.StatusBarAlignment.Left,
@@ -267,17 +263,21 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     submitItem,
     readmeItem,
-    progressItem,
     stateItem,
     onDidChangeTaskState((root) => {
       if (root === undefined || root === current?.root) render();
     }),
-    onDidChangeAuth(() => void refreshCurrentTask()),
+    onDidChangeAuth(() => {
+      void refreshCurrentTask();
+      void refreshProblemActions().catch(() => undefined);
+    }),
     vscode.window.onDidChangeWindowState(({ focused }) => {
-      if (focused) void refreshProblemActions().catch(() => undefined);
+      if (focused && current?.problemSteps) void refreshProblemActions().catch(() => undefined);
     }),
     vscode.workspace.onDidSaveTextDocument(({ uri }) => {
-      if (current?.problemActionsAvailable !== false || uri.scheme !== "file") return;
+      if (!current?.problemSteps || uri.scheme !== "file") return;
+      // 書き出し待ちは、いまの問題があっても保存のあとでやり直す。
+      if (current.problemActionsAvailable !== false && current.currentProblem) return;
       const rel = path.relative(current.root, uri.fsPath);
       if (rel && rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel))
         return refreshProblemActions(true).catch(() => undefined);
@@ -292,7 +292,6 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
         stateItem = undefined;
         submitItem = undefined;
         readmeItem = undefined;
-        progressItem = undefined;
         current = undefined;
         inTask = false;
       },

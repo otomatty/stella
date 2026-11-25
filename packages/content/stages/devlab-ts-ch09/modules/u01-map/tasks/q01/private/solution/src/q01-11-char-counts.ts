@@ -1,8 +1,7 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問11 文字ごとの出てきた回数の Map を返す（最初に出てきた順）
+//     例: charCounts("banana") → Map { "b" => 1, "a" => 3, "n" => 2 }
+// 引数と戻り値に型注釈を付けます。
 
-// 問11
 export function charCounts(text: string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const char of text) {

@@ -1,8 +1,3 @@
-// 08-q03 fetch でAPIを呼ぶ
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
-//
 // 問題
 // fetch を使って、ユーザーと投稿のAPI（API_URL）を呼ぶ関数を書いてください。async と await を使うこと。
 // テストでは fetch を差し替えて、本物の通信はしません。

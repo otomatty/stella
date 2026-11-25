@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問1
+// 問1 合計を返す。空の配列なら 0
+//     例: sumAll([1, 2, 3]) → 6
+// 引数と戻り値には型注釈を付けます。
+// 合計は for-of で求められます。
 export function sumAll(numbers: readonly number[]): number {
   let total = 0;
   for (const n of numbers) {

@@ -1,9 +1,6 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問18
+// 問18 2つの正の整数の最大公約数を返す（ユークリッドの互除法: 大きい方を小さい方で割った余りで置き換えていく）
+//     例: gcd(12, 18) → 6
+// 値を入れ直す引数は、let で宣言した変数に写してください。
 export function gcd(a: number, b: number): number {
   let x = a;
   let y = b;

@@ -1,9 +1,7 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問18
+// 問18 [a, b] の合計を返す
+//     例: sumPair([3, 4]) → 7
+// 引数と戻り値には型注釈を付けます。
+// タプルの要素は配列の分割代入で取り出せます。
 export function sumPair([a, b]: [number, number]): number {
   return a + b;
 }

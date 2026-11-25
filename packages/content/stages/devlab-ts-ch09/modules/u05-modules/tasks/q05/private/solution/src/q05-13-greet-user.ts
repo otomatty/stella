@@ -1,6 +1,4 @@
-// 09-q05 import と export ドリル
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
+// 問13 shared/q05-modules.lib のデフォルト export を、greetUser という名前で re-export する（export { default as … } from …）
+//     例: greetUser("佐藤") → "ようこそ、佐藤さん"
 
-// 問13
 export { default as greetUser } from "./shared/q05-modules.lib";

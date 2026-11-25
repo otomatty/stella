@@ -1,8 +1,3 @@
-// 06-q04 クラスの継承
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/class/class-inheritance
-//       https://typescriptbook.jp/reference/object-oriented/class/instanceof-operator
-//
 // 問題
 // 1. 社員を表すクラス Employee を書いてください
 //    - constructor(name, salary): 名前と月給。どちらも読み取り専用のフィールドにする

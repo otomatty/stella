@@ -1,7 +1,3 @@
-// 09-q01 Map
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
-//
 // 問題
 // 文章の単語を数える関数を、Map を使って書いてください。引数の Map や配列は変えないこと。
 //

@@ -1,10 +1,10 @@
-// 03-q05 成功と失敗を表す型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/discriminated-union
+// 問1 value を持つ成功の Result を作る
+//     例: success(3) → { ok: true, value: 3 }
+// 引数と戻り値に型注釈を付ける。
+// 定義済みの Result 型を使う。
 
 export type Result = { ok: true; value: number } | { ok: false; error: string };
 
-// 問1
 export function success(value: number): Result {
   return { ok: true, value };
 }

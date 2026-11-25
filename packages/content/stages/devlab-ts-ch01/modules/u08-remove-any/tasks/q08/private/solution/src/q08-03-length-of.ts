@@ -1,8 +1,5 @@
-// 01-q08 any をなくす ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/any
-
-// 問3
+// 問3 文字数を返す
+//     例: lengthOf("abc") → 3
 export function lengthOf(text: string): number {
   return text.length;
 }

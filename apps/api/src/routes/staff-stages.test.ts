@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { DOTNET_PROTECTED_FILES } from "@stella/shared/tasks/dotnet";
 import {
   staffTaskSourcePath,
   type StaffTaskDetail,
@@ -211,11 +213,57 @@ describe("講師・管理者のステージ課題 API (実 SQLite)", () => {
       revisions: [],
       variants: [],
     });
+    expect(result).not.toHaveProperty("problems");
     const serialized = JSON.stringify(result);
     for (const text of ["SECRET_HINT", "SECRET_SOLUTION", "SECRET_EXPLANATION", "SECRET_VARIANT"]) {
       expect(serialized).not.toContain(text);
       expect(serialized).not.toContain(encode(text));
     }
+  });
+
+  it.each([
+    ["node-test", "ts", "問1 足す"],
+    ["dotnet-test", "cs", "Q01 ★ 足す"],
+  ])("%s の問題文を配布ファイルから取得する", async (runner, ext, heading) => {
+    await prepareDetail();
+    const problems = [
+      { id: "q01-add", title: "足す" },
+      { id: "q02-extra", title: "応用問題" },
+      { id: "q03-missing", title: "引く" },
+    ];
+    await db
+      .update(tasks)
+      .set({
+        bundle: JSON.stringify({
+          manifest: {
+            ...manifest,
+            runner,
+            problems,
+            submit: { files: [`src/**/*.${ext}`] },
+            ...(ext === "cs" ? { protected: [...DOTNET_PROTECTED_FILES, "tests/**"] } : {}),
+          },
+          contentHash: "a".repeat(64),
+          files: {
+            "README.md": encode("# 日本語の課題文\n"),
+            [`src/q01-add.${ext}`]: encode(`// ${heading}\n// 2つの数を足す。\n\n// TODO\n`),
+            [`src/q02-extra.${ext}`]: encode("// TODO\n"),
+          },
+        }),
+      })
+      .where(eq(tasks.id, detailId));
+    expect(await detail()).toMatchObject({
+      readme: "# 日本語の課題文\n",
+      problems: [
+        {
+          ...problems[0],
+          label: "問1",
+          source: `src/q01-add.${ext}`,
+          statement: `${heading}\n2つの数を足す。`,
+        },
+        { ...problems[1], label: "応用", source: `src/q02-extra.${ext}`, statement: null },
+        { ...problems[2], label: "問3", source: `src/q03-missing.${ext}`, statement: null },
+      ],
+    });
   });
 
   it.each([undefined, 1])(

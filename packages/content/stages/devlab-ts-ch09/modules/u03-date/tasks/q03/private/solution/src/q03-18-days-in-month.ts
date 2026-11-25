@@ -1,8 +1,8 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
+// 問18 year 年 month 月（1〜12）の日数を返す
+//     例: daysInMonth(2028, 2) → 29
+// 引数と戻り値に型注釈を付けます。
+// Date では月を 0〜11（1月が 0）で数えます。
 
-// 問18
 export function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }

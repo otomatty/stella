@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch08/u05-aggregate-api-results@1",
-  "contentHash": "4d2aedcc80bbdd00b31c210d11b41d54d5cf4c22c72328b169a8040ecf5180b3",
+  "unitId": "devlab-ts-ch08/u05-aggregate-api-results@2",
+  "contentHash": "53c392a61262227f1cb315333b7874dcfb2010839dd94c8184482b61159fa242",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

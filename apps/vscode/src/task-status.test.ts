@@ -195,7 +195,7 @@ describe("ステータスバーの課題のボタン", () => {
     expect(state.items[2]?.visible).toBe(false);
   });
 
-  it("段階がある課題はロック中でも提出を出し、ウィンドウに戻ると件数を更新する", async () => {
+  it("解ける問題が無い (すべてロック中) あいだは提出を隠し、解ける問題があれば『確認して提出』を出す。ウィンドウに戻ると件数を更新する", async () => {
     await writeFile(
       path.join(root, ".stella/task.json"),
       JSON.stringify({
@@ -205,7 +205,10 @@ describe("ステータスバーの課題のボタン", () => {
         kind: "basic",
         runner: "node-test",
         problemSteps: true,
-        problems: [{ id: "q01", title: "問1" }],
+        problems: [
+          { id: "q01", title: "問1" },
+          { id: "q02", title: "問2" },
+        ],
         submit: { files: ["src/**/*.ts"] },
         checks: { lint: false, format: false },
       }),
@@ -213,19 +216,36 @@ describe("ステータスバーの課題のボタン", () => {
     let watched = false;
     apiRequest.mockImplementation(async () => ({
       gated: true,
-      passedProblems: 0,
-      totalProblems: 1,
+      passedProblems: watched ? 1 : 0,
+      totalProblems: 2,
       taskPassed: false,
-      problems: [{ id: "q01", state: watched ? "open" : "locked-video" }],
+      problems: watched
+        ? [
+            { id: "q01", state: "submitted" },
+            { id: "q02", state: "open" },
+          ]
+        : [
+            { id: "q01", state: "locked-video" },
+            { id: "q02", state: "locked-video" },
+          ],
     }));
     state.activeFile = path.join(root, "index.html");
     registerTaskStatus(context);
     await state.editorListener?.(editor(state.activeFile));
-    expect(state.items[0]?.visible).toBe(true);
+    expect(state.items[0]?.visible).toBe(false);
     expect(state.items[1]?.visible).toBe(true);
+    expect(stateItem()?.text).toBe("$(star) q01 ・ 提出 0/2");
     watched = true;
     state.focusListener?.({ focused: true });
-    await vi.waitFor(() => expect(state.items[0]?.visible).toBe(true));
+    await vi.waitFor(() => {
+      expect(state.items[0]?.visible).toBe(true);
+      expect(state.items[0]?.text).toBe("$(play) 確認して提出");
+      expect(stateItem()?.text).toBe("$(star) q01 問2 ・ 提出 1/2");
+    });
+    expect(state.items[0]?.command).toMatchObject({
+      command: "stella.submitTask",
+      arguments: [root, "q02"],
+    });
   });
 
   it("古い deferred の書き出しが未保存で止まったら提出を隠し、保存すると出す", async () => {
@@ -346,9 +366,20 @@ describe("ステータスバーの課題のボタン", () => {
     await state.editorListener?.(editor(state.activeFile));
     expect(taskChanged).toHaveBeenCalledExactlyOnceWith(problemRoot);
     expect(state.items[2]?.visible).toBe(true);
-    expect(state.items[2]?.text).toBe("1/2 問");
+    expect(stateItem()?.text).toBe("$(star) calc 問2 ・ 提出 1/2");
+    expect(stateItem()?.command).toMatchObject({
+      command: "stella.showTaskReadme",
+      arguments: [problemRoot],
+    });
+    expect(state.items[1]?.text).toBe("$(book) 課題");
+    expect(submitItem()?.text).toBe("$(play) 確認して提出");
+    expect(submitItem()?.command).toMatchObject({
+      command: "stella.submitTask",
+      arguments: [problemRoot, "q02-sub"],
+    });
+    expect(state.executeCommand).toHaveBeenCalledWith("setContext", "stella.problemTask", true);
     startTaskCheck({ root: problemRoot, taskId: "extra/unit/calc", problemId: "q01-add" });
-    expect(stateItem()?.visible).toBe(false);
+    expect(stateItem()?.text).toBe("$(star) calc 問2 ・ 提出 1/2");
     expect(submitItem()?.visible).toBe(true);
   });
 

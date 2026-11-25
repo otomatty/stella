@@ -4,6 +4,7 @@ import {
   type TestCaseResult,
 } from "@stella/shared/tasks/run-result";
 import { escapeHtml } from "./markdown-html.js";
+import { expectedActual } from "./task-test-message.js";
 
 export interface TestCounts {
   passed: number;
@@ -70,6 +71,26 @@ export function remainingSteps(steps: readonly StepSummary[]): string[] {
     });
 }
 
+export function renderFailedTest(test: TestCaseResult, fileLink?: string): string {
+  const file = fileLink
+    ? ` ${fileLink}`
+    : test.file
+      ? ` <span class="file">${escapeHtml(test.file)}</span>`
+      : "";
+  const message = test.message ?? "";
+  const comparison = message ? expectedActual(message) : undefined;
+  const fullMessage =
+    message && (!comparison || /[\r\n]/.test(message)) ? `<pre>${escapeHtml(message)}</pre>` : "";
+  const values = comparison
+    ? `<dl class="expected-actual"><dt>期待</dt><dd class="expected">${escapeHtml(comparison.expected)}</dd><dt>実際</dt><dd class="actual">${escapeHtml(comparison.actual)}</dd></dl>`
+    : "";
+  const details =
+    comparison && fullMessage
+      ? `<details><summary>メッセージの全文</summary>${fullMessage}</details>`
+      : fullMessage;
+  return `<div class="test-fail"><p class="test-name">${escapeHtml(test.name)}${file}</p>${values}${details}</div>`;
+}
+
 export const RUN_SUMMARY_CSS = `
     .tests-line { display: flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
     .tbar { display: inline-flex; gap: 3px; flex: 1; max-width: 220px; }
@@ -107,3 +128,37 @@ export const RUN_SUMMARY_CSS = `
     .chip.error { border-color: var(--vscode-editorWarning-foreground); }
     .chip.error b { color: var(--vscode-editorWarning-foreground); }
     .chip.skipped { color: var(--vscode-descriptionForeground); }`;
+
+export const FAILED_TEST_CSS = `
+    .test-fail {
+      margin: 0.5rem 0;
+      padding: 0.45rem 0.7rem;
+      border-radius: 4px;
+      background: var(--vscode-textCodeBlock-background);
+    }
+    .test-fail .test-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+    .test-name::before { content: "✗ "; color: var(--vscode-testing-iconFailed); }
+    .test-name .file { font-weight: normal; color: var(--vscode-descriptionForeground); }
+    .test-fail pre, .expected-actual { font-size: 0.9em; }
+    .test-fail pre {
+      margin: 0.3rem 0 0;
+      padding: 0;
+      background: transparent;
+      color: var(--vscode-testing-iconFailed);
+    }
+    .expected-actual {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.1rem 0.7rem;
+      margin: 0.3rem 0 0;
+    }
+    .expected-actual dt { color: var(--vscode-descriptionForeground); }
+    .expected-actual dd {
+      margin: 0;
+      font-family: var(--vscode-editor-font-family);
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+    .expected-actual .expected { color: var(--vscode-testing-iconPassed); }
+    .expected-actual .actual { color: var(--vscode-testing-iconFailed); }
+`;

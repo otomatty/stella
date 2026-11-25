@@ -1,8 +1,5 @@
-// 04-q07 never型と網羅性のチェック ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/never
-
-// 問13
+// 問13 "ここには来ないはずです" の Error を投げる関数。引数はなし、戻り値の型は never
+//     例: unreachable() → Error "ここには来ないはずです"
 export function unreachable(): never {
   throw new Error("ここには来ないはずです");
 }

@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問4
+// 問4 曜日の番号（0が日曜、6が土曜）が土日なら "休日"、それ以外は "平日" を返す
+//     例: dayType(0) → "休日"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function dayType(day: number): "平日" | "休日" {
   return day === 0 || day === 6 ? "休日" : "平日";
 }

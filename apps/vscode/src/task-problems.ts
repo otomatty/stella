@@ -5,7 +5,11 @@
  */
 
 import type { TaskBundleResponse } from "@stella/shared/tasks/catalog";
-import type { ProblemStepState } from "@stella/shared/tasks/problem-steps";
+import {
+  problemStepLabel,
+  type ProblemStepState,
+  type TaskRefSummary,
+} from "@stella/shared/tasks/problem-steps";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
@@ -19,7 +23,7 @@ import {
 import { apiRequest, apiSession } from "./api.js";
 import { hashFiles, LIMITS, listFiles, readFileInRoot, sha256Hex } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
-import { taskBundleUrl } from "./task-bundle-url.js";
+import { taskBundleUrl, taskFixedStartUrl } from "./task-bundle-url.js";
 import {
   hasDeferredDistribution,
   protectedTaskFiles,
@@ -49,6 +53,7 @@ export interface ProblemState {
   status: ProblemWorkStatus;
   /** サーバーがロックしているときの、提出を止める理由。 */
   lockReason?: string;
+  failed?: true;
 }
 
 export interface ServerProblem {
@@ -60,10 +65,12 @@ export interface ServerProblem {
   afterTitle?: string;
   stepLessonId?: string;
   afterLessonId?: string;
+  refs?: TaskRefSummary[];
 }
 
 export interface ProblemResults {
   gated?: true;
+  refs?: TaskRefSummary[];
   problems: ServerProblem[];
   passedProblems: number;
   totalProblems: number;
@@ -116,6 +123,26 @@ export function problemForTestPath(manifest: TaskManifest, rel: string): TaskPro
 /** 提出済みでない最初の問題。全部提出済みなら undefined。 */
 export function nextUnsubmittedProblem(states: readonly ProblemState[]): ProblemState | undefined {
   return states.find((state) => state.status !== "submitted");
+}
+
+export function problemToWorkOn(states: readonly ProblemState[]): ProblemState | undefined {
+  return states.find((state) => state.status !== "submitted" && !state.lockReason);
+}
+
+export function problemTaskProgress(manifest: TaskManifest, problems: TaskProblems) {
+  const next = problemToWorkOn(problems.states);
+  return {
+    problemProgress: problems.progress,
+    problemSteps: manifest.problemSteps,
+    problemTaskCode: manifest.id.split("/").at(-1),
+    currentProblem: next && {
+      id: next.id,
+      label: problemStepLabel(
+        next.title,
+        manifest.problems?.findIndex(({ id }) => id === next.id) ?? 0,
+      ),
+    },
+  };
 }
 
 /** 開くファイル。次の未提出。全問が配布・提出済みなら 1 問目。 */
@@ -226,6 +253,7 @@ export async function loadProblemStates(
       source,
       status: problemWorkStatus(passed.has(problem.id), local?.outcome),
       ...(lockReason ? { lockReason } : {}),
+      ...(local?.outcome === "failed" || local?.outcome === "error" ? { failed: true } : {}),
     });
   }
   return states;
@@ -244,6 +272,7 @@ function problemLockedReason(problem: ServerProblem | undefined): string | undef
 }
 
 export interface TaskProblems {
+  server?: ProblemResults;
   states: ProblemState[];
   blocked: Map<string, string>;
   progress: { passed: number; total: number };
@@ -317,7 +346,7 @@ async function readTaskProblems(
           const options = { signal, ...(session === undefined ? {} : { session }) };
           const { bundle } =
             receipt.variant === "fixed-start"
-              ? await apiRequest<TaskBundleResponse>("/api/tasks/fixed-start", {
+              ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
                   ...options,
                   method: "POST",
                   body: { taskId: manifest.id },
@@ -347,6 +376,7 @@ async function readTaskProblems(
     if (state.lockReason) blocked.set(state.id, state.lockReason);
   }
   return {
+    ...(server ? { server } : {}),
     states,
     blocked,
     ...(releasePending ? { releasePending } : {}),

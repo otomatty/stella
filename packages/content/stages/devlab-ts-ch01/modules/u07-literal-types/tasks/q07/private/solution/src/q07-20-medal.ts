@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問20
+// 問20 順位が 1 なら "金"、2 なら "銀"、3 なら "銅"、それ以外は "なし" を返す
+//     例: medal(2) → "銀"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function medal(rank: number): "金" | "銀" | "銅" | "なし" {
   if (rank === 1) {
     return "金";

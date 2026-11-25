@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問9
+// 問9 前後の空白を取り除き、英字を小文字にする
+//     例: normalize("  Hello ") → "hello"
+// 戻り値には型注釈を付けてください。
+// trim と toLowerCase が使えます。
 export function normalize(text: string): string {
   return text.trim().toLowerCase();
 }

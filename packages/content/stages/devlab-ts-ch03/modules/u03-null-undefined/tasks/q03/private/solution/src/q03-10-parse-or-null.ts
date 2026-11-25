@@ -1,9 +1,7 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問10 文字列を Number で数値にする。NaN になるなら null
+//     例: parseOrNull("abc") → null
+// 引数と戻り値に型注釈を付ける。
 
-// 問10
 export function parseOrNull(text: string): number | null {
   const value = Number(text);
   return Number.isNaN(value) ? null : value;

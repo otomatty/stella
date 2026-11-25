@@ -1,9 +1,6 @@
-// 05-q09 型ガード関数とアサーション関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
+// 問19 【型ガード】x と y が数値のオブジェクトか。戻り値の型は value is { x: number; y: number }
+//     例: isPoint({ x: 1, y: 2 }) → true
 
-// 問19
 export function isPoint(value: unknown): value is { x: number; y: number } {
   return (
     typeof value === "object" &&

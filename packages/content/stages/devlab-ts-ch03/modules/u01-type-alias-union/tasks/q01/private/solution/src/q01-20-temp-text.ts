@@ -1,9 +1,8 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問20 型 Temperature（数値か "不明"）を定義して export し、tempText(temp: Temperature) を書く。数値なら「25℃」、"不明" ならそのまま
+//     例: tempText(25) → "25℃"
+// 引数と戻り値に型注釈を付ける。
+// 文字列のリテラル値と === で比較し、場合を分ける。
 
-// 問20
 export type Temperature = number | "不明";
 
 export function tempText(temp: Temperature): string {

@@ -1,10 +1,6 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問13
+// 問13 最小値を返す。空の配列なら Error を投げる
+//     例: minValue([3, 9, 2]) → 2
+// 引数と戻り値には型注釈を付けます。
 export function minValue(numbers: readonly number[]): number {
   if (numbers.length === 0) {
     throw new Error("空の配列です");

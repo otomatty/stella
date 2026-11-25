@@ -1,7 +1,8 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問11 `${API}/users?q=キーワード` を取得し、User の配列を返す。キーワードは encodeURIComponent で変換する。形が違えば "ユーザーの形が違います" の Error
+//     例: searchUsers("山田") → `${API}/users?q=%E5%B1%B1%E7%94%B0` を取得する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れ、形を確かめてから使ってください。
+// ユーザーの形は定義済みの isUser で確かめてください。
 
 export const API = "https://api.example.com";
 
@@ -18,7 +19,6 @@ export function isUser(value: unknown): value is User {
   );
 }
 
-// 問11
 export async function searchUsers(keyword: string): Promise<User[]> {
   const res = await fetch(`${API}/users?q=${encodeURIComponent(keyword)}`);
   const data: unknown = await res.json();

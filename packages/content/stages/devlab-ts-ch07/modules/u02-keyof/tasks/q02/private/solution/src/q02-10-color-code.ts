@@ -1,11 +1,9 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問10 COLOR_CODES から色の番号を返す。引数の型は keyof typeof COLOR_CODES
+//     例: colorCode("green") → "#00ff00"
+// 引数と戻り値に型注釈を付けます。
 
 export const COLOR_CODES = { red: "#ff0000", green: "#00ff00", blue: "#0000ff" } as const;
 
-// 問10
 export function colorCode(name: keyof typeof COLOR_CODES): string {
   return COLOR_CODES[name];
 }

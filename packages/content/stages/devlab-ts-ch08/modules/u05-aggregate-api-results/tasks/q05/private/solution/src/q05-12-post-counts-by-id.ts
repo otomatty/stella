@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問12 ids の投稿を同時に取得し、{ id: 投稿の数 } のオブジェクト（Record<number, number>）を返す。取得に失敗した id は入れない
+//     例: postCountsById([1, 2, 3]) → { 1: 3, 2: 1 } で解決する
+// async と await を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
+// 同時に始めた取得は Promise.allSettled で待ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -19,7 +20,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問12
 export async function postCountsById(ids: readonly number[]): Promise<Record<number, number>> {
   const results = await Promise.allSettled(ids.map((id) => getPosts(id)));
   const counts: Record<number, number> = {};

@@ -1,7 +1,6 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問19 型 Teaser を Pick<Article, "title"> & { excerpt: string } として作る。toTeaser(article) の excerpt は body の先頭10文字（10文字を超えるときは「…」を付ける）
+//     例: toTeaser(本文が「TypeScriptを始めよう」の記事).excerpt → "TypeScript…"
+// 引数と戻り値に型注釈を付けます。
 
 export type Article = {
   id: number;
@@ -11,7 +10,6 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問19
 export type Teaser = Pick<Article, "title"> & { excerpt: string };
 
 export function toTeaser(article: Article): Teaser {

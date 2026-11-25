@@ -1,8 +1,7 @@
-// 03-q07 as const ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
+// 問18 定数 WEEKEND を ["土", "日"] として as const で宣言して export し、isWeekendDay(day: string) を書く。WEEKEND のどれかなら true
+//     例: isWeekendDay("日") → true
+// 引数と戻り値に型注釈を付ける。
 
-// 問18
 export const WEEKEND = ["土", "日"] as const;
 
 export function isWeekendDay(day: string): boolean {

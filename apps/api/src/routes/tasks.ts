@@ -6,6 +6,7 @@ import {
   bundleSizeProblem,
   parsePublicTaskBundle,
   type TaskBundleResponse,
+  type TaskProblemItem,
   type TaskSummary,
 } from "@stella/shared/tasks/catalog";
 import {
@@ -13,8 +14,11 @@ import {
   extensionSatisfies,
   extensionUpgradeMessage,
   requiredExtensionVersion,
+  requiredExtensionVersionForFiles,
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
+import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
+import { problemFiles } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
@@ -31,6 +35,7 @@ import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
 import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "../lib/task-problem-steps.js";
+import { loadTaskRefs } from "../lib/task-refs.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
 import { localRunUpsert } from "../lib/task-support.js";
@@ -90,9 +95,10 @@ async function stageTaskList(
               ),
             );
     const progressByTaskId = new Map(progress.map((p) => [p.taskId, p]));
-    const locks = rows.length
-      ? await loadStageStepLocks(db, caller.id, stageId, { hashCache })
-      : null;
+    const [locks, refsByTask] = await Promise.all([
+      rows.length ? loadStageStepLocks(db, caller.id, stageId, { hashCache }) : null,
+      rows.length ? loadTaskRefs(db, caller, { stageId }) : undefined,
+    ]);
     const possibleCompletions: { summary: TaskSummary; contentHash: string }[] = [];
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
@@ -105,22 +111,64 @@ async function stageTaskList(
           ...task,
           kind: task.kind as TaskKind,
           status,
+          refs: refsByTask?.get(task.id)?.get("") ?? [],
         };
         const problemTask = locks?.byTask.get(task.id);
         if (!problemTask) return base;
-        const { problems, saved, counted: passed, ready, steps } = problemTask;
+        const { problems, saved, counted: passed, ready, steps, plan } = problemTask;
+        const manualResults = new Set(
+          saved
+            .filter((row) => row.source === "manual" && passed.has(row.problemId))
+            .map((row) => row.problemId),
+        );
+        const problemRefs = (problemId: string) => refsByTask?.get(task.id)?.get(problemId) ?? [];
         const problemSteps = ready
-          ? steps.map(({ blocking: _blocking, ...step }) => step)
+          ? steps.map(({ blocking: _blocking, ...step }) => {
+              const locked = step.state === "locked-video" || step.state === "locked-previous";
+              return {
+                id: step.id,
+                title: step.title,
+                label: step.label,
+                stepLessonId: step.stepLessonId,
+                state: step.state,
+                refs: problemRefs(step.id),
+                ...(locked
+                  ? { afterLessonId: step.afterLessonId, afterTitle: step.afterTitle }
+                  : {}),
+                ...(step.state === "submitted" && manualResults.has(step.id)
+                  ? { manual: true }
+                  : {}),
+              };
+            })
           : undefined;
+        const stepByProblem = new Map(problemSteps?.map((step) => [step.id, step]));
+        const problemItems = problems.flatMap<TaskProblemItem>((problem, index) => {
+          const paths = plan && problemFiles(plan, problem.id);
+          if (!paths) return [];
+          const step = stepByProblem.get(problem.id);
+          if (step) return [{ ...step, source: paths.source }];
+          const state = passed.has(problem.id)
+            ? "submitted"
+            : problem.after
+              ? "locked-video"
+              : "open";
+          return [
+            {
+              id: problem.id,
+              title: problem.title,
+              label: problemStepLabel(problem.title, index),
+              source: paths.source,
+              state,
+              ...(state === "submitted" && manualResults.has(problem.id) ? { manual: true } : {}),
+              refs: problemRefs(problem.id).filter((ref) => !ref.auto),
+            },
+          ];
+        });
         const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
-          problems_manual: saved.filter(
-            (row) =>
-              row.source === "manual" &&
-              passed.has(row.problemId) &&
-              problems.some((p) => p.id === row.problemId),
-          ).length,
+          problem_items: problemItems,
+          problems_manual: manualResults.size,
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
@@ -245,12 +293,17 @@ async function problemResults(
             : {}),
         }))
       : problems.map(({ id, title }) => ({ id, title }));
+    const refsByTask = await loadTaskRefs(db, caller, { taskId: row.id });
+    const refsByProblem = refsByTask.get(row.id);
     return c.json({
       ...(steps ? { gated: true } : {}),
+      refs: refsByProblem?.get("") ?? [],
       problems: entries.map((problem) => {
         const firstPassedAt = byId.get(problem.id);
+        const refs = refsByProblem?.get(problem.id) ?? [];
         return {
           ...problem,
+          refs: steps ? refs : refs.filter((ref) => !ref.auto),
           status: firstPassedAt ? "passed" : "not-submitted",
           firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
           source: firstPassedAt
@@ -267,6 +320,11 @@ async function problemResults(
   }
 }
 tasksRoute.get("/api/tasks/problem-results", (c) => problemResults(c, true));
+
+function requireTaskExtensionVersion(c: Context<{ Bindings: Env }>, required: string | null) {
+  if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
+    throw new ApiError(extensionUpgradeMessage(required), 426);
+}
 
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
@@ -293,9 +351,10 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
     // 予備の類題は出題した受講者にだけ配る (#39)。
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
     const bundle = parsePublicTaskBundle(JSON.parse(row.bundle));
-    const required = requiredExtensionVersion(bundle.manifest);
-    if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
-      throw new ApiError(extensionUpgradeMessage(required), 426);
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersion(bundle.manifest, Object.keys(bundle.files)),
+    );
     const response: TaskBundleResponse = {
       bundle,
       fixedStart: row.fixedStartHash === row.contentHash,
@@ -329,7 +388,8 @@ tasksRoute.get("/api/tasks/revision-files", async (c) => {
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
-    const { files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const { manifest, files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    requireTaskExtensionVersion(c, requiredExtensionVersionForFiles(manifest, Object.keys(files)));
     const hashes = await Promise.all(
       Object.entries(files).map(async ([rel, encoded]) => {
         const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
@@ -398,6 +458,10 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       contentHash: row.contentHash,
       files: JSON.parse(row.files),
     });
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersionForFiles(manifest, Object.keys(bundle.files)),
+    );
     // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
     const tooLarge = bundleSizeProblem(bundle.files);
     if (tooLarge) {

@@ -1,10 +1,7 @@
-// 05-q02 引数と戻り値の型、void ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//       https://typescriptbook.jp/reference/functions/pass-by-value
+// 問18 ミリ秒を「1.5秒」の形にする（小数第1位まで）
+//     例: secondsText(1500) → "1.5秒"
+// 引数と戻り値には型注釈を付けてください。
 
-// 問18
 export function secondsText(ms: number): string {
   return `${(ms / 1000).toFixed(1)}秒`;
 }

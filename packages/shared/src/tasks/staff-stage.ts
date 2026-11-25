@@ -56,6 +56,13 @@ export interface StaffTaskDetail {
   section: { id: string; title: string };
   sourcePath: string;
   readme: string | null;
+  problems?: {
+    id: string;
+    title: string;
+    label: string;
+    source: string;
+    statement: string | null;
+  }[];
   reviewNotes: string | null;
   rubric: { id: string; criterion: string; required: boolean }[];
   submission: { explanation: boolean; debuggingRecord: boolean };

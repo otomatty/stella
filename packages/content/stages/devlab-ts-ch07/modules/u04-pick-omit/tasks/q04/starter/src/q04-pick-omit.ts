@@ -1,8 +1,3 @@
-// 07-q04 Pick と Omit
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
-//
 // 問題
 //   Pick<T, "a" | "b">: T から、指定したプロパティだけを取り出した型
 //   Omit<T, "a" | "b">: T から、指定したプロパティを除いた型
@@ -19,6 +14,7 @@
 //
 // 4. 型 UserUpdate: User の name と email だけを、どちらも省略できるようにした型（Partial と Pick を組み合わせる）
 //    applyUpdate(user, update): 上書きした新しい User を返す
+// 引数と戻り値に型注釈を付けます。
 
 export type User = {
   id: number;

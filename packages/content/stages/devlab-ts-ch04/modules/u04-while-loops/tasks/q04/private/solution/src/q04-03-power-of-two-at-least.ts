@@ -1,8 +1,7 @@
-// 04-q04 while文と break・continue ドリル
-//
-// 教材: https://jsprimer.net/basic/loop/
-
-// 問3
+// 問3 n 以上で最小の、2の累乗（1, 2, 4, 8…）を返す
+//     例: powerOfTwoAtLeast(5) → 8
+// 引数と戻り値に型注釈を付けます。
+// 繰り返しには while 文を使います。
 export function powerOfTwoAtLeast(n: number): number {
   let value = 1;
   while (value < n) {

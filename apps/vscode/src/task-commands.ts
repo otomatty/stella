@@ -18,7 +18,12 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { canSubmit, type RunOutcome, type RunResult } from "@stella/shared/tasks/run-result";
+import {
+  canSubmit,
+  type RunOutcome,
+  type RunResult,
+  type TestCaseResult,
+} from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
@@ -26,6 +31,7 @@ import { apiSession } from "./api.js";
 import { AuthSessionChanged, type AuthStore, onDidChangeAuthSession } from "./auth.js";
 import { type CatalogLesson, getCachedCatalog } from "./catalog.js";
 import { stellaUrl } from "./config.js";
+import { findTestLine } from "./find-test-line.js";
 import { sendLocalRunReport } from "./local-run-report.js";
 import {
   findTaskRoot,
@@ -45,6 +51,7 @@ import {
   sendTaskSubmission,
   SUBMIT_AGAIN,
 } from "./task-submission.js";
+import { readTestSource, resolveDiagnosticFile } from "./task-diagnostics.js";
 import { readLastResult, resolveEditFiles } from "./task-guide.js";
 import {
   onTaskReadmeVisible,
@@ -59,6 +66,8 @@ import {
   problemCountLabel,
   problemForPath,
   problemForTestPath,
+  problemTaskProgress,
+  problemToWorkOn,
   readProblemRun,
   sendProblemConsultation,
   sendProblemSubmission,
@@ -363,7 +372,7 @@ async function runTaskCommand(
 
 interface ProblemSelection {
   id: string;
-  states: ProblemState[];
+  snapshot: TaskProblems;
 }
 
 async function selectTaskProblem(
@@ -379,9 +388,10 @@ async function selectTaskProblem(
   )
     throw new Error("提出する問題がありません");
   if (!manifest.problems?.length) return undefined;
-  const { states, blocked, releasePending, releaseError } = await loadTaskProblems(root, manifest, {
+  const snapshot = await loadTaskProblems(root, manifest, {
     trainingRoot: trainingRootOf(root),
   });
+  const { states, blocked, releasePending, releaseError } = snapshot;
   if (manifest.problemSteps && releasePending) {
     throw new Error(
       releaseError ?? "残りの問題のファイルを書き出してから、もう一度実行してください",
@@ -396,7 +406,7 @@ async function selectTaskProblem(
     const reason = blocked.get(chosen.id);
     if (reason) throw new Error(reason);
   }
-  return chosen ? { id: chosen.id, states } : undefined;
+  return chosen ? { id: chosen.id, snapshot } : undefined;
 }
 
 async function checkTask(
@@ -504,14 +514,37 @@ async function checkTask(
     }
     finishTaskCheck({ root, manifest, result, saved: result.outcome !== "cancelled" });
     const panel = { kind: "result" as const, manifest, result, root };
-    if (!options.forSubmission || result.outcome === "failed" || result.outcome === "error") {
+    const snapshot = selection?.snapshot;
+    const showProblemGuide =
+      options.forSubmission &&
+      snapshot &&
+      (result.outcome === "failed" || result.outcome === "error") &&
+      problemToWorkOn(snapshot.states)?.id === problem;
+    if (showProblemGuide) {
+      const active = vscode.window.activeTextEditor?.document.uri;
+      const reveal =
+        taskReadmeRoot() === root ||
+        !active ||
+        (active.scheme === "file" && (await taskRootOf(active.fsPath)) === root);
+      if (reveal)
+        await renderTaskReadme(root, {}, {}, snapshot, result).catch(() => showTaskPanel(panel));
+    } else if (
+      !options.forSubmission ||
+      result.outcome === "failed" ||
+      result.outcome === "error"
+    ) {
       showTaskPanel(panel);
     } else if (canSubmit(result)) {
       showTaskPanel(panel, { reveal: false });
     }
     notify(result.outcome, output, options.forSubmission);
     // 課題文のパネルを開いていれば、「いまやること」を新しい結果で描き直す (前面には出さない)。
-    if (result.outcome !== "cancelled" && taskReadmeRoot() === root)
+    if (
+      !showProblemGuide &&
+      !(selection && options.forSubmission && canSubmit(result)) &&
+      result.outcome !== "cancelled" &&
+      taskReadmeRoot() === root
+    )
       void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
     // 合格も失敗も、回数を数えるための要約だけを送る (#38)。コード・ファイル名・メッセージ・
     // ログは送らない。配布記録のない見本や中断した実行は送らない。失敗は合格と別の道に送る
@@ -626,7 +659,7 @@ async function submitTaskCommand(
           throw new Error(`確認した問題が一致しません。${SUBMIT_AGAIN}`);
         if (dirtyTaskDocuments(root).length > 0)
           throw new Error(`保存していない変更があります。${SUBMIT_AGAIN}`);
-        await submitProblemTask(root, manifest, problemId, selection.states, session);
+        await submitProblemTask(root, manifest, problemId, selection.snapshot, session);
         return;
       }
     } else {
@@ -635,7 +668,7 @@ async function submitTaskCommand(
         const openPath = requestedProblemPath(root, undefined);
         if (manifest.problemSteps) {
           const selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
-          problem = selection?.states.find(({ id }) => id === selection.id);
+          problem = selection?.snapshot.states.find(({ id }) => id === selection.id);
         } else {
           const { states } = await loadTaskProblems(root, manifest, {
             trainingRoot: trainingRootOf(root),
@@ -754,10 +787,14 @@ async function submitProblemTask(
   root: string,
   manifest: TaskManifest,
   problemId: string,
-  states: readonly ProblemState[],
+  previous: TaskProblems,
   session: number | undefined,
 ): Promise<void> {
-  const response = await sendProblemSubmission(root, problemId, session);
+  const response = await sendProblemSubmission(root, problemId, session).catch((error: unknown) => {
+    if (session === apiSession() && taskReadmeRoot() === root)
+      void renderTaskReadme(root, { reveal: false }, {}, previous).catch(() => undefined);
+    throw error;
+  });
   refreshLearningSidebar();
   if (manifest.problemSteps) {
     if (session !== apiSession()) return;
@@ -781,7 +818,7 @@ async function submitProblemTask(
     setCurrentTask({
       root,
       title: manifest.title,
-      problemProgress: refreshed.progress,
+      ...problemTaskProgress(manifest, refreshed),
       problemActionsAvailable: !refreshed.releasePending,
     });
     notifyProblemTaskOpened(root);
@@ -790,19 +827,27 @@ async function submitProblemTask(
     if (refreshed.releaseError) void vscode.window.showWarningMessage(refreshed.releaseError);
     return;
   }
-  setCurrentTask({
-    root,
-    title: manifest.title,
-    problemProgress: { passed: response.passedProblems, total: response.totalProblems },
-  });
+  const marked = previous.states.map((state) =>
+    state.id === problemId ? { ...state, status: "submitted" as const } : state,
+  );
+  const snapshot: TaskProblems = {
+    ...previous,
+    server: {
+      ...previous.server,
+      problems: previous.server?.problems ?? [],
+      passedProblems: response.passedProblems,
+      totalProblems: response.totalProblems,
+      taskPassed: response.taskPassed,
+    },
+    states: marked,
+    progress: { passed: response.passedProblems, total: response.totalProblems },
+  };
+  setCurrentTask({ root, title: manifest.title, ...problemTaskProgress(manifest, snapshot) });
   if (response.taskPassed) {
     void vscode.window.showInformationMessage("課題に合格しました");
   } else {
     void vscode.window.showInformationMessage(
       `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
-    );
-    const marked = states.map((state) =>
-      state.id === problemId ? { ...state, status: "submitted" as const } : state,
     );
     const next = nextUnsubmittedProblem(marked);
     if (next) {
@@ -814,8 +859,48 @@ async function submitProblemTask(
     }
   }
   if (taskReadmeRoot() === root) {
-    void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
+    void renderTaskReadme(root, { reveal: false }, {}, snapshot).catch(() => undefined);
   }
+}
+
+function taskLesson(taskId: string) {
+  return getCachedCatalog()
+    .flatMap((stage) => stage.sections.flatMap((section) => section.lessons))
+    .find((item) => item.task?.id === taskId);
+}
+
+function isWebId(id: unknown): id is string {
+  return typeof id === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(id);
+}
+
+async function openTaskWebPage(stageId?: string, lessonId?: string): Promise<void> {
+  const stage = typeof stageId === "string" ? `/stages/${encodeURIComponent(stageId)}` : "/";
+  const lesson = typeof lessonId === "string" ? `/lessons/${encodeURIComponent(lessonId)}` : "";
+  const uri = vscode.Uri.parse(`${stellaUrl("webUrl")}${stage}${lesson}`);
+  if (uri.scheme === "https" || uri.scheme === "http") await vscode.env.openExternal(uri);
+}
+
+async function failedTestLines(
+  root: string,
+  run?: RunResult,
+): Promise<Map<TestCaseResult, number>> {
+  const lines = new Map<TestCaseResult, number>();
+  if (!run || (run.outcome !== "failed" && run.outcome !== "error")) return lines;
+  const sources = new Map<string, string>();
+  for (const step of run.steps) {
+    for (const test of step.tests ?? []) {
+      if (test.status !== "failed" || typeof test.file !== "string") continue;
+      const file = resolveDiagnosticFile(root, test.file);
+      if (!file) continue;
+      let source = sources.get(file);
+      if (source === undefined) {
+        source = await readTestSource(root, file);
+        sources.set(file, source);
+      }
+      lines.set(test, (findTestLine(source, test.name) ?? 0) + 1);
+    }
+  }
+  return lines;
 }
 
 /** 課題文は 1 MB まで。課題フォルダーの中の README.md だけを読む。 */
@@ -832,41 +917,42 @@ async function renderTaskReadme(
   options: { reveal?: boolean } = {},
   refresh: { forceLms?: boolean; skipLms?: boolean } = {},
   problemSnapshot?: TaskProblems,
+  latestRun?: RunResult,
 ): Promise<void> {
-  const shown = (title: string, problems?: TaskProblems, taskId?: string, gated?: true) => {
-    if (options.reveal === false) return;
-    setCurrentTask({
-      root,
-      title,
-      ...(taskId ? { taskId } : {}),
-      ...(problems
-        ? {
-            problemProgress: problems.progress,
-            ...(gated ? { problemActionsAvailable: !problems.releasePending } : {}),
-          }
-        : {}),
-    });
-  };
   const loaded = await loadTask(root);
-  const markdown = new TextDecoder().decode(
-    await readFileInRoot(root, "README.md", README_MAX_BYTES),
-  );
-  if (!loaded.ok) {
-    showTaskReadme({ title: path.basename(root), markdown, root }, options);
-    shown(path.basename(root));
+  const manifest = loaded.ok ? loaded.manifest : undefined;
+  const markdown = manifest?.problems?.length
+    ? ""
+    : new TextDecoder().decode(await readFileInRoot(root, "README.md", README_MAX_BYTES));
+  if (!manifest) {
+    const title = path.basename(root);
+    showTaskReadme({ title, markdown, root }, options);
+    if (options.reveal !== false) setCurrentTask({ root, title });
     return;
   }
-  const { manifest } = loaded;
   const session = apiSession();
   const [edit, problems] = await Promise.all([
-    resolveEditFiles(root, manifest),
+    manifest.problems?.length ? { files: [], missing: [] } : resolveEditFiles(root, manifest),
     manifest.problems?.length
       ? (problemSnapshot ??
         loadTaskProblems(root, manifest, { trainingRoot: trainingRootOf(root) }))
       : undefined,
-    refreshTaskState(root, manifest.id, manifest.problems ? { skipLms: true } : refresh),
+    refreshTaskState(root, manifest.id, refresh),
   ]);
-  const { lastRun, lmsStatus } = getTaskState(root, manifest.id) ?? {};
+  const current = problems && problemToWorkOn(problems.states);
+  const problemRun =
+    current &&
+    (latestRun?.problemId === current.id
+      ? latestRun
+      : await readProblemRun(root, manifest.id, current.id));
+  const problemTestLines = await failedTestLines(root, problemRun);
+  if (problems && session !== apiSession()) return;
+  const { lastRun, lmsStatus, helpLabel } = getTaskState(root, manifest.id) ?? {};
+  const server = problems?.server;
+  const stageId =
+    problems &&
+    (taskLesson(manifest.id)?.stageId ??
+      server?.problems.flatMap(({ refs }) => refs ?? []).find(({ auto }) => auto)?.stageId);
   showTaskReadme(
     {
       title: manifest.title,
@@ -877,9 +963,13 @@ async function renderTaskReadme(
         manifest,
         edit,
         ...(lastRun ? { lastRun } : {}),
-        ...(problems ? { problems: problems.states, problemProgress: problems.progress } : {}),
+        ...(problems ? { problems: problems.states } : {}),
         ...(problems?.releaseError ? { releaseError: problems.releaseError } : {}),
-        ...(lmsStatus && !refresh.skipLms && session === apiSession()
+        ...(server ? { problemResults: server } : {}),
+        ...(problemRun ? { problemRun, problemTestLines } : {}),
+        ...(stageId ? { stageId } : {}),
+        ...(problems && helpLabel && !refresh.skipLms ? { helpLabel } : {}),
+        ...(!manifest.problems && lmsStatus && !refresh.skipLms && session === apiSession()
           ? { taskStatus: lmsStatus }
           : {}),
       },
@@ -887,12 +977,18 @@ async function renderTaskReadme(
     options,
   );
   if (manifest.problemSteps) notifyProblemTaskOpened(root);
-  shown(
-    manifest.title,
-    problems,
-    manifest.problems ? undefined : manifest.id,
-    manifest.problemSteps,
-  );
+  if (options.reveal !== false) {
+    setCurrentTask({
+      root,
+      title: manifest.title,
+      ...(problems
+        ? {
+            ...problemTaskProgress(manifest, problems),
+            problemActionsAvailable: !problems.releasePending,
+          }
+        : { taskId: manifest.id }),
+    });
+  }
 }
 
 /** 課題文 (README.md) を OS のタブ付きで表示する。フォルダーの信頼は問わない。 */
@@ -979,6 +1075,40 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
   });
 }
 
+async function openProblemLocation(
+  requested: unknown,
+  problemId: unknown,
+  file: unknown,
+  line: unknown,
+) {
+  const root = typeof requested === "string" ? await requestedTaskRoot(requested) : null;
+  if (
+    !root ||
+    typeof file !== "string" ||
+    typeof line !== "number" ||
+    !Number.isSafeInteger(line) ||
+    line < 1
+  )
+    return;
+  const loaded = await loadTask(root);
+  if (!loaded.ok || !loaded.manifest.problems?.some(({ id }) => id === problemId)) return;
+  const { manifest } = loaded;
+  if (
+    problemForTestPath(manifest, file)?.id !== problemId &&
+    !(await resolveEditFiles(root, manifest)).files.includes(file)
+  )
+    return;
+  const document = await vscode.workspace.openTextDocument(
+    vscode.Uri.file(await resolveFileInRoot(root, file)),
+  );
+  const target = Math.min(line - 1, document.lineCount - 1);
+  await vscode.window.showTextDocument(document, {
+    viewColumn: vscode.ViewColumn.One,
+    preview: false,
+    selection: new vscode.Range(target, 0, target, 0),
+  });
+}
+
 export function registerTaskCommands(context: vscode.ExtensionContext, auth: AuthStore): void {
   registerTaskState(context, auth);
   registerSubmissionForms(context);
@@ -1027,6 +1157,22 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
         `${context.extension.id}#stella.gettingStarted`,
         false,
       ),
+    ),
+    vscode.commands.registerCommand(
+      "stella.openTaskWebPage",
+      (stageId: unknown, lessonId?: unknown) => {
+        if (!isWebId(stageId) || (lessonId !== undefined && !isWebId(lessonId))) return;
+        return openTaskWebPage(stageId, lessonId);
+      },
+    ),
+    vscode.commands.registerCommand(
+      "stella.openProblemLocation",
+      (root: unknown, problemId: unknown, file: unknown, line: unknown) =>
+        openProblemLocation(root, problemId, file, line).catch((error: unknown) => {
+          void vscode.window.showErrorMessage(
+            error instanceof Error ? error.message : String(error),
+          );
+        }),
     ),
     vscode.commands.registerCommand("stella.openTaskFile", (root: unknown, rel: unknown) =>
       openTaskFileCommand(root, rel).catch((e: unknown) => {

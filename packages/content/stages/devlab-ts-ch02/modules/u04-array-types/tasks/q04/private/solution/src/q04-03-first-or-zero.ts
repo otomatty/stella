@@ -1,10 +1,6 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問3
+// 問3 最初の要素を返す。空の配列なら 0
+//     例: firstOrZero([5, 6]) → 5
+// 引数と戻り値には型注釈を付けます。
 export function firstOrZero(numbers: readonly number[]): number {
   return numbers[0] ?? 0;
 }

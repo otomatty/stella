@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問2
+// 問2 正なら 1、負なら -1、0 なら 0 を返す（戻り値は -1 | 0 | 1）
+//     例: signOf(-5) → -1
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function signOf(n: number): -1 | 0 | 1 {
   if (n > 0) {
     return 1;

@@ -58,7 +58,7 @@ modules/<unit>/
 
 種別、既存教材の分割、`task.json` の項目、フォルダー名は `references/task-design.md`。C# は `references/csharp.md`。
 
-runner を選び、テンプレートから始めます。`static-preview` と `env-diagnose` にテンプレートは無いので、見本の課題から写します。それ以外は次です。`$SKILL` はこの SKILL.md があるフォルダーです。
+runner を選び、テンプレートから始めます。次の scaffold は `problems` の無い課題の雛形を作ります。`static-preview` と `env-diagnose` にテンプレートは無いので、見本の課題から写します。それ以外は次です。`$SKILL` はこの SKILL.md があるフォルダーです。
 
 ```bash
 SKILL=.claude/skills/stella-course   # ユーザー全体に入れたものなら ~/.claude/skills/stella-course
@@ -71,13 +71,15 @@ node "$SKILL/scripts/scaffold.mjs" task \
 
 scaffold は `templates/runners/<runner>/` の `starter/` と `tests/` を課題へ写し、`task-fields.json` から `task.json` の下書きを書きます。`pattern`、`skills`、`sources` は、同じ単元の既存の課題があればその値、無ければ台帳の先頭です。課題の内容に合わせて直します。`README.md`、`hints.md`、`private/solution/` (テンプレートの、テストが通る実装)、`private/explanation.md`、`private/review.md`、`private/variants/.gitkeep` も置きます。既存の課題フォルダーがあるときは何も書きません。
 
+問題つきの課題を作るときは README.md を置かず、各問題ファイルの先頭に `// 問N` で始まるコメントを書きます。問題文、例、その問題の条件 (テスト・ESLint・型の確認で検出できないものだけ) を記し、共通のルール・進め方・教材の URL は書きません。手がかりは `task.json` の `refs` に書きます (類題では使えません)。
+
 書いたあとにやること。
 
 1. 例の実装とテストを、その課題の入出力に書き換える。解答例は `private/solution/` に置き、starter に重ねるとテストが通る状態にする。
 2. `submit.files` を、受講者が編集するファイルに合わせる。`protected` はテンプレートの設定とテストを残す。
-3. ルーブリックの `criterion` は、コードを見て当否を決められる文にする。
+3. 問題の無い課題のルーブリックは、コードを見て当否を決められる文を `criterion` に書く。
 4. `hints.md` の段数を `support.hintLevels` とそろえる。確認 A・B と統合は 0 段。
-5. 単元の `references.json` に、この課題の `tasks/<課題>/README.md` を足す。`sources` とその `sourceRefs` を同じ ID にする。
+5. 単元の `references.json` に、出典の対応先として `tasks/<課題>/README.md` を足す (問題つきの課題も同じパス)。`sources` とその `sourceRefs` を同じ ID にする。
 
 `task.json` に任意のコマンドは書けません。拡張が runner ごとの固定手順で実行します。
 

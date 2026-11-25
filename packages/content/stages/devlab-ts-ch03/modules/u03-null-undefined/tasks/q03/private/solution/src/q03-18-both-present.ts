@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問18 2つとも null でなければ true
+//     例: bothPresent("a", null) → false
+// 引数と戻り値に型注釈を付ける。
+// === null または !== null で、値があるかを確かめる。
 
-// 問18
 export function bothPresent(a: string | null, b: string | null): boolean {
   return a !== null && b !== null;
 }

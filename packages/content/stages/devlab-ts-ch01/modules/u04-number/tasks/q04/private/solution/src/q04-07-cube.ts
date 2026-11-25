@@ -1,8 +1,6 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問7
+// 問7 3乗した数を返す（** 演算子を使う）
+//     例: cube(3) → 27
+// 戻り値には型注釈を付けてください。
 export function cube(n: number): number {
   return n ** 3;
 }

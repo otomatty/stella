@@ -1,9 +1,5 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問20
+// 問20 秒を「時:分:秒」の形（それぞれ2桁）にする
+//     例: secondsToClock(3723) → "01:02:03"
 export function secondsToClock(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

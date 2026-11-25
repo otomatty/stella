@@ -1,10 +1,10 @@
-// 03-q06 インターセクション型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/intersection
+// 問20 型 Place を Named & { lat: number; lng: number } として定義して export し、place(name: string, lat: number, lng: number) を書く。Place を返す
+//     例: place("東京駅", 35.68, 139.76) → { name: "東京駅", lat: 35.68, lng: 139.76 }
+// 引数と戻り値に型注釈を付ける。
+// type を使って、& でつないだ型に名前を付ける。
 
 export type Named = { name: string };
 
-// 問20
 export type Place = Named & { lat: number; lng: number };
 
 export function place(name: string, lat: number, lng: number): Place {

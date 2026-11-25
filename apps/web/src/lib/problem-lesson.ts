@@ -15,6 +15,7 @@ export type ProblemStepView = TaskProblemStepSummary & {
 export interface ProblemLesson {
   taskId: string;
   problem: ProblemStepView;
+  problems?: readonly ProblemStepView[];
 }
 
 export type PresentedTask = Omit<TaskSummary, "problems"> & {
@@ -61,9 +62,31 @@ export function presentStageProblems(
 
   return tasks.map((task) => {
     if (!task.problems?.length) return task;
+    const problems = task.problems.map((problem) =>
+      presentProblem(problem, indexById, steps, done),
+    );
+    const byId = new Map(problems.map((problem) => [problem.id, problem]));
     return {
       ...task,
-      problems: task.problems.map((problem) => presentProblem(problem, indexById, steps, done)),
+      problems,
+      ...(task.problem_items
+        ? {
+            problem_items: task.problem_items.map((item) => {
+              const presented = byId.get(item.id);
+              if (!presented) return item;
+              const locked =
+                presented.state === "locked-video" || presented.state === "locked-previous";
+              return {
+                ...item,
+                state: presented.state,
+                ...(presented.manual ? { manual: true as const } : { manual: undefined }),
+                ...(locked
+                  ? { afterLessonId: presented.afterLessonId, afterTitle: presented.afterTitle }
+                  : { afterLessonId: undefined, afterTitle: undefined }),
+              };
+            }),
+          }
+        : {}),
     };
   });
 }
@@ -87,8 +110,9 @@ function presentProblem(
     ...problem,
     state: presented.state,
     blocking,
-    afterLessonId: blocking?.id ?? problem.afterLessonId,
-    afterTitle: blocking?.title ?? problem.afterTitle,
+    ...(blocking
+      ? { afterLessonId: blocking.id, afterTitle: blocking.title }
+      : { afterLessonId: undefined, afterTitle: undefined }),
   };
 }
 
@@ -98,7 +122,7 @@ export function problemLessonsById(
   const lessons = new Map<string, ProblemLesson>();
   for (const task of tasks ?? []) {
     for (const problem of task.problems ?? []) {
-      lessons.set(problem.stepLessonId, { taskId: task.id, problem });
+      lessons.set(problem.stepLessonId, { taskId: task.id, problem, problems: task.problems });
     }
   }
   return lessons;

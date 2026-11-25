@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問12 fn の値の小さい順に並べた新しい配列（同じなら元の順）
+//     例: sortByNumber(["ccc", "a"], (s) => s.length) → ["a", "ccc"]
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問12
 export function sortByNumber<T>(items: readonly T[], fn: (item: T) => number): T[] {
   return [...items].sort((a, b) => fn(a) - fn(b));
 }

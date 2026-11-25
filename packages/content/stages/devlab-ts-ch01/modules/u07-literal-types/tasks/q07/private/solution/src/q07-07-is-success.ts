@@ -1,8 +1,7 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問7
+// 問7 ステータスコード 200、404、500 のどれかを受け取り、200 なら true を返す
+//     例: isSuccess(404) → false
+// 戻り値には型注釈を付けてください。
+// 引数には、決まった値のリテラル型を | でつないで型注釈を書いてください。
 export function isSuccess(code: 200 | 404 | 500): boolean {
   return code === 200;
 }

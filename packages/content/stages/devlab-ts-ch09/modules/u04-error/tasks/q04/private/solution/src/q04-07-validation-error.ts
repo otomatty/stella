@@ -1,9 +1,6 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問7 Error を継承したクラス ValidationError を書く。constructor(field, message) で、field（文字列）を readonly で持つ。name は "ValidationError"
+//     例: new ValidationError("email", "形が違います").field → "email"
 
-// 問7
 export class ValidationError extends Error {
   readonly field: string;
 

@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問5
+// 問5 text に word が含まれていれば true を返す
+//     例: hasWord("I like TypeScript", "Type") → true
+// 戻り値には型注釈を付けてください。
+// includes が使えます。
 export function hasWord(text: string, word: string): boolean {
   return text.includes(word);
 }

@@ -1,7 +1,3 @@
-// 01-q03 型推論
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-//
 // 問題
 // BMI（体格指数）を計算する2つの関数を書いてください。
 //

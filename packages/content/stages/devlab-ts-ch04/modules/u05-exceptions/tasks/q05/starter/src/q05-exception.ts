@@ -1,7 +1,3 @@
-// 04-q05 例外処理
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//
 // 問題
 // 次の4つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //
@@ -20,6 +16,7 @@
 // 4. parseAges(inputs)
 //    文字列の配列を年齢の配列にする。読めなかったものは飛ばし、そのメッセージを errors に集める。
 //    { ages: number[]; errors: string[] } を返す。引数は readonly string[]
+// parseAges では parseAge を try-catch で囲み、受け取った値は errorMessage で処理します。
 
 export function parseAge() {}
 

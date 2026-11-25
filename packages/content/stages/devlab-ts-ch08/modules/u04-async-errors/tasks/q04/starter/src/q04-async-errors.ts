@@ -1,8 +1,3 @@
-// 08-q04 非同期のエラー処理
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://typescriptbook.jp/reference/statements/exception
-//
 // 問題
 // 失敗するかもしれない非同期の処理（引数の fn や tasks）を扱う関数を書いてください。
 // async と await、try・catch を使うこと。catch で受け取る値の型は unknown なので、Error かどうかを確かめてから使う。

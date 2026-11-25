@@ -1,8 +1,3 @@
-// 08-q05 ★総合問題 複数のAPIの結果をまとめる
-//
-// 教材: 08章のこれまでの教材
-//       https://typescriptbook.jp/reference/asynchronous/promise
-//
 // 問題
 // ユーザーを取得する getUser と、ユーザーの投稿を取得する getPosts を持つ api（型は Api）を受け取り、
 // ダッシュボードに出す情報をまとめる関数を書いてください。async と await を使うこと。

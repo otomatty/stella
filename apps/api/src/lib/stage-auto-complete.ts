@@ -40,7 +40,12 @@ import { recordAudit } from "./audit.js";
 import { D1_MAX_BOUND_PARAMS, chunk } from "./enrollment-bulk.js";
 import { stageClearLockId, withResourceLock } from "./resource-lock.js";
 import { recordStagePathEvents } from "./stage-path-events.js";
-import { isProblemStepLesson, loadCompletedProblemSteps } from "./lesson-progress-write.js";
+import {
+  isProblemStepLesson,
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "./lesson-progress-write.js";
 import { passCountsForLesson } from "./reviewed-progress.js";
 
 /**
@@ -539,6 +544,7 @@ async function batchComputeCounts(
         lessonId: lessons.id,
         type: lessons.type,
         problemStep: isProblemStepLesson(sql`lessons.id`),
+        problemOverview: isProblemTaskOverviewLesson(sql`lessons.id`),
       })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
@@ -553,7 +559,9 @@ async function batchComputeCounts(
       .where(inArray(sections.stageId, slice)),
   );
 
-  const lessonIds = lessonRows.filter((row) => !row.problemStep).map((row) => row.lessonId);
+  const lessonIds = lessonRows
+    .filter((row) => !row.problemStep && !row.problemOverview)
+    .map((row) => row.lessonId);
   const quizIds = quizRows.map((row) => row.quizId);
   const assignmentLessonIds = lessonRows
     .filter((row) => row.type === "assignment" || row.type === "code")
@@ -581,6 +589,13 @@ async function batchComputeCounts(
     lessonRows.filter((row) => row.problemStep).map((row) => row.lessonId),
   )) {
     doneLessonIds.add(step.lessonId);
+  }
+  for (const overview of await loadPassedOverviewLessons(
+    db,
+    [userId],
+    lessonRows.filter((row) => row.problemOverview).map((row) => row.lessonId),
+  )) {
+    doneLessonIds.add(overview.lessonId);
   }
   const passedQuizIds = new Set(
     (

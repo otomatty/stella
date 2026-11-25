@@ -21,6 +21,7 @@ import { readFileSync } from "node:fs";
 import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
 import type { VideoManifest } from "../../content/src/material-video.js";
+import { taskRevisionDefinition } from "../../content/src/task-schema.js";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
@@ -378,6 +379,7 @@ function emitLessonIdRemap(pairs: { from: string; to: string }[]) {
  * A」という取り残しを防ぐ (CMS が勝った場合はこの insert が no-op になり、CMS 側の
  * リビジョンが最新のまま)。残る極小の交錯パターンでも、次の seed が本文を正本へ
  * 戻すと同時にリビジョンも追い付くので恒久的な食い違いにはならない。
+ * 空本文は lessons に null で入るため、照合時だけ空文字列として扱う。
  * 照合した本文はその行から読む。本文を SQL に二度埋め込むと、出典の多い教材で D1 の
  * 1 文 100KB 制限を超える。クイズの履歴には解答を含む別の正本を使用する。
  */
@@ -404,7 +406,7 @@ function emitLessonRevision(
     [
       "insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_by, created_at)",
       `select '${id}', coalesce((select max(r.revision) from lesson_revisions r where r.lesson_id = '${id}'), 0) + 1, '${hash}', ${snapshot}, 'seed', null, ${nowExpr()}`,
-      `from lessons l where l.id = '${id}'${guardLessonMarkdown ? ` and l.markdown = ${literal}` : ""}`,
+      `from lessons l where l.id = '${id}'${guardLessonMarkdown ? ` and coalesce(l.markdown, '') = ${literal}` : ""}`,
       `and coalesce((${latestHash}), '') <> '${hash}';`,
     ].join(" "),
   );
@@ -708,7 +710,7 @@ for (const stage of content.stages.filter((c) => c.format === 2)) {
   );
 }
 for (const [order, task] of content.tasks.entries()) {
-  const d = task.definition;
+  const d = taskRevisionDefinition(task.definition);
   const sectionId = sectionIdMap.get(`ses:${task.stageId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
   // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
@@ -726,6 +728,21 @@ for (const [order, task] of content.tasks.entries()) {
   lines.push(
     `insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, active, lesson_id, variant_of) values (${strLit(d.id)}, ${strLit(sectionId)}, ${strLit(d.title)}, ${strLit(d.kind)}, ${strLit(d.pattern)}, ${strLit(JSON.stringify(d.skills))}, ${d.estimatedMinutes}, ${order}, ${contentHash}, ${definition}, '', 0, ${lessonId}, ${variantOf}) on conflict (id) ${doUpdate("tasks", ["section_id", '"order"', "lesson_id", "variant_of"])};`,
   );
+  const refs = task.refs ?? [];
+  if (refs.length > 0) {
+    const values = refs.map(
+      ({ problemId, position, stageId, lessonId }) =>
+        `(${strLit(d.id)}, ${strLit(problemId)}, ${position}, ${strLit(lessonUuid("ses", stageId, lessonId))})`,
+    );
+    lines.push(
+      `insert into task_refs (task_id, problem_id, position, lesson_id) values ${values.join(", ")} on conflict (task_id, problem_id, position) ${doUpdate("task_refs", ["lesson_id"])};`,
+    );
+  }
+  const keepRefs =
+    refs.length > 0
+      ? ` and (problem_id, position) not in (values ${refs.map(({ problemId, position }) => `(${strLit(problemId)}, ${position})`).join(", ")})`
+      : "";
+  lines.push(`delete from task_refs where task_id = ${strLit(d.id)}${keepRefs};`);
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
@@ -811,6 +828,7 @@ if (isSqlite) {
     "update lessons set problem_task_id = null, problem_id = null where problem_task_id in (select id from tasks where active = 0);",
   );
 }
+lines.push("delete from task_refs where task_id in (select id from tasks where active = 0);");
 
 // 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。
 lines.push(

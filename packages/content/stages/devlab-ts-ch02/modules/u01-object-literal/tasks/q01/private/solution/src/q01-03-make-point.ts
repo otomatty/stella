@@ -1,9 +1,7 @@
-// 02-q01 オブジェクトの型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/type-annotation-of-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/shorthand-property-names
-
-// 問3
+// 問3 x と y から、座標のオブジェクト { x, y } を作る
+//     例: makePoint(1, 2) → { x: 1, y: 2 }
+// 引数と戻り値には型注釈を付けます。
+// オブジェクトの型は { name: string; age: number } のように書きます。型に type で名前を付けてもかまいません。
 export function makePoint(x: number, y: number): { x: number; y: number } {
   return { x, y };
 }

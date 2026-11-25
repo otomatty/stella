@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.11.2",
+  "version": "0.12.1",
   "private": true,
   "repository": {
     "type": "git",
@@ -14,7 +14,13 @@
     "vscode": "^1.96.0"
   },
   "main": "./dist/extension.js",
-  "activationEvents": ["onUri", "onView:stella.lessons", "onStartupFinished"],
+  "activationEvents": [
+    "onUri",
+    "onView:stella.lessons",
+    "onStartupFinished",
+    "onLanguage:typescript",
+    "onLanguage:csharp"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
@@ -189,7 +195,7 @@
         },
         {
           "command": "stella.runTask",
-          "when": "stella.inTask && resourceScheme == file",
+          "when": "stella.inTask && !stella.problemTask && resourceScheme == file",
           "group": "navigation@2"
         },
         {

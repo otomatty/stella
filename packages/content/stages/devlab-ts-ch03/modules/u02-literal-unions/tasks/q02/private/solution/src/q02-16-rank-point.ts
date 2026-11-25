@@ -1,9 +1,8 @@
-// 03-q02 リテラル型のユニオン ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問16 型 Rank（"gold"、"silver"、"bronze"）を定義して export し、rankPoint(rank: Rank) を書く。gold 3、silver 2、bronze 1
+//     例: rankPoint("silver") → 2
+// 引数と戻り値に型注釈を付ける。
+// type と | を使い、リテラル型のユニオンを定義する。
 
-// 問16
 export type Rank = "gold" | "silver" | "bronze";
 
 export function rankPoint(rank: Rank): number {

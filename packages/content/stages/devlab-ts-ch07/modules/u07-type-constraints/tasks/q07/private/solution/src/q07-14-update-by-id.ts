@@ -1,8 +1,8 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問14 id が一致する要素だけを patch（Partial<T>）で上書きした新しい配列
+//     例: updateById(rows, 1, { name: "z" }) → id 1 の name が "z"
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の要素は id: number を持つ型に限ります。
 
-// 問14
 export function updateById<T extends { id: number }>(
   items: readonly T[],
   id: number,

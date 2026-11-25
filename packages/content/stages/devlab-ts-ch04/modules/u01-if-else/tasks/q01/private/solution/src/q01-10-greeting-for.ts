@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問10
+// 問10 5〜10時は "おはよう"、11〜17時は "こんにちは"、それ以外は "こんばんは"
+//     例: greetingFor(8) → "おはよう"
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function greetingFor(hour: number): "おはよう" | "こんにちは" | "こんばんは" {
   if (hour >= 5 && hour <= 10) {
     return "おはよう";

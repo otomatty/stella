@@ -1,9 +1,7 @@
-// 01-q06 boolean型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/boolean
-//       https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values
-
-// 問6
+// 問6 1文字の英字が母音（a, e, i, o, u。大文字も含む）なら true
+//     例: isVowel("E") → true
+// 戻り値には型注釈を付けてください。
+// 判定式の結果を return の1行で返せます。
 export function isVowel(char: string): boolean {
   return char.length === 1 && "aeiou".includes(char.toLowerCase());
 }

@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問1
+// 問1 文字数を返す
+//     例: lengthOf("Agora") → 5
+// 戻り値には型注釈を付けてください。
+// length が使えます。
 export function lengthOf(text: string): number {
   return text.length;
 }

@@ -1,14 +1,13 @@
-// 04-q07 never型と網羅性のチェック ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/never
-
+// 問19 大きさを k 倍した、新しい図形を返す
+//     例: scaleShape({ kind: "square", size: 2 }, 3) → { kind: "square", size: 6 }
+// 引数と戻り値に型注釈を付けます。
+// switch で分け、default で用意されている assertNever を呼んだ結果を返します。
 export function assertNever(value: never): never {
   throw new Error(`想定していない値です: ${JSON.stringify(value)}`);
 }
 
 export type Shape = { kind: "circle"; radius: number } | { kind: "square"; size: number };
 
-// 問19
 export function scaleShape(shape: Shape, k: number): Shape {
   switch (shape.kind) {
     case "circle":

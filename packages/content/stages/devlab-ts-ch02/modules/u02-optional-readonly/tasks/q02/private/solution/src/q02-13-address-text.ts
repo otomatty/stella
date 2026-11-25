@@ -1,9 +1,7 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-
-// 問13
+// 問13 { city, building? } を、building があれば「city building」、なければ「city」にする
+//     例: addressText({ city: "渋谷区", building: "渋谷ビル" }) → "渋谷区 渋谷ビル"
+// 引数と戻り値には型注釈を付けます。
+// 値が省略されたかどうかは undefined と比較して確かめます。
 export function addressText(address: { city: string; building?: string }): string {
   return address.building === undefined ? address.city : `${address.city} ${address.building}`;
 }

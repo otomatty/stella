@@ -5,6 +5,7 @@ import {
   type TaskProblemStepSummary,
 } from "@stella/shared/tasks/problem-steps";
 import type { TaskProblem } from "@stella/shared/tasks/problems";
+import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { lockKindOfLessonType, type LockStep } from "@stella/shared/tasks/step-lock";
 import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import type { Db } from "../db/client.js";
@@ -57,6 +58,7 @@ interface StageProblemTask {
   status: (typeof taskProgress.$inferSelect)["status"] | null;
   gated: boolean;
   ready: boolean;
+  plan?: RunnerPlanKind;
   steps: StageProblemStep[];
 }
 
@@ -91,7 +93,7 @@ export async function loadStageStepLocks(
         and(eq(lessonProgress.lessonId, lessons.id), eq(lessonProgress.userId, userId)),
       )
       .where(eq(sections.stageId, stageId))
-      .orderBy(asc(sections.order), asc(lessons.order)),
+      .orderBy(asc(sections.order), asc(lessons.order), asc(lessons.id)),
     db
       .select({
         taskId: lessons.problemTaskId,
@@ -137,9 +139,11 @@ export async function loadStageStepLocks(
 
   const byTask = new Map<string, StageProblemTask>();
   const scopes = definitions.flatMap(({ id, contentHash, definition, status }) => {
-    const problems = readTaskDefinition(definition).problems;
+    const parsed = readTaskDefinition(definition);
+    const problems = parsed.problems;
     if (!problems) return [];
     const saved: SavedProblem[] = [];
+    const plan = parsed.runner ? RUNNERS[parsed.runner].plan : undefined;
     byTask.set(id, {
       problems,
       saved,
@@ -147,6 +151,7 @@ export async function loadStageStepLocks(
       status,
       gated: problems.some((problem) => problem.after),
       ready: false,
+      plan,
       steps: [],
     });
     return [
@@ -242,6 +247,7 @@ export async function loadStageStepLocks(
         title: problem.title,
         label: problemStepLabel(problem.title, problem.index),
         stepLessonId: lesson.id,
+        refs: [],
         ...presented,
         ...(blocking ? { afterLessonId: blocking.id, afterTitle: blocking.title } : {}),
       });

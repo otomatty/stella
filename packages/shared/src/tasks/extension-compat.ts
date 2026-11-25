@@ -19,14 +19,28 @@ const EXTENSION_REQUIREMENTS: {
   },
 };
 
-/** 課題に当てはまる要件のうち、最も高い版。要件がなければ古い拡張にも配る。 */
-export function requiredExtensionVersion(manifest: TaskManifest): string | null {
+/** 配布ファイルの構成に対応するために必要な拡張の版。 */
+export function requiredExtensionVersionForFiles(
+  manifest: TaskManifest,
+  paths: readonly string[],
+): string | null {
+  return manifest.problems?.length && !paths.includes("README.md") ? "0.12.0" : null;
+}
+
+/** 課題に当てはまる要件のうち、最も高い版。ファイル一覧を省略した場合は定義だけを見る。 */
+export function requiredExtensionVersion(
+  manifest: TaskManifest,
+  paths?: readonly string[],
+): string | null {
   let required = EXTENSION_REQUIREMENTS.runners[manifest.runner] ?? null;
   for (const [field, version] of Object.entries(EXTENSION_REQUIREMENTS.fields)) {
     if (manifest[field as keyof TaskManifest] === undefined) continue;
     if (required === null || extensionSatisfies(version, required)) required = version;
   }
-  return required;
+  const filesVersion = paths && requiredExtensionVersionForFiles(manifest, paths);
+  return filesVersion && (required === null || extensionSatisfies(filesVersion, required))
+    ? filesVersion
+    : required;
 }
 
 function parseVersion(version: string | undefined): bigint[] | null {

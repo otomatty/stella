@@ -1,12 +1,12 @@
-// 03-q06 インターセクション型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/intersection
+// 問5 「りんご 150円」を返す
+//     例: priceTag({ name: "りんご", price: 150 }) → "りんご 150円"
+// 引数と戻り値に型注釈を付ける。
+// 引数の型には Named & Priced と書く。
 
 export type Named = { name: string };
 
 export type Priced = { price: number };
 
-// 問5
 export function priceTag(item: Named & Priced): string {
   return `${item.name} ${item.price}円`;
 }

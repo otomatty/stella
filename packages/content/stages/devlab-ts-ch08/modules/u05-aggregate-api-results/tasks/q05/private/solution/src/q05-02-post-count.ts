@@ -1,7 +1,7 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問2 ユーザーの投稿の数を返す
+//     例: postCount(1) → 3 で解決する
+// async と await を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -19,7 +19,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問2
 export async function postCount(userId: number): Promise<number> {
   const posts = await getPosts(userId);
   return posts.length;

@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問14
+// 問14 平均を返す。空の配列なら 0
+//     例: averageOf([2, 4, 9]) → 5
+// 引数と戻り値には型注釈を付けます。
+// 合計は for-of で求められます。
 export function averageOf(numbers: readonly number[]): number {
   if (numbers.length === 0) {
     return 0;

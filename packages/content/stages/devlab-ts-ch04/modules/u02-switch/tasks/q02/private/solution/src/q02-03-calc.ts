@@ -1,9 +1,7 @@
-// 04-q02 switch文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-
-// 問3
+// 問3 op が "+"、"-"、"*"、"/" のどれかで、a と b を計算する
+//     例: calc(6, "/", 3) → 2
+// 引数と戻り値に型注釈を付けます。
+// switch 文で分けます。
 export function calc(a: number, op: "+" | "-" | "*" | "/", b: number): number {
   switch (op) {
     case "+":

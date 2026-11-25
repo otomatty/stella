@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問11
+// 問11 要素を「, 」でつないだ文字列を返す
+//     例: joinWithComma(["a", "b", "c"]) → "a, b, c"
+// 引数と戻り値には型注釈を付けます。
+// 要素をつなぐには join が使えます。
 export function joinWithComma(items: readonly string[]): string {
   return items.join(", ");
 }

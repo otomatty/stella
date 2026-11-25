@@ -1,6 +1,4 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
+// 問1 定数 SITE_NAME を宣言する。値は "Agora"。推論される型は "Agora"
+// 型注釈を書かずに export const で宣言してください。
 
-// 問1
 export const SITE_NAME = "Agora";

@@ -24,9 +24,9 @@ import { fetchStaffTaskDetail } from "@/lib/staff-stage-api";
 import { StaffEnrollButton } from "./StaffEnrollButton";
 import { taskSupportLabel } from "./staff-stage-detail";
 import {
-  firstReadmeParagraph,
   parseStaffTaskTab,
   staffTaskCounts,
+  staffTaskStatement,
   taskGithubUrl,
   type StaffTaskTab,
 } from "./staff-task-detail";
@@ -71,6 +71,7 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
     return () => pending.current?.abort();
   }, [load]);
   const changeTab = (value: string) => void navigate({ search: { tab: parseStaffTaskTab(value) } });
+  const statement = staffTaskStatement(data ?? { readme: null });
   const back = (
     <nav
       aria-label="パンくず"
@@ -168,19 +169,40 @@ export function StaffTaskDetail({ stageId, taskId }: { stageId: string; taskId: 
             <TabsList aria-label="課題詳細">
               {tabs.map(({ value, label }) => (
                 <TabsTrigger key={value} value={value}>
-                  {label}
+                  {value === "statement" ? statement.label : label}
                 </TabsTrigger>
               ))}
             </TabsList>
             <TabsContent value="overview">
-              <Overview data={data} onStatement={() => changeTab("statement")} />
+              <Overview
+                data={data}
+                statement={statement}
+                onStatement={() => changeTab("statement")}
+              />
             </TabsContent>
             <TabsContent value="statement">
               <Card className="space-y-4 p-4 md:p-6">
-                <p className="text-xs text-ink-3">
-                  受講者には課題文の教材と VS Code の課題パネルで同じ文章が出る
-                </p>
-                {data.readme === null ? (
+                <p className="text-xs text-ink-3">{statement.note}</p>
+                {data.problems ? (
+                  <ul className="space-y-4">
+                    {data.problems.map((problem) => (
+                      <li
+                        key={problem.id}
+                        className="space-y-2 border-b border-border pb-4 last:border-b-0 last:pb-0"
+                      >
+                        <h3 className="font-medium">
+                          {problem.label} {problem.title}
+                        </h3>
+                        <code className="break-all text-xs text-ink-3">{problem.source}</code>
+                        {problem.statement !== null && (
+                          <pre className="whitespace-pre-wrap break-words font-mono text-sm">
+                            {problem.statement}
+                          </pre>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : data.readme === null ? (
                   <p className="text-sm text-ink-3">課題文がありません</p>
                 ) : (
                   <LessonMarkdown>{data.readme}</LessonMarkdown>
@@ -314,18 +336,25 @@ function environmentLabel(environment: Detail["task"]["manifest"]["environment"]
   );
 }
 
-function Overview({ data, onStatement }: { data: Detail; onStatement: () => void }) {
+function Overview({
+  data,
+  statement,
+  onStatement,
+}: {
+  data: Detail;
+  statement: ReturnType<typeof staffTaskStatement>;
+  onStatement: () => void;
+}) {
   const { task } = data;
   const { manifest } = task;
-  const paragraph = firstReadmeParagraph(data.readme);
   return (
     <div className="space-y-4">
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="min-w-0 space-y-4">
           <Panel title="求めること">
-            {paragraph ? <p>{paragraph}</p> : null}
+            {statement.summary ? <p>{statement.summary}</p> : null}
             <Button variant="outline" size="sm" onClick={onStatement}>
-              課題文を全部読む
+              {statement.action}
             </Button>
           </Panel>
           <Panel title="判定の項目">

@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問16
+// 問16 ファイル名の拡張子（最後の「.」より後ろ）を返す。「.」がなければ空の文字列
+//     例: extension("photo.jpeg") → "jpeg"
+// 戻り値には型注釈を付けてください。
+// lastIndexOf と slice が使えます。
 export function extension(fileName: string): string {
   const dot = fileName.lastIndexOf(".");
   return dot === -1 ? "" : fileName.slice(dot + 1);

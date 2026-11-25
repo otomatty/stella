@@ -1,8 +1,3 @@
-// 03-q02 リテラル型のユニオン
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//       https://typescriptbook.jp/reference/values-types-variables/union
-//
 // 問題
 // 飲み物のサイズを扱う関数を書いてください。
 //

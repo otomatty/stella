@@ -1,12 +1,11 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問18 いちばん安いものの name を返す。同じ価格なら先に出てきた方。空の配列なら Error を投げる
+//     例: cheapestName([相談, りんご]) → "りんご"
+// 引数と戻り値には型注釈を付けます。
 
 export type Product = { name: string; price: number; stock: number };
 
 export type Service = { name: string; price: number; hours: number };
 
-// 問18
 export function cheapestName(items: readonly { name: string; price: number }[]): string {
   const [first, ...rest] = items;
   if (first === undefined) {

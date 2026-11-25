@@ -1,11 +1,10 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問4 url を fetch して、本文を JSON として読んだ結果（res.json()）を返す。戻り値の型は Promise<unknown>
+//     例: getJson(url) → { a: 1 } で解決する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れてから返してください。
 
 export const API = "https://api.example.com";
 
-// 問4
 export async function getJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   const data: unknown = await res.json();

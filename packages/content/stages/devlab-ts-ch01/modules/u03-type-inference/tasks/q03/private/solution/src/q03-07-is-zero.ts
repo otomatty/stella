@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問7
+// 問7 0 なら true を返す（戻り値は boolean に推論される）
+//     例: isZero(0) → true
+// 戻り値の型は推論に任せてください。
 export function isZero(n: number) {
   return n === 0;
 }

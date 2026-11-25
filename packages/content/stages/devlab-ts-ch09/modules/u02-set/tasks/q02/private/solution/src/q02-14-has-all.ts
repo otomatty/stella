@@ -1,8 +1,10 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問14 values の要素がすべて set にあれば true
+//     例: hasAll(Set { "read", "write" }, ["read"]) → true
+// 引数と戻り値に型注釈を付けます。
+// 引数の配列は変更しません。
+// 引数の Set は変更しません。
+// 要素が Set にあるかは has() で調べます。
 
-// 問14
 export function hasAll(set: Set<string>, values: string[]): boolean {
   return values.every((value) => set.has(value));
 }

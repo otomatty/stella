@@ -1,7 +1,3 @@
-// 04-q07 never型と網羅性のチェック
-//
-// 教材: https://typescriptbook.jp/reference/statements/never
-//
 // 問題
 // 図形を表す型 Shape と、タスクの状態を表す型 TaskStatus は定義済みです。
 //

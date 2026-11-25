@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問10 Partial<Options> のうち、値が入っているプロパティの数を返す
+//     例: countSet({ size: 1, bold: false }) → 2
+// 引数と戻り値に型注釈を付けます。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問10
 export function countSet(options: Partial<Options>): number {
   let count = 0;
   if (options.size !== undefined) {

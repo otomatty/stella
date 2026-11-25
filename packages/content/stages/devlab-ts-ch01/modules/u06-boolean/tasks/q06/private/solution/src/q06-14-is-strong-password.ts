@@ -1,9 +1,7 @@
-// 01-q06 boolean型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/boolean
-//       https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values
-
-// 問14
+// 問14 8文字以上で、数字と英大文字を1文字ずつ以上含めば true
+//     例: isStrongPassword("Agora2026") → true
+// 戻り値には型注釈を付けてください。
+// 判定式の結果を return の1行で返せます。
 export function isStrongPassword(password: string): boolean {
   return password.length >= 8 && /\d/.test(password) && /[A-Z]/.test(password);
 }

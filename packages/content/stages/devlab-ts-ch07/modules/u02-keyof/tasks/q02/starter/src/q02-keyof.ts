@@ -1,8 +1,3 @@
-// 07-q02 keyof 型演算子
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
-//
 // 問題
 // keyof 型 と書くと、その型のプロパティ名のユニオン型になります。型 User は定義済みです。
 //
@@ -16,6 +11,7 @@
 //    引数の配列は readonly User[]。同じ値なら元の順
 //
 // 5. isUserKey(text) を書く。UserKey のどれかなら true。戻り値の型は text is UserKey
+// 引数と戻り値に型注釈を付けます。
 
 export type User = { id: number; name: string; email: string; age: number };
 

@@ -1,7 +1,9 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問16 ids のユーザーを順番に取得し、最初に見つかった20歳以上の人の名前を返す。失敗した id は飛ばす。いなければ undefined
+//     例: firstAdult([2, 9, 4, 1]) → "田中" で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
+// 失敗は try・catch で受け止めてください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +22,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問16
 export async function firstAdult(ids: readonly number[]): Promise<string | undefined> {
   for (const id of ids) {
     try {

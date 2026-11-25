@@ -1,8 +1,8 @@
-// 05-q03 オプション引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
+// 問15 n と、省略できる step。n にいちばん近い step の倍数を返す。省略したら 1
+//     例: roundStep(17, 5) → 15
+// 引数と戻り値には型注釈を付けてください。
+// 省略できる引数は ? で宣言し、関数の中で ?? や === undefined で省略を扱ってください。
 
-// 問15
 export function roundStep(n: number, step?: number): number {
   const s = step ?? 1;
   return Math.round(n / s) * s;

@@ -1,7 +1,3 @@
-// 06-e01 発展問題 抽象クラス
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/class/abstract-class
-//
 // 問題
 // 抽象クラス（abstract class）は、それ自体からは new できず、継承して使うためのクラスです。
 // 中身を子クラスに任せたいメソッドには abstract を付け、本体を書かずに宣言だけします。

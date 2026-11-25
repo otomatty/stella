@@ -1,11 +1,9 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問15 `${API}/todos/${id}` に { done } を JSON で送り（method は "PATCH"）、res.ok を返す
+//     例: updateTodo(3, true) → true で解決する
+// fetch と async・await を使ってください。
 
 export const API = "https://api.example.com";
 
-// 問15
 export async function updateTodo(id: number, done: boolean): Promise<boolean> {
   const res = await fetch(`${API}/todos/${id}`, {
     method: "PATCH",

@@ -1,9 +1,7 @@
-// 01-q06 boolean型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/boolean
-//       https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values
-
-// 問15
+// 問15 2つの数がどちらも正、またはどちらも負なら true（0 が含まれていれば false）
+//     例: isSameSign(-2, -5) → true
+// 戻り値には型注釈を付けてください。
+// 判定式の結果を return の1行で返せます。
 export function isSameSign(a: number, b: number): boolean {
   return (a > 0 && b > 0) || (a < 0 && b < 0);
 }

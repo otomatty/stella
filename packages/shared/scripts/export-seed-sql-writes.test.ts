@@ -160,6 +160,62 @@ const total = (writes: Record<string, number>) =>
 
 describe("seed の書き込み行数", () => {
   it(
+    "課題と問題の手がかりだけを書き、変更と削除を反映する",
+    async () => {
+      const db = migratedDb();
+      const taskId = "devlab-ts-ch01/u01-let-const/q01";
+      const problemId = "q01-01-add-tax";
+      const first = { problemId: "", position: 0, stageId: COURSE, lessonId: LESSON };
+      const second = { ...first, position: 1, lessonId: "doc-0-1" };
+      const problem = { problemId, position: 0, stageId: "devlab-ts-ch01", lessonId: "1-2-1" };
+      const sqlFor = (refs: NonNullable<Manifest["tasks"][number]["refs"]>) =>
+        exportSql((manifest) => {
+          const task = manifest.tasks.find((row) => row.definition.id === taskId);
+          if (!task) throw new Error(`課題がありません: ${taskId}`);
+          task.refs = refs;
+          task.definition.refs = refs
+            .filter((ref) => ref.problemId === "")
+            .map((ref) => `${ref.stageId}:${ref.lessonId}`);
+        });
+      const read = () =>
+        db
+          .prepare(
+            "select problem_id, position, lesson_id from task_refs where task_id = ? order by problem_id, position",
+          )
+          .all(taskId);
+
+      try {
+        apply(db, await exportSql());
+        const full = await sqlFor([first, second, problem]);
+        expect(apply(db, full)).toEqual({ [`task_refs:${taskId}`]: 3 });
+        const firstId = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+        const docId = stableUuid(`lesson:ses:${COURSE}:doc-0-1`);
+        expect(read()).toEqual([
+          { problem_id: "", position: 0, lesson_id: firstId },
+          { problem_id: "", position: 1, lesson_id: docId },
+          {
+            problem_id: problemId,
+            position: 0,
+            lesson_id: stableUuid("lesson:ses:devlab-ts-ch01:1-2-1@r2"),
+          },
+        ]);
+        expect(apply(db, full)).toEqual({});
+
+        const reduced = await sqlFor([{ ...second, position: 0 }]);
+        expect(total(apply(db, reduced))).toBe(3);
+        expect(read()).toEqual([{ problem_id: "", position: 0, lesson_id: docId }]);
+        expect(apply(db, reduced)).toEqual({});
+
+        expect(total(apply(db, await sqlFor([])))).toBe(1);
+        expect(read()).toEqual([]);
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
     "開発ラボG の旧単元を除去しても提出履歴を保持し、未登録の新課題に問題結果を移す",
     async () => {
       const db = migratedDb();
@@ -424,6 +480,29 @@ describe("seed の書き込み行数", () => {
     });
     // fixtures / problems を丸ごと in-process で読み込むので既定の 5s では足りない。
   }, 120_000);
+
+  it(
+    "空本文のリビジョンは lessons に入る null を空文字列として照合する",
+    async () => {
+      const emptyLesson = "doc-0-1";
+      const id = stableUuid(`lesson:ses:${COURSE}:${emptyLesson}`);
+      const empty = await exportSql((manifest) => {
+        const stage = manifest.stages.find((entry) => entry.id === COURSE);
+        const lesson = stage?.sections?.flatMap((s) => s.lessons).find((l) => l.id === emptyLesson);
+        if (!lesson) throw new Error("変える教材が見つかりません");
+        lesson.markdown = "";
+      });
+      const revision = splitSqlStatements(empty).find(
+        (statement) =>
+          statement.startsWith("insert into lesson_revisions ") &&
+          statement.includes(`select '${id}',`),
+      );
+      expect(revision).toContain(
+        `from lessons l where l.id = '${id}' and coalesce(l.markdown, '') = ''`,
+      );
+    },
+    SEED_TIMEOUT,
+  );
 
   it(
     "進捗の版を付けた動画4本だけ UUID が変わり、再 seed が旧動画と進捗を片付ける",

@@ -1,7 +1,3 @@
-// 01-q07 リテラル型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//
 // 問題
 // 1. 関数 move(position, direction) を書いてください
 //    - direction には "up" か "down" だけを渡せるように、リテラル型で型注釈を付ける

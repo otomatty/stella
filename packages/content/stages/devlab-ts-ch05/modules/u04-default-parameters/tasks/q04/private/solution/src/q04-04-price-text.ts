@@ -1,8 +1,8 @@
-// 05-q04 デフォルト引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/default-parameters
+// 問4 「1,200円」の形にする。currency を省略したら「円」
+//     例: priceText(1200, "ドル") → "1,200ドル"
+// 省略時の値は、引数に times = 2 のように書いてください。
+// 必須の引数と戻り値には型注釈を付けてください。
 
-// 問4
 export function priceText(price: number, currency = "円"): string {
   return `${price.toLocaleString("ja-JP")}${currency}`;
 }

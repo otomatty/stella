@@ -1,11 +1,10 @@
-// 03-q02 リテラル型のユニオン ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問5 次の平日を返す。金の次は月
+//     例: nextWeekday("金") → "月"
+// 引数と戻り値に型注釈を付ける。
+// 定義済みの Weekday 型を使う。
 
 export type Weekday = "月" | "火" | "水" | "木" | "金";
 
-// 問5
 export function nextWeekday(day: Weekday): Weekday {
   if (day === "月") {
     return "火";

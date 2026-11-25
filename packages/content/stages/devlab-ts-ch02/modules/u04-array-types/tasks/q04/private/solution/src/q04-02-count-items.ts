@@ -1,10 +1,6 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問2
+// 問2 要素の数を返す
+//     例: countItems(["a", "b"]) → 2
+// 引数と戻り値には型注釈を付けます。
 export function countItems(items: readonly string[]): number {
   return items.length;
 }

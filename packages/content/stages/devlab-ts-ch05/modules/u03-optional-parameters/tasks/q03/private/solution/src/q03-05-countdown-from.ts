@@ -1,8 +1,8 @@
-// 05-q03 オプション引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
+// 問5 from と、省略できる to。from から to まで1ずつ減らした配列を返す。to を省略したら 1
+//     例: countdownFrom(3) → [3, 2, 1]
+// 引数と戻り値には型注釈を付けてください。
+// 省略できる引数は ? で宣言し、関数の中で ?? や === undefined で省略を扱ってください。
 
-// 問5
 export function countdownFrom(from: number, to?: number): number[] {
   const end = to ?? 1;
   const result: number[] = [];

@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問5
+// 問5 すべての要素を2倍にした新しい配列を返す
+//     例: doubleEach([1, 2, 3]) → [2, 4, 6]
+// 引数と戻り値には型注釈を付けます。
+// 要素を変換するには map が使えます。
 export function doubleEach(numbers: readonly number[]): number[] {
   return numbers.map((n) => n * 2);
 }

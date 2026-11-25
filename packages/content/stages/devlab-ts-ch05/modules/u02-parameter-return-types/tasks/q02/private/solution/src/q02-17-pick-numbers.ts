@@ -1,10 +1,7 @@
-// 05-q02 引数と戻り値の型、void ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//       https://typescriptbook.jp/reference/functions/pass-by-value
+// 問17 文字列と数値が混ざった配列から、数値だけを集める
+//     例: pickNumbers([1, "a", 2]) → [1, 2]
+// 引数と戻り値には型注釈を付けてください。
 
-// 問17
 export function pickNumbers(values: readonly (string | number)[]): number[] {
   const result: number[] = [];
   for (const value of values) {

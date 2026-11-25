@@ -12,7 +12,11 @@ import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "../lib/enrollment-bulk.js";
 import { learnerOnly } from "../lib/learner-scope.js";
-import { loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
+import {
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  problemTaskOverviewTasks,
+} from "../lib/lesson-progress-write.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { evaluateSkillMapFor } from "./skill-map.js";
 
@@ -222,12 +226,20 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
       select stage_id, count(*) total from stage_lessons group by stage_id
     ), task_totals as (
       select stage_id, count(*) total from stage_tasks group by stage_id
-    ), lesson_counts as (
-      select p.id profile_id, l.stage_id, count(*) done from peers p
+    ), completed_lessons as (
+      select p.id profile_id, l.stage_id, l.id lesson_id from peers p
       join lesson_progress lp on lp.user_id = p.id and lp.completed = 1
       join stage_lessons l on l.id = lp.lesson_id
       join lessons lesson on lesson.id = l.id and lesson.problem_id is null
-      group by p.id, l.stage_id
+      where not ${isProblemTaskOverviewLesson(sql`l.id`)}
+      union
+      select p.id, l.stage_id, l.id from peers p
+      join task_progress tp on tp.user_id = p.id and tp.status in ('passed', 'ai-passed')
+      join (${problemTaskOverviewTasks}) t on t.id = tp.task_id
+      join stage_lessons l on l.id = t.lesson_id
+    ), lesson_counts as (
+      select profile_id, stage_id, count(*) done from completed_lessons
+      group by profile_id, stage_id
     ), task_counts as (
       select p.id profile_id, t.stage_id, count(*) passed from peers p
       join task_progress tp on tp.user_id = p.id and tp.status in ('passed', 'ai-passed')

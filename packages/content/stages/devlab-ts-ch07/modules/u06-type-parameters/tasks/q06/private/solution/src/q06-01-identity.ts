@@ -1,9 +1,7 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問1 受け取った値をそのまま返す
+//     例: identity(5) → 5
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問1
 export function identity<T>(value: T): T {
   return value;
 }

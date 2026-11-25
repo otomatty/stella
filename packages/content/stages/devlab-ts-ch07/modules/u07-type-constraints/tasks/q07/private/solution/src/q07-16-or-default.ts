@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問16 文字列か数値に限り、value が undefined なら fallback を返す
+//     例: orDefault(undefined, 5) → 5
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問16
 export function orDefault<T extends string | number>(value: T | undefined, fallback: T): T {
   return value ?? fallback;
 }

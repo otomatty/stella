@@ -1,12 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
-//
-// async・await と Promise.all・Promise.allSettled を使って書いてください。
-// 型 User・Post・Comment と、APIの代わりの関数 getUser・getPosts・getComments は定義済みです。
-// getUser(id) はいない id なら失敗し、getPosts(3) は必ず失敗します（投稿を取得できない人の例）。
-// 待つ必要のない取得は、一度に始めて同時に待つこと。「順番に」と書いてある問題だけ、1つずつ待つ。
+// 問4 ids のユーザーを同時に取得し、名前の配列を返す（ids の順）。1人でも失敗したら、その失敗を投げる
+//     例: namesOf([3, 1]) → ["鈴木", "山田"] で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -25,6 +21,4 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問4 ids のユーザーを同時に取得し、名前の配列を返す（ids の順）。1人でも失敗したら、その失敗を投げる
-//     例: namesOf([3, 1]) → ["鈴木", "山田"] で解決する
 export function namesOf() {}

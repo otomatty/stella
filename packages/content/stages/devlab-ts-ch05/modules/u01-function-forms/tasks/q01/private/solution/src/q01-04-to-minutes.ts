@@ -1,10 +1,8 @@
-// 05-q01 関数宣言・関数式・アロー関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-declaration
-//       https://typescriptbook.jp/reference/functions/function-expression
-//       https://typescriptbook.jp/reference/functions/arrow-functions
+// 問4 【関数宣言】時と分を、0時からの分にする
+//     例: toMinutes(9, 30) → 570
+// 引数と戻り値には型注釈を付けてください。
+// 用意された関数宣言の形のまま、引数・型・中身を書き足してください。
 
-// 問4
 export function toMinutes(hour: number, minute: number): number {
   return hour * 60 + minute;
 }

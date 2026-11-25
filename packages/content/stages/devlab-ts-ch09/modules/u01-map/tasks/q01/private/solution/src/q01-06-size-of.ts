@@ -1,8 +1,7 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問6 Map に入っている数を返す
+//     例: sizeOf(scores) → 2
+// 引数と戻り値に型注釈を付けます。
 
-// 問6
 export function sizeOf(scores: Map<string, number>): number {
   return scores.size;
 }
