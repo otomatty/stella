@@ -246,9 +246,10 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       const bundle = JSON.stringify({
         files: Object.fromEntries(ids.map((id) => [`src/${id}.ts`, ""])),
       });
-      const problemHashes = JSON.stringify(
-        Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
-      );
+      const problemHashes = JSON.stringify({
+        version: 2,
+        hashes: Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
+      });
       sqlite.sqlite.exec(`
         delete from task_problem_results where user_id='inside' and task_id='task-stage';
         delete from integration_events where user_id='inside' and task_id='task-stage' and problem_id is not null;
@@ -314,7 +315,10 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
 
       if (recorded) {
         // q1 は、その後の依存なしの q2 ではなく、指定時点に q3 を読み込んでいた q2 をたどる。
-        const changed = JSON.stringify({ ...JSON.parse(problemHashes), q3: "b".repeat(64) });
+        const changed = JSON.stringify({
+          ...JSON.parse(problemHashes),
+          hashes: { ...JSON.parse(problemHashes).hashes, q3: "b".repeat(64) },
+        });
         sqlite.sqlite
           .prepare(
             "update task_revisions set problem_hashes=? where task_id=? and content_hash='current'",
@@ -334,7 +338,10 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       ],
     });
     const bundle = JSON.stringify({ files: { "src/q1.ts": "", "src/q2.ts": "" } });
-    const problemHashes = JSON.stringify({ q1: "a".repeat(64), q2: "b".repeat(64) });
+    const problemHashes = JSON.stringify({
+      version: 2,
+      hashes: { q1: "a".repeat(64), q2: "b".repeat(64) },
+    });
     const revisions = ["old", "current"].map((contentHash) => ({
       taskId,
       contentHash,
@@ -386,9 +393,10 @@ describe("連携の読み取り (架空データ・実SQLite)", () => {
       const bundle = JSON.stringify({
         files: Object.fromEntries(ids.map((id) => [`src/${id}.ts`, ""])),
       });
-      const problemHashes = JSON.stringify(
-        Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
-      );
+      const problemHashes = JSON.stringify({
+        version: 2,
+        hashes: Object.fromEntries(ids.map((id) => [id, "a".repeat(64)])),
+      });
       sqlite.sqlite.exec(`
         delete from task_problem_results where user_id='inside' and task_id='task-stage';
         delete from integration_events where user_id='inside' and task_id='task-stage' and problem_id is not null;

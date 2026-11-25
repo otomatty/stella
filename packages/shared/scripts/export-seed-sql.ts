@@ -27,7 +27,7 @@ import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
 
 import { RETIRED_STAGES } from "../src/curriculum/retired-stages.js";
-import { problemFingerprints } from "../src/tasks/problems.js";
+import { encodeProblemHashes, problemFingerprints } from "../src/tasks/problems.js";
 import { findAssignment } from "../src/problems/index.js";
 import { getEntryFile, getLanguage, getStaticAnalysisSettings } from "../src/assignment-helpers.js";
 import { lessonNamespace, lessonUuid as revisedLessonUuid, stableUuid } from "./seed-ids.js";
@@ -763,7 +763,7 @@ for (const [order, task] of content.tasks.entries()) {
   );
   const problemHashes = d.problems
     ? strLit(
-        JSON.stringify(
+        encodeProblemHashes(
           await problemFingerprints(
             { ...task.bundle.manifest, problems: d.problems },
             task.bundle.files,

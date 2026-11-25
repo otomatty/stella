@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
+import { starterCodeHash } from "@stella/shared/tasks/starter-code";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
 import {
   installTask,
@@ -200,6 +201,42 @@ describe("課題の配布", () => {
       "distribution.json",
       "task.json",
     ]);
+  });
+  it("雛形のコメントと空行と改行だけが変わった編集中のファイルは残す", async () => {
+    const training = await root();
+    const commented = "starter\r\n\r\n// note\r\n";
+    const first = {
+      ...bundle,
+      files: { ...bundle.files, "index.js": Buffer.from(commented).toString("base64") },
+    };
+    const taskRoot = await installTask(training, first);
+    await writeFile(path.join(taskRoot, "index.js"), "learner code");
+    const updated = nextBundle({ "index.js": "starter\n" });
+    const loadRevisionFiles = vi.fn(async () => ({
+      files: makeHashes(first.files),
+      codeHashes: { "index.js": await starterCodeHash(Buffer.from(commented)) },
+    }));
+    expect(await installTask(training, updated, { loadRevisionFiles })).toBe(taskRoot);
+    expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
+    expect(await readReceipt(taskRoot)).toEqual({
+      taskId: bundle.manifest.id,
+      contentHash: updated.contentHash,
+      files: makeHashes(updated.files),
+    });
+  });
+  it("雛形のコードが変わった編集中のファイルは衝突のまま残す", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, bundle);
+    await writeFile(path.join(taskRoot, "index.js"), "learner code");
+    const updated = nextBundle({ "index.js": "starter changed\n" });
+    const loadRevisionFiles = vi.fn(async () => ({
+      files: makeHashes(bundle.files),
+      codeHashes: { "index.js": await starterCodeHash(Buffer.from("starter")) },
+    }));
+    const conflict = await conflictOf(installTask(training, updated, { loadRevisionFiles }));
+    expect(conflict.reason).toBe("updated");
+    expect(conflict.files).toEqual(["index.js"]);
+    expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
   });
   it("雛形が同じなら編集したコードと配布から外れたファイルを残す", async () => {
     const training = await root();

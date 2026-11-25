@@ -218,14 +218,14 @@ describe("旧版のコードを読むあいだの再提出", () => {
           contentHash: CURRENT,
           definition,
           bundle: bundle(CURRENT),
-          problemHashes: JSON.stringify({ q1: FINGERPRINT }),
+          problemHashes: JSON.stringify({ version: 2, hashes: { q1: FINGERPRINT } }),
         },
         {
           taskId: "stage/unit/calc",
           contentHash: OLD,
           definition,
           bundle: bundle(OLD),
-          problemHashes: JSON.stringify({ q1: FINGERPRINT }),
+          problemHashes: JSON.stringify({ version: 2, hashes: { q1: FINGERPRINT } }),
         },
       ]),
       db.insert(taskProblemResults).values({
