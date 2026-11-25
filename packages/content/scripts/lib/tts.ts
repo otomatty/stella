@@ -593,6 +593,16 @@ export interface CachedTts {
  */
 const inflight = new Map<string, Promise<CachedTts>>();
 
+/** `--cached-only`。有効なあいだは、キャッシュに無い読み上げと `refresh` を合成しない。 */
+let cachedTtsRequired = false;
+
+export function requireCachedTts(enabled: boolean): void {
+  cachedTtsRequired = enabled;
+}
+
+const CACHED_TTS_ONLY =
+  "確認した音声だけで上げるため、音声は作りません。先に --preview で作って確かめてください";
+
 /** キャッシュにあればそれを、無ければ合成して書く。`refresh` はキャッシュを無視して作り直す。 */
 export function synthesizeCached(
   provider: TtsProvider,
@@ -647,6 +657,7 @@ async function synthesizeUncached(
     const file = cachedTtsHit(provider.identity, speech, cacheDir, true);
     if (file) return { file, cached: true };
   }
+  if (cachedTtsRequired) throw new Error(CACHED_TTS_ONLY);
   const audio = await synthesizeLimited(provider, speech);
   if (audio.bytes.length === 0) throw new Error("TTS の結果が空でした");
   mkdirSync(cacheDir, { recursive: true });

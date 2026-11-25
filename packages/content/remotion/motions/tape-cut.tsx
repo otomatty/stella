@@ -31,16 +31,11 @@ export function TapeCut({ beats }: MotionProps) {
         at(1, 0.15),
       );
       t.to("#cut-dash", { opacity: 1, duration: 0.3 }, at(1, 0.7));
-      t.to(
-        "#cut-half-left",
-        { rotation: 18, svgOrigin: `${PIVOT.x} ${PIVOT.y}`, duration: 0.32, ease: "power2.inOut" },
-        at(2),
-      );
-      t.to(
-        "#cut-half-right",
-        { rotation: -18, svgOrigin: `${PIVOT.x} ${PIVOT.y}`, duration: 0.32, ease: "power2.inOut" },
-        at(2),
-      );
+      const pivot = { svgOrigin: `${PIVOT.x} ${PIVOT.y}`, duration: 0.32, ease: "power2.inOut" };
+      t.to("#cut-half-left", { ...pivot, rotation: 18 }, at(1, 2.6));
+      t.to("#cut-half-right", { ...pivot, rotation: -18 }, at(1, 2.6));
+      t.to("#cut-half-left", { ...pivot, rotation: -16 }, at(2));
+      t.to("#cut-half-right", { ...pivot, rotation: 16 }, at(2));
       t.to("#cut-dash", { opacity: 0, duration: 0.25 }, at(2, 0.15));
       t.to("#cut-left", { x: -60, y: -30, duration: 0.7, ease: "power2.out" }, at(2, 0.2));
       t.to("#cut-left-paper", { fill: SKY, duration: 0.45 }, at(2, 0.2));

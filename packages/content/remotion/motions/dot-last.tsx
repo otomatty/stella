@@ -56,23 +56,21 @@ export function DotLast({ beats }: MotionProps) {
       show("#dot-back", at(2, 0.2));
       const hold = 0.42;
       const move = 0.36;
+      let landed = at(2, 0.2);
       for (let step = 0; step < 3; step++) {
         const leave = 0.2 + step * (hold + move);
+        const start = at(2, leave + hold);
         t.to(
           "#dot-lens-move",
           { x: slotX(LETTERS.length - 2 - step), duration: move, ease: "power2.inOut" },
-          at(2, leave + hold),
+          start,
         );
+        landed = start + move;
       }
-      const land = 0.2 + 3 * (hold + move);
-      t.to("#dot-card-7", { y: -20, duration: 0.35, ease: "power2.out" }, at(2, land));
-      t.to(
-        "#dot-hit-box",
-        { stroke: PINK, attr: { "stroke-width": 8 }, duration: 0.25 },
-        at(2, land),
-      );
-      t.to("#dot-num-7", { opacity: 0, duration: 0.15 }, at(2, land));
-      show("#dot-index", at(2, land));
+      t.to("#dot-card-7", { y: -20, duration: 0.35, ease: "power2.out" }, landed);
+      t.to("#dot-hit-box", { stroke: PINK, attr: { "stroke-width": 8 }, duration: 0.25 }, landed);
+      t.to("#dot-num-7", { opacity: 0, duration: 0.15 }, landed);
+      show("#dot-index", landed);
       t.to("#dot-back", { opacity: 0, duration: 0.2 }, at(3));
       emphasize("dot-hit", at(3, 0.25));
       emphasize("dot-index", at(3, 0.25));

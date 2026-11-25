@@ -730,6 +730,13 @@ export function videoTtsOf(args: string[], remote = false): TtsProviderName | un
   return remote ? "gemini" : undefined;
 }
 
+/** `--out` の出力先。相対パスは教材ルート基準。無いときは dist/video。 */
+export function videoOutputDir(args: readonly string[]): string {
+  const i = args.indexOf("--out");
+  const value = i !== -1 && args[i + 1] ? args[i + 1] : null;
+  return resolve(contentRoot, value ?? join("dist", "video"));
+}
+
 /** CLI と配信が共用する。skip は R2 に出力一式がある場合だけ true を返す。 */
 export function videoSelectorsFromArgs(args: readonly string[]): string[] {
   const valueFlags = ["--tts", "--out", "--concurrency", "--topics"];
@@ -748,11 +755,12 @@ export async function buildVideos(
     const i = args.indexOf(name);
     return i !== -1 && args[i + 1] ? args[i + 1] : null;
   }
-  const outDir = resolve(contentRoot, argValue("--out") ?? join("dist", "video"));
+  const outDir = videoOutputDir(args);
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const concurrency = Number(argValue("--concurrency") ?? 2);
-  const captioned = args.includes("--captioned");
   const burnCaptions = args.includes("--burn-captions");
+  // 旧方式の焼き込み版は `--captioned`。`--burn-captions` も同じ確認版を作る。
+  const captioned = args.includes("--captioned") || burnCaptions;
   const force = args.includes("--force");
   const keepWork = args.includes("--keep-work");
   const topicIds = topicIdsFromArgs(args);
@@ -833,6 +841,7 @@ export async function buildVideos(
     }
     const base = join(outDir, topic.stageSlug, topic.id);
     if (force || outputFiles(false, true).some((f) => !existsSync(join(base, f)))) return true;
+    if (burnCaptions && !existsSync(join(base, "video.captions.mp4"))) return true;
     try {
       return JSON.parse(readFileSync(join(base, "report.json"), "utf8")).sourceHash !== sourceHash;
     } catch {

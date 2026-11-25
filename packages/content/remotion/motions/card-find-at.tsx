@@ -53,26 +53,20 @@ export function CardFindAt({ beats }: MotionProps) {
       show("#find-lens", at(1, 0.2));
       const hold = 0.42;
       const move = 0.36;
+      let landed = at(2, 0.15);
       for (let i = 0; i < MATCH; i++) {
         const leave = 0.15 + i * (hold + move);
-        t.to(
-          "#find-lens-move",
-          { x: slotX(i + 1), duration: move, ease: "power2.inOut" },
-          at(2, leave + hold),
-        );
+        const start = at(2, leave + hold);
+        t.to("#find-lens-move", { x: slotX(i + 1), duration: move, ease: "power2.inOut" }, start);
+        landed = start + move;
         t.to(
           `#find-num-${i}`,
           { attr: { fill: PASSED }, duration: 0.2 },
-          at(2, leave + hold + move),
+          i === MATCH - 1 ? landed : at(2, leave + hold + move),
         );
       }
-      const land = 0.15 + MATCH * (hold + move);
-      t.to("#find-card-4", { y: -20, duration: 0.35, ease: "power2.out" }, at(2, land));
-      t.to(
-        "#find-card-box",
-        { stroke: PINK, attr: { "stroke-width": 8 }, duration: 0.25 },
-        at(2, land),
-      );
+      t.to("#find-card-4", { y: -20, duration: 0.35, ease: "power2.out" }, landed);
+      t.to("#find-card-box", { stroke: PINK, attr: { "stroke-width": 8 }, duration: 0.25 }, landed);
       t.to(
         "#find-num-4",
         {
@@ -81,9 +75,9 @@ export function CardFindAt({ beats }: MotionProps) {
           transformOrigin: "50% 70%",
           duration: 0.3,
         },
-        at(2, land),
+        landed,
       );
-      show("#find-index", at(2, land));
+      show("#find-index", landed);
       emphasize("find-card", at(3, 0.25));
       emphasize("find-index", at(3, 0.25));
       show("#find-code", at(3, 0.7));

@@ -468,3 +468,77 @@ it("作る前に新方式は場面ごと、旧方式はトピックごとの読�
   expect(slide?.speeches[0]).toContain("ひとつ。");
   expect(slide?.speeches[0]).toContain("ふたつ。");
 });
+
+it("新方式は通常の出力が揃っていても焼き込み版が無ければ作る", async () => {
+  const { root, topic } = fixture();
+  const out = join(root, "out");
+  const hash = planSceneTopic(topic, createTtsProvider(loadVideoVoice("fake")).identity);
+  const base = join(out, topic.stageSlug, topic.id);
+  mkdirSync(base, { recursive: true });
+  for (const name of ["video.mp4", "captions.vtt", "poster.jpg"])
+    writeFileSync(join(base, name), "x");
+  writeFileSync(join(base, "report.json"), JSON.stringify({ sourceHash: hash }));
+  const idle = await buildVideos(["--tts", "fake", "--out", out]);
+  expect(idle.failures).toEqual([]);
+  expect(buildSceneTopic).not.toHaveBeenCalled();
+  let pending: string[] = [];
+  await expect(
+    buildVideos(["--tts", "fake", "--out", out, "--burn-captions"], undefined, (items) => {
+      pending = items.map((item) => item.id);
+      throw new Error("halt");
+    }),
+  ).rejects.toThrow("halt");
+  expect(pending).toEqual([topic.id]);
+});
+
+it("旧方式は --burn-captions で焼き込み版が無ければ作る", async () => {
+  const { root, topic } = fixture();
+  const legacyDir = join(root, "legacy");
+  mkdirSync(legacyDir);
+  const legacy: NarrationTopic = {
+    ...topic,
+    id: "legacy",
+    topicDir: legacyDir,
+    narrationFile: join(legacyDir, "narration.json"),
+    parseError: undefined,
+    narration: { schema: 1, slidesHash: "fixture", slides: [{ cues: [{ text: "読みます。" }] }] },
+  };
+  writeFileSync(legacy.narrationFile, "{}");
+  vi.mocked(collectNarrationTopics).mockReturnValue([legacy]);
+  vi.mocked(collectPdfTargets).mockReturnValue([
+    {
+      kind: "slides",
+      stageSlug: "fixture",
+      lessonId: "legacy",
+      courseTitle: "fixture",
+      source: "slide",
+      assets: [],
+    } as unknown as ReturnType<typeof collectPdfTargets>[number],
+  ]);
+  const out = join(root, "out");
+  let hash = "";
+  await buildVideos(["--tts", "fake", "--out", out], (plan) => {
+    hash = plan.sourceHash;
+    return true;
+  });
+  const base = join(out, "fixture", "legacy");
+  mkdirSync(base, { recursive: true });
+  for (const name of ["video.mp4", "captions.vtt", "chapters.vtt", "poster.jpg", "timeline.json"])
+    writeFileSync(join(base, name), "x");
+  writeFileSync(join(base, "report.json"), JSON.stringify({ sourceHash: hash }));
+  let pending: string[] = [];
+  await expect(
+    buildVideos(["--tts", "fake", "--out", out], undefined, (items) => {
+      pending = items.map((item) => item.id);
+      throw new Error("idle");
+    }),
+  ).rejects.toThrow("idle");
+  expect(pending).toEqual([]);
+  await expect(
+    buildVideos(["--tts", "fake", "--out", out, "--burn-captions"], undefined, (items) => {
+      pending = items.map((item) => item.id);
+      throw new Error("halt");
+    }),
+  ).rejects.toThrow("halt");
+  expect(pending).toEqual(["legacy"]);
+});

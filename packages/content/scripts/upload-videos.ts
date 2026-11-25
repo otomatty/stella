@@ -18,6 +18,7 @@ import {
   formatVideoFailure,
   loadVideoVoice,
   validatePublishedVideoVoice,
+  videoOutputDir,
   videoSelectorsFromArgs,
   videoTtsOf,
   type PendingVideoTts,
@@ -30,6 +31,7 @@ import {
   createTtsProvider,
   lessonVideoTtsCacheDir,
   logVideoTts,
+  requireCachedTts,
   trackGeminiTtsCalls,
   type TtsCallTopic,
 } from "./lib/tts.js";
@@ -163,6 +165,38 @@ function parseVideoState(body: Uint8Array): VideoState {
   return parsed as unknown as VideoState;
 }
 
+type VideoLedger = {
+  objects: Record<string, number>;
+  durations: Record<string, number>;
+  scenes: NonNullable<VideoState["scenes"]>;
+  revisions: Record<string, string>;
+  ttsUsage: Record<string, number>;
+};
+
+function emptyLedger(): VideoLedger {
+  return { objects: {}, durations: {}, scenes: {}, revisions: {}, ttsUsage: {} };
+}
+
+/** 読み直した台帳に、この実行が書いたキーと ttsUsage の増分だけを重ねる。 */
+function applyLedger(base: VideoState, ledger: VideoLedger): VideoState {
+  const next: VideoState = {
+    ...base,
+    objects: { ...base.objects, ...ledger.objects },
+    durations: { ...base.durations, ...ledger.durations },
+  };
+  if (Object.keys(ledger.scenes).length > 0) next.scenes = { ...base.scenes, ...ledger.scenes };
+  if (Object.keys(ledger.revisions).length > 0) {
+    next.revisions = { ...base.revisions, ...ledger.revisions };
+  }
+  if (Object.keys(ledger.ttsUsage).length > 0) {
+    next.ttsUsage = { ...base.ttsUsage };
+    for (const [day, count] of Object.entries(ledger.ttsUsage)) {
+      next.ttsUsage[day] = (next.ttsUsage[day] ?? 0) + count;
+    }
+  }
+  return next;
+}
+
 async function readVideoState(r2: R2Client): Promise<VideoState> {
   try {
     const body = await r2.get(STATE_KEY);
@@ -271,6 +305,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
     throw new Error("--topics には対象ステージを 1 つ指定してください");
   }
   const remote = args.includes("--remote");
+  const ledger = emptyLedger();
   const tts = loadVideoVoice(videoTtsOf(args, remote)).provider;
   logVideoTts(tts);
   const manifestFile = join(contentRoot, "dist/video-manifest.json");
@@ -285,6 +320,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
     ...(args.includes("--tts") ? [] : ["--tts", tts]),
     ...(preview ? ["--burn-captions"] : []),
   ];
+  const outDir = videoOutputDir(buildArgs);
   const voice = loadVideoVoice(videoTtsOf(buildArgs));
   const identity = createTtsProvider(voice).identity;
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
@@ -324,6 +360,11 @@ export async function uploadVideos(args: string[]): Promise<void> {
           return true;
         }
         pending.push(plan);
+        if (preview) {
+          const base = join(outDir, plan.stageSlug, plan.id);
+          rmSync(join(base, "video.captions.mp4"), { force: true });
+          rmSync(join(base, "preview-captioned.mp4"), { force: true });
+        }
         return false;
       },
       async (targets) => {
@@ -348,6 +389,18 @@ export async function uploadVideos(args: string[]): Promise<void> {
               false,
             );
           }
+        } else if (cachedOnly) {
+          const counted = countTtsCalls(targets, identity, cacheDir);
+          if (counted.needed > 0) {
+            const names = counted.topics
+              .filter((topic) => topic.calls > 0)
+              .map((topic) => `${topic.stageSlug}/${topic.id}`)
+              .join("、");
+            throw new VideoSyncHalted(
+              `音声の作り直しが要るので上げません。先に --preview で作って確かめてください。呼び出しが要るトピック: ${names}`,
+              false,
+            );
+          }
         } else if (dryRun) {
           console.log("--dry-run のため、動画は作りません。");
         }
@@ -357,17 +410,11 @@ export async function uploadVideos(args: string[]): Promise<void> {
           appendFileSync(output, "cache=true\n");
         beginVideoCacheRun();
         started = true;
+        if (cachedOnly) requireCachedTts(true);
         if (voice.provider === "gemini") {
           trackGeminiTtsCalls(true, () => {
-            if (cachedOnly) {
-              throw new Error(
-                "確認した音声だけで上げるため、Gemini は呼びません。先に --preview で作って確かめてください",
-              );
-            }
             const day = pacificDate();
-            state.ttsUsage ??= {};
-            const usage = state.ttsUsage;
-            usage[day] = (usage[day] ?? 0) + 1;
+            ledger.ttsUsage[day] = (ledger.ttsUsage[day] ?? 0) + 1;
           });
         }
       },
@@ -382,9 +429,12 @@ export async function uploadVideos(args: string[]): Promise<void> {
             item.sourceHash === plan.sourceHash,
         );
         if (!report) continue;
-        const base = join(contentRoot, "dist/video", plan.stageSlug, plan.id);
+        const base = join(outDir, plan.stageSlug, plan.id);
         const burned = join(base, "video.captions.mp4");
-        made.push(existsSync(burned) ? burned : join(base, "video.mp4"));
+        const legacy = join(base, "preview-captioned.mp4");
+        if (existsSync(burned)) made.push(burned);
+        else if (existsSync(legacy)) made.push(legacy);
+        else made.push(`${join(base, "video.mp4")} （字幕を焼き込んだ版はありません）`);
       }
       if (made.length > 0) {
         console.log("確認する動画:");
@@ -406,7 +456,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
         );
         if (!report) continue;
         const keys = videoRevisionKeys(plan, revision);
-        const base = join(contentRoot, "dist/video", plan.stageSlug, plan.id);
+        const base = join(outDir, plan.stageSlug, plan.id);
         const files = [
           { key: keys.video, file: join(base, "video.mp4"), contentType: "video/mp4" },
           {
@@ -427,18 +477,14 @@ export async function uploadVideos(args: string[]): Promise<void> {
           });
           continue;
         }
-        for (const file of files) state.objects[videoKeyHash(file.key)] = statSync(file.file).size;
+        for (const file of files) ledger.objects[videoKeyHash(file.key)] = statSync(file.file).size;
         const videoHash = videoKeyHash(keys.video);
         const scenes = report.videoScenes;
-        state.durations[videoHash] = report.durationSec;
+        ledger.durations[videoHash] = report.durationSec;
         if (revision) {
-          state.revisions ??= {};
-          state.revisions[videoKeyHash(videoRevisionKeys(plan).video)] = revision;
+          ledger.revisions[videoKeyHash(videoRevisionKeys(plan).video)] = revision;
         }
-        if (scenes) {
-          state.scenes ??= {};
-          state.scenes[videoHash] = scenes;
-        }
+        if (scenes) ledger.scenes[videoHash] = scenes;
         const key = videoManifestKey(plan.stageSlug, plan.id);
         if (manifest[key]) throw new Error(`レッスン ID が重複しています: ${key}`);
         manifest[key] = { ...keys, durationSec: report.durationSec, ...(scenes ? { scenes } : {}) };
@@ -453,14 +499,28 @@ export async function uploadVideos(args: string[]): Promise<void> {
     if (error instanceof VideoSyncHalted && error.dryRun) return;
     failure = { error };
   } finally {
+    requireCachedTts(false);
     trackGeminiTtsCalls(false);
     if (started) {
       try {
-        await r2.put(
-          STATE_KEY,
-          new TextEncoder().encode(JSON.stringify(state)),
-          "application/json",
-        );
+        // ponytail: 読み直しから保存までの間の競合は残る。並行実行が増えたら R2 の条件付き put に替える。
+        let latest: VideoState | undefined;
+        try {
+          latest = await readVideoState(r2);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          const wrapped = new Error(
+            `${message} 上げた動画は台帳に載っていません。同じコマンドをもう一度実行してください。`,
+          );
+          if (failure) console.error(failure.error);
+          failure = { error: wrapped };
+        }
+        if (latest)
+          await r2.put(
+            STATE_KEY,
+            new TextEncoder().encode(JSON.stringify(applyLedger(latest, ledger))),
+            "application/json",
+          );
       } catch (error) {
         if (failure) console.error("動画の台帳の保存にも失敗しました", error);
         else failure = { error };

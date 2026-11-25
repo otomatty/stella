@@ -28,6 +28,7 @@ import {
   pcmToWav,
   QuotaExhaustedError,
   readGeminiTtsCalls,
+  requireCachedTts,
   RetryableError,
   synthesizeCached,
   trackGeminiTtsCalls,
@@ -421,6 +422,44 @@ describe("gemini プロバイダ", () => {
 });
 
 describe("synthesizeCached", () => {
+  it("キャッシュ必須のあいだは無い読み上げと refresh を合成しない", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tts-cache-"));
+    const synthesize = vi.fn(async () => ({ bytes: new Uint8Array([1]), ext: "wav" as const }));
+    const provider: TtsProvider = {
+      unit: "cue",
+      identity: "t/cached-only",
+      concurrency: 1,
+      nondeterministic: true,
+      synthesize,
+    };
+    try {
+      requireCachedTts(true);
+      const missing = synthesizeCached(provider, "無い", dir);
+      await expect(missing).rejects.toThrow("音声は作りません");
+      await expect(missing).rejects.not.toBeInstanceOf(RetryableError);
+      await expect(synthesizeCached(provider, "無い", dir, true)).rejects.toThrow(
+        "音声は作りません",
+      );
+      expect(synthesize).not.toHaveBeenCalled();
+      requireCachedTts(false);
+      const made = await synthesizeCached(provider, "無い", dir);
+      expect(made.cached).toBe(false);
+      expect(synthesize).toHaveBeenCalledTimes(1);
+      requireCachedTts(true);
+      await expect(synthesizeCached(provider, "無い", dir)).resolves.toEqual({
+        file: made.file,
+        cached: true,
+      });
+      await expect(synthesizeCached(provider, "無い", dir, true)).rejects.toThrow(
+        "音声は作りません",
+      );
+      expect(synthesize).toHaveBeenCalledTimes(1);
+    } finally {
+      requireCachedTts(false);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("同じ読み上げ文は 2 回目から呼ばない。refresh で作り直す", async () => {
     const dir = mkdtempSync(join(tmpdir(), "tts-cache-"));
     try {

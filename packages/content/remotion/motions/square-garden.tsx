@@ -69,7 +69,7 @@ export function SquareGarden({ beats }: MotionProps) {
         t.to(`#garden-bud-${i}`, { opacity: 0, duration: 0.08 }, at(1, start));
         t.fromTo(
           `#garden-flower-${i}`,
-          { opacity: 0, scale: 0.15, transformOrigin: `${cx}px ${cy}px` },
+          { opacity: 0, scale: 0.15, svgOrigin: `${cx} ${cy}` },
           { opacity: 1, scale: 1, duration: 0.16, ease: "power2.out", immediateRender: false },
           at(1, start),
         );

@@ -1,4 +1,5 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -25,7 +26,7 @@ vi.mock("./build-video.js", async (original) => {
 
 import { videoKeyHash, videoKeys, videoManifestKey } from "../src/material-video.js";
 import { createR2Client, putAll } from "./lib/r2.js";
-import { createTtsProvider } from "./lib/tts.js";
+import { createTtsProvider, lessonVideoTtsCacheDir, synthesizeCached } from "./lib/tts.js";
 import {
   assessVideoTtsBudget,
   uploadVideos,
@@ -304,6 +305,8 @@ it("--preview は動画を上げず、呼び出し回数だけ台帳に残し、
     buildVideos.mockImplementation(async (args, skip, beforeGenerate) => {
       expect(args).toContain("--burn-captions");
       expect(skip(plan)).toBe(false);
+      expect(existsSync(burned)).toBe(false);
+      writeFileSync(burned, "burned");
       await beforeGenerate?.([]);
       const synthesize = (text: string) =>
         createTtsProvider({ provider: "gemini" }).synthesize(text);
@@ -394,7 +397,11 @@ it("--cached-only で Gemini を呼びかけると、そのトピックだけ失
       await beforeGenerate?.([]);
       const failures = [];
       try {
-        await createTtsProvider({ provider: "gemini" }).synthesize("作り直し");
+        await synthesizeCached(
+          createTtsProvider({ provider: "gemini" }),
+          "作り直し",
+          lessonVideoTtsCacheDir(join(import.meta.dirname, "..")),
+        );
       } catch (error) {
         failures.push({
           stageSlug: failed.stageSlug,
@@ -416,7 +423,7 @@ it("--cached-only で Gemini を呼びかけると、そのトピックだけ失
     const written = JSON.parse(readFileSync(manifest, "utf8"));
     expect(written[videoManifestKey(made.stageSlug, made.id)].durationSec).toBe(8);
     expect(written[videoManifestKey(failed.stageSlug, failed.id)].error).toContain(
-      "Gemini は呼びません",
+      "音声は作りません",
     );
     expect(process.exitCode).toBe(1);
   } finally {
@@ -429,11 +436,15 @@ it("--cached-only の合成例外が外へ出ても動画は上げない", async
   vi.stubEnv("GEMINI_API_KEY", "test-key");
   buildVideos.mockImplementation(async (_args, _skip, beforeGenerate) => {
     await beforeGenerate?.([]);
-    await createTtsProvider({ provider: "gemini" }).synthesize("作り直し");
+    await synthesizeCached(
+      createTtsProvider({ provider: "gemini" }),
+      "作り直し",
+      lessonVideoTtsCacheDir(join(import.meta.dirname, "..")),
+    );
     return { reports: [], failures: [] };
   });
   await expect(uploadVideos(["--tts", "gemini", "--cached-only"])).rejects.toThrow(
-    /Gemini は呼びません/,
+    /音声は作りません/,
   );
   expect(putAll).not.toHaveBeenCalled();
 });
@@ -444,4 +455,183 @@ it.each([
 ])("同時に指定できない (%j)", async (args, message) => {
   await expect(uploadVideos(args)).rejects.toThrow(message);
   expect(createR2Client).not.toHaveBeenCalled();
+});
+
+it.each(["openjtalk", "grok"] as const)(
+  "--cached-only は %s でもキャッシュに無い読み上げがあると何も書かずに止まる",
+  async (tts) => {
+    let generated = false;
+    buildVideos.mockImplementation(async (_args, _skip, beforeGenerate) => {
+      await beforeGenerate?.(targets([`miss-${crypto.randomUUID()}`]));
+      generated = true;
+      return { reports: [], failures: [] };
+    });
+    await expect(uploadVideos(["--tts", tts, "--cached-only"])).rejects.toThrow(/--preview/);
+    expect(generated).toBe(false);
+    expect(put).not.toHaveBeenCalled();
+    expect(putAll).not.toHaveBeenCalled();
+    expect(() => readFileSync(manifest, "utf8")).toThrow();
+  },
+);
+
+it("--preview は残った焼き込み版を消し、作れなければ字幕なしの動画を案内する", async () => {
+  const plan = {
+    stageSlug: "dev-env-basics",
+    id: `stale-${crypto.randomUUID()}`,
+    sourceHash: "hash",
+  };
+  const dir = join(import.meta.dirname, "../dist/video", plan.stageSlug, plan.id);
+  const burned = join(dir, "video.captions.mp4");
+  const legacy = join(dir, "preview-captioned.mp4");
+  const plain = join(dir, "video.mp4");
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(burned, "old");
+    writeFileSync(legacy, "old");
+    writeFileSync(plain, "plain");
+    buildVideos.mockImplementation(async (_args, skip) => {
+      expect(skip(plan)).toBe(false);
+      expect(existsSync(burned)).toBe(false);
+      expect(existsSync(legacy)).toBe(false);
+      return { reports: [{ ...plan, durationSec: 1 }], failures: [] };
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    await uploadVideos([plan.stageSlug, "--topics", plan.id, "--tts", "fake", "--preview"]);
+    const text = log.mock.calls.map((call) => String(call[0])).join("\n");
+    expect(text).toContain(plain);
+    expect(text).toContain("字幕を焼き込んだ版はありません");
+    expect(text).not.toContain("video.captions.mp4");
+    log.mockRestore();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+it("--out を付けると、その下のファイルを上げる", async () => {
+  const plan = {
+    stageSlug: "dev-env-basics",
+    id: `out-${crypto.randomUUID()}`,
+    sourceHash: "hash",
+  };
+  const root = mkdtempSync(join(tmpdir(), "stella-video-"));
+  const dir = join(root, plan.stageSlug, plan.id);
+  try {
+    mkdirSync(dir, { recursive: true });
+    for (const file of ["video.mp4", "captions.vtt", "poster.jpg"])
+      writeFileSync(join(dir, file), "out");
+    buildVideos.mockImplementation(async (args, skip, beforeGenerate) => {
+      expect(skip(plan)).toBe(false);
+      expect(args).toContain("--out");
+      expect(args).toContain(root);
+      await beforeGenerate?.([]);
+      return { reports: [{ ...plan, durationSec: 3 }], failures: [] };
+    });
+    await uploadVideos([plan.stageSlug, "--topics", plan.id, "--tts", "fake", "--out", root]);
+    const files = vi.mocked(putAll).mock.calls[0][1].map((file) => file.file as string);
+    expect(files).toEqual([
+      join(dir, "video.mp4"),
+      join(dir, "captions.vtt"),
+      join(dir, "poster.jpg"),
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it("保存直前に台帳を読み直し、並行した変更を残す", async () => {
+  vi.stubEnv("GEMINI_API_KEY", "test-key");
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-23T12:00:00Z"));
+  const initial = {
+    version: 1,
+    objects: { kept: 1 },
+    durations: {},
+    ttsUsage: { "2026-11-23": 2 },
+  };
+  const concurrent = {
+    version: 1,
+    objects: { kept: 1, other: 9 },
+    durations: { other: 4 },
+    ttsUsage: { "2026-11-23": 5 },
+  };
+  get
+    .mockResolvedValueOnce(new TextEncoder().encode(JSON.stringify(initial)))
+    .mockResolvedValueOnce(new TextEncoder().encode(JSON.stringify(concurrent)));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              details: [
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel" }],
+                },
+              ],
+            },
+          }),
+          { status: 429 },
+        ),
+    ),
+  );
+  const plan = {
+    stageSlug: "dev-env-basics",
+    id: `merge-${crypto.randomUUID()}`,
+    sourceHash: "hash",
+  };
+  const dir = join(import.meta.dirname, "../dist/video", plan.stageSlug, plan.id);
+  try {
+    mkdirSync(dir, { recursive: true });
+    for (const file of ["video.mp4", "captions.vtt", "poster.jpg"])
+      writeFileSync(join(dir, file), "x");
+    buildVideos.mockImplementation(async (_args, skip, beforeGenerate) => {
+      expect(skip(plan)).toBe(false);
+      await beforeGenerate?.([]);
+      await expect(createTtsProvider({ provider: "gemini" }).synthesize("並行")).rejects.toThrow(
+        "429",
+      );
+      return { reports: [{ ...plan, durationSec: 6 }], failures: [] };
+    });
+    await uploadVideos([plan.stageSlug, "--topics", plan.id, "--tts", "gemini"]);
+    const saved = JSON.parse(new TextDecoder().decode(put.mock.calls[0][1]));
+    expect(saved.objects.kept).toBe(1);
+    expect(saved.objects.other).toBe(9);
+    expect(saved.durations.other).toBe(4);
+    expect(saved.ttsUsage["2026-11-23"]).toBe(6);
+    expect(Object.keys(saved.objects).length).toBeGreaterThan(2);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+it("台帳の読み直しに失敗したら保存しない", async () => {
+  get
+    .mockResolvedValueOnce(
+      new TextEncoder().encode(JSON.stringify({ version: 1, objects: {}, durations: {} })),
+    )
+    .mockRejectedValueOnce(new Error("読み直し"));
+  const plan = {
+    stageSlug: "dev-env-basics",
+    id: `reread-${crypto.randomUUID()}`,
+    sourceHash: "hash",
+  };
+  const dir = join(import.meta.dirname, "../dist/video", plan.stageSlug, plan.id);
+  try {
+    mkdirSync(dir, { recursive: true });
+    for (const file of ["video.mp4", "captions.vtt", "poster.jpg"])
+      writeFileSync(join(dir, file), "x");
+    buildVideos.mockImplementation(async (_args, skip, beforeGenerate) => {
+      expect(skip(plan)).toBe(false);
+      await beforeGenerate?.([]);
+      return { reports: [{ ...plan, durationSec: 2 }], failures: [] };
+    });
+    await expect(
+      uploadVideos([plan.stageSlug, "--topics", plan.id, "--tts", "fake"]),
+    ).rejects.toThrow(/もう一度実行してください/);
+    expect(put).not.toHaveBeenCalled();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
