@@ -2,6 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/common/AccessDeniedScreen";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { RoleGuard } from "@/components/shell/RoleGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_app/groups/")({
   component: GroupsPage,
@@ -40,7 +41,21 @@ function GroupsPage() {
               <p className="text-sm text-ink-3">参加しているグループはありません</p>
             )
           ) : myGroups.status === "loading" ? (
-            <p role="status">グループを読み込んでいます</p>
+            <div role="status" aria-busy="true" aria-live="polite">
+              <span className="sr-only">グループを読み込んでいます</span>
+              <ul className="grid gap-3 sm:grid-cols-2" aria-hidden="true">
+                {["first", "second"].map((key) => (
+                  <li key={key} className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex h-6 items-center">
+                      <Skeleton className="h-5 w-2/3" />
+                    </div>
+                    <div className="mt-1 flex h-5 items-center">
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : (
             <p role="alert">グループを読み込めませんでした</p>
           )}

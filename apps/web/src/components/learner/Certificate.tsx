@@ -8,7 +8,7 @@ import { Award, Check, ChevronDown, ChevronRight, Clock, Download, LinkIcon } fr
 import { PageHeader } from "@/components/common/PageHeader";
 import { CertificateView } from "@/components/common/CertificateView";
 import { Button } from "@/components/ui/button";
-import { SkeletonRows } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Stage } from "@/data/types";
 import { formatIssuedDateJa } from "@/lib/certificate-display";
 import {
@@ -59,7 +59,7 @@ export function CertificatePage({ stages, currentUserId, backendEnabled }: Certi
       {!backendEnabled ? (
         <CertificateList stages={[]} certificates={[DEMO_CERTIFICATE]} completions={[]} demo />
       ) : !currentUserId ? (
-        <SkeletonRows rows={3} className="py-6" />
+        <CertificateListSkeleton />
       ) : (
         <LiveCertificates key={currentUserId} stages={stages} userId={currentUserId} />
       )}
@@ -104,9 +104,94 @@ function LiveCertificates({ stages, userId }: { stages: Stage[]; userId: string 
     };
   }, [userId]);
   return loading ? (
-    <SkeletonRows rows={3} className="py-6" />
+    <CertificateListSkeleton />
   ) : (
     <CertificateList stages={stages} certificates={certificates} completions={completions} />
+  );
+}
+
+function CertificateListSkeleton() {
+  const cards = ["first", "second"];
+
+  return (
+    <div role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">修了証を読み込んでいます</span>
+      <div className="flex min-w-0 flex-col gap-6 sm:gap-10" aria-hidden="true">
+        <div className="space-y-3.5">
+          <div className="flex h-[22.5px] items-center gap-2">
+            <Skeleton className="h-4 w-[60px]" />
+            <Skeleton className="h-5 w-6 rounded-full" />
+          </div>
+          <div className="hidden gap-5 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(332px,1fr))]">
+            {cards.map((key) => (
+              <div
+                key={key}
+                className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card"
+              >
+                <div className="flex justify-center bg-brand-soft p-5">
+                  <Skeleton className="aspect-[297/210] w-full max-w-[292px] rounded-sm" />
+                </div>
+                <div className="p-4 sm:px-[18px] sm:pb-[18px]">
+                  <div className="flex h-[22.5px] items-center">
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                  <div className="mt-1 flex h-5 items-center">
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Skeleton className="h-9 w-14" />
+                    <Skeleton className="h-9 w-[72px]" />
+                    <Skeleton className="h-9 w-32" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card sm:hidden">
+            {cards.map((key) => (
+              <div key={key} className="flex items-center gap-3.5 p-3.5">
+                <Skeleton className="aspect-[297/210] w-28 shrink-0 rounded-sm" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3.5">
+          <div className="flex h-[22.5px] items-center justify-between gap-2">
+            <Skeleton className="h-4 w-[135px]" />
+            <Skeleton className="h-3 w-[72px]" />
+          </div>
+          {cards.map((key) => (
+            <div
+              key={key}
+              className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5 sm:px-5 sm:py-4"
+            >
+              <div className="min-w-0 flex-1 space-y-2 sm:basis-[300px]">
+                <div className="flex h-[22.5px] items-center justify-between gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-8 sm:hidden" />
+                </div>
+                <div className="flex items-center gap-3 sm:h-4">
+                  <Skeleton className="h-1.5 flex-1 rounded-full sm:max-w-[380px]" />
+                  <Skeleton className="hidden h-3 w-8 sm:block" />
+                </div>
+                <div className="hidden h-4 items-center gap-4 sm:flex">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3 sm:gap-4">
+                <Skeleton className="h-3 w-16 sm:w-24" />
+                <Skeleton className="h-11 w-24 sm:h-9" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
