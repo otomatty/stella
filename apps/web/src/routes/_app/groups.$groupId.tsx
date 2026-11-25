@@ -137,59 +137,58 @@ function PeerBandsSkeleton() {
   const segments = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
   return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label="仲間の進捗を読み込んでいます"
-      className="space-y-4"
-    >
-      <div className="overflow-x-auto p-1">
-        <div className="min-w-[239px] space-y-2 sm:min-w-[670px]">
-          <div className="grid h-4 items-center border border-transparent px-3 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3">
-            <Skeleton className="hidden h-3 w-12 sm:block" />
-            <Skeleton className="hidden h-3 w-8 sm:block" />
-            <div className="flex gap-[3px] sm:gap-1">
-              {segments.map((key) => (
-                <div key={key} className="flex min-w-[24px] flex-1 justify-center">
-                  <Skeleton className="h-2.5 w-4" />
-                </div>
-              ))}
-            </div>
-          </div>
-          {["first", "second", "third", "fourth"].map((key) => (
-            <div key={key} className="rounded-xl border border-border bg-card">
-              <div className="grid grid-cols-1 items-center gap-2 px-3 py-2 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3 sm:py-3">
-                <div className="flex h-6 min-w-0 items-center justify-between gap-2 sm:justify-start">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-12 sm:hidden" />
-                </div>
-                <div className="hidden sm:block">
-                  <div className="flex h-5 items-center">
-                    <Skeleton className="h-3.5 w-28" />
+    <div role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">仲間の進捗を読み込んでいます</span>
+      <div className="space-y-4" aria-hidden="true">
+        <div className="overflow-x-auto p-1">
+          <div className="min-w-[239px] space-y-2 sm:min-w-[670px]">
+            <div className="grid h-4 items-center border border-transparent px-3 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3">
+              <Skeleton className="hidden h-3 w-12 sm:block" />
+              <Skeleton className="hidden h-3 w-8 sm:block" />
+              <div className="flex gap-[3px] sm:gap-1">
+                {segments.map((key) => (
+                  <div key={key} className="flex min-w-[24px] flex-1 justify-center">
+                    <Skeleton className="h-2.5 w-4" />
                   </div>
-                  <div className="flex h-[18px] items-center">
-                    <Skeleton className="h-3 w-10" />
-                  </div>
-                </div>
-                <div className="flex gap-[3px] sm:gap-1">
-                  {segments.map((key) => (
-                    <Skeleton
-                      key={key}
-                      className="h-3.5 min-w-[24px] flex-1 rounded-[4px] sm:h-5"
-                    />
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
-          ))}
+            {["first", "second", "third", "fourth"].map((key) => (
+              <div key={key} className="rounded-xl border border-border bg-card">
+                <div className="grid grid-cols-1 items-center gap-2 px-3 py-2 sm:grid-cols-[200px_200px_minmax(0,1fr)] sm:gap-3 sm:py-3">
+                  <div className="flex h-6 min-w-0 items-center justify-between gap-2 sm:justify-start">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-12 sm:hidden" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className="flex h-5 items-center">
+                      <Skeleton className="h-3.5 w-28" />
+                    </div>
+                    <div className="flex h-[18px] items-center">
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                  </div>
+                  <div className="flex gap-[3px] sm:gap-1">
+                    {segments.map((key) => (
+                      <div
+                        key={key}
+                        className="flex min-h-[24px] min-w-[24px] flex-[1_1_0%] items-center"
+                      >
+                        <Skeleton className="h-3.5 w-full rounded-[4px] sm:h-5" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
-        <Skeleton className="h-3 w-12" />
-        <Skeleton className="h-3 w-32" />
-        <Skeleton className="h-3 w-14" />
-        <Skeleton className="h-3 w-24" />
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-3 w-14" />
+          <Skeleton className="h-3 w-24" />
+        </div>
       </div>
     </div>
   );

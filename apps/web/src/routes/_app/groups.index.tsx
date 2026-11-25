@@ -41,12 +41,8 @@ function GroupsPage() {
               <p className="text-sm text-ink-3">参加しているグループはありません</p>
             )
           ) : myGroups.status === "loading" ? (
-            <div
-              role="status"
-              aria-busy="true"
-              aria-live="polite"
-              aria-label="グループを読み込んでいます"
-            >
+            <div role="status" aria-busy="true" aria-live="polite">
+              <span className="sr-only">グループを読み込んでいます</span>
               <ul className="grid gap-3 sm:grid-cols-2" aria-hidden="true">
                 {["first", "second"].map((key) => (
                   <li key={key} className="rounded-xl border border-border bg-card p-4">
