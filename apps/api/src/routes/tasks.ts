@@ -21,6 +21,8 @@ import {
   requiredExtensionVersionForFiles,
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
+import { starterCodeHash } from "@stella/shared/tasks/starter-code";
+import { matchesPattern } from "@stella/shared/tasks/submission";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
 import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
@@ -502,10 +504,24 @@ tasksRoute.get("/api/tasks/revision-files", async (c) => {
     const hashes = await Promise.all(
       Object.entries(files).map(async ([rel, encoded]) => {
         const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
-        return [rel, await sha256Hex(normalizeForHash(bytes))];
+        return [rel, bytes, await sha256Hex(normalizeForHash(bytes))] as const;
       }),
     );
-    return c.json({ files: Object.fromEntries(hashes) });
+    const codeHashes = Object.fromEntries(
+      await Promise.all(
+        hashes
+          .filter(
+            ([rel]) =>
+              matchesPattern(rel, manifest.submit.files) &&
+              !matchesPattern(rel, manifest.protected),
+          )
+          .map(async ([rel, bytes]) => [rel, await starterCodeHash(bytes)]),
+      ),
+    );
+    return c.json({
+      files: Object.fromEntries(hashes.map(([rel, , hash]) => [rel, hash])),
+      codeHashes,
+    });
   } catch (err) {
     return errorResponse(c, err);
   }

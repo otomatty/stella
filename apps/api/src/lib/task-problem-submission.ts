@@ -427,7 +427,6 @@ export async function submitTaskProblem(
   bundle: TaskBundle,
 ): Promise<ProblemSubmissionResult> {
   if (!input.problemId) throw new ApiError("拡張を更新してください", 400);
-  assertCurrentProblemSubmission(input.contentHash, task.contentHash);
   const problemId = input.problemId;
   let verified: Awaited<ReturnType<typeof verifyTaskSubmission>>;
   try {
@@ -491,7 +490,10 @@ export async function submitTaskProblem(
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual");
       let hashes: ProblemRevisionHashes | undefined;
-      if (bundle.manifest.problemSteps) {
+      if (
+        bundle.manifest.problemSteps === true ||
+        (defined.problems?.some((problem) => problem.after) ?? false)
+      ) {
         const locks = await loadStageStepLocks(db, caller.id, task.stageId, {
           verifyPassedTaskId: canReplaceManualPass ? task.id : undefined,
         });
@@ -508,12 +510,31 @@ export async function submitTaskProblem(
           );
         }
         hashes = locks.hashes.get(task.id);
+        if (input.contentHash !== task.contentHash && !hashes?.has(input.contentHash)) {
+          const extra = await loadTaskProblemHashes(db, {
+            taskId: task.id,
+            currentHash: task.contentHash,
+            rows: [{ contentHash: input.contentHash }],
+            taskPassed: false,
+          });
+          if (extra) {
+            const merged = new Map(hashes);
+            for (const [key, value] of extra) if (!merged.has(key)) merged.set(key, value);
+            hashes = merged;
+          }
+        }
       } else {
         hashes = await loadTaskProblemHashes(db, {
           taskId: task.id,
           currentHash: task.contentHash,
-          rows: saved,
-          taskPassed: taskAlreadyPassed && !canReplaceManualPass,
+          rows:
+            input.contentHash === task.contentHash
+              ? saved
+              : [...saved, { contentHash: input.contentHash }],
+          taskPassed:
+            input.contentHash === task.contentHash
+              ? taskAlreadyPassed && !canReplaceManualPass
+              : false,
         });
       }
       const submitted = [
@@ -521,11 +542,17 @@ export async function submitTaskProblem(
         {
           problemId,
           source: "tests" as const,
-          contentHash: task.contentHash,
+          contentHash: input.contentHash,
           path: file.path,
           code,
         },
       ];
+      if (
+        !countableProblemResults(submitted, task.contentHash, false, hashes).some(
+          (row) => row.problemId === problemId,
+        )
+      )
+        assertCurrentProblemSubmission(input.contentHash, task.contentHash);
       const completedIds = countedProblemIds(
         submitted,
         task.contentHash,

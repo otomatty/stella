@@ -197,4 +197,36 @@ describe("相対 import", () => {
     expect(resolveRelativeImport("src/q1.ts", "./bridge", new Set([tsx, ts]))).toBe(ts);
     expect(resolveRelativeImport("src/q1.ts", "./bridge", new Set([tsx, ts, direct]))).toBe(direct);
   });
+
+  it("雛形の行コメントと空行だけでは指紋が変わらず、雛形のコードとテストのコメントでは変わる", async () => {
+    const original = await problemFingerprints(definition, files);
+    const commented = {
+      ...files,
+      "src/q1.ts": btoa("// keep\n\nfirst starter\n"),
+      "src/q2.ts": btoa("second starter\r\n\r\n// note"),
+    };
+    expect(await problemFingerprints(definition, commented)).toEqual(original);
+    expect(
+      await problemFingerprints(definition, {
+        ...files,
+        "src/q1.ts": btoa("first starter changed"),
+      }),
+    ).not.toEqual(original);
+    expect(
+      await problemFingerprints(definition, {
+        ...files,
+        "tests/q1.test.ts": btoa("// c\nfirst test"),
+      }),
+    ).not.toEqual(original);
+  });
+
+  it("雛形のコメント行に書いた import では指紋が変わらない", async () => {
+    const original = await problemFingerprints(definition, files);
+    expect(
+      await problemFingerprints(definition, {
+        ...files,
+        "src/q1.ts": btoa('// import "./q2";\nfirst starter'),
+      }),
+    ).toEqual(original);
+  });
 });

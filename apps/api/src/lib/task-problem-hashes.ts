@@ -1,5 +1,6 @@
 import { parsePublicTaskBundle, type TaskBundle } from "@stella/shared/tasks/catalog";
 import {
+  encodeProblemHashes,
   isProblemId,
   problemFingerprints,
   problemFiles,
@@ -206,16 +207,22 @@ interface RevisionScope {
   taskPassed?: boolean;
 }
 
-function parseHashes(raw: string): ProblemHashes | undefined {
+// 古い API は {version, hashes} を問題 ID の表として読み、64 桁が無いので空になり、前の版を数えない (安全側)。マイグレーションは足さない。
+export function parseHashes(raw: string): ProblemHashes | undefined {
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return Object.fromEntries(
-        Object.entries(parsed).filter(
-          ([, hash]) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash),
-        ),
-      );
-    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
+    const record = parsed as { version?: unknown; hashes?: unknown };
+    if (
+      record.version !== 2 ||
+      !record.hashes ||
+      typeof record.hashes !== "object" ||
+      Array.isArray(record.hashes)
+    )
+      return;
+    const entries = Object.entries(record.hashes);
+    if (entries.every(([, value]) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value)))
+      return Object.fromEntries(entries);
   } catch {
     // 壊れた指紋では前の版を数えない。
   }
@@ -272,18 +279,33 @@ export async function loadProblemRevisionHashes(
     paths: string;
     scripts: string;
   }>(sql`
-    select r.task_id, r.content_hash, r.problem_hashes,
-      case when r.problem_hashes is null then r.definition end definition,
-      case when r.problem_hashes is null then r.bundle end bundle,
+    with asked as (
+      select json_extract(k.value, '$[0]') task_id, json_extract(k.value, '$[1]') content_hash
+      from json_each(${JSON.stringify(keys)}) k
+    ),
+    rev as (
+      select r.task_id, r.content_hash, r.problem_hashes, r.definition, r.bundle,
+        case when json_valid(r.problem_hashes)
+          and json_extract(r.problem_hashes, '$.version') = 2
+          and json_type(r.problem_hashes, '$.hashes') = 'object'
+          and not exists (
+            select 1 from json_each(r.problem_hashes, '$.hashes') h
+            where h.type <> 'text' or length(h.value) <> 64 or h.value glob '*[^0-9a-f]*'
+          )
+          then 1 else 0 end usable
+      from asked a
+      join task_revisions r on r.task_id = a.task_id and r.content_hash = a.content_hash
+    )
+    select task_id, content_hash, problem_hashes,
+      case when usable then null else definition end definition,
+      case when usable then null else bundle end bundle,
       (select json_group_array(f.key)
-       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f) paths,
+       from json_each(case when json_valid(bundle) then bundle end, '$.files') f) paths,
       (select json_group_object(f.key, f.value)
-       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f
+       from json_each(case when json_valid(bundle) then bundle end, '$.files') f
        where f.key glob '*.[jt]s' or f.key glob '*.[jt]sx'
           or f.key glob '*.[cm][jt]s' or f.key glob '*.[cm][jt]sx') scripts
-    from json_each(${JSON.stringify(keys)}) k
-    join task_revisions r on r.task_id = json_extract(k.value, '$[0]')
-      and r.content_hash = json_extract(k.value, '$[1]')
+    from rev
   `);
   for (const [taskId, contentHash] of keys) {
     const byHash = cache.get(taskId) ?? new Map();
@@ -292,26 +314,27 @@ export async function loadProblemRevisionHashes(
   }
   const writes = [];
   for (const row of revisions) {
-    const hashes =
-      row.problem_hashes === null
-        ? await computeRevisionHashes(row)
-        : parseHashes(row.problem_hashes);
+    const parsed = row.problem_hashes === null ? undefined : parseHashes(row.problem_hashes);
+    const hashes = parsed ?? (await computeRevisionHashes(row));
     if (!hashes) continue;
     cache.get(row.task_id)?.set(row.content_hash, {
       hashes,
       distributedCode: JSON.parse(row.scripts) as Record<string, string>,
       ...problemPaths(JSON.parse(row.paths) as string[], Object.keys(hashes)),
     });
-    if (row.problem_hashes === null) {
+    if (!parsed) {
+      const stored = row.problem_hashes;
       writes.push(
         db
           .update(taskRevisions)
-          .set({ problemHashes: JSON.stringify(hashes) })
+          .set({ problemHashes: encodeProblemHashes(hashes) })
           .where(
             and(
               eq(taskRevisions.taskId, row.task_id),
               eq(taskRevisions.contentHash, row.content_hash),
-              isNull(taskRevisions.problemHashes),
+              stored === null
+                ? isNull(taskRevisions.problemHashes)
+                : eq(taskRevisions.problemHashes, stored),
             ),
           ),
       );

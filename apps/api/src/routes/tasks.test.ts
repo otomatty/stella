@@ -9,6 +9,7 @@ import {
 } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { submissionFixture } from "@stella/shared/testing/task-submission";
+import { starterCodeHash } from "@stella/shared/tasks/starter-code";
 import { getDb } from "../db/client.js";
 import {
   enrollments,
@@ -262,9 +263,16 @@ describe("課題の配布 API (実 SQLite)", () => {
     });
     const response = await revisionFiles(legacyHash);
     expect(response.status, await response.clone().text()).toBe(200);
-    const body = await json<{ files: Record<string, string> }>(response);
-    expect(Object.keys(body)).toEqual(["files"]);
+    const body = await json<{ files: Record<string, string>; codeHashes: Record<string, string> }>(
+      response,
+    );
+    expect(Object.keys(body)).toEqual(["files", "codeHashes"]);
     expect(Object.keys(body.files).sort()).toEqual(Object.keys(fixture.bundle.files).sort());
+    const index = Uint8Array.from(atob(fixture.bundle.files["index.html"]), (ch) =>
+      ch.charCodeAt(0),
+    );
+    expect(body.codeHashes["index.html"]).toBe(await starterCodeHash(index));
+    expect(body.codeHashes).not.toHaveProperty("tests/config.json");
     expect(body.files["README.md"]).toBe(
       createHash("sha256").update("過去の課題文\n").digest("hex"),
     );

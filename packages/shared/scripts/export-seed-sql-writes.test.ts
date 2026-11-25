@@ -239,7 +239,10 @@ describe("seed の書き込み行数", () => {
           bundle.files,
         );
         expect(fingerprints["q01-01-add-tax"]).toMatch(/^[0-9a-f]{64}$/);
-        expect(JSON.parse(destination.problem_hashes)).toEqual(fingerprints);
+        expect(JSON.parse(destination.problem_hashes)).toEqual({
+          version: 2,
+          hashes: fingerprints,
+        });
         db.prepare("delete from tasks where id = ?").run(to);
         db.prepare(
           `insert into sections (id, stage_id, title, "order", created_at) values ('old-unit', ?, '章の課題', 99, 1)`,

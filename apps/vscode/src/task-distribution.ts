@@ -17,6 +17,7 @@ import {
   type TaskBundle,
 } from "@stella/shared/tasks/catalog";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
+import { starterCodeHash } from "@stella/shared/tasks/starter-code";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
 import {
   isSafeRelativePattern,
@@ -287,6 +288,23 @@ function fileHash(data: Buffer): string {
 
 function fileHashes(entries: readonly [string, Buffer][]): FileHashes {
   return Object.fromEntries(entries.map(([rel, data]) => [rel, fileHash(data)]));
+}
+
+function recordedFiles(raw: unknown): unknown {
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw) && "files" in raw) {
+    const files = (raw as { files: unknown }).files;
+    if (typeof files === "object" && files !== null) return files;
+  }
+  return raw;
+}
+
+function codeHashesOf(raw: unknown): FileHashes | undefined {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw) || !("codeHashes" in raw))
+    return;
+  const table = (raw as { codeHashes: unknown }).codeHashes;
+  if (typeof table !== "object" || table === null || Array.isArray(table)) return;
+  if (Object.values(table).every((hash) => typeof hash === "string" && HASH_PATTERN.test(hash)))
+    return table as FileHashes;
 }
 
 function isFileHashes(raw: unknown, requiresReadme: boolean): raw is FileHashes {
@@ -649,11 +667,12 @@ async function planReplacements(
   oldFiles: FileHashes,
   backupDir: string,
   policy:
-    | { mode: "update" | "resume"; oldEditable?: readonly string[] }
+    | { mode: "update" | "resume"; oldEditable?: readonly string[]; codeHashes?: FileHashes }
     | { mode: "add"; adding?: FileHashes },
 ): Promise<Replacement[]> {
   const paths = entries.map(([rel]) => rel);
-  const editable = new Set(matchEditableFiles(paths, manifest).files);
+  const currentEditable = new Set(matchEditableFiles(paths, manifest).files);
+  const editable = new Set(currentEditable);
   if (policy.mode !== "add") for (const rel of policy.oldEditable ?? []) editable.add(rel);
 
   const clashes: string[] = [];
@@ -680,6 +699,13 @@ async function planReplacements(
       if (previousHash === nextHash || (policy.mode === "resume" && currentHash !== previousHash))
         continue;
       if (currentHash !== previousHash) {
+        const codeHashes = policy.mode === "add" ? undefined : policy.codeHashes;
+        if (
+          codeHashes &&
+          currentEditable.has(rel) &&
+          (await starterCodeHash(data)) === codeHashes[rel]
+        )
+          continue;
         clashes.push(rel);
         continue;
       }
@@ -757,9 +783,10 @@ async function updateDistribution(
         : await options
             .loadRevisionFiles?.(receipt.taskId, receipt.contentHash)
             .catch(() => undefined);
-    if (!isFileHashes(loaded, requiresReadme))
+    const files = recordedFiles(loaded);
+    if (!isFileHashes(files, requiresReadme))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
-    oldFiles = loaded;
+    oldFiles = files;
   }
   const entries = readBundleEntries(bundle);
   const backupDir = backupDirectory(receipt.contentHash);
@@ -773,10 +800,34 @@ async function updateDistribution(
     : resume && Array.isArray(receipt.updatingEditable)
       ? receipt.updatingEditable
       : undefined;
-  const writes = await planReplacements(root, bundle.manifest, entries, oldFiles, backupDir, {
-    mode: resume ? "resume" : "update",
-    oldEditable,
-  });
+  let writes: Replacement[];
+  try {
+    writes = await planReplacements(root, bundle.manifest, entries, oldFiles, backupDir, {
+      mode: resume ? "resume" : "update",
+      oldEditable,
+    });
+  } catch (error) {
+    if (
+      !(error instanceof TaskInstallConflict) ||
+      error.reason !== "updated" ||
+      !options.loadRevisionFiles ||
+      receipt.variant === "fixed-start"
+    )
+      throw error;
+    let loaded: unknown;
+    try {
+      loaded = await options.loadRevisionFiles(receipt.taskId, receipt.contentHash);
+    } catch {
+      throw error;
+    }
+    const codeHashes = codeHashesOf(loaded);
+    if (!codeHashes) throw error;
+    writes = await planReplacements(root, bundle.manifest, entries, oldFiles, backupDir, {
+      mode: resume ? "resume" : "update",
+      oldEditable,
+      codeHashes,
+    });
+  }
   const retirements = await planRetirements(root, bundle, oldFiles, backupDir);
   await writeDistributionUpdate(
     base,

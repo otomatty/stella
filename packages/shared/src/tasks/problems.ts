@@ -4,6 +4,7 @@
  */
 
 import { sha256Hex } from "./hash.js";
+import { withoutLineComments } from "./starter-code.js";
 import type { TaskManifest } from "./manifest.js";
 import { RUNNERS, type RunnerPlanKind } from "./runners.js";
 
@@ -166,6 +167,19 @@ const explanationFiles = new Set([
 
 type ProblemHashDefinition = Pick<TaskManifest, "runner" | "problems" | "checks" | "environment">;
 
+/** 保存する問題の指紋。古い形式は配布一式から計算し直す。 */
+export function encodeProblemHashes(hashes: Record<string, string>): string {
+  return JSON.stringify({ version: 2, hashes });
+}
+
+function starterFingerprint(encoded: string): string {
+  const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
+  const stripped = new TextEncoder().encode(withoutLineComments(new TextDecoder().decode(bytes)));
+  let binary = "";
+  for (const byte of stripped) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 /** 配布時の base64 を使い、実行に関わるファイルをパス順に並べて版をまたいで比べる。 */
 export async function problemFingerprints(
   definition: ProblemHashDefinition,
@@ -202,10 +216,10 @@ export async function problemFingerprints(
   const ownHashes = new Map(
     await Promise.all(
       problems.map(async ({ id, title, paths }) => {
-        const problem = paths.map((path) => {
+        const problem = paths.map((path, index) => {
           if (!Object.hasOwn(files, path))
             throw new Error(`問題の配布ファイルがありません: ${path}`);
-          return [path, files[path]];
+          return [path, index === 0 ? starterFingerprint(files[path]) : files[path]];
         });
         const hash = await sha256Hex(encoder.encode(JSON.stringify([sharedHash, title, problem])));
         return [id, hash] as const;
@@ -215,12 +229,16 @@ export async function problemFingerprints(
   if (plan === "dotnet") return Object.fromEntries(ownHashes);
 
   const decoder = new TextDecoder();
+  const starterPaths = new Set(problems.map(({ paths }) => paths[0]));
   const importsByPath = new Map<string, string[]>();
   const importsOf = (path: string) => {
     const cached = importsByPath.get(path);
     if (cached) return cached;
     if (!/\.[cm]?[jt]sx?$/.test(path)) return [];
-    const code = decoder.decode(Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)));
+    const decoded = decoder.decode(
+      Uint8Array.from(atob(files[path] ?? ""), (ch) => ch.charCodeAt(0)),
+    );
+    const code = starterPaths.has(path) ? withoutLineComments(decoded) : decoded;
     const paths = relativeImportSpecifiers(code).flatMap((specifier) => {
       const dependency = resolveRelativeImport(path, specifier, distributedPaths);
       return dependency ? [dependency] : [];

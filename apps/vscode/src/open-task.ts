@@ -332,13 +332,12 @@ async function prepareAndOpen(
     taskRoot = await installTask(trainingRoot, bundle, {
       variant,
       loadRevisionFiles: async (taskId, contentHash) => {
-        const { files } = await apiRequest<{ files: unknown }>(
+        return await apiRequest<{ files: unknown; codeHashes?: unknown }>(
           taskRevisionFilesUrl(taskId, contentHash),
           {
             signal: AbortSignal.timeout(4_000),
           },
         );
-        return files;
       },
       beforeUpdate: requireSavedTaskDocuments,
       beforeReplace: requireSavedTaskFile,

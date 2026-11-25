@@ -93,9 +93,15 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
     .limit(1);
   if (!revision)
     throw new ApiError("課題のバージョンが見つかりません。配布した課題を開き直してください", 409);
-  if (input.mode === "submit" && input.problemId)
-    assertCurrentProblemSubmission(input.contentHash, task.contentHash);
-  const bundle = parsePublicTaskBundle(JSON.parse(revision.bundle));
+  let bundle: ReturnType<typeof parsePublicTaskBundle>;
+  try {
+    bundle = parsePublicTaskBundle(JSON.parse(revision.bundle));
+  } catch (error) {
+    // seed は配布一式を断片に分けて書くので、前の版の bundle が途中までのことがある。
+    if (input.mode === "submit" && input.problemId && input.contentHash !== task.contentHash)
+      assertCurrentProblemSubmission(input.contentHash, task.contentHash);
+    throw error;
+  }
   const definition = JSON.parse(revision.definition) as {
     submit: { explanation: boolean; debuggingRecord: boolean };
     skills: { assesses: string[] };
