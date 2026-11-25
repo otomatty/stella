@@ -72,6 +72,7 @@ import {
   sendProblemConsultation,
   sendProblemSubmission,
   type ProblemState,
+  type ProblemSubmitResponse,
   type TaskProblems,
 } from "./task-problems.js";
 import { loadTaskProblems } from "./task-update-guard.js";
@@ -782,6 +783,49 @@ async function submitTaskCommand(
   }
 }
 
+/**
+ * 提出は受理済みで、問題の状態を取り直せなかったとき。
+ * 件数と受理した問題だけを反映し、後続が解けるかは次に取り直すまで変えない。
+ */
+function reflectAcceptedProblem(
+  previous: TaskProblems,
+  problemId: string,
+  response: ProblemSubmitResponse,
+  failed: Pick<TaskProblems, "releasePending" | "releaseError"> | undefined,
+): TaskProblems {
+  const states = previous.states.map((state) =>
+    state.id === problemId
+      ? {
+          id: state.id,
+          title: state.title,
+          source: state.source,
+          status: "submitted" as const,
+          ...(state.onDisk ? { onDisk: true as const } : {}),
+        }
+      : state,
+  );
+  const blocked = new Map(
+    states.flatMap((state) => (state.lockReason ? ([[state.id, state.lockReason]] as const) : [])),
+  );
+  return {
+    ...(previous.server
+      ? {
+          server: {
+            ...previous.server,
+            passedProblems: response.passedProblems,
+            totalProblems: response.totalProblems,
+            taskPassed: response.taskPassed,
+          },
+        }
+      : {}),
+    states,
+    blocked,
+    progress: { passed: response.passedProblems, total: response.totalProblems },
+    ...(failed?.releasePending ? { releasePending: true } : {}),
+    ...(failed?.releaseError ? { releaseError: failed.releaseError } : {}),
+  };
+}
+
 /** 問題つきの課題を、説明欄なしで 1 問提出して次の問題を案内する。 */
 async function submitProblemTask(
   root: string,
@@ -810,21 +854,31 @@ async function submitProblemTask(
         if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
           await vscode.env.openExternal(vscode.Uri.parse(webUrl));
       });
-    const refreshed = await loadTaskProblems(root, manifest, {
-      afterSubmission: true,
-      trainingRoot: trainingRootOf(root),
-    });
+    let refreshed: TaskProblems | undefined;
+    let refreshError: unknown;
+    try {
+      refreshed = await loadTaskProblems(root, manifest, {
+        afterSubmission: true,
+        trainingRoot: trainingRootOf(root),
+      });
+    } catch (error) {
+      refreshError = error;
+    }
     if (session !== apiSession()) return;
+    const problems = refreshed?.server
+      ? refreshed
+      : reflectAcceptedProblem(previous, problemId, response, refreshed);
     setCurrentTask({
       root,
       title: manifest.title,
-      ...problemTaskProgress(manifest, refreshed),
-      problemActionsAvailable: !refreshed.releasePending,
+      ...problemTaskProgress(manifest, problems),
+      problemActionsAvailable: !problems.releasePending,
     });
     notifyProblemTaskOpened(root);
     if (taskReadmeRoot() === root)
-      void renderTaskReadme(root, { reveal: false }, {}, refreshed).catch(() => undefined);
-    if (refreshed.releaseError) void vscode.window.showWarningMessage(refreshed.releaseError);
+      void renderTaskReadme(root, { reveal: false }, {}, problems).catch(() => undefined);
+    if (problems.releaseError) void vscode.window.showWarningMessage(problems.releaseError);
+    if (refreshError) throw refreshError;
     return;
   }
   const marked = previous.states.map((state) =>

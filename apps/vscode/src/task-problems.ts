@@ -21,7 +21,14 @@ import {
   type TaskSubmissionInput,
 } from "@stella/shared/tasks/submission";
 import { apiRequest, apiSession } from "./api.js";
-import { hashFiles, LIMITS, listFiles, readFileInRoot, sha256Hex } from "./runner/files.js";
+import {
+  hashFiles,
+  isFileInRoot,
+  LIMITS,
+  listFiles,
+  readFileInRoot,
+  sha256Hex,
+} from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
 import { taskBundleUrl, taskFixedStartUrl } from "./task-bundle-url.js";
 import {
@@ -53,6 +60,8 @@ export interface ProblemState {
   status: ProblemWorkStatus;
   /** サーバーがロックしているときの、提出を止める理由。 */
   lockReason?: string;
+  /** 課題フォルダーに通常のファイルとしてある。書き出していないソースにはリンクを出さない。 */
+  onDisk?: true;
   failed?: true;
 }
 
@@ -247,12 +256,14 @@ export async function loadProblemStates(
     if (!source) continue;
     const local = await readProblemRun(root, manifest.id, problem.id);
     const lockReason = gated ? problemLockedReason(remote.get(problem.id)) : undefined;
+    const onDisk = await isFileInRoot(root, source);
     states.push({
       id: problem.id,
       title: problem.title,
       source,
       status: problemWorkStatus(passed.has(problem.id), local?.outcome),
       ...(lockReason ? { lockReason } : {}),
+      ...(onDisk ? { onDisk } : {}),
       ...(local?.outcome === "failed" || local?.outcome === "error" ? { failed: true } : {}),
     });
   }
@@ -336,37 +347,43 @@ async function readTaskProblems(
     : undefined;
   let releasePending = false;
   let releaseError: string | undefined;
-  if (manifest.problemSteps && refresh && session === apiSession()) {
-    try {
-      await releaseDeferredFiles(
-        trainingRoot,
-        root,
-        async (receipt) => {
-          const signal = AbortSignal.timeout(4_000);
-          const options = { signal, ...(session === undefined ? {} : { session }) };
-          const { bundle } =
-            receipt.variant === "fixed-start"
-              ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
-                  ...options,
-                  method: "POST",
-                  body: { taskId: manifest.id },
-                })
-              : await apiRequest<TaskBundleResponse>(taskBundleUrl(manifest.id), options);
-          if (session !== apiSession()) throw new Error("LMS への接続が変わりました");
-          if (bundle.manifest.id !== manifest.id || bundle.contentHash !== receipt.contentHash)
-            throw new Error(
-              "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
-            );
-          return bundle;
-        },
-        guards,
-      );
-    } catch (error) {
-      if (await hasDeferredDistribution(root)) {
-        releasePending = true;
-        releaseError = error instanceof Error ? error.message : String(error);
-      } else {
-        throw error;
+  if (manifest.problemSteps && refresh) {
+    if (session !== apiSession()) {
+      // 結果を待っているあいだに接続が変わっても、控えたファイルは書かない。
+      // deferred が残っていれば確認・提出・相談を止め、無い課題の手元の確認はそのままにする。
+      if (await hasDeferredDistribution(root)) releasePending = true;
+    } else {
+      try {
+        await releaseDeferredFiles(
+          trainingRoot,
+          root,
+          async (receipt) => {
+            const signal = AbortSignal.timeout(4_000);
+            const options = { signal, ...(session === undefined ? {} : { session }) };
+            const { bundle } =
+              receipt.variant === "fixed-start"
+                ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
+                    ...options,
+                    method: "POST",
+                    body: { taskId: manifest.id },
+                  })
+                : await apiRequest<TaskBundleResponse>(taskBundleUrl(manifest.id), options);
+            if (session !== apiSession()) throw new Error("LMS への接続が変わりました");
+            if (bundle.manifest.id !== manifest.id || bundle.contentHash !== receipt.contentHash)
+              throw new Error(
+                "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
+              );
+            return bundle;
+          },
+          guards,
+        );
+      } catch (error) {
+        if (await hasDeferredDistribution(root)) {
+          releasePending = true;
+          releaseError = error instanceof Error ? error.message : String(error);
+        } else {
+          throw error;
+        }
       }
     }
   }

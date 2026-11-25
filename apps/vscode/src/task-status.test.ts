@@ -383,6 +383,93 @@ describe("ステータスバーの課題のボタン", () => {
     expect(submitItem()?.visible).toBe(true);
   });
 
+  async function problemFolder() {
+    const problemRoot = path.join(workspace, "extra", "unit", "calc");
+    await mkdir(path.join(problemRoot, ".stella"), { recursive: true });
+    await mkdir(path.join(problemRoot, "src"), { recursive: true });
+    await writeFile(
+      path.join(problemRoot, ".stella", "task.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "extra/unit/calc",
+        title: "計算",
+        kind: "basic",
+        runner: "node-test",
+        problemSteps: true,
+        problems: [{ id: "q01", title: "問1" }],
+        submit: { files: ["src/**/*.ts"] },
+        checks: { lint: false, format: false },
+      }),
+    );
+    await writeFile(path.join(problemRoot, "src", "q01.ts"), "export const value = 1;\n");
+    return problemRoot;
+  }
+
+  function openProblemResult() {
+    return {
+      gated: true,
+      passedProblems: 0,
+      totalProblems: 1,
+      taskPassed: false,
+      problems: [{ id: "q01", state: "open" }],
+    };
+  }
+
+  it("課題の読み込み中に保存したら、状態を公開したあとで取り直す", async () => {
+    const problemRoot = await problemFolder();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    let publishedAtSecond = "";
+    apiRequest.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) await gate;
+      else publishedAtSecond = stateItem()?.text ?? "";
+      return openProblemResult();
+    });
+    registerTaskStatus(context);
+    state.activeFile = path.join(problemRoot, "src", "q01.ts");
+    const opening = state.editorListener?.(editor(state.activeFile));
+    await vi.waitFor(() => expect(calls).toBe(1));
+    await state.saveListener?.({
+      uri: { scheme: "file", fsPath: path.join(problemRoot, "src", "q01.ts") },
+    });
+    release();
+    await opening;
+    expect(calls).toBe(2);
+    expect(publishedAtSecond).toContain("提出");
+  });
+
+  it("読み込み中でも、課題の外の保存では問題の状態を取り直さない", async () => {
+    const problemRoot = await problemFolder();
+    let release: () => void = () => undefined;
+    let started = false;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    apiRequest.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) {
+        started = true;
+        await gate;
+      }
+      return openProblemResult();
+    });
+    registerTaskStatus(context);
+    state.activeFile = path.join(problemRoot, "src", "q01.ts");
+    const opening = state.editorListener?.(editor(state.activeFile));
+    await vi.waitFor(() => expect(started).toBe(true));
+    await state.saveListener?.({
+      uri: { scheme: "file", fsPath: path.join(workspace, "memo.txt") },
+    });
+    release();
+    await opening;
+    expect(calls).toBe(1);
+  });
+
   it("パネルに移っても出したままにし、課題の外のファイルに移ったら隠す", async () => {
     registerTaskStatus(context);
     await state.editorListener?.(editor(path.join(root, "index.html")));

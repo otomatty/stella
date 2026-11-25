@@ -373,7 +373,7 @@ export function guideProblems(input: TaskGuideInput) {
       index,
       label: problemStepLabel(title, index),
       source: local?.source ?? problemSource(input.manifest, id),
-      hasLocalSource: Boolean(local?.source),
+      hasLocalSource: local?.onDisk === true,
       lockReason: local?.lockReason,
       status: local?.status ?? "not-submitted",
       failed: local?.failed,
@@ -520,19 +520,24 @@ function problemListHtml(
             ? "前の問題のあとに出る"
             : "未解放";
       const known = row.items.flatMap((item) => {
-        if (!item.hasLocalSource || !item.source) return [];
-        return [
-          link(
-            "stella.openTaskFile",
-            [root, item.source],
-            escapeHtml(item.title),
-            "problem-row-title",
-          ),
-          `<code>${escapeHtml(item.source)}</code>`,
-          ...(item.lockReason
-            ? [`<span class="problem-status locked">🔒 ${escapeHtml(item.lockReason)}</span>`]
-            : []),
-        ];
+        const linked =
+          item.hasLocalSource && item.source
+            ? [
+                link(
+                  "stella.openTaskFile",
+                  [root, item.source],
+                  escapeHtml(item.title),
+                  "problem-row-title",
+                ),
+                `<code>${escapeHtml(item.source)}</code>`,
+              ]
+            : [];
+        return item.lockReason
+          ? [
+              ...linked,
+              `<span class="problem-status locked">🔒 ${escapeHtml(item.lockReason)}</span>`,
+            ]
+          : linked;
       });
       return `<li class="locked"><span aria-hidden="true">🔒</span><span class="problem-row-title">${lockedRange(row.items)}</span><span class="problem-status">${reason} ${row.items.length} 問</span>${known.join("")}</li>`;
     }

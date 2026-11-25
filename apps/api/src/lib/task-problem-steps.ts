@@ -30,8 +30,31 @@ export const PROBLEM_STEPS_NOT_READY = "問題の準備中です。少し待っ�
 
 type SavedProblem = Pick<
   typeof taskProblemResults.$inferSelect,
-  "problemId" | "contentHash" | "source" | "path" | "firstPassedAt"
+  "problemId" | "contentHash" | "source" | "path" | "firstPassedAt" | "updatedAt"
 > & { code?: string | null };
+
+/** コードを読む前後で、件数に使う版が同じか。違えばその読み取りのコードを旧版に付けない。 */
+function problemVersionKey(row: SavedProblem): string {
+  const at = (value: Date | number | null | undefined) =>
+    value instanceof Date ? value.getTime() : typeof value === "number" ? value : "";
+  return [
+    row.problemId,
+    row.contentHash,
+    row.source,
+    row.path,
+    at(row.firstPassedAt),
+    at(row.updatedAt),
+  ].join("\0");
+}
+
+function sameProblemSnapshot(
+  previous: readonly SavedProblem[],
+  next: readonly SavedProblem[],
+): boolean {
+  if (previous.length !== next.length) return false;
+  const keys = new Set(previous.map(problemVersionKey));
+  return next.every((row) => keys.has(problemVersionKey(row)));
+}
 
 /** 今の版と一致する提出と、手で済みにした提出はコードを読まなくても数えられる。 */
 function submissionNeedsCode(
@@ -93,7 +116,9 @@ export async function loadStageStepLocks(
         and(eq(lessonProgress.lessonId, lessons.id), eq(lessonProgress.userId, userId)),
       )
       .where(eq(sections.stageId, stageId))
-      .orderBy(asc(sections.order), asc(lessons.order), asc(lessons.id)),
+      // 受講者のステージ詳細は単元ごとにまとめ、その中を lessons.order で並べる。
+      // order が重なっても単元の境目を崩さないよう、同順は id で固定する。
+      .orderBy(asc(sections.order), asc(sections.id), asc(lessons.order), asc(lessons.id)),
     db
       .select({
         taskId: lessons.problemTaskId,
@@ -130,6 +155,7 @@ export async function loadStageStepLocks(
         source: taskProblemResults.source,
         path: taskProblemResults.path,
         firstPassedAt: taskProblemResults.firstPassedAt,
+        updatedAt: taskProblemResults.updatedAt,
       })
       .from(taskProblemResults)
       .innerJoin(tasks, eq(tasks.id, taskProblemResults.taskId))
@@ -178,19 +204,40 @@ export async function loadStageStepLocks(
       ? [scope.taskId]
       : [],
   );
-  // 旧版の依存を照合する課題だけ、依存先の提出も含めてコードを読む。
+  // 旧版の依存を照合する課題だけ、版とコードを同じ 1 回で読む。
+  // 最初の読み取りのあとで再提出されると、旧版の行に新しいコードが付く。版が違えばその読み取りで数え直す。
   for (const part of chunk(codeTaskIds, 80)) {
     const codes = await db
       .select({
         taskId: taskProblemResults.taskId,
         problemId: taskProblemResults.problemId,
+        contentHash: taskProblemResults.contentHash,
+        source: taskProblemResults.source,
+        path: taskProblemResults.path,
+        firstPassedAt: taskProblemResults.firstPassedAt,
+        updatedAt: taskProblemResults.updatedAt,
         code: taskProblemResults.code,
       })
       .from(taskProblemResults)
       .where(and(eq(taskProblemResults.userId, userId), inArray(taskProblemResults.taskId, part)));
+    const fresh = new Map<string, SavedProblem[]>();
     for (const row of codes) {
-      const saved = byTask.get(row.taskId)?.saved.find((item) => item.problemId === row.problemId);
-      if (saved) saved.code = row.code;
+      const rows = fresh.get(row.taskId) ?? [];
+      rows.push(row);
+      fresh.set(row.taskId, rows);
+    }
+    for (const taskId of part) {
+      const saved = byTask.get(taskId)?.saved;
+      if (!saved) continue;
+      const next = fresh.get(taskId) ?? [];
+      if (!sameProblemSnapshot(saved, next)) {
+        saved.splice(0, saved.length, ...next);
+        continue;
+      }
+      for (const row of next) {
+        const previous = saved.find((item) => item.problemId === row.problemId);
+        if (previous) previous.code = row.code;
+      }
     }
   }
   for (const { taskId, currentHash, rows, taskPassed } of scopes) {

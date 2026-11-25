@@ -45,6 +45,8 @@ let submitItem: vscode.StatusBarItem | undefined;
 let readmeItem: vscode.StatusBarItem | undefined;
 /** 開いているファイルが変わるたびに増やし、古い問い合わせの結果で上書きしない。 */
 let generation = 0;
+/** `followEditor` が課題を読み込んでいるあいだに保存されたファイル。公開後に問題の状態を取り直す。 */
+let filesSavedDuringFollow: string[] | null = null;
 
 function isInside(file: string, dir: string): boolean {
   const rel = path.relative(dir, file);
@@ -182,36 +184,51 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
   const uri = editor?.document.uri;
   // パネル (課題文・結果) や出力に移ったときは、直前の課題を出したままにする。
   if (uri?.scheme !== "file") return;
-  const root = await taskRootOfFile(uri.fsPath);
-  if (ticket !== generation) return;
-  inTask = root !== null;
-  if (!root) {
-    current = undefined;
-    render();
-    return;
-  }
-  if (current?.root !== root) {
-    const loaded = await loadTask(root);
+  const savedDuringLoad: string[] = [];
+  filesSavedDuringFollow = savedDuringLoad;
+  try {
+    const root = await taskRootOfFile(uri.fsPath);
     if (ticket !== generation) return;
-    const title = loaded.ok ? loaded.manifest.title : path.basename(root);
-    if (loaded.ok && loaded.manifest.problems?.length) {
-      const problems = await loadTaskProblems(root, loaded.manifest, {
-        trainingRoot: trainingRootOf(root),
-      });
-      if (ticket !== generation) return;
-      current = {
-        root,
-        title,
-        ...problemTaskProgress(loaded.manifest, problems),
-        problemActionsAvailable: !problems.releasePending,
-      };
-      notifyProblemTaskOpened(root);
-    } else {
-      current = { root, title, ...(loaded.ok ? { taskId: loaded.manifest.id } : {}) };
+    inTask = root !== null;
+    if (!root) {
+      current = undefined;
+      render();
+      return;
     }
+    let publishedProblems = false;
+    if (current?.root !== root) {
+      const loaded = await loadTask(root);
+      if (ticket !== generation) return;
+      const title = loaded.ok ? loaded.manifest.title : path.basename(root);
+      if (loaded.ok && loaded.manifest.problems?.length) {
+        const problems = await loadTaskProblems(root, loaded.manifest, {
+          trainingRoot: trainingRootOf(root),
+        });
+        if (ticket !== generation) return;
+        current = {
+          root,
+          title,
+          ...problemTaskProgress(loaded.manifest, problems),
+          problemActionsAvailable: !problems.releasePending,
+        };
+        publishedProblems = true;
+        notifyProblemTaskOpened(root);
+      } else {
+        current = { root, title, ...(loaded.ok ? { taskId: loaded.manifest.id } : {}) };
+      }
+    }
+    render();
+    if (
+      publishedProblems &&
+      savedDuringLoad.some((file) => isInside(file, root)) &&
+      current?.root === root
+    ) {
+      await refreshProblemActions(true);
+    }
+    if (current?.root === root) await refreshCurrentTask();
+  } finally {
+    if (filesSavedDuringFollow === savedDuringLoad) filesSavedDuringFollow = null;
   }
-  render();
-  await refreshCurrentTask();
 }
 
 async function refreshCurrentTask(): Promise<void> {
@@ -275,7 +292,9 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
       if (focused && current?.problemSteps) void refreshProblemActions().catch(() => undefined);
     }),
     vscode.workspace.onDidSaveTextDocument(({ uri }) => {
-      if (!current?.problemSteps || uri.scheme !== "file") return;
+      if (uri.scheme !== "file") return;
+      filesSavedDuringFollow?.push(uri.fsPath);
+      if (!current?.problemSteps) return;
       // 書き出し待ちは、いまの問題があっても保存のあとでやり直す。
       if (current.problemActionsAvailable !== false && current.currentProblem) return;
       const rel = path.relative(current.root, uri.fsPath);
@@ -289,6 +308,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     {
       dispose: () => {
         ++generation;
+        filesSavedDuringFollow = null;
         stateItem = undefined;
         submitItem = undefined;
         readmeItem = undefined;

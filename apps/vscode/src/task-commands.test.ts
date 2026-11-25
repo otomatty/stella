@@ -1593,6 +1593,41 @@ describe("問題つきの課題", () => {
     });
   });
 
+  it("提出のあと問題の状態を取り直せなくても、提出済みの数を戻さない", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    let submitted = false;
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") {
+        submitted = true;
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      if (submitted) throw new Error("問題の状態を読み出せません");
+      return {
+        gated: true,
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: "open" },
+          { id: "q02-sub", state: "locked-previous", afterTitle: "足す" },
+        ],
+      };
+    });
+
+    await run("stella.submitTask", root);
+
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      "提出しました (1/2 問)",
+      "Web で開く",
+    );
+    const published = vscodeMock.setCurrentTask.mock.lastCall?.[0] as {
+      problemProgress?: { passed: number; total: number };
+      currentProblem?: { id: string };
+    };
+    expect(published.problemProgress).toEqual({ passed: 1, total: 2 });
+    expect(published.currentProblem).toBeUndefined();
+  });
+
   it("段階のある課題の提出は控えを書かず、件数だけ知らせる", async () => {
     const root = await problemRoot(undefined, "passed", true);
     vscodeMock.getCachedCatalog.mockReturnValue([

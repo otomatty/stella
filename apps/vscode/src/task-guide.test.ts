@@ -610,6 +610,7 @@ it("段階がある課題の進め方は全問を出し、ロック中は鍵と�
         source: "src/q02.ts",
         status: "not-submitted",
         lockReason,
+        onDisk: true,
       },
     ],
   });
@@ -739,6 +740,52 @@ it("段階がある課題は未解放も数え、次の動画と手がかりを�
   expect(oldServer).not.toContain("src/q02.ts");
   expect(oldServer).not.toContain("手がかり:");
   expect(commandArgs(oldServer, "stella.submitTask")).toEqual([[shared.root, "q01"]]);
+});
+
+it("書き出していない問題にはリンクを出さず、ロックの理由だけを出す", () => {
+  const manifest: TaskManifest = {
+    ...nodeManifest,
+    problemSteps: true,
+    problems: [
+      { id: "q01", title: "最初の問題" },
+      { id: "q02", title: "次の問題" },
+    ],
+  };
+  const reason = "「変数と定数」を終えると解けます";
+  const locked = {
+    id: "q02",
+    title: "次の問題",
+    source: "src/q02.ts",
+    status: "not-submitted" as const,
+    lockReason: reason,
+  };
+  const hidden = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems: [
+        { id: "q01", title: "最初の問題", source: "src/q01.ts", status: "submitted", onDisk: true },
+        locked,
+      ],
+    }),
+  );
+  expect(hidden).toContain(reason);
+  expect(hidden).not.toContain("src/q02.ts");
+  expect(commandArgs(hidden, "stella.openTaskFile")).toEqual([[guide().root, "src/q01.ts"]]);
+
+  const linked = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems: [
+        { id: "q01", title: "最初の問題", source: "src/q01.ts", status: "submitted", onDisk: true },
+        { ...locked, onDisk: true },
+      ],
+    }),
+  );
+  expect(linked).toContain(reason);
+  expect(commandArgs(linked, "stella.openTaskFile")).toEqual([
+    [guide().root, "src/q01.ts"],
+    [guide().root, "src/q02.ts"],
+  ]);
 });
 
 it("失敗した確認のチップと指摘を表示し、テストと ESLint の行へ移動できる", () => {

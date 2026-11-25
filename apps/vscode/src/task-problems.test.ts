@@ -33,7 +33,8 @@ const documents = vi.hoisted(
 );
 vi.mock("vscode", () => ({ workspace: { textDocuments: documents } }));
 
-vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => 1 }));
+const apiState = vi.hoisted(() => ({ session: 1 as number | undefined }));
+vi.mock("./api.js", () => ({ apiRequest: vi.fn(), apiSession: () => apiState.session }));
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return { ...actual, link: vi.fn(actual.link) };
@@ -69,6 +70,7 @@ function state(id: string, status: ProblemState["status"], source = `src/${id}.t
 
 const roots: string[] = [];
 afterEach(async () => {
+  apiState.session = 1;
   documents.length = 0;
   vi.mocked(link).mockReset();
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -458,6 +460,14 @@ describe("問題の段階", () => {
     ],
   };
 
+  it("課題フォルダーにあるソースだけを書き出し済みにする", async () => {
+    const root = await makeRoot();
+    await rm(path.join(root, "src/q02-sub.ts"));
+    const states = await loadProblemStates(root, manifest, undefined);
+    expect(states.find((state) => state.id === "q01-add")?.onDisk).toBe(true);
+    expect(states.find((state) => state.id === "q02-sub")?.onDisk).toBeUndefined();
+  });
+
   it("サーバーの state で全問を出し、ロックには理由を付ける", async () => {
     const root = await makeRoot();
     vi.mocked(apiRequest).mockResolvedValueOnce(server);
@@ -519,6 +529,49 @@ describe("問題の段階", () => {
       String(url).includes("problem-results") ? server : { bundle },
     );
   }
+
+  it("結果の取得中に接続が変わっても、deferred があれば書き出さず確認を止める", async () => {
+    const bundle = problemBundle(staged);
+    const training = await makeRoot();
+    const root = await installTask(training, bundle);
+    await deferSecondProblem(root, bundle);
+    vi.mocked(apiRequest).mockImplementation(async (url: unknown) => {
+      if (String(url).includes("problem-results")) {
+        apiState.session = 2;
+        return server;
+      }
+      throw new Error(`should not fetch ${String(url)}`);
+    });
+
+    const result = await loadTaskProblems(root, staged, { trainingRoot: training });
+
+    expect(result.releasePending).toBe(true);
+    expect(
+      vi.mocked(apiRequest).mock.calls.some((call) => /bundle|fixed-start/.test(String(call[0]))),
+    ).toBe(false);
+    await expect(readFile(path.join(root, "src/q02-sub.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
+  it("deferred が無ければ、接続が変わっても手元の確認を止めない", async () => {
+    const root = await makeRoot();
+    vi.mocked(apiRequest).mockImplementation(async () => {
+      apiState.session = 2;
+      return server;
+    });
+
+    const result = await loadTaskProblems(root, staged);
+
+    expect(result.releasePending).toBeUndefined();
+    expect(result.states.map(({ id }) => id)).toEqual([
+      "q01-add",
+      "q02-sub",
+      "q03-mult",
+      "q04-div",
+    ]);
+    expect(result.states.some((state) => state.lockReason)).toBe(false);
+  });
 
   it("問題の状態を読むと、控えてあったファイルを書き出して deferred を外す", async () => {
     const bundle = problemBundle(staged);

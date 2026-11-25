@@ -1,7 +1,11 @@
 import { type Context, type Handler, Hono } from "hono";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { ProblemHashCache } from "../lib/task-problem-hashes.js";
-import { completeCarriedProblemTask, readTaskDefinition } from "../lib/task-problem-submission.js";
+import { loadProblemRevisionHashes, type ProblemHashCache } from "../lib/task-problem-hashes.js";
+import {
+  completeCarriedProblemTask,
+  countedProblemIds,
+  readTaskDefinition,
+} from "../lib/task-problem-submission.js";
 import {
   bundleSizeProblem,
   parsePublicTaskBundle,
@@ -18,20 +22,22 @@ import {
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
-import { problemFiles } from "@stella/shared/tasks/problems";
+import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
+import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import {
   sections,
   taskFixedStarts,
   taskFixedStartUses,
+  taskProblemResults,
   taskProgress,
   taskRevisions,
   tasks,
 } from "../db/schema.js";
-import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
+import { ApiError, type Caller, errorResponse, getCaller } from "../lib/authz.js";
 import { canAccessTask, canAccessTasks } from "../lib/task-access.js";
 import { getTaskHelp, openTaskHelp } from "../lib/task-help.js";
 import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "../lib/task-problem-steps.js";
@@ -216,6 +222,94 @@ async function stageTaskList(
 tasksRoute.get("/api/tasks/for-stage/:stageId", (c) => stageTaskList(c, true));
 
 /**
+ * `after` の無い課題は、ロック判定をせず、この課題の結果だけを版とコードを同じ読み取りで数える。
+ */
+async function ungatedProblemResults(
+  c: Context<{ Bindings: Env }>,
+  db: Db,
+  caller: Caller,
+  finalize: boolean,
+  hashCache: ProblemHashCache | undefined,
+  row: { id: string; stageId: string; contentHash: string; problems: TaskProblem[] },
+): Promise<Response> {
+  const { problems } = row;
+  const saved = await db
+    .select({
+      problemId: taskProblemResults.problemId,
+      contentHash: taskProblemResults.contentHash,
+      firstPassedAt: taskProblemResults.firstPassedAt,
+      source: taskProblemResults.source,
+      path: taskProblemResults.path,
+      code: taskProblemResults.code,
+    })
+    .from(taskProblemResults)
+    .where(and(eq(taskProblemResults.userId, caller.id), eq(taskProblemResults.taskId, row.id)));
+  const [progress] = await db
+    .select({ status: taskProgress.status })
+    .from(taskProgress)
+    .where(and(eq(taskProgress.userId, caller.id), eq(taskProgress.taskId, row.id)))
+    .limit(1);
+  let taskPassed = progress?.status === "passed" || progress?.status === "ai-passed";
+  const cache = hashCache ?? new Map();
+  const revisions = (
+    await loadProblemRevisionHashes(
+      db,
+      [{ taskId: row.id, currentHash: row.contentHash, rows: saved, taskPassed }],
+      cache,
+    )
+  ).get(row.id);
+  const passedIds = countedProblemIds(saved, row.contentHash, taskPassed, revisions);
+  const byId = new Map(
+    saved
+      .filter((item) => passedIds.has(item.problemId))
+      .map((item) => [item.problemId, item.firstPassedAt]),
+  );
+  const passedProblems = problems.filter((problem) => passedIds.has(problem.id)).length;
+  if (
+    finalize &&
+    !taskPassed &&
+    progress?.status !== "resubmit" &&
+    passedProblems === problems.length &&
+    saved.some(
+      (result) => passedIds.has(result.problemId) && result.contentHash !== row.contentHash,
+    )
+  ) {
+    const completion = await completeCarriedProblemTask(db, caller, row.id, row.contentHash, cache);
+    if (completion === "refresh") return ungatedProblemResults(c, db, caller, false, cache, row);
+    taskPassed = completion;
+    if (taskPassed) {
+      await autoCompleteStagesIfMet(db, {
+        actor: caller,
+        userId: caller.id,
+        stageIds: [row.stageId],
+        ip: clientIp(c),
+      });
+    }
+  }
+  const refsByTask = await loadTaskRefs(db, caller, { taskId: row.id });
+  const refsByProblem = refsByTask.get(row.id);
+  return c.json({
+    refs: refsByProblem?.get("") ?? [],
+    problems: problems.map(({ id, title }) => {
+      const firstPassedAt = byId.get(id);
+      return {
+        id,
+        title,
+        refs: (refsByProblem?.get(id) ?? []).filter((ref) => !ref.auto),
+        status: firstPassedAt ? "passed" : "not-submitted",
+        firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
+        source: firstPassedAt
+          ? (saved.find((item) => item.problemId === id)?.source ?? "tests")
+          : null,
+      };
+    }),
+    passedProblems,
+    totalProblems: problems.length,
+    taskPassed,
+  });
+}
+
+/**
  * 問題つきの課題の、本人の問題の状態。一覧は今の版の problems。問題の無い課題は 404。
  */
 async function problemResults(
@@ -232,13 +326,28 @@ async function problemResults(
         stageId: sections.stageId,
         variantOf: tasks.variantOf,
         contentHash: tasks.contentHash,
+        definition: taskRevisions.definition,
       })
       .from(tasks)
       .innerJoin(sections, eq(sections.id, tasks.sectionId))
+      .innerJoin(
+        taskRevisions,
+        and(eq(taskRevisions.taskId, tasks.id), eq(taskRevisions.contentHash, tasks.contentHash)),
+      )
       .where(and(eq(tasks.id, taskId), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTask(db, caller, row)))
       throw new ApiError("課題が見つかりません", 404);
+    const authored = readTaskDefinition(row.definition).problems;
+    if (!authored) throw new ApiError("課題が見つかりません", 404);
+    if (!authored.some((problem) => problem.after)) {
+      return ungatedProblemResults(c, db, caller, finalize, hashCache, {
+        id: row.id,
+        stageId: row.stageId,
+        contentHash: row.contentHash,
+        problems: authored,
+      });
+    }
     const locks = await loadStageStepLocks(db, caller.id, row.stageId, {
       variantTaskId: row.variantOf === null ? undefined : row.id,
       hashCache,
