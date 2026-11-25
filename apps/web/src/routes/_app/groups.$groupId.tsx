@@ -33,6 +33,7 @@ function GroupProgressPage() {
     (myGroups.status === "ready" && !myGroups.groups.some((group) => group.id === groupId)) ||
     (myGroups.status === "error" && myGroups.accessDenied);
   if (profileRole === "admin") return <AccessDeniedScreen allow={["learner"]} />;
+  const showBackLink = !(myGroups.status === "ready" && myGroups.groups.length === 1);
 
   return (
     <RoleGuard allow={["learner"]}>
@@ -42,6 +43,7 @@ function GroupProgressPage() {
         enabled={
           backendEnabled && currentUserId !== null && profileRole === "student" && !unavailable
         }
+        showBackLink={showBackLink}
       />
     </RoleGuard>
   );
@@ -49,7 +51,15 @@ function GroupProgressPage() {
 
 type PeerResult = { data: GroupPeerProgress } | { error: string };
 
-function GroupProgress({ groupId, enabled }: { groupId: string; enabled: boolean }) {
+function GroupProgress({
+  groupId,
+  enabled,
+  showBackLink,
+}: {
+  groupId: string;
+  enabled: boolean;
+  showBackLink: boolean;
+}) {
   const [result, setResult] = useState<PeerResult | null>(null);
   useEffect(() => {
     if (!enabled) {
@@ -92,9 +102,14 @@ function GroupProgress({ groupId, enabled }: { groupId: string; enabled: boolean
     : "このグループは表示できません";
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-5">
-      <Link to="/groups" className="inline-flex min-h-11 items-center text-sm text-brand underline">
-        グループ一覧に戻る
-      </Link>
+      {showBackLink ? (
+        <Link
+          to="/groups"
+          className="inline-flex min-h-11 items-center text-sm text-brand underline"
+        >
+          グループ一覧に戻る
+        </Link>
+      ) : null}
       <header className="space-y-2">
         <h1 className="break-words text-2xl font-bold">{progress?.group.name ?? "グループ"}</h1>
         {progress ? <p className="text-sm text-ink-3">{progress.members.length} 人</p> : null}
