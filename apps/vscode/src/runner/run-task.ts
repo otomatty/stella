@@ -181,7 +181,6 @@ export async function importedEditableFiles(
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
-  problemId?: string,
   problemSource?: string,
 ): Promise<{
   step: RunStepResult;
@@ -214,7 +213,7 @@ async function collectFiles(
         unmatched: submitAll.files.includes(problemSource) ? [] : [problemSource],
       }
     : submitAll;
-  const prot = await protectedTaskFiles(root, manifest, listed, problemId);
+  const prot = protectedTaskFiles(manifest, listed);
   const problems: string[] = [];
   const missing: string[] = [];
   if (submit.unmatched.length > 0) {
@@ -447,7 +446,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   let protectedFiles: HashedFile[] = [];
   let imported: HashedFile[] = [];
   if (!options.signal?.aborted) {
-    const collected = await collectFiles(root, manifest, options.problem, selected.problem?.source);
+    const collected = await collectFiles(root, manifest, selected.problem?.source);
     if (collected) {
       steps.push(collected.step);
       files = collected.files;

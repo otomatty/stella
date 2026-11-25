@@ -43,7 +43,7 @@ import { useMySubmissions } from "@/hooks/useMySubmissions";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchMyStageCompletion } from "@/lib/certificates-api";
 import { findNextLesson, resolveLessonStatus, resumeLessonId } from "@/lib/lesson-progress";
-import { problemLessonsById, problemLockReason } from "@/lib/problem-lesson";
+import { presentStageProblems, problemLessonsById, problemLockReason } from "@/lib/problem-lesson";
 import { stageWrapupOf } from "@/lib/stage-wrapup";
 import { cn } from "@/lib/utils";
 import { openInVscode } from "@/lib/vscode-launch";
@@ -113,10 +113,13 @@ export const StageDetail = ({
     tasks: TaskSummary[];
   } | null>(null);
   const tasks = loadedTasks?.stageId === stage.id ? loadedTasks.tasks : null;
-  const problemLessons = useMemo(() => problemLessonsById(tasks), [tasks]);
-
   // 完了数は fixture の初期 status ではなく進捗ストア (サーバ同期済み) で解決する。
   const progressMap = useLessonProgressMap();
+  const presentedTasks = useMemo(
+    () => presentStageProblems(tasks, stage, progressMap),
+    [tasks, stage, progressMap],
+  );
+  const problemLessons = useMemo(() => problemLessonsById(presentedTasks), [presentedTasks]);
   const statusOf = (l: Lesson) => resolveLessonStatus(l, progressMap, problemLessons);
   const totalLessons = sections.reduce((a, s) => a + s.lessons.length, 0) || stage.lessonsCount;
   const doneLessons = sections.reduce(
@@ -126,7 +129,10 @@ export const StageDetail = ({
   // 「続きから」 の再開位置 (最初の未完了レッスン)。 レッスンが無いステージでは null。
   const resumeId = resumeLessonId(stage, progressMap, problemLessons);
 
-  const wrapup = useMemo(() => (tasks ? stageWrapupOf(tasks) : null), [tasks]);
+  const wrapup = useMemo(
+    () => (presentedTasks ? stageWrapupOf(presentedTasks) : null),
+    [presentedTasks],
+  );
   const nextLesson = findNextLesson(stage, progressMap, problemLessons);
   const handheld = useIsHandheld();
   const taskTurn =

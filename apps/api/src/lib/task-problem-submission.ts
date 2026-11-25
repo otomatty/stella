@@ -22,15 +22,17 @@ import { loadCodingRuleSet } from "./coding-rule-set.js";
 import { withResourceLock } from "./resource-lock.js";
 import { withRecordedFixedStart } from "./task-fixed-start.js";
 import { withRecordedHelp } from "./task-help.js";
-import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
 import {
   loadTaskProblemHashes,
+  loadProblemRevisionHashes,
+  type ProblemHashCache,
   countableProblemResults,
   submittedProblemDependencies,
   type SavedProblemResult,
   type ProblemRevisionHashes,
 } from "./task-problem-hashes.js";
-import { evaluatedProblemSteps, loadProblemSteps } from "./task-problem-steps.js";
+import { autoCompleteStagesIfMet } from "./stage-auto-complete.js";
+import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "./task-problem-steps.js";
 import {
   recomputeTaskProgress,
   reviewTaskSubmission,
@@ -113,6 +115,7 @@ async function sha256Hex(text: string): Promise<string> {
 
 type ProblemTask = {
   id: string;
+  stageId: string;
   stageTitle: string;
   sectionTitle: string | null;
   contentHash: string;
@@ -279,6 +282,7 @@ export async function completeCarriedProblemTask(
   caller: Caller,
   taskId: string,
   expectedHash: string,
+  hashCache?: ProblemHashCache,
 ): Promise<boolean | "refresh"> {
   const locked = await withResourceLock(
     db,
@@ -338,12 +342,12 @@ export async function completeCarriedProblemTask(
         .where(
           and(eq(taskProblemResults.taskId, taskId), eq(taskProblemResults.userId, caller.id)),
         );
-      const hashes = await loadTaskProblemHashes(db, {
-        taskId,
-        currentHash: expectedHash,
-        rows: saved,
-      });
-      const counted = countableProblemResults(saved, expectedHash, false, hashes);
+      const hashes = await loadProblemRevisionHashes(
+        db,
+        [{ taskId, currentHash: expectedHash, rows: saved }],
+        hashCache,
+      );
+      const counted = countableProblemResults(saved, expectedHash, false, hashes.get(taskId));
       const currentIds = new Set(problems.map((problem) => problem.id));
       const results = counted.filter((row) => currentIds.has(row.problemId));
       if (
@@ -413,6 +417,7 @@ export async function completeCarriedProblemTask(
  * 問題つきの課題の提出。照合に落ちたら何も書かない。AI の待ち行列には積まない。
  * 数える問題が全部そろって、まだ合格していなければ、課題の提出を 1 行作って
  * ロックの外で `tests` として確定する (同じロックを取り直す)。
+ * 合格にした直後に、その課題のステージの修了を判定する。
  */
 export async function submitTaskProblem(
   db: Db,
@@ -485,29 +490,31 @@ export async function submitTaskProblem(
       const canReplaceManualPass =
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual");
-      const hashes = await loadTaskProblemHashes(db, {
-        taskId: task.id,
-        currentHash: task.contentHash,
-        rows: saved,
-        taskPassed: taskAlreadyPassed && !canReplaceManualPass,
-      });
-      const passedIds = countedProblemIds(saved, task.contentHash, taskAlreadyPassed, hashes);
-      let stepLessonId: string | undefined;
+      let hashes: ProblemRevisionHashes | undefined;
       if (bundle.manifest.problemSteps) {
-        const rows = await loadProblemSteps(db, caller.id, { taskId: task.id });
-        const step = evaluatedProblemSteps(rows, currentProblems, passedIds).find(
-          (row) => row.problemId === problemId,
-        );
-        if (!step)
-          throw new ApiError("問題の準備中です。少し待ってからもう一度開いてください。", 503);
-        if (step.state === "locked-video")
+        const locks = await loadStageStepLocks(db, caller.id, task.stageId, {
+          verifyPassedTaskId: canReplaceManualPass ? task.id : undefined,
+        });
+        const problemTask = locks.byTask.get(task.id);
+        const step = problemTask?.ready
+          ? problemTask.steps.find((step) => step.id === problemId)
+          : undefined;
+        if (!step) throw new ApiError(PROBLEM_STEPS_NOT_READY, 503);
+        if (step.blocking) {
+          const ending = step.blocking.kind === "problem" ? "提出してください" : "終えてください";
           throw new ApiError(
-            `この問題はまだ解けません。先に${step.afterTitle}の動画を見てください。`,
+            `この問題はまだ解けません。先に「${step.blocking.title}」を${ending}。`,
             409,
           );
-        if (step.state === "locked-previous")
-          throw new ApiError("この問題はまだ解けません。先に前の問題を提出してください。", 409);
-        stepLessonId = step.stepLessonId;
+        }
+        hashes = locks.hashes.get(task.id);
+      } else {
+        hashes = await loadTaskProblemHashes(db, {
+          taskId: task.id,
+          currentHash: task.contentHash,
+          rows: saved,
+          taskPassed: taskAlreadyPassed && !canReplaceManualPass,
+        });
       }
       const submitted = [
         ...saved.filter((row) => row.problemId !== problemId),
@@ -569,8 +576,6 @@ export async function submitTaskProblem(
             },
           }),
       ];
-      if (stepLessonId)
-        writes.push(...planProblemStepProgressWrites(db, caller.id, [stepLessonId], now));
       const personalIds = canReplaceManualPass
         ? countedProblemIds(
             submitted.filter((row) => row.source === "tests"),
@@ -613,6 +618,12 @@ export async function submitTaskProblem(
   if (locked.value.completionId) {
     await reviewTaskSubmission(db, caller, locked.value.completionId, "pass", "", "tests");
     taskPassed = true;
+    // 合格で修了条件が揃ったらステージをクリアにする。判定の失敗は関数内で握る。
+    await autoCompleteStagesIfMet(db, {
+      actor: caller,
+      userId: caller.id,
+      stageIds: [task.stageId],
+    });
   }
   return {
     problemId,

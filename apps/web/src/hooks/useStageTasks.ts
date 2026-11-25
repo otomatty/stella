@@ -1,16 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { apiFetch } from "@/lib/api-client";
-import { subscribeProgressSynced } from "@/lib/lesson-progress";
-
-const PROBLEM_REFRESH_MS = 15_000;
 
 /** undefined は初回の取得中、null は無効または取得失敗。 */
-export function useStageTasks(
-  stageId: string,
-  enabled: boolean,
-  pollProblems = false,
-): TaskSummary[] | null | undefined {
+export function useStageTasks(stageId: string, enabled: boolean): TaskSummary[] | null | undefined {
   const [result, setResult] = useState<{ stageId: string; tasks: TaskSummary[] | null } | null>(
     null,
   );
@@ -36,28 +29,14 @@ export function useStageTasks(
     if (!enabled) return;
     const refresh = () => void load();
     refresh();
+    // VS Code で提出した結果は、ウィンドウに戻ったときに取り直す。
+    // 問題のロックは手元の進捗から求めるので、進捗の送信後や定期の取り直しはしない。
     window.addEventListener("focus", refresh);
-    // 動画の完了がサーバーに届いた時点で、問題の解放状態を取り直す。
-    const unsubscribe = subscribeProgressSynced(refresh);
     return () => {
       pending.current?.abort();
       window.removeEventListener("focus", refresh);
-      unsubscribe();
     };
   }, [enabled, load]);
 
-  const tasks = !enabled ? null : result?.stageId === stageId ? result.tasks : undefined;
-  const shouldPoll =
-    enabled &&
-    pollProblems &&
-    (tasks === null || tasks?.some((task) => task.problem_items?.length || task.problems?.length));
-  useEffect(() => {
-    if (!shouldPoll) return;
-    const timer = setInterval(() => {
-      if (!pending.current && document.visibilityState === "visible") void load();
-    }, PROBLEM_REFRESH_MS);
-    return () => clearInterval(timer);
-  }, [load, shouldPoll]);
-
-  return tasks;
+  return !enabled ? null : result?.stageId === stageId ? result.tasks : undefined;
 }

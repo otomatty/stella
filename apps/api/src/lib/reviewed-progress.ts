@@ -5,7 +5,6 @@ import { lessonProgress, lessons, submissions } from "../db/schema.js";
 import {
   isProblemStepLesson,
   isProblemTaskOverviewLesson,
-  loadCompletedProblemSteps,
   loadPassedOverviewLessons,
 } from "./lesson-progress-write.js";
 import { chunk } from "./enrollment-bulk.js";
@@ -65,21 +64,20 @@ export async function reviewedPassLessonIds(
 
 export interface ReviewedProgress {
   rows: NormalizedProgressRow[];
-  /** 完了をレビュー・問題の提出・課題の合格から決めたレッスン。 */
+  /** 完了をレビューの合格、または課題の一覧の合格から決めたレッスン。問題のレッスンは含めない。 */
   reviewedLessonIds: Set<string>;
-  problemStepLessonIds: Set<string>;
 }
 
-/** 現存するレッスンの進捗を返す。コードはレビュー、問題のステップは提出、一覧は課題の合格で完了を決める。 */
+/** 現存するレッスンの進捗を返す。コードはレビュー、一覧は課題の合格で完了を決め、問題のレッスンは捨てる。 */
 export async function reviewedProgressRows(
   db: Db,
   userId: string,
   rows: NormalizedProgressRow[],
 ): Promise<ReviewedProgress> {
   const existing = new Set<string>();
+  const problemSteps = new Set<string>();
   const reviewed = new Set<string>();
-  const problemStepLessonIds = new Set<string>();
-  const problemOverviewLessonIds: string[] = [];
+  const problemOverviewLessonIds = new Set<string>();
   const passed = new Set<string>();
   for (const ids of chunk(
     rows.map((r) => r.lessonId),
@@ -97,36 +95,39 @@ export async function reviewedProgressRows(
     const codeLessonIds: string[] = [];
     for (const row of existingLessons) {
       existing.add(row.id);
-      if (row.type !== "code" && !row.problemStep && !row.problemOverview) continue;
+      if (row.problemStep) {
+        problemSteps.add(row.id);
+        continue;
+      }
+      if (row.problemOverview) {
+        reviewed.add(row.id);
+        problemOverviewLessonIds.add(row.id);
+        continue;
+      }
+      if (row.type !== "code") continue;
       reviewed.add(row.id);
-      if (row.problemStep) problemStepLessonIds.add(row.id);
-      else if (row.problemOverview) problemOverviewLessonIds.push(row.id);
-      else codeLessonIds.push(row.id);
+      codeLessonIds.push(row.id);
     }
     const ok = await reviewedPassLessonIds(db, userId, codeLessonIds);
     for (const id of ok) passed.add(id);
   }
-  for (const row of await loadCompletedProblemSteps(db, [userId], [...problemStepLessonIds])) {
+  for (const row of await loadPassedOverviewLessons(db, [userId], [...problemOverviewLessonIds])) {
     passed.add(row.lessonId);
   }
-  for (const row of await loadPassedOverviewLessons(db, [userId], problemOverviewLessonIds)) {
-    passed.add(row.lessonId);
-  }
-  const taskDerived = new Set([...problemStepLessonIds, ...problemOverviewLessonIds]);
   return {
     rows: rows
-      .filter((r) => existing.has(r.lessonId))
+      .filter((r) => existing.has(r.lessonId) && !problemSteps.has(r.lessonId))
       .map((r) =>
         reviewed.has(r.lessonId)
           ? {
               ...r,
               completed: passed.has(r.lessonId),
-              countsTowardActivity: !taskDerived.has(r.lessonId) && r.countsTowardActivity,
+              countsTowardActivity:
+                !problemOverviewLessonIds.has(r.lessonId) && r.countsTowardActivity,
             }
           : r,
       ),
     reviewedLessonIds: reviewed,
-    problemStepLessonIds,
   };
 }
 

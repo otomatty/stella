@@ -41,8 +41,7 @@ export const PROGRESS_WRITE_QUERY_HEADROOM = 20;
  * 候補全ステージの達成判定の読み出し ~80、 発行 1 ステージあたりロック取得 (2) +
  * ロック内の再確認 (登録 1 + 再判定 ~5) + batch(2) + 監査 1 + クリア通知 1 + 解放 1
  * ≒ 13 で、 発行数は `MAX_ISSUES_PER_CALL` (15) で頭打ち → 判定側の最悪 ~275。
- * 問題のステップは書き込み時に提出を再確認するため 2 bind を足し、最大 9 行。
- * N + ceil(N/9) + ceil(N/90) + 275 + headroom <= 1000 → N <= 628。 余裕を見て 600。
+ * N + ceil(N/11) + ceil(N/90) + 275 + headroom <= 1000 → N <= 638。 余裕を見て 600。
  */
 export { MAX_PROGRESS_SYNC_ROWS };
 
@@ -52,38 +51,12 @@ export function assertProgressSyncSize(count: number): void {
   }
 }
 
-/** 提出の書き込みと同じ SQL 内で、書き込み後の状態から完了を確かめる。 */
-function problemStepCompletion(
-  userId: string | SQL,
-  lessonId: string | SQL,
-  carried: boolean | SQL = false,
-) {
-  return sql<boolean | null>`(
-    select exists (
-      select 1 from task_problem_results r
-      inner join tasks t on t.id = p.task_id
-      left join task_progress tp on tp.user_id = r.user_id and tp.task_id = r.task_id
-      left join task_revisions current on current.task_id = t.id and current.content_hash = t.content_hash
-      left join task_revisions previous on previous.task_id = r.task_id and previous.content_hash = r.content_hash
-      where r.user_id = ${userId} and r.task_id = p.task_id and r.problem_id = p.problem_id
-        and (
-          t.content_hash = r.content_hash or tp.status in ('passed', 'ai-passed')
-          or ((r.source = 'manual' or ${typeof carried === "boolean" ? sql.raw(carried ? "1" : "0") : carried}) and exists (
-            select 1 from json_each(case when json_valid(current.problem_hashes) then case when json_type(current.problem_hashes) = 'object' then current.problem_hashes end end) c
-            join json_each(case when json_valid(previous.problem_hashes) then case when json_type(previous.problem_hashes) = 'object' then previous.problem_hashes end end) v
-              on v.key = c.key and v.value = c.value
-            where c.key = p.problem_id and c.type = 'text'
-              and length(c.value) = 64 and c.value not glob '*[^0-9a-f]*'
-          ))
-        )
-    )
-    from task_problem_steps p
-    where p.step_lesson_id = ${lessonId}
-  )`;
-}
-
+/** 問題のレッスン (`lessons.problem_id`)。完了は提出で決める。 */
 export function isProblemStepLesson(lessonId: SQL) {
-  return sql<number>`exists (select 1 from task_problem_steps p where p.step_lesson_id = ${lessonId})`;
+  return sql<number>`exists (
+    select 1 from lessons problem_lesson
+    where problem_lesson.id = ${lessonId} and problem_lesson.problem_id is not null
+  )`;
 }
 
 export const problemTaskOverviewTasks = sql`
@@ -143,16 +116,17 @@ export async function loadCompletedProblemSteps(
     path: string;
     code: string;
   }>(sql`
-    select r.user_id userId, p.step_lesson_id lessonId, r.task_id taskId, r.problem_id problemId,
+    select r.user_id userId, p.id lessonId, r.task_id taskId, r.problem_id problemId,
       r.content_hash contentHash, t.content_hash currentHash, tp.status, r.updated_at updatedAt,
       r.source, r.path, r.code
     from task_problem_results r
     join tasks t on t.id = r.task_id
-    left join task_problem_steps p on p.task_id = r.task_id and p.problem_id = r.problem_id
+    left join lessons p on p.problem_task_id = r.task_id and p.problem_id = r.problem_id
     left join task_progress tp on tp.task_id = r.task_id and tp.user_id = r.user_id
     where r.user_id in (select value from json_each(${JSON.stringify(userIds)}))
-      and r.task_id in (select scope.task_id from task_problem_steps scope
-        ${lessonIds ? sql`where scope.step_lesson_id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``})
+      and r.task_id in (select scope.problem_task_id from lessons scope
+        where scope.problem_id is not null
+        ${lessonIds ? sql`and scope.id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``})
   `);
   const groups = new Map<string, typeof rows>();
   for (const row of rows) {
@@ -178,58 +152,21 @@ export async function loadCompletedProblemSteps(
   );
 }
 
-/** 問題結果の書き込みと同じ batch に追加できる、完了フラグだけの差分 upsert。 */
-export function planProblemStepProgressWrites(
-  db: Db,
-  userId: string,
-  lessonIds: readonly string[],
-  now = new Date(),
-  carriedLessons?: ReadonlySet<string>,
-) {
-  const values = [...new Set(lessonIds)].map((lessonId) => ({
-    userId,
-    lessonId,
-    completed: sql<boolean>`coalesce(${problemStepCompletion(userId, lessonId, carriedLessons?.has(lessonId))}, 0)`,
-    updatedAt: now,
-  }));
-  const upsert = (batch: typeof values) =>
-    db
-      .insert(lessonProgress)
-      .values(batch)
-      .onConflictDoUpdate({
-        target: [lessonProgress.userId, lessonProgress.lessonId],
-        set: {
-          completed: sql`excluded.completed`,
-          updatedAt: sql`max(excluded.updated_at, ${lessonProgress.updatedAt})`,
-        },
-        setWhere: sql`excluded.completed <> ${lessonProgress.completed}`,
-      });
-  if (!values.length) return [];
-  const perInsert = rowsPerInsert((n) => upsert(values.slice(0, n)));
-  return chunk(values, perInsert).map(upsert);
-}
-
 type ProgressValue = {
   userId: string;
   lessonId: string;
-  completed: boolean | SQL;
+  completed: boolean;
   lastPage: number | null;
   viewedPages: number[];
   watchedSec: number | null;
   updatedAt: Date;
 };
 
-function toValues(
-  userId: string,
-  rows: readonly NormalizedProgressRow[],
-  problemStepLessonIds: ReadonlySet<string>,
-): ProgressValue[] {
+function toValues(userId: string, rows: readonly NormalizedProgressRow[]): ProgressValue[] {
   return rows.map((r) => ({
     userId,
     lessonId: r.lessonId,
-    completed: problemStepLessonIds.has(r.lessonId)
-      ? sql`coalesce(${problemStepCompletion(userId, r.lessonId, r.completed)}, 0)`
-      : r.completed,
+    completed: r.completed,
     lastPage: r.lastPage,
     viewedPages: r.viewedPages,
     watchedSec: r.watchedSec,
@@ -257,25 +194,19 @@ const reviewedCompleted = sql`case when exists (
 
 function buildProgressUpsert(db: Db, values: ProgressValue[]) {
   const newer = sql`excluded.updated_at > ${lessonProgress.updatedAt}`;
-  const problemCompleted = problemStepCompletion(
-    sql`excluded.user_id`,
-    sql`excluded.lesson_id`,
-    sql`excluded.completed`,
-  );
   return db
     .insert(lessonProgress)
     .values(values)
     .onConflictDoUpdate({
       target: [lessonProgress.userId, lessonProgress.lessonId],
       set: {
-        completed: sql`coalesce(${problemCompleted}, ${reviewedCompleted})`,
+        completed: reviewedCompleted,
         lastPage: sql`case when ${newer} then excluded.last_page else ${lessonProgress.lastPage} end`,
         viewedPages: sql`case when ${newer} then excluded.viewed_pages else ${lessonProgress.viewedPages} end`,
         watchedSec: sql`case when ${newer} then excluded.watched_sec else ${lessonProgress.watchedSec} end`,
         updatedAt: sql`max(excluded.updated_at, ${lessonProgress.updatedAt})`,
       },
-      // 問題の完了は古い端末の同期でも提出から決め、ほかの進捗は端末の時刻順を保つ。
-      setWhere: sql`${newer} or ${problemCompleted} <> ${lessonProgress.completed}`,
+      setWhere: newer,
     });
 }
 
@@ -287,25 +218,16 @@ export function planLessonProgressWrites(
   db: Db,
   userId: string,
   rows: readonly NormalizedProgressRow[],
-  problemStepLessonIds: ReadonlySet<string> = new Set(),
 ) {
   if (rows.length === 0) return [];
-  const values = toValues(userId, rows, problemStepLessonIds);
-  const stepValue = values.find((value) => typeof value.completed === "object");
   const perInsert = rowsPerInsert((n) =>
-    buildProgressUpsert(
-      db,
-      stepValue ? Array.from({ length: n }, () => stepValue) : values.slice(0, n),
-    ),
+    buildProgressUpsert(db, toValues(userId, rows.slice(0, n))),
   );
   return chunk([...rows], perInsert).map((rowChunk) => {
     const increments = rowChunk
       .filter((r) => r.countsTowardActivity)
       .map((r) => buildStudyActivityIncrement(db, userId, r));
-    return [
-      ...increments,
-      buildProgressUpsert(db, toValues(userId, rowChunk, problemStepLessonIds)),
-    ];
+    return [...increments, buildProgressUpsert(db, toValues(userId, rowChunk))];
   });
 }
 
@@ -313,9 +235,8 @@ export async function executeLessonProgressWrites(
   db: Db,
   userId: string,
   rows: readonly NormalizedProgressRow[],
-  problemStepLessonIds: ReadonlySet<string> = new Set(),
 ): Promise<void> {
-  for (const statements of planLessonProgressWrites(db, userId, rows, problemStepLessonIds)) {
+  for (const statements of planLessonProgressWrites(db, userId, rows)) {
     const [first, ...rest] = statements;
     if (first === undefined) continue;
     if (rest.length === 0) await first;

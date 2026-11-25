@@ -29,8 +29,6 @@ import {
   readTaskDefinition,
 } from "./task-problem-submission.js";
 import { recomputeTaskProgress, resetPassedAt, taskSubmissionLockId } from "./task-submission.js";
-import { planProblemStepProgressWrites } from "./lesson-progress-write.js";
-import { loadProblemSteps } from "./task-problem-steps.js";
 import { withResourceLock } from "./resource-lock.js";
 import { autoCompleteStagesIfMet, reclaimAutoCertificatesIfUnmet } from "./stage-auto-complete.js";
 
@@ -307,7 +305,6 @@ export async function writeManualCompletion(
           });
           const counted = countedProblemIds(saved, task.contentHash, taskPassed, hashes);
           let problemCount = 0;
-          let touchedProblems: ReadonlySet<string>;
           if (revoke) {
             const personalPass = passes.some((p) => p.reviewSource !== "manual");
             const currentIds = new Set(problems?.map((p) => p.id) ?? []);
@@ -356,7 +353,6 @@ export async function writeManualCompletion(
               });
             }
             const removedIds = new Set(removable.map((row) => row.problemId));
-            touchedProblems = removedIds;
             const remainingIds = countedProblemIds(
               saved.filter((row) => !removedIds.has(row.problemId)),
               task.contentHash,
@@ -420,7 +416,6 @@ export async function writeManualCompletion(
               blocked.push({ taskId: task.id, reason: "手で済みにした課題ではありません" });
           } else {
             const additions = selected.filter((pid) => !counted.has(pid));
-            touchedProblems = new Set(additions);
             problemCount = additions.length;
             for (const ids of chunk(additions, 4))
               writes.push(
@@ -491,19 +486,6 @@ export async function writeManualCompletion(
               passedTaskIds.push(task.id);
               if (!problems) inserted++;
             } else if (!problems) skipped++;
-          }
-          if (touchedProblems.size && problems?.some((problem) => problem.after)) {
-            const steps = await loadProblemSteps(db, input.userId, { taskId: task.id });
-            writes.push(
-              ...planProblemStepProgressWrites(
-                db,
-                input.userId,
-                steps
-                  .filter((step) => touchedProblems.has(step.problemId))
-                  .map((step) => step.stepLessonId),
-                now,
-              ),
-            );
           }
           if (writes.length) {
             writes.push(

@@ -60,7 +60,7 @@ import {
   setAllLessonTocSectionsOpen,
   summarizeLessonTocSections,
 } from "@/lib/lesson-toc-sections";
-import { resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import { lessonEndGuides, resolveLessonNeighbors, videoAdvanceNext } from "@/lib/lesson-navigation";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
   useLessonProgress,
@@ -73,6 +73,7 @@ import { lessonSubmissionTarget } from "@/lib/lesson-submissions";
 import {
   firstOpenProblem,
   type ProblemLesson,
+  presentStageProblems,
   problemLessonsById,
   problemLockReason,
 } from "@/lib/problem-lesson";
@@ -154,16 +155,21 @@ export const LessonPlayer = ({
 
   const shell = useContext(AppShellContext);
   const tasksEnabled = stage.format === 2 && isBackendConfigured();
-  const stageTasks = useStageTasks(stage.id, tasksEnabled, true);
-  const problemLessons = useMemo(() => problemLessonsById(stageTasks), [stageTasks]);
+  const stageTasks = useStageTasks(stage.id, tasksEnabled);
+  const progressMap = useLessonProgressMap();
+  const presentedTasks = useMemo(
+    () => presentStageProblems(stageTasks, stage, progressMap),
+    [stageTasks, stage, progressMap],
+  );
+  const problemLessons = useMemo(() => problemLessonsById(presentedTasks), [presentedTasks]);
   const problemOverviews = useMemo(
     () =>
       new Map(
-        stageTasks
+        presentedTasks
           ?.filter(isProblemOverview)
           .flatMap((task) => (task.lessonId === null ? [] : [[task.lessonId, task] as const])),
       ),
-    [stageTasks],
+    [presentedTasks],
   );
   const problemLessonIds = useMemo(() => new Set(problemLessons.keys()), [problemLessons]);
 
@@ -175,8 +181,6 @@ export const LessonPlayer = ({
   // ステージが届いても再適用されずステージ先頭に落ちてしまう。
   const selectionKey = initialLesson ? `${initialLesson.id}:${initialLesson.seq}` : null;
   const appliedSelectionRef = useRef<string | null>(null);
-
-  const progressMap = useLessonProgressMap();
 
   const lessonStatus = useCallback(
     (lesson: Lesson): LessonStatus => {
@@ -294,8 +298,8 @@ export const LessonPlayer = ({
       (lessonObj?.type !== "text" || trackTextProgress),
   );
 
-  // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 locked はスキップして
-  // 手前 / 先の解禁レッスンを探す。 無ければ null で、 ナビは端の表示になる。
+  // 前後のレッスン (Issue #77 の「前へ」もここに集約)。 ロック中でも隣を返し、
+  // ナビ側が止めているレッスンへ案内する。
   const neighbors = useMemo(
     () => resolveLessonNeighbors(stage, activeLesson, progressMap, problemLessons),
     [stage, activeLesson, progressMap, problemLessons],
@@ -361,6 +365,7 @@ export const LessonPlayer = ({
   }, [activeLesson, activeCompleted, completionReady]);
 
   const showCompleteCallout = !problemOverview && justCompleted && !calloutDismissed;
+  const endGuides = lessonEndGuides(showVideo, neighbors.next !== null, neighbors.nextLocked);
 
   // lg 未満 (VSCode 拡張のパネル等も含む) では目次をドロワーで開く。 パネル幅の変更で
   // lg 境界を跨いだら常設パネル側に切り替わるので、 ドロワーは閉じておく。
@@ -376,7 +381,7 @@ export const LessonPlayer = ({
     return <div className="p-10 text-sm text-ink-3">このステージには教材がありません。</div>;
   }
 
-  const task = stageTasks?.find((task) => task.lessonId === lessonObj.id);
+  const task = presentedTasks?.find((item) => item.lessonId === lessonObj.id);
   const taskId = task?.id ?? problemLesson?.taskId ?? null;
   const submissionTarget = lessonSubmissionTarget({
     format: stage.format,
@@ -515,7 +520,7 @@ export const LessonPlayer = ({
               lesson={lessonObj}
               stageId={stage.id}
               task={problemOverview}
-              stageTasks={stageTasks ?? []}
+              stageTasks={presentedTasks ?? []}
             />
           </div>
         ) : (
@@ -534,7 +539,10 @@ export const LessonPlayer = ({
                     nextLessonMeta={nextMeta}
                     // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
                     // canAdvance が true になり、 何もしないオーバーレイが出る。
-                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                    onAdvanceNext={videoAdvanceNext(
+                      neighbors.nextLocked,
+                      nextLessonId ? handleAdvanceNext : undefined,
+                    )}
                   />
                 ) : (
                   <SlideLessonMedia
@@ -545,7 +553,10 @@ export const LessonPlayer = ({
                     onComplete={handleMarkComplete}
                     nextLessonTitle={nextLesson?.title ?? null}
                     nextLessonMeta={nextMeta}
-                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                    onAdvanceNext={videoAdvanceNext(
+                      neighbors.nextLocked,
+                      nextLessonId ? handleAdvanceNext : undefined,
+                    )}
                   />
                 )}
               </div>
@@ -787,7 +798,7 @@ export const LessonPlayer = ({
           {submissionTarget ? (
             <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
           ) : null}
-          {showCompleteCallout && showVideo && neighbors.next === null ? (
+          {showCompleteCallout && showVideo && endGuides.completeCallout ? (
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
@@ -795,12 +806,12 @@ export const LessonPlayer = ({
               onDismiss={() => setCalloutDismissed(true)}
             />
           ) : null}
-          {!showVideo ? (
+          {endGuides.nav ? (
             <LessonNavFooter
               neighbors={neighbors}
               onSelectLesson={goToLesson}
               onBackToStage={handleBackToStage}
-              justCompleted={showCompleteCallout}
+              justCompleted={showCompleteCallout && !showVideo}
               onDismissCompletion={() => setCalloutDismissed(true)}
               problemLessonIds={problemLessonIds}
             />

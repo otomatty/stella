@@ -3,11 +3,10 @@
  *
  * 受講画面のレッスン移動は目次からのクリックしか無かったため、 完了しても次へ
  * 進む導線が無かった。 ここではステージを「セクションを跨いだ 1 本の並び」として
- * 扱い、 現在地の前後にある移動先を返す。
+ * 扱い、 現在地の隣のレッスンを返す。
  *
- * - `locked` はスキップして更に手前 / 先を探す。 順序の強制は locked が担っている
- *   ので、 ナビはその解禁済みの隣へ寄せる。 status は fixture の初期値ではなく
- *   進捗ストアで解決したもの (`resolveLessonStatus`) を見る。
+ * - 前後は並びの 1 つ隣。 ロック中でも返す (飛ばさない)。 ロック中のときは
+ *   `nextBlockedBy` / `prevBlockedBy` が止めているレッスンを指す。
  * - セクションを跨ぐかどうかは `nextStartsNewSection` で呼び出し側へ伝える
  *   (区切りで「セクション完了」の表示に切り替えるため)。
  */
@@ -15,7 +14,7 @@
 import type { Stage, Lesson, Section } from "@/data/types";
 import { resolveLessonStatus, type LessonProgressMap } from "@/lib/lesson-progress";
 
-import type { ProblemLesson } from "./problem-lesson";
+import { problemLockReason, type ProblemLesson } from "./problem-lesson";
 
 export interface LessonNavNode {
   lesson: Lesson;
@@ -27,10 +26,22 @@ export interface LessonNavNode {
 export interface LessonNeighbors {
   /** 表示中のレッスン。 ステージに含まれていなければ null。 */
   current: LessonNavNode | null;
-  /** 手前の解禁済みレッスン。 無ければ null。 */
+  /** 1 つ前のレッスン。 ロック中でも返す。 無ければ null。 */
   prev: LessonNavNode | null;
-  /** 次の解禁済みレッスン。 無ければ null (= 実質ステージの最後)。 */
+  /** 1 つ次のレッスン。 ロック中でも返す。 無ければ null (= 並びの最後)。 */
   next: LessonNavNode | null;
+  /** prev がロック中か。 prev が無ければ false。 */
+  prevLocked: boolean;
+  /** prev がロック中のとき、止めているレッスン。 */
+  prevBlockedBy: LessonNavNode | null;
+  /** prev がロック中のときの理由。 */
+  prevLockReason: string | null;
+  /** next がロック中か。 next が無ければ false。 */
+  nextLocked: boolean;
+  /** next がロック中のとき、止めているレッスン。 */
+  nextBlockedBy: LessonNavNode | null;
+  /** next がロック中のときの理由。 */
+  nextLockReason: string | null;
   /** next が現在と別セクションか。 current / next が無ければ false。 */
   nextStartsNewSection: boolean;
   /**
@@ -51,6 +62,12 @@ const EMPTY_NEIGHBORS: LessonNeighbors = {
   current: null,
   prev: null,
   next: null,
+  prevLocked: false,
+  prevBlockedBy: null,
+  prevLockReason: null,
+  nextLocked: false,
+  nextBlockedBy: null,
+  nextLockReason: null,
   nextStartsNewSection: false,
   currentSectionComplete: false,
   stageComplete: false,
@@ -68,18 +85,32 @@ export function flattenLessonNodes(stage: Stage | undefined): LessonNavNode[] {
   return nodes;
 }
 
-/** `from` から `step` 方向へ進み、 最初に条件を満たすノードを返す。 */
-function findInDirection(
-  nodes: LessonNavNode[],
-  from: number,
-  step: 1 | -1,
-  accept: (node: LessonNavNode) => boolean,
-): LessonNavNode | null {
-  for (let i = from + step; i >= 0 && i < nodes.length; i += step) {
-    const node = nodes[i];
-    if (node && accept(node)) return node;
+interface NeighborLock {
+  locked: boolean;
+  blockedBy: LessonNavNode | null;
+  reason: string | null;
+}
+
+function neighborLock(
+  node: LessonNavNode | null,
+  nodes: readonly LessonNavNode[],
+  map: LessonProgressMap,
+  problemLessons: ReadonlyMap<string, ProblemLesson> | undefined,
+): NeighborLock {
+  if (!node || resolveLessonStatus(node.lesson, map, problemLessons) !== "locked") {
+    return { locked: false, blockedBy: null, reason: null };
   }
-  return null;
+  const problem = problemLessons?.get(node.lesson.id)?.problem;
+  const blockerId = problem?.blocking?.id ?? problem?.afterLessonId;
+  const blockedBy =
+    problem && blockerId
+      ? (nodes.find((candidate) => candidate.lesson.id === blockerId) ?? null)
+      : null;
+  return {
+    locked: true,
+    blockedBy,
+    reason: problemLockReason(problem) ?? null,
+  };
 }
 
 /** 表示中のレッスンから見た前後の移動先を解決する。 */
@@ -95,19 +126,50 @@ export function resolveLessonNeighbors(
   const current = index >= 0 ? (nodes[index] ?? null) : null;
   if (!current) return { ...EMPTY_NEIGHBORS, total: nodes.length };
 
-  const unlocked = (node: LessonNavNode) =>
-    resolveLessonStatus(node.lesson, map, problemLessons) !== "locked";
-  const prev = findInDirection(nodes, index, -1, unlocked);
-  const next = findInDirection(nodes, index, 1, unlocked);
+  const prev = index > 0 ? (nodes[index - 1] ?? null) : null;
+  const next = index + 1 < nodes.length ? (nodes[index + 1] ?? null) : null;
+  const prevLock = neighborLock(prev, nodes, map, problemLessons);
+  const nextLock = neighborLock(next, nodes, map, problemLessons);
   const isDone = (node: LessonNavNode) =>
     resolveLessonStatus(node.lesson, map, problemLessons) === "done";
   return {
     current,
     prev,
     next,
+    prevLocked: prevLock.locked,
+    prevBlockedBy: prevLock.blockedBy,
+    prevLockReason: prevLock.reason,
+    nextLocked: nextLock.locked,
+    nextBlockedBy: nextLock.blockedBy,
+    nextLockReason: nextLock.reason,
     nextStartsNewSection: next !== null && next.section.id !== current.section.id,
     currentSectionComplete: nodes.filter((n) => n.section.id === current.section.id).every(isDone),
     stageComplete: nodes.every(isDone),
     total: nodes.length,
   };
+}
+
+/**
+ * 動画の「次へ」と再生後の自動遷移。
+ * 隣がロック中のときは渡さない。止めている教材への案内は、本文下のナビと完了時の案内が出す。
+ */
+export function videoAdvanceNext(
+  nextLocked: boolean,
+  advance: (() => void) | undefined,
+): (() => void) | undefined {
+  return nextLocked ? undefined : advance;
+}
+
+/**
+ * 本文末尾の前後ナビと、完了直後の案内を出すか。
+ * 動画はプレーヤーが次へ進む。次がロック中のときだけ、両方で止めている教材を示す。
+ * 次が無い動画は完了の案内だけ出す。
+ */
+export function lessonEndGuides(
+  showVideo: boolean,
+  hasNext: boolean,
+  nextLocked: boolean,
+): { nav: boolean; completeCallout: boolean } {
+  if (!showVideo) return { nav: true, completeCallout: true };
+  return { nav: nextLocked, completeCallout: !hasNext || nextLocked };
 }

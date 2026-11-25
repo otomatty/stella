@@ -24,11 +24,11 @@ import {
   skillEvidence,
   skills,
   stages,
+  studyActivity,
   submissionReviews,
   submissions,
   taskLocalRuns,
   taskProblemResults,
-  taskProblemSteps,
   taskProgress,
   taskRefs,
   taskRevisions,
@@ -354,6 +354,7 @@ describe("問題の提出", () => {
                 await problemInput(CURRENT, PROBLEMS, problemId),
                 {
                   id: TASK_ID,
+                  stageId: "stage",
                   stageTitle: "架空のステージ",
                   sectionTitle: "架空の単元",
                   contentHash: CURRENT,
@@ -415,23 +416,23 @@ describe("問題の提出", () => {
       db.update(taskRevisions).set({ definition, bundle }).where(eq(taskRevisions.taskId, TASK_ID)),
       db.insert(lessons).values([
         { id: "video", sectionId: "unit", title: "計算の基礎", type: "slides", order: 0 },
-        { id: "step-sub", sectionId: "unit", title: "問2 引く", type: "text", order: 1 },
-        { id: "step-add", sectionId: "unit", title: "問1 足す", type: "text", order: 2 },
-      ]),
-      db.insert(taskProblemSteps).values([
         {
-          taskId: TASK_ID,
-          problemId: "q01-add",
-          stepLessonId: "step-add",
-          afterLessonId: "video",
-          position: 1,
+          id: "step-sub",
+          sectionId: "unit",
+          title: "問2 引く",
+          type: "text",
+          order: 1,
+          problemTaskId: TASK_ID,
+          problemId: "q02-sub",
         },
         {
-          taskId: TASK_ID,
-          problemId: "q02-sub",
-          stepLessonId: "step-sub",
-          afterLessonId: "video",
-          position: 0,
+          id: "step-add",
+          sectionId: "unit",
+          title: "問1 足す",
+          type: "text",
+          order: 2,
+          problemTaskId: TASK_ID,
+          problemId: "q01-add",
         },
       ]),
       db.insert(lessonProgress).values({ userId: "learner", lessonId: "video", completed: false }),
@@ -545,9 +546,10 @@ describe("問題の提出", () => {
                 label: "問1",
                 source: "src/q01-add.ts",
                 stepLessonId: "step-add",
-                afterLessonId: "video",
-                afterTitle: "計算の基礎",
                 state: staff ? "locked-previous" : "locked-video",
+                ...(staff
+                  ? { afterLessonId: "step-sub", afterTitle: "問2 引く" }
+                  : { afterLessonId: "video", afterTitle: "計算の基礎" }),
                 refs: [auto],
               },
               {
@@ -556,9 +558,13 @@ describe("問題の提出", () => {
                 label: "問2",
                 source: "src/q02-sub.ts",
                 stepLessonId: "step-sub",
-                afterLessonId: "video",
-                afterTitle: "計算の基礎",
-                state: staff ? "open" : "locked-video",
+                ...(staff
+                  ? { state: "open" as const }
+                  : {
+                      state: "locked-video" as const,
+                      afterLessonId: "video",
+                      afterTitle: "計算の基礎",
+                    }),
                 refs: [auto, previous, summary],
               },
             ],
@@ -720,17 +726,10 @@ describe("問題の提出", () => {
             title: problem.title,
             type: "text" as const,
             order: i + 1,
+            problemTaskId: TASK_ID,
+            problemId: problem.id,
           })),
         ]),
-        db.insert(taskProblemSteps).values(
-          problems.map((problem, i) => ({
-            taskId: TASK_ID,
-            problemId: problem.id,
-            stepLessonId: `step-${i}`,
-            afterLessonId: "video",
-            position: i,
-          })),
-        ),
         db.insert(lessonProgress).values({ userId: "learner", lessonId: "video", completed: true }),
         // 教材更新前に完了フラグがあっても、最新の提出判定で数え直す。
         db
@@ -783,7 +782,7 @@ describe("問題の提出", () => {
           change === "after"
             ? ["submitted", "submitted", "submitted", "open"]
             : change === "test"
-              ? ["submitted", "open", "submitted", "open"]
+              ? ["submitted", "open", "submitted", "locked-previous"]
               : ["open", "locked-previous", "locked-previous", "locked-previous"];
         const count = states.filter((state) => state === "submitted").length;
         expect(await result.json()).toMatchObject({
@@ -799,7 +798,11 @@ describe("問題の提出", () => {
             {},
           ],
         });
-        expect((await stepProgress("step-1"))?.completed).toBe(change === "after");
+        // 一覧は写しを直さない。完了は上の GET が提出から返す。
+        expect((await stepProgress("step-1"))?.completed).toBe(true);
+        expect(await stepProgress("step-0")).toBeUndefined();
+        expect(await stepProgress("step-2")).toBeUndefined();
+        expect(await stepProgress("step-3")).toBeUndefined();
         if (change !== "broken") {
           const reads = query.mock.calls.filter(
             ([sql]) => sql.includes("from json_each(") && sql.includes("join task_revisions r"),
@@ -1017,7 +1020,7 @@ describe("問題の提出", () => {
     },
   );
 
-  it("動画と直前の問題の提出で解放し、管理者の引き継ぎも数える", async () => {
+  it("前の動画と問題の完了で解放し、管理者の引き継ぎも数える", async () => {
     const input = await gatedInput(await setupProblemSteps());
     async function results() {
       const response = await problemResults();
@@ -1027,7 +1030,7 @@ describe("問題の提出", () => {
     const lockedVideo = await post(input);
     expect(lockedVideo.status).toBe(409);
     expect(await lockedVideo.json()).toMatchObject({
-      error: "この問題はまだ解けません。先に計算の基礎の動画を見てください。",
+      error: "この問題はまだ解けません。先に「計算の基礎」を終えてください。",
     });
     expect(await results()).toMatchObject({
       gated: true,
@@ -1053,7 +1056,7 @@ describe("問題の提出", () => {
     const lockedPrevious = await post(input);
     expect(lockedPrevious.status).toBe(409);
     expect(await lockedPrevious.json()).toMatchObject({
-      error: "この問題はまだ解けません。先に前の問題を提出してください。",
+      error: "この問題はまだ解けません。先に「問2 引く」を提出してください。",
     });
     expect(await db.select().from(taskProblemResults)).toEqual([]);
 
@@ -1062,7 +1065,7 @@ describe("問題の提出", () => {
       .set({ completed: false })
       .where(eq(lessonProgress.lessonId, "video"));
     expect((await manual(["q02-sub"])).status).toBe(200);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: true });
+    expect(await stepProgress("step-sub")).toBeUndefined();
     expect(await results()).toMatchObject({
       problems: [{ state: "submitted", source: "manual" }, { state: "locked-video" }],
     });
@@ -1088,7 +1091,10 @@ describe("問題の提出", () => {
         auto: true,
       },
     ];
-    expect(await stage.json()).toMatchObject({
+    const stageBody = await json<{
+      tasks: { id: string; problems?: Record<string, unknown>[] }[];
+    }>(stage);
+    expect(stageBody).toMatchObject({
       tasks: expect.arrayContaining([
         expect.objectContaining({
           id: TASK_ID,
@@ -1105,8 +1111,6 @@ describe("問題の提出", () => {
               title: "引く",
               label: "問2",
               stepLessonId: "step-sub",
-              afterLessonId: "video",
-              afterTitle: "計算の基礎",
               state: "submitted",
               refs,
               manual: true,
@@ -1116,8 +1120,6 @@ describe("問題の提出", () => {
               title: "足す",
               label: "問1",
               stepLessonId: "step-add",
-              afterLessonId: "video",
-              afterTitle: "計算の基礎",
               state: "open",
               refs,
             },
@@ -1125,8 +1127,12 @@ describe("問題の提出", () => {
         }),
       ]),
     });
+    for (const problem of stageBody.tasks.find((task) => task.id === TASK_ID)?.problems ?? []) {
+      expect(problem).not.toHaveProperty("afterLessonId");
+      expect(problem).not.toHaveProperty("afterTitle");
+    }
     expect((await post(input)).status).toBe(201);
-    expect(await stepProgress("step-add")).toMatchObject({ completed: true });
+    expect(await stepProgress("step-add")).toBeUndefined();
     expect(await results()).toMatchObject({
       problems: [
         { state: "submitted", source: "manual" },
@@ -1157,7 +1163,122 @@ describe("問題の提出", () => {
     ).toBe(200);
   });
 
-  it("問題ステップの完了は提出で決まり、受講者の同期や手動完了の取り消しで矛盾しない", async () => {
+  it("セクションと課題をまたいで、最初の未完了レッスンが問題を止める", async () => {
+    const input = await gatedInput(await setupProblemSteps());
+    const earlierTaskId = "csharp-foundations/u01/earlier";
+    const earlierProblems = [PROBLEMS[0]];
+    const earlier = await problemBundle(CURRENT, earlierProblems, true, undefined, earlierTaskId);
+    const definition = JSON.stringify(earlier.definition);
+    const bundle = JSON.stringify(earlier.bundle);
+    await db.batch([
+      db
+        .insert(sections)
+        .values({ id: "next-unit", stageId: "stage", title: "次の単元", order: 1 }),
+      db.insert(lessons).values([
+        { id: "intro-quiz", sectionId: "unit", title: "知識問題", type: "quiz", order: -2 },
+        { id: "intro-text", sectionId: "unit", title: "まとめ", type: "text", order: -1 },
+        {
+          id: "earlier-step",
+          sectionId: "unit",
+          title: "別の課題の問題",
+          type: "text",
+          order: 3,
+          problemTaskId: earlierTaskId,
+          problemId: earlierProblems[0].id,
+        },
+        {
+          id: "next-video",
+          sectionId: "next-unit",
+          title: "次の単元の動画",
+          type: "video",
+          order: 0,
+        },
+      ]),
+      db.update(lessons).set({ sectionId: "next-unit" }).where(eq(lessons.id, "step-add")),
+      db.insert(tasks).values({
+        id: earlierTaskId,
+        sectionId: "unit",
+        title: "別の課題",
+        kind: "basic",
+        pattern: "calc",
+        skills: { uses: [], assesses: ["calc"] },
+        estimatedMinutes: 10,
+        order: 2,
+        contentHash: CURRENT,
+        definition,
+        bundle,
+        active: true,
+      }),
+      db
+        .insert(taskRevisions)
+        .values({ taskId: earlierTaskId, contentHash: CURRENT, definition, bundle }),
+    ]);
+
+    async function expectStep(
+      state: string,
+      after?: { afterLessonId: string; afterTitle: string },
+    ) {
+      const results = await problemResults();
+      const list = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+      expect(results.status, await results.clone().text()).toBe(200);
+      expect(list.status, await list.clone().text()).toBe(200);
+      const problem = { id: "q01-add", state, ...after };
+      const expected = [{ id: "q02-sub" }, problem];
+      const resultBody = await json<{ problems: Record<string, unknown>[] }>(results);
+      const listBody = await json<{
+        tasks: { id: string; problems?: Record<string, unknown>[] }[];
+      }>(list);
+      const listed = listBody.tasks.find((task) => task.id === TASK_ID);
+      expect(resultBody.problems).toMatchObject(expected);
+      expect(listed?.problems).toMatchObject(expected);
+      expect(listed?.problems?.map((item) => item.state)).toEqual(
+        resultBody.problems.map((item) => item.state),
+      );
+      const locked = resultBody.problems[1];
+      const listedLocked = listed?.problems?.[1];
+      if (after) {
+        expect(locked).toMatchObject(after);
+        expect(listedLocked).toMatchObject(after);
+      } else {
+        expect(locked).not.toHaveProperty("afterLessonId");
+        expect(locked).not.toHaveProperty("afterTitle");
+        expect(listedLocked).not.toHaveProperty("afterLessonId");
+        expect(listedLocked).not.toHaveProperty("afterTitle");
+      }
+    }
+
+    await expectStep("locked-video", { afterLessonId: "video", afterTitle: "計算の基礎" });
+    await db
+      .update(lessonProgress)
+      .set({ completed: true })
+      .where(eq(lessonProgress.lessonId, "video"));
+    expect((await manual(["q02-sub"])).status).toBe(200);
+    await expectStep("locked-previous", {
+      afterLessonId: "earlier-step",
+      afterTitle: "別の課題の問題",
+    });
+    const denied = await post(input);
+    expect(denied.status, await denied.clone().text()).toBe(409);
+    expect(await denied.json()).toMatchObject({
+      error: "この問題はまだ解けません。先に「別の課題の問題」を提出してください。",
+    });
+    expect(
+      await db.select().from(taskProblemResults).where(eq(taskProblemResults.problemId, "q01-add")),
+    ).toEqual([]);
+
+    expect((await manual(["q01-add"], false, earlierTaskId)).status).toBe(200);
+    await expectStep("locked-video", { afterLessonId: "next-video", afterTitle: "次の単元の動画" });
+    await db
+      .insert(lessonProgress)
+      .values({ userId: "learner", lessonId: "next-video", completed: true });
+    await expectStep("open");
+
+    const response = await post(input);
+    expect(response.status, await response.clone().text()).toBe(201);
+    await expectStep("submitted");
+  });
+
+  it("問題のレッスンの同期と手で済みは lesson_progress を書かず、完了は提出から返す", async () => {
     await setupProblemSteps();
     const sync = async (completed: boolean, updated_at: string, last_page: number) => {
       const result = await request(app(), env, "/api/lesson-progress", {
@@ -1168,27 +1289,39 @@ describe("問題の提出", () => {
         }),
       });
       expect(result.status, await result.clone().text()).toBe(200);
+      expect(await result.json()).toMatchObject({ ok: true, written: 0 });
+    };
+    const listed = async () => {
+      const progress = await request(app(), env, "/api/lesson-progress", { token });
+      expect(progress.status).toBe(200);
+      const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(progress);
+      return rows.find((row) => row.lesson_id === "step-sub");
     };
     await sync(true, "2099-01-01T00:00:00Z", 2);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 2 });
-    expect((await manual(["q02-sub"])).status).toBe(200);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: true, lastPage: 2 });
+    expect(await stepProgress("step-sub")).toBeUndefined();
+    expect(await db.select().from(studyActivity)).toEqual([]);
 
-    // 旧データの欠落を再現し、未完了と送られた新規行も提出から完了を決める。
-    await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, "step-sub"));
-    await sync(false, "2099-01-02T00:00:00Z", 2);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: true, lastPage: 2 });
-    await sync(false, "2099-01-03T00:00:00Z", 3);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: true, lastPage: 3 });
+    expect((await manual(["q02-sub"])).status).toBe(200);
+    expect(await stepProgress("step-sub")).toBeUndefined();
+    expect(await listed()).toMatchObject({ completed: true });
+
+    // 手元に残った写しは同期でも手で済みでも上書きしない。読みは提出を返す。
+    await db.insert(lessonProgress).values({
+      userId: "learner",
+      lessonId: "step-sub",
+      completed: false,
+      lastPage: 4,
+    });
+    await sync(true, "2099-01-02T00:00:00Z", 9);
+    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 4 });
+    expect(await listed()).toMatchObject({ completed: true });
 
     expect((await manual(["q02-sub"], true)).status).toBe(200);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 3 });
-    await db
-      .update(lessonProgress)
-      .set({ completed: true })
-      .where(eq(lessonProgress.lessonId, "step-sub"));
-    await sync(true, "2099-01-02T00:00:00Z", 1);
-    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 3 });
+    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 4 });
+    expect(await listed()).toMatchObject({ completed: false });
+    await sync(false, "2099-01-03T00:00:00Z", 1);
+    expect(await stepProgress("step-sub")).toMatchObject({ completed: false, lastPage: 4 });
+    expect(await db.select().from(studyActivity)).toEqual([]);
   });
 
   it.each([true, false])(
@@ -1220,11 +1353,10 @@ describe("問題の提出", () => {
       const results = await problemResults();
       expect(results.status).toBe(200);
       expect(await results.json()).toMatchObject({ problems });
-      expect(await stepProgress("step-sub")).toEqual(
-        passed ? expect.objectContaining({ completed: true }) : undefined,
-      );
+      expect(await stepProgress("step-sub")).toBeUndefined();
+      expect(await stepProgress("step-add")).toBeUndefined();
 
-      // ブラウザの値と逆でも、完了はサーバーの提出と課題の合格状態から決まる。
+      // 端末から届いた問題のレッスンは捨てる。完了の読みは提出と課題の合格状態から決まる。
       const synced = await request(app(), env, "/api/lesson-progress", {
         method: "POST",
         token,
@@ -1237,8 +1369,17 @@ describe("問題の提出", () => {
         }),
       });
       expect(synced.status).toBe(200);
-      expect(await stepProgress("step-sub")).toMatchObject({ completed: passed });
-      expect(await stepProgress("step-add")).toMatchObject({ completed: passed });
+      expect(await synced.json()).toMatchObject({ ok: true, written: 0 });
+      expect(await stepProgress("step-sub")).toBeUndefined();
+      expect(await stepProgress("step-add")).toBeUndefined();
+      const progress = await request(app(), env, "/api/lesson-progress", { token });
+      expect(progress.status).toBe(200);
+      const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(progress);
+      for (const lessonId of ["step-sub", "step-add"]) {
+        expect(rows.find((row) => row.lesson_id === lessonId)?.completed).toBe(
+          passed ? true : undefined,
+        );
+      }
 
       expect((await post(input)).status).toBe(passed ? 201 : 409);
     },
@@ -1265,15 +1406,16 @@ describe("問題の提出", () => {
   });
 
   it.each(["for-stage", "problem-results"] as const)(
-    "%s は今の版の提出済みステップの完了だけを補い、再読込で書き直さない",
+    "%s は提出済みでも lesson_progress を書かず、再読込でも変えない",
     async (endpoint) => {
       await setupProblemSteps();
       expect((await manual()).status).toBe(200);
-      await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, "step-sub"));
-      await db
-        .update(lessonProgress)
-        .set({ completed: false, lastPage: 2 })
-        .where(eq(lessonProgress.lessonId, "step-add"));
+      await db.insert(lessonProgress).values({
+        userId: "learner",
+        lessonId: "step-add",
+        completed: false,
+        lastPage: 2,
+      });
       const path =
         endpoint === "for-stage"
           ? "/api/tasks/for-stage/stage"
@@ -1281,18 +1423,26 @@ describe("問題の提出", () => {
       const changes = database.sqlite.prepare("select total_changes() as n");
       const before = Number(changes.get()?.n);
       expect((await request(app(), env, path, { token })).status).toBe(200);
-      expect(await stepProgress("step-sub")).toMatchObject({ completed: true });
-      expect(await stepProgress("step-add")).toMatchObject({ completed: true, lastPage: 2 });
-      expect(Number(changes.get()?.n)).toBe(before + 2);
+      expect(await stepProgress("step-sub")).toBeUndefined();
+      expect(await stepProgress("step-add")).toMatchObject({ completed: false, lastPage: 2 });
+      expect(Number(changes.get()?.n)).toBe(before);
       expect((await request(app(), env, path, { token })).status).toBe(200);
-      expect(Number(changes.get()?.n)).toBe(before + 2);
+      expect(Number(changes.get()?.n)).toBe(before);
+      const progress = await request(app(), env, "/api/lesson-progress", { token });
+      expect(progress.status).toBe(200);
+      const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(progress);
+      expect(rows.find((row) => row.lesson_id === "step-sub")).toMatchObject({ completed: true });
+      expect(rows.find((row) => row.lesson_id === "step-add")).toMatchObject({ completed: true });
     },
   );
 
   it("準備中の課題は件数を返し、ほかの課題の一覧を止めない", async () => {
     const input = await gatedInput(await setupProblemSteps());
     expect((await manual(["q02-sub"])).status).toBe(200);
-    await db.delete(taskProblemSteps).where(eq(taskProblemSteps.problemId, "q01-add"));
+    await db
+      .update(lessons)
+      .set({ problemTaskId: null, problemId: null })
+      .where(eq(lessons.problemId, "q01-add"));
     const response = await request(app(), env, "/api/tasks/for-stage/stage", { token });
     expect(response.status).toBe(200);
     const view = await json<{ tasks: { id: string }[] }>(response);
@@ -2335,6 +2485,23 @@ describe("問題の提出", () => {
     expect(second?.code).toBe("export const sub = 3;\n");
   });
 
+  it("最後の問題の提出で課題が合格したら、そのステージの修了を判定する", async () => {
+    const complete = vi.spyOn(stageAutoComplete, "autoCompleteStagesIfMet");
+    try {
+      await submitProblem("q01-add");
+      expect(complete).not.toHaveBeenCalled();
+      await submitProblem("q02-sub");
+      expect(complete).toHaveBeenCalledTimes(1);
+      expect(complete).toHaveBeenCalledWith(expect.anything(), {
+        actor: { id: "learner", role: "student", name: "受講者", email: null },
+        userId: "learner",
+        stageIds: ["stage"],
+      });
+    } finally {
+      complete.mockRestore();
+    }
+  });
+
   it("テストで確定しても submission_reviews に行が増えず、人の訂正は通る", async () => {
     await submitProblem("q01-add");
     await submitProblem("q02-sub");
@@ -2688,10 +2855,11 @@ async function problemBundle(
   problems: { id: string; title: string }[],
   gated = false,
   changedTest?: string,
+  taskId = TASK_ID,
 ) {
   const manifest: TaskManifest = {
     schemaVersion: 1,
-    id: TASK_ID,
+    id: taskId,
     title: "計算",
     kind: "basic",
     runner: "node-test",

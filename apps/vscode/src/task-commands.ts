@@ -17,7 +17,6 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
-import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import {
   canSubmit,
@@ -70,10 +69,10 @@ import {
   problemTaskProgress,
   problemToWorkOn,
   readProblemRun,
-  recordProblemSubmission,
   sendProblemConsultation,
   sendProblemSubmission,
   type ProblemState,
+  type ProblemSubmitResponse,
   type TaskProblems,
 } from "./task-problems.js";
 import { loadTaskProblems } from "./task-update-guard.js";
@@ -128,6 +127,11 @@ export function workspaceRoots(): string[] {
 export function isInside(file: string, dir: string): boolean {
   const rel = path.relative(dir, file);
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/** 課題フォルダーを含むワークスペースのフォルダー。学習フォルダーとして配布の基準にする。 */
+function trainingRootOf(taskRoot: string): string | undefined {
+  return workspaceRoots().find((folder) => isInside(taskRoot, folder));
 }
 
 /**
@@ -377,6 +381,7 @@ async function selectTaskProblem(
   manifest: TaskManifest,
   openPath: string | undefined,
   requestedProblem?: unknown,
+  forSubmission = false,
 ): Promise<ProblemSelection | undefined> {
   if (
     requestedProblem !== undefined &&
@@ -384,24 +389,24 @@ async function selectTaskProblem(
   )
     throw new Error("提出する問題がありません");
   if (!manifest.problems?.length) return undefined;
-  const snapshot = await loadTaskProblems(root, manifest);
-  const { states, blocked, nextReason, preparationError, unprepared } = snapshot;
-  if (manifest.problemSteps) {
-    const fromFile =
-      openPath && (problemForPath(manifest, openPath) ?? problemForTestPath(manifest, openPath));
-    const target =
-      typeof requestedProblem === "string" ? requestedProblem : fromFile ? fromFile.id : undefined;
-    const reason =
-      (target ? blocked.get(target) : undefined) ?? (states.length === 0 ? nextReason : undefined);
-    if (reason) throw new Error(reason);
+  const snapshot = await loadTaskProblems(root, manifest, {
+    trainingRoot: trainingRootOf(root),
+  });
+  const { states, blocked, releasePending, releaseError } = snapshot;
+  if (manifest.problemSteps && releasePending) {
+    throw new Error(
+      releaseError ?? "残りの問題のファイルを書き出してから、もう一度実行してください",
+    );
   }
   const chosen =
     requestedProblem === undefined
       ? chooseProblem(states, openPath, manifest)
       : states.find((state) => state.id === requestedProblem);
   if (requestedProblem !== undefined && !chosen) throw new Error("提出する問題がありません");
-  if (chosen && unprepared.has(chosen.id))
-    throw new Error(preparationError ?? "問題のファイルを準備できませんでした");
+  if (forSubmission && manifest.problemSteps && chosen) {
+    const reason = blocked.get(chosen.id);
+    if (reason) throw new Error(reason);
+  }
   return chosen ? { id: chosen.id, snapshot } : undefined;
 }
 
@@ -457,6 +462,7 @@ async function checkTask(
       manifest,
       options.forSubmission ? options.openPath : requestedProblemPath(root, options.requested),
       options.requestedProblem,
+      options.forSubmission,
     );
     const problem = selection?.id;
     const startedAt = Date.now();
@@ -514,7 +520,7 @@ async function checkTask(
       options.forSubmission &&
       snapshot &&
       (result.outcome === "failed" || result.outcome === "error") &&
-      problemToWorkOn(snapshot.states, snapshot.unprepared)?.id === problem;
+      problemToWorkOn(snapshot.states)?.id === problem;
     if (showProblemGuide) {
       const active = vscode.window.activeTextEditor?.document.uri;
       const reveal =
@@ -623,7 +629,7 @@ async function submitTaskCommand(
     let resubmitTaskId: string | undefined;
     if (mode === "submit") {
       const openPath = requestedProblemPath(root, requestedRoot);
-      let selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
+      let selection = await selectTaskProblem(root, manifest, openPath, requestedProblem, true);
       if (manifest.problems?.length && !selection) throw new Error("提出する問題がありません");
       const plan = RUNNERS[manifest.runner].plan;
       const previous =
@@ -665,7 +671,9 @@ async function submitTaskCommand(
           const selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
           problem = selection?.snapshot.states.find(({ id }) => id === selection.id);
         } else {
-          const { states } = await loadTaskProblems(root, manifest);
+          const { states } = await loadTaskProblems(root, manifest, {
+            trainingRoot: trainingRootOf(root),
+          });
           problem =
             states.find((state) => state.id === requestedProblem) ??
             chooseProblem(states, openPath, manifest);
@@ -775,6 +783,49 @@ async function submitTaskCommand(
   }
 }
 
+/**
+ * 提出は受理済みで、問題の状態を取り直せなかったとき。
+ * 件数と受理した問題だけを反映し、後続が解けるかは次に取り直すまで変えない。
+ */
+function reflectAcceptedProblem(
+  previous: TaskProblems,
+  problemId: string,
+  response: ProblemSubmitResponse,
+  failed: Pick<TaskProblems, "releasePending" | "releaseError"> | undefined,
+): TaskProblems {
+  const states = previous.states.map((state) =>
+    state.id === problemId
+      ? {
+          id: state.id,
+          title: state.title,
+          source: state.source,
+          status: "submitted" as const,
+          ...(state.onDisk ? { onDisk: true as const } : {}),
+        }
+      : state,
+  );
+  const blocked = new Map(
+    states.flatMap((state) => (state.lockReason ? ([[state.id, state.lockReason]] as const) : [])),
+  );
+  return {
+    ...(previous.server
+      ? {
+          server: {
+            ...previous.server,
+            passedProblems: response.passedProblems,
+            totalProblems: response.totalProblems,
+            taskPassed: response.taskPassed,
+          },
+        }
+      : {}),
+    states,
+    blocked,
+    progress: { passed: response.passedProblems, total: response.totalProblems },
+    ...(failed?.releasePending ? { releasePending: true } : {}),
+    ...(failed?.releaseError ? { releaseError: failed.releaseError } : {}),
+  };
+}
+
 /** 問題つきの課題を、説明欄なしで 1 問提出して次の問題を案内する。 */
 async function submitProblemTask(
   root: string,
@@ -790,9 +841,6 @@ async function submitProblemTask(
   });
   refreshLearningSidebar();
   if (manifest.problemSteps) {
-    const receipt = await readDistribution(root).catch(() => undefined);
-    if (receipt?.taskId === manifest.id)
-      await recordProblemSubmission(root, receipt.contentHash, problemId);
     if (session !== apiSession()) return;
     const webUrl = submissionWebUrl(manifest.id, problemId);
     void vscode.window
@@ -806,39 +854,31 @@ async function submitProblemTask(
         if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
           await vscode.env.openExternal(vscode.Uri.parse(webUrl));
       });
-    const refreshed = await loadTaskProblems(root, manifest, { afterSubmission: true });
+    let refreshed: TaskProblems | undefined;
+    let refreshError: unknown;
+    try {
+      refreshed = await loadTaskProblems(root, manifest, {
+        afterSubmission: true,
+        trainingRoot: trainingRootOf(root),
+      });
+    } catch (error) {
+      refreshError = error;
+    }
     if (session !== apiSession()) return;
+    const problems = refreshed?.server
+      ? refreshed
+      : reflectAcceptedProblem(previous, problemId, response, refreshed);
     setCurrentTask({
       root,
       title: manifest.title,
-      ...problemTaskProgress(manifest, refreshed),
+      ...problemTaskProgress(manifest, problems),
+      problemActionsAvailable: !problems.releasePending,
     });
     notifyProblemTaskOpened(root);
     if (taskReadmeRoot() === root)
-      void renderTaskReadme(root, { reveal: false }, {}, refreshed).catch(() => undefined);
-    if (refreshed.preparationError) {
-      void vscode.window.showWarningMessage(refreshed.preparationError);
-      return;
-    }
-    const next = refreshed.states.find(
-      (state) => state.status !== "submitted" && !previous.states.some(({ id }) => id === state.id),
-    );
-    if (next) {
-      const index = manifest.problems?.findIndex(({ id }) => id === next.id) ?? 0;
-      const label = problemStepLabel(next.title, index);
-      const open = "ファイルを開く";
-      void vscode.window
-        .showInformationMessage(`次の問題「${label} ${next.title}」が出ました`, open)
-        .then((choice) => {
-          if (choice === open && session === apiSession())
-            return openTaskFileCommand(root, next.source);
-        })
-        .then(undefined, (error: unknown) => {
-          void vscode.window.showErrorMessage(
-            error instanceof Error ? error.message : String(error),
-          );
-        });
-    }
+      void renderTaskReadme(root, { reveal: false }, {}, problems).catch(() => undefined);
+    if (problems.releaseError) void vscode.window.showWarningMessage(problems.releaseError);
+    if (refreshError) throw refreshError;
     return;
   }
   const marked = previous.states.map((state) =>
@@ -947,10 +987,13 @@ async function renderTaskReadme(
   const session = apiSession();
   const [edit, problems] = await Promise.all([
     manifest.problems?.length ? { files: [], missing: [] } : resolveEditFiles(root, manifest),
-    manifest.problems?.length ? (problemSnapshot ?? loadTaskProblems(root, manifest)) : undefined,
+    manifest.problems?.length
+      ? (problemSnapshot ??
+        loadTaskProblems(root, manifest, { trainingRoot: trainingRootOf(root) }))
+      : undefined,
     refreshTaskState(root, manifest.id, refresh),
   ]);
-  const current = problems && problemToWorkOn(problems.states, problems.unprepared);
+  const current = problems && problemToWorkOn(problems.states);
   const problemRun =
     current &&
     (latestRun?.problemId === current.id
@@ -974,14 +1017,11 @@ async function renderTaskReadme(
         manifest,
         edit,
         ...(lastRun ? { lastRun } : {}),
-        ...(problems ? { problems: problems.states, unpreparedProblems: problems.unprepared } : {}),
+        ...(problems ? { problems: problems.states } : {}),
+        ...(problems?.releaseError ? { releaseError: problems.releaseError } : {}),
         ...(server ? { problemResults: server } : {}),
         ...(problemRun ? { problemRun, problemTestLines } : {}),
         ...(stageId ? { stageId } : {}),
-        ...(problems?.nextReason ? { nextProblemReason: problems.nextReason } : {}),
-        ...(problems?.preparationError
-          ? { problemPreparationError: problems.preparationError }
-          : {}),
         ...(problems && helpLabel && !refresh.skipLms ? { helpLabel } : {}),
         ...(!manifest.problems && lmsStatus && !refresh.skipLms && session === apiSession()
           ? { taskStatus: lmsStatus }
@@ -995,7 +1035,12 @@ async function renderTaskReadme(
     setCurrentTask({
       root,
       title: manifest.title,
-      ...(problems ? problemTaskProgress(manifest, problems) : { taskId: manifest.id }),
+      ...(problems
+        ? {
+            ...problemTaskProgress(manifest, problems),
+            problemActionsAvailable: !problems.releasePending,
+          }
+        : { taskId: manifest.id }),
     });
   }
 }
@@ -1027,7 +1072,7 @@ async function readLastProblemResult(root: string, manifest: TaskManifest, reque
       : undefined;
   const problem = file && (problemForPath(manifest, file) ?? problemForTestPath(manifest, file));
   const visible = manifest.problemSteps
-    ? (await loadTaskProblems(root, manifest)).states
+    ? (await loadTaskProblems(root, manifest, { trainingRoot: trainingRootOf(root) })).states
     : (manifest.problems ?? []);
   if (problem)
     return visible.some(({ id }) => id === problem.id)
@@ -1073,19 +1118,6 @@ async function openTaskFileCommand(requested: unknown, rel: unknown): Promise<vo
   if (typeof rel !== "string") throw new Error("開くファイルが指定されていません");
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
-  if (loaded.manifest.problemSteps) {
-    const problem = problemForPath(loaded.manifest, rel);
-    if (problem) {
-      const { blocked, unprepared, preparationError } = await loadTaskProblems(
-        root,
-        loaded.manifest,
-      );
-      const reason = blocked.get(problem.id);
-      if (reason) throw new Error(reason);
-      if (unprepared.has(problem.id))
-        throw new Error(preparationError ?? "問題のファイルを準備できませんでした");
-    }
-  }
   const { files } = await resolveEditFiles(root, loaded.manifest);
   if (!files.includes(rel)) throw new Error(`${rel} は、この課題で編集するファイルではありません`);
   // 一覧を作ってから開くまでの間にリンクへ差し替えられていないか、開く直前にも確かめる

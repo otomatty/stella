@@ -183,13 +183,15 @@ export interface TaskGuideInput {
   helpLabel?: string;
   /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
   problems?: ProblemState[];
+  problemProgress?: { passed: number; total: number };
+  /** 古い配布の控えを書き出せなかったとき。 */
+  releaseError?: string;
   problemResults?: ProblemResults;
   problemRun?: RunResult;
   problemTestLines?: ReadonlyMap<TestCaseResult, number>;
   stageId?: string;
   nextProblemReason?: string;
   problemPreparationError?: string;
-  unpreparedProblems?: ReadonlySet<string>;
   os: OsName;
 }
 
@@ -360,15 +362,19 @@ export function guideProblems(input: TaskGuideInput) {
     const lock: "locked-video" | "locked-previous" | "waiting" | undefined =
       remote?.state === "locked-video" || remote?.state === "locked-previous"
         ? remote.state
-        : input.problems && !local
-          ? "waiting"
-          : undefined;
+        : local?.lockReason
+          ? "locked-previous"
+          : input.problems && !local
+            ? "waiting"
+            : undefined;
     return {
       id,
       title,
       index,
       label: problemStepLabel(title, index),
       source: local?.source ?? problemSource(input.manifest, id),
+      hasLocalSource: local?.onDisk === true,
+      lockReason: local?.lockReason,
       status: local?.status ?? "not-submitted",
       failed: local?.failed,
       lock,
@@ -380,12 +386,12 @@ type GuideProblem = ReturnType<typeof guideProblems>[number];
 type LockedProblem = NonNullable<GuideProblem["lock"]>;
 
 export function problemNow(input: TaskGuideInput, items = guideProblems(input)) {
-  const currentId = input.problems && problemToWorkOn(input.problems, input.unpreparedProblems)?.id;
+  if (input.releaseError) return { kind: "waiting", current: undefined } as const;
+  const currentId = input.problems && problemToWorkOn(input.problems)?.id;
   const current = items.find(
     (item) =>
       !item.lock &&
       item.source &&
-      !input.unpreparedProblems?.has(item.id) &&
       (input.problems ? item.id === currentId : item.status !== "submitted"),
   );
   if (current) {
@@ -400,8 +406,7 @@ export function problemNow(input: TaskGuideInput, items = guideProblems(input)) 
   }
   const pending = items.filter(({ status }) => status !== "submitted");
   if (!pending.length) return { kind: "done", current: undefined } as const;
-  if (input.problemPreparationError || input.unpreparedProblems?.size)
-    return { kind: "waiting", current: undefined } as const;
+  if (input.problemPreparationError) return { kind: "waiting", current: undefined } as const;
   const next = input.problemResults?.problems.find(({ id }) =>
     pending.some((item) => item.id === id),
   );
@@ -505,7 +510,7 @@ function problemListHtml(
   items: GuideProblem[],
   current?: GuideProblem,
 ): string {
-  const { root, unpreparedProblems } = input;
+  const { root } = input;
   const rows = problemRows(items).map((row) => {
     if (row.lock) {
       const reason =
@@ -514,14 +519,33 @@ function problemListHtml(
           : row.lock === "locked-previous"
             ? "前の問題のあとに出る"
             : "未解放";
-      return `<li class="locked"><span aria-hidden="true">🔒</span><span class="problem-row-title">${lockedRange(row.items)}</span><span class="problem-status">${reason} ${row.items.length} 問</span></li>`;
+      const known = row.items.flatMap((item) => {
+        const linked =
+          item.hasLocalSource && item.source
+            ? [
+                link(
+                  "stella.openTaskFile",
+                  [root, item.source],
+                  escapeHtml(item.title),
+                  "problem-row-title",
+                ),
+                `<code>${escapeHtml(item.source)}</code>`,
+              ]
+            : [];
+        return item.lockReason
+          ? [
+              ...linked,
+              `<span class="problem-status locked">🔒 ${escapeHtml(item.lockReason)}</span>`,
+            ]
+          : linked;
+      });
+      return `<li class="locked"><span aria-hidden="true">🔒</span><span class="problem-row-title">${lockedRange(row.items)}</span><span class="problem-status">${reason} ${row.items.length} 問</span>${known.join("")}</li>`;
     }
     const item = row.item;
     const title = escapeHtml(item.title);
-    const file =
-      item.source && !unpreparedProblems?.has(item.id)
-        ? link("stella.openTaskFile", [root, item.source], title, "problem-row-title")
-        : `<span class="problem-row-title">${title}</span>`;
+    const file = item.source
+      ? link("stella.openTaskFile", [root, item.source], title, "problem-row-title")
+      : `<span class="problem-row-title">${title}</span>`;
     const submitted = item.status === "submitted";
     const status = item.failed && !submitted ? "要確認" : PROBLEM_STATUS_LABELS[item.status];
     const icon = submitted ? "✓" : item.failed ? "!" : "○";
@@ -638,7 +662,7 @@ function problemNowHtml(input: TaskGuideInput, now: ReturnType<typeof problemNow
     return card(
       "waiting",
       "問題を準備しています",
-      `<p>${escapeHtml(input.problemPreparationError ?? input.nextProblemReason ?? "解放の状態を確かめるには、表示を更新してください。")}</p>`,
+      `<p>${escapeHtml(input.releaseError ?? input.problemPreparationError ?? input.nextProblemReason ?? "解放の状態を確かめるには、表示を更新してください。")}</p>`,
       link("stella.showTaskReadme", [root], "表示を更新する", "button"),
     );
   const { id, label, title, source } = now.current;
@@ -691,6 +715,7 @@ function buildProblemGuideHtml(input: TaskGuideInput): string {
     '<div class="guide problem-guide">',
     problemProgressHtml(items, now),
     problemNowHtml(input, now),
+    input.releaseError ? `<p>${escapeHtml(input.releaseError)}</p>` : "",
     problemRefsHtml(refs),
     problemListHtml(input, items, now.current),
     `<footer><p class="help">${help}${consultLink(root, now.current?.id)} ・ ${logLink()}</p>${problemRefsHtml(problemResults?.refs)}</footer>`,
