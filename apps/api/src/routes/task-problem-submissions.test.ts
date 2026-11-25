@@ -886,6 +886,58 @@ describe("問題の提出", () => {
     expect(await db.select().from(submissions)).toEqual([]);
   });
 
+  it("今の版の definition が after だけでも、まだ解けない問題は書かずに断る", async () => {
+    const current = await problemBundle(CURRENT, PROBLEMS, true);
+    expect(current.definition).not.toHaveProperty("problemSteps");
+    expect(current.bundle.manifest.problemSteps).toBe(true);
+    await db.batch([
+      db
+        .update(tasks)
+        .set({
+          definition: JSON.stringify(current.definition),
+          bundle: JSON.stringify(current.bundle),
+        })
+        .where(eq(tasks.id, TASK_ID)),
+      db
+        .update(taskRevisions)
+        .set({
+          definition: JSON.stringify(current.definition),
+          bundle: JSON.stringify(current.bundle),
+        })
+        .where(eq(taskRevisions.taskId, TASK_ID)),
+      db.insert(lessons).values([
+        { id: "video", sectionId: "unit", title: "計算の基礎", type: "slides", order: 0 },
+        {
+          id: "step-sub",
+          sectionId: "unit",
+          title: "問2 引く",
+          type: "text",
+          order: 1,
+          problemTaskId: TASK_ID,
+          problemId: "q02-sub",
+        },
+        {
+          id: "step-add",
+          sectionId: "unit",
+          title: "問1 足す",
+          type: "text",
+          order: 2,
+          problemTaskId: TASK_ID,
+          problemId: "q01-add",
+        },
+      ]),
+    ]);
+    const response = await post(
+      await problemInput(CURRENT, PROBLEMS, "q01-add", undefined, current),
+    );
+    expect(response.status, await response.clone().text()).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: expect.stringContaining("この問題はまだ解けません"),
+    });
+    expect(await db.select().from(taskProblemResults)).toEqual([]);
+    expect(await db.select().from(submissions)).toEqual([]);
+  });
+
   const THIRD_PROBLEM = { id: "q03-mul", title: "掛ける" };
 
   async function useOriginalProblems(problems: typeof PROBLEMS) {
@@ -3011,7 +3063,6 @@ async function problemBundle(
     submit: { explanation: true, debuggingRecord: true },
     skills: { assesses: ["calc"] },
     problems: gated ? problems.map((problem) => ({ ...problem, after: "video" })) : problems,
-    ...(gated ? { problemSteps: true } : {}),
   };
   return { bundle, definition, manifestText, protectedFiles };
 }

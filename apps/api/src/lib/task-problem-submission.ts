@@ -108,22 +108,6 @@ export function readTaskDefinition(definition: string): TaskDefinitionView {
   };
 }
 
-/** 解放を見るかは今の版の定義。行が無い、または JSON でなければ提出された版に戻る。 */
-function revisionUsesProblemSteps(
-  definition: string | undefined,
-  submitted: boolean | undefined,
-): boolean {
-  if (definition === undefined) return submitted === true;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(definition);
-  } catch {
-    return submitted === true;
-  }
-  if (!parsed || typeof parsed !== "object") return submitted === true;
-  return (parsed as { problemSteps?: unknown }).problemSteps === true;
-}
-
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -506,7 +490,10 @@ export async function submitTaskProblem(
         passedSubmissions.length > 0 &&
         passedSubmissions.every((row) => row.reviewSource === "manual");
       let hashes: ProblemRevisionHashes | undefined;
-      if (revisionUsesProblemSteps(current?.definition, bundle.manifest.problemSteps)) {
+      if (
+        bundle.manifest.problemSteps === true ||
+        (defined.problems?.some((problem) => problem.after) ?? false)
+      ) {
         const locks = await loadStageStepLocks(db, caller.id, task.stageId, {
           verifyPassedTaskId: canReplaceManualPass ? task.id : undefined,
         });
