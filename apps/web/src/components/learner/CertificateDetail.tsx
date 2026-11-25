@@ -10,7 +10,7 @@ import type { CertificateRow } from "@stella/shared/cms/types";
 import { toast } from "sonner";
 import { CertificateView } from "@/components/common/CertificateView";
 import { Button } from "@/components/ui/button";
-import { SkeletonRows } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buildVerificationUrl, listCertificatesForUser } from "@/lib/certificates-api";
 import {
   achievementRows,
@@ -47,7 +47,14 @@ export function CertificateDetail({
       </div>
     );
   }
-  if (!userId) return <SkeletonRows rows={3} className="py-6" />;
+  if (!userId) {
+    return (
+      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-5 pb-24">
+        <BackToList />
+        <CertificateDetailSkeleton />
+      </div>
+    );
+  }
   return <LiveCertificateDetail certId={certId} userId={userId} autoPrint={autoPrint} />;
 }
 
@@ -88,13 +95,92 @@ function LiveCertificateDetail({
   return (
     <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-5 pb-24">
       <BackToList />
-      {rows === null ? <SkeletonRows rows={3} className="py-6" /> : null}
+      {rows === null ? <CertificateDetailSkeleton /> : null}
       {rows !== null && !cert ? (
         <p className="text-[15px]">
           {failed ? "修了証の読み込みに失敗しました" : "この修了証は見つかりません"}
         </p>
       ) : null}
       {cert ? <CertificateBody cert={cert} autoPrint={autoPrint} /> : null}
+    </div>
+  );
+}
+
+function CertificateDetailSkeleton() {
+  const factRows = ["first", "second", "third"];
+
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="修了証を読み込んでいます"
+      className="flex min-w-0 flex-col gap-5"
+    >
+      <div className="flex flex-col gap-1.5">
+        <div className="flex h-5 items-center">
+          <Skeleton className="h-3.5 w-10" />
+        </div>
+        <Skeleton className="h-7 w-2/3 lg:h-8" />
+        <div className="flex h-5 items-center">
+          <Skeleton className="h-3.5 w-28 lg:w-64" />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-7 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          <Skeleton className="aspect-[297/210] w-full rounded-none border border-border shadow-lg" />
+          <Skeleton className="mt-3 h-4 w-4/5" />
+        </div>
+
+        <div className="hidden w-80 shrink-0 flex-col gap-3.5 lg:flex">
+          <div className="flex flex-col gap-2.5 rounded-md border border-border bg-card p-[18px]">
+            <Skeleton className="h-5 w-20" />
+            <div className="flex flex-col gap-2.5">
+              {factRows.map((key) => (
+                <Skeleton key={key} className="h-10 w-full" />
+              ))}
+            </div>
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+          <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-[18px]">
+            <Skeleton className="h-5 w-20" />
+            <div className="flex flex-col gap-2.5">
+              {factRows.map((key) => (
+                <div key={key} className="flex h-5 items-center justify-between gap-3">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3.5 w-14" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+          <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-[18px]">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-4 w-full" />
+            <div className="flex h-8 items-center">
+              <Skeleton className="h-3.5 w-44" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 lg:hidden">
+          <div className="flex flex-col gap-2.5">
+            {factRows.map((key) => (
+              <Skeleton key={key} className="min-h-11 w-full" />
+            ))}
+          </div>
+          <Skeleton className="h-4 w-4/5" />
+          <div className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card">
+            {factRows.map((key) => (
+              <div key={key} className="flex flex-col gap-0.5 px-3.5 py-3">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
