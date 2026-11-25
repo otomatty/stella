@@ -1,3 +1,5 @@
+import { blockingStep, type LockStep } from "./step-lock.js";
+
 export type ProblemStepState = "locked-video" | "locked-previous" | "open" | "submitted";
 
 export interface ProblemStep {
@@ -22,8 +24,9 @@ export interface TaskProblemStepSummary {
   title: string;
   label: string;
   stepLessonId: string;
-  afterLessonId: string;
-  afterTitle: string;
+  /** ロック中に止めているステップ。開いている・提出済みのときは付けない。 */
+  afterLessonId?: string;
+  afterTitle?: string;
   state: ProblemStepState;
   refs: TaskRefSummary[];
   /** 管理者が過去の学習から引き継いだ問題にだけ付ける。 */
@@ -33,6 +36,26 @@ export interface TaskProblemStepSummary {
 /** 問番号は教材の problems の位置、提出の順序はレッスン一覧の位置で決まります。 */
 export function problemStepLabel(title: string, index: number): string {
   return title.includes("応用問題") ? "応用" : `問${index + 1}`;
+}
+
+export interface PresentedProblemStep {
+  state: ProblemStepState;
+  /** ロック中に止めているステップ。開いている・提出済みは null。 */
+  blocking: LockStep | null;
+}
+
+export function presentProblemStep(
+  steps: readonly LockStep[],
+  index: number,
+  done: ReadonlySet<string>,
+): PresentedProblemStep | null {
+  const step = steps[index];
+  if (step?.kind !== "problem") return null;
+  if (done.has(step.id)) return { state: "submitted", blocking: null };
+
+  const blocking = blockingStep(steps, index, done);
+  if (!blocking) return { state: "open", blocking: null };
+  return { state: blocking.kind === "problem" ? "locked-previous" : "locked-video", blocking };
 }
 
 /** ファイル冒頭の行コメントから、問題の見出しと本文を読む。 */
@@ -47,23 +70,4 @@ export function problemStatementFromSource(
   }
   const [heading, ...details] = statement;
   return heading ? { heading, details } : undefined;
-}
-
-export function problemStepStates(
-  steps: readonly ProblemStep[],
-  completedLessonIds: ReadonlySet<string>,
-  submittedProblemIds: ReadonlySet<string>,
-): Map<string, ProblemStepState> {
-  const states = new Map<string, ProblemStepState>();
-  const byPosition = new Map(steps.map((step) => [step.position, step.problemId]));
-  for (const { problemId, afterLessonId, position } of steps) {
-    const previous = byPosition.get(position - 1);
-    let state: ProblemStepState = "open";
-    if (submittedProblemIds.has(problemId)) state = "submitted";
-    else if (!completedLessonIds.has(afterLessonId)) state = "locked-video";
-    else if (position > 0 && (!previous || !submittedProblemIds.has(previous)))
-      state = "locked-previous";
-    states.set(problemId, state);
-  }
-  return states;
 }

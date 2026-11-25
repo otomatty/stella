@@ -1469,7 +1469,14 @@ describe("問題つきの課題", () => {
     });
     await run("stella.showTaskReadme", root);
     expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).toMatchObject({
-      problems: [expect.objectContaining({ id: "q01-add", status: "submitted" })],
+      problems: [
+        expect.objectContaining({ id: "q01-add", status: "submitted" }),
+        expect.objectContaining({
+          id: "q02-sub",
+          status: "not-submitted",
+          lockReason: "「引き算」を終えると解けます",
+        }),
+      ],
       problemResults: { problems: [expect.anything(), { id: "q02-sub", state: "locked-video" }] },
     });
   });
@@ -1513,7 +1520,7 @@ describe("問題つきの課題", () => {
     expect(body.body.explanation).toBe("");
   });
 
-  it("未解放の問題は確認と提出を手元で止め、同じ理由を表示する", async () => {
+  it("ロック中の問題は確認でき、提出はその理由で止める", async () => {
     const root = await problemRoot(undefined, "passed", true);
     apiRequest.mockResolvedValue({
       gated: true,
@@ -1525,16 +1532,103 @@ describe("問題つきの課題", () => {
         { id: "q02-sub", state: "locked-video", afterTitle: "引き算" },
       ],
     });
-    const reason = "次の問題は「引き算」の動画を見ると出ます";
+    const reason = "「引き算」を終えると解けます";
+    vi.mocked(runTask).mockResolvedValueOnce({
+      schemaVersion: 1,
+      taskId: problemTask.id,
+      runner: "node-test",
+      outcome: "failed",
+      startedAt: "2026-11-06T00:00:00.000Z",
+      durationMs: 1,
+      platform: process.platform,
+      toolVersions: {},
+      steps: [],
+      files: [],
+      protected: [],
+      manifestSha256: "ab".repeat(32),
+      problemId: "q02-sub",
+    });
     await run("stella.runTask", root, "q02-sub");
-    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining(reason));
-    expect(runTask).not.toHaveBeenCalled();
+    expect(runTask).toHaveBeenCalledWith(expect.objectContaining({ problem: "q02-sub" }));
+    expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
     await run("stella.submitTask", root, "q02-sub");
     expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(reason);
     expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
   });
 
-  it("提出後の更新で解放された問題を知らせ、選ぶと開く", async () => {
+  it("控えたファイルの書き出しが終わっていない間は、確認も提出も止める", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    await unlink(path.join(root, "src/q02-sub.ts"));
+    const receipt = JSON.parse(
+      await readFile(path.join(root, ".stella/distribution.json"), "utf8"),
+    ) as { deferred?: unknown };
+    await writeFile(
+      path.join(root, ".stella/distribution.json"),
+      JSON.stringify({ ...receipt, deferred: { "src/q02-sub.ts": null } }),
+    );
+    const reason = "教材を取得できません";
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (String(url).includes("/api/tasks/bundle")) throw new Error(reason);
+      return {
+        gated: true,
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: "open" },
+          { id: "q02-sub", state: "open" },
+        ],
+      };
+    });
+    await run("stella.runTask", root, "q01-add");
+    expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(
+      `確認を実行できませんでした: ${reason}`,
+    );
+    expect(runTask).not.toHaveBeenCalled();
+    await run("stella.submitTask", root, "q01-add");
+    expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(reason);
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+    await expect(readFile(path.join(root, "src/q02-sub.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
+  it("提出のあと問題の状態を取り直せなくても、提出済みの数を戻さない", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    let submitted = false;
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") {
+        submitted = true;
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      if (submitted) throw new Error("問題の状態を読み出せません");
+      return {
+        gated: true,
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: "open" },
+          { id: "q02-sub", state: "locked-previous", afterTitle: "足す" },
+        ],
+      };
+    });
+
+    await run("stella.submitTask", root);
+
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      "提出しました (1/2 問)",
+      "Web で開く",
+    );
+    const published = vscodeMock.setCurrentTask.mock.lastCall?.[0] as {
+      problemProgress?: { passed: number; total: number };
+      currentProblem?: { id: string };
+    };
+    expect(published.problemProgress).toEqual({ passed: 1, total: 2 });
+    expect(published.currentProblem).toBeUndefined();
+  });
+
+  it("段階のある課題の提出は控えを書かず、件数だけ知らせる", async () => {
     const root = await problemRoot(undefined, "passed", true);
     vscodeMock.getCachedCatalog.mockReturnValue([
       {
@@ -1564,7 +1658,7 @@ describe("問題つきの課題", () => {
         taskPassed: false,
         problems: [
           { id: "q01-add", state: submitted ? "submitted" : "open" },
-          { id: "q02-sub", state: submitted ? "open" : "locked-previous" },
+          { id: "q02-sub", state: "open" },
         ],
       };
     });
@@ -1578,20 +1672,19 @@ describe("問題つきの課題", () => {
       scheme: "https",
       url: "https://stella.example/stages/stage/lessons/problem-add",
     });
-    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
-      "次の問題「問2 引く」が出ました",
-      "ファイルを開く",
-    );
-    await vi.waitFor(() =>
-      expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
-        "vscode.open",
-        { scheme: "file", fsPath: path.join(root, "src/q02-sub.ts") },
-        { viewColumn: 1, preview: false },
-      ),
-    );
     expect(
-      JSON.parse(await readFile(path.join(root, ".stella/submitted-q01-add.json"), "utf8")),
-    ).toEqual({ contentHash: "ab".repeat(32) });
+      vscodeMock.showInformationMessage.mock.calls.some((call) =>
+        String(call[0]).includes("出ました"),
+      ),
+    ).toBe(false);
+    await expect(readFile(path.join(root, ".stella/submitted-q01-add.json"))).rejects.toMatchObject(
+      {
+        code: "ENOENT",
+      },
+    );
+    await expect(readFile(path.join(root, ".stella/problem-steps.json"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("API の提出拒否の理由をそのまま表示する", async () => {

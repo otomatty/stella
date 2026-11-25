@@ -134,7 +134,7 @@ describe("動画と提出で解放する課題の仕上げ", () => {
     expect(wrapup?.detail).toContain("問1 税込価格を返す");
   });
 
-  it("解ける問題がなければ、その原因の動画を案内する", () => {
+  it("解ける問題がなければ、止めている教材を案内する", () => {
     const wrapup = stageWrapupOf([
       task("a", "not-started", {
         problems_total: 2,
@@ -143,9 +143,23 @@ describe("動画と提出で解放する課題の仕上げ", () => {
     ]);
     expect(wrapup).toMatchObject({
       learnerTurn: true,
-      nextLesson: { id: "video-earlier", action: "動画を見る" },
+      nextLesson: { id: "video-earlier", action: "教材を開く" },
     });
-    expect(wrapup?.detail).toContain("「関数の返り値」の動画を見ると解けます");
+    expect(wrapup?.detail).toContain("「関数の返り値」を終えると解けます");
+  });
+
+  it("前の問題で止まっていれば、その問題を開く", () => {
+    const wrapup = stageWrapupOf([
+      task("a", "not-started", {
+        problems_total: 1,
+        problems: [step("later", "locked-previous")],
+      }),
+    ]);
+    expect(wrapup).toMatchObject({
+      learnerTurn: true,
+      nextLesson: { id: "video-later", action: "問題を開く" },
+    });
+    expect(wrapup?.detail).toContain("「関数の返り値」を提出すると解けます");
   });
 
   it("解ける問題も未視聴の動画もなければ課題の起動を案内しない", () => {

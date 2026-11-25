@@ -18,7 +18,6 @@ import {
   stages,
   submissions,
   taskProblemResults,
-  taskProblemSteps,
   taskProgress,
   tasks,
   tenants,
@@ -108,6 +107,7 @@ it.each([
         sectionId: "unit",
         title: id,
         type: "text" as const,
+        ...(id === "step" ? { problemTaskId: "steps", problemId: "q01" } : {}),
       })),
     );
     const task = {
@@ -129,13 +129,6 @@ it.each([
       { ...task, id: "inactive", lessonId: "plain", definition, active: false },
       { ...task, id: "variant", lessonId: "plain", definition, variantOf: "overview" },
     ]);
-    await db.insert(taskProblemSteps).values({
-      taskId: "steps",
-      problemId: "q01",
-      stepLessonId: "step",
-      afterLessonId: "plain",
-      position: 0,
-    });
     await db.insert(taskProgress).values(
       ["overview", "plain", "steps"].map((taskId): typeof taskProgress.$inferInsert => ({
         userId,
@@ -199,7 +192,7 @@ it.each([
       code: "",
       sha256: "hash",
       firstPassedAt: now,
-      updatedAt: now,
+      updatedAt: new Date(0),
     });
     await expectCompletion(2, false);
     expect(await autoCompleteStagesIfMet(db, input)).toEqual([]);

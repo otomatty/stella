@@ -622,8 +622,8 @@ describe("export-seed-sql (sqlite)", () => {
       db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
         values ('task-lesson-progress', 'ses', 'upgrade-learner', ?, 0, 1)`).run(oldTaskLesson);
       db.prepare(`insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
-        select 'problem-lesson-progress', 'ses', 'upgrade-learner', step_lesson_id, 1, 1
-        from task_problem_steps where task_id = ? and position = 0`).run(problemTaskId);
+        select 'problem-lesson-progress', 'ses', 'upgrade-learner', id, 1, 1
+        from lessons where problem_task_id = ? order by "order" limit 1`).run(problemTaskId);
 
       // 同じ seed を再適用しても削除・履歴作成が増殖しない。
       db.exec(sql);

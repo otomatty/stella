@@ -1,16 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type Db, getDb } from "../db/client.js";
-import {
-  lessons,
-  quizQuestions,
-  quizzes,
-  sections,
-  stages,
-  taskProblemSteps,
-  tasks,
-  tenants,
-} from "../db/schema.js";
+import { lessons, quizQuestions, quizzes, sections, stages, tasks, tenants } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { loadStageContentSummaries } from "./stage-content-summary.js";
@@ -51,7 +42,14 @@ describe("loadStageContentSummaries", () => {
       { ...lesson, id: "doc", title: "まとめ", type: "text" },
       { ...lesson, id: "task-doc", title: "課題文", type: "text" },
       { ...lesson, id: "inactive-doc", title: "休止中の課題文", type: "text" },
-      { ...lesson, id: "step", title: "課題の問題ページ", type: "text" },
+      {
+        ...lesson,
+        id: "step",
+        title: "課題の問題ページ",
+        type: "text",
+        problemTaskId: "one",
+        problemId: "p01",
+      },
       { ...lesson, id: "knowledge", title: "知識問題", type: "quiz" },
       { ...lesson, id: "practice", title: "旧形式のクイズ", type: "quiz" },
     ]);
@@ -100,14 +98,6 @@ describe("loadStageContentSummaries", () => {
         definition: '{"runner":"dotnet-test","problems":[{}]}',
       },
     ]);
-    await db.insert(taskProblemSteps).values({
-      taskId: "one",
-      problemId: "p01",
-      stepLessonId: "step",
-      afterLessonId: "slides-video",
-      position: 0,
-    });
-
     const summaries = await loadStageContentSummaries(db);
 
     expect(summaries.get("stage")).toEqual({

@@ -17,8 +17,6 @@ import {
   type TaskBundle,
 } from "@stella/shared/tasks/catalog";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
-import { problemFiles } from "@stella/shared/tasks/problems";
-import { RUNNERS } from "@stella/shared/tasks/runners";
 import type { HashedFile } from "@stella/shared/tasks/run-result";
 import {
   isSafeRelativePattern,
@@ -39,11 +37,15 @@ import {
 /** 通常の配布と、前の実装が壊れていて進めないときの「固定した開始点」(01 §4)。 */
 export type TaskVariant = "standard" | "fixed-start";
 
-/** `.stella/distribution.json` は配布した版と初回に省いたパスを控える。 */
+/**
+ * `.stella/distribution.json` は配布した版を控える。
+ * `deferred` は古い段階的配布の記録だけを読む。新しい配布では書かない。
+ */
 interface Receipt {
   taskId: string;
   contentHash: string;
   variant?: "fixed-start";
+  /** 古い拡張が後から配るつもりで控えたパス。値は保護ファイルのハッシュか、編集対象なら null。 */
   deferred?: Record<string, HashedFile | null>;
   files?: FileHashes;
   updatingTo?: string;
@@ -301,10 +303,11 @@ function isFileHashes(raw: unknown, requiresReadme: boolean): raw is FileHashes 
   );
 }
 
-function readBundleEntries(bundle: TaskBundle, deferred?: Receipt["deferred"]): [string, Buffer][] {
-  return Object.entries(bundle.files)
-    .filter(([rel]) => !Object.hasOwn(deferred ?? {}, rel))
-    .map(([rel, encoded]) => [rel, Buffer.from(encoded, "base64")]);
+function readBundleEntries(bundle: TaskBundle): [string, Buffer][] {
+  return Object.entries(bundle.files).map(([rel, encoded]) => [
+    rel,
+    Buffer.from(encoded, "base64"),
+  ]);
 }
 
 /** 配布ファイルと拡張の記録を、準備先からの相対パスとバイト列で並べる。 */
@@ -312,14 +315,12 @@ function filesToWrite(
   bundle: TaskBundle,
   variant: TaskVariant,
   now: Date,
-  deferred: Receipt["deferred"],
 ): [rel: string, data: Buffer][] {
-  const entries = readBundleEntries(bundle, deferred);
+  const entries = readBundleEntries(bundle);
   const receipt: Receipt = {
     taskId: bundle.manifest.id,
     contentHash: bundle.contentHash,
     ...(variant === "fixed-start" ? { variant } : {}),
-    ...(deferred ? { deferred } : {}),
     files: fileHashes(entries),
   };
   if (variant === "fixed-start") {
@@ -367,115 +368,114 @@ async function installBeside(
   }
 }
 
-function problemPaths(manifest: TaskManifest) {
-  return (manifest.problems ?? []).flatMap(({ id }) => {
-    const files = problemFiles(RUNNERS[manifest.runner].plan, id);
-    return files ? [{ id, paths: [files.source, files.test] }] : [];
+function hasDeferred(receipt: Receipt | "invalid" | undefined): receipt is Receipt {
+  return (
+    !!receipt &&
+    receipt !== "invalid" &&
+    !!receipt.deferred &&
+    Object.keys(receipt.deferred).length > 0
+  );
+}
+
+type DeferredBundleSource =
+  | TaskBundle
+  | ((receipt: { variant?: "fixed-start"; contentHash: string }) => Promise<TaskBundle>);
+
+/**
+ * 古い段階的配布が `deferred` に控えたファイルを、今の版の配布物からすべて書き、
+ * 記録から `deferred` を外す。控えていなければ何もしない。
+ * 手元の編集は上書きしない（配布の更新と同じ照合で、一時ファイルを用意してから置く）。
+ *
+ * 学習フォルダーから課題フォルダーまでの各要素が普通のフォルダーであることを確かめてから書く。
+ * 途中のリンクを realpath で解消すると、学習フォルダーの外へ書いてしまう。
+ */
+export async function releaseDeferredFiles(
+  trainingRoot: string | undefined,
+  root: string,
+  source: DeferredBundleSource,
+  guards: DistributionGuards = {},
+): Promise<void> {
+  const receipt = await readReceipt(root);
+  if (!hasDeferred(receipt)) return;
+  if (!trainingRoot) {
+    throw new Error("学習フォルダーが分からないため、残りのファイルを書き出せません");
+  }
+  const base = path.resolve(trainingRoot);
+  if (!(await stat(base)).isDirectory()) {
+    throw new Error(`学習フォルダーがフォルダーではありません: ${trainingRoot}`);
+  }
+  // 書き込みの直前にも、待ちのあいだにリンクへ差し替えられていないか確かめる。
+  await assertPlainDirectory(base, root);
+  const key = await realpath(root);
+  await serializeInstallation(key, async () => {
+    await assertPlainDirectory(base, root);
+    await writeDeferredRelease(base, root, source, guards);
   });
 }
 
-function deferredFiles(bundle: TaskBundle, visible: ReadonlySet<string> | undefined) {
-  if (!bundle.manifest.problemSteps || !visible) return undefined;
-  const paths = problemPaths(bundle.manifest)
-    .filter(({ id }) => !visible.has(id))
-    .flatMap(({ paths }) => paths.filter((rel) => Object.hasOwn(bundle.files, rel)));
-  const protectedPaths = new Set(matchPatterns(paths, bundle.manifest.protected).files);
-  return Object.fromEntries(
-    paths.map((rel) => {
-      if (!protectedPaths.has(rel)) return [rel, null];
-      const data = Buffer.from(bundle.files[rel], "base64");
-      return [rel, { path: rel, sha256: fileHash(data), bytes: data.byteLength }];
-    }),
-  );
-}
+async function writeDeferredRelease(
+  base: string,
+  root: string,
+  source: DeferredBundleSource,
+  guards: DistributionGuards,
+): Promise<void> {
+  const receipt = await readReceipt(root);
+  if (!hasDeferred(receipt)) return;
+  const bundle =
+    typeof source === "function"
+      ? parsePublicTaskBundle(
+          await source({
+            contentHash: receipt.contentHash,
+            ...(receipt.variant ? { variant: receipt.variant } : {}),
+          }),
+        )
+      : parsePublicTaskBundle(source);
+  if (bundle.manifest.id !== receipt.taskId || bundle.contentHash !== receipt.contentHash) return;
 
-function pendingProblems(manifest: TaskManifest, receipt: Receipt) {
-  return problemPaths(manifest)
-    .map(({ id, paths }) => ({
-      id,
-      paths: paths.filter((rel) => Object.hasOwn(receipt.deferred ?? {}, rel)),
-    }))
-    .filter(({ paths }) => paths.length > 0);
-}
-
-/** 旧拡張があとから配った問題を、旧配布記録のハッシュを保ったまま取り込む。 */
-async function legacyDistribution(root: string, manifest: TaskManifest, receipt: Receipt) {
-  const { files, deferred } = receipt;
-  const hashes: FileHashes = {};
-  if (files !== undefined || !deferred) return { deferred, hashes, migrated: false };
-
-  const remaining = { ...deferred };
-  let migrated = false;
-  for (const { id, paths } of pendingProblems(manifest, receipt)) {
-    const marker = await readFileInRoot(root, `.stella/installed-${id}`, 64).catch(() => undefined);
-    if (marker?.toString("utf8") !== receipt.contentHash) continue;
-    migrated = true;
-    for (const rel of paths) {
-      const file = remaining[rel];
-      if (file?.path === rel && typeof file.sha256 === "string" && HASH_PATTERN.test(file.sha256))
-        hashes[rel] = file.sha256;
-      delete remaining[rel];
-    }
+  const deferred = receipt.deferred ?? {};
+  const entries: [string, Buffer][] = [];
+  for (const rel of Object.keys(deferred)) {
+    const encoded = bundle.files[rel];
+    if (encoded === undefined) throw new TaskInstallConflict("damaged", root, [rel]);
+    entries.push([rel, Buffer.from(encoded, "base64")]);
   }
-  return { deferred: remaining, hashes, migrated };
-}
-
-export async function pendingProblemBundle(
-  root: string,
-  manifest: TaskManifest,
-  visible: ReadonlySet<string>,
-): Promise<{ contentHash: string; variant?: "fixed-start"; ids: string[] } | undefined> {
-  const receipt = await readReceipt(root);
-  if (!receipt || receipt === "invalid" || receipt.taskId !== manifest.id) return undefined;
-  const { deferred } = await legacyDistribution(root, manifest, receipt);
-  const ids = pendingProblems(manifest, { ...receipt, deferred })
-    .filter(({ id }) => visible.has(id))
-    .map(({ id }) => id);
-  const { contentHash, variant } = receipt;
-  return ids.length > 0 ? { contentHash, ...(variant ? { variant } : {}), ids } : undefined;
-}
-
-/** 配布前の保護ファイルは元のハッシュを使い、配布後はディスク上のファイルを照合する。 */
-async function deferredProtectedFiles(root: string, manifest: TaskManifest): Promise<HashedFile[]> {
-  const receipt = await readReceipt(root);
-  if (!receipt || receipt === "invalid" || receipt.taskId !== manifest.id) return [];
-  const { deferred } = await legacyDistribution(root, manifest, receipt);
-  const pending = pendingProblems(manifest, { ...receipt, deferred });
-  return pending.flatMap(({ paths }) =>
-    paths.flatMap((rel) => {
-      const file = deferred?.[rel];
-      return file?.path === rel &&
-        typeof file.bytes === "number" &&
-        /^[a-f0-9]{64}$/.test(file.sha256)
-        ? [file]
-        : [];
-    }),
+  const released = fileHashes(entries);
+  // 同じ版なので、既にあるファイルは受講者の編集として残す（雛形のハッシュを前回値にする）。
+  // files の無い古い記録に、書き出した分だけのハッシュを足すと、次の更新が版の照合を飛ばす。
+  const recordedFiles = isFileHashes(receipt.files, false) ? receipt.files : undefined;
+  const oldFiles = { ...recordedFiles, ...released };
+  await guards.beforeUpdate?.(root);
+  const writes = await planReplacements(
+    root,
+    bundle.manifest,
+    entries,
+    oldFiles,
+    backupDirectory(receipt.contentHash),
+    { mode: "add", adding: receipt.adding },
   );
-}
-
-export async function protectedTaskFiles(
-  root: string,
-  manifest: TaskManifest,
-  listed: readonly string[],
-  problem?: string,
-) {
-  if (!manifest.problemSteps || !problem)
-    return { ...matchPatterns(listed, manifest.protected), references: [] };
-  const currentTest = problemFiles(RUNNERS[manifest.runner].plan, problem)?.test;
-  const deferred = (await deferredProtectedFiles(root, manifest)).filter(
-    (file) => file.path !== currentTest,
-  );
-  const matched = matchPatterns(
-    [...listed, ...deferred.map((file) => file.path)],
-    manifest.protected,
-  );
-  const references = deferred.filter((file) => matched.files.includes(file.path));
-  const referenced = new Set(references.map((file) => file.path));
-  return {
-    files: matched.files.filter((file) => !referenced.has(file)),
-    unmatched: matched.unmatched,
-    references,
+  const next: Receipt = {
+    taskId: receipt.taskId,
+    contentHash: receipt.contentHash,
+    ...(receipt.variant ? { variant: receipt.variant } : {}),
+    ...(recordedFiles ? { files: { ...recordedFiles, ...released } } : {}),
   };
+  await writeDistributionUpdate(
+    base,
+    root,
+    writes,
+    receipt,
+    next,
+    guards,
+    entries.length > 0 ? { adding: { ...receipt.adding, ...released } } : undefined,
+  );
+}
+
+export async function hasDeferredDistribution(root: string): Promise<boolean> {
+  return hasDeferred(await readReceipt(root).catch(() => undefined));
+}
+
+export function protectedTaskFiles(manifest: TaskManifest, listed: readonly string[]) {
+  return { ...matchPatterns(listed, manifest.protected), references: [] as HashedFile[] };
 }
 
 interface Replacement {
@@ -703,7 +703,6 @@ async function planRetirements(
   oldFiles: FileHashes,
   backupDir: string,
 ): Promise<DistributionChange[]> {
-  // 遅延配布もバンドルには含まれるので、引退するファイルにはならない。
   const removed = Object.keys(oldFiles).filter((rel) => !Object.hasOwn(bundle.files, rel));
   const retired = matchPatterns(removed, bundle.manifest.protected).files;
   const writes: DistributionChange[] = [];
@@ -718,68 +717,10 @@ async function planRetirements(
   return writes;
 }
 
-async function extendDistribution(
-  base: string,
-  root: string,
-  bundle: TaskBundle,
-  receipt: Receipt,
-  paths: string[],
-  visible: ReadonlySet<string> | undefined,
-  guards: DistributionGuards,
-): Promise<void> {
-  const legacy = await legacyDistribution(root, bundle.manifest, receipt);
-  const pending = bundle.manifest.problemSteps
-    ? pendingProblems(bundle.manifest, { ...receipt, deferred: legacy.deferred })
-    : [];
-  const deferred = new Set(pending.flatMap((problem) => problem.paths));
+async function assertDistributionPresent(root: string, paths: readonly string[]): Promise<void> {
   const missing: string[] = [];
-  for (const rel of paths)
-    if (!deferred.has(rel) && !(await isPlainFile(root, rel))) missing.push(rel);
+  for (const rel of paths) if (!(await isPlainFile(root, rel))) missing.push(rel);
   if (missing.length > 0) throw new TaskInstallConflict("damaged", root, missing);
-
-  const entries: [string, Buffer][] = [];
-  for (const problem of pending) {
-    if (visible && !visible.has(problem.id)) continue;
-    for (const rel of problem.paths) {
-      if (!Object.hasOwn(bundle.files, rel)) throw new TaskInstallConflict("damaged", root, [rel]);
-      entries.push([rel, Buffer.from(bundle.files[rel], "base64")]);
-    }
-  }
-  if (entries.length === 0 && !legacy.migrated) return;
-  const oldFiles = receipt.files ?? {};
-  await guards.beforeUpdate?.(root);
-  const writes = await planReplacements(
-    root,
-    bundle.manifest,
-    entries,
-    oldFiles,
-    backupDirectory(receipt.contentHash),
-    { mode: "add", adding: receipt.adding },
-  );
-  const addedFiles = fileHashes(entries);
-  const adding = { ...receipt.adding, ...addedFiles };
-  const remainingAdding = { ...adding };
-  const remaining = { ...legacy.deferred };
-  for (const [rel] of entries) {
-    delete remaining[rel];
-    delete remainingAdding[rel];
-  }
-  const files =
-    receipt.files ?? fileHashes(readBundleEntries(bundle).filter(([rel]) => !deferred.has(rel)));
-  await writeDistributionUpdate(
-    base,
-    root,
-    writes,
-    receipt,
-    {
-      ...receipt,
-      deferred: remaining,
-      files: { ...files, ...legacy.hashes, ...addedFiles },
-      adding: Object.keys(remainingAdding).length > 0 ? remainingAdding : undefined,
-    },
-    guards,
-    entries.length > 0 ? { adding } : undefined,
-  );
 }
 
 function backupDirectory(contentHash: string): string {
@@ -789,7 +730,6 @@ function backupDirectory(contentHash: string): string {
 type InstallOptions = {
   variant?: TaskVariant;
   now?: Date;
-  visibleProblems?: ReadonlySet<string>;
   loadRevisionFiles?: (taskId: string, contentHash: string) => Promise<unknown>;
   onUpdated?: (backupDir?: string) => void;
 } & DistributionGuards;
@@ -808,7 +748,6 @@ async function updateDistribution(
 ): Promise<void> {
   await options.beforeUpdate?.(root);
   let oldFiles = receipt.files;
-  const problems = bundle.manifest.problemSteps ? problemPaths(bundle.manifest) : [];
   const requiresReadme = !bundle.manifest.problems?.length;
   if (!isFileHashes(oldFiles, requiresReadme)) {
     // 固定した開始点の雛形は通常配布の履歴とは異なる。
@@ -820,21 +759,9 @@ async function updateDistribution(
             .catch(() => undefined);
     if (!isFileHashes(loaded, requiresReadme))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
-    const oldManifest = await verifiedOldManifest(root, loaded);
-    const legacy = await legacyDistribution(root, oldManifest ?? bundle.manifest, receipt);
-    oldFiles = {
-      ...Object.fromEntries(
-        Object.entries(loaded).filter(([rel]) => !Object.hasOwn(legacy.deferred ?? {}, rel)),
-      ),
-      ...legacy.hashes,
-    };
+    oldFiles = loaded;
   }
-  // 配布済みの問題は、解放状態が戻っても新しいバージョンへ移す。
-  const visible = new Set(options.visibleProblems);
-  for (const { id, paths } of problems)
-    if (paths.some((rel) => Object.hasOwn(oldFiles, rel))) visible.add(id);
-  const deferred = deferredFiles(bundle, visible);
-  const entries = readBundleEntries(bundle, deferred);
+  const entries = readBundleEntries(bundle);
   const backupDir = backupDirectory(receipt.contentHash);
   const resume = receipt.updatingTo === bundle.contentHash;
   const oldManifest = await verifiedOldManifest(root, oldFiles);
@@ -860,7 +787,6 @@ async function updateDistribution(
       taskId: receipt.taskId,
       contentHash: bundle.contentHash,
       ...(receipt.variant ? { variant: receipt.variant } : {}),
-      ...(deferred ? { deferred } : {}),
       files: fileHashes(entries),
     },
     options,
@@ -871,11 +797,24 @@ async function updateDistribution(
 }
 
 const installations = new Map<string, Promise<unknown>>();
+const installationQueueWatchers = new Set<(waiting: boolean) => void>();
 
+/** 同じ鍵の配布が待ちに入ったことを、テストが取りこぼさず待つ。 */
+export function watchInstallationQueue(listener: (waiting: boolean) => void): () => void {
+  installationQueueWatchers.add(listener);
+  return () => installationQueueWatchers.delete(listener);
+}
+
+/**
+ * 同じ課題フォルダーの配布を 1 本ずつ行う。
+ * 控えたファイルの書き出しは `installTaskFiles` が `writeDeferredRelease` を直接呼ぶ。
+ * ここを入れ子にすると、同じ鍵の待ちが戻ってこなくなる。
+ */
 async function serializeInstallation<T>(key: string, work: () => Promise<T>): Promise<T> {
   const previous = installations.get(key);
-  const pending = (previous?.catch(() => undefined) ?? Promise.resolve()).then(work);
+  const pending = (previous?.catch(() => undefined) ?? Promise.resolve()).then(() => work());
   installations.set(key, pending);
+  for (const listener of installationQueueWatchers) listener(previous !== undefined);
   try {
     return await pending;
   } finally {
@@ -896,40 +835,13 @@ export async function installTask(
   return serializeInstallation(key, () => installTaskFiles(trainingRoot, parsed, options));
 }
 
-export async function unlockTaskFiles(
-  root: string,
-  raw: TaskBundle,
-  visible: ReadonlySet<string>,
-  guards: DistributionGuards = {},
-): Promise<void> {
-  const realRoot = await realpath(root);
-  await serializeInstallation(realRoot, async () => {
-    const bundle = parsePublicTaskBundle(raw);
-    const paths = assertDistributable(bundle);
-    if (!(await info(root))?.isDirectory()) throw new Error("課題フォルダーが見つかりません");
-    const receipt = await readReceipt(root);
-    if (!receipt || receipt === "invalid" || receipt.taskId !== bundle.manifest.id)
-      throw new TaskInstallConflict("occupied", root, [".stella/distribution.json"]);
-    if (receipt.contentHash !== bundle.contentHash)
-      throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
-    await extendDistribution(
-      path.dirname(realRoot),
-      realRoot,
-      bundle,
-      receipt,
-      paths,
-      visible,
-      guards,
-    );
-  });
-}
-
 /**
  * 課題を学習フォルダーの `<ステージ>/<単元>/<課題>/` (固定した開始点は `<課題>-fixed-start/`) へ
  * 置き、課題フォルダーの絶対パスを返す。
  *
  * - 初めての配布は一時フォルダーで完成させてから名前を付け替える (途中で止まっても半端に残さない)。
- * - 同じバージョンなら新しく解ける問題のファイルを足し、教材が変われば雛形を照合して更新する。
+ * - 同じバージョンなら、古い段階的配布が控えたファイルを書き出してから、配布ファイルの欠落を確かめる。
+ * - 教材が変われば雛形を照合して更新する。
  * - 準備先にファイルがあれば、同じ名前のファイルが無いときだけ横に足す。あれば TaskInstallConflict。
  * - 学習フォルダー自体はリンクの先でもよいが、その中ではリンクをたどらない。
  */
@@ -961,24 +873,13 @@ async function installTaskFiles(
     if (!sameTask) throw new TaskInstallConflict("occupied", root, [".stella/distribution.json"]);
     if (receipt.contentHash !== bundle.contentHash)
       await updateDistribution(base, root, bundle, receipt, options);
-    else
-      await extendDistribution(
-        base,
-        root,
-        bundle,
-        receipt,
-        paths,
-        options.visibleProblems,
-        options,
-      );
+    else {
+      await writeDeferredRelease(base, root, bundle, options);
+      await assertDistributionPresent(root, paths);
+    }
     return root;
   }
-  const entries = filesToWrite(
-    bundle,
-    variant,
-    options.now ?? new Date(),
-    deferredFiles(bundle, options.visibleProblems),
-  );
+  const entries = filesToWrite(bundle, variant, options.now ?? new Date());
   if (rootInfo && (await readdir(root)).length > 0) {
     const clashes = await collisions(
       root,

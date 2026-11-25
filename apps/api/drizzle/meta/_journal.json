@@ -652,6 +652,20 @@
       "when": 1795046400011,
       "tag": "0095_task_refs",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "6",
+      "when": 1795046400012,
+      "tag": "0096_drop_problem_step_lesson_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "6",
+      "when": 1795046400013,
+      "tag": "0097_lesson_problem_columns",
+      "breakpoints": true
     }
   ]
 }

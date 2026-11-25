@@ -12,7 +12,7 @@ import {
 } from "@stella/shared/tasks/problem-steps";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { isProblemId, problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
+import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
 import { canSubmit, type RunResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
@@ -23,15 +23,19 @@ import {
 import { apiRequest, apiSession } from "./api.js";
 import {
   hashFiles,
+  isFileInRoot,
   LIMITS,
   listFiles,
   readFileInRoot,
   sha256Hex,
-  writeStateFile,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
 import { taskBundleUrl, taskFixedStartUrl } from "./task-bundle-url.js";
-import { pendingProblemBundle, protectedTaskFiles, unlockTaskFiles } from "./task-distribution.js";
+import {
+  hasDeferredDistribution,
+  protectedTaskFiles,
+  releaseDeferredFiles,
+} from "./task-distribution.js";
 import {
   readDistribution,
   readRecordedSupport,
@@ -54,6 +58,10 @@ export interface ProblemState {
   /** 課題フォルダーからの相対パス (`src/<id>.<ext>`)。 */
   source: string;
   status: ProblemWorkStatus;
+  /** サーバーがロックしているときの、提出を止める理由。 */
+  lockReason?: string;
+  /** 課題フォルダーに通常のファイルとしてある。書き出していないソースにはリンクを出さない。 */
+  onDisk?: true;
   failed?: true;
 }
 
@@ -126,15 +134,12 @@ export function nextUnsubmittedProblem(states: readonly ProblemState[]): Problem
   return states.find((state) => state.status !== "submitted");
 }
 
-export function problemToWorkOn(
-  states: readonly ProblemState[],
-  unprepared?: ReadonlySet<string>,
-): ProblemState | undefined {
-  return states.find(({ id, status }) => status !== "submitted" && !unprepared?.has(id));
+export function problemToWorkOn(states: readonly ProblemState[]): ProblemState | undefined {
+  return states.find((state) => state.status !== "submitted" && !state.lockReason);
 }
 
 export function problemTaskProgress(manifest: TaskManifest, problems: TaskProblems) {
-  const next = problemToWorkOn(problems.states, problems.unprepared);
+  const next = problemToWorkOn(problems.states);
   return {
     problemProgress: problems.progress,
     problemSteps: manifest.problemSteps,
@@ -238,151 +243,58 @@ export async function loadProblemStates(
   manifest: TaskManifest,
   server: ProblemResults | undefined,
 ): Promise<ProblemState[]> {
-  const problems =
-    manifest.problemSteps && server?.gated
-      ? server.problems.flatMap(({ id, state }) => {
-          if (state !== "open" && state !== "submitted") return [];
-          const problem = manifest.problems?.find((item) => item.id === id);
-          return problem ? [problem] : [];
-        })
-      : (manifest.problems ?? []);
+  const gated = manifest.problemSteps && server?.gated;
+  const remote = new Map((server?.problems ?? []).map((problem) => [problem.id, problem]));
   const passed = new Set(
     (server?.problems ?? [])
-      .filter((problem) =>
-        manifest.problemSteps && server?.gated
-          ? problem.state === "submitted"
-          : problem.status === "passed",
-      )
+      .filter((problem) => (gated ? problem.state === "submitted" : problem.status === "passed"))
       .map((problem) => problem.id),
   );
   const states: ProblemState[] = [];
-  for (const problem of problems) {
+  for (const problem of manifest.problems ?? []) {
     const source = problemSource(manifest, problem.id);
     if (!source) continue;
     const local = await readProblemRun(root, manifest.id, problem.id);
+    const lockReason = gated ? problemLockedReason(remote.get(problem.id)) : undefined;
+    const onDisk = await isFileInRoot(root, source);
     states.push({
       id: problem.id,
       title: problem.title,
       source,
       status: problemWorkStatus(passed.has(problem.id), local?.outcome),
+      ...(lockReason ? { lockReason } : {}),
+      ...(onDisk ? { onDisk } : {}),
       ...(local?.outcome === "failed" || local?.outcome === "error" ? { failed: true } : {}),
     });
   }
   return states;
 }
 
-const PROBLEM_STATES_FILE = "problem-steps.json";
-const WAITING_FOR_PROBLEM = "問題の状態を確認できません。Web で課題の進み具合を確認してください";
-
-async function readProblemRecord(root: string, name: string): Promise<unknown> {
-  try {
-    return JSON.parse(
-      (await readFileInRoot(root, `.stella/${name}`, 1024 * 1024)).toString("utf8"),
-    );
-  } catch {
-    return undefined;
-  }
-}
-
-function recordOfVersion(raw: unknown, contentHash: string) {
-  return raw && typeof raw === "object" && "contentHash" in raw && raw.contentHash === contentHash
-    ? raw
-    : undefined;
-}
-
-export async function saveProblemStepResults(
-  root: string,
-  contentHash: string,
-  server: ProblemResults,
-) {
-  if (server.gated) {
-    await writeStateFile(root, PROBLEM_STATES_FILE, JSON.stringify({ contentHash, server })).catch(
-      () => undefined,
-    );
-  }
-}
-
-/** 成功した提出だけを控える。手元のテスト合格は提出として扱わない。 */
-export async function recordProblemSubmission(root: string, contentHash: string, id: string) {
-  if (!isProblemId(id)) return;
-  await writeStateFile(root, `submitted-${id}.json`, JSON.stringify({ contentHash })).catch(
-    () => undefined,
-  );
-}
-
-export async function readProblemStepResults(
-  root: string,
-  manifest: TaskManifest,
-  contentHash: string | undefined,
-  server: ProblemResults | undefined,
-): Promise<ProblemResults | undefined> {
-  if (server?.gated || !contentHash) return server;
-  const cached = recordOfVersion(await readProblemRecord(root, PROBLEM_STATES_FILE), contentHash);
-  const previous =
-    cached && "server" in cached ? readServerProblemResults(cached.server) : undefined;
-  const submitted = await Promise.all(
-    (manifest.problems ?? []).map(async ({ id, title }) => {
-      const record = await readProblemRecord(root, `submitted-${id}.json`);
-      return recordOfVersion(record, contentHash) ? { id, title } : undefined;
-    }),
-  );
-  const local = submitted.filter((problem) => problem !== undefined);
-  if (!previous?.gated && local.length === 0) return server;
-  const localIds = new Set(local.map(({ id }) => id));
-  const known = [
-    ...(previous?.problems ?? []),
-    ...local
-      .filter(({ id }) => !previous?.problems.some((problem) => problem.id === id))
-      .map((problem) => ({ ...problem, status: "passed" as const, firstPassedAt: null })),
-  ];
-  const problems = known.map(
-    (problem): ServerProblem =>
-      localIds.has(problem.id) ? { ...problem, state: "submitted", status: "passed" } : problem,
-  );
-  const passedProblems = problems.filter(({ state }) => state === "submitted").length;
-  const totalProblems = manifest.problems?.length ?? 0;
-  return {
-    gated: true,
-    ...(previous?.refs ? { refs: previous.refs } : {}),
-    problems,
-    passedProblems,
-    totalProblems,
-    taskPassed: passedProblems === totalProblems,
-  };
-}
-
 function problemLockedReason(problem: ServerProblem | undefined): string | undefined {
   if (problem?.state === "locked-video")
     return problem.afterTitle
-      ? `次の問題は「${problem.afterTitle}」の動画を見ると出ます`
+      ? `「${problem.afterTitle}」を終えると解けます`
       : "次の問題は指定された動画を見ると出ます";
-  if (problem?.state === "locked-previous") return "この問題を提出すると、次の問題が出ます";
+  if (problem?.state === "locked-previous")
+    return problem.afterTitle
+      ? `「${problem.afterTitle}」を提出すると解けます`
+      : "前の問題を提出すると、この問題を提出できます";
   return undefined;
-}
-
-export function visibleProblemIds(
-  server: ProblemResults | undefined,
-): ReadonlySet<string> | undefined {
-  return server?.gated
-    ? new Set(
-        server.problems
-          .filter(({ state }) => state === "open" || state === "submitted")
-          .map(({ id }) => id),
-      )
-    : undefined;
 }
 
 export interface TaskProblems {
   server?: ProblemResults;
   states: ProblemState[];
-  nextReason?: string;
   blocked: Map<string, string>;
   progress: { passed: number; total: number };
-  preparationError?: string;
-  unprepared: ReadonlySet<string>;
+  /** 古い deferred の書き出しが、未保存などでまだ終わっていない。 */
+  releasePending?: boolean;
+  releaseError?: string;
 }
 
-/** 表示と操作で同じ解放状態を使う。必要になったファイルだけを同じ版の配布物から足す。 */
+type DistributionGuards = NonNullable<Parameters<typeof releaseDeferredFiles>[3]>;
+
+/** 表示と操作で同じ状態を使う。古い配布記録の控えがあれば、ここで書き出す。 */
 const refreshing = new Map<string, Promise<TaskProblems>>();
 
 export function loadTaskProblems(
@@ -391,20 +303,28 @@ export function loadTaskProblems(
   {
     refresh = true,
     afterSubmission = false,
+    trainingRoot,
     ...guards
   }: {
     refresh?: boolean;
     afterSubmission?: boolean;
-  } & NonNullable<Parameters<typeof unlockTaskFiles>[3]> = {},
+    /** 学習フォルダー。控えたファイルを書くとき、ここから課題フォルダーまでを確かめる。 */
+    trainingRoot?: string;
+  } & DistributionGuards = {},
 ): Promise<TaskProblems> {
-  if (!refresh || !manifest.problemSteps) return readTaskProblems(root, manifest, refresh);
-  const key = JSON.stringify([root, manifest.id, apiSession()]);
+  if (!refresh || !manifest.problemSteps)
+    return readTaskProblems(root, manifest, refresh, trainingRoot);
+  const key = JSON.stringify([
+    root,
+    manifest.id,
+    apiSession(),
+    (manifest.problems ?? []).map((problem) => problem.id),
+  ]);
+  const rest = { ...guards, ...(trainingRoot ? { trainingRoot } : {}) };
   const inFlight = refreshing.get(key);
   if (inFlight)
-    return afterSubmission
-      ? inFlight.then(() => loadTaskProblems(root, manifest, guards))
-      : inFlight;
-  const pending = readTaskProblems(root, manifest, true, guards).finally(() =>
+    return afterSubmission ? inFlight.then(() => loadTaskProblems(root, manifest, rest)) : inFlight;
+  const pending = readTaskProblems(root, manifest, true, trainingRoot, guards).finally(() =>
     refreshing.delete(key),
   );
   refreshing.set(key, pending);
@@ -415,78 +335,69 @@ async function readTaskProblems(
   root: string,
   manifest: TaskManifest,
   refresh: boolean,
-  guards?: Parameters<typeof unlockTaskFiles>[3],
+  trainingRoot?: string,
+  guards?: DistributionGuards,
 ): Promise<TaskProblems> {
   const session = apiSession();
-  const fresh = refresh
+  const server = refresh
     ? await fetchProblemResults(
         manifest.id,
         manifest.problemSteps ? AbortSignal.timeout(4_000) : undefined,
       ).catch(() => undefined)
     : undefined;
-  let server = fresh;
-  let preparationError: string | undefined;
-  let unprepared: string[] = [];
-  if (manifest.problemSteps) {
-    const receipt = await readDistribution(root).catch(() => undefined);
-    const contentHash = receipt?.taskId === manifest.id ? receipt.contentHash : undefined;
-    server = await readProblemStepResults(root, manifest, contentHash, fresh);
-    if (fresh && contentHash && session === apiSession())
-      await saveProblemStepResults(root, contentHash, fresh);
-    if (refresh && session === apiSession()) {
+  let releasePending = false;
+  let releaseError: string | undefined;
+  if (manifest.problemSteps && refresh) {
+    if (session !== apiSession()) {
+      // 結果を待っているあいだに接続が変わっても、控えたファイルは書かない。
+      // deferred が残っていれば確認・提出・相談を止め、無い課題の手元の確認はそのままにする。
+      if (await hasDeferredDistribution(root)) releasePending = true;
+    } else {
       try {
-        // 状態の初回取得に失敗しても、配布しなかったファイルがある場合は再接続後に足せる。
-        const visible =
-          visibleProblemIds(server) ?? new Set(manifest.problems?.map(({ id }) => id));
-        const pending = await pendingProblemBundle(root, manifest, visible);
-        if (pending) {
-          unprepared = pending.ids;
-          const signal = AbortSignal.timeout(4_000);
-          const options = { signal, ...(session === undefined ? {} : { session }) };
-          const { bundle } =
-            pending.variant === "fixed-start"
-              ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
-                  ...options,
-                  method: "POST",
-                  body: { taskId: manifest.id },
-                })
-              : await apiRequest<TaskBundleResponse>(taskBundleUrl(manifest.id), options);
-          if (session === apiSession()) {
-            if (bundle.manifest.id !== manifest.id || bundle.contentHash !== pending.contentHash)
+        await releaseDeferredFiles(
+          trainingRoot,
+          root,
+          async (receipt) => {
+            const signal = AbortSignal.timeout(4_000);
+            const options = { signal, ...(session === undefined ? {} : { session }) };
+            const { bundle } =
+              receipt.variant === "fixed-start"
+                ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
+                    ...options,
+                    method: "POST",
+                    body: { taskId: manifest.id },
+                  })
+                : await apiRequest<TaskBundleResponse>(taskBundleUrl(manifest.id), options);
+            if (session !== apiSession()) throw new Error("LMS への接続が変わりました");
+            if (bundle.manifest.id !== manifest.id || bundle.contentHash !== receipt.contentHash)
               throw new Error(
                 "教材が更新されています。Web の課題文から「VS Code で開く」を押してください",
               );
-            await unlockTaskFiles(root, bundle, visible, guards);
-            unprepared = [];
-          }
-        }
+            return bundle;
+          },
+          guards,
+        );
       } catch (error) {
-        preparationError = error instanceof Error ? error.message : String(error);
+        if (await hasDeferredDistribution(root)) {
+          releasePending = true;
+          releaseError = error instanceof Error ? error.message : String(error);
+        } else {
+          throw error;
+        }
       }
     }
   }
   const states = await loadProblemStates(root, manifest, server);
-  const visible = new Set(states.map(({ id }) => id));
   const blocked = new Map<string, string>();
-  if (manifest.problemSteps && server?.gated) {
-    const manifestIds = new Set(manifest.problems?.map(({ id }) => id));
-    for (const problem of server.problems) {
-      if (!manifestIds.has(problem.id)) continue;
-      const reason = problemLockedReason(problem);
-      if (reason) blocked.set(problem.id, reason);
-    }
-    for (const { id } of manifest.problems ?? []) {
-      if (!visible.has(id) && !blocked.has(id)) blocked.set(id, WAITING_FOR_PROBLEM);
-    }
+  for (const state of states) {
+    if (state.lockReason) blocked.set(state.id, state.lockReason);
   }
-  const nextReason = blocked.values().next().value;
   return {
     ...(server ? { server } : {}),
     states,
     blocked,
-    ...(nextReason ? { nextReason } : {}),
-    ...(preparationError ? { preparationError } : {}),
-    unprepared: new Set(unprepared),
+    ...(releasePending ? { releasePending } : {}),
+    ...(releaseError ? { releaseError } : {}),
     progress: {
       passed: states.filter(({ status }) => status === "submitted").length,
       total: manifest.problemSteps ? (manifest.problems?.length ?? 0) : states.length,
@@ -563,11 +474,8 @@ async function prepareProblemInput(
     }
   }
   const listed = await listFiles(root);
-  const protection = await protectedTaskFiles(root, manifest, listed, problemId);
-  const protectedHashes = [
-    ...(await hashFiles(root, protection.files, LIMITS.protectedFileBytes)),
-    ...protection.references,
-  ];
+  const protection = protectedTaskFiles(manifest, listed);
+  const protectedHashes = await hashFiles(root, protection.files, LIMITS.protectedFileBytes);
   const protectedSame =
     loaded.manifestSha256 === result.manifestSha256 &&
     protectedHashes.length === result.protected.length &&

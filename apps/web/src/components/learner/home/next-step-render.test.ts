@@ -250,7 +250,7 @@ describe("VS Code の準備", () => {
 });
 
 describe("動画と提出で解放する課題の仕上げ", () => {
-  it.each(["問題を開く", "動画を見る"] as const)("対応するレッスンへの「%s」を出す", (action) => {
+  it.each(["問題を開く", "教材を開く"] as const)("対応するレッスンへの「%s」を出す", (action) => {
     const guide: HomeGuide = { steps: [{ kind: "wrapup" }], idle: "empty" };
     const detail = "次のレッスンに進みましょう。";
     const markup = renderToStaticMarkup(

@@ -94,7 +94,9 @@ test("課題だけの単元は問題の一覧で提出状況と次の問題を�
   ).toHaveAttribute("href", "https://typescriptbook.jp/reference/values-types-variables/tuple");
 });
 
-test("問題のレッスンは解放状態を取り直し、閲覧では完了にならない", async ({ page }) => {
+test("問題のレッスンは手元の進捗でロックし、提出は取り直す。閲覧では完了にならない", async ({
+  page,
+}) => {
   await signInAs(page, "seed-learner");
   let state: ProblemStepState = "locked-video";
   await page.route(`**/api/tasks/for-stage/${problemStageId}`, async (route) => {
@@ -116,12 +118,12 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     .getByTestId("stage-syllabus")
     .getByRole("button", { name: /問1 税込価格を返す/ });
   await expect(row).toBeDisabled();
-  await expect(row).toContainText("の動画を見ると解けます");
+  await expect(row).toContainText("を終えると解けます");
 
   await page.goto(`/stages/${problemStageId}/lessons/${problemLessonId}`);
   const lesson = page.getByTestId("lesson-screen");
   const handoff = lesson.getByTestId("lesson-problem-handoff");
-  const open = lesson.getByRole("button", { name: "VS Code で開く", exact: true });
+  const open = handoff.getByRole("button", { name: "VS Code で開く", exact: true });
   const statement = lesson.getByTestId("lesson-doc");
   await expect(statement).toBeVisible();
   await expect(lesson.getByRole("heading", { level: 1 })).toHaveText("問1 税込価格を返す");
@@ -130,7 +132,7 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     statement.getByRole("paragraph").filter({ hasText: "税率10%。税額の1円未満は切り捨て" }),
   ).toBeVisible();
   await expect(statement).toContainText("例: addTax(1000) → 1100");
-  await expect(handoff).toContainText("の動画を見ると解けます");
+  await expect(handoff).toContainText("を終えると解けます");
   await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("tab", { name: "教材" })).toBeVisible();
   await expect(lesson.getByRole("tab", { name: /^資料/ })).toBeVisible();
@@ -148,16 +150,30 @@ test("問題のレッスンは解放状態を取り直し、閲覧では完了�
     `[data-testid="lesson-toc-text"][data-lesson-id="${problemLessonId}"]`,
   );
   await expect(tocRow).toBeDisabled();
-  await expect(tocRow).toContainText("の動画を見ると解けます");
+  await expect(tocRow).toContainText("を終えると解けます");
   if (usesTocDrawer) {
     await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
   }
 
+  // サーバーが open でも、前の教材が手元で終わっていなければロックのまま。
+  // focus の取り直しが画面に反映されてから、文言とボタンを見る。
   state = "open";
+  const refreshed = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/tasks/for-stage/${problemStageId}`) &&
+      response.request().method() === "GET" &&
+      response.ok(),
+  );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(open).toBeVisible();
-  await expect(lesson.getByText("未提出", { exact: true })).toBeVisible();
-  await open.scrollIntoViewIfNeeded();
+  await refreshed;
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
+  await expect(handoff).toContainText("を終えると解けます");
+  await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);
   const savedProgress = await page.evaluate((id) => {
     window.dispatchEvent(new Event("pagehide"));

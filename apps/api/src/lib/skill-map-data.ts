@@ -18,6 +18,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   max,
   notInArray,
   sql,
@@ -45,7 +46,11 @@ import {
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
-import { isProblemTaskOverviewLesson, loadPassedOverviewLessons } from "./lesson-progress-write.js";
+import {
+  isProblemTaskOverviewLesson,
+  loadCompletedProblemSteps,
+  loadPassedOverviewLessons,
+} from "./lesson-progress-write.js";
 import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
@@ -519,19 +524,43 @@ export async function loadFocusCompletions(
       and(
         eq(lessonProgress.userId, caller.id),
         eq(lessonProgress.completed, true),
+        isNull(lessons.problemId),
         gte(lessonProgress.updatedAt, new Date(fromMs)),
         sql`not ${isProblemTaskOverviewLesson(sql`lessons.id`)}`,
       ),
     );
+  const completions: FocusCompletion[] = rows.map((row) => ({
+    stageId: row.stageId,
+    date: toStudyDate(row.updatedAt),
+  }));
+  // 問題のレッスンは lesson_progress の写しを使わず、提出の日時を完了日にする。
+  const steps = await loadCompletedProblemSteps(db, [caller.id]);
+  const stageByLesson = new Map<string, string>();
+  for (const part of chunk(
+    [...new Set(steps.map((step) => step.lessonId))],
+    D1_MAX_BOUND_PARAMS - 5,
+  )) {
+    const stagesOfLessons = await db
+      .select({ lessonId: lessons.id, stageId: sections.stageId })
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .where(inArray(lessons.id, part));
+    for (const row of stagesOfLessons) stageByLesson.set(row.lessonId, row.stageId);
+  }
+  for (const step of steps) {
+    if (step.updatedAt < fromMs) continue;
+    const stageId = stageByLesson.get(step.lessonId);
+    if (!stageId) continue;
+    completions.push({ stageId, date: toStudyDate(step.updatedAt) });
+  }
   const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
     excludeManualOnly: true,
   });
-  return [
-    ...rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) })),
-    ...passedOverviews
-      .filter((row) => row.updatedAt >= fromMs)
-      .map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) })),
-  ];
+  for (const row of passedOverviews) {
+    if (row.updatedAt < fromMs) continue;
+    completions.push({ stageId: row.stageId, date: toStudyDate(row.updatedAt) });
+  }
+  return completions;
 }
 
 /**
@@ -651,19 +680,28 @@ export interface SkillProfileCounts {
 
 /** XP の材料 (完了レッスン数 / 合格クイズ数 / クリアステージ数)。 */
 export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<SkillProfileCounts> {
-  const lessonRows = await db
+  // 問題のレッスンは提出が正本。lesson_progress に写しが残っていても、ここでは数えない。
+  // 通常のレッスンは DB で数え、問題のレッスンは提出から一意な件数だけを足す。
+  const [lessonCount] = await db
     .select({ n: count() })
     .from(lessonProgress)
+    .leftJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
     .where(
       and(
         eq(lessonProgress.userId, caller.id),
         eq(lessonProgress.completed, true),
+        isNull(lessons.problemId),
         sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
       ),
     );
+  const problemLessonIds = new Set(
+    (await loadCompletedProblemSteps(db, [caller.id])).map((step) => step.lessonId),
+  );
   const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
     excludeManualOnly: true,
   });
+  const completedLessons =
+    Number(lessonCount?.n ?? 0) + problemLessonIds.size + passedOverviews.length;
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })
@@ -671,7 +709,7 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
     .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
   const clearedStageIds = await loadClearedStageIds(db, caller);
   return {
-    completedLessons: Number(lessonRows[0]?.n ?? 0) + passedOverviews.length,
+    completedLessons,
     passedQuizzes: Number(quizRows[0]?.n ?? 0),
     clearedStages: clearedStageIds.size,
   };

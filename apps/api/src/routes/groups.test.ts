@@ -8,6 +8,7 @@ import {
   sections,
   stageGrants,
   stages,
+  taskProblemResults,
   taskProgress,
   tasks,
 } from "../db/schema.js";
@@ -300,6 +301,62 @@ describe("グループ API (実 SQLite)", () => {
     expect(members.find((member) => member.isMe)?.stages).toContainEqual({
       id: "stage-a",
       percent: 50,
+      cleared: false,
+    });
+  });
+
+  it("動画 1 本と提出済みの問題 1 問を 2/2 として数える", async () => {
+    await seedStages();
+    const db = getDb(env);
+    await db.insert(sections).values({ id: "unit-mix", stageId: "stage-a", title: "Mix" });
+    await db.insert(lessons).values([
+      { id: "lesson-video", sectionId: "unit-mix", title: "動画", type: "video" },
+      {
+        id: "lesson-problem",
+        sectionId: "unit-mix",
+        title: "問1",
+        type: "text",
+        problemTaskId: "task-prob",
+        problemId: "q01",
+      },
+    ]);
+    await db.insert(lessonProgress).values({
+      userId: "profile-me",
+      lessonId: "lesson-video",
+      completed: true,
+    });
+    await db.insert(tasks).values({
+      id: "task-prob",
+      sectionId: "unit-mix",
+      title: "問題",
+      kind: "practice",
+      pattern: "example",
+      estimatedMinutes: 5,
+      order: 1,
+      contentHash: "hash",
+      definition: "{}",
+      bundle: "{}",
+      active: false,
+    });
+    await db.insert(taskProblemResults).values({
+      userId: "profile-me",
+      taskId: "task-prob",
+      problemId: "q01",
+      contentHash: "hash",
+      path: "src/q01.ts",
+      code: "code",
+      sha256: "sha",
+      firstPassedAt: new Date(1),
+      updatedAt: new Date(1),
+    });
+    const res = await call(learner, `${LEARNER}/shared/peers`);
+    expect(res.status).toBe(200);
+    const { members } = await json<{
+      members: { isMe: boolean; stages: { id: string; percent: number; cleared: boolean }[] }[];
+    }>(res);
+    expect(members.find((member) => member.isMe)?.stages).toContainEqual({
+      id: "stage-a",
+      percent: 100,
       cleared: false,
     });
   });

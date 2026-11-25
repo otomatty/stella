@@ -649,29 +649,6 @@ export const taskProblemResults = sqliteTable(
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.taskId, t.problemId] }) }),
 );
 
-/** 動画のあとに置く問題のステップ。教材のレッスン順を課題ごとに持ちます。 */
-export const taskProblemSteps = sqliteTable(
-  "task_problem_steps",
-  {
-    taskId: text("task_id")
-      .notNull()
-      .references(() => tasks.id, { onDelete: "cascade" }),
-    problemId: text("problem_id").notNull(),
-    stepLessonId: text("step_lesson_id")
-      .notNull()
-      .references(() => lessons.id, { onDelete: "cascade" }),
-    afterLessonId: text("after_lesson_id")
-      .notNull()
-      .references(() => lessons.id, { onDelete: "cascade" }),
-    position: integer("position").notNull(),
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.taskId, t.problemId] }),
-    stepLessonIdx: index("task_problem_steps_step_lesson_idx").on(t.stepLessonId),
-    afterLessonIdx: index("task_problem_steps_after_lesson_idx").on(t.afterLessonId),
-  }),
-);
-
 /** 課題と各問題の手がかり。課題全体の参照は problemId が空文字。 */
 export const taskRefs = sqliteTable(
   "task_refs",
@@ -844,6 +821,12 @@ export const lessons = sqliteTable(
      * 教材が正本で seed が毎回書き直す。CMS は書かない (作ったレッスンは既定の false のまま)。
      */
     public: integer("public", { mode: "boolean" }).notNull().default(false),
+    /**
+     * このレッスンが課題の問題なら、その課題と問題。問題のレッスンだけ両方が入り、ほかは null。
+     * 外部キーは付けない。`tasks.lesson_id` が lessons を参照し、seed はレッスンを課題より先に入れる。
+     */
+    problemTaskId: text("problem_task_id"),
+    problemId: text("problem_id"),
     createdAt: tsNow("created_at"),
     updatedAt: tsNowUpd("updated_at"),
   },
@@ -851,6 +834,10 @@ export const lessons = sqliteTable(
     sectionIdx: index("lessons_section_id_idx").on(t.sectionId),
     // 公開 API は匿名で叩かれるので、印のある行だけを引く (表を全走査させない)。
     publicIdx: index("lessons_public_idx").on(t.sectionId).where(sql`public = 1`),
+    // 同じ課題の同じ問題を、2 つのレッスンに付けない。null は問題のレッスンではない。
+    problemUq: uniqueIndex("lessons_problem_uq")
+      .on(t.problemTaskId, t.problemId)
+      .where(sql`problem_task_id is not null and problem_id is not null`),
   }),
 );
 
