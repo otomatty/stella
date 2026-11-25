@@ -1,7 +1,7 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問9 Article から { id, title } を取り出して返す
+//     例: toSummary(article) → { id: 1, title: "はじめまして" }
+// 引数と戻り値に型注釈を付けます。
+// 戻り値の型に Pick<Article, "id" | "title"> を使います。
 
 export type Article = {
   id: number;
@@ -11,7 +11,6 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問9
 export function toSummary(article: Article): Pick<Article, "id" | "title"> {
   return { id: article.id, title: article.title };
 }

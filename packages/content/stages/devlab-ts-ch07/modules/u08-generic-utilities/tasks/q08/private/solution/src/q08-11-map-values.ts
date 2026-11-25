@@ -1,9 +1,7 @@
-// 07-q08 ジェネリクスのユーティリティ ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問11 Record<string, T> のすべての値に fn を当てはめた Record<string, U>（型変数を2つ使う）
+//     例: mapValues({ a: 1, b: 2 }, (n) => String(n)) → { a: "1", b: "2" }
+// 型変数を unknown で置き換えないでください。
 
-// 問11
 export function mapValues<T, U>(record: Record<string, T>, fn: (value: T) => U): Record<string, U> {
   const result: Record<string, U> = {};
   for (const [key, value] of Object.entries(record)) {

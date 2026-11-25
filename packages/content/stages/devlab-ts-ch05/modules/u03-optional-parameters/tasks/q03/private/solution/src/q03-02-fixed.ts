@@ -1,8 +1,8 @@
-// 05-q03 オプション引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
+// 問2 n と、省略できる digits。小数第 digits 位までの文字列にする。省略したら 0
+//     例: fixed(3.14159, 2) → "3.14"
+// 引数と戻り値には型注釈を付けてください。
+// 省略できる引数は ? で宣言し、関数の中で ?? や === undefined で省略を扱ってください。
 
-// 問2
 export function fixed(n: number, digits?: number): string {
   return n.toFixed(digits ?? 0);
 }

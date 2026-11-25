@@ -1,10 +1,9 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問4 age が years より大きければ true
+//     例: isOlderThan(ポチ, 3) → true
+// 引数と戻り値には型注釈を付けます。
 
 export type Dog = { name: string; age: number; breed: string };
 
-// 問4
 export function isOlderThan(x: { age: number }, years: number): boolean {
   return x.age > years;
 }

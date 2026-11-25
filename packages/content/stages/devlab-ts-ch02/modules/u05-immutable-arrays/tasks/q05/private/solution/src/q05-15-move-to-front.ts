@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問15
+// 問15 index 番目の要素を先頭に移した新しい配列を返す
+//     例: moveToFront(["a", "b", "c"], 2) → ["c", "a", "b"]
+// 引数と戻り値には型注釈を付けます。
+// filter で残りの要素を選び、スプレッド構文で先頭の要素とまとめます。
 export function moveToFront(items: readonly string[], index: number): string[] {
   const item = items[index];
   if (item === undefined) {

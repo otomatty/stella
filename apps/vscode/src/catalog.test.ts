@@ -80,6 +80,7 @@ describe("toCatalogStage", () => {
         afterLessonId: "video",
         afterTitle: "計算の順番",
         state,
+        refs: [],
       }),
     );
     const section = {

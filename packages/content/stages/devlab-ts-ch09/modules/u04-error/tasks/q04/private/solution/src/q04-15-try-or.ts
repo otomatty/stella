@@ -1,9 +1,7 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問15 fn() を呼んでその値を返す。fn が例外を投げたら fallback を返す
+//     例: tryOr(() => JSON.parse("{"), 0) → 0
+// 引数と戻り値に型注釈を付けます。
 
-// 問15
 export function tryOr(fn: () => number, fallback: number): number {
   try {
     return fn();

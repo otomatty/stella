@@ -1,8 +1,3 @@
-// 07-q01 typeof 型演算子
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
-//
 // 問題
 // 値から型を作ると、値を直したときに型も一緒に変わるので、書き直し忘れがなくなります。
 // 型の位置で typeof 値 と書くと、その値の型になります。定数 DEFAULT_CONFIG と THEMES は定義済みです。
@@ -19,6 +14,7 @@
 //
 // 説明すること（答えは、この下に // のコメントで書く）
 // - 型 Config を手で書いた場合と比べて、typeof で作ると何がうれしいか
+// 定義済みの定数は書き換えず、関数の引数と戻り値に型注釈を付けます。
 
 export const DEFAULT_CONFIG = {
   host: "localhost",

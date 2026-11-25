@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問17
+// 問17 true なら "はい"、false なら "いいえ" を返す（戻り値は "はい" | "いいえ" に推論される）
+//     例: yesNo(true) → "はい"
+// 戻り値の型は推論に任せてください。
 export function yesNo(flag: boolean) {
   return flag ? "はい" : "いいえ";
 }

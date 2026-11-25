@@ -1,9 +1,7 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問3 名前を受け取り「greeting、◯◯さん」を返す関数を返す
+//     例: makeGreeter("おはよう")("山田") → "おはよう、山田さん"
+// 引数には型注釈を付け、戻り値の型は (x: number) => number のように書いてください。
 
-// 問3
 export function makeGreeter(greeting: string): (name: string) => string {
   return (name) => `${greeting}、${name}さん`;
 }

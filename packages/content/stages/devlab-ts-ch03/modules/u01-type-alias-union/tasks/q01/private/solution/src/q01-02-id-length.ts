@@ -1,9 +1,8 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問2 文字列か数値を受け取り、文字列にしたときの文字数を返す
+//     例: idLength(12345) → 5
+// 引数と戻り値に型注釈を付ける。
+// 引数の型にはユニオン型を直接書く。
 
-// 問2
 export function idLength(id: string | number): number {
   return String(id).length;
 }

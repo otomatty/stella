@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問20
+// 問20 index 番目の要素だけを1増やした新しい配列を返す
+//     例: incrementAt([1, 1, 1], 1) → [1, 2, 1]
+// 引数と戻り値には型注釈を付けます。
+// 指定の位置だけ変更した配列を作るには map が使えます。
 export function incrementAt(numbers: readonly number[], index: number): number[] {
   return numbers.map((n, i) => (i === index ? n + 1 : n));
 }

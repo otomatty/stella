@@ -1,9 +1,3 @@
-// 06-e02 発展問題 static、getter・setter、メソッドチェーン
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/class/static-fields
-//       https://typescriptbook.jp/reference/object-oriented/class/static-methods
-//       https://typescriptbook.jp/reference/object-oriented/class/return-this-type
-//
 // 問題
 // 1. 温度を表すクラス Temperature を書いてください
 //    - constructor(celsius): 摂氏を private に持つ

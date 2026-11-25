@@ -1,7 +1,3 @@
-// 04-q04 while文と break・continue
-//
-// 教材: https://jsprimer.net/basic/loop/
-//
 // 問題
 // 次の3つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //
@@ -18,6 +14,7 @@
 //    先頭から順に足していき、負の数が出てきたらそこで止める（break）。
 //    0 は飛ばす（continue）。足した数と、足した個数を { sum, count } で返す。引数は readonly number[]
 //    例: sumUntilNegative([3, 0, 4, -1, 5]) → { sum: 7, count: 2 }
+// firstPowerOver では、何回掛けるかが決まっていないので while 文を使います。
 
 export function toBinary() {}
 

@@ -1,9 +1,6 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問8 Error を継承したクラス TimeoutError を書く。constructor(ms) で、ms（数値）を readonly で持つ。message は `${ms}ミリ秒でタイムアウトしました`、name は "TimeoutError"
+//     例: new TimeoutError(500).message → "500ミリ秒でタイムアウトしました"
 
-// 問8
 export class TimeoutError extends Error {
   readonly ms: number;
 

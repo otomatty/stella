@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問15 value と同じ要素をすべて除いた新しい配列
+//     例: withoutValue([1, 2, 1], 1) → [2]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問15
 export function withoutValue<T>(items: readonly T[], value: T): T[] {
   return items.filter((item) => item !== value);
 }

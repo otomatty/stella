@@ -1,7 +1,3 @@
-// 01-q02 型注釈
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-//
 // 問題
 // 次の2つの関数を書いてください。引数と戻り値には、すべて型注釈を付けること。
 //

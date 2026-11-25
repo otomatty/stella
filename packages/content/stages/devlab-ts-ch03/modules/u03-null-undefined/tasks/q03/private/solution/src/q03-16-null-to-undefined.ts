@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問16 null なら undefined に変える
+//     例: nullToUndefined(null) → undefined
+// 引数と戻り値に型注釈を付ける。
+// ?? で、値がない場合を扱う。
 
-// 問16
 export function nullToUndefined(value: string | null): string | undefined {
   return value ?? undefined;
 }

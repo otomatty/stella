@@ -1,7 +1,9 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問14 取得できれば true、失敗したら false を返す
+//     例: userExists(9) → false で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
+// 失敗は try・catch で受け止めてください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +22,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問14
 export async function userExists(id: number): Promise<boolean> {
   try {
     await fetchUser(id);

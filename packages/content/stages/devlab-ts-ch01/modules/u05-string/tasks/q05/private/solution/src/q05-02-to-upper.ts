@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問2
+// 問2 英字を大文字にする
+//     例: toUpper("abc") → "ABC"
+// 戻り値には型注釈を付けてください。
+// toUpperCase が使えます。
 export function toUpper(text: string): string {
   return text.toUpperCase();
 }

@@ -1,6 +1,4 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
+// 問3 定数 IS_BETA を宣言する。値は true。推論される型は true
+// 型注釈を書かずに export const で宣言してください。
 
-// 問3
 export const IS_BETA = true;

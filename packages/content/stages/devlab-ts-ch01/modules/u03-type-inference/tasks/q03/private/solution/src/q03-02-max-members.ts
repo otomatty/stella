@@ -1,6 +1,4 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
+// 問2 定数 MAX_MEMBERS を宣言する。値は 50。推論される型は 50
+// 型注釈を書かずに export const で宣言してください。
 
-// 問2
 export const MAX_MEMBERS = 50;

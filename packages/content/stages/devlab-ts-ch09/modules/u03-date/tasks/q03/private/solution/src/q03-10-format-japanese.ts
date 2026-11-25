@@ -1,8 +1,11 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
+// 問10 "2026年4月1日（水）" の形の文字列を返す（月と日は0を付けない）
+//     例: formatJapanese(2026年4月1日) → "2026年4月1日（水）"
+// 引数と戻り値に型注釈を付けます。
+// Date では月を 0〜11（1月が 0）で数えます。
+// getDay() の曜日は 0〜6（日曜が 0）です。
+// ローカル時刻の年月日と曜日を使います。
+// 引数の Date は変更しません。
 
-// 問10
 export function formatJapanese(date: Date): string {
   const weekday = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()] ?? "";
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekday}）`;

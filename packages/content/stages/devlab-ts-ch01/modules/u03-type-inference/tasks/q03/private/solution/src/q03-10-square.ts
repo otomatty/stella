@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問10
+// 問10 2乗した数を返す
+//     例: square(5) → 25
+// 戻り値の型は推論に任せてください。
 export function square(n: number) {
   return n * n;
 }

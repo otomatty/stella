@@ -1,8 +1,9 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問3 同じ値が2回以上出てきたら true
+//     例: hasDuplicates([1, 2, 1]) → true
+// 引数と戻り値に型注釈を付けます。
+// 重複や要素の有無を調べるために Set を使います。
+// 引数の配列は変更しません。
 
-// 問3
 export function hasDuplicates(items: number[]): boolean {
   return new Set(items).size !== items.length;
 }

@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問15 ids のユーザーと投稿を同時に取得し、投稿がいちばん多い人の名前を返す。ユーザーか投稿の取得に失敗した人は除く。だれもいなければ undefined
+//     例: mostActive([2, 1, 4]) → "山田" で解決する
+// async と await を使ってください。
+// ユーザーと投稿の取得には定義済みの getUser と getPosts を使ってください。
+// ユーザーと投稿の取得の成否は Promise.all と Promise.allSettled を使って分けてください。
 
 export type User = { id: number; name: string };
 
@@ -36,7 +37,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問15
 export async function mostActive(ids: readonly number[]): Promise<string | undefined> {
   const results = await Promise.allSettled(ids.map((id) => userWithPostsOf(id)));
   let best: { name: string; count: number } | undefined;

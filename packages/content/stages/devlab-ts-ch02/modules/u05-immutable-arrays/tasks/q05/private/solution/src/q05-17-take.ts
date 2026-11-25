@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問17
+// 問17 先頭から n 個の要素の新しい配列を返す
+//     例: take([1, 2, 3, 4], 2) → [1, 2]
+// 引数と戻り値には型注釈を付けます。
+// 配列の一部を取り出すには slice が使えます。
 export function take(numbers: readonly number[], n: number): number[] {
   return numbers.slice(0, n);
 }

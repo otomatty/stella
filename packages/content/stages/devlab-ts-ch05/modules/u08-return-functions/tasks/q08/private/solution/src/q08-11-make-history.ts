@@ -1,9 +1,8 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問11 { add, list } を返す。add(text) で履歴に足し（何も返さない）、list() でそれまでの履歴の配列（コピー）を返す
+//     例: const h = makeHistory(); h.add("a"); h.list() → ["a"]
+// 戻り値の型注釈には、各プロパティの関数の型を書いてください。
+// 外側の関数に状態を持たせ、返す関数から読み書きしてください。
 
-// 問11
 export function makeHistory(): { add: (text: string) => void; list: () => string[] } {
   const items: string[] = [];
   return {

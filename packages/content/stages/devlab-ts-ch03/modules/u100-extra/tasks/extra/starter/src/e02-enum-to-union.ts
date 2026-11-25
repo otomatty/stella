@@ -1,7 +1,3 @@
-// 03-e02 発展問題 enum をユニオン型に置き換える
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/enum
-//
 // 問題
 // 下のコードは enum を使っています。サバイバルTypeScriptでは、enum の代わりに
 // ユニオン型を使うことを勧めています。次のように書き直してください。

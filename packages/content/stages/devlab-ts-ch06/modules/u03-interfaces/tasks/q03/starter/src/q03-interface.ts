@@ -1,9 +1,3 @@
-// 06-q03 インターフェース
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/interface/implementing-interfaces
-//       https://typescriptbook.jp/reference/object-oriented/interface/readonly-modifier-in-interfaces
-//       https://typescriptbook.jp/reference/object-oriented/interface/interface-vs-type-alias
-//
 // 問題
 // 1. インターフェース Shape を定義して export してください
 //    - name: 図形の名前（文字列）。読み取り専用

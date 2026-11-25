@@ -1,8 +1,3 @@
-// 09-q04 Error
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
-//
 // 問題
 // 入力のチェックで使うエラーのクラスと、チェックの関数を書いてください。
 //

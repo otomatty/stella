@@ -1,9 +1,8 @@
-// 02-q08 インデックス型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/index-signature
-//       https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object
-
-// 問7
+// 問7 単語ごとに、出てきた回数を数える
+//     例: countWords(["a", "b", "a"]) → { a: 2, b: 1 }
+// 引数と戻り値には型注釈を付けます。
+// キーが自由なオブジェクトの型は { [key: string]: number } の形で書きます。
+// キーがない場合の値は ?? で補えます。
 export function countWords(words: readonly string[]): { [word: string]: number } {
   const counts: { [word: string]: number } = {};
   for (const word of words) {

@@ -35,6 +35,7 @@ vi.mock("vscode", () => ({
 // UI と採点は起動せず、拡張の URI 入口・認証ストア・API クライアントを通す。
 vi.mock("./tree.js", () => ({ registerLearningSidebar: vi.fn() }));
 vi.mock("./grader-host.js", () => ({ initGraderHost: () => ({ dispose: vi.fn() }) }));
+vi.mock("./task-code-lens.js", () => ({ registerTaskCodeLens: vi.fn() }));
 vi.mock("./task-commands.js", () => ({ registerTaskCommands: vi.fn() }));
 vi.mock("./task-help.js", () => ({ registerTaskHelp: vi.fn() }));
 vi.mock("./task-status.js", () => ({ registerTaskStatus: vi.fn() }));

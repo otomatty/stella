@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問12 先頭から n 個の新しい配列
+//     例: takeFirst([1, 2, 3], 2) → [1, 2]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問12
 export function takeFirst<T>(items: readonly T[], n: number): T[] {
   return items.slice(0, n);
 }

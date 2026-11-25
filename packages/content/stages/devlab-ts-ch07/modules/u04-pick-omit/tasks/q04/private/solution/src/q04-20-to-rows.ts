@@ -1,11 +1,9 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問20 型 UserRow を Pick<User, "id" | "name" | "age"> として作る。toRows(users) で UserRow の配列を id の小さい順に返す
+//     例: toRows(users) → [{ id: 1, name: "山田", age: 30 }, …]
+// 引数と戻り値に型注釈を付けます。
 
 export type User = { id: number; name: string; email: string; password: string; age: number };
 
-// 問20
 export type UserRow = Pick<User, "id" | "name" | "age">;
 
 export function toRows(users: readonly User[]): UserRow[] {

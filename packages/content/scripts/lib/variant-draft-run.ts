@@ -173,7 +173,8 @@ function systemPrompt(guide: string, mode: "full" | "params", mutants: boolean):
     "出力は指定の JSON だけにします。slug は類題を表す短い英小文字とハイフンの名前 (例: profile-page) にします。",
   ];
   const full = [
-    `類題 1 問は次のファイルで書きます: task.json・README.md (課題文)・hints.md (ヒント。段の数は task.json の support.hintLevels とそろえ、0 段なら空文字)・starter/ (受講者に配る出発点)・tests/ (手元の検査)・private/solution/ (starter に重ねて検査に通る解答例)・private/explanation.md (解説)・private/review.md (レビューの観点とよくある違反)${mutants ? "・private/mutants/<誤答の名前>/ (典型的な誤答。1 つ以上)" : ""}。`,
+    `類題 1 問は次のファイルで書きます: task.json・hints.md (ヒント。段の数は task.json の support.hintLevels とそろえ、0 段なら空文字)・starter/ (受講者に配る出発点)・tests/ (手元の検査)・private/solution/ (starter に重ねて検査に通る解答例)・private/explanation.md (解説)${mutants ? "・private/mutants/<誤答の名前>/ (典型的な誤答。1 つ以上)" : ""}。`,
+    "類題の task.json に problems が無い場合は、README.md (課題文) と private/review.md (レビューの観点とよくある違反) も書きます。problems がある場合は README.md を作らず、問題文、例、その問題の条件 (テスト・ESLint・型の確認で検出できないものだけ) を、各問題ファイル先頭の // 問N のコメントに書きます。コメントに共通のルール・進め方・教材の URL は書きません。類題には refs を書けません。",
     "task.json は親の課題の task.json を元にし、title・skills・estimatedMinutes・review・support・static などを類題に合わせて直します。id・pattern・kind はこちらで決めた値に置き換えるので、何を書いても構いません。support は類題の kind で選べる値にします (書き方の決まりの表)。",
     mutants
       ? "典型的な誤答は、受講者がやりがちな誤りを解答例に重ねた形で書きます。starter か解答例にあるファイルだけを置き、テスト・設定は変えません。誤答はテストで必ず落ちるようにし、落ちない誤答があればテストを足します。"

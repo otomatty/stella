@@ -1,8 +1,8 @@
-// 05-q04 デフォルト引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/default-parameters
+// 問3 全件数 total を perPage 件ずつに分けたときのページ数を返す。perPage を省略したら 10
+//     例: pageCount(25) → 3
+// 省略時の値は、引数に times = 2 のように書いてください。
+// 必須の引数と戻り値には型注釈を付けてください。
 
-// 問3
 export function pageCount(total: number, perPage = 10): number {
   return Math.ceil(total / perPage);
 }

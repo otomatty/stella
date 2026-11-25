@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問11
+// 問11 「@」が何文字目（0から数える）にあるかを返す。なければ -1
+//     例: atPosition("taro@example.com") → 4
+// 戻り値には型注釈を付けてください。
+// indexOf が使えます。
 export function atPosition(email: string): number {
   return email.indexOf("@");
 }

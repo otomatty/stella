@@ -5,7 +5,11 @@
  */
 
 import type { TaskBundleResponse } from "@stella/shared/tasks/catalog";
-import type { ProblemStepState } from "@stella/shared/tasks/problem-steps";
+import {
+  problemStepLabel,
+  type ProblemStepState,
+  type TaskRefSummary,
+} from "@stella/shared/tasks/problem-steps";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { isProblemId, problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
@@ -26,7 +30,7 @@ import {
   writeStateFile,
 } from "./runner/files.js";
 import { loadTask } from "./runner/run-task.js";
-import { taskBundleUrl } from "./task-bundle-url.js";
+import { taskBundleUrl, taskFixedStartUrl } from "./task-bundle-url.js";
 import { pendingProblemBundle, protectedTaskFiles, unlockTaskFiles } from "./task-distribution.js";
 import {
   readDistribution,
@@ -50,6 +54,7 @@ export interface ProblemState {
   /** 課題フォルダーからの相対パス (`src/<id>.<ext>`)。 */
   source: string;
   status: ProblemWorkStatus;
+  failed?: true;
 }
 
 export interface ServerProblem {
@@ -61,10 +66,12 @@ export interface ServerProblem {
   afterTitle?: string;
   stepLessonId?: string;
   afterLessonId?: string;
+  refs?: TaskRefSummary[];
 }
 
 export interface ProblemResults {
   gated?: true;
+  refs?: TaskRefSummary[];
   problems: ServerProblem[];
   passedProblems: number;
   totalProblems: number;
@@ -117,6 +124,29 @@ export function problemForTestPath(manifest: TaskManifest, rel: string): TaskPro
 /** 提出済みでない最初の問題。全部提出済みなら undefined。 */
 export function nextUnsubmittedProblem(states: readonly ProblemState[]): ProblemState | undefined {
   return states.find((state) => state.status !== "submitted");
+}
+
+export function problemToWorkOn(
+  states: readonly ProblemState[],
+  unprepared?: ReadonlySet<string>,
+): ProblemState | undefined {
+  return states.find(({ id, status }) => status !== "submitted" && !unprepared?.has(id));
+}
+
+export function problemTaskProgress(manifest: TaskManifest, problems: TaskProblems) {
+  const next = problemToWorkOn(problems.states, problems.unprepared);
+  return {
+    problemProgress: problems.progress,
+    problemSteps: manifest.problemSteps,
+    problemTaskCode: manifest.id.split("/").at(-1),
+    currentProblem: next && {
+      id: next.id,
+      label: problemStepLabel(
+        next.title,
+        manifest.problems?.findIndex(({ id }) => id === next.id) ?? 0,
+      ),
+    },
+  };
 }
 
 /** 開くファイル。次の未提出。全問が配布・提出済みなら 1 問目。 */
@@ -235,6 +265,7 @@ export async function loadProblemStates(
       title: problem.title,
       source,
       status: problemWorkStatus(passed.has(problem.id), local?.outcome),
+      ...(local?.outcome === "failed" || local?.outcome === "error" ? { failed: true } : {}),
     });
   }
   return states;
@@ -312,6 +343,7 @@ export async function readProblemStepResults(
   const totalProblems = manifest.problems?.length ?? 0;
   return {
     gated: true,
+    ...(previous?.refs ? { refs: previous.refs } : {}),
     problems,
     passedProblems,
     totalProblems,
@@ -341,6 +373,7 @@ export function visibleProblemIds(
 }
 
 export interface TaskProblems {
+  server?: ProblemResults;
   states: ProblemState[];
   nextReason?: string;
   blocked: Map<string, string>;
@@ -412,7 +445,7 @@ async function readTaskProblems(
           const options = { signal, ...(session === undefined ? {} : { session }) };
           const { bundle } =
             pending.variant === "fixed-start"
-              ? await apiRequest<TaskBundleResponse>("/api/tasks/fixed-start", {
+              ? await apiRequest<TaskBundleResponse>(taskFixedStartUrl(), {
                   ...options,
                   method: "POST",
                   body: { taskId: manifest.id },
@@ -448,6 +481,7 @@ async function readTaskProblems(
   }
   const nextReason = blocked.values().next().value;
   return {
+    ...(server ? { server } : {}),
     states,
     blocked,
     ...(nextReason ? { nextReason } : {}),

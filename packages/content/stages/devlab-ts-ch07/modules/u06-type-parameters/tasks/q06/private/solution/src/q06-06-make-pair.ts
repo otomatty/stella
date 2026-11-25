@@ -1,9 +1,7 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問6 2つの値を [a, b] のタプルにする（型変数を2つ使う）
+//     例: makePair("a", 1) → ["a", 1]
+// 型変数を unknown で置き換えないでください。
 
-// 問6
 export function makePair<A, B>(a: A, b: B): [A, B] {
   return [a, b];
 }

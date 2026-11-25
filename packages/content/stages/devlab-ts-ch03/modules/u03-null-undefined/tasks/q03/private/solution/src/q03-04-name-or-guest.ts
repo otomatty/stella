@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問4 名前か null を受け取り、null なら「ゲスト」を返す
+//     例: nameOrGuest(null) → "ゲスト"
+// 引数と戻り値に型注釈を付ける。
+// ?? で、値がない場合を扱う。
 
-// 問4
 export function nameOrGuest(name: string | null): string {
   return name ?? "ゲスト";
 }

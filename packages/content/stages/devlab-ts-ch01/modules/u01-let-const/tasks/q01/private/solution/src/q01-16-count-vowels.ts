@@ -1,9 +1,5 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問16
+// 問16 英字の文字列に含まれる母音（a, e, i, o, u）の数を返す
+//     例: countVowels("education") → 5
 export function countVowels(text: string): number {
   const vowels = "aeiou";
   let count = 0;

@@ -435,6 +435,17 @@ function checkUnit(
     }
   }
   const files = publicContentFiles(directory);
+  // 課題文のレッスンは README が無くても残る。出典の対応先は従来の課題文のキーで確認する。
+  const tasksDir = join(directory, "tasks");
+  if (existsSync(tasksDir)) {
+    for (const task of readdirSync(tasksDir, { withFileTypes: true })) {
+      const readme = `tasks/${task.name}/README.md`;
+      const taskFile = join(tasksDir, task.name, "task.json");
+      if (!task.isDirectory() || files.includes(readme) || !existsSync(taskFile)) continue;
+      const definition = object(JSON.parse(readFileSync(taskFile, "utf8")), taskFile);
+      if (Array.isArray(definition.problems) && definition.problems.length > 0) files.push(readme);
+    }
+  }
   for (const use of refs.uses) {
     if (use.environmentRef !== undefined) {
       try {

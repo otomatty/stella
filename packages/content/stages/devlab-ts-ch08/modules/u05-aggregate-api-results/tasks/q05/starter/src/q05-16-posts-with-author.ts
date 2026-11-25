@@ -1,12 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
-//
-// async・await と Promise.all・Promise.allSettled を使って書いてください。
-// 型 User・Post・Comment と、APIの代わりの関数 getUser・getPosts・getComments は定義済みです。
-// getUser(id) はいない id なら失敗し、getPosts(3) は必ず失敗します（投稿を取得できない人の例）。
-// 待つ必要のない取得は、一度に始めて同時に待つこと。「順番に」と書いてある問題だけ、1つずつ待つ。
+// 問16 ids のユーザーと投稿を同時に取得し、すべての投稿を { title, author: 書いた人の名前 } の配列にする（ids の順、その中は投稿の順）。失敗したらその失敗を投げる
+//     例: postsWithAuthor([2]) → [{ title: "非同期処理のまとめ", author: "佐藤" }] で解決する
+// async と await を使ってください。
+// ユーザーと投稿の取得には定義済みの getUser と getPosts を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type User = { id: number; name: string };
 
@@ -41,6 +37,4 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問16 ids のユーザーと投稿を同時に取得し、すべての投稿を { title, author: 書いた人の名前 } の配列にする（ids の順、その中は投稿の順）。失敗したらその失敗を投げる
-//     例: postsWithAuthor([2]) → [{ title: "非同期処理のまとめ", author: "佐藤" }] で解決する
 export function postsWithAuthor() {}

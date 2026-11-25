@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問10 ids のユーザーの取得を map で一度に始め、Promise.all で待って、名前の配列を返す
+//     例: namesAtOnce([2, 4]) → ["佐藤", "田中"] で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問10
 export async function namesAtOnce(ids: readonly number[]): Promise<string[]> {
   const users = await Promise.all(ids.map((id) => fetchUser(id)));
   return users.map((u) => u.name);

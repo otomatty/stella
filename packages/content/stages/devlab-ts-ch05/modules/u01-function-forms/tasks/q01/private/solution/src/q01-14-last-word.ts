@@ -1,10 +1,8 @@
-// 05-q01 関数宣言・関数式・アロー関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-declaration
-//       https://typescriptbook.jp/reference/functions/function-expression
-//       https://typescriptbook.jp/reference/functions/arrow-functions
+// 問14 【関数式】半角スペースで区切った最後の単語を返す
+//     例: lastWord("hello big world") → "world"
+// 引数と戻り値には型注釈を付けてください。
+// 用意された関数式の形のまま、引数・型・中身を書き足してください。
 
-// 問14
 export const lastWord = function (text: string): string {
   return text.slice(text.lastIndexOf(" ") + 1);
 };

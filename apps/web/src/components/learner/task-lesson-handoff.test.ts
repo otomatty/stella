@@ -15,6 +15,7 @@ const problemStep = (state: ProblemStepState): TaskProblemStepSummary => ({
   afterLessonId: "video",
   afterTitle: "関数の返り値",
   state,
+  refs: [],
 });
 
 const renderProblem = (

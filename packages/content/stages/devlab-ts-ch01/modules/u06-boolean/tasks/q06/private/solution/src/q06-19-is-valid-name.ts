@@ -1,9 +1,7 @@
-// 01-q06 boolean型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/boolean
-//       https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values
-
-// 問19
+// 問19 空ではなく、max 文字以下なら true
+//     例: isValidName("山田", 10) → true
+// 戻り値には型注釈を付けてください。
+// 判定式の結果を return の1行で返せます。
 export function isValidName(name: string, max: number): boolean {
   return name.length > 0 && name.length <= max;
 }

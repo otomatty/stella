@@ -1,8 +1,3 @@
-// 08-q02 async と await
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
-//
 // 問題
 // ユーザーを1人取得する非同期関数 fetchUser（型は FetchUser）を引数で受け取り、次の関数を書いてください。
 // async と await を使うこと。戻り値の型は Promise<…> で書く。

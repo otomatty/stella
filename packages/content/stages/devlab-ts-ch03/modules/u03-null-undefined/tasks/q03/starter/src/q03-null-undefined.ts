@@ -1,8 +1,3 @@
-// 03-q03 null と undefined
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
-//
 // 問題
 // プロフィールを表す型 Profile は定義済みです。
 // bio は書いていない人もいます。company は、会社に所属していない人では null になります。

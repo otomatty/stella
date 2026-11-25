@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問16 value が最後に出てくる番号。なければ -1
+//     例: lastIndexOfValue(["a", "b", "a"], "a") → 2
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問16
 export function lastIndexOfValue<T>(items: readonly T[], value: T): number {
   return items.lastIndexOf(value);
 }

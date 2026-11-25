@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問6
+// 問6 数値を文字列にする（戻り値は string に推論される）
+//     例: toText(42) → "42"
+// 戻り値の型は推論に任せてください。
 export function toText(n: number) {
   return String(n);
 }

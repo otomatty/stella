@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問8
+// 問8 番号を4桁になるように前を0で埋める
+//     例: padId(7) → "0007"
+// 戻り値には型注釈を付けてください。
+// padStart が使えます。
 export function padId(id: number): string {
   return String(id).padStart(4, "0");
 }

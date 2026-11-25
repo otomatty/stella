@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問20
+// 問20 在庫が 0 なら "在庫なし"、5 以下なら "残りわずか"、それ以外は "在庫あり"
+//     例: stockStatus(3) → "残りわずか"
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function stockStatus(stock: number): "在庫あり" | "残りわずか" | "在庫なし" {
   if (stock === 0) {
     return "在庫なし";

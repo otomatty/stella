@@ -1,9 +1,8 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問15 { deposit, withdraw, balance } を返す。deposit(n) と withdraw(n) は残高を変えて、変えた後の残高を返す。残高より多く引き出そうとしたら "残高が足りません" の Error を投げる
+//     例: const w = makeWallet(1000); w.withdraw(300) → 700
+// 引数には型注釈を付け、戻り値の型注釈には各プロパティの関数の型を書いてください。
+// 外側の関数に状態を持たせ、返す関数から読み書きしてください。
 
-// 問15
 export function makeWallet(initial: number): {
   deposit: (n: number) => number;
   withdraw: (n: number) => number;

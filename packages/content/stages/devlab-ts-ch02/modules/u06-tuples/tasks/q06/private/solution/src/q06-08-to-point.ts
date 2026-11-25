@@ -1,9 +1,6 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問8
+// 問8 x と y から座標 [x, y] を作る
+//     例: toPoint(1, 2) → [1, 2]
+// 引数と戻り値には型注釈を付けます。
 export function toPoint(x: number, y: number): [number, number] {
   return [x, y];
 }

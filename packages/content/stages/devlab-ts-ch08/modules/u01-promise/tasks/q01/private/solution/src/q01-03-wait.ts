@@ -1,9 +1,8 @@
-// 08-q01 Promise ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous
-//       https://typescriptbook.jp/reference/asynchronous/promise
+// 問3 ms ミリ秒たったら解決する Promise<void> を返す（new Promise と setTimeout）
+//     例: wait(100) → 100ミリ秒後に解決する
+// async と await を使わずに書いてください。
+// 引数と戻り値に型注釈を付け、Promise の中身の型まで書いてください。
 
-// 問3
 export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);

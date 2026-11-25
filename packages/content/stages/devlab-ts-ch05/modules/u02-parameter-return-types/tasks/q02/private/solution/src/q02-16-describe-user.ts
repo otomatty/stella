@@ -1,10 +1,7 @@
-// 05-q02 引数と戻り値の型、void ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//       https://typescriptbook.jp/reference/functions/pass-by-value
+// 問16 { name, age } を「山田（30歳）」にする
+//     例: describeUser({ name: "山田", age: 30 }) → "山田（30歳）"
+// 引数と戻り値には型注釈を付けてください。
 
-// 問16
 export function describeUser(user: { name: string; age: number }): string {
   return `${user.name}（${user.age}歳）`;
 }

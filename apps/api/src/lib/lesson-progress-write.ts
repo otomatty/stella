@@ -17,6 +17,7 @@ import type { Db } from "../db/client.js";
 import { lessonProgress } from "../db/schema.js";
 import { ApiError } from "./authz.js";
 import { chunk, rowsPerInsert } from "./enrollment-bulk.js";
+import { hasOnlyManualTaskPass } from "./task-pass-source.js";
 import {
   loadProblemRevisionHashes,
   countableProblemResults,
@@ -83,6 +84,42 @@ function problemStepCompletion(
 
 export function isProblemStepLesson(lessonId: SQL) {
   return sql<number>`exists (select 1 from task_problem_steps p where p.step_lesson_id = ${lessonId})`;
+}
+
+export const problemTaskOverviewTasks = sql`
+  select id, lesson_id from tasks
+  where active = 1 and variant_of is null and lesson_id is not null
+    and case when json_valid(definition) then json_array_length(definition, '$.problems') > 0 end
+`;
+
+export function isProblemTaskOverviewLesson(lessonId: SQL) {
+  return sql<number>`(${lessonId} in (select lesson_id from (${problemTaskOverviewTasks})))`;
+}
+
+/** 一覧レッスンの完了は課題の現在の合格状態から決める。本人の活動を集計するときは引き継ぎだけの合格を除く。 */
+export async function loadPassedOverviewLessons(
+  db: Db,
+  userIds: readonly string[],
+  lessonIds?: readonly string[],
+  options?: { excludeManualOnly?: boolean },
+) {
+  if (userIds.length === 0 || lessonIds?.length === 0) return [];
+  const excludeManualOnly = options?.excludeManualOnly
+    ? sql`and not ${hasOnlyManualTaskPass(sql`tp.user_id`, sql`tp.task_id`)}`
+    : sql``;
+  return db.all<{ userId: string; lessonId: string; stageId: string; updatedAt: number }>(sql`
+    select tp.user_id userId, t.lesson_id lessonId, s.stage_id stageId,
+      max(coalesce(tp.passed_at, tp.updated_at)) updatedAt
+    from task_progress tp
+    join (${problemTaskOverviewTasks}) t on t.id = tp.task_id
+    join lessons l on l.id = t.lesson_id
+    join sections s on s.id = l.section_id
+    where tp.user_id in (select value from json_each(${JSON.stringify(userIds)}))
+      and tp.status in ('passed', 'ai-passed')
+      ${excludeManualOnly}
+      ${lessonIds ? sql`and t.lesson_id in (select value from json_each(${JSON.stringify(lessonIds)}))` : sql``}
+    group by tp.user_id, t.lesson_id, s.stage_id
+  `);
 }
 
 /** 問題のステップは保存済みの完了フラグより、現在数えられる提出を優先する。 */

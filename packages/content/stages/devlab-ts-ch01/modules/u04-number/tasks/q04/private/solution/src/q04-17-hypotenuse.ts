@@ -1,8 +1,6 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問17
+// 問17 直角三角形の2辺から、斜辺の長さを返す（Math.hypot または Math.sqrt）
+//     例: hypotenuse(3, 4) → 5
+// 戻り値には型注釈を付けてください。
 export function hypotenuse(a: number, b: number): number {
   return Math.hypot(a, b);
 }

@@ -1,9 +1,8 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問14
+// 問14 "1.2.3" の形の2つのバージョンを比べ、a が古ければ -1、同じなら 0、新しければ 1 を返す（数値として比べる）
+//     例: compareVersions("1.9.0", "1.10.0") → -1
+// 引数と戻り値に型注釈を付けます。
+// 文字列を split で区切ります。
+// 取り出した数値の文字列は Number で変換します。
 export function compareVersions(a: string, b: string): -1 | 0 | 1 {
   const pa = a.split(".").map(Number);
   const pb = b.split(".").map(Number);

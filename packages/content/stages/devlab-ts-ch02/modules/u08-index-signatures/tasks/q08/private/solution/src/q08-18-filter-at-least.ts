@@ -1,9 +1,8 @@
-// 02-q08 インデックス型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/index-signature
-//       https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object
-
-// 問18
+// 問18 値が min 以上のキーだけを残した、新しいオブジェクトを返す
+//     例: filterAtLeast({ a: 1, b: 5, c: 3 }, 3) → { b: 5, c: 3 }
+// 引数と戻り値には型注釈を付けます。
+// キーが自由なオブジェクトの型は { [key: string]: number } の形で書きます。
+// キーと値を順に見るには Object.entries を使います。
 export function filterAtLeast(
   record: { [key: string]: number },
   min: number,

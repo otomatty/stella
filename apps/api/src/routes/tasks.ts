@@ -14,6 +14,7 @@ import {
   bundleSizeProblem,
   parsePublicTaskBundle,
   type TaskBundleResponse,
+  type TaskProblemItem,
   type TaskSummary,
 } from "@stella/shared/tasks/catalog";
 import {
@@ -21,10 +22,12 @@ import {
   extensionSatisfies,
   extensionUpgradeMessage,
   requiredExtensionVersion,
+  requiredExtensionVersionForFiles,
 } from "@stella/shared/tasks/extension-compat";
 import { normalizeForHash, sha256Hex } from "@stella/shared/tasks/hash";
 import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
-import type { TaskProblem } from "@stella/shared/tasks/problems";
+import { problemFiles, type TaskProblem } from "@stella/shared/tasks/problems";
+import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import { type LocalRunReport, parseLocalRunReport } from "@stella/shared/tasks/local-report";
 import { parseHelpContentHash, parseHelpOpenRequest } from "@stella/shared/tasks/help";
@@ -47,6 +50,7 @@ import {
   loadProblemSteps,
   problemStepsIfReady,
 } from "../lib/task-problem-steps.js";
+import { loadTaskRefs } from "../lib/task-refs.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
 import { localRunUpsert } from "../lib/task-support.js";
@@ -123,12 +127,12 @@ async function stageTaskList(
             .where(
               and(eq(sections.stageId, stageId), eq(tasks.active, true), isNull(tasks.variantOf)),
             );
-    const problemTasks = new Map<string, TaskProblem[]>();
+    const problemTasks = new Map<string, { problems: TaskProblem[]; plan?: RunnerPlanKind }>();
     const gatedTaskIds = new Set<string>();
     for (const row of definitions) {
-      const problems = readTaskDefinition(row.definition).problems;
+      const { problems, runner } = readTaskDefinition(row.definition);
       if (!problems) continue;
-      problemTasks.set(row.id, problems);
+      problemTasks.set(row.id, { problems, plan: runner && RUNNERS[runner].plan });
       if (problems.some((problem) => problem.after)) gatedTaskIds.add(row.id);
     }
     const resultsByTask = new Map<string, SavedProblemResult[]>();
@@ -167,7 +171,10 @@ async function stageTaskList(
         };
       }),
     );
-    const stepRows = gatedTaskIds.size ? await loadProblemSteps(db, caller.id, { stageId }) : [];
+    const [stepRows, refsByTask] = await Promise.all([
+      gatedTaskIds.size ? loadProblemSteps(db, caller.id, { stageId }) : [],
+      rows.length ? loadTaskRefs(db, caller, { stageId }) : undefined,
+    ]);
     const stepsByTask = new Map<string, typeof stepRows>();
     for (const step of stepRows) {
       const steps = stepsByTask.get(step.taskId) ?? [];
@@ -188,9 +195,11 @@ async function stageTaskList(
           ...task,
           kind: task.kind as TaskKind,
           status,
+          refs: refsByTask?.get(task.id)?.get("") ?? [],
         };
-        const problems = problemTasks.get(task.id);
-        if (!problems) return base;
+        const problemTask = problemTasks.get(task.id);
+        if (!problemTask) return base;
+        const { problems, plan } = problemTask;
         const saved = resultsByTask.get(task.id) ?? [];
         const passed = countedProblemIds(
           saved,
@@ -198,11 +207,15 @@ async function stageTaskList(
           p?.status === "passed" || p?.status === "ai-passed",
           hashes.get(task.id),
         );
-        const manualResults = saved.filter(
-          (row) =>
-            row.source === "manual" &&
-            passed.has(row.problemId) &&
-            problems.some((problem) => problem.id === row.problemId),
+        const manualResults = new Set(
+          saved
+            .filter(
+              (row) =>
+                row.source === "manual" &&
+                passed.has(row.problemId) &&
+                problems.some((problem) => problem.id === row.problemId),
+            )
+            .map((row) => row.problemId),
         );
         const steps = gatedTaskIds.has(task.id)
           ? problemStepsIfReady(stepsByTask.get(task.id) ?? [], problems, passed)
@@ -220,16 +233,35 @@ async function stageTaskList(
               afterLessonId,
               afterTitle,
               state,
-              ...(state === "submitted" && manualResults.some((row) => row.problemId === problem.id)
-                ? { manual: true }
-                : {}),
+              refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
+              ...(state === "submitted" && manualResults.has(problem.id) ? { manual: true } : {}),
             };
           },
         );
+        const stepByProblem = new Map(problemSteps?.map((step) => [step.id, step]));
+        const problemItems = problems.flatMap<TaskProblemItem>((problem, index) => {
+          const paths = plan && problemFiles(plan, problem.id);
+          if (!paths) return [];
+          const step = stepByProblem.get(problem.id);
+          if (step) return [{ ...step, source: paths.source }];
+          return [
+            {
+              id: problem.id,
+              title: problem.title,
+              label: problemStepLabel(problem.title, index),
+              source: paths.source,
+              // ステップの準備が済むまでは、動画で解放する問題を開ける扱いにしない。
+              state: passed.has(problem.id) ? "submitted" : problem.after ? "locked-video" : "open",
+              ...(manualResults.has(problem.id) ? { manual: true } : {}),
+              refs: refsByTask?.get(task.id)?.get(problem.id) ?? [],
+            },
+          ];
+        });
         const summary = {
           ...base,
           ...(problemSteps ? { problems: problemSteps } : {}),
-          problems_manual: manualResults.length,
+          problem_items: problemItems,
+          problems_manual: manualResults.size,
           problems_total: problems.length,
           problems_passed: problems.filter((problem) => passed.has(problem.id)).length,
         };
@@ -388,12 +420,17 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
           afterTitle,
         }))
       : problems.map(({ id, title }) => ({ id, title }));
+    const refsByTask = await loadTaskRefs(db, caller, { taskId: row.id });
+    const refsByProblem = refsByTask.get(row.id);
     return c.json({
       ...(steps ? { gated: true } : {}),
+      refs: refsByProblem?.get("") ?? [],
       problems: entries.map((problem) => {
         const firstPassedAt = byId.get(problem.id);
+        const refs = refsByProblem?.get(problem.id) ?? [];
         return {
           ...problem,
+          refs: steps ? refs : refs.filter((ref) => !ref.auto),
           status: firstPassedAt ? "passed" : "not-submitted",
           firstPassedAt: firstPassedAt ? firstPassedAt.toISOString() : null,
           source: firstPassedAt
@@ -410,6 +447,11 @@ async function problemResults(c: Context<{ Bindings: Env }>, finalize: boolean):
   }
 }
 tasksRoute.get("/api/tasks/problem-results", (c) => problemResults(c, true));
+
+function requireTaskExtensionVersion(c: Context<{ Bindings: Env }>, required: string | null) {
+  if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
+    throw new ApiError(extensionUpgradeMessage(required), 426);
+}
 
 /**
  * 課題の配布ファイル (README・starter・tests・`.stella/task.json`)。private/・ヒント・
@@ -436,9 +478,10 @@ tasksRoute.get("/api/tasks/bundle", async (c) => {
     // 予備の類題は出題した受講者にだけ配る (#39)。
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
     const bundle = parsePublicTaskBundle(JSON.parse(row.bundle));
-    const required = requiredExtensionVersion(bundle.manifest);
-    if (required && !extensionSatisfies(c.req.query(EXTENSION_VERSION_PARAM), required))
-      throw new ApiError(extensionUpgradeMessage(required), 426);
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersion(bundle.manifest, Object.keys(bundle.files)),
+    );
     const response: TaskBundleResponse = {
       bundle,
       fixedStart: row.fixedStartHash === row.contentHash,
@@ -472,7 +515,8 @@ tasksRoute.get("/api/tasks/revision-files", async (c) => {
       .where(and(eq(tasks.id, c.req.query("taskId") ?? ""), eq(tasks.active, true)))
       .limit(1);
     if (!row || !(await canAccessTask(db, caller, row))) throw new ApiError("task not found", 404);
-    const { files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    const { manifest, files } = parsePublicTaskBundle(JSON.parse(row.bundle));
+    requireTaskExtensionVersion(c, requiredExtensionVersionForFiles(manifest, Object.keys(files)));
     const hashes = await Promise.all(
       Object.entries(files).map(async ([rel, encoded]) => {
         const bytes = Uint8Array.from(atob(encoded), (ch) => ch.charCodeAt(0));
@@ -541,6 +585,10 @@ tasksRoute.post("/api/tasks/fixed-start", async (c) => {
       contentHash: row.contentHash,
       files: JSON.parse(row.files),
     });
+    requireTaskExtensionVersion(
+      c,
+      requiredExtensionVersionForFiles(manifest, Object.keys(bundle.files)),
+    );
     // 教材の検査で止めているはずの大きさ。D1 に入ってしまっても配らず、利用も記録せずにログへ残す。
     const tooLarge = bundleSizeProblem(bundle.files);
     if (tooLarge) {

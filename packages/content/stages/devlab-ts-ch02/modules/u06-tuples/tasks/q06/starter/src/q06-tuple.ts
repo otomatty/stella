@@ -1,8 +1,3 @@
-// 02-q06 タプル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-//
 // 問題
 // 1. 座標を表す型 Point を、[x, y] の2つの数値を持つタプル型として定義して export してください
 //

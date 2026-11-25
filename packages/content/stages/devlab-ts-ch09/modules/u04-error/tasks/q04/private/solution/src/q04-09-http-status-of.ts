@@ -1,7 +1,8 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問9 error が HttpError ならその status、そうでなければ undefined を返す
+//     例: httpStatusOf(new HttpError(500, "x")) → 500
+// 引数と戻り値に型注釈を付けます。
+// エラーの種類は instanceof で見分けます。
+// 定義済みのエラークラスを使います。
 
 export class HttpError extends Error {
   readonly status: number;
@@ -20,7 +21,6 @@ export class NotFoundError extends HttpError {
   }
 }
 
-// 問9
 export function httpStatusOf(error: unknown): number | undefined {
   return error instanceof HttpError ? error.status : undefined;
 }

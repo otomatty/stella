@@ -37,7 +37,8 @@ export interface TaskDefinition {
   skills: SkillRefs;
   runner: TaskManifest["runner"];
   /** 課題の中の問題。無い課題は持たない (内容ハッシュを変えないため)。 */
-  problems?: TaskProblem[];
+  problems?: (TaskProblem & { refs?: string[] })[];
+  refs?: string[];
   environment: string;
   submit: { files: string[]; explanation: boolean; debuggingRecord: boolean };
   review: {
@@ -90,6 +91,30 @@ export function stringList(raw: unknown, at: string): string[] {
   if (new Set(values).size !== values.length) throw new Error(`${at}: 重複があります`);
   return values;
 }
+
+const TASK_REF =
+  /^(?:[a-z0-9][a-z0-9-]*:)?(?:\d+-\d+-\d+|m\d+-l\d+-t\d+|[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*)$/;
+
+function readTaskRefs(raw: unknown, taskId: string, problem?: TaskProblem): string[] | undefined {
+  if (raw === undefined) return undefined;
+  const at = `${taskId}${problem ? ` の問題 ${problem.id}` : ""} の refs`;
+  if (!Array.isArray(raw)) throw new Error(`${at} は配列で書いてください: ${JSON.stringify(raw)}`);
+  const stageId = taskId.split("/")[0];
+  const seen = new Set<string>();
+  return raw.map((ref: unknown) => {
+    if (typeof ref !== "string" || !TASK_REF.test(ref) || ref !== ref.trim())
+      throw new Error(
+        `${at} はトピック ID または <単元>/<レッスン> で書いてください: ${JSON.stringify(ref)}`,
+      );
+    const key = ref.includes(":") ? ref : `${stageId}:${ref}`;
+    if (seen.has(key)) throw new Error(`${at} に重複があります: ${ref}`);
+    if (problem?.after && key === `${stageId}:${problem.after}`)
+      throw new Error(`${at} に after と同じレッスンは書けません: ${ref}`);
+    seen.add(key);
+    return ref;
+  });
+}
+
 function positive(raw: unknown, at: string): number {
   if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0)
     throw new Error(`${at}: 正の数が必要です`);
@@ -134,6 +159,12 @@ export function parseTaskDefinition(
   if (!parsed.ok) throw new Error(parsed.errors.join("\n"));
   if (parsed.manifest.id.split("/").length !== 3)
     throw new Error("id: <ステージ>/<単元>/<課題> が必要です");
+  const refs = readTaskRefs(value.refs, parsed.manifest.id);
+  const problems = parsed.manifest.problems?.map((problem, index) => {
+    const authorProblem = (value.problems as Record<string, unknown>[])[index];
+    const refs = readTaskRefs(authorProblem.refs, parsed.manifest.id, problem);
+    return refs === undefined ? problem : { ...problem, refs };
+  });
   const submit = object(value.submit, "submit");
   const problemTask = parsed.manifest.problems !== undefined;
   let rules: { id: string; required: boolean }[] | undefined;
@@ -255,6 +286,8 @@ export function parseTaskDefinition(
         })();
   return {
     ...parsed.manifest,
+    ...(problems ? { problems } : {}),
+    ...(refs === undefined ? {} : { refs }),
     environment: text(value.environment, "environment"),
     pattern: text(value.pattern, "pattern"),
     skills: parseSkills(value.skills, "skills"),
@@ -269,6 +302,16 @@ export function parseTaskDefinition(
     sources: stringList(value.sources, "sources"),
     estimatedMinutes: positive(value.estimatedMinutes, "estimatedMinutes"),
     ...(fixedStart ? { fixedStart } : {}),
+  };
+}
+
+/** 手がかりは課題の版に含めず、seed が task_refs に書く。 */
+export function taskRevisionDefinition({ refs: _refs, ...task }: TaskDefinition): TaskDefinition {
+  return {
+    ...task,
+    ...(task.problems
+      ? { problems: task.problems.map(({ refs: _refs, ...problem }) => problem) }
+      : {}),
   };
 }
 

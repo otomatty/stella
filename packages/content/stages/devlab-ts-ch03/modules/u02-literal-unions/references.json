@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch03/u02-literal-unions@1",
-  "contentHash": "b43f74a2a7a7625961ab4f2654c4c9fdd6721e4d5ff9accfc711bd951fb4a7ee",
+  "unitId": "devlab-ts-ch03/u02-literal-unions@2",
+  "contentHash": "0a986ca0c9b81969e6ad54e018e0e94c775a2554d84b07cc4f28f029b40c4725",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

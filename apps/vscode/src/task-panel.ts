@@ -37,7 +37,9 @@ import {
 } from "./task-guide.js";
 import {
   countTests,
+  FAILED_TEST_CSS,
   remainingSteps,
+  renderFailedTest,
   RUN_SUMMARY_CSS,
   shortStepLabel,
   STEP_MARKS,
@@ -46,7 +48,6 @@ import {
   testBar,
   type TestCounts,
 } from "./task-run-summary.js";
-import { expectedActual } from "./task-test-message.js";
 
 export const NARROW_WIDTH = 420;
 export const WIDE_WIDTH = 900;
@@ -135,22 +136,6 @@ export function referencesHtml(references: readonly PublicSourceReference[] | un
   return `<section class="references"><h2>参照元</h2><ul>${references.map((ref) => `<li>${isPublicSourceUrl(ref.url) ? `<a href="${escapeHtml(ref.url)}">${escapeHtml(ref.title)}</a>` : escapeHtml(ref.title)} — ${escapeHtml(ref.publisher)} / ${escapeHtml(ref.section)}${attributionHtml(ref)}</li>`).join("")}</ul></section>`;
 }
 
-function renderFailedTest(test: TestCaseResult): string {
-  const file = test.file ? ` <span class="file">${escapeHtml(test.file)}</span>` : "";
-  const message = test.message ?? "";
-  const comparison = message ? expectedActual(message) : undefined;
-  const fullMessage =
-    message && (!comparison || /[\r\n]/.test(message)) ? `<pre>${escapeHtml(message)}</pre>` : "";
-  const values = comparison
-    ? `<dl class="expected-actual"><dt>期待</dt><dd class="expected">${escapeHtml(comparison.expected)}</dd><dt>実際</dt><dd class="actual">${escapeHtml(comparison.actual)}</dd></dl>`
-    : "";
-  const details =
-    comparison && fullMessage
-      ? `<details><summary>メッセージの全文</summary>${fullMessage}</details>`
-      : fullMessage;
-  return `<div class="test-fail"><p class="test-name">${escapeHtml(test.name)}${file}</p>${values}${details}</div>`;
-}
-
 function renderPassedTests(tests: readonly TestCaseResult[] = []): string {
   const others = tests.filter((test) => test.status !== "failed");
   if (others.length === 0) return "";
@@ -168,10 +153,13 @@ function renderStep(step: RunStepResult, counts: TestCounts): string {
   ];
   const failed = step.tests?.filter((test) => test.status === "failed") ?? [];
   const expandedLimit = 5;
-  parts.push(...failed.slice(0, expandedLimit).map(renderFailedTest));
+  parts.push(...failed.slice(0, expandedLimit).map((test) => renderFailedTest(test)));
   if (failed.length > expandedLimit) {
     parts.push(
-      `<details><summary>ほかに直すテスト ${failed.length - expandedLimit} 件</summary>${failed.slice(expandedLimit).map(renderFailedTest).join("")}</details>`,
+      `<details><summary>ほかに直すテスト ${failed.length - expandedLimit} 件</summary>${failed
+        .slice(expandedLimit)
+        .map((test) => renderFailedTest(test))
+        .join("")}</details>`,
     );
   }
   parts.push(renderPassedTests(step.tests));
@@ -392,37 +380,7 @@ export function buildTaskPanelHtml(input: TaskPanelInput): string {
     .step.failed .mark { color: var(--vscode-testing-iconFailed); }
     .step.error .mark { color: var(--vscode-editorWarning-foreground); }
     .step p { margin: 0.25rem 0; }
-    .test-fail {
-      margin: 0.5rem 0;
-      padding: 0.45rem 0.7rem;
-      border-radius: 4px;
-      background: var(--vscode-textCodeBlock-background);
-    }
-    .test-fail .test-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-    .test-name::before { content: "✗ "; color: var(--vscode-testing-iconFailed); }
-    .test-name .file { font-weight: normal; color: var(--vscode-descriptionForeground); }
-    .test-fail pre, .expected-actual { font-size: 0.9em; }
-    .test-fail pre {
-      margin: 0.3rem 0 0;
-      padding: 0;
-      background: transparent;
-      color: var(--vscode-testing-iconFailed);
-    }
-    .expected-actual {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 0.1rem 0.7rem;
-      margin: 0.3rem 0 0;
-    }
-    .expected-actual dt { color: var(--vscode-descriptionForeground); }
-    .expected-actual dd {
-      margin: 0;
-      font-family: var(--vscode-editor-font-family);
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
-    }
-    .expected-actual .expected { color: var(--vscode-testing-iconPassed); }
-    .expected-actual .actual { color: var(--vscode-testing-iconFailed); }
+${FAILED_TEST_CSS}
     .passed-steps { list-style: none; padding: 0; margin: 0.6rem 0; }
     .passed-steps > li { padding: 0.28rem 0.2rem; border-bottom: 1px solid var(--vscode-panel-border); }
     .passed-steps .row { display: flex; gap: 0.6rem; align-items: baseline; }
@@ -514,15 +472,17 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
   const nonce = randomBytes(16).toString("base64");
   const os = input.os ?? defaultOsForPlatform();
   const guide = input.guide;
-  const body = guide
-    ? [
-        `<h1>${escapeHtml(input.title)}</h1>`,
-        `<p class="meta">${escapeHtml(guideMetaText(guide.manifest))}</p>`,
-        buildTaskGuideHtml({ ...guide, os }),
-        `<h2 class="readme-title">課題文</h2>`,
-        markdownToHtml(stripLeadingTitle(input.markdown, input.title), { os }),
-      ].join("\n")
-    : markdownToHtml(input.markdown, { os });
+  const body = guide?.manifest.problems?.length
+    ? `${buildTaskGuideHtml({ ...guide, os })}\n${referencesHtml(guide.manifest.references)}`
+    : guide
+      ? [
+          `<h1>${escapeHtml(input.title)}</h1>`,
+          `<p class="meta">${escapeHtml(guideMetaText(guide.manifest))}</p>`,
+          buildTaskGuideHtml({ ...guide, os }),
+          `<h2 class="readme-title">課題文</h2>`,
+          markdownToHtml(stripLeadingTitle(input.markdown, input.title), { os }),
+        ].join("\n")
+      : markdownToHtml(input.markdown, { os });
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -550,6 +510,8 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
     code { font-family: var(--vscode-editor-font-family); font-size: 0.9em; }
     a { color: var(--vscode-textLink-foreground); }
     ul, ol { padding-left: 1.4rem; }
+    .references { overflow-wrap: anywhere; }
+    .references h2 { font-size: 1em; }
     blockquote {
       margin: 0.75rem 0;
       padding: 0.15rem 0 0.15rem 0.9rem;
@@ -560,7 +522,7 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
       border: 1px solid var(--vscode-panel-border);
       padding: 0.35rem 0.6rem;
       text-align: left;
-    }${OS_TABS_CSS}${GUIDE_CSS}
+    }${OS_TABS_CSS}${GUIDE_CSS}${guide?.manifest.problems?.length ? FAILED_TEST_CSS : ""}
   </style>
 </head>
 <body>

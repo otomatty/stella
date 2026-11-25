@@ -1,8 +1,8 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
+// 問1 年・月（1〜12）・日から、その日の 0時0分の Date を作る
+//     例: makeDate(2026, 4, 1) → 2026年4月1日 0:00
+// 引数と戻り値に型注釈を付けます。
+// Date では月を 0〜11（1月が 0）で数えます。
 
-// 問1
 export function makeDate(year: number, month: number, day: number): Date {
   return new Date(year, month - 1, day);
 }

@@ -1,11 +1,9 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問2 url を fetch して、res.ok を返す
+//     例: isOk(url) → 成功なら true で解決する
+// fetch と async・await を使ってください。
 
 export const API = "https://api.example.com";
 
-// 問2
 export async function isOk(url: string): Promise<boolean> {
   const res = await fetch(url);
   return res.ok;

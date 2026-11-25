@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問12 undefined でない要素の数を返す
+//     例: countPresent(["a", undefined, "b"]) → 2
+// 引数と戻り値に型注釈を付ける。
+// === undefined または !== undefined で、値があるかを確かめる。
 
-// 問12
 export function countPresent(values: readonly (string | undefined)[]): number {
   return values.filter((value) => value !== undefined).length;
 }

@@ -1,7 +1,6 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問3 型 Settings を SETTINGS から作る
+// 定義済みの定数は書き換えません。
+// 型は手で書き写さず、typeof で作ります。
 
 export const SETTINGS = {
   theme: "light",
@@ -9,5 +8,4 @@ export const SETTINGS = {
   notifications: { email: true, push: false },
 };
 
-// 問3
 export type Settings = typeof SETTINGS;

@@ -1,7 +1,6 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問15 型 AuthorInfo を Pick<Article, "author"> & { articleCount: number } として作り、authorInfo(articles, author) でその人の記事の数を返す
+//     例: authorInfo(articles, "山田") → { author: "山田", articleCount: 2 }
+// 引数と戻り値に型注釈を付けます。
 
 export type Article = {
   id: number;
@@ -11,7 +10,6 @@ export type Article = {
   publishedAt: Date;
 };
 
-// 問15
 export type AuthorInfo = Pick<Article, "author"> & { articleCount: number };
 
 export function authorInfo(articles: readonly Article[], author: string): AuthorInfo {

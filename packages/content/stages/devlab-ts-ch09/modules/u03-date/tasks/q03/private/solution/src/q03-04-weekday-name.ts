@@ -1,8 +1,9 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
+// 問4 曜日を "日"・"月"・"火"・"水"・"木"・"金"・"土" のどれかで返す
+//     例: weekdayName(2026年4月1日) → "水"
+// 引数と戻り値に型注釈を付けます。
+// getDay() の曜日は 0〜6（日曜が 0）です。
+// 引数の Date は変更しません。
 
-// 問4
 export function weekdayName(date: Date): string {
   return ["日", "月", "火", "水", "木", "金", "土"][date.getDay()] ?? "";
 }

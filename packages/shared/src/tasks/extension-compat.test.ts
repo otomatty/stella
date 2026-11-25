@@ -56,6 +56,27 @@ describe("requiredExtensionVersion", () => {
       ),
     ).toBe("0.8.0");
   });
+
+  it.each([
+    [undefined, "0.8.0"],
+    [true, "0.11.0"],
+  ] as const)(
+    "README のない問題つき課題は 0.12.0 以上が要る (problemSteps: %s)",
+    (problemSteps, previousMinimum) => {
+      const task = manifest({ problems: [{ id: "q01", title: "型を付ける" }], problemSteps });
+      expect(requiredExtensionVersion(task)).toBe(previousMinimum);
+      expect(requiredExtensionVersion(task, ["README.md", ".stella/task.json"])).toBe(
+        previousMinimum,
+      );
+      expect(requiredExtensionVersion(task, ["docs/README.md", ".stella/task.json"])).toBe(
+        "0.12.0",
+      );
+    },
+  );
+
+  it("問題のない課題の最低版はファイル一覧で変わらない", () => {
+    expect(requiredExtensionVersion(manifest(), [".stella/task.json"])).toBe("0.6.0");
+  });
 });
 
 describe("extensionSatisfies", () => {

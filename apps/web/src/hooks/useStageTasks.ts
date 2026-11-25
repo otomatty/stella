@@ -48,7 +48,9 @@ export function useStageTasks(
 
   const tasks = !enabled ? null : result?.stageId === stageId ? result.tasks : undefined;
   const shouldPoll =
-    enabled && pollProblems && (tasks === null || tasks?.some((task) => task.problems?.length));
+    enabled &&
+    pollProblems &&
+    (tasks === null || tasks?.some((task) => task.problem_items?.length || task.problems?.length));
   useEffect(() => {
     if (!shouldPoll) return;
     const timer = setInterval(() => {

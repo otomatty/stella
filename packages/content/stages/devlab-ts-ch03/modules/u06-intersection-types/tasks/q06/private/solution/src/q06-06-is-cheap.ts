@@ -1,12 +1,12 @@
-// 03-q06 インターセクション型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/intersection
+// 問6 price が limit 以下なら true
+//     例: isCheap({ name: "りんご", price: 150 }, 200) → true
+// 引数と戻り値に型注釈を付ける。
+// 引数の型には Named & Priced と書く。
 
 export type Named = { name: string };
 
 export type Priced = { price: number };
 
-// 問6
 export function isCheap(item: Named & Priced, limit: number): boolean {
   return item.price <= limit;
 }

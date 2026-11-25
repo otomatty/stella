@@ -1,8 +1,3 @@
-// 01-q08 ★総合問題 any をなくす
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/any
-//       https://typescriptbook.jp/reference/values-types-variables/type-annotation
-//
 // 問題
 // 下のコードは、テストの点数を集計する関数です。引数と戻り値が any なので、型のチェックが効いていません。
 // そのせいで見落とされているバグが、2つあります。

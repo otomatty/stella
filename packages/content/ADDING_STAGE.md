@@ -67,7 +67,7 @@ modules/<unit>/
     knowledge.md        # アプリで解く知識問題
   tasks/<task>/
     task.json
-    README.md           # 課題文と参照リンク
+    README.md           # 課題文と参照リンク (problems が無い課題に必須)
     starter/            # 内容を作業フォルダー直下へ配布
     tests/              # tests/ として配布
     fixed-start/        # 任意。前の実装が壊れていて進めない受講者向けの「固定した開始点」
@@ -77,7 +77,7 @@ modules/<unit>/
       explanation.md
       review.md
       variants/         # 予備の類題 (1 問 1 フォルダー)。空の場合は .gitkeep を置く
-        <variant>/      # 中身は課題と同じ形 (task.json・README.md・hints.md・starter/・tests/・private/)
+        <variant>/      # 中身は課題と同じ形
 ```
 
 `unit.json` は `{"plannedHours": 3, "skills": {"uses": [], "assesses": ["html-document"]}, "reuses": []}` の形です。スキルとパターンは `packages/content/skills.json`・`patterns.json` に `{ id, title }` で登録します。実行環境は `environments/<id>.json` に `id`・`version`・`requirements` を書きます。requirements は拡張の環境検査と同じ Node.js・npm・Git の版指定 (`min`・`maxMajor`・`majors`) です。Node.js は奇数版 (23 など) に対応しない道具が多いので、`"majors": [22, 24]` のように使える版を並べます。OS・ブラウザー・ライブラリの版もこの台帳に記録します。版を更新する際は ID を新しくし、過去の環境を残してください。
@@ -87,6 +87,10 @@ modules/<unit>/
 問題つきの課題は、同じ課題の中を 1 問 1 ファイルで確認・提出します。`problems` に `{ "id", "title" }` を 1 件以上書きます。`id` は英小文字・数字で始め、英小文字・数字・ハイフンだけです。課題の中で重複しません。書けるのは手順が vitest・typescript・dotnet の runner だけです。ファイルのパスは書きません。`id` から、vitest・typescript は `src/<id>.ts` と `tests/<id>.test.ts`、dotnet は `src/<id>.cs` と `tests/<id>.test.cs` になります。`review` は書かなくてよく、読み込み後は空のルーブリックになります。`submit.explanation` と `submit.debuggingRecord` は `false` でよいです。AI の一次レビューは通さず、問題が全部そろった提出を `review_source = 'tests'` で合格にします。合否は手元のテストが通ったという申告で、サーバーはコードを実行しません。
 
 動画のあとに問題を出すには、同じステージの、その単元か前の単元のトピック ID を、全問の `after` に書きます（例 `"after": "1-1-7"`）。レッスン一覧では動画の直後に問題が並びます。動画のレッスンを完了し、一覧で一つ前の問題を提出すると解けます。最初の問題は動画の完了だけで解けます。類題には `after` を書けません。 この課題には課題文のレッスンを作らず、課題文は VS Code の課題パネルで読みます。問題を提出するとその問題のレッスンが完了し、課題の状態は全問そろったときだけ合格に更新します。
+
+手がかりにする動画やまとめは、課題全体または各問題の `refs` に順番どおりに書けます（例 `"refs": ["1-2-3", "u01-let-const/l2-loops"]`）。動画は `slides.md` のトピック ID、まとめは `doc.md` の `<単元>/<レッスン>` です。同じステージではその単元か前の単元を参照できます。前提をさかのぼってたどれる別のステージは、`devlab-ts-ch01:1-2-3` のように先頭に `<ステージslug>:` を付けて指定します。空文字、同じ一覧での重複、その問題の `after` と同じ動画、類題の `refs` は使えません。
+
+問題つきの課題には `README.md` を置きません (置くと検査で止まります)。問題文、例、その問題の条件 (テスト・ESLint・型の確認で検出できないものだけ) は、各問題ファイルの先頭に `// 問N` で始まるコメントの塊として書きます。共通のルール・進め方・教材の URL はコメントに書きません。参照元は `task.json` の `sources` から表示します。手がかりは `refs` に書きます (類題では使えません)。`references.json` の出典の対応先は従来どおり `tasks/<課題>/README.md` です。
 
 - `submit`: `files`（相対glob）、`explanation`、`debuggingRecord`。自力・統合・確認は説明必須、修正は修正記録必須です。
 - `review`: `rules` に適用するコーディング規則 `{ id, required }`、`rubric` に課題固有の項目 `{ id, criterion, required }`、`escalateWhen` に人に回す追加条件 (`optional-unmet`・`major-finding`) を書きます。必須の項目は `rules` と `rubric` を合わせて1つ以上要ります。`criterion` は「関数名が戻り値の意味を表している」のようにコードを見て当否を決められる文にし、「1〜5で採点」のような尺度や問いにしません。
@@ -136,7 +140,7 @@ modules/<unit>/
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<ステージ>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
 
-`fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・README・`.stella/task.json` は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点を置く課題は `task.json` に `"fixedStart": { "covers": ["<ステージ>/<単元>/<課題>"] }` を書き、開始点が動く実装を含む前の課題を示します。順序から推測しないので必須で、同じステージでこの課題より前の課題だけを書けます (自分自身・重複は不可。開始点の無い課題には書けません)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを `covers` と一緒に記録します (その課題と `covers` の課題の、受け取ったあとの提出は「支援付き」になります。開始点を写せば前の課題も出せるためで、受け取る前の提出は変わりません)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
+`fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・`.stella/task.json` と、問題の無い課題の README は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点を置く課題は `task.json` に `"fixedStart": { "covers": ["<ステージ>/<単元>/<課題>"] }` を書き、開始点が動く実装を含む前の課題を示します。順序から推測しないので必須で、同じステージでこの課題より前の課題だけを書けます (自分自身・重複は不可。開始点の無い課題には書けません)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを `covers` と一緒に記録します (その課題と `covers` の課題の、受け取ったあとの提出は「支援付き」になります。開始点を写せば前の課題も出せるためで、受け取る前の提出は変わりません)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
 
 WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きいステージは `stage.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かないステージは1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
 
@@ -150,7 +154,7 @@ WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README
 tasks/q01-first-page/private/variants/
   v01-profile-page/
     task.json           # id は "<ステージ>/<単元>/v01-profile-page"。pattern は親と同じ
-    README.md           # 類題の課題文
+    README.md           # 類題の課題文 (problems が無い類題に必須)
     hints.md            # ヒント (段の数は support.hintLevels とそろえる。0 段なら空)
     starter/
     tests/
@@ -183,7 +187,7 @@ tasks/q01-first-page/private/variants/
 tasks/q01-first-page/private/variant-templates/
   heading/
     params.json         # 類題 1 問ずつの { "name", "values" } の配列
-    template/           # 類題 1 問と同じ形 (task.json・README.md・hints.md・starter/・tests/・private/)
+    template/           # 類題 1 問と同じ形
 ```
 
 ```json

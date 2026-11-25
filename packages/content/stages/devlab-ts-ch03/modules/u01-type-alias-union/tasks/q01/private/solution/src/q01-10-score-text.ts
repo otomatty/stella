@@ -1,9 +1,8 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問10 型 Score（数値か "欠席"）を定義して export し、scoreText(score: Score) を書く。数値なら「80点」、"欠席" ならそのまま
+//     例: scoreText(80) → "80点"
+// 引数と戻り値に型注釈を付ける。
+// 文字列のリテラル値と === で比較し、場合を分ける。
 
-// 問10
 export type Score = number | "欠席";
 
 export function scoreText(score: Score): string {

@@ -1,9 +1,7 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問8 型 Box<T>（{ value: T }）を定義して export し、boxOf(value) で Box を作る
+//     例: boxOf(5) → { value: 5 }
+// 型変数を unknown で置き換えないでください。
 
-// 問8
 export type Box<T> = { value: T };
 
 export function boxOf<T>(value: T): Box<T> {

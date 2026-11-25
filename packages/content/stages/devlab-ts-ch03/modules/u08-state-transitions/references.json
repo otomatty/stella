@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch03/u08-state-transitions@1",
-  "contentHash": "b33dbe54cefd68e443351892ca7757b8dc8f2cb5992e60743b7f4c540009079e",
+  "unitId": "devlab-ts-ch03/u08-state-transitions@2",
+  "contentHash": "7c0d61e61c94df7bddd62ce712ef41555b60fed548414a2f3b2cf7ab9fc6eef1",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

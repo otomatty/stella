@@ -1,8 +1,7 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問5 name を取り除いた新しい Map を返す（元の Map は変えない）
+//     例: withoutName(scores, "山田") → 山田のいない新しい Map
+// 引数と戻り値に型注釈を付けます。
 
-// 問5
 export function withoutName(scores: Map<string, number>, name: string): Map<string, number> {
   const result = new Map(scores);
   result.delete(name);

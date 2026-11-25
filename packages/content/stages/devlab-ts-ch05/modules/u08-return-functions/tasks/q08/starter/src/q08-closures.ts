@@ -1,8 +1,3 @@
-// 05-q08 関数を返す関数
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
-//
 // 問題
 // 関数を返す関数を書いてください。返された関数は、作られたときの変数を覚えていて、使い続けられる（クロージャ）。
 // 引数と戻り値には型注釈を付けること。

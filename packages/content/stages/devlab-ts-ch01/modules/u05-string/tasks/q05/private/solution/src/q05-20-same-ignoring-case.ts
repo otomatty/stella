@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問20
+// 問20 大文字と小文字の違いを無視して、同じ文字列なら true を返す
+//     例: sameIgnoringCase("Agora", "AGORA") → true
+// 戻り値には型注釈を付けてください。
+// toLowerCase が使えます。
 export function sameIgnoringCase(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }

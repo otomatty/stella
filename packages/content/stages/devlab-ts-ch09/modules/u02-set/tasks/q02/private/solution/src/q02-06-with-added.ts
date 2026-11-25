@@ -1,8 +1,7 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問6 value を足した新しい Set を返す（元の Set は変えない）
+//     例: withAdded(Set { "a" }, "b") → Set { "a", "b" }
+// 引数と戻り値に型注釈を付けます。
 
-// 問6
 export function withAdded(set: Set<string>, value: string): Set<string> {
   const result = new Set(set);
   result.add(value);

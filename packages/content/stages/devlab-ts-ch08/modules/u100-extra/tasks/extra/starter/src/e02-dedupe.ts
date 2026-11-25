@@ -1,8 +1,3 @@
-// 08-e02 発展問題 同じ取得を1回にまとめる（キャッシュ）
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/builtin-api/map
-//
 // 問題
 // 画面のあちこちから同じユーザーの取得が同時に呼ばれると、同じ通信が何度も走ってしまいます。
 // 非同期関数 fn を包んで、同じ key の取得を1回にまとめる関数 dedupe を書いてください。

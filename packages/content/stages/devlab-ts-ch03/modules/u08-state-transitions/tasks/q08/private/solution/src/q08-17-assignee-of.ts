@@ -1,13 +1,13 @@
-// 03-q08 状態の切り替え ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/discriminated-union
+// 問17 assigned なら担当者の名前、それ以外は undefined を返す
+//     例: assigneeOf({ status: "assigned", title: "バグ", assignee: "山田" }) → "山田"
+// 引数と戻り値に型注釈を付ける。
+// 定義済みの Ticket 型を使い、status で状態を見分ける。
 
 export type Ticket =
   | { status: "open"; title: string }
   | { status: "assigned"; title: string; assignee: string }
   | { status: "closed"; title: string; resolution: string };
 
-// 問17
 export function assigneeOf(ticket: Ticket): string | undefined {
   return ticket.status === "assigned" ? ticket.assignee : undefined;
 }

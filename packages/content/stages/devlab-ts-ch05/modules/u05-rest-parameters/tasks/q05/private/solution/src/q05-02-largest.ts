@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問2 1つ以上の数の最大値
+//     例: largest(3, 9, 2) → 9
+// 引数と戻り値には型注釈を付けてください。
+// 1つ目は普通の引数にし、残りは ...rest: number[] のような残余引数で受け取ってください。
 
-// 問2
 export function largest(first: number, ...rest: number[]): number {
   return Math.max(first, ...rest);
 }

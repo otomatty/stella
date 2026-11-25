@@ -1,7 +1,7 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問19 ids のユーザーを順番に1人ずつ取得し、最初に取得できた人の名前を返す（取得できたら後ろは取得しない）。だれも取得できなければ undefined
+//     例: firstAvailableName([9, 8, 2, 1]) → "佐藤" で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
 
 export type User = { id: number; name: string };
 
@@ -20,7 +20,6 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問19
 export async function firstAvailableName(ids: readonly number[]): Promise<string | undefined> {
   for (const id of ids) {
     try {

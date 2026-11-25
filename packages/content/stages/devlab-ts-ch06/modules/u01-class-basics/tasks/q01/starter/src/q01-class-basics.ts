@@ -1,9 +1,3 @@
-// 06-q01 クラスの基本
-//
-// 教材: https://typescriptbook.jp/reference/object-oriented/class/constructor
-//       https://typescriptbook.jp/reference/object-oriented/class/fields
-//       https://typescriptbook.jp/reference/object-oriented/class/methods
-//
 // 問題
 // 次の2つのクラスを書いてください。フィールド、コンストラクタの引数、メソッドの引数と戻り値には型注釈を付けること。
 //

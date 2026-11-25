@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問14 value が含まれていれば true
+//     例: includesValue([1, 2], 2) → true
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問14
 export function includesValue<T>(items: readonly T[], value: T): boolean {
   return items.includes(value);
 }

@@ -1,10 +1,9 @@
-// 07-q05 Record ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/record
+// 問7 schedule の day に event を足した、新しい Record<Weekday, string[]> を返す（元は変えない）
+//     例: addEvent(schedule, "mon", "会議").mon → ["会議"]
+// 引数と戻り値に型注釈を付けます。
 
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri";
 
-// 問7
 export function addEvent(
   schedule: Record<Weekday, string[]>,
   day: Weekday,

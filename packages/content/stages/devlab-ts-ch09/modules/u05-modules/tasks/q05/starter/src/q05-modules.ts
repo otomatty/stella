@@ -1,7 +1,3 @@
-// 09-q05 ★総合問題 モジュールに分ける
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
-//
 // 問題
 // 下のコードは、ネットショップのカートの計算を1つのファイルにまとめたものです。
 // これを q05-modules-price.ts、q05-modules-format.ts、q05-modules-cart.ts の3つのファイルに分け、このファイル（q05-modules.ts）には re-export だけを書いてください。

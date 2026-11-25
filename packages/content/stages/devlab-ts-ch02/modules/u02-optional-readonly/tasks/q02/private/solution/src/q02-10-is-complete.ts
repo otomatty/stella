@@ -1,9 +1,7 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-
-// 問10
+// 問10 { name?, email? } の両方がそろっていれば true
+//     例: isComplete({ name: "山田" }) → false
+// 引数と戻り値には型注釈を付けます。
+// 値が省略されたかどうかは undefined と比較して確かめます。
 export function isComplete(profile: { name?: string; email?: string }): boolean {
   return profile.name !== undefined && profile.email !== undefined;
 }

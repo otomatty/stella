@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問15
+// 問15 文字数を返す
+//     例: charCount("TypeScript") → 10
+// 戻り値の型は推論に任せてください。
 export function charCount(text: string) {
   return text.length;
 }

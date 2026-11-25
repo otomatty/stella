@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問1 obj の key のプロパティを返す。key は obj のプロパティ名に限る。戻り値の型は T[K]
+//     例: getProp({ name: "山田", age: 30 }, "age") → 30
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問1
 export function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }

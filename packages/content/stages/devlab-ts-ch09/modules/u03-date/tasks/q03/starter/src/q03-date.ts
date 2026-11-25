@@ -1,7 +1,3 @@
-// 09-q03 Date
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
-//
 // 問題
 // 日付を扱う関数を書いてください。日付は、その環境の時刻（ローカル時刻）で扱う（getFullYear、getMonth、getDate など）。
 // 引数の Date は変えないこと（Date は setDate などで中身を書き換えられるので、新しい Date を作って返す）。

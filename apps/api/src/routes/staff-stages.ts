@@ -13,6 +13,9 @@ import {
 import { Hono } from "hono";
 import { parsePublicTaskBundle } from "@stella/shared/tasks/catalog";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
+import { problemStatementFromSource, problemStepLabel } from "@stella/shared/tasks/problem-steps";
+import { problemFiles } from "@stella/shared/tasks/problems";
+import { RUNNERS } from "@stella/shared/tasks/runners";
 import {
   staffTaskSourcePath,
   type StaffTaskDetail,
@@ -211,6 +214,22 @@ staffStagesRoute.get("/api/staff/tasks/detail", async (c) => {
       throw new ApiError("課題の定義が不正です", 500);
     }
     const bundle = parsePublicTaskBundle(JSON.parse(row.task.bundle));
+    const plan = RUNNERS[bundle.manifest.runner].plan;
+    const problems = bundle.manifest.problems?.flatMap(({ id, title }, index) => {
+      const paths = problemFiles(plan, id);
+      if (!paths) return [];
+      const code = decodeBase64(bundle.files[paths.source]);
+      const statement = code === null ? undefined : problemStatementFromSource(code);
+      return [
+        {
+          id,
+          title,
+          label: problemStepLabel(title, index),
+          source: paths.source,
+          statement: statement ? [statement.heading, ...statement.details].join("\n") : null,
+        },
+      ];
+    });
     // 配布用 manifest に含まれないレビュー・提出要件は元の定義から読む。
     const metadata = definitionObject(definition);
     const review = definitionObject(metadata.review);
@@ -298,6 +317,7 @@ staffStagesRoute.get("/api/staff/tasks/detail", async (c) => {
       section: row.section,
       sourcePath: staffTaskSourcePath(taskId, row.stage.slug),
       readme: decodeBase64(bundle.files["README.md"]),
+      ...(problems ? { problems } : {}),
       reviewNotes: decodeBase64(privateFiles["review.md"]),
       rubric,
       submission: {

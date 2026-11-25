@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問2 最初の要素を返す。空なら undefined
+//     例: firstOf([3, 1]) → 3
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にします。
 
-// 問2
 export function firstOf<T>(items: readonly T[]): T | undefined {
   return items[0];
 }

@@ -1,11 +1,10 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問19 ROLE_LABELS からラベルを返す。引数の型は keyof typeof ROLE_LABELS
+//     例: roleLabel("admin") → "管理者"
+// 定義済みの定数は書き換えません。
+// 引数と戻り値に型注釈を付けます。
 
 export const ROLE_LABELS = { admin: "管理者", member: "一般" } as const;
 
-// 問19
 export function roleLabel(role: keyof typeof ROLE_LABELS): string {
   return ROLE_LABELS[role];
 }

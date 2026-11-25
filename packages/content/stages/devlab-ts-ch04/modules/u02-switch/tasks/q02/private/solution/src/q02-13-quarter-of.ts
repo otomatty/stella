@@ -1,9 +1,9 @@
-// 04-q02 switch文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-
-// 問13
+// 問13 月（1〜12）が第何四半期かを返す。1〜3月は 1、4〜6月は 2、7〜9月は 3、10〜12月は 4。それ以外は Error を投げる
+//     例: quarterOf(5) → 2
+// 引数と戻り値に型注釈を付けます。
+// switch 文で分けます。
+// 同じ処理になる case は続けて並べます。
+// どの case にも当てはまらない値は default で扱います。
 export function quarterOf(month: number): 1 | 2 | 3 | 4 {
   switch (month) {
     case 1:

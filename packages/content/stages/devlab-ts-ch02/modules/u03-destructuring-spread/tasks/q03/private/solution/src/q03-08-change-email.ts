@@ -1,11 +1,11 @@
-// 02-q03 分割代入とスプレッド構文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object
+// 問8 email だけを変えた新しい User を返す
+//     例: changeEmail(山田, "new@example.com") → email が変わった新しい User
+// 引数と戻り値には型注釈を付けます。
+// 定義済みの User 型を使います。
+// 元のオブジェクトを変えず、スプレッド構文で新しいオブジェクトを作ります。
 
 export type User = { id: number; name: string; age: number; email: string };
 
-// 問8
 export function changeEmail(user: User, email: string): User {
   return { ...user, email };
 }

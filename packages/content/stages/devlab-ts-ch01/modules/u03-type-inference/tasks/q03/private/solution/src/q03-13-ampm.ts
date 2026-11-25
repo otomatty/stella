@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問13
+// 問13 0〜11時なら "午前"、12〜23時なら "午後" を返す（戻り値は "午前" | "午後" に推論される）
+//     例: ampm(13) → "午後"
+// 戻り値の型は推論に任せてください。
 export function ampm(hour: number) {
   return hour < 12 ? "午前" : "午後";
 }

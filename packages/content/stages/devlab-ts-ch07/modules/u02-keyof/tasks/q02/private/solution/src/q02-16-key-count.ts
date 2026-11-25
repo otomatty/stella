@@ -1,9 +1,7 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問16 オブジェクトのキーの数を返す。引数の型は object
+//     例: keyCount({ a: 1, b: 2 }) → 2
+// 引数と戻り値に型注釈を付けます。
 
-// 問16
 export function keyCount(obj: object): number {
   return Object.keys(obj).length;
 }

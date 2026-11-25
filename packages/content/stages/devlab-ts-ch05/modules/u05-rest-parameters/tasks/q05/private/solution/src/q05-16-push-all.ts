@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問16 target の末尾に残りの数をすべて足し、足した後の長さを返す
+//     例: pushAll([0], 1, 2) → 3
+// 引数と戻り値には型注釈を付けてください。
+// 個数が決まっていない引数は、...numbers: number[] のような残余引数で受け取ってください。
 
-// 問16
 export function pushAll(target: number[], ...values: number[]): number {
   return target.push(...values);
 }

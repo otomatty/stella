@@ -1,10 +1,7 @@
-// 05-q02 引数と戻り値の型、void ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//       https://typescriptbook.jp/reference/functions/pass-by-value
+// 問12 バイト数を、1024 以上なら「1.5 KB」、1024 × 1024 以上なら「2.0 MB」、それ未満なら「512 B」の形にする（KB と MB は小数第1位まで）
+//     例: formatBytes(1536) → "1.5 KB"
+// 引数と戻り値には型注釈を付けてください。
 
-// 問12
 export function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;

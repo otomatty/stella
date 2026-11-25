@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問11 ids のユーザーを同時に取得し、いちばん年上の人の名前を返す。ids が空なら undefined
+//     例: oldestName([1, 3, 4]) → "鈴木" で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問11
 export async function oldestName(ids: readonly number[]): Promise<string | undefined> {
   const users = await Promise.all(ids.map((id) => fetchUser(id)));
   let oldest: User | undefined;

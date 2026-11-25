@@ -1,9 +1,6 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問8 型 Endpoint を、ENDPOINTS のすべての値のユニオン型として作る（(typeof ENDPOINTS)[keyof typeof ENDPOINTS]）
+// 定義済みの定数は書き換えません。
 
 export const ENDPOINTS = { users: "/api/users", rooms: "/api/rooms" } as const;
 
-// 問8
 export type Endpoint = (typeof ENDPOINTS)[keyof typeof ENDPOINTS];

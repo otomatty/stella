@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問2
+// 問2 名前の後ろに「さん」を付ける
+//     例: honorific("山田") → "山田さん"
+// 戻り値には型注釈を付けてください。
 export function honorific(name: string): string {
   return `${name}さん`;
 }
