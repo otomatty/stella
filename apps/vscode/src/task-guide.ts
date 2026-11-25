@@ -13,6 +13,7 @@ import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalo
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
 import { problemStepLabel, type TaskRefSummary } from "@stella/shared/tasks/problem-steps";
+import { problemFiles } from "@stella/shared/tasks/problems";
 import type { RunOutcome, RunResult, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
@@ -189,6 +190,8 @@ export interface TaskGuideInput {
   problemResults?: ProblemResults;
   problemRun?: RunResult;
   problemTestLines?: ReadonlyMap<TestCaseResult, number>;
+  /** いまの問題の Vitest テスト本文。手元のファイルだけで、サーバーには送らない。 */
+  problemTestSource?: { problemId: string; source: string };
   stageId?: string;
   nextProblemReason?: string;
   problemPreparationError?: string;
@@ -383,7 +386,6 @@ export function guideProblems(input: TaskGuideInput) {
 }
 
 type GuideProblem = ReturnType<typeof guideProblems>[number];
-type LockedProblem = NonNullable<GuideProblem["lock"]>;
 
 export function problemNow(input: TaskGuideInput, items = guideProblems(input)) {
   if (input.releaseError) return { kind: "waiting", current: undefined } as const;
@@ -439,20 +441,6 @@ export function problemCellGroups(
   return { drills, advanced };
 }
 
-export function problemRows(items: readonly GuideProblem[]) {
-  const rows: (
-    | { item: GuideProblem; lock?: undefined }
-    | { lock: LockedProblem; items: GuideProblem[] }
-  )[] = [];
-  for (const item of items) {
-    const previous = rows.at(-1);
-    if (!item.lock) rows.push({ item });
-    else if (previous?.lock === item.lock) previous.items.push(item);
-    else rows.push({ lock: item.lock, items: [item] });
-  }
-  return rows;
-}
-
 export function problemRefText(ref: TaskRefSummary) {
   const kind = ref.lessonType === "slides" || ref.lessonType === "video" ? "動画" : "まとめ";
   return {
@@ -497,61 +485,101 @@ function problemProgressHtml(
 <p class="problem-count"><strong>提出 ${submitted} / ${items.length} 問</strong><span>ドリル ${drills.length} ・ 応用 ${advanced.length}</span></p>`;
 }
 
-function lockedRange(items: readonly GuideProblem[]): string {
-  const drills = items.filter(({ label }) => label !== "応用");
-  const first = drills[0];
-  const last = drills.at(-1);
-  const range = first === last ? first?.label : `${first?.label}〜${(last?.index ?? 0) + 1}`;
-  return [range, drills.length < items.length ? "応用問題" : ""].filter(Boolean).join("・");
+export type ProblemTestExample =
+  | { kind: "value"; call: string; expected: string }
+  | { kind: "throws"; call: string }
+  | { kind: "parameters"; name: string; type: string }
+  | { kind: "returns"; name: string; type: string };
+
+const VALUE_EXPECT = /^\s*expect\((.*)\)\s*\.\s*(?:toBe|toEqual|toStrictEqual)\s*\((.*)\)\s*;?\s*$/;
+const THROW_EXPECT = /^\s*expect\(\s*\(\s*\)\s*=>\s*(.*)\)\s*\.\s*toThrow\s*\((.*)\)\s*;?\s*$/;
+const PARAM_EXPECT =
+  /^\s*expectTypeOf\((.*)\)\s*\.\s*parameters\s*\.\s*toEqualTypeOf\s*<(.+)>\s*\(\s*\)\s*;?\s*$/;
+const RETURN_EXPECT =
+  /^\s*expectTypeOf\((.*)\)\s*\.\s*returns\s*\.\s*toEqualTypeOf\s*<(.+)>\s*\(\s*\)\s*;?\s*$/;
+
+/** テスト本文の 1 行に収まる確認だけを表にする。取れない expect は件数だけ数える。 */
+export function problemTestExamples(source: string): {
+  examples: ProblemTestExample[];
+  other: number;
+} {
+  const examples: ProblemTestExample[] = [];
+  let other = 0;
+  for (const line of source.split(/\r?\n/)) {
+    const value = VALUE_EXPECT.exec(line);
+    if (value?.[1] !== undefined && value[2] !== undefined) {
+      examples.push({ kind: "value", call: value[1], expected: value[2] });
+      continue;
+    }
+    const thrown = THROW_EXPECT.exec(line);
+    if (thrown?.[1] !== undefined) {
+      examples.push({ kind: "throws", call: thrown[1] });
+      continue;
+    }
+    const parameters = PARAM_EXPECT.exec(line);
+    if (parameters?.[1] !== undefined && parameters[2] !== undefined) {
+      examples.push({ kind: "parameters", name: parameters[1].trim(), type: parameters[2] });
+      continue;
+    }
+    const returns = RETURN_EXPECT.exec(line);
+    if (returns?.[1] !== undefined && returns[2] !== undefined) {
+      examples.push({ kind: "returns", name: returns[1].trim(), type: returns[2] });
+      continue;
+    }
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || /^import\s/.test(trimmed)) continue;
+    if (/\b(?:await\s+)?expect(?:TypeOf)?\s*[(<]/.test(line)) other += 1;
+  }
+  return { examples, other };
 }
 
-function problemListHtml(
+function problemTestExamplesHtml(
   input: TaskGuideInput,
-  items: GuideProblem[],
-  current?: GuideProblem,
+  now: ReturnType<typeof problemNow>,
 ): string {
-  const { root } = input;
-  const rows = problemRows(items).map((row) => {
-    if (row.lock) {
-      const reason =
-        row.lock === "locked-video"
-          ? "動画のあとに出る"
-          : row.lock === "locked-previous"
-            ? "前の問題のあとに出る"
-            : "未解放";
-      const known = row.items.flatMap((item) => {
-        const linked =
-          item.hasLocalSource && item.source
-            ? [
-                link(
-                  "stella.openTaskFile",
-                  [root, item.source],
-                  escapeHtml(item.title),
-                  "problem-row-title",
-                ),
-                `<code>${escapeHtml(item.source)}</code>`,
-              ]
-            : [];
-        return item.lockReason
-          ? [
-              ...linked,
-              `<span class="problem-status locked">🔒 ${escapeHtml(item.lockReason)}</span>`,
-            ]
-          : linked;
-      });
-      return `<li class="locked"><span aria-hidden="true">🔒</span><span class="problem-row-title">${lockedRange(row.items)}</span><span class="problem-status">${reason} ${row.items.length} 問</span>${known.join("")}</li>`;
+  const current = now.current;
+  const loaded = input.problemTestSource;
+  if (!current || !loaded || loaded.problemId !== current.id) return "";
+  const { examples, other } = problemTestExamples(loaded.source);
+  if (!examples.length && other === 0) return "";
+  const rows = examples.flatMap((example) => {
+    if (example.kind === "value") {
+      return [
+        `<tr><td><code>${escapeHtml(example.call)}</code></td><td><code>${escapeHtml(example.expected)}</code></td></tr>`,
+      ];
     }
-    const item = row.item;
-    const title = escapeHtml(item.title);
-    const file = item.source
-      ? link("stella.openTaskFile", [root, item.source], title, "problem-row-title")
-      : `<span class="problem-row-title">${title}</span>`;
-    const submitted = item.status === "submitted";
-    const status = item.failed && !submitted ? "要確認" : PROBLEM_STATUS_LABELS[item.status];
-    const icon = submitted ? "✓" : item.failed ? "!" : "○";
-    return `<li${item === current ? ' class="current" aria-current="step"' : ""}><span class="problem-icon ${submitted ? "submitted" : item.failed ? "failed" : ""}" aria-hidden="true">${icon}</span><span>${item.label}</span>${file}<span class="problem-status ${item.status}">${status}</span></li>`;
+    if (example.kind === "throws") {
+      return [`<tr><td><code>${escapeHtml(example.call)}</code></td><td>エラーを投げる</td></tr>`];
+    }
+    return [];
   });
-  return `<h2 class="problems-title">問題</h2><ul class="problems">${rows.join("")}</ul>`;
+  const types = new Map<string, { parameters?: string; returns?: string }>();
+  for (const example of examples) {
+    if (example.kind !== "parameters" && example.kind !== "returns") continue;
+    const slot = types.get(example.name) ?? {};
+    slot[example.kind] = example.type;
+    types.set(example.name, slot);
+  }
+  const typeLines = [...types].map(([, slot]) => {
+    const parts = [
+      slot.parameters ? `引数の型 <code>${escapeHtml(slot.parameters)}</code>` : "",
+      slot.returns ? `戻り値の型 <code>${escapeHtml(slot.returns)}</code>` : "",
+    ].filter(Boolean);
+    return `<p class="test-example-types">${parts.join(" ・ ")}</p>`;
+  });
+  const table = rows.length
+    ? `<table class="test-examples"><thead><tr><th>呼び出し</th><th>期待する答え</th></tr></thead><tbody>${rows.join("")}</tbody></table>`
+    : "";
+  const testPath = problemFiles(RUNNERS[input.manifest.runner].plan, current.id)?.test;
+  const more =
+    other > 0
+      ? `<p class="test-examples-more">ほかに ${other} 件の確認があります${
+          testPath
+            ? ` ${link("stella.openTaskFile", [input.root, testPath], "テストファイルを開く")}`
+            : ""
+        }</p>`
+      : "";
+  return `<h2 class="test-examples-title">テストで確かめる例</h2>${table}${typeLines.join("")}${more}`;
 }
 
 function problemFileLocation(root: string, problemId: string, file: string, line: number): string {
@@ -715,9 +743,9 @@ function buildProblemGuideHtml(input: TaskGuideInput): string {
     '<div class="guide problem-guide">',
     problemProgressHtml(items, now),
     problemNowHtml(input, now),
+    problemTestExamplesHtml(input, now),
     input.releaseError ? `<p>${escapeHtml(input.releaseError)}</p>` : "",
     problemRefsHtml(refs),
-    problemListHtml(input, items, now.current),
     `<footer><p class="help">${help}${consultLink(root, now.current?.id)} ・ ${logLink()}</p>${problemRefsHtml(problemResults?.refs)}</footer>`,
     "</div>",
   ].join("\n");
@@ -871,20 +899,14 @@ export const GUIDE_CSS = `
     .problem-guide .now-title { margin: 0.25rem 0; }
     .problem-guide .now-label, .problem-refs { color: var(--vscode-descriptionForeground); }
     .problem-check-details { max-height: 16rem; overflow: auto; overflow-wrap: anywhere; }
-    .problems-title { font-size: 1em; margin: 1rem 0 0.25rem; }
-    .problems { list-style: none; padding-left: 0; margin: 0 0 0.9rem; }
-    .problems li {
-      display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0.4rem;
+    .test-examples-title { font-size: 1em; margin: 1rem 0 0.25rem; }
+    .test-examples { width: 100%; table-layout: auto; border-collapse: collapse; margin: 0 0 0.6rem; }
+    .test-examples th, .test-examples td {
       border-bottom: 1px solid var(--vscode-panel-border);
+      text-align: left; padding: 0.2rem 0.4rem; vertical-align: top;
     }
-    .problems li.current {
-      background: var(--vscode-editor-inactiveSelectionBackground);
-      font-weight: 600;
-    }
-    .problem-row-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-    .problem-icon.submitted { color: var(--vscode-testing-iconPassed); }
-    .problem-icon.failed { color: var(--vscode-testing-iconFailed); }
-    .problem-status { color: var(--vscode-descriptionForeground); font-size: 0.9em; text-align: right; }
+    .test-examples code, .test-example-types code { overflow-wrap: anywhere; }
+    .test-example-types, .test-examples-more { margin: 0.25rem 0 0.6rem; }
     .problem-guide footer { border-top: 1px solid var(--vscode-panel-border); padding-top: 0.4rem; }
     .help { margin: 0.5rem 0 0.25rem; }
     .readme-title { margin-top: 1.5rem; }`;

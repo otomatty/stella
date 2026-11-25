@@ -25,6 +25,7 @@ import {
   type TestCaseResult,
 } from "@stella/shared/tasks/run-result";
 import { CONSULT_SUPPORT_DETAIL } from "@stella/shared/tasks/support-record";
+import { problemFiles } from "@stella/shared/tasks/problems";
 import { RUNNERS } from "@stella/shared/tasks/runners";
 import * as vscode from "vscode";
 import { apiSession } from "./api.js";
@@ -1000,6 +1001,14 @@ async function renderTaskReadme(
       ? latestRun
       : await readProblemRun(root, manifest.id, current.id));
   const problemTestLines = await failedTestLines(root, problemRun);
+  let problemTestSource: { problemId: string; source: string } | undefined;
+  if (current) {
+    const test = problemFiles(RUNNERS[manifest.runner].plan, current.id)?.test;
+    if (test?.endsWith(".test.ts")) {
+      const source = await readTestSource(root, path.resolve(root, test));
+      if (source) problemTestSource = { problemId: current.id, source };
+    }
+  }
   if (problems && session !== apiSession()) return;
   const { lastRun, lmsStatus, helpLabel } = getTaskState(root, manifest.id) ?? {};
   const server = problems?.server;
@@ -1021,6 +1030,7 @@ async function renderTaskReadme(
         ...(problems?.releaseError ? { releaseError: problems.releaseError } : {}),
         ...(server ? { problemResults: server } : {}),
         ...(problemRun ? { problemRun, problemTestLines } : {}),
+        ...(problemTestSource ? { problemTestSource } : {}),
         ...(stageId ? { stageId } : {}),
         ...(problems && helpLabel && !refresh.skipLms ? { helpLabel } : {}),
         ...(!manifest.problems && lmsStatus && !refresh.skipLms && session === apiSession()

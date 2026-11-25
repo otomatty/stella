@@ -17,7 +17,7 @@ import {
   problemCellGroups,
   problemNow,
   problemRefText,
-  problemRows,
+  problemTestExamples,
   opensAsText,
   readLastRun,
   resolveEditFiles,
@@ -508,20 +508,13 @@ describe("buildTaskGuideHtml", () => {
     expect(html).toContain('aria-label="3 問中 1 問を提出済み"');
     expect(html).toContain("提出済み");
     expect(html).not.toContain("手元で合格");
-    expect(html).toContain('class="problem-status submitted">提出済み');
-    expect(html).toContain('class="problem-status local-passed">未提出');
-    expect(html).toContain('class="problem-status not-submitted">未提出');
-    expect(html).toMatch(/<li class="current"[^>]*>.*<a [^>]*>引く<\/a>/);
+    expect(html).not.toContain('class="problems"');
     expect(html).toContain("提出する");
     expect(html).not.toContain("説明");
     expect(html).not.toContain("修正記録");
     expect(html).not.toContain("ファイルを編集して保存する");
     expect(html).not.toContain("command:stella.openWalkthrough");
-    expect(commandArgs(html, "stella.openTaskFile")).toEqual([
-      [input.root, "src/q01-add.ts"],
-      [input.root, "src/q02-sub.ts"],
-      [input.root, "src/q03-mod.ts"],
-    ]);
+    expect(commandArgs(html, "stella.openTaskFile")).toEqual([]);
     expect(commandArgs(html, "stella.submitTask")).toEqual([[input.root, "q02-sub"]]);
     expect(commandArgs(html, "stella.consultTask")).toEqual([[input.root, "q02-sub"]]);
     expect(html).not.toContain("command:stella.runTask");
@@ -542,10 +535,7 @@ describe("buildTaskGuideHtml", () => {
       "<code>src/&lt;q01-add&gt;.ts</code></a> に書いて保存したら、確認して提出します。",
     );
     expect(html).not.toMatch(/<足す>|<q01-add>/);
-    expect(commandArgs(html, "stella.openTaskFile")).toEqual([
-      [input.root, item.source],
-      [input.root, item.source],
-    ]);
+    expect(commandArgs(html, "stella.openTaskFile")).toEqual([[input.root, item.source]]);
 
     const completed = buildTaskGuideHtml(
       guide({ manifest, problems: [{ ...item, status: "submitted" }] }),
@@ -615,9 +605,9 @@ it("段階がある課題の進め方は全問を出し、ロック中は鍵と�
     ],
   });
   expect(html).toContain("最初の問題");
-  expect(html).toContain("まだ解けない題");
-  expect(html).toContain(`🔒 ${lockReason}`);
-  expect(html).toContain("src/q02.ts");
+  expect(html).not.toContain("まだ解けない題");
+  expect(html).not.toContain(lockReason);
+  expect(html).not.toContain("src/q02.ts");
   expect(commandArgs(html, "stella.submitTask")).toEqual([[shared.root, "q01"]]);
   expect(html).toContain('aria-label="2 問中 0 問を提出済み"');
 });
@@ -682,9 +672,6 @@ it("段階がある課題は未解放も数え、次の動画と手がかりを�
     drills: [{ style: "submitted" }, { style: "locked" }, { style: "locked" }, { style: "locked" }],
     advanced: [{ label: "応用", style: "locked" }],
   });
-  expect(
-    problemRows(items).map((row) => (row.lock ? [row.lock, row.items.length] : row.item.id)),
-  ).toEqual(["q01", ["locked-video", 3], ["locked-previous", 1]]);
   expect(problemRefText(notes)).toEqual({
     title: "まとめ『<まとめ>』",
     suffix: "（『<他のステージ>』を受講すると見られます）",
@@ -694,9 +681,8 @@ it("段階がある課題は未解放も数え、次の動画と手がかりを�
   const waiting = buildTaskGuideHtml(shared);
   expect(waiting).toContain("動画『変数と定数』を見る");
   expect(waiting).toContain("問2『次の問題』がここに出ます");
-  expect(waiting).toContain("問2〜3・応用問題");
-  expect(waiting).toContain("動画のあとに出る 3 問");
-  expect(waiting).toContain("前の問題のあとに出る 1 問");
+  expect(waiting).not.toContain("問2〜3・応用問題");
+  expect(waiting).not.toContain("動画のあとに出る");
   expect(waiting).toContain("手がかり:");
   expect(waiting).toContain(">動画『変数と定数』</a>");
   expect(waiting).toContain(
@@ -709,7 +695,7 @@ it("段階がある課題は未解放も数え、次の動画と手がかりを�
     ["stage-id", "video-id"],
     ["stage-id", "video-id"],
   ]);
-  expect(commandArgs(waiting, "stella.openTaskFile")).toEqual([[shared.root, "src/q01.ts"]]);
+  expect(commandArgs(waiting, "stella.openTaskFile")).toEqual([]);
   expect(commandArgs(waiting, "stella.submitTask")).toEqual([]);
 
   const { refs: _taskRefs, ...legacyResults } = problemResults;
@@ -768,9 +754,9 @@ it("書き出していない問題にはリンクを出さず、ロックの理�
       ],
     }),
   );
-  expect(hidden).toContain(reason);
+  expect(hidden).not.toContain(reason);
   expect(hidden).not.toContain("src/q02.ts");
-  expect(commandArgs(hidden, "stella.openTaskFile")).toEqual([[guide().root, "src/q01.ts"]]);
+  expect(commandArgs(hidden, "stella.openTaskFile")).toEqual([]);
 
   const linked = buildTaskGuideHtml(
     guide({
@@ -781,11 +767,9 @@ it("書き出していない問題にはリンクを出さず、ロックの理�
       ],
     }),
   );
-  expect(linked).toContain(reason);
-  expect(commandArgs(linked, "stella.openTaskFile")).toEqual([
-    [guide().root, "src/q01.ts"],
-    [guide().root, "src/q02.ts"],
-  ]);
+  expect(linked).not.toContain(reason);
+  expect(linked).not.toContain("src/q02.ts");
+  expect(commandArgs(linked, "stella.openTaskFile")).toEqual([]);
 });
 
 it("失敗した確認のチップと指摘を表示し、テストと ESLint の行へ移動できる", () => {
@@ -885,6 +869,148 @@ it("失敗した確認のチップと指摘を表示し、テストと ESLint �
   expect(error).toContain("環境の問題で確認できませんでした");
   expect(error).toContain("&lt;環境の詳細&gt;");
   expect(commandArgs(error, "stella.submitTask")).toEqual([[input.root, "q01"]]);
+});
+
+const HONORIFIC = `test("問2 honorific", () => {
+  expect(honorific("山田")).toBe("山田さん");
+  expect(honorific("Taro")).toBe("Taroさん");
+  expectTypeOf(honorific).parameters.toEqualTypeOf<[string]>();
+  expectTypeOf(honorific).returns.toEqualTypeOf<string>();
+});
+`;
+
+const HONORIFIC_FILE = `// このファイルは書き換えないでください
+import { expect, expectTypeOf, test } from "vitest";
+import { honorific } from "../src/q02-02-honorific";
+test("問2 honorific", () => {
+  expect(honorific("山田")).toBe("山田さん");
+  expect(honorific("Taro")).toBe("Taroさん");
+  expectTypeOf(honorific).parameters.toEqualTypeOf<[string]>();
+  expectTypeOf(honorific).returns.toEqualTypeOf<string>();
+});
+`;
+
+describe("problemTestExamples", () => {
+  it("1 行の値・例外・型を取り、複数行と await は件数にする", () => {
+    expect(problemTestExamples(HONORIFIC)).toEqual({
+      examples: [
+        { kind: "value", call: 'honorific("山田")', expected: '"山田さん"' },
+        { kind: "value", call: 'honorific("Taro")', expected: '"Taroさん"' },
+        { kind: "parameters", name: "honorific", type: "[string]" },
+        { kind: "returns", name: "honorific", type: "string" },
+      ],
+      other: 0,
+    });
+    const mixed = [
+      '  expect(() => honorific("")).toThrow("名前が空です");',
+      "  expect(pack()).toEqual({ ok: true });",
+      "  expect(pack()).toEqual(",
+      "    { ok: false },",
+      "  );",
+      "  await expect(load()).resolves.toBe(1);",
+    ].join("\n");
+    expect(problemTestExamples(mixed)).toEqual({
+      examples: [
+        { kind: "throws", call: 'honorific("")' },
+        { kind: "value", call: "pack()", expected: "{ ok: true }" },
+      ],
+      other: 2,
+    });
+  });
+
+  it("import と先頭コメントは件数にしない", () => {
+    expect(problemTestExamples(HONORIFIC_FILE).other).toBe(0);
+    const manifest: TaskManifest = {
+      ...staticManifest,
+      runner: "ts-test",
+      problems: [{ id: "q02-02-honorific", title: "敬称" }],
+    };
+    const html = buildTaskGuideHtml(
+      guide({
+        manifest,
+        problems: [
+          {
+            id: "q02-02-honorific",
+            title: "敬称",
+            source: "src/q02-02-honorific.ts",
+            status: "not-submitted",
+          },
+        ],
+        problemTestSource: { problemId: "q02-02-honorific", source: HONORIFIC_FILE },
+      }),
+    );
+    expect(html).not.toContain("ほかに");
+  });
+});
+
+it("いまの問題のテスト例を出し、別の問題や完了では出さない", () => {
+  const manifest: TaskManifest = {
+    ...staticManifest,
+    runner: "ts-test",
+    problems: [
+      { id: "q02", title: "敬称" },
+      { id: "q03", title: "次" },
+    ],
+  };
+  const problems = [
+    { id: "q02", title: "敬称", source: "src/q02.ts", status: "not-submitted" as const },
+    { id: "q03", title: "次", source: "src/q03.ts", status: "not-submitted" as const },
+  ];
+  const source = HONORIFIC + '  expect(tag()).toBe("<b>");\n';
+  const html = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems,
+      problemTestSource: { problemId: "q02", source },
+    }),
+  );
+  expect(html).toContain("テストで確かめる例");
+  expect(html).toContain("<code>honorific(&quot;山田&quot;)</code>");
+  expect(html).toContain("<code>&quot;山田さん&quot;</code>");
+  expect(html).toContain("引数の型 <code>[string]</code>");
+  expect(html).toContain("戻り値の型 <code>string</code>");
+  expect(html).toContain("<code>&quot;&lt;b&gt;&quot;</code>");
+  expect(html).not.toContain("<b>");
+  const mismatch = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems,
+      problemTestSource: { problemId: "q03", source },
+    }),
+  );
+  expect(mismatch).not.toContain("テストで確かめる例");
+  const done = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems: problems.map((problem) => ({ ...problem, status: "submitted" as const })),
+      problemTestSource: { problemId: "q02", source },
+    }),
+  );
+  expect(done).not.toContain("テストで確かめる例");
+});
+
+it("取り出せない確認は件数とテストファイルへのリンクにする", () => {
+  const manifest: TaskManifest = {
+    ...staticManifest,
+    runner: "ts-test",
+    problems: [{ id: "q02", title: "敬称" }],
+  };
+  const html = buildTaskGuideHtml(
+    guide({
+      manifest,
+      problems: [{ id: "q02", title: "敬称", source: "src/q02.ts", status: "not-submitted" }],
+      problemTestSource: {
+        problemId: "q02",
+        source: "expect(list).toHaveLength(2);\nexpect(list).toHaveLength(3);\n",
+      },
+    }),
+  );
+  expect(html).toContain("ほかに 2 件の確認があります");
+  expect(html).not.toContain("<table");
+  expect(commandArgs(html, "stella.openTaskFile")).toEqual([
+    [guide().root, "src/q02.ts"],
+    [guide().root, "tests/q02.test.ts"],
+  ]);
 });
 
 it("全問提出後は課題の合格状態と、ステージが分かるときは Web へのボタンを出す", () => {
