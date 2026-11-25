@@ -7,9 +7,12 @@ import {
 } from "@stella/shared/skill-map/evaluate";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
+import { chunk, D1_MAX_BOUND_PARAMS } from "../lib/enrollment-bulk.js";
 import { learnerOnly } from "../lib/learner-scope.js";
+import { loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
 import { loadSkillMapSource } from "../lib/skill-map-data.js";
 import { evaluateSkillMapFor } from "./skill-map.js";
 
@@ -97,6 +100,38 @@ function orderVisibleStages(stages: SkillMapStage[]): { id: string; title: strin
       return a.id.localeCompare(b.id);
     })
     .map((stage) => ({ id: stage.id, title: stage.title }));
+}
+
+/** 問題のレッスンは提出が正本。所属と公開ステージの範囲は呼び出し側の行に残っている。 */
+async function addCompletedProblemLessons(db: Db, rows: PeerProgressRow[]): Promise<void> {
+  const peerIds = [...new Set(rows.map((row) => row.profileId))];
+  const stageIds = [...new Set(rows.flatMap((row) => (row.stageId === null ? [] : [row.stageId])))];
+  if (peerIds.length === 0 || stageIds.length === 0) return;
+  const problemLessons = await db.all<{ lessonId: string; stageId: string }>(sql`
+    select l.id lessonId, u.stage_id stageId
+    from sections u
+    join lessons l on l.section_id = u.id
+    where l.problem_id is not null
+      and u.stage_id in (select value from json_each(${JSON.stringify(stageIds)}))
+  `);
+  if (problemLessons.length === 0) return;
+  const stageByLesson = new Map(problemLessons.map((lesson) => [lesson.lessonId, lesson.stageId]));
+  const lessonIds = [...stageByLesson.keys()];
+  const done = new Map<string, Set<string>>();
+  for (const ids of chunk(peerIds, D1_MAX_BOUND_PARAMS - 10)) {
+    for (const step of await loadCompletedProblemSteps(db, ids, lessonIds)) {
+      const stageId = stageByLesson.get(step.lessonId);
+      if (!stageId) continue;
+      const key = `${step.userId}\0${stageId}`;
+      const lessons = done.get(key) ?? new Set<string>();
+      lessons.add(step.lessonId);
+      done.set(key, lessons);
+    }
+  }
+  for (const row of rows) {
+    if (row.stageId === null) continue;
+    row.lessonsDone += done.get(`${row.profileId}\0${row.stageId}`)?.size ?? 0;
+  }
 }
 
 function buildPeerProgress(
@@ -191,6 +226,7 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
       select p.id profile_id, l.stage_id, count(*) done from peers p
       join lesson_progress lp on lp.user_id = p.id and lp.completed = 1
       join stage_lessons l on l.id = lp.lesson_id
+      join lessons lesson on lesson.id = l.id and lesson.problem_id is null
       group by p.id, l.stage_id
     ), task_counts as (
       select p.id profile_id, t.stage_id, count(*) passed from peers p
@@ -215,6 +251,7 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
   `);
   const first = rows[0];
   if (!first) throw new ApiError("Not found", 404);
+  await addCompletedProblemLessons(db, rows);
 
   const publishedIds = new Set(rows.flatMap((row) => (row.stageId === null ? [] : [row.stageId])));
   const source = await loadSkillMapSource(db, caller);

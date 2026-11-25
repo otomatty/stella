@@ -34,6 +34,7 @@ import {
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
+import { loadCompletedProblemSteps } from "./lesson-progress-write.js";
 import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
@@ -630,10 +631,18 @@ export interface SkillProfileCounts {
 
 /** XP の材料 (完了レッスン数 / 合格クイズ数 / クリアステージ数)。 */
 export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<SkillProfileCounts> {
+  // 問題のレッスンは提出が正本。lesson_progress に写しが残っていても、ここでは数えない。
   const lessonRows = await db
-    .select({ n: count() })
+    .select({ lessonId: lessonProgress.lessonId, problemId: lessons.problemId })
     .from(lessonProgress)
+    .leftJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
     .where(and(eq(lessonProgress.userId, caller.id), eq(lessonProgress.completed, true)));
+  const completedLessons = new Set(
+    lessonRows.flatMap((row) => (row.problemId === null ? [row.lessonId] : [])),
+  );
+  for (const step of await loadCompletedProblemSteps(db, [caller.id])) {
+    completedLessons.add(step.lessonId);
+  }
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })
@@ -641,7 +650,7 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
     .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
   const clearedStageIds = await loadClearedStageIds(db, caller);
   return {
-    completedLessons: Number(lessonRows[0]?.n ?? 0),
+    completedLessons: completedLessons.size,
     passedQuizzes: Number(quizRows[0]?.n ?? 0),
     clearedStages: clearedStageIds.size,
   };

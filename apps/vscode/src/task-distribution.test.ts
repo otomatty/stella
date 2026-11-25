@@ -112,6 +112,45 @@ describe("課題の配布", () => {
     expect(await installTask(training, bundle)).toBe(taskRoot);
     expect(await readFile(path.join(taskRoot, "index.js"), "utf8")).toBe("learner code");
   });
+  it("同じ課題の配布は、前の処理が終わるまで始めない", async () => {
+    const training = await root();
+    await installTask(training, bundle);
+    let releaseFirst: () => void = () => undefined;
+    const releaseFirstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let enteredFirst = false;
+    let secondStarted = false;
+    const first = installTask(training, nextBundle({ "index.js": "second starter" }), {
+      beforeUpdate: async () => {
+        if (enteredFirst) return;
+        enteredFirst = true;
+        await releaseFirstGate;
+      },
+    });
+    const started = Date.now();
+    while (!enteredFirst) {
+      if (Date.now() - started > 2000) throw new Error("配布が始まらない");
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    const third: TaskBundle = {
+      ...nextBundle({ "index.js": "third starter" }),
+      contentHash: "c".repeat(64),
+    };
+    const second = installTask(training, third, {
+      beforeUpdate: async () => {
+        secondStarted = true;
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(secondStarted).toBe(false);
+    releaseFirst();
+    await Promise.all([first, second]);
+    expect(secondStarted).toBe(true);
+    expect(await readFile(path.join(training, "course/unit/q1/index.js"), "utf8")).toBe(
+      "third starter",
+    );
+  });
   it("教材が更新されたら、上書きせずに変わるファイルを示す", async () => {
     const training = await root();
     const taskRoot = await installTask(training, bundle);
@@ -1070,5 +1109,44 @@ describe("問題つきの課題の配布", () => {
     const migrated = await readReceipt(taskRoot);
     expect(migrated.deferred).toBeUndefined();
     expect(migrated.files).toEqual(makeHashes(withProblems.files));
+  });
+
+  it("files の無い古い記録はハッシュを作らず、次の更新は版の照合に戻る", async () => {
+    const training = await root();
+    const taskRoot = await installTask(training, withProblems);
+    await writeFile(path.join(taskRoot, "src/q01.ts"), "learner answer");
+    const record = await readReceipt(taskRoot);
+    await rm(path.join(taskRoot, "README.md"));
+    await rm(path.join(taskRoot, ".stella/task.json"));
+    const { files: recordedFiles, ...withoutFiles } = record;
+    await writeFile(
+      path.join(taskRoot, receiptPath),
+      JSON.stringify({
+        ...withoutFiles,
+        deferred: { "README.md": null, ".stella/task.json": null },
+      }),
+    );
+
+    expect(await installTask(training, withProblems)).toBe(taskRoot);
+    const migrated = await readReceipt(taskRoot);
+    expect(migrated.deferred).toBeUndefined();
+    expect(migrated.files).toBeUndefined();
+    expect(await readFile(path.join(taskRoot, "src/q01.ts"), "utf8")).toBe("learner answer");
+    expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+
+    const updatedManifest = { ...manifest, title: "更新した課題" };
+    const updated = {
+      ...withProblems,
+      contentHash: "c".repeat(64),
+      manifest: updatedManifest,
+      files: {
+        ...withProblems.files,
+        ".stella/task.json": Buffer.from(JSON.stringify(updatedManifest)).toString("base64"),
+      },
+    };
+    const loadRevisionFiles = vi.fn(async () => recordedFiles);
+    await expect(installTask(training, updated, { loadRevisionFiles })).resolves.toBe(taskRoot);
+    expect(loadRevisionFiles).toHaveBeenCalledWith(manifest.id, withProblems.contentHash);
+    expect(await readFile(path.join(taskRoot, "src/q01.ts"), "utf8")).toBe("learner answer");
   });
 });

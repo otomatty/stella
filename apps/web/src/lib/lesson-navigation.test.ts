@@ -10,7 +10,11 @@ import type { TaskProblemStepSummary } from "@stella/shared/tasks/problem-steps"
 import { describe, expect, it } from "vitest";
 import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
-import { flattenLessonNodes, resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import {
+  flattenLessonNodes,
+  resolveLessonNeighbors,
+  videoAdvanceNext,
+} from "@/lib/lesson-navigation";
 import { presentStageProblems, problemLessonsById } from "@/lib/problem-lesson";
 
 function lesson(id: string, status: LessonStatus = "todo"): Lesson {
@@ -151,6 +155,11 @@ describe("resolveLessonNeighbors", () => {
     expect(fromQ1.nextLocked).toBe(true);
     expect(fromQ1.nextBlockedBy?.lesson.id).toBe("q1");
     expect(fromQ1.nextLockReason).toBe("「問1」を提出すると解けます");
+
+    const advance = () => undefined;
+    expect(videoAdvanceNext(fromVideo.nextLocked, advance)).toBeUndefined();
+    expect(videoAdvanceNext(fromDoneVideo.nextLocked, advance)).toBe(advance);
+    expect(videoAdvanceNext(false, undefined)).toBeUndefined();
   });
 
   it("進捗で解禁された locked ではないレッスンは status を進捗ストアで解決する", () => {

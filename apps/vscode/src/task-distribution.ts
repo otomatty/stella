@@ -422,7 +422,9 @@ async function writeDeferredRelease(
   }
   const released = fileHashes(entries);
   // 同じ版なので、既にあるファイルは受講者の編集として残す（雛形のハッシュを前回値にする）。
-  const oldFiles = { ...receipt.files, ...released };
+  // files の無い古い記録に、書き出した分だけのハッシュを足すと、次の更新が版の照合を飛ばす。
+  const recordedFiles = isFileHashes(receipt.files) ? receipt.files : undefined;
+  const oldFiles = { ...recordedFiles, ...released };
   await guards.beforeUpdate?.(root);
   const writes = await planReplacements(
     root,
@@ -436,7 +438,7 @@ async function writeDeferredRelease(
     taskId: receipt.taskId,
     contentHash: receipt.contentHash,
     ...(receipt.variant ? { variant: receipt.variant } : {}),
-    files: { ...receipt.files, ...released },
+    ...(recordedFiles ? { files: { ...recordedFiles, ...released } } : {}),
   };
   await writeDistributionUpdate(
     base,
@@ -775,22 +777,15 @@ async function updateDistribution(
 }
 
 const installations = new Map<string, Promise<unknown>>();
-const installationDepth = new Map<string, number>();
 
+/**
+ * 同じ課題フォルダーの配布を 1 本ずつ行う。
+ * 控えたファイルの書き出しは `installTaskFiles` が `writeDeferredRelease` を直接呼ぶ。
+ * ここを入れ子にすると、同じ鍵の待ちが戻ってこなくなる。
+ */
 async function serializeInstallation<T>(key: string, work: () => Promise<T>): Promise<T> {
-  // 配布の途中で控えたファイルを書き出すとき、同じ鍵で待ち続けると戻ってこられない。
-  if ((installationDepth.get(key) ?? 0) > 0) return work();
   const previous = installations.get(key);
-  const pending = (previous?.catch(() => undefined) ?? Promise.resolve()).then(async () => {
-    installationDepth.set(key, (installationDepth.get(key) ?? 0) + 1);
-    try {
-      return await work();
-    } finally {
-      const next = (installationDepth.get(key) ?? 1) - 1;
-      if (next <= 0) installationDepth.delete(key);
-      else installationDepth.set(key, next);
-    }
-  });
+  const pending = (previous?.catch(() => undefined) ?? Promise.resolve()).then(() => work());
   installations.set(key, pending);
   try {
     return await pending;

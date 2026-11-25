@@ -148,3 +148,14 @@ export function resolveLessonNeighbors(
     total: nodes.length,
   };
 }
+
+/**
+ * 動画の「次へ」と再生後の自動遷移。
+ * 隣がロック中のときは渡さない。止めている教材への案内は、本文下のナビと完了時の案内が出す。
+ */
+export function videoAdvanceNext(
+  nextLocked: boolean,
+  advance: (() => void) | undefined,
+): (() => void) | undefined {
+  return nextLocked ? undefined : advance;
+}

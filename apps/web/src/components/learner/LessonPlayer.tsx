@@ -44,7 +44,7 @@ import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
-import { resolveLessonNeighbors } from "@/lib/lesson-navigation";
+import { resolveLessonNeighbors, videoAdvanceNext } from "@/lib/lesson-navigation";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
   useLessonProgress,
@@ -459,7 +459,10 @@ export const LessonPlayer = ({
                     nextLessonMeta={nextMeta}
                     // 次が無いステージ末尾では渡さない。 渡すと VideoViewer 側の
                     // canAdvance が true になり、 何もしないオーバーレイが出る。
-                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                    onAdvanceNext={videoAdvanceNext(
+                      neighbors.nextLocked,
+                      nextLessonId ? handleAdvanceNext : undefined,
+                    )}
                   />
                 ) : (
                   <SlideLessonMedia
@@ -470,7 +473,10 @@ export const LessonPlayer = ({
                     onComplete={handleMarkComplete}
                     nextLessonTitle={nextLesson?.title ?? null}
                     nextLessonMeta={nextMeta}
-                    onAdvanceNext={nextLessonId ? handleAdvanceNext : undefined}
+                    onAdvanceNext={videoAdvanceNext(
+                      neighbors.nextLocked,
+                      nextLessonId ? handleAdvanceNext : undefined,
+                    )}
                   />
                 )}
               </div>

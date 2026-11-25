@@ -40,6 +40,7 @@ import { ApiError, errorResponse, getCaller, requireAdmin } from "../lib/authz.j
 import type { Env } from "../env.js";
 
 import { learnerOnly, learnerOrUnknown } from "../lib/learner-scope.js";
+import { loadCompletedProblemSteps } from "../lib/lesson-progress-write.js";
 
 export const reportsRoute = new Hono<{ Bindings: Env }>();
 
@@ -207,7 +208,11 @@ async function enrollmentsReport(
     await Promise.all(
       chunk(stageIds, IN_CHUNK_SIZE).map((ids) =>
         db
-          .select({ lessonId: lessons.id, stageId: sections.stageId })
+          .select({
+            lessonId: lessons.id,
+            stageId: sections.stageId,
+            problemId: lessons.problemId,
+          })
           .from(lessons)
           .innerJoin(sections, eq(sections.id, lessons.sectionId))
           .where(inArray(sections.stageId, ids)),
@@ -216,11 +221,13 @@ async function enrollmentsReport(
   ).flat();
   const lessonIdsByStage = new Map<string, string[]>();
   const pageLessonIds = new Set<string>();
+  const problemLessonIds = new Set<string>();
   for (const r of lessonRows) {
     const arr = lessonIdsByStage.get(r.stageId) ?? [];
     arr.push(r.lessonId);
     lessonIdsByStage.set(r.stageId, arr);
     pageLessonIds.add(r.lessonId);
+    if (r.problemId !== null) problemLessonIds.add(r.lessonId);
   }
 
   // 完了進捗はページ上の user に絞って読む。 レッスン ID でも絞りたいところだが、
@@ -237,11 +244,24 @@ async function enrollmentsReport(
     )
   ).flat();
   const completedByUser = new Map<string, Set<string>>();
+  const markCompleted = (userId: string, lessonId: string) => {
+    if (!pageLessonIds.has(lessonId)) return;
+    const set = completedByUser.get(userId) ?? new Set<string>();
+    set.add(lessonId);
+    completedByUser.set(userId, set);
+  };
   for (const r of progressRows) {
-    if (!pageLessonIds.has(r.lessonId)) continue;
-    const set = completedByUser.get(r.userId) ?? new Set<string>();
-    set.add(r.lessonId);
-    completedByUser.set(r.userId, set);
+    // 問題のレッスンは提出が正本。残った写しは数えない。
+    if (problemLessonIds.has(r.lessonId)) continue;
+    markCompleted(r.userId, r.lessonId);
+  }
+  if (problemLessonIds.size > 0) {
+    const problemIds = [...problemLessonIds];
+    for (const ids of chunk(userIds, IN_CHUNK_SIZE)) {
+      for (const step of await loadCompletedProblemSteps(db, ids, problemIds)) {
+        markCompleted(step.userId, step.lessonId);
+      }
+    }
   }
 
   const rows: EnrollmentReportRow[] = page.map((r) => {
