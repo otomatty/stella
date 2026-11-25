@@ -382,16 +382,32 @@ type DeferredBundleSource =
  * 古い段階的配布が `deferred` に控えたファイルを、今の版の配布物からすべて書き、
  * 記録から `deferred` を外す。控えていなければ何もしない。
  * 手元の編集は上書きしない（配布の更新と同じ照合で、一時ファイルを用意してから置く）。
+ *
+ * 学習フォルダーから課題フォルダーまでの各要素が普通のフォルダーであることを確かめてから書く。
+ * 途中のリンクを realpath で解消すると、学習フォルダーの外へ書いてしまう。
  */
 export async function releaseDeferredFiles(
+  trainingRoot: string | undefined,
   root: string,
   source: DeferredBundleSource,
   guards: DistributionGuards = {},
 ): Promise<void> {
-  const realRoot = await realpath(root);
-  await serializeInstallation(realRoot, () =>
-    writeDeferredRelease(path.dirname(realRoot), realRoot, source, guards),
-  );
+  const receipt = await readReceipt(root);
+  if (!hasDeferred(receipt)) return;
+  if (!trainingRoot) {
+    throw new Error("学習フォルダーが分からないため、残りのファイルを書き出せません");
+  }
+  const base = path.resolve(trainingRoot);
+  if (!(await stat(base)).isDirectory()) {
+    throw new Error(`学習フォルダーがフォルダーではありません: ${trainingRoot}`);
+  }
+  // 書き込みの直前にも、待ちのあいだにリンクへ差し替えられていないか確かめる。
+  await assertPlainDirectory(base, root);
+  const key = await realpath(root);
+  await serializeInstallation(key, async () => {
+    await assertPlainDirectory(base, root);
+    await writeDeferredRelease(base, root, source, guards);
+  });
 }
 
 async function writeDeferredRelease(
@@ -777,6 +793,13 @@ async function updateDistribution(
 }
 
 const installations = new Map<string, Promise<unknown>>();
+const installationQueueWatchers = new Set<(waiting: boolean) => void>();
+
+/** 同じ鍵の配布が待ちに入ったことを、テストが取りこぼさず待つ。 */
+export function watchInstallationQueue(listener: (waiting: boolean) => void): () => void {
+  installationQueueWatchers.add(listener);
+  return () => installationQueueWatchers.delete(listener);
+}
 
 /**
  * 同じ課題フォルダーの配布を 1 本ずつ行う。
@@ -787,6 +810,7 @@ async function serializeInstallation<T>(key: string, work: () => Promise<T>): Pr
   const previous = installations.get(key);
   const pending = (previous?.catch(() => undefined) ?? Promise.resolve()).then(() => work());
   installations.set(key, pending);
+  for (const listener of installationQueueWatchers) listener(previous !== undefined);
   try {
     return await pending;
   } finally {

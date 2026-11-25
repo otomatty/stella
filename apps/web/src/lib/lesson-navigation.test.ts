@@ -12,6 +12,7 @@ import type { Stage, Lesson, LessonStatus } from "@/data/types";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
 import {
   flattenLessonNodes,
+  lessonEndGuides,
   resolveLessonNeighbors,
   videoAdvanceNext,
 } from "@/lib/lesson-navigation";
@@ -160,6 +161,13 @@ describe("resolveLessonNeighbors", () => {
     expect(videoAdvanceNext(fromVideo.nextLocked, advance)).toBeUndefined();
     expect(videoAdvanceNext(fromDoneVideo.nextLocked, advance)).toBe(advance);
     expect(videoAdvanceNext(false, undefined)).toBeUndefined();
+
+    // 動画は自動では進まない。ロック中の次は本文下のナビと完了案内で止める教材を示す。
+    expect(lessonEndGuides(true, true, true)).toEqual({ nav: true, completeCallout: true });
+    expect(lessonEndGuides(true, true, false)).toEqual({ nav: false, completeCallout: false });
+    expect(lessonEndGuides(true, false, false)).toEqual({ nav: false, completeCallout: true });
+    expect(lessonEndGuides(false, true, true)).toEqual({ nav: true, completeCallout: true });
+    expect(lessonEndGuides(false, true, false)).toEqual({ nav: true, completeCallout: true });
   });
 
   it("進捗で解禁された locked ではないレッスンは status を進捗ストアで解決する", () => {

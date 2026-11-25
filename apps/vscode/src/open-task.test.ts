@@ -834,6 +834,128 @@ describe("課題を開いた画面", () => {
     expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
   });
 
+  async function installedProblems() {
+    const problems = [
+      { id: "q01", title: "問1" },
+      { id: "q02", title: "問2" },
+    ];
+    const problemManifest = {
+      ...manifest,
+      problems,
+      problemSteps: true as const,
+      submit: { files: ["src/**/*.ts"] },
+    };
+    const files = {
+      ...bundle.files,
+      ".stella/task.json": Buffer.from(JSON.stringify(problemManifest)).toString("base64"),
+      "src/q01.ts": Buffer.from("one").toString("base64"),
+      "tests/q01.test.ts": Buffer.from("t1").toString("base64"),
+      "src/q02.ts": Buffer.from("two").toString("base64"),
+      "tests/q02.test.ts": Buffer.from("t2").toString("base64"),
+    };
+    state.folders = [training];
+    state.apiRequest.mockImplementation(async (url: string) =>
+      String(url).includes("problem-results")
+        ? {
+            gated: true,
+            totalProblems: 2,
+            passedProblems: 0,
+            taskPassed: false,
+            problems: [
+              { id: "q01", state: "open" },
+              { id: "q02", state: "locked-video", afterTitle: "導入" },
+            ],
+          }
+        : { bundle: { ...bundle, manifest: problemManifest, files } },
+    );
+    await openDistributedTask(context, taskId);
+    return problemManifest;
+  }
+
+  it("指定した問題のファイルがまだ無ければ、手元にある問題のソースを開く", async () => {
+    await installedProblems();
+    await rm(path.join(taskRoot(), "src/q02.ts"));
+    const receiptPath = path.join(taskRoot(), ".stella/distribution.json");
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8")) as Record<string, unknown>;
+    await writeFile(
+      receiptPath,
+      JSON.stringify({ ...receipt, deferred: { "src/q02.ts": null, "tests/q02.test.ts": null } }),
+    );
+    await rm(path.join(taskRoot(), "tests/q02.test.ts"));
+    state.apiRequest.mockImplementation(async (url: string) => {
+      if (String(url).includes("problem-results")) {
+        return {
+          gated: true,
+          totalProblems: 2,
+          passedProblems: 0,
+          taskPassed: false,
+          problems: [
+            { id: "q01", state: "open" },
+            { id: "q02", state: "locked-video", afterTitle: "導入" },
+          ],
+        };
+      }
+      throw new Error("教材を取得できません");
+    });
+    state.showTextDocument.mockClear();
+    await savePendingTaskOpen(pendingDir, {
+      trainingRoot: training,
+      taskRoot: taskRoot(),
+      problem: "q02",
+    });
+    registerTaskOpening(context);
+    await focusWindow();
+    expect(state.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src/q01.ts") } },
+      expect.anything(),
+    );
+    await expect(readFile(path.join(taskRoot(), "src/q02.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    expect(state.executeCommand).toHaveBeenCalledWith("stella.showTaskReadme", taskRoot());
+  });
+
+  it("指定したファイルが手元にあれば、サーバーでロック中でも開く", async () => {
+    await installedProblems();
+    await rm(path.join(taskRoot(), "tests/q02.test.ts"));
+    const receiptPath = path.join(taskRoot(), ".stella/distribution.json");
+    const receipt = JSON.parse(await readFile(receiptPath, "utf8")) as Record<string, unknown>;
+    await writeFile(
+      receiptPath,
+      JSON.stringify({ ...receipt, deferred: { "tests/q02.test.ts": null } }),
+    );
+    state.apiRequest.mockImplementation(async (url: string) => {
+      if (String(url).includes("problem-results")) {
+        return {
+          gated: true,
+          totalProblems: 2,
+          passedProblems: 0,
+          taskPassed: false,
+          problems: [
+            { id: "q01", state: "open" },
+            { id: "q02", state: "locked-video", afterTitle: "導入" },
+          ],
+        };
+      }
+      throw new Error("教材を取得できません");
+    });
+    state.showTextDocument.mockClear();
+    await savePendingTaskOpen(pendingDir, {
+      trainingRoot: training,
+      taskRoot: taskRoot(),
+      problem: "q02",
+    });
+    registerTaskOpening(context);
+    await focusWindow();
+    expect(state.showTextDocument).toHaveBeenCalledWith(
+      { uri: { scheme: "file", fsPath: path.join(taskRoot(), "src/q02.ts") } },
+      expect.anything(),
+    );
+    await expect(readFile(path.join(taskRoot(), "tests/q02.test.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
   it.each([undefined, "q01-add"])(
     "段階なしの課題は問題指定 %s から従来どおり次の未提出を開く",
     async (requested) => {

@@ -6,7 +6,7 @@ import {
 } from "@stella/shared/tasks/problem-steps";
 import type { TaskProblem } from "@stella/shared/tasks/problems";
 import { lockKindOfLessonType, type LockStep } from "@stella/shared/tasks/step-lock";
-import { and, asc, eq, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   lessonProgress,
@@ -17,15 +17,36 @@ import {
   taskRevisions,
   tasks,
 } from "../db/schema.js";
-import { loadProblemRevisionHashes, type ProblemHashCache } from "./task-problem-hashes.js";
+import { chunk } from "./enrollment-bulk.js";
+import {
+  loadProblemRevisionHashes,
+  type ProblemHashCache,
+  type ProblemRevisionHashes,
+} from "./task-problem-hashes.js";
 import { countedProblemIds, readTaskDefinition } from "./task-problem-submission.js";
 
 export const PROBLEM_STEPS_NOT_READY = "問題の準備中です。少し待ってからもう一度開いてください。";
 
 type SavedProblem = Pick<
   typeof taskProblemResults.$inferSelect,
-  "problemId" | "contentHash" | "source" | "path" | "code" | "firstPassedAt"
->;
+  "problemId" | "contentHash" | "source" | "path" | "firstPassedAt"
+> & { code?: string | null };
+
+/** 今の版と一致する提出と、手で済みにした提出はコードを読まなくても数えられる。 */
+function submissionNeedsCode(
+  row: Pick<SavedProblem, "problemId" | "contentHash" | "source">,
+  currentHash: string,
+  taskPassed: boolean,
+  revisions: ProblemRevisionHashes | undefined,
+): boolean {
+  if (taskPassed || row.contentHash === currentHash || row.source === "manual") return false;
+  const current = revisions?.get(currentHash);
+  const previous = revisions?.get(row.contentHash);
+  const hash = current?.hashes[row.problemId];
+  return (
+    typeof hash === "string" && hash === previous?.hashes[row.problemId] && !!current && !!previous
+  );
+}
 
 type StageProblemStep = TaskProblemStepSummary & PresentedProblemStep;
 
@@ -106,7 +127,6 @@ export async function loadStageStepLocks(
         contentHash: taskProblemResults.contentHash,
         source: taskProblemResults.source,
         path: taskProblemResults.path,
-        code: taskProblemResults.code,
         firstPassedAt: taskProblemResults.firstPassedAt,
       })
       .from(taskProblemResults)
@@ -146,6 +166,28 @@ export async function loadStageStepLocks(
     ),
     options.hashCache,
   );
+  const codeTaskIds = scopes.flatMap((scope) =>
+    scope.rows.some((row) =>
+      submissionNeedsCode(row, scope.currentHash, scope.taskPassed, hashes.get(scope.taskId)),
+    )
+      ? [scope.taskId]
+      : [],
+  );
+  // 旧版の依存を照合する課題だけ、依存先の提出も含めてコードを読む。
+  for (const part of chunk(codeTaskIds, 80)) {
+    const codes = await db
+      .select({
+        taskId: taskProblemResults.taskId,
+        problemId: taskProblemResults.problemId,
+        code: taskProblemResults.code,
+      })
+      .from(taskProblemResults)
+      .where(and(eq(taskProblemResults.userId, userId), inArray(taskProblemResults.taskId, part)));
+    for (const row of codes) {
+      const saved = byTask.get(row.taskId)?.saved.find((item) => item.problemId === row.problemId);
+      if (saved) saved.code = row.code;
+    }
+  }
   for (const { taskId, currentHash, rows, taskPassed } of scopes) {
     const task = byTask.get(taskId);
     if (task) task.counted = countedProblemIds(rows, currentHash, taskPassed, hashes.get(taskId));

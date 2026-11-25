@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { evaluateSkillMap } from "@stella/shared/skill-map/evaluate";
 import { filterIslandStages } from "@stella/shared/skill-map/islands";
 import { computeXp, XP_PER_LESSON } from "@stella/shared/skill-map/xp";
+import { studyDateStartMs } from "@stella/shared/study/activity";
 
 import { getDb } from "../db/client.js";
 import {
@@ -25,6 +26,7 @@ import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audienc
 import {
   INVALID_PREREQUISITE_SENTINEL,
   isDevMode,
+  loadFocusCompletions,
   loadSkillProfileCounts,
   isUsableFocus,
   loadClearedStageIds,
@@ -520,6 +522,96 @@ describe("スキルプロフィールの問題レッスン (実 SQLite)", () => 
         completedLessons: 2,
         fromLessons: 2 * XP_PER_LESSON,
       });
+    } finally {
+      fixture.sqlite.close();
+    }
+  });
+
+  it("問題の提出日を完了に数え、問題レッスンの写しと期間外の提出は数えない", async () => {
+    const fixture = sqliteD1();
+    const db = getDb({ DB: fixture.binding } as Env);
+    try {
+      const fromMs = studyDateStartMs("2026-11-01");
+      await db.batch([
+        db.insert(tenants).values({ id: "ses", name: "テスト" }),
+        db.insert(profiles).values({ id: "learner", displayName: "受講者", role: "student" }),
+        db.insert(stages).values({ id: "stage", slug: "stage", title: "ステージ" }),
+        db.insert(sections).values({ id: "unit", stageId: "stage", title: "単元" }),
+        db.insert(lessons).values([
+          { id: "video", sectionId: "unit", title: "動画", type: "video" },
+          {
+            id: "problem",
+            sectionId: "unit",
+            title: "問1",
+            type: "text",
+            problemTaskId: "task",
+            problemId: "q01",
+          },
+          {
+            id: "problem-2",
+            sectionId: "unit",
+            title: "問2",
+            type: "text",
+            problemTaskId: "task",
+            problemId: "q02",
+          },
+        ]),
+        db.insert(tasks).values({
+          id: "task",
+          sectionId: "unit",
+          title: "課題",
+          kind: "practice",
+          pattern: "example",
+          estimatedMinutes: 5,
+          order: 1,
+          contentHash: "hash",
+          definition: "{}",
+          bundle: "{}",
+        }),
+        db.insert(taskProblemResults).values([
+          {
+            userId: "learner",
+            taskId: "task",
+            problemId: "q01",
+            contentHash: "hash",
+            path: "src/q01.ts",
+            code: "code",
+            sha256: "sha",
+            firstPassedAt: new Date("2026-10-01T03:00:00Z"),
+            updatedAt: new Date("2026-10-01T03:00:00Z"),
+          },
+          {
+            userId: "learner",
+            taskId: "task",
+            problemId: "q02",
+            contentHash: "hash",
+            path: "src/q02.ts",
+            code: "code",
+            sha256: "sha",
+            firstPassedAt: new Date("2026-11-20T03:00:00Z"),
+            updatedAt: new Date("2026-11-20T03:00:00Z"),
+          },
+        ]),
+        db.insert(lessonProgress).values([
+          {
+            userId: "learner",
+            lessonId: "video",
+            completed: true,
+            updatedAt: new Date("2026-11-19T03:00:00Z"),
+          },
+          {
+            userId: "learner",
+            lessonId: "problem",
+            completed: true,
+            updatedAt: new Date("2026-11-18T03:00:00Z"),
+          },
+        ]),
+      ]);
+      const completions = await loadFocusCompletions(db, caller, fromMs);
+      expect(completions).toEqual([
+        { stageId: "stage", date: "2026-11-19" },
+        { stageId: "stage", date: "2026-11-20" },
+      ]);
     } finally {
       fixture.sqlite.close();
     }

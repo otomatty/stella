@@ -119,6 +119,11 @@ export function isInside(file: string, dir: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/** 課題フォルダーを含むワークスペースのフォルダー。学習フォルダーとして配布の基準にする。 */
+function trainingRootOf(taskRoot: string): string | undefined {
+  return workspaceRoots().find((folder) => isInside(taskRoot, folder));
+}
+
 /**
  * 開いているファイル、なければワークスペースのフォルダーから課題フォルダーを探す。
  * 探すのはワークスペースのフォルダーの中だけ。外のファイルを開いていても、その親を
@@ -374,7 +379,14 @@ async function selectTaskProblem(
   )
     throw new Error("提出する問題がありません");
   if (!manifest.problems?.length) return undefined;
-  const { states, blocked } = await loadTaskProblems(root, manifest);
+  const { states, blocked, releasePending, releaseError } = await loadTaskProblems(root, manifest, {
+    trainingRoot: trainingRootOf(root),
+  });
+  if (manifest.problemSteps && releasePending) {
+    throw new Error(
+      releaseError ?? "残りの問題のファイルを書き出してから、もう一度実行してください",
+    );
+  }
   const chosen =
     requestedProblem === undefined
       ? chooseProblem(states, openPath, manifest)
@@ -625,7 +637,9 @@ async function submitTaskCommand(
           const selection = await selectTaskProblem(root, manifest, openPath, requestedProblem);
           problem = selection?.states.find(({ id }) => id === selection.id);
         } else {
-          const { states } = await loadTaskProblems(root, manifest);
+          const { states } = await loadTaskProblems(root, manifest, {
+            trainingRoot: trainingRootOf(root),
+          });
           problem =
             states.find((state) => state.id === requestedProblem) ??
             chooseProblem(states, openPath, manifest);
@@ -759,7 +773,10 @@ async function submitProblemTask(
         if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
           await vscode.env.openExternal(vscode.Uri.parse(webUrl));
       });
-    const refreshed = await loadTaskProblems(root, manifest, { afterSubmission: true });
+    const refreshed = await loadTaskProblems(root, manifest, {
+      afterSubmission: true,
+      trainingRoot: trainingRootOf(root),
+    });
     if (session !== apiSession()) return;
     setCurrentTask({
       root,
@@ -843,7 +860,10 @@ async function renderTaskReadme(
   const session = apiSession();
   const [edit, problems] = await Promise.all([
     resolveEditFiles(root, manifest),
-    manifest.problems?.length ? (problemSnapshot ?? loadTaskProblems(root, manifest)) : undefined,
+    manifest.problems?.length
+      ? (problemSnapshot ??
+        loadTaskProblems(root, manifest, { trainingRoot: trainingRootOf(root) }))
+      : undefined,
     refreshTaskState(root, manifest.id, manifest.problems ? { skipLms: true } : refresh),
   ]);
   const { lastRun, lmsStatus } = getTaskState(root, manifest.id) ?? {};
@@ -902,7 +922,7 @@ async function readLastProblemResult(root: string, manifest: TaskManifest, reque
       : undefined;
   const problem = file && (problemForPath(manifest, file) ?? problemForTestPath(manifest, file));
   const visible = manifest.problemSteps
-    ? (await loadTaskProblems(root, manifest)).states
+    ? (await loadTaskProblems(root, manifest, { trainingRoot: trainingRootOf(root) })).states
     : (manifest.problems ?? []);
   if (problem)
     return visible.some(({ id }) => id === problem.id)

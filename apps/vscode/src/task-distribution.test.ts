@@ -14,7 +14,13 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
 import type { TaskBundle } from "@stella/shared/tasks/catalog";
-import { installTask, protectedTaskFiles, TaskInstallConflict } from "./task-distribution.js";
+import {
+  installTask,
+  protectedTaskFiles,
+  releaseDeferredFiles,
+  TaskInstallConflict,
+  watchInstallationQueue,
+} from "./task-distribution.js";
 import { listFiles, matchEditableFiles, sha256Hex } from "./runner/files.js";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -137,15 +143,32 @@ describe("課題の配布", () => {
       ...nextBundle({ "index.js": "third starter" }),
       contentHash: "c".repeat(64),
     };
-    const second = installTask(training, third, {
-      beforeUpdate: async () => {
-        secondStarted = true;
-      },
+    let queued: () => void = () => undefined;
+    const queuedGate = new Promise<void>((resolve) => {
+      queued = resolve;
     });
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    expect(secondStarted).toBe(false);
-    releaseFirst();
-    await Promise.all([first, second]);
+    const stopWatching = watchInstallationQueue((waiting) => {
+      if (waiting) queued();
+    });
+    try {
+      const second = installTask(training, third, {
+        beforeUpdate: async () => {
+          secondStarted = true;
+        },
+      });
+      await Promise.race([
+        queuedGate,
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("待ち行列に入らない")), 2000);
+        }),
+      ]);
+      expect(secondStarted).toBe(false);
+      releaseFirst();
+      await Promise.all([first, second]);
+    } finally {
+      releaseFirst();
+      stopWatching();
+    }
     expect(secondStarted).toBe(true);
     expect(await readFile(path.join(training, "course/unit/q1/index.js"), "utf8")).toBe(
       "third starter",
@@ -810,6 +833,31 @@ describe("課題の配布", () => {
     expect(conflict.reason).toBe("updated");
     expect(await readReceipt(taskRoot)).toEqual(old);
     expect(await readFile(path.join(taskRoot, "README.md"), "utf8")).toBe("課題文");
+  });
+  it("学習フォルダーから課題フォルダーの途中がリンクなら、控えたファイルを書かない", async () => {
+    const training = await root();
+    const outside = await root();
+    const taskDir = path.join(outside, "unit", "q1");
+    await mkdir(path.join(taskDir, ".stella"), { recursive: true });
+    await symlink(outside, path.join(training, "course"));
+    await writeFile(
+      path.join(taskDir, ".stella", "distribution.json"),
+      JSON.stringify({
+        taskId: bundle.manifest.id,
+        contentHash: bundle.contentHash,
+        deferred: { "index.js": null },
+      }),
+    );
+    const taskRoot = path.join(training, "course", "unit", "q1");
+    await expect(releaseDeferredFiles(training, taskRoot, bundle)).rejects.toThrow(
+      "通常のフォルダーが必要です",
+    );
+    await expect(readFile(path.join(taskDir, "index.js"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    expect(await readFile(path.join(taskDir, ".stella", "distribution.json"), "utf8")).toContain(
+      "deferred",
+    );
   });
   it("配布先が既存のリンクなら書き込まない", async () => {
     const training = await root();

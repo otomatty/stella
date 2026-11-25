@@ -48,6 +48,13 @@ function isInside(file: string, dir: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/** 課題フォルダーを含むワークスペースのフォルダー。学習フォルダーとして配布の基準にする。 */
+function trainingRootOf(taskRoot: string): string | undefined {
+  return (vscode.workspace.workspaceFolders ?? [])
+    .map((folder) => folder.uri.fsPath)
+    .find((folder) => isInside(taskRoot, folder));
+}
+
 /** ワークスペースの中のファイルから課題フォルダーを探す。外のファイル・課題の外なら null。 */
 async function taskRootOfFile(file: string): Promise<string | null> {
   const owner = (vscode.workspace.workspaceFolders ?? [])
@@ -169,7 +176,9 @@ async function followEditor(editor: vscode.TextEditor | undefined): Promise<void
     let problemProgress: CurrentTask["problemProgress"];
     let problemActionsAvailable: boolean | undefined;
     if (loaded.ok && loaded.manifest.problemSteps) {
-      const problems = await loadTaskProblems(root, loaded.manifest);
+      const problems = await loadTaskProblems(root, loaded.manifest, {
+        trainingRoot: trainingRootOf(root),
+      });
       if (ticket !== generation) return;
       problemProgress = problems.progress;
       problemActionsAvailable = !problems.releasePending;
@@ -219,6 +228,7 @@ async function refreshProblemActions(afterSave = false): Promise<void> {
   // 保存前に始まった準備で止まっていた場合も、保存した状態で確かめ直す。
   const problems = await loadTaskProblems(task.root, loaded.manifest, {
     afterSubmission: afterSave,
+    trainingRoot: trainingRootOf(task.root),
   });
   if (ticket !== generation || request !== problemRefresh) return;
   setCurrentTask({

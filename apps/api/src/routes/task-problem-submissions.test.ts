@@ -1006,6 +1006,14 @@ describe("問題の提出", () => {
       afterLessonId: "earlier-step",
       afterTitle: "別の課題の問題",
     });
+    const denied = await post(input);
+    expect(denied.status, await denied.clone().text()).toBe(409);
+    expect(await denied.json()).toMatchObject({
+      error: "この問題はまだ解けません。先に「別の課題の問題」を提出してください。",
+    });
+    expect(
+      await db.select().from(taskProblemResults).where(eq(taskProblemResults.problemId, "q01-add")),
+    ).toEqual([]);
 
     expect((await manual(["q01-add"], false, earlierTaskId)).status).toBe(200);
     await expectStep("locked-video", { afterLessonId: "next-video", afterTitle: "次の単元の動画" });

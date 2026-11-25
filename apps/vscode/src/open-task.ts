@@ -34,7 +34,7 @@ import { resolveFileInRoot } from "./runner/files.js";
 import { taskBundleUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import { isCompactTaskLayout } from "./task-panel.js";
-import { problemFileToOpen } from "./task-problems.js";
+import { problemFileToOpen, type ProblemState } from "./task-problems.js";
 import {
   requireSavedTaskDocuments,
   requireSavedTaskFile,
@@ -96,21 +96,50 @@ async function isPlainFile(file: string): Promise<boolean> {
  * 課題フォルダーで最初に開くファイル (課題フォルダーからの相対パス)。画像などテキストで
  * 開けないファイルは除く (課題文のリンクからは開ける)。定義を読めなければ無し。
  */
-async function filesToOpen(taskRoot: string, requestedProblem?: string): Promise<string[]> {
+/**
+ * 開く問題のソース。指定したファイルが手元にあれば、サーバーでロック中でもそれを開く。
+ * まだ書き出せていないときは、手元にある問題のソースから代わりを選ぶ。
+ */
+async function problemSourceOnDisk(
+  taskRoot: string,
+  states: readonly ProblemState[],
+  requested?: string,
+): Promise<string | undefined> {
+  const ordered = [
+    problemFileToOpen(states, requested),
+    ...states.filter((state) => state.status !== "submitted").map((state) => state.source),
+    ...states.map((state) => state.source),
+  ];
+  const seen = new Set<string>();
+  for (const rel of ordered) {
+    if (!rel || seen.has(rel) || !opensAsText(rel)) continue;
+    seen.add(rel);
+    if (await isPlainFile(path.join(taskRoot, rel))) return rel;
+  }
+  return undefined;
+}
+
+async function filesToOpen(
+  taskRoot: string,
+  trainingRoot: string | undefined,
+  requestedProblem?: string,
+): Promise<string[]> {
   const loaded = await loadTask(taskRoot);
   if (!loaded.ok) return [];
   if (loaded.manifest.problems?.length) {
-    const { states, releaseError } = await loadTaskProblems(taskRoot, loaded.manifest);
+    const { states, releaseError } = await loadTaskProblems(taskRoot, loaded.manifest, {
+      trainingRoot,
+    });
     const invalid =
       loaded.manifest.problemSteps &&
       requestedProblem &&
       !loaded.manifest.problems.some(({ id }) => id === requestedProblem);
     if (invalid) void vscode.window.showWarningMessage("この課題の問題ではありません");
     else if (releaseError) void vscode.window.showWarningMessage(releaseError);
-    const file = problemFileToOpen(
-      states,
-      loaded.manifest.problemSteps ? requestedProblem : undefined,
-    );
+    const requested = loaded.manifest.problemSteps ? requestedProblem : undefined;
+    const file = loaded.manifest.problemSteps
+      ? await problemSourceOnDisk(taskRoot, states, requested)
+      : problemFileToOpen(states, requested);
     return file && opensAsText(file) ? [file] : [];
   }
   const { files } = await resolveEditFiles(taskRoot, loaded.manifest);
@@ -138,7 +167,11 @@ async function openInLeftColumn(taskRoot: string, rel: string): Promise<vscode.U
  * 編集するファイルを 1 列目に開き、最初のファイルにフォーカスを置く。
  * 課題文のパネル (進め方つき) の配置は task-panel が決める。
  */
-async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<void> {
+async function showTaskWorkspace(
+  taskRoot: string,
+  trainingRoot: string | undefined,
+  problem?: string,
+): Promise<void> {
   const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
   if (!(await isPlainFile(readme.fsPath))) {
     // 課題文が消えた・壊れた課題フォルダー (「今のフォルダーを開く」から来る) は、
@@ -152,7 +185,7 @@ async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<vo
     );
     return;
   }
-  const rels = await filesToOpen(taskRoot, problem);
+  const rels = await filesToOpen(taskRoot, trainingRoot, problem);
   const receipt = await readDistribution(taskRoot).catch(() => undefined);
   if (receipt) await vscode.commands.executeCommand("stella.revealTask", receipt.taskId);
   const opened: string[] = [];
@@ -181,7 +214,7 @@ async function openTaskInWindow(
 ): Promise<void> {
   const folders = workspaceFolders();
   if (await windowIsTrainingRoot(folders, trainingRoot)) {
-    await showTaskWorkspace(taskRoot, problem);
+    await showTaskWorkspace(taskRoot, trainingRoot, problem);
     return;
   }
   let forceNewWindow = false;
@@ -224,7 +257,7 @@ export async function resumePendingTaskOpen(pendingDir: string): Promise<void> {
   const pending = await takePendingTaskOpen(pendingDir, (p) =>
     windowIsTrainingRoot(folders, p.trainingRoot),
   );
-  if (pending) await showTaskWorkspace(pending.taskRoot, pending.problem);
+  if (pending) await showTaskWorkspace(pending.taskRoot, pending.trainingRoot, pending.problem);
 }
 
 const CONFLICT_GUIDANCE: Record<TaskInstallConflict["reason"], string> = {

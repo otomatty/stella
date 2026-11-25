@@ -239,7 +239,7 @@ function problemLockedReason(problem: ServerProblem | undefined): string | undef
   if (problem?.state === "locked-previous")
     return problem.afterTitle
       ? `「${problem.afterTitle}」を提出すると解けます`
-      : "この問題を提出すると、次の問題が出ます";
+      : "前の問題を提出すると、この問題を提出できます";
   return undefined;
 }
 
@@ -252,7 +252,7 @@ export interface TaskProblems {
   releaseError?: string;
 }
 
-type DistributionGuards = NonNullable<Parameters<typeof releaseDeferredFiles>[2]>;
+type DistributionGuards = NonNullable<Parameters<typeof releaseDeferredFiles>[3]>;
 
 /** 表示と操作で同じ状態を使う。古い配布記録の控えがあれば、ここで書き出す。 */
 const refreshing = new Map<string, Promise<TaskProblems>>();
@@ -263,20 +263,28 @@ export function loadTaskProblems(
   {
     refresh = true,
     afterSubmission = false,
+    trainingRoot,
     ...guards
   }: {
     refresh?: boolean;
     afterSubmission?: boolean;
+    /** 学習フォルダー。控えたファイルを書くとき、ここから課題フォルダーまでを確かめる。 */
+    trainingRoot?: string;
   } & DistributionGuards = {},
 ): Promise<TaskProblems> {
-  if (!refresh || !manifest.problemSteps) return readTaskProblems(root, manifest, refresh);
-  const key = JSON.stringify([root, manifest.id, apiSession()]);
+  if (!refresh || !manifest.problemSteps)
+    return readTaskProblems(root, manifest, refresh, trainingRoot);
+  const key = JSON.stringify([
+    root,
+    manifest.id,
+    apiSession(),
+    (manifest.problems ?? []).map((problem) => problem.id),
+  ]);
+  const rest = { ...guards, ...(trainingRoot ? { trainingRoot } : {}) };
   const inFlight = refreshing.get(key);
   if (inFlight)
-    return afterSubmission
-      ? inFlight.then(() => loadTaskProblems(root, manifest, guards))
-      : inFlight;
-  const pending = readTaskProblems(root, manifest, true, guards).finally(() =>
+    return afterSubmission ? inFlight.then(() => loadTaskProblems(root, manifest, rest)) : inFlight;
+  const pending = readTaskProblems(root, manifest, true, trainingRoot, guards).finally(() =>
     refreshing.delete(key),
   );
   refreshing.set(key, pending);
@@ -287,6 +295,7 @@ async function readTaskProblems(
   root: string,
   manifest: TaskManifest,
   refresh: boolean,
+  trainingRoot?: string,
   guards?: DistributionGuards,
 ): Promise<TaskProblems> {
   const session = apiSession();
@@ -301,6 +310,7 @@ async function readTaskProblems(
   if (manifest.problemSteps && refresh && session === apiSession()) {
     try {
       await releaseDeferredFiles(
+        trainingRoot,
         root,
         async (receipt) => {
           const signal = AbortSignal.timeout(4_000);

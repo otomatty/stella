@@ -1433,6 +1433,43 @@ describe("問題つきの課題", () => {
     expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
   });
 
+  it("控えたファイルの書き出しが終わっていない間は、確認も提出も止める", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    await unlink(path.join(root, "src/q02-sub.ts"));
+    const receipt = JSON.parse(
+      await readFile(path.join(root, ".stella/distribution.json"), "utf8"),
+    ) as { deferred?: unknown };
+    await writeFile(
+      path.join(root, ".stella/distribution.json"),
+      JSON.stringify({ ...receipt, deferred: { "src/q02-sub.ts": null } }),
+    );
+    const reason = "教材を取得できません";
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (String(url).includes("/api/tasks/bundle")) throw new Error(reason);
+      return {
+        gated: true,
+        passedProblems: 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: "open" },
+          { id: "q02-sub", state: "open" },
+        ],
+      };
+    });
+    await run("stella.runTask", root, "q01-add");
+    expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(
+      `確認を実行できませんでした: ${reason}`,
+    );
+    expect(runTask).not.toHaveBeenCalled();
+    await run("stella.submitTask", root, "q01-add");
+    expect(vscodeMock.showErrorMessage).toHaveBeenLastCalledWith(reason);
+    expect(apiRequest).not.toHaveBeenCalledWith("/api/submissions", expect.anything());
+    await expect(readFile(path.join(root, "src/q02-sub.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
   it("段階のある課題の提出は控えを書かず、件数だけ知らせる", async () => {
     const root = await problemRoot(undefined, "passed", true);
     vscodeMock.getCachedCatalog.mockReturnValue([
@@ -1476,10 +1513,11 @@ describe("問題つきの課題", () => {
     expect(vscodeMock.openExternal).toHaveBeenCalledWith(
       "https://stella.example/stages/stage/lessons/problem-add",
     );
-    expect(vscodeMock.showInformationMessage).not.toHaveBeenCalledWith(
-      expect.stringContaining("出ました"),
-      expect.anything(),
-    );
+    expect(
+      vscodeMock.showInformationMessage.mock.calls.some((call) =>
+        String(call[0]).includes("出ました"),
+      ),
+    ).toBe(false);
     await expect(readFile(path.join(root, ".stella/submitted-q01-add.json"))).rejects.toMatchObject(
       {
         code: "ENOENT",

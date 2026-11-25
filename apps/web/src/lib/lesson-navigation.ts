@@ -159,3 +159,17 @@ export function videoAdvanceNext(
 ): (() => void) | undefined {
   return nextLocked ? undefined : advance;
 }
+
+/**
+ * 本文末尾の前後ナビと、完了直後の案内を出すか。
+ * 動画はプレーヤーが次へ進む。次がロック中のときだけ、両方で止めている教材を示す。
+ * 次が無い動画は完了の案内だけ出す。
+ */
+export function lessonEndGuides(
+  showVideo: boolean,
+  hasNext: boolean,
+  nextLocked: boolean,
+): { nav: boolean; completeCallout: boolean } {
+  if (!showVideo) return { nav: true, completeCallout: true };
+  return { nav: nextLocked, completeCallout: !hasNext || nextLocked };
+}

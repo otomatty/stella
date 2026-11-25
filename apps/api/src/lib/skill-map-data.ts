@@ -10,7 +10,18 @@
  * 修了証を revoke したステージで判定が食い違う。
  */
 
-import { and, count, countDistinct, desc, eq, gte, inArray, max, notInArray } from "drizzle-orm";
+import {
+  and,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  max,
+  notInArray,
+} from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 import type { SkillMapStage } from "@stella/shared/skill-map/evaluate";
@@ -508,10 +519,36 @@ export async function loadFocusCompletions(
       and(
         eq(lessonProgress.userId, caller.id),
         eq(lessonProgress.completed, true),
+        isNull(lessons.problemId),
         gte(lessonProgress.updatedAt, new Date(fromMs)),
       ),
     );
-  return rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) }));
+  const completions: FocusCompletion[] = rows.map((row) => ({
+    stageId: row.stageId,
+    date: toStudyDate(row.updatedAt),
+  }));
+  // 問題のレッスンは lesson_progress の写しを使わず、提出の日時を完了日にする。
+  const steps = await loadCompletedProblemSteps(db, [caller.id]);
+  if (steps.length === 0) return completions;
+  const stageByLesson = new Map<string, string>();
+  for (const part of chunk(
+    [...new Set(steps.map((step) => step.lessonId))],
+    D1_MAX_BOUND_PARAMS - 5,
+  )) {
+    const stagesOfLessons = await db
+      .select({ lessonId: lessons.id, stageId: sections.stageId })
+      .from(lessons)
+      .innerJoin(sections, eq(sections.id, lessons.sectionId))
+      .where(inArray(lessons.id, part));
+    for (const row of stagesOfLessons) stageByLesson.set(row.lessonId, row.stageId);
+  }
+  for (const step of steps) {
+    if (step.updatedAt < fromMs) continue;
+    const stageId = stageByLesson.get(step.lessonId);
+    if (!stageId) continue;
+    completions.push({ stageId, date: toStudyDate(step.updatedAt) });
+  }
+  return completions;
 }
 
 /**
@@ -632,17 +669,22 @@ export interface SkillProfileCounts {
 /** XP の材料 (完了レッスン数 / 合格クイズ数 / クリアステージ数)。 */
 export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<SkillProfileCounts> {
   // 問題のレッスンは提出が正本。lesson_progress に写しが残っていても、ここでは数えない。
-  const lessonRows = await db
-    .select({ lessonId: lessonProgress.lessonId, problemId: lessons.problemId })
+  // 通常のレッスンは DB で数え、問題のレッスンは提出から一意な件数だけを足す。
+  const [lessonCount] = await db
+    .select({ n: count() })
     .from(lessonProgress)
     .leftJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
-    .where(and(eq(lessonProgress.userId, caller.id), eq(lessonProgress.completed, true)));
-  const completedLessons = new Set(
-    lessonRows.flatMap((row) => (row.problemId === null ? [row.lessonId] : [])),
+    .where(
+      and(
+        eq(lessonProgress.userId, caller.id),
+        eq(lessonProgress.completed, true),
+        isNull(lessons.problemId),
+      ),
+    );
+  const problemLessonIds = new Set(
+    (await loadCompletedProblemSteps(db, [caller.id])).map((step) => step.lessonId),
   );
-  for (const step of await loadCompletedProblemSteps(db, [caller.id])) {
-    completedLessons.add(step.lessonId);
-  }
+  const completedLessons = Number(lessonCount?.n ?? 0) + problemLessonIds.size;
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })
@@ -650,7 +692,7 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
     .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
   const clearedStageIds = await loadClearedStageIds(db, caller);
   return {
-    completedLessons: completedLessons.size,
+    completedLessons,
     passedQuizzes: Number(quizRows[0]?.n ?? 0),
     clearedStages: clearedStageIds.size,
   };

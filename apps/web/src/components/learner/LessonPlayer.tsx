@@ -44,7 +44,7 @@ import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
 import type { LessonProgressMap } from "@/lib/lesson-progress";
-import { resolveLessonNeighbors, videoAdvanceNext } from "@/lib/lesson-navigation";
+import { lessonEndGuides, resolveLessonNeighbors, videoAdvanceNext } from "@/lib/lesson-navigation";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
   useLessonProgress,
@@ -307,6 +307,7 @@ export const LessonPlayer = ({
   }, [activeLesson, activeCompleted, completionReady]);
 
   const showCompleteCallout = justCompleted && !calloutDismissed;
+  const endGuides = lessonEndGuides(showVideo, neighbors.next !== null, neighbors.nextLocked);
 
   // lg 未満 (VSCode 拡張のパネル等も含む) では目次をドロワーで開く。 パネル幅の変更で
   // lg 境界を跨いだら常設パネル側に切り替わるので、 ドロワーは閉じておく。
@@ -675,7 +676,7 @@ export const LessonPlayer = ({
           {submissionTarget ? (
             <SubmissionHistory target={submissionTarget} onOpenSubmission={onOpenSubmission} />
           ) : null}
-          {showCompleteCallout && (!showVideo || neighbors.next === null) ? (
+          {showCompleteCallout && endGuides.completeCallout ? (
             <LessonCompleteCallout
               neighbors={neighbors}
               onSelectLesson={goToLesson}
@@ -683,7 +684,7 @@ export const LessonPlayer = ({
               onDismiss={() => setCalloutDismissed(true)}
             />
           ) : null}
-          {!showVideo ? (
+          {endGuides.nav ? (
             <LessonNavFooter
               neighbors={neighbors}
               onSelectLesson={goToLesson}

@@ -69,8 +69,22 @@ test("問題のレッスンは手元の進捗でロックし、提出は取り�
   }
 
   // サーバーが open でも、前の教材が手元で終わっていなければロックのまま。
+  // focus の取り直しが画面に反映されてから、文言とボタンを見る。
   state = "open";
+  const refreshed = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/tasks/for-stage/${problemStageId}`) &&
+      response.request().method() === "GET" &&
+      response.ok(),
+  );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await refreshed;
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
   await expect(handoff).toContainText("を終えると解けます");
   await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("button", { name: "完了にする" })).toHaveCount(0);

@@ -468,7 +468,7 @@ describe("問題の段階", () => {
       ["q03-mult", "not-submitted"],
       ["q04-div", "not-submitted"],
     ]);
-    expect(problems.blocked.get("q03-mult")).toBe("この問題を提出すると、次の問題が出ます");
+    expect(problems.blocked.get("q03-mult")).toBe("前の問題を提出すると、この問題を提出できます");
     expect(problems.blocked.get("q04-div")).toBe("「割り算」を終えると解けます");
     expect(problems.states.find(({ id }) => id === "q02-sub")?.lockReason).toBeUndefined();
     expect(problemFileToOpen(problems.states, "q04-div")).toBe("src/q04-div.ts");
@@ -522,10 +522,11 @@ describe("問題の段階", () => {
 
   it("問題の状態を読むと、控えてあったファイルを書き出して deferred を外す", async () => {
     const bundle = problemBundle(staged);
-    const root = await installTask(await makeRoot(), bundle);
+    const training = await makeRoot();
+    const root = await installTask(training, bundle);
     await deferSecondProblem(root, bundle);
 
-    const result = await loadTaskProblems(root, staged);
+    const result = await loadTaskProblems(root, staged, { trainingRoot: training });
 
     expect(result.releaseError).toBeUndefined();
     expect(await readFile(path.join(root, "src/q02-sub.ts"), "utf8")).toBe("export const sub = 1;");
@@ -537,7 +538,8 @@ describe("問題の段階", () => {
 
   it("控えの書き出しも課題内の未保存文書があれば止め、保存後に続ける", async () => {
     const bundle = problemBundle(staged);
-    const root = await installTask(await makeRoot(), bundle);
+    const training = await makeRoot();
+    const root = await installTask(training, bundle);
     await deferSecondProblem(root, bundle);
     const nextTest = path.join(root, "tests/q02-sub.test.ts");
     documents.push({
@@ -545,12 +547,14 @@ describe("問題の段階", () => {
       uri: { scheme: "file", fsPath: path.join(root, "src/q01-add.ts") },
     });
 
-    const blocked = await loadEditorTaskProblems(root, staged);
+    const blocked = await loadEditorTaskProblems(root, staged, { trainingRoot: training });
     expect(blocked.releaseError).toContain("ファイルを保存してから");
     await expect(readFile(nextTest)).rejects.toMatchObject({ code: "ENOENT" });
 
     documents.length = 0;
-    expect((await loadEditorTaskProblems(root, staged)).releaseError).toBeUndefined();
+    expect(
+      (await loadEditorTaskProblems(root, staged, { trainingRoot: training })).releaseError,
+    ).toBeUndefined();
     expect(await readFile(nextTest, "utf8")).toBe("test 2");
   });
 
@@ -623,5 +627,38 @@ describe("問題の段階", () => {
     expect(problems.blocked.size).toBe(0);
     expect(problems.states.every(({ status }) => status === "not-submitted")).toBe(true);
     expect(problems.progress).toEqual({ passed: 0, total: 4 });
+  });
+
+  it("問題の id が違う取得は、進行中の古い一覧を受け取らない", async () => {
+    const root = await makeRoot();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(apiRequest).mockImplementation(async (url: unknown) => {
+      if (String(url).includes("problem-results")) {
+        await gate;
+        return server;
+      }
+      throw new Error(String(url));
+    });
+    const first = loadTaskProblems(root, staged);
+    const second = loadTaskProblems(root, {
+      ...staged,
+      problems: staged.problems?.slice(0, 2),
+    });
+    release();
+    try {
+      const [older, newer] = await Promise.all([first, second]);
+      expect(older.states.map(({ id }) => id)).toEqual([
+        "q01-add",
+        "q02-sub",
+        "q03-mult",
+        "q04-div",
+      ]);
+      expect(newer.states.map(({ id }) => id)).toEqual(["q01-add", "q02-sub"]);
+    } finally {
+      release();
+    }
   });
 });
