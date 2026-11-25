@@ -220,13 +220,9 @@ export function parseHashes(raw: string): ProblemHashes | undefined {
       Array.isArray(record.hashes)
     )
       return;
-    const hashes = Object.fromEntries(
-      Object.entries(record.hashes).filter(
-        (entry): entry is [string, string] =>
-          typeof entry[1] === "string" && /^[a-f0-9]{64}$/.test(entry[1]),
-      ),
-    );
-    if (Object.keys(hashes).length > 0) return hashes;
+    const entries = Object.entries(record.hashes);
+    if (entries.every(([, value]) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value)))
+      return Object.fromEntries(entries);
   } catch {
     // 壊れた指紋では前の版を数えない。
   }
@@ -283,24 +279,33 @@ export async function loadProblemRevisionHashes(
     paths: string;
     scripts: string;
   }>(sql`
-    select r.task_id, r.content_hash, r.problem_hashes,
-      case when json_valid(r.problem_hashes)
-        and json_extract(r.problem_hashes, '$.version') = 2
-        and json_type(r.problem_hashes, '$.hashes') = 'object'
-        then null else r.definition end definition,
-      case when json_valid(r.problem_hashes)
-        and json_extract(r.problem_hashes, '$.version') = 2
-        and json_type(r.problem_hashes, '$.hashes') = 'object'
-        then null else r.bundle end bundle,
+    with asked as (
+      select json_extract(k.value, '$[0]') task_id, json_extract(k.value, '$[1]') content_hash
+      from json_each(${JSON.stringify(keys)}) k
+    ),
+    rev as (
+      select r.task_id, r.content_hash, r.problem_hashes, r.definition, r.bundle,
+        case when json_valid(r.problem_hashes)
+          and json_extract(r.problem_hashes, '$.version') = 2
+          and json_type(r.problem_hashes, '$.hashes') = 'object'
+          and not exists (
+            select 1 from json_each(r.problem_hashes, '$.hashes') h
+            where h.type <> 'text' or length(h.value) <> 64 or h.value glob '*[^0-9a-f]*'
+          )
+          then 1 else 0 end usable
+      from asked a
+      join task_revisions r on r.task_id = a.task_id and r.content_hash = a.content_hash
+    )
+    select task_id, content_hash, problem_hashes,
+      case when usable then null else definition end definition,
+      case when usable then null else bundle end bundle,
       (select json_group_array(f.key)
-       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f) paths,
+       from json_each(case when json_valid(bundle) then bundle end, '$.files') f) paths,
       (select json_group_object(f.key, f.value)
-       from json_each(case when json_valid(r.bundle) then r.bundle end, '$.files') f
+       from json_each(case when json_valid(bundle) then bundle end, '$.files') f
        where f.key glob '*.[jt]s' or f.key glob '*.[jt]sx'
           or f.key glob '*.[cm][jt]s' or f.key glob '*.[cm][jt]sx') scripts
-    from json_each(${JSON.stringify(keys)}) k
-    join task_revisions r on r.task_id = json_extract(k.value, '$[0]')
-      and r.content_hash = json_extract(k.value, '$[1]')
+    from rev
   `);
   for (const [taskId, contentHash] of keys) {
     const byHash = cache.get(taskId) ?? new Map();
