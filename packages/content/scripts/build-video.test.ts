@@ -70,6 +70,15 @@ function fixture() {
   vi.mocked(collectNarrationTopics).mockReturnValue([topic]);
   return { root, topic };
 }
+it("--burn-captions を場面の生成へ渡す", async () => {
+  const { root } = fixture();
+  vi.mocked(chromium.launch).mockResolvedValue({ close: vi.fn() } as unknown as Awaited<
+    ReturnType<typeof chromium.launch>
+  >);
+  vi.mocked(buildSceneTopic).mockResolvedValue(undefined);
+  await buildVideos(["--tts", "fake", "--out", join(root, "out"), "--burn-captions"]);
+  expect(vi.mocked(buildSceneTopic).mock.calls[0][1]).toMatchObject({ burnCaptions: true });
+});
 it.each([undefined, "gemini", "openjtalk", "fake", "grok"] as const)(
   "content:video の読み上げ指定 %s で配信計画を作る",
   async (tts) => {

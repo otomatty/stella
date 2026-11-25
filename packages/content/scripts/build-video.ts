@@ -752,6 +752,7 @@ export async function buildVideos(
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const concurrency = Number(argValue("--concurrency") ?? 2);
   const captioned = args.includes("--captioned");
+  const burnCaptions = args.includes("--burn-captions");
   const force = args.includes("--force");
   const keepWork = args.includes("--keep-work");
   const topicIds = topicIdsFromArgs(args);
@@ -915,6 +916,7 @@ export async function buildVideos(
           {
             selectors,
             stills: false,
+            ...(burnCaptions ? { burnCaptions: true } : {}),
             tts: voice.provider,
             ttsModel: undefined,
             out: outDir,

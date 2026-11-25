@@ -163,9 +163,10 @@ export async function withRetry<T>(
 }
 
 /**
- * video:sync が台帳に足す回数。有効なあいだの Gemini TTS の HTTP リクエスト
- * (失敗と再試行を含む) だけを数える。手元の `--tts gemini` や、同じ API キーの
- * 別用途 (清書・イラスト・チュートリアル収録) はここを有効にしないので数えない。
+ * video:sync（`--preview` を含む）が台帳に足す回数。有効なあいだの Gemini TTS の
+ * HTTP リクエスト (失敗と再試行を含む) だけを数える。`video:scenes` などの手元の
+ * `--tts gemini` や、同じ API キーの別用途 (清書・イラスト・チュートリアル収録) は
+ * ここを有効にしないので数えない。
  */
 let geminiCallCounting = false;
 let geminiCallCount = 0;
