@@ -1,10 +1,12 @@
 import {
   lazy,
   type ReactNode,
+  type RefObject,
   Suspense,
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -12,7 +14,14 @@ import {
 import { toast } from "sonner";
 import {
   Check,
+  CheckCircle,
+  ChevronDown,
   ChevronLeft,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  CircleDashed,
+  Contrast,
   Code,
   Download,
   FileText,
@@ -44,6 +53,13 @@ import { LessonComments } from "./LessonComments";
 import { SlideLessonMedia } from "./SlideLessonMedia";
 import { VideoViewer } from "./VideoViewer";
 import { resolveLessonStatus } from "@/lib/lesson-progress";
+import {
+  isLessonTocSectionOpen,
+  type LessonTocOverrides,
+  resolveLessonTocSection,
+  setAllLessonTocSectionsOpen,
+  summarizeLessonTocSections,
+} from "@/lib/lesson-toc-sections";
 import { lessonEndGuides, resolveLessonNeighbors, videoAdvanceNext } from "@/lib/lesson-navigation";
 import { displayLessonType, isVideoLesson, nextLessonMeta } from "@/lib/lesson-video";
 import {
@@ -127,6 +143,16 @@ export const LessonPlayer = ({
     () => allLessons.find((l) => l.id === initialLesson?.id)?.id ?? allLessons[0]?.id ?? "",
   );
   const [tabSelection, setTabSelection] = useState<{ key: string; tab: string }>();
+  const [tocStageId, setTocStageId] = useState(stage.id);
+  const [tocSectionOverrides, setTocSectionOverrides] = useState<LessonTocOverrides>({});
+  const tocAsideRef = useRef<HTMLElement>(null);
+  const tocDrawerScrollRef = useRef<HTMLDivElement>(null);
+
+  if (tocStageId !== stage.id) {
+    setTocStageId(stage.id);
+    setTocSectionOverrides({});
+  }
+
   const shell = useContext(AppShellContext);
   const tasksEnabled = stage.format === 2 && isBackendConfigured();
   const stageTasks = useStageTasks(stage.id, tasksEnabled);
@@ -387,7 +413,10 @@ export const LessonPlayer = ({
           Topbar から開くドロワーへ寄せる (常設のレールは表示領域を削るので廃止した)。
           CSS で隠すのではなく描画ごと落として、 ドロワーと同時に目次を 2 本持たない。 */}
       {isNarrow ? null : (
-        <aside className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[var(--shell-header-height)] max-h-[calc(100vh-var(--shell-header-height))]">
+        <aside
+          ref={tocAsideRef}
+          className="border-r border-border bg-card py-4 overflow-y-auto sticky top-[var(--shell-header-height)] max-h-[calc(100vh-var(--shell-header-height))]"
+        >
           <LessonToc
             stage={stage}
             sections={sections}
@@ -395,7 +424,10 @@ export const LessonPlayer = ({
             lessonStatus={lessonStatus}
             problemOverviews={problemOverviews}
             problemLessons={problemLessons}
-            activeLesson={activeLesson}
+            activeLesson={lessonObj.id}
+            scrollContainer={tocAsideRef}
+            overrides={tocSectionOverrides}
+            setOverrides={setTocSectionOverrides}
             onSelectLesson={goToLesson}
             onBackToStage={handleBackToStage}
           />
@@ -446,7 +478,7 @@ export const LessonPlayer = ({
               </Button>
             </DrawerClose>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto py-3">
+          <div ref={tocDrawerScrollRef} className="flex-1 overflow-y-auto py-3">
             <LessonToc
               stage={stage}
               sections={sections}
@@ -454,7 +486,10 @@ export const LessonPlayer = ({
               lessonStatus={lessonStatus}
               problemOverviews={problemOverviews}
               problemLessons={problemLessons}
-              activeLesson={activeLesson}
+              activeLesson={lessonObj.id}
+              scrollContainer={tocDrawerScrollRef}
+              overrides={tocSectionOverrides}
+              setOverrides={setTocSectionOverrides}
               onSelectLesson={(lessonId) => {
                 goToLesson(lessonId);
                 setTocOpen(false);
@@ -799,6 +834,9 @@ const LessonToc = ({
   problemOverviews,
   problemLessons,
   activeLesson,
+  scrollContainer,
+  overrides,
+  setOverrides,
   onSelectLesson,
   onBackToStage,
 }: {
@@ -809,102 +847,208 @@ const LessonToc = ({
   problemOverviews: ReadonlyMap<string, ProblemTask>;
   problemLessons: ReadonlyMap<string, ProblemLesson>;
   activeLesson: string;
+  scrollContainer: RefObject<HTMLElement | null>;
+  overrides: LessonTocOverrides;
+  setOverrides: (update: (previous: LessonTocOverrides) => LessonTocOverrides) => void;
   onSelectLesson: (lessonId: string) => void;
   onBackToStage: () => void;
-}) => (
-  <>
-    <div className="px-[18px] pb-3.5 border-b border-border mb-2">
-      <button
-        type="button"
-        onClick={onBackToStage}
-        className="flex w-full items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta min-w-0"
-      >
-        <ChevronLeft size={12} className="shrink-0" />
-        <span className="truncate">{stage.title}</span>
-      </button>
-      <div className="text-sm font-semibold leading-snug">進捗</div>
-      <div className="text-[11.5px] text-ink-3 mt-1.5">
-        <strong className="text-ink font-display text-[13px] font-bold">{progressPercent}%</strong>{" "}
-        · セクション {sections.length}
-      </div>
-      <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
-    </div>
+}) => {
+  const tocId = useId();
+  const sectionStates = sections.map((section) =>
+    resolveLessonTocSection(section, lessonStatus, activeLesson),
+  );
+  const { done, progress, untouched, allOpen } = summarizeLessonTocSections(
+    sectionStates,
+    overrides,
+  );
+  const ToggleAllIcon = allOpen ? ChevronsDownUp : ChevronsUpDown;
 
-    {sections.map((s) => {
-      const doneCount = s.lessons.filter((lesson) => lessonStatus(lesson) === "done").length;
-      return (
-        <div key={s.id} className="py-2.5">
-          <div className="px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5">
-            <span>{s.title}</span>
-            <span className="ml-auto text-[11px] font-normal text-ink-3">
-              {doneCount}/{s.lessons.length}
+  useEffect(() => {
+    const container = scrollContainer.current;
+    const row = container?.querySelector(`button[data-lesson-id="${CSS.escape(activeLesson)}"]`);
+    if (!container || !row) return;
+
+    // 現在の教材がはみ出す分だけ目次を動かし、本文のスクロール位置は保つ。
+    const bounds = row.getBoundingClientRect();
+    const top = container.getBoundingClientRect().top + container.clientTop;
+    const bottom = top + container.clientHeight;
+    if (bounds.top < top) {
+      container.scrollTop += bounds.top - top;
+    } else if (bounds.bottom > bottom) {
+      container.scrollTop += bounds.bottom - bottom;
+    }
+  }, [activeLesson, scrollContainer]);
+
+  return (
+    <>
+      <div className="px-[18px] pb-3.5 border-b border-border mb-2">
+        <button
+          type="button"
+          onClick={onBackToStage}
+          className="flex w-full items-center gap-1 text-[11.5px] text-ink-3 mb-2 hover:text-sf-magenta min-w-0"
+        >
+          <ChevronLeft size={12} className="shrink-0" />
+          <span className="truncate">{stage.title}</span>
+        </button>
+        <div className="text-sm font-semibold leading-snug">進捗</div>
+        <div className="text-[11.5px] text-ink-3 mt-1.5">
+          <strong className="text-ink font-display text-[13px] font-bold">
+            {progressPercent}%
+          </strong>{" "}
+          · セクション {sections.length}
+        </div>
+        <Progress value={progressPercent} tone="brand" className="mt-2 h-1.5" />
+      </div>
+
+      <div className="flex items-center justify-between gap-2 px-[18px] py-1 text-[11px] text-ink-3">
+        <span>
+          完了 {done} · 進行中 {progress} · 未着手 {untouched}
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            setOverrides((previous) =>
+              setAllLessonTocSectionsOpen(sectionStates, previous, !allOpen),
+            )
+          }
+          className="flex shrink-0 items-center gap-1 rounded-sm hover:text-brand-ink focus-visible:ring-2 focus-visible:ring-brand"
+        >
+          <ToggleAllIcon size={12} aria-hidden="true" />
+          {allOpen ? "すべて閉じる" : "すべて開く"}
+        </button>
+      </div>
+
+      {sectionStates.map((section) => {
+        const current = section.status === "current";
+        const open = isLessonTocSectionOpen(section, overrides);
+        const listId = `${tocId}-${section.id}`;
+        const Chevron = open ? ChevronDown : ChevronRight;
+        const headerClassName =
+          "px-[18px] py-2 font-display text-[10.5px] font-bold text-ink-3 uppercase tracking-[0.14em] flex items-center gap-1.5";
+        const heading = (
+          <>
+            <Chevron
+              size={12}
+              className={current ? "shrink-0 text-ink-4" : "shrink-0 text-ink-3"}
+              aria-hidden="true"
+            />
+            {section.allDone ? (
+              <CheckCircle size={14} className="shrink-0 text-success" aria-hidden="true" />
+            ) : section.status === "untouched" ? (
+              <CircleDashed size={14} className="shrink-0 text-ink-4" aria-hidden="true" />
+            ) : (
+              <Contrast
+                size={14}
+                className={cn("shrink-0 [&_path]:fill-current", current && "text-brand")}
+                aria-hidden="true"
+              />
+            )}
+            <span className={cn("truncate", current && "text-foreground")}>{section.title}</span>
+            {current ? (
+              <span className="shrink-0 text-[10px] font-bold text-brand-ink bg-brand-soft rounded-full px-1.5">
+                いまここ
+              </span>
+            ) : null}
+            <span className="ml-auto shrink-0 text-[11px] font-normal text-ink-3">
+              {section.doneCount}/{section.lessons.length}
             </span>
-          </div>
-          {s.lessons.map((l) => {
-            const isActive = l.id === activeLesson;
-            const status = lessonStatus(l);
-            const overview = problemOverviews.get(l.id);
-            const step = problemLessons.get(l.id)?.problem;
-            const lockReason = problemLockReason(step);
-            const details = overview
-              ? `課題 ・ 提出 ${submittedProblemCount(overview.problem_items)}/${overview.problem_items.length}`
-              : step?.state === "submitted"
-                ? "問題 ・ 提出済み"
-                : step
-                  ? "問題"
-                  : l.duration;
-            return (
+          </>
+        );
+
+        return (
+          <div key={section.id} className="py-2.5">
+            {current ? (
+              <div className={headerClassName}>{heading}</div>
+            ) : (
               <button
                 type="button"
-                key={l.id}
-                data-testid={`lesson-toc-${l.type}`}
-                data-lesson-id={l.id}
-                onClick={() => {
-                  if (status === "locked") return;
-                  onSelectLesson(l.id);
-                }}
-                disabled={status === "locked"}
+                aria-expanded={open}
+                aria-controls={listId}
+                onClick={() =>
+                  setOverrides((previous) => ({
+                    ...previous,
+                    [section.id]: !isLessonTocSectionOpen(section, previous),
+                  }))
+                }
                 className={cn(
-                  "w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left",
-                  "transition-colors",
-                  isActive
-                    ? "bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta"
-                    : status === "locked"
-                      ? "text-ink-4 cursor-not-allowed border-transparent"
-                      : "text-ink-2 hover:bg-sunken hover:text-foreground border-transparent",
+                  headerClassName,
+                  "w-full text-left hover:bg-sunken focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand",
                 )}
               >
-                <span className="shrink-0 mt-0.5 text-ink-3">
-                  {isActive && !overview && (status === "todo" || !step) ? (
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
-                  ) : (
-                    <LessonStatusIcon status={status} />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="truncate">{l.title}</div>
-                  <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
-                    <LessonTypeIcon type={displayLessonType(l)} size={10} />
-                    <span>{details}</span>
-                    {!overview && !step && isActive && l.progress !== undefined ? (
-                      <>
-                        <span>·</span>
-                        <span>進捗 {l.progress}%</span>
-                      </>
-                    ) : null}
-                  </div>
-                  {lockReason ? (
-                    <div className="mt-1 text-[11px] font-normal text-ink-3">{lockReason}</div>
-                  ) : null}
-                </div>
+                {heading}
               </button>
-            );
-          })}
-        </div>
-      );
-    })}
-  </>
-);
+            )}
+            <div id={listId} hidden={!open}>
+              {open &&
+                section.lessons.map((l) => {
+                  const isActive = l.id === activeLesson;
+                  const status = lessonStatus(l);
+                  const overview = problemOverviews.get(l.id);
+                  const step = problemLessons.get(l.id)?.problem;
+                  const lockReason = problemLockReason(step);
+                  const details = overview
+                    ? `課題 ・ 提出 ${submittedProblemCount(overview.problem_items)}/${overview.problem_items.length}`
+                    : step?.state === "submitted"
+                      ? "問題 ・ 提出済み"
+                      : step
+                        ? "問題"
+                        : l.duration;
+                  return (
+                    <button
+                      type="button"
+                      key={l.id}
+                      data-testid={`lesson-toc-${l.type}`}
+                      data-lesson-id={l.id}
+                      onClick={() => {
+                        if (status === "locked") return;
+                        onSelectLesson(l.id);
+                      }}
+                      disabled={status === "locked"}
+                      className={cn(
+                        "w-full flex items-start gap-2.5 px-[18px] py-2 text-[12.5px] border-l-2 text-left",
+                        "transition-colors",
+                        isActive
+                          ? "bg-[rgba(230,47,154,0.05)] text-foreground font-semibold border-sf-magenta"
+                          : status === "locked"
+                            ? "text-ink-3 cursor-not-allowed border-transparent"
+                            : "text-ink-2 hover:bg-sunken hover:text-foreground border-transparent",
+                      )}
+                    >
+                      <span className="shrink-0 mt-0.5 text-ink-3">
+                        {isActive && !overview && (status === "todo" || !step) ? (
+                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-sf-magenta mt-1 ml-[3px] animate-lms-pulse" />
+                        ) : (
+                          <LessonStatusIcon status={status} />
+                        )}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{l.title}</div>
+                        <div className="text-ink-3 text-[11px] font-normal mt-0.5 flex items-center gap-1">
+                          <LessonTypeIcon type={displayLessonType(l)} size={10} />
+                          <span>{details}</span>
+                          {!overview && !step && isActive && l.progress !== undefined ? (
+                            <>
+                              <span>·</span>
+                              <span>進捗 {l.progress}%</span>
+                            </>
+                          ) : null}
+                        </div>
+                        {lockReason ? (
+                          <div className="mt-1 text-[11px] font-normal text-ink-3">
+                            {lockReason}
+                          </div>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+};
 
 const ViewerLoading = () => (
   <div
