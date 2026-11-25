@@ -1,7 +1,3 @@
-// 04-q08 ★総合問題 コマンドの解析
-//
-// 教材: 04章のこれまでの教材
-//
 // 問題
 // "add 3 5" のような文字列のコマンドを読み取って計算する、小さな電卓を作ります。
 // 型 Command と RunResult は定義済みです。引数と戻り値には型注釈を付けること。
@@ -34,6 +30,7 @@
 //   parseCommand の数値の読み取りに使い、null なら "数値ではありません: …" の Error を投げる。
 // - assertNever(value): 引数も戻り値も never。呼ばれたら Error を投げる（メッセージは自由）。
 //   execute の switch の default で使い、case の書き忘れを型エラーで確かめる。
+// toNumber では Number で変換し、Number.isFinite で有限の数値か確かめます。
 
 function errorMessage() {}
 

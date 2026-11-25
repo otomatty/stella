@@ -1,12 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
-//
-// async・await と Promise.all・Promise.allSettled を使って書いてください。
-// 型 User・Post・Comment と、APIの代わりの関数 getUser・getPosts・getComments は定義済みです。
-// getUser(id) はいない id なら失敗し、getPosts(3) は必ず失敗します（投稿を取得できない人の例）。
-// 待つ必要のない取得は、一度に始めて同時に待つこと。「順番に」と書いてある問題だけ、1つずつ待つ。
+// 問14 ids のユーザーと投稿をすべて同時に取得し、ユーザーを取得できた人だけ { name, postCount } の配列にする（ids の順）。投稿の取得に失敗した人の postCount は null
+//     例: dashboard([1, 3, 9, 4]) → [{ name: "山田", postCount: 3 }, { name: "鈴木", postCount: null }, { name: "田中", postCount: 0 }]
+// async と await を使ってください。
+// ユーザーと投稿の取得には定義済みの getUser と getPosts を使ってください。
+// ユーザーと投稿の取得の成否は Promise.all と Promise.allSettled を使って分けてください。
 
 export type User = { id: number; name: string };
 
@@ -41,6 +37,4 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問14 ids のユーザーと投稿をすべて同時に取得し、ユーザーを取得できた人だけ { name, postCount } の配列にする（ids の順）。投稿の取得に失敗した人の postCount は null
-//     例: dashboard([1, 3, 9, 4]) → [{ name: "山田", postCount: 3 }, { name: "鈴木", postCount: null }, { name: "田中", postCount: 0 }]
 export function dashboard() {}

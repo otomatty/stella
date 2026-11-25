@@ -1,4 +1,4 @@
-import type { TaskProblemStepSummary } from "./problem-steps.js";
+import type { ProblemStepState, TaskProblemStepSummary, TaskRefSummary } from "./problem-steps.js";
 import {
   isSafeRelativePattern,
   parseTaskManifest,
@@ -26,6 +26,20 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   resubmit: "再提出",
   passed: "合格",
 };
+export interface TaskProblemItem {
+  id: string;
+  title: string;
+  label: string;
+  source: string;
+  state: ProblemStepState;
+  /** 管理者が過去の学習から引き継いだ問題にだけ付ける。 */
+  manual?: boolean;
+  afterLessonId?: string;
+  afterTitle?: string;
+  stepLessonId?: string;
+  refs: TaskRefSummary[];
+}
+
 export interface TaskSummary {
   id: string;
   sectionId: string;
@@ -39,10 +53,13 @@ export interface TaskSummary {
   manual_passed?: boolean;
   /** 課題文のレッスン (`lessons.id`)。そのレッスンにも「VS Code で開く」を出す。 */
   lessonId: string | null;
+  refs?: TaskRefSummary[];
   /** 問題つきの課題だけ。今の版の問題数。 */
   problems_total?: number;
   /** 動画と提出で順に出す問題。レッスン一覧の順で返す。 */
   problems?: TaskProblemStepSummary[];
+  /** 問題つきの課題の全問。教材の problems に記載された順で返す。 */
+  problem_items?: TaskProblemItem[];
   /** 問題つきの課題だけ。提出済みの問題数。 */
   problems_passed?: number;
   /** 済みに数える問題のうち、管理者が手で済みにした数。 */

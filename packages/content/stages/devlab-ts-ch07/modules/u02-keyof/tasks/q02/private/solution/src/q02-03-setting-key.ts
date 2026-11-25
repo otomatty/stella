@@ -1,9 +1,5 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問3 型 SettingKey を、定数 SETTINGS のキーとして作る（keyof typeof SETTINGS）
 
 export const SETTINGS = { theme: "light", fontSize: 14, beta: false };
 
-// 問3
 export type SettingKey = keyof typeof SETTINGS;

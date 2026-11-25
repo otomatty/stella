@@ -1,9 +1,7 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問7
+// 問7 座標 [x, y] の原点からの距離を返す
+//     例: distanceFromOrigin([3, 4]) → 5
+// 引数と戻り値には型注釈を付けます。
+// タプルの要素は配列の分割代入で取り出せます。
 export function distanceFromOrigin(point: [number, number]): number {
   const [x, y] = point;
   return Math.hypot(x, y);

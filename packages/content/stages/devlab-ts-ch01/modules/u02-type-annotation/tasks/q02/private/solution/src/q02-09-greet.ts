@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問9
+// 問9 12時より前なら「おはよう、◯◯さん」、12時以降なら「こんにちは、◯◯さん」を返す
+//     例: greet("山田", 9) → "おはよう、山田さん"
+// 戻り値には型注釈を付けてください。
 export function greet(name: string, hour: number): string {
   if (hour < 12) {
     return `おはよう、${name}さん`;

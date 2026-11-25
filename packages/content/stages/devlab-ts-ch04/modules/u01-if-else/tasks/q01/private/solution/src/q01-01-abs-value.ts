@@ -1,9 +1,6 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問1
+// 問1 絶対値を返す（Math.abs を使わず、if で負なら符号を反転する）
+//     例: absValue(-5) → 5
+// 引数と戻り値に型注釈を付けます。
 export function absValue(n: number): number {
   if (n < 0) {
     return -n;

@@ -1,11 +1,9 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問7 user の key のプロパティを返す。key の型は keyof User、戻り値は string | number
+//     例: userField(user, "name") → "山田"
+// 引数と戻り値に型注釈を付けます。
 
 export type User = { id: number; name: string; email: string; age: number };
 
-// 問7
 export function userField(user: User, key: keyof User): string | number {
   return user[key];
 }

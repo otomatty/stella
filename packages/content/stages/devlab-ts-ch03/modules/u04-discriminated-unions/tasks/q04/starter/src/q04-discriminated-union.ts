@@ -1,7 +1,3 @@
-// 03-q04 判別可能なユニオン型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/discriminated-union
-//
 // 問題
 // 1. 図形を表す型 Shape を、次の3つのユニオン型として定義して export してください。
 //    kind プロパティで、どの図形かを見分けられるようにする

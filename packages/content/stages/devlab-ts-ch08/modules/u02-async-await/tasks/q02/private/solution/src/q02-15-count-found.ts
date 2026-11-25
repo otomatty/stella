@@ -1,7 +1,9 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問15 ids のユーザーを順番に取得し、取得できた人数を返す（失敗しても最後まで続ける）
+//     例: countFound([1, 9, 3, 8]) → 2 で解決する
+// async と await を使ってください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
+// 失敗は try・catch で受け止めてください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +22,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問15
 export async function countFound(ids: readonly number[]): Promise<number> {
   let count = 0;
   for (const id of ids) {

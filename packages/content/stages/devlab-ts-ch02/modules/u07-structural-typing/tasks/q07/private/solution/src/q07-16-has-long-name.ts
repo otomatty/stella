@@ -1,12 +1,11 @@
-// 02-q07 構造的型付け ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
+// 問16 name が max 文字より長ければ true
+//     例: hasLongName(R2, 3) → false
+// 引数と戻り値には型注釈を付けます。
 
 export type Robot = { name: string; version: number };
 
 export type Product = { name: string; price: number; stock: number };
 
-// 問16
 export function hasLongName(x: { name: string }, max: number): boolean {
   return x.name.length > max;
 }

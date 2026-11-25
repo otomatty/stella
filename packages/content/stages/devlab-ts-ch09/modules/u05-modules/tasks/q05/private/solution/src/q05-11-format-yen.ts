@@ -1,6 +1,4 @@
-// 09-q05 import と export ドリル
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
+// 問11 shared/q05-modules.lib の formatYen を、このファイルからそのまま re-export する（export { … } from …）
+//     例: このファイルから import した formatYen が、shared/q05-modules.lib の formatYen と同じものになる
 
-// 問11
 export { formatYen } from "./shared/q05-modules.lib";

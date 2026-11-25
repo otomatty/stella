@@ -1,10 +1,6 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問3 型 ReadonlyOptions を Options から作る（すべて読み取り専用）
+// プロパティを手で書き並べず、Readonly<Options> で作ります。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問3
 export type ReadonlyOptions = Readonly<Options>;

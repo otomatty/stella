@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問6 options を patch（Partial<Options>）で上書きした、新しい Options を返す
+//     例: patchOptions(options, { bold: true }) → bold だけ true
+// 引数と戻り値に型注釈を付けます。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問6
 export function patchOptions(options: Options, patch: Partial<Options>): Options {
   return { ...options, ...patch };
 }

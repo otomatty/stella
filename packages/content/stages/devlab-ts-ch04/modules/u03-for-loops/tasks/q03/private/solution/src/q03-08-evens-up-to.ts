@@ -1,9 +1,7 @@
-// 04-q03 for文と for-of文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/for-of
-//       https://jsprimer.net/basic/loop/
-
-// 問8
+// 問8 0 以上 n 以下の偶数を並べた配列を返す（for 文で 2 ずつ増やす）
+//     例: evensUpTo(7) → [0, 2, 4, 6]
+// 引数と戻り値に型注釈を付けます。
+// map や filter などでループを置き換えないでください。
 export function evensUpTo(n: number): number[] {
   const result: number[] = [];
   for (let i = 0; i <= n; i += 2) {

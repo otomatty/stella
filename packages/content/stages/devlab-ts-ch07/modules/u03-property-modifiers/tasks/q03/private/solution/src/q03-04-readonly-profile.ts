@@ -1,10 +1,6 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問4 型 ReadonlyProfile を Profile から作る
+// プロパティを手で書き並べず、Readonly<Profile> で作ります。
 
 export type Profile = { name: string; email?: string; age?: number };
 
-// 問4
 export type ReadonlyProfile = Readonly<Profile>;

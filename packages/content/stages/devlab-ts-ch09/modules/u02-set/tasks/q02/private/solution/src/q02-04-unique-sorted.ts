@@ -1,8 +1,9 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問4 重複を除き、小さい順に並べた配列を返す
+//     例: uniqueSorted([3, 1, 3, 2]) → [1, 2, 3]
+// 引数と戻り値に型注釈を付けます。
+// 重複や要素の有無を調べるために Set を使います。
+// Set の要素をスプレッド構文で配列にします。
 
-// 問4
 export function uniqueSorted(items: number[]): number[] {
   return [...new Set(items)].sort((a, b) => a - b);
 }

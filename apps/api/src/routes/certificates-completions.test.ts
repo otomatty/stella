@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import type {
   CertificateVerification,
   StageCompletion,
@@ -16,13 +17,23 @@ import {
   sections,
   stages,
   submissions,
+  taskProblemResults,
+  taskProblemSteps,
+  taskProgress,
+  tasks,
   tenants,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
 import { signAccessToken } from "../lib/auth-jwt.js";
+import { loadFocusCompletions, loadSkillProfileCounts } from "../lib/skill-map-data.js";
+import {
+  autoCompleteStagesIfMet,
+  reclaimAutoCertificatesIfUnmet,
+} from "../lib/stage-auto-complete.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { certificatesRoute } from "./certificates.js";
+import { lessonProgressRoute } from "./lesson-progress.js";
 
 const SECRET = "certificates-test-secret";
 let database: ReturnType<typeof sqliteD1>;
@@ -35,7 +46,7 @@ beforeEach(async () => {
   database = sqliteD1();
   env = { DB: database.binding, AUTH_JWT_SECRET: SECRET } as Env;
   db = getDb(env);
-  app = mountTestApp(env, certificatesRoute).app;
+  app = mountTestApp(env, certificatesRoute, lessonProgressRoute).app;
   token = await signAccessToken(SECRET, "learner", "learner@example.test");
   await db.insert(tenants).values({ id: "ses", name: "SES" });
   await db.insert(profiles).values({ id: "learner", role: "student", displayName: "受講者" });
@@ -70,6 +81,181 @@ describe("GET /api/certificates/completions", () => {
     expect((await request(app, env, "/api/certificates/completions")).status).toBe(401);
   });
 });
+
+it.each([
+  ["passed", "tests"],
+  ["passed", "manual"],
+  ["ai-passed", "ai"],
+] as const)(
+  "課題の %s (%s) を問題一覧の完了に数え、合格の出所に応じて学習活動に数える",
+  async (status, reviewSource) => {
+    const overviewId = "00000000-0000-4000-8000-000000000001";
+    const userId = "learner";
+    const stageId = "active";
+    const input = {
+      actor: { id: userId, name: "受講者", role: "student" },
+      userId,
+      stageIds: [stageId],
+    };
+    await db.update(stages).set({ format: 2, status: "published" }).where(eq(stages.id, stageId));
+    await db.insert(enrollments).values({ userId, stageId });
+    await db.insert(profiles).values({ id: "staff", displayName: "管理者", role: "admin" });
+    const staffToken = await signAccessToken(SECRET, "staff", "staff@example.test");
+    await db.insert(sections).values({ id: "unit", stageId, title: "単元" });
+    await db.insert(lessons).values(
+      [overviewId, "plain", "step"].map((id) => ({
+        id,
+        sectionId: "unit",
+        title: id,
+        type: "text" as const,
+      })),
+    );
+    const task = {
+      sectionId: "unit",
+      title: "課題",
+      kind: "practice",
+      pattern: "test",
+      estimatedMinutes: 10,
+      order: 0,
+      contentHash: "current",
+      bundle: "{}",
+    };
+    const problems = [{ id: "q01" }];
+    const definition = JSON.stringify({ problems });
+    await db.insert(tasks).values([
+      { ...task, id: "overview", lessonId: overviewId, definition },
+      { ...task, id: "plain", lessonId: "plain", definition: "{}" },
+      { ...task, id: "steps", definition: JSON.stringify({ problems, problemSteps: true }) },
+      { ...task, id: "inactive", lessonId: "plain", definition, active: false },
+      { ...task, id: "variant", lessonId: "plain", definition, variantOf: "overview" },
+    ]);
+    await db.insert(taskProblemSteps).values({
+      taskId: "steps",
+      problemId: "q01",
+      stepLessonId: "step",
+      afterLessonId: "plain",
+      position: 0,
+    });
+    await db.insert(taskProgress).values(
+      ["overview", "plain", "steps"].map((taskId): typeof taskProgress.$inferInsert => ({
+        userId,
+        taskId,
+        status: taskId === "overview" ? "local-passed" : "passed",
+        contentHash: "previous",
+      })),
+    );
+    await db.insert(lessonProgress).values(
+      [overviewId, "step"].map((lessonId) => ({
+        userId,
+        lessonId,
+        completed: true,
+        updatedAt: new Date(0),
+      })),
+    );
+    const progress = async () => {
+      const { rows } = await json<{ rows: { lesson_id: string; completed: boolean }[] }>(
+        await get("/api/lesson-progress"),
+      );
+      return Object.fromEntries(rows.map((row) => [row.lesson_id, row.completed]));
+    };
+    const expectCompletion = async (done: number, met: boolean) => {
+      const { completion } = await json<{ completion: StageCompletion }>(
+        await get("/api/certificates/completion/active"),
+      );
+      expect(completion).toMatchObject({ total_lessons: 3, completed_lessons: done, met });
+      const { gradebook } = await json<{ gradebook: { rows: GradebookEntry[] } }>(
+        await request(app, env, "/api/certificates/gradebook/active", { token: staffToken }),
+      );
+      expect(gradebook.rows[0]?.completion).toEqual(completion);
+    };
+    expect(await progress()).toEqual({ [overviewId]: false, step: false });
+    await expectCompletion(0, false);
+
+    const sync = await request(app, env, "/api/lesson-progress", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        rows: [{ lesson_id: overviewId, completed: true, updated_at: new Date().toISOString() }],
+      }),
+    });
+    expect(await json(sync)).toMatchObject({ written: 1 });
+    const [storedOverview] = await db
+      .select()
+      .from(lessonProgress)
+      .where(eq(lessonProgress.lessonId, overviewId));
+    expect(storedOverview?.completed).toBe(false);
+    await db.delete(lessonProgress).where(eq(lessonProgress.lessonId, overviewId));
+
+    await db
+      .insert(lessonProgress)
+      .values({ userId, lessonId: "plain", completed: true, updatedAt: new Date(0) });
+    const now = new Date();
+    await db.insert(taskProblemResults).values({
+      userId,
+      taskId: "steps",
+      problemId: "q01",
+      contentHash: "current",
+      path: "src/q01.ts",
+      code: "",
+      sha256: "hash",
+      firstPassedAt: now,
+      updatedAt: now,
+    });
+    await expectCompletion(2, false);
+    expect(await autoCompleteStagesIfMet(db, input)).toEqual([]);
+
+    const passedAt = new Date("2026-11-24T06:00:00Z");
+    // 引き継ぎ済みの一覧に保存済みの完了フラグがあっても、フォーカスや XP には数えない。
+    if (reviewSource === "manual") {
+      await db.insert(lessonProgress).values({
+        userId,
+        lessonId: overviewId,
+        completed: true,
+        updatedAt: passedAt,
+      });
+    }
+    await db.insert(submissions).values({
+      studentId: userId,
+      taskId: "overview",
+      assignmentTitle: "課題",
+      stageTitle: "星",
+      code: "",
+      verdict: "pass",
+      reviewSource,
+    });
+    await db
+      .update(taskProgress)
+      .set({ status, updatedAt: passedAt })
+      .where(eq(taskProgress.taskId, "overview"));
+    const learner = { ...input.actor, role: "student" as const, email: null };
+    // 「plain」と「step」は別の日の完了としてこの範囲から外す。
+    expect(await loadFocusCompletions(db, learner, passedAt.getTime())).toEqual(
+      reviewSource === "manual" ? [] : [{ stageId, date: "2026-11-24" }],
+    );
+    expect((await loadSkillProfileCounts(db, learner)).completedLessons).toBe(
+      reviewSource === "manual" ? 2 : 3,
+    );
+    expect(await progress()).toEqual({ [overviewId]: true, plain: true, step: true });
+    await expectCompletion(3, true);
+    expect(await autoCompleteStagesIfMet(db, input)).toHaveLength(1);
+    expect(await db.select().from(enrollments)).toMatchObject([{ status: "completed" }]);
+    expect(await db.select().from(certificates)).toMatchObject([{ stageId, revoked: false }]);
+
+    await db
+      .insert(lessonProgress)
+      .values({ userId, lessonId: overviewId, completed: true })
+      .onConflictDoNothing();
+    await db
+      .update(taskProgress)
+      .set({ status: "resubmit" })
+      .where(eq(taskProgress.taskId, "overview"));
+    expect(await progress()).toEqual({ [overviewId]: false, plain: true, step: true });
+    await expectCompletion(2, false);
+    await reclaimAutoCertificatesIfUnmet(db, input);
+    expect(await db.select().from(enrollments)).toMatchObject([{ status: "active" }]);
+    expect(await db.select().from(certificates)).toEqual([]);
+  },
+);
 
 describe("GET /api/certificates/verify/:code", () => {
   it.each([false, true])("有効なときだけ修了内容を公開する (revoked=%s)", async (revoked) => {

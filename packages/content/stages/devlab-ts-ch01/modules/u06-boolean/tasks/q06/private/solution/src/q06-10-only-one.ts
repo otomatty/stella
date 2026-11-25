@@ -1,9 +1,7 @@
-// 01-q06 boolean型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/boolean
-//       https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values
-
-// 問10
+// 問10 どちらか片方だけが true なら true（両方 true なら false）
+//     例: onlyOne(true, true) → false
+// 戻り値には型注釈を付けてください。
+// 判定式の結果を return の1行で返せます。
 export function onlyOne(a: boolean, b: boolean): boolean {
   return a !== b;
 }

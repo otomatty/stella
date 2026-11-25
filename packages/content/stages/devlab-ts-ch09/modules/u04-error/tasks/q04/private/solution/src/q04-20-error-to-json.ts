@@ -1,7 +1,7 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問20 error が Error なら { name, message }（name はエラーの name）、そうでなければ { name: "Unknown", message: String(error) } を返す
+//     例: errorToJson(new NotFoundError("ユーザー")) → { name: "NotFoundError", message: "ユーザー が見つかりません" }
+// 引数と戻り値に型注釈を付けます。
+// エラーの種類は instanceof で見分けます。
 
 export class HttpError extends Error {
   readonly status: number;
@@ -20,7 +20,6 @@ export class NotFoundError extends HttpError {
   }
 }
 
-// 問20
 export function errorToJson(error: unknown): { name: string; message: string } {
   if (error instanceof Error) {
     return { name: error.name, message: error.message };

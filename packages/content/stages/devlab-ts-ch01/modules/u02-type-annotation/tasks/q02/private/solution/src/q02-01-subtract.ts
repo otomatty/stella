@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問1
+// 問1 a から b を引いた数を返す
+//     例: subtract(5, 3) → 2
+// 戻り値には型注釈を付けてください。
 export function subtract(a: number, b: number): number {
   return a - b;
 }

@@ -1,8 +1,3 @@
-// 02-q08 ★総合問題 在庫の集計
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/index-signature
-//       02章のこれまでの教材
-//
 // 問題
 // 商品を表す型 Item は定義済みです。在庫を集計する関数を書いてください。
 // 引数の配列は readonly Item[] にし、元の配列や商品のオブジェクトは変えないこと。

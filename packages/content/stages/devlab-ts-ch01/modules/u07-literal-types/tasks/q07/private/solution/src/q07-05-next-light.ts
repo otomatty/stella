@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問5
+// 問5 信号の次の色を返す。"green" → "yellow" → "red" → "green"
+//     例: nextLight("red") → "green"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function nextLight(light: "green" | "yellow" | "red"): "green" | "yellow" | "red" {
   if (light === "green") {
     return "yellow";

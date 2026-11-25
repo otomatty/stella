@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問6 { address?: { city } } の city を返す。address がなければ undefined
+//     例: cityOf({ address: { city: "渋谷区" } }) → "渋谷区"
+// 引数と戻り値に型注釈を付ける。
+// ?. で、address がない場合を扱う。
 
-// 問6
 export function cityOf(user: { address?: { city: string } }): string | undefined {
   return user.address?.city;
 }

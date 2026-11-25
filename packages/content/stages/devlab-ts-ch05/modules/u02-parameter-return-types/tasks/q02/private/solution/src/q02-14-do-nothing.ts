@@ -1,10 +1,7 @@
-// 05-q02 引数と戻り値の型、void ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-parameters
-//       https://typescriptbook.jp/reference/functions/void-type
-//       https://typescriptbook.jp/reference/functions/pass-by-value
+// 問14 引数を受け取らず、何もしない関数（中身は空でよいが、ESLint の no-empty-function に引っかからないよう、中にコメントを1行書く）
+//     例: doNothing() → undefined
+// 戻り値の型は void と明記してください。
 
-// 問14
 export function doNothing(): void {
   // 何もしない
 }

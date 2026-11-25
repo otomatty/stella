@@ -1,9 +1,6 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-
-// 問15
+// 問15 読み取り専用の座標 { x, y } の x を1増やした、新しい座標を返す
+//     例: moveRight({ x: 1, y: 2 }) → { x: 2, y: 2 }
+// 引数と戻り値には型注釈を付けます。
 export function moveRight(point: { readonly x: number; readonly y: number }): {
   readonly x: number;
   readonly y: number;

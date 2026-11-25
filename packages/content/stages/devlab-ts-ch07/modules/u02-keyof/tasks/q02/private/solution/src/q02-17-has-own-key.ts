@@ -1,9 +1,7 @@
-// 07-q02 keyof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/keyof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問17 obj に key のプロパティがあれば true（key in obj）
+//     例: hasOwnKey({ a: 1 }, "a") → true
+// 引数と戻り値に型注釈を付けます。
 
-// 問17
 export function hasOwnKey(obj: object, key: string): boolean {
   return key in obj;
 }

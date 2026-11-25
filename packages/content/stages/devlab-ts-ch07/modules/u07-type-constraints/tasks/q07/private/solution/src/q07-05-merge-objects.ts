@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問5 2つのオブジェクトを合わせた新しいオブジェクト。どちらもオブジェクトに限る。戻り値の型は A & B
+//     例: mergeObjects({ a: 1 }, { b: "x" }) → { a: 1, b: "x" }
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問5
 export function mergeObjects<A extends object, B extends object>(a: A, b: B): A & B {
   return { ...a, ...b };
 }

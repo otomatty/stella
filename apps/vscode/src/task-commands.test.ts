@@ -67,7 +67,10 @@ vi.mock("vscode", () => ({
       }
     }
   },
-  Uri: { file: (fsPath: string) => ({ scheme: "file", fsPath }), parse: (url: string) => url },
+  Uri: {
+    file: (fsPath: string) => ({ scheme: "file", fsPath }),
+    parse: (url: string) => ({ scheme: new URL(url).protocol.slice(0, -1), url }),
+  },
   env: { openExternal: vscodeMock.openExternal },
   ViewColumn: { One: 1, Two: 2 },
   window: {
@@ -650,9 +653,10 @@ describe("提出後の案内", () => {
       },
     ]);
     await submit("submit", "Web で開く");
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith(
-      "https://stella.example/stages/stage%2F1/lessons/lesson%3F2",
-    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/stages/stage%2F1/lessons/lesson%3F2",
+    });
   });
 
   it("別の課題の ID しかなければホームを開く", async () => {
@@ -660,7 +664,10 @@ describe("提出後の案内", () => {
       { sections: [{ lessons: [{ stageId: "stage", id: "lesson", task: { id: "other" } }] }] },
     ]);
     await submit("submit", "Web で開く");
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/",
+    });
   });
 
   it("相談後は返事が届く場所を示し、Web のボタンだけを出す。ID が無ければホームへ戻る", async () => {
@@ -669,7 +676,10 @@ describe("提出後の案内", () => {
       "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。",
       "Web で開く",
     );
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith("https://stella.example/");
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/",
+    });
     expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
   });
 });
@@ -1344,17 +1354,123 @@ describe("問題つきの課題", () => {
     expect(apiRequest).not.toHaveBeenCalled();
   });
 
-  it("課題文は問題ごとの状態を取得する", async () => {
-    const root = await problemRoot();
-    await run("stella.showTaskReadme", root);
-    expect(apiRequest.mock.calls).toEqual([
-      [`/api/tasks/problem-results?taskId=${encodeURIComponent(problemTask.id)}`],
+  it("Web の課題リンクは設定のオリジンと ID から開く", async () => {
+    await run("stella.openTaskWebPage", "stage-1", "lesson-2");
+    await run("stella.openTaskWebPage", "stage-1");
+    await run("stella.openTaskWebPage", "..");
+    await run("stella.openTaskWebPage", "stage-1", "https://example.org");
+    expect(vscodeMock.openExternal.mock.calls).toEqual([
+      [{ scheme: "https", url: "https://stella.example/stages/stage-1/lessons/lesson-2" }],
+      [{ scheme: "https", url: "https://stella.example/stages/stage-1" }],
     ]);
+  });
+
+  const problemHelpEndpoint = `/api/tasks/help?taskId=${encodeURIComponent(problemTask.id)}&contentHash=${"ab".repeat(32)}`;
+
+  it("課題文は問題ごとの状態と、配布した版のヒント・解答の状態を取得する", async () => {
+    const root = await problemRoot();
+    await unlink(path.join(root, "README.md"));
+    await run("stella.showTaskReadme", root);
+    expect(apiRequest.mock.calls).toHaveLength(2);
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/api/tasks/problem-results?taskId=${encodeURIComponent(problemTask.id)}`,
+    );
+    expect(apiRequest).toHaveBeenCalledWith(
+      problemHelpEndpoint,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).toMatchObject({
       problems: [
         expect.objectContaining({ id: "q01-add" }),
         expect.objectContaining({ id: "q02-sub" }),
       ],
+    });
+  });
+
+  const notOffered = { state: "locked", reason: "not-offered" };
+  it.each([
+    ["ヒントあり", [{ state: "available", level: 1 }], notOffered, notOffered, "ヒント・解答"],
+    [
+      "合格後に解答例と解説を表示",
+      [],
+      { state: "locked", reason: "passed" },
+      { state: "locked", reason: "passed" },
+      "解答・解説",
+    ],
+    ["素材なし", [], notOffered, notOffered, undefined],
+    ["通信失敗", undefined, notOffered, notOffered, undefined],
+    ["未接続", undefined, notOffered, notOffered, undefined],
+  ] as const)(
+    "%s の課題パネルにヒント・解答の入口を出し分ける",
+    async (scenario, hints, solution, explanation, label) => {
+      const root = await problemRoot();
+      if (scenario === "未接続") vscodeMock.getSecret.mockResolvedValue(undefined);
+      apiRequest.mockImplementation(async (url) => {
+        if (url !== problemHelpEndpoint) return {};
+        if (!hints) throw new Error("offline");
+        return { hints, solution, explanation };
+      });
+      await run("stella.showTaskReadme", root);
+      const html = buildTaskGuideHtml({
+        ...vscodeMock.showTaskReadme.mock.lastCall?.[0].guide,
+        os: "windows",
+      });
+      if (label) {
+        const href = `command:stella.showTaskHelp?${encodeURIComponent(JSON.stringify([root]))}`;
+        expect(html).toContain(`<footer><p class="help"><a href="${href}">${label}</a>`);
+      } else {
+        expect(html).not.toContain("command:stella.showTaskHelp");
+      }
+      expect(html).toContain("管理者に相談");
+      expect(html).toContain("実行ログ");
+
+      state.readmeRoot = root;
+      const onVisible = vscodeMock.onTaskReadmeVisible.mock.lastCall?.[0];
+      onVisible(root);
+      await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(2));
+      expect(apiRequest.mock.calls.filter(([url]) => url === problemHelpEndpoint)).toHaveLength(
+        scenario === "未接続" ? 0 : 1,
+      );
+    },
+  );
+
+  it("接続が切り替わると、問題つきの課題のヒント・解答の状態を取り直す", async () => {
+    const root = await problemRoot();
+    apiRequest.mockImplementation(async (url) =>
+      url === problemHelpEndpoint ? { hints: [{ state: "available", level: 1 }] } : {},
+    );
+    await run("stella.showTaskReadme", root);
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide.helpLabel).toBe("ヒント・解答");
+
+    state.readmeRoot = root;
+    apiRequest.mockResolvedValue({ hints: [], solution: notOffered, explanation: notOffered });
+    await auth.setToken("new-token");
+    await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(2));
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).not.toHaveProperty("helpLabel");
+
+    const onVisible = vscodeMock.onTaskReadmeVisible.mock.lastCall?.[0];
+    onVisible(root);
+    await vi.waitFor(() => expect(vscodeMock.showTaskReadme).toHaveBeenCalledTimes(3));
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).not.toHaveProperty("helpLabel");
+    expect(apiRequest.mock.calls.filter(([url]) => url === problemHelpEndpoint)).toHaveLength(2);
+  });
+
+  it("refs の無い応答でも、未解放の問題を課題パネルに渡す", async () => {
+    const root = await problemRoot(undefined, "passed", true);
+    apiRequest.mockResolvedValue({
+      gated: true,
+      passedProblems: 1,
+      totalProblems: 2,
+      taskPassed: false,
+      problems: [
+        { id: "q01-add", status: "passed", state: "submitted" },
+        { id: "q02-sub", state: "locked-video", afterLessonId: "video-2", afterTitle: "引き算" },
+      ],
+    });
+    await run("stella.showTaskReadme", root);
+    expect(vscodeMock.showTaskReadme.mock.lastCall?.[0].guide).toMatchObject({
+      problems: [expect.objectContaining({ id: "q01-add", status: "submitted" })],
+      problemResults: { problems: [expect.anything(), { id: "q02-sub", state: "locked-video" }] },
     });
   });
 
@@ -1458,9 +1574,10 @@ describe("問題つきの課題", () => {
       "提出しました (1/2 問)",
       "Web で開く",
     );
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith(
-      "https://stella.example/stages/stage/lessons/problem-add",
-    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: "https://stella.example/stages/stage/lessons/problem-add",
+    });
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
       "次の問題「問2 引く」が出ました",
       "ファイルを開く",
@@ -1707,6 +1824,9 @@ describe("問題つきの課題", () => {
 
   it("ファイルが変わっていて確認に通らなければ問題を送らない", async () => {
     const root = await problemRoot(undefined, "failed");
+    apiRequest.mockImplementation(async (url) =>
+      url === problemHelpEndpoint ? { hints: [{ state: "available", level: 1 }] } : {},
+    );
     const failed = JSON.parse(
       await readFile(path.join(root, ".stella", "problem-runs", "q01-add.json"), "utf8"),
     );
@@ -1724,10 +1844,14 @@ describe("問題つきの課題", () => {
     expect(runTask).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ problem: "q01-add" }),
     );
-    expect(vscodeMock.showTaskPanel).toHaveBeenCalledWith(
+    expect(vscodeMock.showTaskReadme).toHaveBeenCalledWith(
       expect.objectContaining({
-        result: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+        guide: expect.objectContaining({
+          problemRun: expect.objectContaining({ outcome: "failed", problemId: "q01-add" }),
+          helpLabel: "ヒント・解答",
+        }),
       }),
+      {},
     );
     expect(apiRequest.mock.calls.filter(([url]) => url === "/api/tasks/local-runs")).toHaveLength(
       1,
@@ -1783,7 +1907,9 @@ describe("問題つきの課題", () => {
         sections: [
           {
             lessons: [
-              { stageId, id: "task-lesson", task: { id: problemTask.id } },
+              ...(problemIds.length === 0
+                ? [{ stageId, id: "task-lesson", task: { id: problemTask.id } }]
+                : []),
               { stageId, id: "other-lesson", problem: { taskId: "other-task", id: "q01-add" } },
               ...problemIds.map((id) => ({
                 stageId,
@@ -1804,9 +1930,10 @@ describe("問題つきの課題", () => {
     };
     await actions.submit({ explanation: "足す処理を相談します。" });
 
-    expect(vscodeMock.openExternal).toHaveBeenCalledWith(
-      `https://stella.example/stages/${stageId}/lessons/${lessonId}`,
-    );
+    expect(vscodeMock.openExternal).toHaveBeenCalledWith({
+      scheme: "https",
+      url: `https://stella.example/stages/${stageId}/lessons/${lessonId}`,
+    });
   });
 
   it("相談する問題が手元で合格していたら、提出を案内して入力欄を出さない", async () => {

@@ -21,6 +21,7 @@ import { readFileSync } from "node:fs";
 import { buildContentManifest, listCodingRuleScopes } from "@stella/content";
 import type { QuizSeed } from "@stella/content";
 import type { VideoManifest } from "../../content/src/material-video.js";
+import { taskRevisionDefinition } from "../../content/src/task-schema.js";
 
 import { TENANTS } from "../../../apps/web/src/data/seed-catalog.js";
 import type { Stage, Lesson, Tenant } from "../../../apps/web/src/data/types.js";
@@ -675,7 +676,7 @@ for (const stage of content.stages.filter((c) => c.format === 2)) {
   );
 }
 for (const [order, task] of content.tasks.entries()) {
-  const d = task.definition;
+  const d = taskRevisionDefinition(task.definition);
   const sectionId = sectionIdMap.get(`ses:${task.stageId}:${task.unitId}`);
   if (!sectionId) throw new Error(`task section missing: ${d.id}`);
   // 課題文のレッスン (manifest が課題ごとに作る) と結び、Web の「VS Code で開く」に使う。
@@ -708,6 +709,21 @@ for (const [order, task] of content.tasks.entries()) {
       ? ` and problem_id not in (${steps.map((step) => strLit(step.problemId)).join(", ")})`
       : "";
   lines.push(`delete from task_problem_steps where task_id = ${strLit(d.id)}${keepSteps};`);
+  const refs = task.refs ?? [];
+  if (refs.length > 0) {
+    const values = refs.map(
+      ({ problemId, position, stageId, lessonId }) =>
+        `(${strLit(d.id)}, ${strLit(problemId)}, ${position}, ${strLit(lessonUuid("ses", stageId, lessonId))})`,
+    );
+    lines.push(
+      `insert into task_refs (task_id, problem_id, position, lesson_id) values ${values.join(", ")} on conflict (task_id, problem_id, position) ${doUpdate("task_refs", ["lesson_id"])};`,
+    );
+  }
+  const keepRefs =
+    refs.length > 0
+      ? ` and (problem_id, position) not in (values ${refs.map(({ problemId, position }) => `(${strLit(problemId)}, ${position})`).join(", ")})`
+      : "";
+  lines.push(`delete from task_refs where task_id = ${strLit(d.id)}${keepRefs};`);
   // 非公開の素材の版は追記だけ。課題の版のハッシュに含まれないので、素材の内容ハッシュで別に持つ。
   // 提出は受け付けた時点の版を記録し、AI のレビューはその版を読む (API も同じ式で版を作る)。
   const privateJson = JSON.stringify(task.privateFiles);
@@ -790,6 +806,7 @@ for (const [order, task] of content.tasks.entries()) {
 
 lines.push(
   "delete from task_problem_steps where task_id in (select id from tasks where active = 0);",
+  "delete from task_refs where task_id in (select id from tasks where active = 0);",
 );
 
 // 新課題の行と配布版がそろったあと、章の課題で記録した問題結果を引き継ぐ。

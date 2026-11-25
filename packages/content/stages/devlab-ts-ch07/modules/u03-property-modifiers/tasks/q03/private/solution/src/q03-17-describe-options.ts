@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問17 Readonly<Options> を "12px black" の形にする。bold が true なら後ろに " 太字" を付ける
+//     例: describeOptions({ size: 12, color: "black", bold: true }) → "12px black 太字"
+// 引数と戻り値に型注釈を付けます。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問17
 export function describeOptions(options: Readonly<Options>): string {
   const base = `${options.size}px ${options.color}`;
   return options.bold ? `${base} 太字` : base;

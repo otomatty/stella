@@ -1,8 +1,7 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問3 name が Map のキーにあれば true
+//     例: hasName(scores, "山田") → true
+// 引数と戻り値に型注釈を付けます。
 
-// 問3
 export function hasName(scores: Map<string, number>, name: string): boolean {
   return scores.has(name);
 }

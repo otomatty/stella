@@ -1,7 +1,3 @@
-// 09-e02 発展問題 正規表現（RegExp）
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/regexp
-//
 // 問題
 // 次の関数を、正規表現を使って書いてください。
 //

@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問9 ids のユーザーを for...of と await で1人ずつ順番に取得し、名前の配列を返す
+//     例: namesInOrder([3, 1]) → ["鈴木", "山田"] で解決する
+// async 関数として書いてください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問9
 export async function namesInOrder(ids: readonly number[]): Promise<string[]> {
   const names: string[] = [];
   for (const id of ids) {

@@ -1,9 +1,8 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問1 { name } を受け取り「こんにちは、◯◯さん」を返す
+//     例: hello({ name: "山田" }) → "こんにちは、山田さん"
+// 引数と戻り値には型注釈を付けてください。
+// オブジェクトは引数の位置で分割代入してください。
 
-// 問1
 export function hello({ name }: { name: string }): string {
   return `こんにちは、${name}さん`;
 }

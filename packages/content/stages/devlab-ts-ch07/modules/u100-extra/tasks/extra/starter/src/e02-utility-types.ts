@@ -1,11 +1,3 @@
-// 07-e02 発展問題 Exclude・Extract・NonNullable・ReturnType・Awaited
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/exclude
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/extract
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/nonnullable
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/return-type
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/awaited
-//
 // 問題
 // 型 Status、AppEvent、MaybeName と、関数 createSession、fetchUser は定義済みです。
 // 次の型を、それぞれのユーティリティ型を使って作り、export してください。型を手で書き並べないこと。

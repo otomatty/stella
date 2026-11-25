@@ -1,9 +1,8 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問11 型 Price（数値か "非売品"）を定義して export し、priceText(price: Price) を書く。数値なら「1,200円」、"非売品" ならそのまま
+//     例: priceText(1200) → "1,200円"
+// 引数と戻り値に型注釈を付ける。
+// 文字列のリテラル値と === で比較し、場合を分ける。
 
-// 問11
 export type Price = number | "非売品";
 
 export function priceText(price: Price): string {

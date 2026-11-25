@@ -1,7 +1,9 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問14 `${API}/todos` に { title, done: false } を JSON で POST し、作られた Todo を返す。ok でなければ `HTTP 400`、形が違えば "TODO の形が違います" の Error
+//     例: createTodo("買い物") → { id: 5, title: "買い物", done: false } で解決する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れ、形を確かめてから使ってください。
+// TODO の形は定義済みの isTodo で確かめてください。
+// HTTP エラーのメッセージには実際の res.status を入れてください。
 
 export const API = "https://api.example.com";
 
@@ -20,7 +22,6 @@ export function isTodo(value: unknown): value is Todo {
   );
 }
 
-// 問14
 export async function createTodo(title: string): Promise<Todo> {
   const res = await fetch(`${API}/todos`, {
     method: "POST",

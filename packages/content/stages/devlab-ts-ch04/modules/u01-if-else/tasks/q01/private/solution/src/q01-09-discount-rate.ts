@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問9
+// 問9 合計が 10000円以上なら 0.1、5000円以上なら 0.05、それ未満は 0 を返す
+//     例: discountRate(6000) → 0.05
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function discountRate(total: number): number {
   if (total >= 10000) {
     return 0.1;

@@ -1,8 +1,7 @@
-// 07-q05 Record ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/record
+// 問14 [キー, 値] の配列から Record<string, number> を作る（同じキーは後の方）
+//     例: fromPairs([["a", 1], ["b", 2]]) → { a: 1, b: 2 }
+// 引数と戻り値に型注釈を付けます。
 
-// 問14
 export function fromPairs(pairs: readonly [string, number][]): Record<string, number> {
   const result: Record<string, number> = {};
   for (const [key, value] of pairs) {

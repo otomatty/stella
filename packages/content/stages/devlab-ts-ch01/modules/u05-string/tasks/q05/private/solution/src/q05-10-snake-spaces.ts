@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問10
+// 問10 半角スペースをすべて「_」に置き換える
+//     例: snakeSpaces("a b c") → "a_b_c"
+// 戻り値には型注釈を付けてください。
+// replaceAll が使えます。
 export function snakeSpaces(text: string): string {
   return text.replaceAll(" ", "_");
 }

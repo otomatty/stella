@@ -1,12 +1,5 @@
-// 04-q04 while文と break・continue ドリル
-//
-// 教材: https://jsprimer.net/basic/loop/
-//
-// 引数と戻り値には型注釈を付けること。
-// 何回繰り返すか前もって分からないときは while 文を使う。少なくとも1回は実行したいときは do-while 文を使う。
-// ループを途中で抜けるときは break、その回だけ飛ばすときは continue を使う。
-// 引数には値を入れ直せないので、変えたい値は let の変数に写してから使う。
-
 // 問17 n を d で割り切れなくなるまで割ったとき、割れた回数を返す（d は 2 以上）
 //     例: divisibleTimes(48, 2) → 4
+// 引数と戻り値に型注釈を付けます。
+// 繰り返しには while 文を使います。
 export function divisibleTimes() {}

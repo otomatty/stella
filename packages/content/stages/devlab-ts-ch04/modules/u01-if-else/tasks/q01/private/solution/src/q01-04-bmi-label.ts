@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問4
+// 問4 BMI が 18.5 未満なら "やせ"、25 未満なら "普通"、それ以上は "肥満"
+//     例: bmiLabel(22) → "普通"
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function bmiLabel(bmi: number): "やせ" | "普通" | "肥満" {
   if (bmi < 18.5) {
     return "やせ";

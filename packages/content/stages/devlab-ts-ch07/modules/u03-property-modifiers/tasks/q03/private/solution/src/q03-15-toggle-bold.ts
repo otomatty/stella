@@ -1,12 +1,9 @@
-// 07-q03 Partial・Required・Readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/partial
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/required
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/readonly
+// 問15 Readonly<Options> を受け取り、bold を反転した新しい Options を返す
+//     例: toggleBold({ size: 12, color: "black", bold: false }).bold → true
+// 引数と戻り値に型注釈を付けます。
 
 export type Options = { size: number; color: string; bold: boolean };
 
-// 問15
 export function toggleBold(options: Readonly<Options>): Options {
   return { ...options, bold: !options.bold };
 }

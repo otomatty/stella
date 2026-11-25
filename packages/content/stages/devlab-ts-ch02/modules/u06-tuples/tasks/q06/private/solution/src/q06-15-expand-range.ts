@@ -1,9 +1,7 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問15
+// 問15 [開始, 終了] から、開始以上終了以下の整数を並べた配列を返す
+//     例: expandRange([2, 5]) → [2, 3, 4, 5]
+// 引数と戻り値には型注釈を付けます。
+// タプルの要素は配列の分割代入で取り出せます。
 export function expandRange(range: [number, number]): number[] {
   const [start, end] = range;
   const result: number[] = [];

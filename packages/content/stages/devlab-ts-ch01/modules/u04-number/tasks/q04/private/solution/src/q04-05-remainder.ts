@@ -1,8 +1,6 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問5
+// 問5 a を b で割った余りを返す
+//     例: remainder(10, 3) → 1
+// 戻り値には型注釈を付けてください。
 export function remainder(a: number, b: number): number {
   return a % b;
 }

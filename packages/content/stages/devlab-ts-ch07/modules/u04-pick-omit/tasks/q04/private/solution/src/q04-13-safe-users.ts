@@ -1,11 +1,10 @@
-// 07-q04 Pick と Omit ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/utility-types/pick
-//       https://typescriptbook.jp/reference/type-reuse/utility-types/omit
+// 問13 User の配列から、password を除いた配列を返す
+//     例: safeUsers(users) → password のない User の配列
+// 引数と戻り値に型注釈を付けます。
+// 戻り値の配列の要素の型に Omit<User, "password"> を使います。
 
 export type User = { id: number; name: string; email: string; password: string; age: number };
 
-// 問13
 export function safeUsers(users: readonly User[]): Omit<User, "password">[] {
   return users.map((u) => ({ id: u.id, name: u.name, email: u.email, age: u.age }));
 }

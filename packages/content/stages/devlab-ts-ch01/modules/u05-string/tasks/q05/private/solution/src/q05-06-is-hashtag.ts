@@ -1,8 +1,7 @@
-// 01-q05 string型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/string
-
-// 問6
+// 問6 「#」で始まっていれば true を返す
+//     例: isHashtag("#agora") → true
+// 戻り値には型注釈を付けてください。
+// startsWith が使えます。
 export function isHashtag(text: string): boolean {
   return text.startsWith("#");
 }

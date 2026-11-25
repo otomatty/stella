@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問15
+// 問15 駐車料金を返す。30分以下なら無料。30分を超えたら、停めた時間全体について30分ごとに 200円（30分に満たない分も 200円）
+//     例: parkingFee(61) → 600
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function parkingFee(minutes: number): number {
   if (minutes <= 30) {
     return 0;

@@ -1,8 +1,6 @@
-// 09-q05 import と export ドリル
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
+// 問20 下のクラス Stack を export する
+//     例: new Stack() で作れる
 
-// 問20
 export class Stack {
   private items: number[] = [];
 

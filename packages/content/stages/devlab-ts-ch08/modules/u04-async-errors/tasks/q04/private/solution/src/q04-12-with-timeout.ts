@@ -1,7 +1,6 @@
-// 08-q04 非同期のエラー処理 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://typescriptbook.jp/reference/statements/exception
+// 問12 task が ms ミリ秒以内に終われば、その値を返す。間に合わなければ "タイムアウトしました" の Error を投げる
+//     例: withTimeout(200ミリ秒かかる task, 100) → Error("タイムアウトしました") で失敗する
+// async と await を使ってください。
 
 export type Task = () => Promise<number>;
 
@@ -12,7 +11,6 @@ export function wait(ms: number): Promise<void> {
   });
 }
 
-// 問12
 export async function withTimeout(task: Task, ms: number): Promise<number> {
   const timer = new Promise<never>((_, reject) => {
     setTimeout(() => {

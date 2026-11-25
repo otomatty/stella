@@ -1,8 +1,9 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問10 a と b の両方にある要素の Set を返す（a の順）
+//     例: intersection(Set { 1, 2, 3 }, Set { 3, 1 }) → Set { 1, 3 }
+// 引数と戻り値に型注釈を付けます。
+// 引数の Set は変更しません。
+// 要素が Set にあるかは has() で調べます。
 
-// 問10
 export function intersection(a: Set<number>, b: Set<number>): Set<number> {
   return new Set([...a].filter((n) => b.has(n)));
 }

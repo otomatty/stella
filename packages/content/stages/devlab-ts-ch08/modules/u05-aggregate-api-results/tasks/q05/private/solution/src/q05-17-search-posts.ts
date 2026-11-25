@@ -1,7 +1,8 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問17 ids の投稿を同時に取得し、タイトルに keyword を含む投稿のタイトルの配列を返す。投稿の取得に失敗した人は飛ばす
+//     例: searchPosts([1, 2, 3], "型") → ["型注釈のこつ"] で解決する
+// async と await を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
+// 同時に始めた取得は Promise.allSettled で待ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -19,7 +20,6 @@ export function getPosts(userId: number): Promise<Post[]> {
     : Promise.resolve(POSTS.filter((p) => p.userId === userId));
 }
 
-// 問17
 export async function searchPosts(ids: readonly number[], keyword: string): Promise<string[]> {
   const results = await Promise.allSettled(ids.map((id) => getPosts(id)));
   return results

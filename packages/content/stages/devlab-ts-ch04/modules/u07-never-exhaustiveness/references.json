@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch04/u07-never-exhaustiveness@1",
-  "contentHash": "962dd601f7a9701f013ead4d8e18e296e74ee6f10b31bb232838c0bda9f4d6c7",
+  "unitId": "devlab-ts-ch04/u07-never-exhaustiveness@2",
+  "contentHash": "c1cf8ea101a13cbe794a4146ac8b4adcf5226cf427a112eb79f68abd02b13ef8",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

@@ -1,9 +1,8 @@
-// 07-q06 型変数（ジェネリクス） ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問7 タプル [a, b] を [b, a] にする
+//     例: swapPair(["a", 1]) → [1, "a"]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 引数は読み取り専用のタプルにします。
 
-// 問7
 export function swapPair<A, B>(pair: readonly [A, B]): [B, A] {
   return [pair[1], pair[0]];
 }

@@ -1,9 +1,8 @@
-// 07-q08 ジェネリクスのユーティリティ ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics
-//       https://typescriptbook.jp/reference/generics/type-variables
+// 問12 末尾の n 個の新しい配列。n が 0 以下なら空の配列
+//     例: lastN([1, 2, 3], 2) → [2, 3]
+// 型変数を使い、unknown で型を置き換えないでください。
+// 配列の引数は readonly T[] にし、元の配列は変更しません。
 
-// 問12
 export function lastN<T>(items: readonly T[], n: number): T[] {
   return n <= 0 ? [] : items.slice(-n);
 }

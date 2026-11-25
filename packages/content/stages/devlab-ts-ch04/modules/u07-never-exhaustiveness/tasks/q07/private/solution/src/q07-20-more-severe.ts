@@ -1,10 +1,8 @@
-// 04-q07 never型と網羅性のチェック ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/never
-
+// 問20 重要度の高い方を返す（debug < info < warn < error）。同じなら a
+//     例: moreSevere("info", "error") → "error"
+// 引数と戻り値に型注釈を付けます。
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
-// 問20
 export function moreSevere(a: LogLevel, b: LogLevel): LogLevel {
   const order: LogLevel[] = ["debug", "info", "warn", "error"];
   return order.indexOf(b) > order.indexOf(a) ? b : a;

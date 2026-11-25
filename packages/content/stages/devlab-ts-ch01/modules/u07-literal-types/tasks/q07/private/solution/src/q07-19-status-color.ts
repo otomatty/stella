@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問19
+// 問19 在席ステータスから色を返す。"online" は "green"、"busy" は "red"、"offline" は "gray"
+//     例: statusColor("busy") → "red"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function statusColor(status: "online" | "busy" | "offline"): "green" | "red" | "gray" {
   if (status === "online") {
     return "green";

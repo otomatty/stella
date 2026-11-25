@@ -1,8 +1,5 @@
-// 01-q08 any をなくす ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/any
-
-// 問16
+// 問16 文字列を数値に変える
+//     例: toNumber("42") → 42
 export function toNumber(text: string): number {
   return Number(text);
 }

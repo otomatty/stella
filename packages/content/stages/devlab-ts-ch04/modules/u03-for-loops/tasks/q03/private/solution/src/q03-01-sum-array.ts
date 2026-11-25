@@ -1,9 +1,7 @@
-// 04-q03 for文と for-of文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/for-of
-//       https://jsprimer.net/basic/loop/
-
-// 問1
+// 問1 合計を返す
+//     例: sumArray([1, 2, 3]) → 6
+// 引数と戻り値に型注釈を付けます。
+// for 文か for-of 文で回します。map や filter などでループを置き換えないでください。
 export function sumArray(numbers: readonly number[]): number {
   let total = 0;
   for (const n of numbers) {

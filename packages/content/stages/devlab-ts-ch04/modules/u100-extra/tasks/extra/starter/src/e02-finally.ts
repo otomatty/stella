@@ -1,7 +1,3 @@
-// 04-e02 発展問題 finally
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//
 // 問題
 // try-catch に finally を付けると、例外が出ても出なくても、最後に必ず実行される処理を書けます。
 // ファイルを開いたら必ず閉じる、のような「後片付け」に使います。

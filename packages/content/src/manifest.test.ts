@@ -92,6 +92,45 @@ describe("buildContentManifest", () => {
     ]);
   });
 
+  it("動画で解放しない問題つきの課題にも一覧用のレッスンを作る", () => {
+    const task = tasks.find(
+      ({ definition }) => definition.id === "csharp-foundations/m13-date-check/q01-check-date8",
+    );
+    expect(task?.bundle.files).not.toHaveProperty("README.md");
+    const lesson = stages
+      .find(({ id }) => id === task?.stageId)
+      ?.sections?.find(({ id }) => id === task?.unitId)
+      ?.lessons.find(({ id }) => id === task?.lessonId);
+    expect(lesson).toMatchObject({
+      id: "task-m13-date-check-q01-check-date8",
+      title: `${task?.definition.title}の問題`,
+      duration: "1 問",
+      markdown: "",
+    });
+  });
+
+  it("問題のない課題は今までどおり課題文を載せる", () => {
+    const task = tasks.find(
+      ({ stageId, definition, lessonId, bundle }) =>
+        stageId === "dev-env-basics" &&
+        lessonId &&
+        !definition.problems &&
+        bundle.files["README.md"],
+    );
+    if (!task) throw new Error("課題文のある課題が見つかりません");
+    const lesson = stages
+      .find(({ id }) => id === task.stageId)
+      ?.sections?.find(({ id }) => id === task.unitId)
+      ?.lessons.find(({ id }) => id === task.lessonId);
+    expect(lesson).toMatchObject({
+      title: `${task.definition.title} 課題文`,
+      duration: "5分",
+      markdown: expect.stringContaining(
+        Buffer.from(task.bundle.files["README.md"], "base64").toString("utf8"),
+      ),
+    });
+  });
+
   it("標準18ステージの予定時間が教材から入り、合計1229時間になる", () => {
     const program = stages.filter((stage) =>
       (LEARNING_PROGRAM_SLUGS as readonly string[]).includes(stage.id),

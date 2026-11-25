@@ -1,8 +1,8 @@
-// 05-q03 オプション引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/optional-parameters
+// 問14 message と、省略できる level（"info" か "warn"）。「[INFO] message」の形。省略したら info
+//     例: logText("起動", "warn") → "[WARN] 起動"
+// 引数と戻り値には型注釈を付けてください。
+// 省略できる引数は ? で宣言し、関数の中で ?? や === undefined で省略を扱ってください。
 
-// 問14
 export function logText(message: string, level?: "info" | "warn"): string {
   return `[${(level ?? "info").toUpperCase()}] ${message}`;
 }

@@ -1,9 +1,7 @@
-// 02-q01 オブジェクトの型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/type-annotation-of-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/shorthand-property-names
-
-// 問20
+// 問20 区間 { start, end } の真ん中の値を返す
+//     例: middleOf({ start: 2, end: 8 }) → 5
+// 引数と戻り値には型注釈を付けます。
+// オブジェクトの型は { name: string; age: number } のように書きます。型に type で名前を付けてもかまいません。
 export function middleOf(range: { start: number; end: number }): number {
   return (range.start + range.end) / 2;
 }

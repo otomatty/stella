@@ -1,9 +1,6 @@
-// 05-q09 型ガード関数とアサーション関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
+// 問5 【型ガード】string | null を受け取り、null でないか。戻り値の型は value is string
+//     例: isPresent(null) → false
 
-// 問5
 export function isPresent(value: string | null): value is string {
   return value !== null;
 }

@@ -1,8 +1,8 @@
-// 05-q04 デフォルト引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/default-parameters
+// 問6 text を left と right で囲む。省略したら "[" と "]"
+//     例: bracket("a") → "[a]"
+// 省略時の値は、引数に times = 2 のように書いてください。
+// 必須の引数と戻り値には型注釈を付けてください。
 
-// 問6
 export function bracket(text: string, left = "[", right = "]"): string {
   return `${left}${text}${right}`;
 }

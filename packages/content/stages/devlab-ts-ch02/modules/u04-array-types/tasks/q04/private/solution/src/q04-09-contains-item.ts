@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問9
+// 問9 target が含まれていれば true
+//     例: containsItem(["a", "b"], "b") → true
+// 引数と戻り値には型注釈を付けます。
+// 要素が含まれるかの確認には includes が使えます。
 export function containsItem(items: readonly string[], target: string): boolean {
   return items.includes(target);
 }

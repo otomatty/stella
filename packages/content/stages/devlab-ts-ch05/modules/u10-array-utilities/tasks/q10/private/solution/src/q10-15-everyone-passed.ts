@@ -1,11 +1,11 @@
-// 05-q10 配列のユーティリティ ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/callback-functions
-//       https://typescriptbook.jp/reference/values-types-variables/array/array-operations
+// 問15 全員が border 点以上なら true（every を使う）
+//     例: everyonePassed(students, 60) → true
+// 引数と戻り値には型注釈を付けてください。
+// ファイル内に定義済みの Student 型を使ってください。
+// 元の配列や生徒のオブジェクトは変更しないでください。
 
 export type Student = { name: string; grade: number; score: number };
 
-// 問15
 export function everyonePassed(students: readonly Student[], border: number): boolean {
   return students.every((s) => s.score >= border);
 }

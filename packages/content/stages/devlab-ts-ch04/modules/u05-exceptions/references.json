@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch04/u05-exceptions@1",
-  "contentHash": "ee72b30c9253fcd09ebdb63ddcedf9e3af11cff99a436404b9cd8e0f8aa368c5",
+  "unitId": "devlab-ts-ch04/u05-exceptions@2",
+  "contentHash": "165a7b25f2cea8db0e59ca0d7283fa76dcdc606af729d77ece05da0f6c16e397",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

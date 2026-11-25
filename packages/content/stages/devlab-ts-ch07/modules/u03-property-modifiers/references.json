@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch07/u03-property-modifiers@1",
-  "contentHash": "720050ee349804ebf19568637e91f842e1128451001470d94db7f0743b27238f",
+  "unitId": "devlab-ts-ch07/u03-property-modifiers@2",
+  "contentHash": "40fd39077f4d77e07c5bf45dfc5ba9e90a85414ff8fa49edecc7d262dffe9c1d",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

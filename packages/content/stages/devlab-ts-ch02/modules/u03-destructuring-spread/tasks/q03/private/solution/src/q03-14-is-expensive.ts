@@ -1,11 +1,10 @@
-// 02-q03 分割代入とスプレッド構文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object
+// 問14 引数の位置で price を分割代入し、1000円以上なら true を返す
+//     例: isExpensive(りんご) → false
+// 引数と戻り値には型注釈を付けます。
+// 定義済みの Item 型を使います。
 
 export type Item = { id: number; name: string; price: number; stock: number };
 
-// 問14
 export function isExpensive({ price }: Item): boolean {
   return price >= 1000;
 }

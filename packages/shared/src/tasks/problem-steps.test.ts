@@ -1,5 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { problemStepStates } from "./problem-steps.js";
+import { problemStatementFromSource, problemStepStates } from "./problem-steps.js";
+
+describe("問題ファイルの冒頭コメント", () => {
+  it("TypeScript の見出しと続きの行だけを読む", () => {
+    expect(
+      problemStatementFromSource(
+        "\n// 課題の雛形\n// 問1 足す\n// 2つの数を足す。\n//\n// 例: add(1, 2) → 3\n\n// 実装のメモ\nexport const add = 0;",
+      ),
+    ).toEqual({ heading: "問1 足す", details: ["2つの数を足す。", "", "例: add(1, 2) → 3"] });
+  });
+
+  it("C# の番号つき見出しを CRLF でも読む", () => {
+    expect(
+      problemStatementFromSource("// Q01 ★ 差\r\n// 2つの整数の差を返す。\r\nnamespace Exercises;"),
+    ).toEqual({ heading: "Q01 ★ 差", details: ["2つの整数の差を返す。"] });
+  });
+
+  it.each(["", "export const add = 0;\n// 問1 足す", "// TODO: 実装する\nexport const add = 0;"])(
+    "冒頭に問題の見出しがないときは文を返さない (%j)",
+    (code) => {
+      expect(problemStatementFromSource(code)).toBeUndefined();
+    },
+  );
+});
 
 describe("動画と前の提出で出る問題", () => {
   const steps = [

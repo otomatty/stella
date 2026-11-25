@@ -12,23 +12,24 @@
 import { TASK_STATUS_LABELS, type TaskStatus } from "@stella/shared/tasks/catalog";
 import { TASK_HELP_POLICIES } from "@stella/shared/tasks/help";
 import { TASK_KIND_LABELS, type TaskManifest } from "@stella/shared/tasks/manifest";
-import type { RunOutcome, RunResult } from "@stella/shared/tasks/run-result";
+import { problemStepLabel, type TaskRefSummary } from "@stella/shared/tasks/problem-steps";
+import type { RunOutcome, RunResult, TestCaseResult } from "@stella/shared/tasks/run-result";
 import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { escapeHtml } from "./markdown-html.js";
 import { listFiles, matchEditableFiles, readFileInRoot } from "./runner/files.js";
 import {
-  nextUnsubmittedProblem,
   PROBLEM_STATUS_LABELS,
-  problemCountLabel,
   problemSource,
+  problemToWorkOn,
   type ProblemState,
+  type ProblemResults,
 } from "./task-problems.js";
 import {
-  barWidth,
   countTests,
   remainingSteps,
+  renderFailedTest,
   RUN_SUMMARY_CSS,
   shortStepLabel,
   stepChips,
@@ -40,6 +41,8 @@ import {
 /** 課題文のパネルが開けるコマンド。WebView の `enableCommandUris` にも同じものを渡す。 */
 export const GUIDE_COMMANDS = [
   "stella.openTaskFile",
+  "stella.openProblemLocation",
+  "stella.openTaskWebPage",
   "stella.runTask",
   "stella.submitTask",
   "stella.consultTask",
@@ -176,9 +179,14 @@ export interface TaskGuideInput {
   edit: EditFiles;
   lastRun?: GuideRun;
   taskStatus?: TaskStatus;
+  /** 問題つきの課題で、LMS が案内するヒント・解答例・解説へのリンクの文言。 */
+  helpLabel?: string;
   /** 問題つきの課題の、問題ごとの状態。未指定なら一覧を未提出として出す。 */
   problems?: ProblemState[];
-  problemProgress?: { passed: number; total: number };
+  problemResults?: ProblemResults;
+  problemRun?: RunResult;
+  problemTestLines?: ReadonlyMap<TestCaseResult, number>;
+  stageId?: string;
   nextProblemReason?: string;
   problemPreparationError?: string;
   unpreparedProblems?: ReadonlySet<string>;
@@ -343,82 +351,356 @@ function taskProgress(input: TaskGuideInput): { step: number; card: string } {
   return { step: outcome === "error" || outcome === "passed" ? 2 : 1, card: taskNowCard(input) };
 }
 
-function guideProblems(input: TaskGuideInput): ProblemState[] | undefined {
-  const listed = input.manifest.problems;
-  if (!listed?.length) return undefined;
-  if (input.problems) return input.problems;
-  return listed.flatMap((problem) => {
-    const source = problemSource(input.manifest, problem.id);
-    return source
-      ? [{ id: problem.id, title: problem.title, source, status: "not-submitted" as const }]
-      : [];
+export function guideProblems(input: TaskGuideInput) {
+  const states = new Map(input.problems?.map((problem) => [problem.id, problem]));
+  const server = new Map(input.problemResults?.problems.map((problem) => [problem.id, problem]));
+  return (input.manifest.problems ?? []).map(({ id, title }, index) => {
+    const local = states.get(id);
+    const remote = server.get(id);
+    const lock: "locked-video" | "locked-previous" | "waiting" | undefined =
+      remote?.state === "locked-video" || remote?.state === "locked-previous"
+        ? remote.state
+        : input.problems && !local
+          ? "waiting"
+          : undefined;
+    return {
+      id,
+      title,
+      index,
+      label: problemStepLabel(title, index),
+      source: local?.source ?? problemSource(input.manifest, id),
+      status: local?.status ?? "not-submitted",
+      failed: local?.failed,
+      lock,
+    };
   });
 }
 
-function problemListHtml(
-  root: string,
-  items: readonly ProblemState[],
-  current: ProblemState | undefined,
-  progress?: TaskGuideInput["problemProgress"],
-  unprepared?: ReadonlySet<string>,
-): string {
-  const submitted = progress?.passed ?? items.filter((item) => item.status === "submitted").length;
-  const total = progress?.total ?? items.length;
-  const rows = items
-    .map((item) => {
-      const label = PROBLEM_STATUS_LABELS[item.status];
-      const title = escapeHtml(item.title);
-      const file = unprepared?.has(item.id)
-        ? title
-        : link("stella.openTaskFile", [root, item.source], title);
-      return `<li${item === current ? ' class="current" aria-current="step"' : ""}>${file} <code>${escapeHtml(item.source)}</code> <span class="problem-status ${item.status}">${label}</span></li>`;
-    })
-    .join("");
-  return [
-    `<div class="pbar" role="img" aria-label="${total} 問中 ${submitted} 問を提出済み"><i style="width:${barWidth(submitted, total)}%"></i></div>`,
-    `<p class="count">${problemCountLabel(submitted, total)}</p>`,
-    `<ul class="problems">${rows}</ul>`,
-  ].join("\n");
+type GuideProblem = ReturnType<typeof guideProblems>[number];
+type LockedProblem = NonNullable<GuideProblem["lock"]>;
+
+export function problemNow(input: TaskGuideInput, items = guideProblems(input)) {
+  const currentId = input.problems && problemToWorkOn(input.problems, input.unpreparedProblems)?.id;
+  const current = items.find(
+    (item) =>
+      !item.lock &&
+      item.source &&
+      !input.unpreparedProblems?.has(item.id) &&
+      (input.problems ? item.id === currentId : item.status !== "submitted"),
+  );
+  if (current) {
+    const run = input.problemRun?.problemId === current.id ? input.problemRun : undefined;
+    const kind =
+      run?.outcome === "error" || run?.outcome === "failed"
+        ? run.outcome
+        : run?.outcome === "passed" || current.status === "local-passed"
+          ? "passed"
+          : "edit";
+    return { kind, current, run } as const;
+  }
+  const pending = items.filter(({ status }) => status !== "submitted");
+  if (!pending.length) return { kind: "done", current: undefined } as const;
+  if (input.problemPreparationError || input.unpreparedProblems?.size)
+    return { kind: "waiting", current: undefined } as const;
+  const next = input.problemResults?.problems.find(({ id }) =>
+    pending.some((item) => item.id === id),
+  );
+  const item = pending.find(({ id }) => id === next?.id) ?? pending[0];
+  if (item.lock === "locked-video" && next)
+    return { kind: "video", current: undefined, item, next } as const;
+  return { kind: "waiting", current: undefined } as const;
 }
 
-/** 問題つきの課題の進め方。 */
-function buildProblemGuideHtml(input: TaskGuideInput, items: ProblemState[]): string {
-  const { root } = input;
-  const current = nextUnsubmittedProblem(items);
-  let card =
-    '<div class="now-card passed"><p class="now-title">✓ 全部の問題を提出しました</p></div>';
-  if (input.nextProblemReason || input.problemPreparationError) card = "";
-  if (current && !input.unpreparedProblems?.has(current.id)) {
-    const source = link(
-      "stella.openTaskFile",
-      [root, current.source],
-      `<code>${escapeHtml(current.source)}</code>`,
-    );
-    const checked = current.status === "local-passed";
-    const action = checked
-      ? "手元の確認は通っています。「提出する」を押すと"
-      : `${source} を書いて保存したら提出します。確認が通れば、そのまま`;
-    const nextAction = input.manifest.problemSteps
-      ? "送ります。解ける問題が増えたらお知らせします。"
-      : `送って${checked ? "、" : ""}次の問題を開きます。`;
-    const body = action + nextAction;
-    card = `<div class="now-card"><p class="now-title">いまの問題: ${escapeHtml(current.title)}</p><p>${body}</p><p class="actions">${submitButton(root, current.id)} ${consultLink(root, current.id)}</p></div>`;
+export function problemCellGroups(
+  items: readonly GuideProblem[],
+  now: ReturnType<typeof problemNow>,
+) {
+  const drills: { label: string; style: string; text: string }[] = [];
+  const advanced: typeof drills = [];
+  for (const item of items) {
+    const active = item.id === now.current?.id;
+    const status =
+      item.status === "submitted"
+        ? { style: "submitted", text: "提出済み" }
+        : item.lock
+          ? { style: "locked", text: "未解放" }
+          : item.failed || (active && (now.kind === "failed" || now.kind === "error"))
+            ? { style: "failed", text: active ? "いまの問題・要確認" : "要確認" }
+            : active
+              ? { style: "current", text: "いまの問題" }
+              : { style: "pending", text: PROBLEM_STATUS_LABELS[item.status] };
+    (item.label === "応用" ? advanced : drills).push({ label: item.label, ...status });
   }
+  return { drills, advanced };
+}
+
+export function problemRows(items: readonly GuideProblem[]) {
+  const rows: (
+    | { item: GuideProblem; lock?: undefined }
+    | { lock: LockedProblem; items: GuideProblem[] }
+  )[] = [];
+  for (const item of items) {
+    const previous = rows.at(-1);
+    if (!item.lock) rows.push({ item });
+    else if (previous?.lock === item.lock) previous.items.push(item);
+    else rows.push({ lock: item.lock, items: [item] });
+  }
+  return rows;
+}
+
+export function problemRefText(ref: TaskRefSummary) {
+  const kind = ref.lessonType === "slides" || ref.lessonType === "video" ? "動画" : "まとめ";
+  return {
+    title: `${kind}『${ref.title}』`,
+    suffix: ref.accessible
+      ? ref.completed
+        ? " ✓"
+        : ""
+      : `${ref.completed ? " ✓" : ""}${ref.stageTitle ? `（『${ref.stageTitle}』を受講すると見られます）` : ""}`,
+  };
+}
+
+function problemRefsHtml(refs?: readonly TaskRefSummary[]): string {
+  if (!refs?.length) return "";
+  const items = refs.map((ref) => {
+    const { title, suffix } = problemRefText(ref);
+    const text = escapeHtml(title);
+    return (
+      (ref.accessible ? link("stella.openTaskWebPage", [ref.stageId, ref.lessonId], text) : text) +
+      escapeHtml(suffix)
+    );
+  });
+  return `<p class="problem-refs">手がかり: ${items.join(" ・ ")}</p>`;
+}
+
+function problemProgressHtml(
+  items: readonly GuideProblem[],
+  now: ReturnType<typeof problemNow>,
+): string {
+  const { drills, advanced } = problemCellGroups(items, now);
+  const group = (cells: typeof drills) =>
+    cells.length > 0
+      ? `<span class="problem-cells">${cells
+          .map(
+            ({ label, style, text }) =>
+              `<i class="problem-cell ${style}" role="img" aria-label="${label} ${text}" title="${label} ${text}"></i>`,
+          )
+          .join("")}</span>`
+      : "";
+  const submitted = items.filter(({ status }) => status === "submitted").length;
+  return `<div class="problem-progress" role="group" aria-label="${items.length} 問中 ${submitted} 問を提出済み">${group(drills)}${group(advanced)}</div>
+<p class="problem-count"><strong>提出 ${submitted} / ${items.length} 問</strong><span>ドリル ${drills.length} ・ 応用 ${advanced.length}</span></p>`;
+}
+
+function lockedRange(items: readonly GuideProblem[]): string {
+  const drills = items.filter(({ label }) => label !== "応用");
+  const first = drills[0];
+  const last = drills.at(-1);
+  const range = first === last ? first?.label : `${first?.label}〜${(last?.index ?? 0) + 1}`;
+  return [range, drills.length < items.length ? "応用問題" : ""].filter(Boolean).join("・");
+}
+
+function problemListHtml(
+  input: TaskGuideInput,
+  items: GuideProblem[],
+  current?: GuideProblem,
+): string {
+  const { root, unpreparedProblems } = input;
+  const rows = problemRows(items).map((row) => {
+    if (row.lock) {
+      const reason =
+        row.lock === "locked-video"
+          ? "動画のあとに出る"
+          : row.lock === "locked-previous"
+            ? "前の問題のあとに出る"
+            : "未解放";
+      return `<li class="locked"><span aria-hidden="true">🔒</span><span class="problem-row-title">${lockedRange(row.items)}</span><span class="problem-status">${reason} ${row.items.length} 問</span></li>`;
+    }
+    const item = row.item;
+    const title = escapeHtml(item.title);
+    const file =
+      item.source && !unpreparedProblems?.has(item.id)
+        ? link("stella.openTaskFile", [root, item.source], title, "problem-row-title")
+        : `<span class="problem-row-title">${title}</span>`;
+    const submitted = item.status === "submitted";
+    const status = item.failed && !submitted ? "要確認" : PROBLEM_STATUS_LABELS[item.status];
+    const icon = submitted ? "✓" : item.failed ? "!" : "○";
+    return `<li${item === current ? ' class="current" aria-current="step"' : ""}><span class="problem-icon ${submitted ? "submitted" : item.failed ? "failed" : ""}" aria-hidden="true">${icon}</span><span>${item.label}</span>${file}<span class="problem-status ${item.status}">${status}</span></li>`;
+  });
+  return `<h2 class="problems-title">問題</h2><ul class="problems">${rows.join("")}</ul>`;
+}
+
+function problemFileLocation(root: string, problemId: string, file: string, line: number): string {
+  return link(
+    "stella.openProblemLocation",
+    [root, problemId, file, line],
+    `<code>${escapeHtml(file)}:${line}</code>`,
+  );
+}
+
+function problemChecks(input: TaskGuideInput, run?: RunResult): string {
+  if (!run) return "";
+  const chips: StepSummary[] = [];
+  const details: string[] = [];
+  for (const step of run.steps) {
+    if (step.status === "skipped" || (step.id === "deps" && step.status === "passed")) continue;
+    const { passed, total } = countTests(step.tests);
+    const lint = Array.isArray(step.lint)
+      ? step.lint.filter(
+          (item) =>
+            item &&
+            typeof item.message === "string" &&
+            typeof item.file === "string" &&
+            (typeof item.ruleId === "string" || item.ruleId === null) &&
+            Number.isSafeInteger(item.line),
+        )
+      : [];
+    const labels: Partial<Record<typeof step.id, string>> = {
+      lint: "書き方",
+      typecheck: "型",
+      format: "整形",
+    };
+    const label = total
+      ? `テスト ${passed} / ${total}`
+      : step.id === "lint" && lint.length
+        ? `書き方 ${lint.length} 件`
+        : (labels[step.id] ?? shortStepLabel(step.label));
+    chips.push({ label, status: step.status });
+    for (const test of step.tests ?? []) {
+      if (test.status !== "failed") continue;
+      const line = input.problemTestLines?.get(test) ?? 1;
+      const file = typeof test.file === "string" ? test.file : undefined;
+      const safeTest = {
+        ...test,
+        file,
+        message: typeof test.message === "string" ? test.message : undefined,
+      };
+      details.push(
+        renderFailedTest(
+          safeTest,
+          file && run.problemId
+            ? problemFileLocation(input.root, run.problemId, file, line)
+            : undefined,
+        ),
+      );
+    }
+    for (const { file, line, ruleId, message } of lint) {
+      const location = run.problemId
+        ? problemFileLocation(input.root, run.problemId, file, Math.max(line, 1))
+        : "";
+      details.push(
+        `<p>${escapeHtml(message)}${ruleId ? ` <code>${escapeHtml(ruleId)}</code>` : ""} ${location}</p>`,
+      );
+    }
+    if (
+      step.status === "error" ||
+      (step.status === "failed" &&
+        !lint.length &&
+        !step.tests?.some(({ status }) => status === "failed"))
+    ) {
+      details.push(`<p>${escapeHtml(step.summary)}</p>`);
+    }
+  }
+  return (
+    stepChips(chips) +
+    (details.length ? `<div class="problem-check-details">${details.join("")}</div>` : "")
+  );
+}
+
+function problemNowHtml(input: TaskGuideInput, now: ReturnType<typeof problemNow>): string {
+  const { root } = input;
+  const card = (style: string, title: string, body = "", action = "", secondary = "") =>
+    `<section class="now-card ${style}" aria-label="いまやること"><p class="now-label">いまやること</p><h2 class="now-title">${title}</h2>${body}${action ? `<p class="actions">${action}${secondary ? ` ${secondary}` : ""}</p>` : ""}</section>`;
+  if (now.kind === "done")
+    return card(
+      "passed",
+      input.problemResults?.taskPassed ? "この課題に合格しました" : "全部の問題を提出しました",
+      "",
+      input.stageId
+        ? link("stella.openTaskWebPage", [input.stageId], "Web で次の課題を選ぶ", "button")
+        : "",
+    );
+  if (now.kind === "video") {
+    const { next, item } = now;
+    const video = next.refs?.find(({ auto, lessonId }) => auto && lessonId === next.afterLessonId);
+    const stageId = video?.stageId ?? input.stageId;
+    const lessonId = next.afterLessonId;
+    return card(
+      "video",
+      next.afterTitle ? `動画『${escapeHtml(next.afterTitle)}』を見る` : "指定された動画を見る",
+      `<p>解ける問題はすべて提出しました。動画を見終えると、${item.label}『${escapeHtml(item.title)}』がここに出ます。</p>`,
+      stageId && lessonId
+        ? link("stella.openTaskWebPage", [stageId, lessonId], "動画を開く", "button")
+        : link("stella.showTaskReadme", [root], "表示を更新する", "button"),
+    );
+  }
+  if (!now.current)
+    return card(
+      "waiting",
+      "問題を準備しています",
+      `<p>${escapeHtml(input.problemPreparationError ?? input.nextProblemReason ?? "解放の状態を確かめるには、表示を更新してください。")}</p>`,
+      link("stella.showTaskReadme", [root], "表示を更新する", "button"),
+    );
+  const { id, label, title, source } = now.current;
+  const submit = (text: string) => link("stella.submitTask", [root, id], text, "button");
+  if (now.kind === "error")
+    return card(
+      "error",
+      "環境の問題で確認できませんでした",
+      problemChecks(input, now.run),
+      submit("もう一度 確認して提出"),
+      consultLink(root, id),
+    );
+  if (now.kind === "failed")
+    return card(
+      "failed",
+      `${label} に直すところがあります`,
+      `${problemChecks(input, now.run)}<p>左のエディターにも波線で出ています。直して保存し、もう一度確かめます。</p>`,
+      submit("もう一度 確認して提出"),
+      consultLink(root, id),
+    );
+  if (now.kind === "passed")
+    return card(
+      "passed",
+      `${label} は確認が通りましたが、まだ提出していません`,
+      problemChecks(input, now.run),
+      submit("提出する"),
+    );
+  const file = link(
+    "stella.openTaskFile",
+    [root, source],
+    `<code>${escapeHtml(source ?? "")}</code>`,
+  );
+  return card(
+    "edit",
+    `${label} ${escapeHtml(title)}`,
+    `<p>左の ${file} に書いて保存したら、確認して提出します。</p>`,
+    submit("確認して提出"),
+  );
+}
+
+function buildProblemGuideHtml(input: TaskGuideInput): string {
+  const { root, manifest, problemResults, helpLabel } = input;
+  const items = guideProblems(input);
+  const now = problemNow(input, items);
+  const activeId = now.current?.id ?? (now.kind === "video" ? now.item.id : undefined);
+  const refs = problemResults?.problems.find(({ id }) => id === activeId)?.refs;
+  const help = helpLabel ? `${link("stella.showTaskHelp", [root], escapeHtml(helpLabel))} ・ ` : "";
   return [
-    '<section class="guide" aria-label="この課題の進め方">',
-    card,
-    input.nextProblemReason ? `<p>${escapeHtml(input.nextProblemReason)}</p>` : "",
-    input.problemPreparationError ? `<p>${escapeHtml(input.problemPreparationError)}</p>` : "",
-    problemListHtml(root, items, current, input.problemProgress, input.unpreparedProblems),
-    helpLine(input),
-    "</section>",
+    `<header class="problem-header"><h1>${escapeHtml(manifest.title)}</h1>${link("stella.showTaskReadme", [root], "表示を更新する")}</header>`,
+    '<div class="guide problem-guide">',
+    problemProgressHtml(items, now),
+    problemNowHtml(input, now),
+    problemRefsHtml(refs),
+    problemListHtml(input, items, now.current),
+    `<footer><p class="help">${help}${consultLink(root, now.current?.id)} ・ ${logLink()}</p>${problemRefsHtml(problemResults?.refs)}</footer>`,
+    "</div>",
   ].join("\n");
 }
 
 /** 課題文のパネルの先頭に出す「進め方」。 */
 export function buildTaskGuideHtml(input: TaskGuideInput): string {
-  const problems = guideProblems(input);
-  if (problems) return buildProblemGuideHtml(input, problems);
+  if (input.manifest.problems?.length) return buildProblemGuideHtml(input);
   const { step, card } = taskProgress(input);
   const steps = GUIDE_STEPS.map((label, i) => {
     if (i < step) return `<li class="done">${label}</li>`;
@@ -534,14 +816,6 @@ export const GUIDE_CSS = `
     .first, .rest { font-size: 0.9em; color: var(--vscode-descriptionForeground); }${RUN_SUMMARY_CSS}
     .all-steps { margin-top: 0.6rem; }
     .all-steps summary { cursor: pointer; }
-    .pbar {
-      height: 6px;
-      border-radius: 3px;
-      background: var(--vscode-panel-border);
-      overflow: hidden;
-      margin: 0.6rem 0 0.2rem;
-    }
-    .pbar i { display: block; height: 100%; background: var(--vscode-testing-iconPassed); }
     kbd {
       padding: 0 0.3rem;
       border: 1px solid var(--vscode-panel-border);
@@ -551,12 +825,41 @@ export const GUIDE_CSS = `
     }
     .files { color: var(--vscode-descriptionForeground); }
     .count { margin: 0.25rem 0; font-weight: bold; }
-    .problems { list-style: none; padding-left: 0; margin: 0.25rem 0 0.5rem; }
-    .problems li { margin: 0.15rem 0; }
+    .problem-header, .problem-count {
+      display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.3rem 1rem;
+    }
+    .problem-header a, .problem-count, .problem-refs { font-size: 0.9em; }
+    .problem-progress { display: flex; gap: 0.55rem; }
+    .problem-cells { display: flex; gap: 3px; flex-wrap: wrap; }
+    .problem-cells:first-child { flex: 0 1 auto; min-width: 0; }
+    .problem-cell {
+      display: block; width: 0.85rem; height: 0.55rem; border-radius: 2px; box-sizing: border-box;
+      background: var(--vscode-panel-border);
+      border: 1px solid var(--vscode-contrastBorder, transparent);
+    }
+    .problem-cell.locked { background: var(--vscode-editor-inactiveSelectionBackground); }
+    .problem-cell.submitted { background: var(--vscode-testing-iconPassed); }
+    .problem-cell.current { background: var(--vscode-focusBorder); }
+    .problem-cell.failed { background: var(--vscode-testing-iconFailed); }
+    .problem-count { color: var(--vscode-descriptionForeground); margin: 0.3rem 0 0.9rem; }
+    .problem-count strong { color: var(--vscode-foreground); }
+    .problem-guide .now-title { margin: 0.25rem 0; }
+    .problem-guide .now-label, .problem-refs { color: var(--vscode-descriptionForeground); }
+    .problem-check-details { max-height: 16rem; overflow: auto; overflow-wrap: anywhere; }
+    .problems-title { font-size: 1em; margin: 1rem 0 0.25rem; }
+    .problems { list-style: none; padding-left: 0; margin: 0 0 0.9rem; }
+    .problems li {
+      display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0.4rem;
+      border-bottom: 1px solid var(--vscode-panel-border);
+    }
     .problems li.current {
       background: var(--vscode-editor-inactiveSelectionBackground);
       font-weight: 600;
     }
-    .problem-status { color: var(--vscode-descriptionForeground); }
+    .problem-row-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .problem-icon.submitted { color: var(--vscode-testing-iconPassed); }
+    .problem-icon.failed { color: var(--vscode-testing-iconFailed); }
+    .problem-status { color: var(--vscode-descriptionForeground); font-size: 0.9em; text-align: right; }
+    .problem-guide footer { border-top: 1px solid var(--vscode-panel-border); padding-top: 0.4rem; }
     .help { margin: 0.5rem 0 0.25rem; }
     .readme-title { margin-top: 1.5rem; }`;

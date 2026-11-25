@@ -1,8 +1,8 @@
-// 05-q04 デフォルト引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/default-parameters
+// 問9 税込価格（1円未満は切り捨て）を返す。rate を省略したら 0.1
+//     例: withTax(1000) → 1100
+// 省略時の値は、引数に times = 2 のように書いてください。
+// 必須の引数と戻り値には型注釈を付けてください。
 
-// 問9
 export function withTax(price: number, rate = 0.1): number {
   return Math.floor(price * (1 + rate));
 }

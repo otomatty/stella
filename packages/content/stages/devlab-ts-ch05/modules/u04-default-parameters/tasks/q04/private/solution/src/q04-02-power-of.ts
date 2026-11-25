@@ -1,8 +1,8 @@
-// 05-q04 デフォルト引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/default-parameters
+// 問2 base を exponent 乗する。exponent を省略したら 2
+//     例: powerOf(3) → 9
+// 省略時の値は、引数に times = 2 のように書いてください。
+// 必須の引数と戻り値には型注釈を付けてください。
 
-// 問2
 export function powerOf(base: number, exponent = 2): number {
   return base ** exponent;
 }

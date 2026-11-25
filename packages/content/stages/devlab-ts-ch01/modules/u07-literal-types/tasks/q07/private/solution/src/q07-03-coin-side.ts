@@ -1,8 +1,6 @@
-// 01-q07 リテラル型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-
-// 問3
+// 問3 偶数なら "表"、奇数なら "裏" を返す
+//     例: coinSide(4) → "表"
+// 引数や戻り値が決まった値だけを取る場合は、リテラル型を | でつないで型注釈を書いてください。
 export function coinSide(n: number): "表" | "裏" {
   return n % 2 === 0 ? "表" : "裏";
 }

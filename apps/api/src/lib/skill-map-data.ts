@@ -10,7 +10,18 @@
  * 修了証を revoke したステージで判定が食い違う。
  */
 
-import { and, count, countDistinct, desc, eq, gte, inArray, max, notInArray } from "drizzle-orm";
+import {
+  and,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  inArray,
+  max,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import { evaluateSkillMap, isSelectableVisibility } from "@stella/shared/skill-map/evaluate";
 import type { SkillMapStage } from "@stella/shared/skill-map/evaluate";
@@ -34,6 +45,7 @@ import {
 import type { Caller } from "./authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "./enrollment-bulk.js";
 import { learnerOnly } from "./learner-scope.js";
+import { isProblemTaskOverviewLesson, loadPassedOverviewLessons } from "./lesson-progress-write.js";
 import { loadUnlockedStageIds } from "./stage-unlocks-data.js";
 import { dropOrphanGrantedStages, filterStagesByAudience } from "./stage-audience.js";
 
@@ -508,9 +520,18 @@ export async function loadFocusCompletions(
         eq(lessonProgress.userId, caller.id),
         eq(lessonProgress.completed, true),
         gte(lessonProgress.updatedAt, new Date(fromMs)),
+        sql`not ${isProblemTaskOverviewLesson(sql`lessons.id`)}`,
       ),
     );
-  return rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) }));
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
+  return [
+    ...rows.map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) })),
+    ...passedOverviews
+      .filter((row) => row.updatedAt >= fromMs)
+      .map((row) => ({ stageId: row.stageId, date: toStudyDate(row.updatedAt) })),
+  ];
 }
 
 /**
@@ -633,7 +654,16 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
   const lessonRows = await db
     .select({ n: count() })
     .from(lessonProgress)
-    .where(and(eq(lessonProgress.userId, caller.id), eq(lessonProgress.completed, true)));
+    .where(
+      and(
+        eq(lessonProgress.userId, caller.id),
+        eq(lessonProgress.completed, true),
+        sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
+      ),
+    );
+  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
+    excludeManualOnly: true,
+  });
   // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
   const quizRows = await db
     .select({ n: countDistinct(quizAttempts.quizId) })
@@ -641,7 +671,7 @@ export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<Sk
     .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
   const clearedStageIds = await loadClearedStageIds(db, caller);
   return {
-    completedLessons: Number(lessonRows[0]?.n ?? 0),
+    completedLessons: Number(lessonRows[0]?.n ?? 0) + passedOverviews.length,
     passedQuizzes: Number(quizRows[0]?.n ?? 0),
     clearedStages: clearedStageIds.size,
   };

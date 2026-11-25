@@ -1,9 +1,8 @@
-// 05-q07 コールバック関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/callback-functions
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問20 x に f を当てはめ、その結果に g を当てはめる（g(f(x))）
+//     例: composeTwo((n) => n + 1, (n) => n * 10, 2) → 30
+// 引数と戻り値には型注釈を付けてください。
+// コールバックの型は (n: number) => number のように書いてください。
 
-// 問20
 export function composeTwo(f: (n: number) => number, g: (n: number) => number, x: number): number {
   return g(f(x));
 }

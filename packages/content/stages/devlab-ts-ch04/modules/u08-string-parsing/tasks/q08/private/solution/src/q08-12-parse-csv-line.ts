@@ -1,9 +1,7 @@
-// 04-q08 文字列の解析 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/exception
-//       https://typescriptbook.jp/reference/statements/switch
-
-// 問12
+// 問12 "a, b ,c" を、「,」で分けて前後の空白を取り除いた配列にする
+//     例: parseCsvLine("a, b ,c") → ["a", "b", "c"]
+// 引数と戻り値に型注釈を付けます。
+// 文字列を split で区切ります。
 export function parseCsvLine(text: string): string[] {
   return text.split(",").map((part) => part.trim());
 }

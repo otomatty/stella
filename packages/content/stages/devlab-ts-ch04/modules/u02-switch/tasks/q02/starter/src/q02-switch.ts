@@ -1,8 +1,3 @@
-// 04-q02 switch文
-//
-// 教材: https://typescriptbook.jp/reference/statements/switch
-//       https://typescriptbook.jp/reference/statements/switch-fallthrough
-//
 // 問題
 // 次の3つの関数を、switch 文を使って書いてください。引数と戻り値には型注釈を付けること。
 //
@@ -19,6 +14,7 @@
 //    operator は "+"、"-"、"*"、"/" のどれか。計算した結果を返す。"/" で b が 0 なら Error を投げる
 //
 // switch のすべての case で return するか、break を書くこと（書き忘れると次の case に進んでしまう）
+// daysInMonth と weekdayName では、どの case にも当てはまらない値は default で扱います。
 
 export function daysInMonth() {}
 

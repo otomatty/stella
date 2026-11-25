@@ -1,7 +1,3 @@
-// 07-e01 発展問題 Mapped Types
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/mapped-types
-//
 // 問題
 // { [K in keyof T]: … } と書くと、T のすべてのプロパティについて、値の型を作り変えた型を作れます（Mapped Types）。
 // Partial や Readonly も、この書き方で作られています。次の型と関数を書いて export してください。

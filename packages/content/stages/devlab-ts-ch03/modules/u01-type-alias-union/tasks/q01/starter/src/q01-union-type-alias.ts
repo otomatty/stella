@@ -1,8 +1,3 @@
-// 03-q01 型エイリアスとユニオン型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
-//
 // 問題
 // 1. 型 Id を「文字列または数値」のユニオン型として定義して export してください
 //

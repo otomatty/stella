@@ -46,6 +46,25 @@ export function firstReadmeParagraph(readme: string | null): string | null {
   return text || null;
 }
 
+export function staffTaskStatement({
+  problems,
+  readme,
+}: Pick<StaffTaskDetail, "problems" | "readme">) {
+  return problems
+    ? {
+        label: "問題",
+        note: "受講者には問題ファイルのコメントが出る",
+        summary: `全 ${problems.length} 問`,
+        action: "問題の一覧を見る",
+      }
+    : {
+        label: "課題文",
+        note: "受講者には課題文の教材と VS Code の課題パネルで同じ文章が出る",
+        summary: firstReadmeParagraph(readme),
+        action: "課題文を全部読む",
+      };
+}
+
 export function staffTaskCounts(counts: StaffTaskDetail["counts"]) {
   return [
     { label: "着手", count: counts.started },

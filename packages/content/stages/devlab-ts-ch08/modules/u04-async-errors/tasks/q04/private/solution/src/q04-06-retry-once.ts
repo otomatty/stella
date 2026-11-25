@@ -1,11 +1,10 @@
-// 08-q04 非同期のエラー処理 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://typescriptbook.jp/reference/statements/exception
+// 問6 task を呼び、失敗したら1回だけやり直す。やり直しも失敗したら、その失敗を投げる
+//     例: retryOnce(1回目だけ失敗する task) → 2回目の値で解決する
+// async と await を使ってください。
+// 失敗は try・catch で受け止めてください。
 
 export type Task = () => Promise<number>;
 
-// 問6
 export async function retryOnce(task: Task): Promise<number> {
   try {
     return await task();

@@ -1,9 +1,8 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問9 文字列か数値を、width 桁になるように前を0で埋めた文字列にする
+//     例: padValue(7, 3) → "007"
+// 引数と戻り値に型注釈を付ける。
+// 引数の型にはユニオン型を直接書く。
 
-// 問9
 export function padValue(value: string | number, width: number): string {
   return String(value).padStart(width, "0");
 }

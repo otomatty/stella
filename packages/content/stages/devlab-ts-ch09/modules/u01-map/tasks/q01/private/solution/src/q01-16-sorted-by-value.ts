@@ -1,8 +1,9 @@
-// 09-q01 Map ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/map
+// 問16 [キー, 値] の配列を、値の大きい順に並べて返す。同じ値なら先に入った順
+//     例: sortedByValue(Map { "a" => 1, "b" => 3 }) → [["b", 3], ["a", 1]]
+// 引数と戻り値に型注釈を付けます。
+// Map の entries() で入れた順に取り出します。
+// スプレッド構文で [キー, 値] の配列にします。
 
-// 問16
 export function sortedByValue(scores: Map<string, number>): [string, number][] {
   return [...scores.entries()].sort((a, b) => b[1] - a[1]);
 }

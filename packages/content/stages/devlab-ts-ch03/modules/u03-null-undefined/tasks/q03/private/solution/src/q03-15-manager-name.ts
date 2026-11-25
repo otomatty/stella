@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問15 { manager: { name } | null } の manager の name を返す。manager が null なら「未定」
+//     例: managerName({ manager: null }) → "未定"
+// 引数と戻り値に型注釈を付ける。
+// ?. と ?? で、値がない場合を扱う。
 
-// 問15
 export function managerName(team: { manager: { name: string } | null }): string {
   return team.manager?.name ?? "未定";
 }

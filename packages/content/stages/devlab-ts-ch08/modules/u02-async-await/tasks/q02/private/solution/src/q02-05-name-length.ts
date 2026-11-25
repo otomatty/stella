@@ -1,7 +1,6 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問5 async のアロー関数で書く。export const nameLength = async (id: number): Promise<number> => … の形で、名前の文字数を返す
+//     例: nameLength(1) → 2 で解決する
+// fetchUser の結果は await で受け取ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +19,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問5
 export const nameLength = async (id: number): Promise<number> => {
   const user = await fetchUser(id);
   return user.name.length;

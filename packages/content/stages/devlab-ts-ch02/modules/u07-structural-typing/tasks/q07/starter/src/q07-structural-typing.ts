@@ -1,8 +1,3 @@
-// 02-q07 構造的型付け
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/structural-subtyping
-//       https://typescriptbook.jp/reference/values-types-variables/object/excess-property-checking
-//
 // 問題
 // 下の Rect、Photo、Banner は、名前も用途も違う型ですが、どれも width と height を持っています。
 //

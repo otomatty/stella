@@ -1,7 +1,9 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問10 ユーザーの投稿を取得してから、それぞれの投稿のコメントを同時に取得し、コメントの text を1つの配列にまとめて返す（投稿の順）
+//     例: commentsOfUser(1) → ["いいですね", "参考になりました", "難しそう"] で解決する
+// async と await を使ってください。
+// コメントの取得には定義済みの getComments を使ってください。
+// 投稿の取得には定義済みの getPosts を使ってください。
+// 同時に始めた取得は Promise.all で待ってください。
 
 export type Post = { id: number; userId: number; title: string };
 
@@ -33,7 +35,6 @@ export function getComments(postId: number): Promise<Comment[]> {
   return Promise.resolve(COMMENTS.filter((c) => c.postId === postId));
 }
 
-// 問10
 export async function commentsOfUser(userId: number): Promise<string[]> {
   const posts = await getPosts(userId);
   const lists = await Promise.all(posts.map((p) => getComments(p.id)));

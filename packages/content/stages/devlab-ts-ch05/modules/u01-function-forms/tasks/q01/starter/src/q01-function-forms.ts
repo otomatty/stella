@@ -1,9 +1,3 @@
-// 05-q01 関数宣言・関数式・アロー関数
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-declaration
-//       https://typescriptbook.jp/reference/functions/function-expression
-//       https://typescriptbook.jp/reference/functions/arrow-functions
-//
 // 問題
 // 温度の単位を変換する関数を、3つの書き方で書いてください。引数と戻り値には型注釈を付けること。
 // 結果は、どれも小数第2位までに四捨五入する。

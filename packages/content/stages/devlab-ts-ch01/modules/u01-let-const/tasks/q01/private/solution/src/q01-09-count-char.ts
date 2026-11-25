@@ -1,9 +1,5 @@
-// 01-q01 letとconst ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-
-// 問9
+// 問9 text の中に char が何回出てくるかを返す（for-of で1文字ずつ見る）
+//     例: countChar("banana", "a") → 3
 export function countChar(text: string, char: string): number {
   let count = 0;
   for (const c of text) {

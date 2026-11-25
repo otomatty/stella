@@ -1,9 +1,8 @@
-// 09-q04 Error ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/error
-//       https://typescriptbook.jp/reference/statements/exception
+// 問14 error の cause をたどり、いちばん元の原因を返す（Error でないか、cause を持たないところで止める）
+//     例: rootCause(c) → a（c の cause が b、b の cause が a のとき）
+// 引数と戻り値に型注釈を付けます。
+// エラーの種類は instanceof で見分けます。
 
-// 問14
 export function rootCause(error: unknown): unknown {
   let current = error;
   while (current instanceof Error && current.cause !== undefined) {

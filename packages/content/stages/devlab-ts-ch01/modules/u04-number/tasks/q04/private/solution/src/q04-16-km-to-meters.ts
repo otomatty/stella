@@ -1,8 +1,6 @@
-// 01-q04 number型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-
-// 問16
+// 問16 km を m に変える
+//     例: kmToMeters(1.5) → 1500
+// 戻り値には型注釈を付けてください。
 export function kmToMeters(km: number): number {
   return km * 1000;
 }

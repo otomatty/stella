@@ -1,8 +1,7 @@
-// 07-q07 型引数の制約 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/generics/type-parameter-constraint
+// 問8 fn の値がいちばん大きい要素。同じなら先の方。空なら undefined
+//     例: maxBy(["a", "abc"], (s) => s.length) → "abc"
+// 型変数を使い、unknown で型を置き換えないでください。
 
-// 問8
 export function maxBy<T>(items: readonly T[], fn: (item: T) => number): T | undefined {
   let best: T | undefined;
   let bestValue = -Infinity;

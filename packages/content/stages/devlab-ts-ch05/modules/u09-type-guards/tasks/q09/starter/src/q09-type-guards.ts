@@ -1,8 +1,3 @@
-// 05-q09 型ガード関数とアサーション関数
-//
-// 教材: https://typescriptbook.jp/reference/functions/type-guard-functions
-//       https://typescriptbook.jp/reference/functions/assertion-functions
-//
 // 問題
 // 戻り値の型を value is User のように書くと、true を返したとき、呼び出し側で value が User に絞り込まれる（型ガード関数）。
 // asserts value is User と書くと、例外を投げずに戻ったとき、value が User に絞り込まれる（アサーション関数）。

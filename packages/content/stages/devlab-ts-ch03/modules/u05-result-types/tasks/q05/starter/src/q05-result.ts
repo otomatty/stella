@@ -1,7 +1,3 @@
-// 03-q05 成功と失敗を表す型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/discriminated-union
-//
 // 問題
 // 文字列を数値に変換する処理を、例外を使わずに「成功」と「失敗」を値で返す形で書いてください。
 //

@@ -1,7 +1,7 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問6 ids のユーザーを同時に取得し（Promise.allSettled）、取得できたユーザーだけの配列を返す（ids の順）
+//     例: loadedUsers([1, 9, 2]) → [山田, 佐藤] で解決する
+// async と await を使ってください。
+// ユーザーの取得には定義済みの getUser を使ってください。
 
 export type User = { id: number; name: string };
 
@@ -20,7 +20,6 @@ export function getUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問6
 export async function loadedUsers(ids: readonly number[]): Promise<User[]> {
   const results = await Promise.allSettled(ids.map((id) => getUser(id)));
   return results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));

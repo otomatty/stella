@@ -1,9 +1,9 @@
-// 03-q01 型エイリアスとユニオン型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-alias
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問4 数値なら2倍、文字列なら2回つなげたものを返す
+//     例: doubleValue("ab") → "abab"
+// 引数と戻り値に型注釈を付ける。
+// 引数の型にはユニオン型を直接書く。
+// typeof で値の型を確かめて、場合を分ける。
 
-// 問4
 export function doubleValue(value: string | number): string | number {
   if (typeof value === "number") {
     return value * 2;

@@ -1,4 +1,7 @@
-// 問1
+// 問1 interface Named（name: string）と、それを実装する class Cat(name) を書く。Cat の meow() は "ミケ: ニャー" を返す
+//     例: new Cat("ミケ").meow() → "ミケ: ニャー"
+// 型は interface で宣言し、クラスには implements Named を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Named {
   name: string;
 }
@@ -11,7 +14,10 @@ export class Cat implements Named {
   }
 }
 
-// 問2
+// 問2 interface HasArea（area(): number）と、それを実装する class Square(size) を書く
+//     例: new Square(3).area() → 9
+// 型は interface で宣言し、クラスには implements HasArea を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface HasArea {
   area(): number;
 }
@@ -24,7 +30,10 @@ export class Square implements HasArea {
   }
 }
 
-// 問3
+// 問3 interface Greeting（greet(name: string): string）と、それを実装する class JapaneseGreeting を書く。greet は "こんにちは、◯◯さん"
+//     例: new JapaneseGreeting().greet("山田") → "こんにちは、山田さん"
+// 型は interface で宣言し、クラスには implements Greeting を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Greeting {
   greet(name: string): string;
 }
@@ -35,7 +44,10 @@ export class JapaneseGreeting implements Greeting {
   }
 }
 
-// 問4
+// 問4 interface Figure（name: string、area(): number）と、関数 describeShape(figure: Figure) を書く。"正方形（面積 9）" の形
+//     例: describeShape({ name: "正方形", area: () => 9 }) → "正方形（面積 9）"
+// 型は interface で宣言してください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Figure {
   name: string;
   area(): number;
@@ -45,7 +57,10 @@ export function describeShape(figure: Figure): string {
   return `${figure.name}（面積 ${figure.area()}）`;
 }
 
-// 問5
+// 問5 interface Priced（price: number）と、関数 totalPrice(items: readonly Priced[]) を書く
+//     例: totalPrice([{ price: 100 }, { price: 50 }]) → 150
+// 型は interface で宣言してください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Priced {
   price: number;
 }
@@ -58,7 +73,10 @@ export function totalPrice(items: readonly Priced[]): number {
   return total;
 }
 
-// 問6
+// 問6 interface Instrument（play(): string）と、それを実装する class Bell と class Drum、関数 playAll(instruments: readonly Instrument[]): string[] を書く。Bell は "チリン"、Drum は "ドン"
+//     例: playAll([new Bell(), new Drum()]) → ["チリン", "ドン"]
+// 型は interface で宣言し、クラスには implements Instrument を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Instrument {
   play(): string;
 }
@@ -79,7 +97,10 @@ export function playAll(instruments: readonly Instrument[]): string[] {
   return instruments.map((instrument) => instrument.play());
 }
 
-// 問7
+// 問7 interface FixedPoint（x と y、どちらも読み取り専用の数値）と、関数 origin()（{ x: 0, y: 0 } を返す）を書く
+//     例: origin() → { x: 0, y: 0 }
+// 型は interface で宣言してください。
+// 引数と戻り値には型注釈を付けてください。
 export interface FixedPoint {
   readonly x: number;
   readonly y: number;
@@ -89,7 +110,11 @@ export function origin(): FixedPoint {
   return { x: 0, y: 0 };
 }
 
-// 問8
+// 問8 interface Animal（name: string）と、それを継承した interface Dog（breed: string を足す）、関数 dogLabel(dog: Dog) を書く。"ポチ（柴）"
+//     例: dogLabel({ name: "ポチ", breed: "柴" }) → "ポチ（柴）"
+// 型は interface で宣言してください。
+// インターフェースの継承には extends を使ってください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Animal {
   name: string;
 }
@@ -102,7 +127,10 @@ export function dogLabel(dog: Dog): string {
   return `${dog.name}（${dog.breed}）`;
 }
 
-// 問9
+// 問9 interface Logger（log(message: string): void）と、それを実装する class MemoryLogger を書く。MemoryLogger は受け取ったメッセージを lines（文字列の配列）に貯める
+//     例: log("a") の後の lines → ["a"]
+// 型は interface で宣言し、クラスには implements Logger を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Logger {
   log(message: string): void;
 }
@@ -115,7 +143,10 @@ export class MemoryLogger implements Logger {
   }
 }
 
-// 問10
+// 問10 interface KeyValueStore（get(key: string): string | undefined、set(key: string, value: string): void）と、それを実装する class MemoryStore を書く
+//     例: set("a", "1") の後の get("a") → "1"
+// 型は interface で宣言し、クラスには implements KeyValueStore を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface KeyValueStore {
   get(key: string): string | undefined;
   set(key: string, value: string): void;
@@ -133,7 +164,10 @@ export class MemoryStore implements KeyValueStore {
   }
 }
 
-// 問11
+// 問11 interface Vehicle（wheels: number、move(): string）と、それを実装する class Bike（wheels は 2、move は "スイスイ"）と class Car（wheels は 4、move は "ブーン"）を書く
+//     例: new Car().move() → "ブーン"
+// 型は interface で宣言し、クラスには implements Vehicle を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Vehicle {
   wheels: number;
   move(): string;
@@ -155,7 +189,10 @@ export class Car implements Vehicle {
   }
 }
 
-// 問12
+// 問12 interface Validator（validate(value: string): boolean）と、それを実装する class MinLength(min) を書く。文字数が min 以上なら true
+//     例: new MinLength(3).validate("ab") → false
+// 型は interface で宣言し、クラスには implements Validator を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Validator {
   validate(value: string): boolean;
 }
@@ -168,7 +205,10 @@ export class MinLength implements Validator {
   }
 }
 
-// 問13
+// 問13 interface Clock（now(): number）と、それを実装する class FixedClock(time)（now は常に time を返す）、関数 elapsedSince(clock: Clock, start: number): number（now() - start）を書く
+//     例: elapsedSince(new FixedClock(1500), 1000) → 500
+// 型は interface で宣言し、クラスには implements Clock を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Clock {
   now(): number;
 }
@@ -185,7 +225,10 @@ export function elapsedSince(clock: Clock, start: number): number {
   return clock.now() - start;
 }
 
-// 問14
+// 問14 interface PriceFormatter（format(n: number): string）と、それを実装する class YenFormatter を書く。"1,200円" の形
+//     例: new YenFormatter().format(1200) → "1,200円"
+// 型は interface で宣言し、クラスには implements PriceFormatter を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface PriceFormatter {
   format(n: number): string;
 }
@@ -196,7 +239,10 @@ export class YenFormatter implements PriceFormatter {
   }
 }
 
-// 問15
+// 問15 interface TallyLike（count: number、increment(): void）と、関数 makeTally(): TallyLike（オブジェクトリテラルで作る。increment は count を1増やす）を書く
+//     例: const t = makeTally(); t.increment(); t.count → 1
+// 型は interface で宣言してください。
+// 引数と戻り値には型注釈を付けてください。
 export interface TallyLike {
   count: number;
   increment(): void;
@@ -212,7 +258,11 @@ export function makeTally(): TallyLike {
   return tally;
 }
 
-// 問16
+// 問16 interface Point2D（x、y）と、それを継承した interface Point3D（z を足す）、関数 length3d(p: Point3D): number（原点からの距離。Math.hypot）を書く
+//     例: length3d({ x: 1, y: 2, z: 2 }) → 3
+// 型は interface で宣言してください。
+// インターフェースの継承には extends を使ってください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Point2D {
   x: number;
   y: number;
@@ -226,7 +276,10 @@ export function length3d(p: Point3D): number {
   return Math.hypot(p.x, p.y, p.z);
 }
 
-// 問17
+// 問17 interface LogEntry（message: string、at: number）と、関数 latestEntry(entries: readonly LogEntry[]): LogEntry | undefined（at がいちばん大きいもの）を書く
+//     例: latestEntry([{ message: "a", at: 1 }, { message: "b", at: 3 }]) → { message: "b", at: 3 }
+// 型は interface で宣言してください。
+// 引数と戻り値には型注釈を付けてください。
 export interface LogEntry {
   message: string;
   at: number;
@@ -242,7 +295,10 @@ export function latestEntry(entries: readonly LogEntry[]): LogEntry | undefined 
   return latest;
 }
 
-// 問18
+// 問18 interface Repository（findById(id: number): string | undefined）と、それを実装する class ArrayRepository(items: readonly string[]) を書く。id は1から数えた番号
+//     例: new ArrayRepository(["a", "b"]).findById(2) → "b"
+// 型は interface で宣言し、クラスには implements Repository を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Repository {
   findById(id: number): string | undefined;
 }
@@ -255,7 +311,10 @@ export class ArrayRepository implements Repository {
   }
 }
 
-// 問19
+// 問19 interface Discount（apply(price: number): number）と、class PercentOff(rate)（rate パーセント引き。1円未満は切り捨て）、class AmountOff(amount)（amount 円引き。0 より小さくしない）、関数 applyDiscounts(price, discounts: readonly Discount[]): number（前から順に当てはめる）を書く
+//     例: applyDiscounts(1000, [new PercentOff(10), new AmountOff(100)]) → 800
+// 型は interface で宣言し、クラスには implements Discount を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Discount {
   apply(price: number): number;
 }
@@ -284,7 +343,10 @@ export function applyDiscounts(price: number, discounts: readonly Discount[]): n
   return result;
 }
 
-// 問20
+// 問20 interface Serializable（serialize(): string）と、それを実装する class JsonUser(name, age) を書く。serialize は JSON.stringify({ name, age }) を返す
+//     例: new JsonUser("山田", 30).serialize() → '{"name":"山田","age":30}'
+// 型は interface で宣言し、クラスには implements Serializable を付けてください。
+// 引数と戻り値には型注釈を付けてください。
 export interface Serializable {
   serialize(): string;
 }

@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問10
+// 問10 target が何番目（0から数える）にあるかを返す。なければ -1
+//     例: positionOf(["a", "b"], "b") → 1
+// 引数と戻り値には型注釈を付けます。
+// 要素の位置を調べるには indexOf が使えます。
 export function positionOf(items: readonly string[], target: string): number {
   return items.indexOf(target);
 }

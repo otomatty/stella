@@ -1,7 +1,8 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問8 `${API}/users` を取得し、User の配列を返す。配列でない、または User でない要素があれば "ユーザーの形が違います" の Error
+//     例: getUsers() → [{ id: 1, name: "山田" }] で解決する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れ、形を確かめてから使ってください。
+// ユーザーの形は定義済みの isUser で確かめてください。
 
 export const API = "https://api.example.com";
 
@@ -18,7 +19,6 @@ export function isUser(value: unknown): value is User {
   );
 }
 
-// 問8
 export async function getUsers(): Promise<User[]> {
   const res = await fetch(`${API}/users`);
   const data: unknown = await res.json();

@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問12
+// 問12 偶数なら半分にした数を、奇数なら undefined を返す（戻り値は number | undefined に推論される）
+//     例: halfIfEven(8) → 4
+// 戻り値の型は推論に任せてください。
 export function halfIfEven(n: number) {
   if (n % 2 === 0) {
     return n / 2;

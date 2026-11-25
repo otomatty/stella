@@ -205,7 +205,10 @@ function assertDistributable(bundle: TaskBundle): string[] {
   const paths = Object.keys(bundle.files);
   for (const rel of paths)
     if (!isDistributablePath(rel)) throw new Error(`配布ファイルのパスが不正です: ${rel}`);
-  if (!paths.includes("README.md") || !paths.includes(TASK_MANIFEST_PATH))
+  if (bundle.manifest.problems?.length) {
+    if (!paths.includes(TASK_MANIFEST_PATH))
+      throw new Error("配布する課題に .stella/task.json がありません");
+  } else if (!paths.includes("README.md") || !paths.includes(TASK_MANIFEST_PATH))
     throw new Error("配布する課題に README.md と .stella/task.json がありません");
   return paths;
 }
@@ -284,12 +287,12 @@ function fileHashes(entries: readonly [string, Buffer][]): FileHashes {
   return Object.fromEntries(entries.map(([rel, data]) => [rel, fileHash(data)]));
 }
 
-function isFileHashes(raw: unknown): raw is FileHashes {
+function isFileHashes(raw: unknown, requiresReadme: boolean): raw is FileHashes {
   return (
     typeof raw === "object" &&
     raw !== null &&
     !Array.isArray(raw) &&
-    Object.hasOwn(raw, "README.md") &&
+    (!requiresReadme || Object.hasOwn(raw, "README.md")) &&
     Object.hasOwn(raw, TASK_MANIFEST_PATH) &&
     Object.entries(raw).every(
       ([rel, hash]) =>
@@ -806,7 +809,8 @@ async function updateDistribution(
   await options.beforeUpdate?.(root);
   let oldFiles = receipt.files;
   const problems = bundle.manifest.problemSteps ? problemPaths(bundle.manifest) : [];
-  if (!isFileHashes(oldFiles)) {
+  const requiresReadme = !bundle.manifest.problems?.length;
+  if (!isFileHashes(oldFiles, requiresReadme)) {
     // 固定した開始点の雛形は通常配布の履歴とは異なる。
     const loaded =
       receipt.variant === "fixed-start"
@@ -814,7 +818,7 @@ async function updateDistribution(
         : await options
             .loadRevisionFiles?.(receipt.taskId, receipt.contentHash)
             .catch(() => undefined);
-    if (!isFileHashes(loaded))
+    if (!isFileHashes(loaded, requiresReadme))
       throw new TaskInstallConflict("updated", root, await changedFiles(root, bundle));
     const oldManifest = await verifiedOldManifest(root, loaded);
     const legacy = await legacyDistribution(root, oldManifest ?? bundle.manifest, receipt);

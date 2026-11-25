@@ -1,14 +1,13 @@
-// 04-q07 never型と網羅性のチェック ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/never
-
+// 問11 warn と error なら true、debug と info なら false
+//     例: shouldNotify("warn") → true
+// 引数と戻り値に型注釈を付けます。
+// switch で分け、default で用意されている assertNever を呼んだ結果を返します。
 export function assertNever(value: never): never {
   throw new Error(`想定していない値です: ${JSON.stringify(value)}`);
 }
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
-// 問11
 export function shouldNotify(level: LogLevel): boolean {
   switch (level) {
     case "debug":

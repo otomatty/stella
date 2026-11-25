@@ -1,8 +1,3 @@
-// 01-q01 letとconst
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/let-and-const
-//       https://typescriptbook.jp/reference/values-types-variables/vars-problems
-//
 // 問題
 // 買い物かごの合計金額を計算する関数 checkout を完成させてください。
 //

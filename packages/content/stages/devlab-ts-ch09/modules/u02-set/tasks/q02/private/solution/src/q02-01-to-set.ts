@@ -1,8 +1,8 @@
-// 09-q02 Set ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/set
+// 問1 配列から Set を作る
+//     例: toSet(["a", "b", "a"]) → Set { "a", "b" }
+// 引数と戻り値に型注釈を付けます。
+// 引数の配列は変更しません。
 
-// 問1
 export function toSet(items: string[]): Set<string> {
   return new Set(items);
 }

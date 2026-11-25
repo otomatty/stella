@@ -1,8 +1,3 @@
-// 04-q06 unknown型と型の絞り込み
-//
-// 教材: https://typescriptbook.jp/reference/statements/unknown
-//       https://typescriptbook.jp/reference/statements/control-flow-analysis-and-type-guard
-//
 // 問題
 // 型の分からない値（unknown）を受け取る関数を書いてください。引数と戻り値には型注釈を付けること。
 // unknown の値は、typeof、instanceof、Array.isArray、=== null などで型を絞り込んでから使う。

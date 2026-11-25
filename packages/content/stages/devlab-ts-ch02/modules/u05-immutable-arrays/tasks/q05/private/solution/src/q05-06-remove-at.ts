@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問6
+// 問6 index 番目の要素を除いた新しい配列を返す
+//     例: removeAt(["a", "b", "c"], 1) → ["a", "c"]
+// 引数と戻り値には型注釈を付けます。
+// 残す要素を選ぶには filter が使えます。
 export function removeAt(items: readonly string[], index: number): string[] {
   return items.filter((_, i) => i !== index);
 }

@@ -1,9 +1,6 @@
-// 02-q06 タプル ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/tuple
-//       https://typescriptbook.jp/reference/values-types-variables/array/destructuring-assignment-from-array
-
-// 問20
+// 問20 各要素を [番号, 要素] のタプルにした配列を返す（番号は0から）
+//     例: withIndex(["a", "b"]) → [[0, "a"], [1, "b"]]
+// 引数と戻り値には型注釈を付けます。
 export function withIndex(items: readonly string[]): [number, string][] {
   return items.map((item, i): [number, string] => [i, item]);
 }

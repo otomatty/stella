@@ -1,7 +1,3 @@
-// 01-e01 発展問題 bigint型
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/bigint
-//
 // 問題
 // factorial(n) を書いてください。n の階乗（1 × 2 × … × n）を返す。
 // 引数と戻り値は bigint にすること。

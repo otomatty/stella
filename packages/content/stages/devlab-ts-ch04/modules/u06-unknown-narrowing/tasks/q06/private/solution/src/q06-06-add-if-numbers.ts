@@ -1,9 +1,7 @@
-// 04-q06 unknown型と型の絞り込み ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/unknown
-//       https://typescriptbook.jp/reference/statements/control-flow-analysis-and-type-guard
-
-// 問6
+// 問6 2つとも数値なら足した数、そうでなければ null
+//     例: addIfNumbers(1, "2") → null
+// 引数と戻り値に型注釈を付けます。
+// typeof で値の型を確かめます。
 export function addIfNumbers(a: unknown, b: unknown): number | null {
   if (typeof a === "number" && typeof b === "number") {
     return a + b;

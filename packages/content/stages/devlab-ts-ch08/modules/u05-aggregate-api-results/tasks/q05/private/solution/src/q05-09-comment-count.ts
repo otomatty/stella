@@ -1,7 +1,7 @@
-// 08-q05 複数のAPIの結果をまとめる ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/promise
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問9 投稿のコメントの数を返す
+//     例: commentCount(10) → 2 で解決する
+// async と await を使ってください。
+// コメントの取得には定義済みの getComments を使ってください。
 
 export type Comment = { postId: number; text: string };
 
@@ -17,7 +17,6 @@ export function getComments(postId: number): Promise<Comment[]> {
   return Promise.resolve(COMMENTS.filter((c) => c.postId === postId));
 }
 
-// 問9
 export async function commentCount(postId: number): Promise<number> {
   const comments = await getComments(postId);
   return comments.length;

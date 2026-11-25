@@ -1,7 +1,8 @@
-// 08-q03 fetch ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/await
-//       https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch
+// 問10 `${API}/todos` を取得し、done が true の TODO の数を返す。形が違えば "TODO の形が違います" の Error
+//     例: countDone() → 1 で解決する
+// fetch と async・await を使ってください。
+// res.json() の結果を unknown 型の変数に入れ、形を確かめてから使ってください。
+// TODO の形は定義済みの isTodo で確かめてください。
 
 export const API = "https://api.example.com";
 
@@ -20,7 +21,6 @@ export function isTodo(value: unknown): value is Todo {
   );
 }
 
-// 問10
 export async function countDone(): Promise<number> {
   const res = await fetch(`${API}/todos`);
   const data: unknown = await res.json();

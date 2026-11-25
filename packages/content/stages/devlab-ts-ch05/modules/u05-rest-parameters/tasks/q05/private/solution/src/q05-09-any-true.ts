@@ -1,8 +1,8 @@
-// 05-q05 残余引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/rest-parameters
+// 問9 1つでも true なら true。引数がなければ false
+//     例: anyTrue(false, true) → true
+// 引数と戻り値には型注釈を付けてください。
+// 個数が決まっていない引数は、...numbers: number[] のような残余引数で受け取ってください。
 
-// 問9
 export function anyTrue(...flags: boolean[]): boolean {
   return flags.some((flag) => flag);
 }

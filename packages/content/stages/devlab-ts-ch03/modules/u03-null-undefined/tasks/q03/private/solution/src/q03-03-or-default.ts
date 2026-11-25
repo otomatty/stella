@@ -1,9 +1,8 @@
-// 03-q03 null と undefined ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/undefined-vs-null
-//       https://typescriptbook.jp/reference/values-types-variables/object/optional-chaining
+// 問3 数値か undefined を受け取り、undefined なら fallback を返す
+//     例: orDefault(undefined, 10) → 10
+// 引数と戻り値に型注釈を付ける。
+// ?? で、値がない場合を扱う。
 
-// 問3
 export function orDefault(value: number | undefined, fallback: number): number {
   return value ?? fallback;
 }

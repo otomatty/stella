@@ -1,8 +1,6 @@
-// 01-q03 型推論 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-inference
-
-// 問11
+// 問11 2つの単語を半角スペースでつなぐ
+//     例: joinWords("Hello", "World") → "Hello World"
+// 戻り値の型は推論に任せてください。
 export function joinWords(a: string, b: string) {
   return `${a} ${b}`;
 }

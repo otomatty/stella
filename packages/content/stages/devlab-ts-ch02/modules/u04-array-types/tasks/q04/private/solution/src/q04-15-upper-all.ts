@@ -1,10 +1,7 @@
-// 02-q04 配列の型 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/type-annotation-of-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/readonly-array
-//       https://typescriptbook.jp/reference/values-types-variables/array/how-to-loop-an-array
-
-// 問15
+// 問15 すべての英字を大文字にした配列を返す
+//     例: upperAll(["a", "Bc"]) → ["A", "BC"]
+// 引数と戻り値には型注釈を付けます。
+// 要素を変換するには map が使えます。
 export function upperAll(words: readonly string[]): string[] {
   return words.map((w) => w.toUpperCase());
 }

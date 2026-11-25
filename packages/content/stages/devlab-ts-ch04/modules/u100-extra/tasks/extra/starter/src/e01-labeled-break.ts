@@ -1,8 +1,3 @@
-// 04-e01 発展問題 ラベル付き break
-//
-// 教材: https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/label
-//       https://jsprimer.net/basic/loop/
-//
 // 問題
 // 2重のループを途中で抜けたいとき、break だけでは内側のループしか抜けられません。
 // 外側のループにラベル（outer: for …）を付けると、break outer; で外側まで一度に抜けられます。

@@ -1,9 +1,8 @@
-// 03-q02 リテラル型のユニオン ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/literal-types
-//       https://typescriptbook.jp/reference/values-types-variables/union
+// 問13 型 Theme（"light"、"dark"、"system"）を定義して export し、resolveTheme(theme: Theme, osDark: boolean) を書く。"system" なら OS の設定（osDark が true なら "dark"）に従う。戻り値は "light" | "dark"
+//     例: resolveTheme("system", true) → "dark"
+// 引数と戻り値に型注釈を付ける。
+// type と | を使い、リテラル型のユニオンを定義する。
 
-// 問13
 export type Theme = "light" | "dark" | "system";
 
 export function resolveTheme(theme: Theme, osDark: boolean): "light" | "dark" {

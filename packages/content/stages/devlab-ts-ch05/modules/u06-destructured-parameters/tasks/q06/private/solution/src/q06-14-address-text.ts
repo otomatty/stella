@@ -1,9 +1,8 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問14 { pref, city, line } をつなぐ。line を省略したら付けない
+//     例: addressText({ pref: "東京都", city: "渋谷区" }) → "東京都渋谷区"
+// 引数と戻り値には型注釈を付けてください。
+// オブジェクトは引数の位置で分割代入してください。
 
-// 問14
 export function addressText({
   pref,
   city,

@@ -1,9 +1,7 @@
-// 02-q05 配列を壊さない操作 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/array/array-operations
-//       https://typescriptbook.jp/reference/values-types-variables/array/spread-syntax-for-array
-
-// 問4
+// 問4 最後の要素を除いた新しい配列を返す
+//     例: dropLast(["a", "b", "c"]) → ["a", "b"]
+// 引数と戻り値には型注釈を付けます。
+// 配列の一部を取り出すには slice が使えます。
 export function dropLast(items: readonly string[]): string[] {
   return items.slice(0, -1);
 }

@@ -28,6 +28,7 @@ import type { PublicSourceReference } from "../../shared/src/tasks/source-refere
 import { sortNatural } from "./natural-order.mjs";
 import {
   parseTaskDefinition,
+  taskRevisionDefinition,
   parseUnitConfig,
   toRuntimeManifest,
   type TaskDefinition,
@@ -43,6 +44,7 @@ export interface TaskSeed {
    */
   lessonId: string | null;
   problemSteps?: { problemId: string; stepLessonId: string; afterLessonId: string }[];
+  refs?: { problemId: string; position: number; stageId: string; lessonId: string }[];
   /**
    * 類題 (`tasks/<課題>/private/variants/<類題>/`) なら親の課題 ID (#39)。類題はステージの課題一覧・
    * レッスン・学習ペース・修了の判定に出さず、出題した受講者にだけ配る。
@@ -298,7 +300,8 @@ export function readUnit(
 
 /**
  * 課題の `private/variants/` を読む。予備の類題は 1 問 1 フォルダーで、中身は課題と同じ形
- * (task.json・README.md・hints.md・starter/・tests/・private/)。空の在庫は `.gitkeep` だけを置く。
+ * (task.json・hints.md・starter/・tests/・private/ と、問題の無い類題には README.md)。
+ * 空の在庫は `.gitkeep` だけを置く。
  */
 function readVariants(ctx: UnitContext, parent: TaskSeed): TaskSeed[] {
   const variantsRoot = join(parent.directory, "private/variants");
@@ -403,6 +406,9 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   for (const id of definition.sources)
     if (!ctx.references.some((r) => r.id === id)) throw new Error(`未知の参照元: ${id}`);
   if (parent) {
+    const refs = definition.refs ?? definition.problems?.find((p) => p.refs !== undefined)?.refs;
+    if (refs !== undefined)
+      throw new Error(`類題 ${definition.id} には refs を書けません: ${JSON.stringify(refs)}`);
     // 類題は同じ実装パターンの別の問題 (07 §7.2)。パターンを変えたら類題ではない。
     if (definition.pattern !== parent.definition.pattern)
       throw new Error(
@@ -418,9 +424,16 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
       if (existsSync(join(taskDir, rel)))
         throw new Error(`類題には ${rel} を置けません: ${definition.id}`);
   }
+  const readmePath = join(taskDir, "README.md");
+  const hasReadme = lstatSync(readmePath, { throwIfNoEntry: false }) !== undefined;
+  if (definition.problems && hasReadme)
+    throw new Error(
+      `問題つきの課題には README.md を置きません。問題文と条件は問題ファイルの // 問N のコメントに、手がかりは task.json の refs に書きます (類題では refs は使えません)。課題 ID ${definition.id}`,
+    );
   for (const rel of parent ? TASK_REQUIRED_PATHS : [...TASK_REQUIRED_PATHS, "private/variants"]) {
     // 問題つきの課題は AI の一次レビューを通さないので、観点の review.md は置かない。
     if (rel === "private/review.md" && definition.problems) continue;
+    if (rel === "README.md" && definition.problems) continue;
     if (!existsSync(join(taskDir, rel)) || lstatSync(join(taskDir, rel)).isSymbolicLink())
       throw new Error(`${label}に ${rel} が必要です: ${definition.id}`);
   }
@@ -430,7 +443,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   const readmeId = parent
     ? `tasks/${basename(parent.directory)}/private/variants/${taskId}/README.md`
     : `tasks/${taskId}/README.md`;
-  const readme = readFileSync(join(taskDir, "README.md"), "utf8");
+  const readme = hasReadme ? readFileSync(readmePath, "utf8") : "";
   // 課題の配布物 (starter・tests・README・manifest) にも LMS の課題文にも教材内の画像は
   // 載らないので、README から参照すると受講者には壊れた画像になる。公開前に止める。
   const contentIds = referenceContentIds(readme, readmeId);
@@ -470,7 +483,7 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
       bundlePaths.add(normalized);
       files[key] = value;
     }
-    files["README.md"] = readmeFile;
+    if (hasReadme) files["README.md"] = readmeFile;
     files[".stella/task.json"] = manifestFile;
     return files;
   };
@@ -511,7 +524,13 @@ function readTask(ctx: UnitContext, taskDir: string, taskId: string, parent?: Ta
   );
   // 固定した開始点の無い課題は、これまでと同じ版 (contentHash) のままにする。
   const contentHash = createHash("sha256")
-    .update(JSON.stringify({ definition, files, ...(fixedStart ? { fixedStart } : {}) }))
+    .update(
+      JSON.stringify({
+        definition: taskRevisionDefinition(definition),
+        files,
+        ...(fixedStart ? { fixedStart } : {}),
+      }),
+    )
     .digest("hex");
   return {
     stageId,

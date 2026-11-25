@@ -1,12 +1,7 @@
-// 09-q03 Date ドリル
-//
-// 教材: https://typescriptbook.jp/reference/builtin-api/date
-//
-// Date を使って書いてください。引数と戻り値には型注釈を付けること。
-// 日付はその環境の時刻（ローカル時刻）で扱う。getFullYear、getMonth、getDate、getDay、getHours、getMinutes を使う。
-// Date の中では、月は 0〜11（1月が 0）、曜日は 0〜6（日曜が 0）で数える。問題文の「月」は 1〜12 で書いている。
-// 引数の Date は変えないこと。変えたいときは new Date(date.getTime()) でコピーしてから変える。
-
 // 問3 月を 1〜12 で返す
 //     例: monthOf(2026年4月1日) → 4
+// 引数と戻り値に型注釈を付けます。
+// Date では月を 0〜11（1月が 0）で数えます。
+// ローカル時刻の月は getMonth() で取り出します。
+// 引数の Date は変更しません。
 export function monthOf() {}

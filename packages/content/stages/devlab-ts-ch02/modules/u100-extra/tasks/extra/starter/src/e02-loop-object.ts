@@ -1,7 +1,3 @@
-// 02-e02 発展問題 オブジェクトをループする
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/how-to-loop-an-object
-//
 // 問題
 // 名前と得点の組を表す型 Scores は定義済みです。次の3つの関数を書いてください。
 // 引数と戻り値には型注釈を付けること。

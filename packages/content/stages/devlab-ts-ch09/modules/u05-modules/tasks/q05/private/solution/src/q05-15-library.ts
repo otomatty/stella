@@ -1,6 +1,4 @@
-// 09-q05 import と export ドリル
-//
-// 教材: https://typescriptbook.jp/reference/import-export-require
+// 問15 shared/q05-modules.lib の export をすべて、library という名前のまとまりとして re-export する（export * as … from …）
+//     例: library.SITE_NAME → "サンプル商店"
 
-// 問15
 export * as library from "./shared/q05-modules.lib";

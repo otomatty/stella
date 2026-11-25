@@ -1,8 +1,3 @@
-// 09-e01 発展問題 JSON の読み書き
-//
-// 教材: https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
-//       https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
-//
 // 問題
 // JSON.parse の戻り値は any です。外から来た JSON は、形を確かめてから使う必要があります。
 // any を使わずに（unknown の変数に入れて）、次の関数を書いてください。

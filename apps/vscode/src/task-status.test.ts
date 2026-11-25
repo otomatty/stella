@@ -332,9 +332,20 @@ describe("ステータスバーの課題のボタン", () => {
     await state.editorListener?.(editor(state.activeFile));
     expect(taskChanged).toHaveBeenCalledExactlyOnceWith(problemRoot);
     expect(state.items[2]?.visible).toBe(true);
-    expect(state.items[2]?.text).toBe("1/2 問");
+    expect(stateItem()?.text).toBe("$(star) calc 問2 ・ 提出 1/2");
+    expect(stateItem()?.command).toMatchObject({
+      command: "stella.showTaskReadme",
+      arguments: [problemRoot],
+    });
+    expect(state.items[1]?.text).toBe("$(book) 課題");
+    expect(submitItem()?.text).toBe("$(play) 確認して提出");
+    expect(submitItem()?.command).toMatchObject({
+      command: "stella.submitTask",
+      arguments: [problemRoot, "q02-sub"],
+    });
+    expect(state.executeCommand).toHaveBeenCalledWith("setContext", "stella.problemTask", true);
     startTaskCheck({ root: problemRoot, taskId: "extra/unit/calc", problemId: "q01-add" });
-    expect(stateItem()?.visible).toBe(false);
+    expect(stateItem()?.text).toBe("$(star) calc 問2 ・ 提出 1/2");
     expect(submitItem()?.visible).toBe(true);
   });
 

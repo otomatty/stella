@@ -30,6 +30,7 @@ import {
   taskProblemResults,
   taskProblemSteps,
   taskProgress,
+  taskRefs,
   taskRevisions,
   tasks,
   tenants,
@@ -441,6 +442,219 @@ describe("問題の提出", () => {
   async function problemResults() {
     return request(app(), env, `/api/tasks/problem-results?taskId=${TASK_ID}`, { token });
   }
+
+  it("課題と解放ステップの手がかりを順に返し、本人の受講登録と進捗を反映する", async () => {
+    await setupProblemSteps();
+    await db.batch([
+      db.insert(enrollments).values({ userId: "teacher", stageId: "stage" }),
+      db.insert(stages).values([
+        { id: "previous", slug: "dev-env-basics", title: "開発環境", status: "published" },
+        { id: "draft", slug: "draft-stage", title: "下書き", status: "draft" },
+        { id: "archived", slug: "archived-stage", title: "非公開", status: "archived" },
+        { id: "retired", slug: "devlab-ts-prework", title: "退役", status: "published" },
+      ]),
+      db.insert(sections).values(
+        ["previous", "draft", "archived", "retired"].map((stageId) => ({
+          id: `${stageId}-unit`,
+          stageId,
+          title: "単元",
+        })),
+      ),
+      db.insert(lessons).values([
+        { id: "summary", sectionId: "unit", title: "計算のまとめ", type: "text" },
+        {
+          id: "previous-lesson",
+          sectionId: "previous-unit",
+          title: "環境のまとめ",
+          type: "text",
+        },
+        ...["draft", "archived", "retired"].map((stageId) => ({
+          id: `${stageId}-lesson`,
+          sectionId: `${stageId}-unit`,
+          title: "参照対象外",
+          type: "text" as const,
+        })),
+      ]),
+      db.insert(lessonProgress).values([
+        { userId: "learner", lessonId: "summary", completed: true },
+        { userId: "teacher", lessonId: "video", completed: true },
+      ]),
+      db.insert(taskRefs).values([
+        { taskId: TASK_ID, problemId: "", position: 0, lessonId: "summary" },
+        { taskId: TASK_ID, problemId: "", position: 1, lessonId: "draft-lesson" },
+        { taskId: TASK_ID, problemId: "", position: 2, lessonId: "archived-lesson" },
+        { taskId: TASK_ID, problemId: "", position: 3, lessonId: "retired-lesson" },
+        { taskId: TASK_ID, problemId: "q02-sub", position: 1, lessonId: "summary" },
+        { taskId: TASK_ID, problemId: "q02-sub", position: 0, lessonId: "previous-lesson" },
+      ]),
+    ]);
+
+    async function expectRefs(viewerToken: string, crossStageAccess: boolean, staff = false) {
+      const summary = {
+        lessonId: "summary",
+        stageId: "stage",
+        title: "計算のまとめ",
+        lessonType: "text",
+        accessible: true,
+        completed: !staff,
+      };
+      const auto = {
+        lessonId: "video",
+        stageId: "stage",
+        title: "計算の基礎",
+        lessonType: "slides",
+        accessible: true,
+        completed: staff,
+        auto: true,
+      };
+      const previous = {
+        lessonId: "previous-lesson",
+        stageId: "previous",
+        stageTitle: "開発環境",
+        title: "環境のまとめ",
+        lessonType: "text",
+        accessible: crossStageAccess,
+        completed: false,
+      };
+      const expected = {
+        refs: [summary],
+        problems: [
+          { id: "q02-sub", refs: [auto, previous, summary] },
+          { id: "q01-add", refs: [auto] },
+        ],
+      };
+      const results = await request(app(), env, `/api/tasks/problem-results?taskId=${TASK_ID}`, {
+        token: viewerToken,
+      });
+      expect(results.status, await results.clone().text()).toBe(200);
+      expect(await results.json()).toMatchObject(expected);
+
+      const catalog = await request(app(), env, "/api/tasks/for-stage/stage", {
+        token: viewerToken,
+      });
+      expect(catalog.status, await catalog.clone().text()).toBe(200);
+      expect(await catalog.json()).toMatchObject({
+        tasks: [
+          {
+            id: TASK_ID,
+            ...expected,
+            problem_items: [
+              {
+                id: "q01-add",
+                title: "足す",
+                label: "問1",
+                source: "src/q01-add.ts",
+                stepLessonId: "step-add",
+                afterLessonId: "video",
+                afterTitle: "計算の基礎",
+                state: staff ? "locked-previous" : "locked-video",
+                refs: [auto],
+              },
+              {
+                id: "q02-sub",
+                title: "引く",
+                label: "問2",
+                source: "src/q02-sub.ts",
+                stepLessonId: "step-sub",
+                afterLessonId: "video",
+                afterTitle: "計算の基礎",
+                state: staff ? "open" : "locked-video",
+                refs: [auto, previous, summary],
+              },
+            ],
+          },
+          { id: plain.input.taskId, refs: [] },
+        ],
+      });
+    }
+    await expectRefs(token, false);
+    await expectRefs(instructorToken, true, true);
+    await db.insert(enrollments).values({
+      userId: "learner",
+      stageId: "previous",
+      status: "completed",
+    });
+    await expectRefs(token, true);
+  });
+
+  it("動画で解放しない課題も問題の手がかりを返し、手がかりのない箇所は空配列にする", async () => {
+    const empty = await problemResults();
+    expect(empty.status).toBe(200);
+    expect(await empty.json()).toMatchObject({ refs: [], problems: [{ refs: [] }, { refs: [] }] });
+
+    await db.batch([
+      db
+        .insert(lessons)
+        .values({ id: "summary", sectionId: "unit", title: "まとめ", type: "text" }),
+      db.insert(taskRefs).values({
+        taskId: TASK_ID,
+        problemId: "q01-add",
+        position: 0,
+        lessonId: "summary",
+      }),
+    ]);
+    const results = await problemResults();
+    expect(results.status).toBe(200);
+    const body = await results.json();
+    expect(body).toMatchObject({
+      refs: [],
+      problems: [
+        {
+          id: "q01-add",
+          refs: [
+            {
+              lessonId: "summary",
+              stageId: "stage",
+              title: "まとめ",
+              lessonType: "text",
+              completed: false,
+              accessible: true,
+            },
+          ],
+        },
+        { id: "q02-sub", refs: [] },
+      ],
+    });
+    expect(body).not.toHaveProperty("gated");
+
+    await submitProblem("q01-add");
+    const stage = await request(app(), env, "/api/tasks/for-stage/stage", { token });
+    expect(stage.status).toBe(200);
+    const catalog = await json<{ tasks: TaskSummary[] }>(stage);
+    const task = catalog.tasks.find(({ id }) => id === TASK_ID);
+    expect(task).toMatchObject({ problems_total: 2, problems_passed: 1 });
+    expect(task?.problem_items).toEqual([
+      {
+        id: "q01-add",
+        title: "足す",
+        label: "問1",
+        source: "src/q01-add.ts",
+        state: "submitted",
+        refs: [
+          {
+            lessonId: "summary",
+            stageId: "stage",
+            title: "まとめ",
+            lessonType: "text",
+            completed: false,
+            accessible: true,
+          },
+        ],
+      },
+      {
+        id: "q02-sub",
+        title: "引く",
+        label: "問2",
+        source: "src/q02-sub.ts",
+        state: "open",
+        refs: [],
+      },
+    ]);
+    expect(task).not.toHaveProperty("problems");
+    expect(catalog.tasks.find(({ id }) => id === plain.input.taskId)).not.toHaveProperty(
+      "problem_items",
+    );
+  });
 
   async function stepProgress(lessonId: string) {
     const [row] = await db
@@ -863,12 +1077,27 @@ describe("問題の提出", () => {
     await db.update(taskProblemResults).set({ contentHash: CURRENT });
     const stage = await request(app(), env, "/api/tasks/for-stage/stage", { token });
     expect(stage.status).toBe(200);
+    const refs = [
+      {
+        lessonId: "video",
+        stageId: "stage",
+        title: "計算の基礎",
+        lessonType: "slides",
+        accessible: true,
+        completed: true,
+        auto: true,
+      },
+    ];
     expect(await stage.json()).toMatchObject({
       tasks: expect.arrayContaining([
         expect.objectContaining({
           id: TASK_ID,
           problems_total: 2,
           problems_passed: 1,
+          problem_items: [
+            expect.objectContaining({ id: "q01-add", state: "open" }),
+            expect.objectContaining({ id: "q02-sub", state: "submitted", manual: true, refs }),
+          ],
           problems_manual: 1,
           problems: [
             {
@@ -879,6 +1108,7 @@ describe("問題の提出", () => {
               afterLessonId: "video",
               afterTitle: "計算の基礎",
               state: "submitted",
+              refs,
               manual: true,
             },
             {
@@ -889,6 +1119,7 @@ describe("問題の提出", () => {
               afterLessonId: "video",
               afterTitle: "計算の基礎",
               state: "open",
+              refs,
             },
           ],
         }),
@@ -914,6 +1145,7 @@ describe("問題の提出", () => {
       ],
     });
     expect(summary?.problems?.[1]).not.toHaveProperty("manual");
+    expect(summary?.problem_items?.[0]).not.toHaveProperty("manual");
     const old = await request(app(), env, `/api/tasks/bundle?taskId=${TASK_ID}&extension=0.10.1`, {
       token,
     });
@@ -1067,6 +1299,12 @@ describe("問題の提出", () => {
     const pending = view.tasks.find((task) => task.id === TASK_ID);
     expect(pending).toMatchObject({ problems_total: 2, problems_passed: 1 });
     expect(pending).not.toHaveProperty("problems");
+    expect(pending).toMatchObject({
+      problem_items: [
+        { id: "q01-add", state: "locked-video" },
+        { id: "q02-sub", state: "submitted" },
+      ],
+    });
     expect(view.tasks.some((task) => task.id === plain.input.taskId)).toBe(true);
     expect((await problemResults()).status).toBe(503);
     expect((await post(input)).status).toBe(503);
@@ -1607,6 +1845,10 @@ describe("問題の提出", () => {
     );
     expect(listed.tasks.find((task) => task.id === TASK_ID)).toMatchObject({
       problems_manual: 2,
+      problem_items: [
+        { id: "q01-add", state: "submitted", manual: true },
+        { id: "q02-sub", state: "submitted", manual: true },
+      ],
       manual_passed: true,
       status: "passed",
     });
@@ -2331,6 +2573,7 @@ describe("問題の提出", () => {
         ...problem,
         status: "passed",
         source: "tests",
+        refs: [],
         firstPassedAt: saved
           .find((row) => row.problemId === problem.id)
           ?.firstPassedAt.toISOString(),

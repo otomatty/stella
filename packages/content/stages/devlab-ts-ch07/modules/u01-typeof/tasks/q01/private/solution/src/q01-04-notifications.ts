@@ -1,7 +1,5 @@
-// 07-q01 typeof 型演算子 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/type-reuse/typeof-type-operator
-//       https://typescriptbook.jp/reference/type-reuse/indexed-access-types
+// 問4 型 Notifications を、SETTINGS の notifications プロパティの型として作る（(typeof SETTINGS)["notifications"]）
+// 定義済みの定数は書き換えません。
 
 export const SETTINGS = {
   theme: "light",
@@ -9,5 +7,4 @@ export const SETTINGS = {
   notifications: { email: true, push: false },
 };
 
-// 問4
 export type Notifications = (typeof SETTINGS)["notifications"];

@@ -1,7 +1,3 @@
-// 01-e02 発展問題 小数の計算の誤差
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/number
-//
 // 問題
 // JavaScript の数値で小数を計算すると、誤差が出ることがあります。
 // 例: 0.1 + 0.2 は 0.30000000000000004 になる

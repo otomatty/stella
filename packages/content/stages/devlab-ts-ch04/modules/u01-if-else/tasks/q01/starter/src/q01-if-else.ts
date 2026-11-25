@@ -1,8 +1,3 @@
-// 04-q01 if-else文
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-//
 // 問題
 // 次の3つの関数を書いてください。引数と戻り値には型注釈を付けること。
 //
@@ -19,6 +14,7 @@
 // 3. ticketPrice(age, isWeekday)
 //    入場料を返す。6歳未満は 0円、12歳以下は 500円、65歳以上は 800円、それ以外は 1500円。
 //    平日は 100円引き。ただし 0円の人は 0円のまま
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 
 export function grade() {}
 

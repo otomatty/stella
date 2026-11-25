@@ -1,9 +1,7 @@
-// 02-q02 オプションプロパティと readonly ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-
-// 問3
+// 問3 { email? } の email を返す。なければ「（未登録）」
+//     例: emailText({}) → "（未登録）"
+// 引数と戻り値には型注釈を付けます。
+// 値が省略されている場合は、?? で補えます。
 export function emailText(user: { email?: string }): string {
   return user.email ?? "（未登録）";
 }

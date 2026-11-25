@@ -1,9 +1,8 @@
-// 05-q08 関数を返す関数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/function-is-a-value
-//       https://typescriptbook.jp/reference/functions/function-type-declaration
+// 問14 呼ぶたびに items を先頭から順に返し、最後まで行ったら先頭に戻る関数を返す。空の配列なら Error を投げる
+//     例: const next = makeCycler(["a", "b"]); next() → "a"、"b"、"a"…
+// 引数には型注釈を付け、戻り値の型は (x: number) => number のように書いてください。
+// 外側の関数に状態を持たせ、返す関数から読み書きしてください。
 
-// 問14
 export function makeCycler(items: readonly string[]): () => string {
   if (items.length === 0) {
     throw new Error("空の配列です");

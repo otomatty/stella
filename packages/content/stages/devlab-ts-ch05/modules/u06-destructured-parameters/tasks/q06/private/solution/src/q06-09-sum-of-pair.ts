@@ -1,9 +1,8 @@
-// 05-q06 分割代入引数 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/functions/destructuring-assignment-parameters
-//       https://typescriptbook.jp/reference/functions/keyword-arguments-and-options-object-pattern
+// 問9 { a, b } の合計
+//     例: sumOfPair({ a: 2, b: 5 }) → 7
+// 引数と戻り値には型注釈を付けてください。
+// オブジェクトは引数の位置で分割代入してください。
 
-// 問9
 export function sumOfPair({ a, b }: { a: number; b: number }): number {
   return a + b;
 }

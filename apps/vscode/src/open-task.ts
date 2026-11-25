@@ -36,7 +36,7 @@ import {
   type TaskVariant,
 } from "./task-distribution.js";
 import { resolveFileInRoot } from "./runner/files.js";
-import { taskBundleUrl } from "./task-bundle-url.js";
+import { taskBundleUrl, taskFixedStartUrl, taskRevisionFilesUrl } from "./task-bundle-url.js";
 import { OPEN_FILES_LIMIT, opensAsText, resolveEditFiles } from "./task-guide.js";
 import { isCompactTaskLayout } from "./task-panel.js";
 import {
@@ -107,8 +107,11 @@ async function isPlainFile(file: string): Promise<boolean> {
  * 課題フォルダーで最初に開くファイル (課題フォルダーからの相対パス)。画像などテキストで
  * 開けないファイルは除く (課題文のリンクからは開ける)。定義を読めなければ無し。
  */
-async function filesToOpen(taskRoot: string, requestedProblem?: string): Promise<string[]> {
-  const loaded = await loadTask(taskRoot);
+async function filesToOpen(
+  taskRoot: string,
+  loaded: Awaited<ReturnType<typeof loadTask>>,
+  requestedProblem?: string,
+): Promise<string[]> {
   if (!loaded.ok) return [];
   if (loaded.manifest.problems?.length) {
     const { states, blocked, unprepared, preparationError, progress } = await loadTaskProblems(
@@ -156,8 +159,9 @@ async function openInLeftColumn(taskRoot: string, rel: string): Promise<vscode.U
  * 課題文のパネル (進め方つき) の配置は task-panel が決める。
  */
 async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<void> {
-  const readme = vscode.Uri.file(path.join(taskRoot, "README.md"));
-  if (!(await isPlainFile(readme.fsPath))) {
+  const loaded = await loadTask(taskRoot);
+  const hasProblems = loaded.ok && loaded.manifest.problems?.length;
+  if (!hasProblems && !(await isPlainFile(path.join(taskRoot, "README.md")))) {
     // 課題文が消えた・壊れた課題フォルダー (「今のフォルダーを開く」から来る) は、
     // 開けない README の代わりに課題フォルダーをエクスプローラーで示す。
     await vscode.commands.executeCommand("revealInExplorer", vscode.Uri.file(taskRoot)).then(
@@ -169,7 +173,7 @@ async function showTaskWorkspace(taskRoot: string, problem?: string): Promise<vo
     );
     return;
   }
-  const rels = await filesToOpen(taskRoot, problem);
+  const rels = await filesToOpen(taskRoot, loaded, problem);
   const receipt = await readDistribution(taskRoot).catch(() => undefined);
   if (receipt) await vscode.commands.executeCommand("stella.revealTask", receipt.taskId);
   const opened: string[] = [];
@@ -325,9 +329,8 @@ async function prepareAndOpen(
     taskRoot = await installTask(trainingRoot, bundle, {
       variant,
       loadRevisionFiles: async (taskId, contentHash) => {
-        const query = new URLSearchParams({ taskId, contentHash });
         const { files } = await apiRequest<{ files: unknown }>(
-          `/api/tasks/revision-files?${query}`,
+          taskRevisionFilesUrl(taskId, contentHash),
           {
             signal: AbortSignal.timeout(4_000),
           },
@@ -414,7 +417,7 @@ async function startFromFixedStart(store: TaskOpenStore): Promise<void> {
     use,
   );
   if (choice !== use) return;
-  const { bundle } = await apiRequest<{ bundle: TaskBundle }>("/api/tasks/fixed-start", {
+  const { bundle } = await apiRequest<{ bundle: TaskBundle }>(taskFixedStartUrl(), {
     method: "POST",
     body: { taskId },
   });

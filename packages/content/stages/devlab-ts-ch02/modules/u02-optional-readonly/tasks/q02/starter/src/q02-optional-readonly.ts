@@ -1,8 +1,3 @@
-// 02-q02 オプションプロパティと readonly
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/optional-property
-//       https://typescriptbook.jp/reference/values-types-variables/object/readonly-property
-//
 // 問題
 // 1. 利用者を表す型 User を定義して export してください
 //    - id: 数値。後から書き換えられないように readonly にする

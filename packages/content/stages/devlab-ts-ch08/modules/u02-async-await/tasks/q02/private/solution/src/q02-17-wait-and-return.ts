@@ -1,7 +1,7 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問17 wait(ms) を await で待ってから、value を返す
+//     例: waitAndReturn(100, "a") → 100ミリ秒後に "a" で解決する
+// async 関数として書いてください。
+// 戻り値の型は Promise<…> と明記してください。
 
 // ms ミリ秒待つ
 export function wait(ms: number): Promise<void> {
@@ -10,7 +10,6 @@ export function wait(ms: number): Promise<void> {
   });
 }
 
-// 問17
 export async function waitAndReturn(ms: number, value: string): Promise<string> {
   await wait(ms);
   return value;

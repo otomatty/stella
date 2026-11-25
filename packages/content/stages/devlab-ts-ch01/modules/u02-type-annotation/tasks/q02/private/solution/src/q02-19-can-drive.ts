@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問19
+// 問19 18歳以上で、免許を持っていれば true を返す
+//     例: canDrive(20, true) → true
+// 戻り値には型注釈を付けてください。
 export function canDrive(age: number, hasLicense: boolean): boolean {
   return age >= 18 && hasLicense;
 }

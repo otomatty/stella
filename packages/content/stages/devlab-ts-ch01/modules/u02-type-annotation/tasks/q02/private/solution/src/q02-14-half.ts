@@ -1,8 +1,6 @@
-// 01-q02 型注釈 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/type-annotation
-
-// 問14
+// 問14 半分の数を返す
+//     例: half(7) → 3.5
+// 戻り値には型注釈を付けてください。
 export function half(n: number): number {
   return n / 2;
 }

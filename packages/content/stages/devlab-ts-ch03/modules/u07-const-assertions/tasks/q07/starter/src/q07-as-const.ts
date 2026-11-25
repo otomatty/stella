@@ -1,7 +1,3 @@
-// 03-q07 as const
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/const-assertion
-//
 // 問題
 // タスクのステータスを扱います。
 //

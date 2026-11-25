@@ -1,11 +1,10 @@
-// 02-q03 分割代入とスプレッド構文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/values-types-variables/object/destructuring-assignment-from-objects
-//       https://typescriptbook.jp/reference/values-types-variables/object/spread-syntax-for-object
+// 問1 分割代入で name と price を取り出し、「りんご 150円」の形にする
+//     例: itemLabel(りんご) → "りんご 150円"
+// 引数と戻り値には型注釈を付けます。
+// 定義済みの Item 型を使います。
 
 export type Item = { id: number; name: string; price: number; stock: number };
 
-// 問1
 export function itemLabel(item: Item): string {
   const { name, price } = item;
   return `${name} ${price}円`;

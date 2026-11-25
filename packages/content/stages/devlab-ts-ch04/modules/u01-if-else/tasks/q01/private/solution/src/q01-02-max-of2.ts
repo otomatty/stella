@@ -1,9 +1,7 @@
-// 04-q01 if-else文 ドリル
-//
-// 教材: https://typescriptbook.jp/reference/statements/if-else
-//       https://typescriptbook.jp/reference/statements/ternary-operator
-
-// 問2
+// 問2 大きい方を返す（Math.max を使わない）
+//     例: maxOf2(3, 8) → 8
+// 引数と戻り値に型注釈を付けます。
+// if-else 文で分けます。短い場合は三項演算子でも構いません。
 export function maxOf2(a: number, b: number): number {
   if (a >= b) {
     return a;

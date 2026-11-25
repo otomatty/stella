@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch02/u07-structural-typing@1",
-  "contentHash": "f16e4a239005c16412be722fb9135e0104007a5fb593c2a3bfce754614453688",
+  "unitId": "devlab-ts-ch02/u07-structural-typing@2",
+  "contentHash": "65294e4db8677ef9e21e1c05692d0dbda0181f0dacc851560e5839c7befe8d7c",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {

@@ -1,7 +1,8 @@
-// 08-q02 async と await ドリル
-//
-// 教材: https://typescriptbook.jp/reference/asynchronous/async
-//       https://typescriptbook.jp/reference/asynchronous/await
+// 問7 a と b のユーザーを、順番に await して取得し、年齢の合計を返す
+//     例: sumAges(1, 2) → 53 で解決する
+// async 関数として書いてください。
+// 戻り値の型は Promise<…> と明記してください。
+// ユーザーの取得には定義済みの fetchUser を使ってください。
 
 export type User = { id: number; name: string; age: number };
 
@@ -20,7 +21,6 @@ export function fetchUser(id: number): Promise<User> {
     : Promise.resolve(user);
 }
 
-// 問7
 export async function sumAges(a: number, b: number): Promise<number> {
   const first = await fetchUser(a);
   const second = await fetchUser(b);
