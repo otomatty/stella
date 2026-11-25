@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { GroupRequest, GroupSummary } from "@/lib/admin-groups-api";
-import { cn } from "@/lib/utils";
 
 const SHARE_DESCRIPTION =
   "オンにすると、このグループのメンバー同士で、表示名 (呼び名があれば呼び名)・修了したステージ・進捗の割合が見えます。";
@@ -33,9 +33,12 @@ export function GroupOverview({
   onDelete: () => Promise<void>;
 }) {
   const nameId = useId();
+  const shareTitleId = useId();
   const shareDescriptionId = useId();
+  const shareOffId = useId();
+  const shareOnId = useId();
   const confirmId = useId();
-  const switchRef = useRef<HTMLButtonElement>(null);
+  const onRadioRef = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState(group.name);
   const [confirmName, setConfirmName] = useState("");
   const [dialog, setDialog] = useState<"share" | "delete" | null>(null);
@@ -113,39 +116,38 @@ export function GroupOverview({
             </Button>
           </form>
         )}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">仲間に進捗を公開する</p>
-            <p id={shareDescriptionId} className="mt-1 text-sm text-ink-2">
-              {SHARE_DESCRIPTION}
-            </p>
-          </div>
-          <button
-            ref={switchRef}
-            type="button"
-            role="switch"
-            aria-label="仲間に進捗を公開する"
-            aria-checked={group.shareProgress}
-            aria-describedby={shareDescriptionId}
+        <div>
+          <p id={shareTitleId} className="text-sm font-semibold">
+            仲間に進捗を公開する
+          </p>
+          <p id={shareDescriptionId} className="mt-1 text-sm text-ink-2">
+            {SHARE_DESCRIPTION}
+          </p>
+          <RadioGroup
+            className="mt-3"
+            value={group.shareProgress ? "on" : "off"}
             disabled={busy}
-            className={cn(
-              "inline-flex h-11 w-14 shrink-0 items-center rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-              group.shareProgress ? "border-primary bg-primary" : "border-border bg-muted",
-            )}
-            onClick={() => {
-              if (group.shareProgress)
+            aria-labelledby={shareTitleId}
+            aria-describedby={shareDescriptionId}
+            onValueChange={(value) => {
+              if (value === "on" && !group.shareProgress) openDialog("share");
+              if (value === "off" && group.shareProgress)
                 void save({ shareProgress: false }, "進捗の公開をオフにしました");
-              else openDialog("share");
             }}
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                "size-5 rounded-full bg-card shadow transition-transform",
-                group.shareProgress ? "translate-x-7" : "translate-x-1",
-              )}
-            />
-          </button>
+            <div className="flex min-h-11 items-center gap-2">
+              <RadioGroupItem value="off" id={shareOffId} />
+              <Label htmlFor={shareOffId} className="mb-0 text-sm font-normal">
+                オフ
+              </Label>
+            </div>
+            <div className="flex min-h-11 items-center gap-2">
+              <RadioGroupItem ref={onRadioRef} value="on" id={shareOnId} />
+              <Label htmlFor={shareOnId} className="mb-0 text-sm font-normal">
+                オン
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
         <Dialog
           open={dialog === "share"}
@@ -157,7 +159,7 @@ export function GroupOverview({
             className="max-w-md overflow-y-auto"
             onCloseAutoFocus={(event) => {
               event.preventDefault();
-              switchRef.current?.focus();
+              onRadioRef.current?.focus();
             }}
           >
             <DialogHeader>
