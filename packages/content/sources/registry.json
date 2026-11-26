@@ -6769,6 +6769,159 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-docs-citations-20261126",
+      "title": "Citations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/citations",
+      "section": "How citations work / Citation indices / Token costs / Feature compatibility / Get structured data with citations / Document types / Response structure",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-search-results-20261126",
+      "title": "Search results",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/search-results",
+      "section": "Search result schema / Claude’s response with citations / Citation control / For tool-based search (Method 1)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-contextual-retrieval-20261126",
+      "title": "Introducing Contextual Retrieval",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/contextual-retrieval",
+      "section": "A note on simply using a longer prompt / A primer on RAG: scaling to larger knowledge bases / Further boosting performance with Reranking",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2024-09-19"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-embeddings-20261126",
+      "title": "Embeddings",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/embeddings",
+      "section": "How to get embeddings with Anthropic",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-authentication-keys-20261126",
+      "title": "Authentication",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/authentication",
+      "section": "Key types / Create and use a key / Key expiration / Browser-based applications / Workload Identity Federation",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-workspaces-20261126",
+      "title": "Workspaces",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/workspaces",
+      "section": "API keys and resource scoping / Setting workspace limits / Usage and cost tracking / Environment separation",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-admin-api-keys-management-20261126",
+      "title": "Admin API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/admin-api",
+      "section": "Admin API key / Key concepts / API keys / Usage and cost reports / Best practices",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-create-admin-key-20261126",
+      "title": "Create an Admin API key",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/admin-api-keys",
+      "section": "Which key do you need? / Create a key for a Claude Console organization",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-usage-cost-analytics-20261126",
+      "title": "Usage and Cost Analytics API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api",
+      "section": "Usage endpoint / Cost endpoint",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

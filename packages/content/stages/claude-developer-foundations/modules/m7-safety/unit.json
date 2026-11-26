@@ -1,5 +1,5 @@
 {
-  "plannedHours": 3,
+  "plannedHours": 6,
   "skills": {
     "uses": ["claude-tool-use", "claude-structured-output", "claude-mcp", "claude-agent-sdk"],
     "assesses": ["claude-safety", "claude-grounding"]

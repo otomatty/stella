@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m7-safety@5",
-  "contentHash": "18c7a0b138d3dbf5d7df29bd9f460e67a5d0bed859d5fc1ab37f18a4c58f71e7",
+  "unitId": "claude-developer-foundations/m7-safety@6",
+  "contentHash": "4afc904bc8b31cc0da9ed9125d99ef09825066227a7d85b728a05c891fb8e5a4",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -142,6 +142,144 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l3-grounding/t1-citations/slides.md",
+      "sourceRefs": ["SRC-claude-docs-citations-20261126"],
+      "usedFor": "文書ごとの引用設定、資料の種類に応じた位置、応答の引用と cited_text",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-grounding/t2-drop-unsupported/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-citations-20261126",
+        "SRC-claude-docs-hallucination-advanced-20261031"
+      ],
+      "usedFor": "裏付けがない主張の取り下げと、応答の引用を使った表示の判断",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-grounding/t3-full-or-retrieve/slides.md",
+      "sourceRefs": [
+        "SRC-claude-contextual-retrieval-20261126",
+        "SRC-claude-docs-search-results-20261126",
+        "SRC-anthropic-context-engineering-20261031"
+      ],
+      "usedFor": "資料の量と鮮度による選択、検索の組み合わせと検索結果の渡し方",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/t1-server-side-key/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-authentication-keys-20261126",
+        "SRC-claude-docs-api-key-20261031"
+      ],
+      "usedFor": "ブラウザーとサーバーの認証情報の境界、SDK のブラウザー設定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/t2-workspace-per-env/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-workspaces-20261126",
+        "SRC-claude-docs-authentication-keys-20261126"
+      ],
+      "usedFor": "環境の分離、資源と上限の範囲、個人キーとサービスアカウントキーの使い分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/t3-admin-key/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-admin-api-keys-management-20261126",
+        "SRC-claude-docs-create-admin-key-20261126"
+      ],
+      "usedFor": "Admin キーの発行と用途、キー一覧・名前変更・無効化の範囲",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/t4-rotate-and-watch/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-authentication-keys-20261126",
+        "SRC-claude-docs-admin-api-keys-management-20261126",
+        "SRC-claude-docs-usage-cost-analytics-20261126"
+      ],
+      "usedFor": "期限と期限切れの応答、切り替え確認、無効化・削除、キー別の監視",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-grounding/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-citations-20261126",
+        "SRC-claude-docs-search-results-20261126",
+        "SRC-claude-docs-structured-combined-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-hallucination-advanced-20261031",
+        "SRC-claude-contextual-retrieval-20261126",
+        "SRC-anthropic-context-engineering-20261031",
+        "SRC-claude-docs-embeddings-20261126"
+      ],
+      "usedFor": "引用を有効にする方法と応答の読み方、表示前の根拠の確認、量・費用・鮮度による資料取得の選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-grounding/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-citations-20261126",
+        "SRC-claude-docs-search-results-20261126",
+        "SRC-claude-docs-structured-combined-20261031",
+        "SRC-claude-docs-hallucination-advanced-20261031",
+        "SRC-claude-contextual-retrieval-20261126",
+        "SRC-anthropic-context-engineering-20261031"
+      ],
+      "usedFor": "教材独自の知識問題。出典の位置と構造化、引用のない応答、資料の取得方式の選択",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-authentication-keys-20261126",
+        "SRC-claude-docs-api-key-20261031",
+        "SRC-claude-docs-workspaces-20261126",
+        "SRC-claude-docs-admin-api-keys-management-20261126",
+        "SRC-claude-docs-create-admin-key-20261126",
+        "SRC-claude-docs-usage-cost-analytics-20261126",
+        "SRC-claude-code-sdk-secure-deployment-20261031"
+      ],
+      "usedFor": "画面とサーバーの境界、環境ごとの資源・キーの権限、期限とローテーションの運用",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-keys/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-authentication-keys-20261126",
+        "SRC-claude-docs-workspaces-20261126",
+        "SRC-claude-docs-admin-api-keys-management-20261126",
+        "SRC-claude-docs-create-admin-key-20261126",
+        "SRC-claude-docs-usage-cost-analytics-20261126"
+      ],
+      "usedFor": "教材独自の知識問題。配布物の境界、環境の分離、キーの選択、切り替えと監視",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     }
   ]
 }

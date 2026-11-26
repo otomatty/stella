@@ -8,7 +8,7 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["dev-env-basics"],
-  "plannedHours": 60,
+  "plannedHours": 63,
   "environment": "node-test-01",
   "canDo": "Claude を組み込む設計を選び、テストと実行記録を根拠に説明できる",
   "theme": "資格で示すAI開発力",
