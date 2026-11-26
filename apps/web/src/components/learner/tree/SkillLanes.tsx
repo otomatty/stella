@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 import { buildLanes } from "./lanes";
 import { nextUnlockIds } from "./next-unlock";
-import { routeAccentOf, routeSolidOf } from "./route-accents";
-import { routeStyleOf, type ActiveStarInfo } from "./SkillTree";
+import { routeAccentOf, routeSolidOf, routeStyleOf } from "./route-accents";
+import type { ActiveStarInfo } from "./SkillTree";
 import { describeStar, type StarDetail } from "./star-detail";
 
 interface SkillLanesProps {
@@ -296,10 +296,10 @@ function LaneActions({
         ) : null}
         <button
           type="button"
-          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をステージ一覧で見る`}
+          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をツリーで見る`}
           onClick={() => onShowInTree(stageId)}
         >
-          ステージ一覧で見る
+          ツリーで見る
         </button>
       </div>
     </div>

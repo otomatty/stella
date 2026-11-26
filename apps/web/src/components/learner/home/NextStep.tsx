@@ -19,7 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GuideStep, HomeGuide } from "@/lib/home-guide";
 import type { StageWrapup } from "@/lib/stage-wrapup";
-import { Book, Check, Clock, Compass, Play, RotateCcw, Sparkles } from "@/lib/icons";
+import { Book, Check, Clock, Compass, Network, Play, RotateCcw, Sparkles } from "@/lib/icons";
 import type { SkillMapStageNode } from "@/lib/skill-map-api";
 import type { TodayPlanItemKind } from "@/lib/today-plan";
 import { cn } from "@/lib/utils";
@@ -218,8 +218,8 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
           className="mt-1.5 self-center"
           onClick={() => ctx.onShowInTree(step.stageId)}
         >
-          <Compass size={12} />
-          ステージ一覧で見る
+          <Network size={12} />
+          ツリーで見る
         </Button>
       </HeroFrame>
     );
@@ -243,9 +243,9 @@ const HeroStep = ({ step, ctx }: { step: GuideStep; ctx: StepContext }) => {
             type="button"
             onClick={() => ctx.onShowInTree(lesson.id)}
             className="mb-1 inline-flex max-w-full items-center gap-1 text-[11.5px] font-medium text-brand-ink hover:underline"
-            title="ステージ一覧で見る"
+            title="ツリーで見る"
           >
-            <Compass size={11} className="shrink-0" />
+            <Network size={11} className="shrink-0" />
             <span className="truncate">{lesson.title}</span>
           </button>
         ) : null}
@@ -428,11 +428,11 @@ const StartableStageRow = ({ id, ctx }: { id: string; ctx: StepContext }) => {
       <Button
         size="icon-sm"
         variant="ghost"
-        aria-label={`${title} をステージ一覧で見る`}
-        title="ステージ一覧で見る"
+        aria-label={`${title} をツリーで見る`}
+        title="ツリーで見る"
         onClick={() => ctx.onShowInTree(id)}
       >
-        <Compass size={13} />
+        <Network size={13} />
       </Button>
     </li>
   );

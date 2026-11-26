@@ -101,6 +101,8 @@ export {
   PlayCircle,
   Inbox,
   ListTree,
+  LayoutGrid,
+  Network,
   Megaphone,
   CheckCheck,
   ShieldCheck,

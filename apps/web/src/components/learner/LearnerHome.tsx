@@ -37,6 +37,7 @@ import { useStageWrapup } from "@/hooks/useStageWrapup";
 import { CoursePanel } from "@/components/learner/CoursePanel";
 import { DiscoveryDialog } from "@/components/learner/discovery/DiscoveryDialog";
 import { HomeHud } from "@/components/learner/home/HomeHud";
+import { HomeViewToggle, type HomeView } from "@/components/learner/home/HomeViewToggle";
 import {
   GuideSection,
   LaterSteps,
@@ -59,7 +60,7 @@ import {
   isGuidedStageStep,
   pickGuidedStage,
 } from "@/lib/home-guide";
-import { Compass, ListTree, Sparkles } from "@/lib/icons";
+import { Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { buildTodayPlan } from "@/lib/today-plan";
@@ -111,7 +112,7 @@ export const LearnerHome = ({
   const skillMap = useSkillMap(currentUserId, backendEnabled);
   const guided = useGuidedStages(currentUserId);
   const treeRef = useRef<SkillTreeHandle | null>(null);
-  const [homeView, setHomeView] = useState<"tree" | "lanes">(() => {
+  const [homeView, setHomeView] = useState<HomeView>(() => {
     try {
       return localStorage.getItem("stella_home_view_v1") === "lanes" ? "lanes" : "tree";
     } catch {
@@ -637,39 +638,19 @@ export const LearnerHome = ({
           </section>
 
           {showViewToggle ? (
-            <fieldset
-              aria-label="表示"
-              className="pointer-events-auto ml-3 flex h-9 w-max shrink-0 items-center rounded-full border border-border bg-white/[0.86] p-0.5 shadow-sm backdrop-blur-md dark:bg-[rgba(12,14,24,0.78)] lg:absolute lg:left-[376px] lg:top-0 lg:ml-0"
-            >
-              {(["tree", "lanes"] as const).map((view) => {
-                const Icon = view === "tree" ? Compass : ListTree;
-                return (
-                  <button
-                    key={view}
-                    type="button"
-                    aria-pressed={homeView === view}
-                    className={cn(
-                      "inline-flex h-full items-center gap-1.5 rounded-full px-3 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
-                      homeView === view
-                        ? "bg-brand text-white dark:bg-[#a78bfa] dark:text-[#0c0e18]"
-                        : "text-ink-2 hover:bg-sunken",
-                    )}
-                    onClick={() => {
-                      setPendingFocusId(null);
-                      if (view === "lanes") closeCourse();
-                      setHomeView(view);
-                    }}
-                  >
-                    <Icon size={14} />
-                    {view === "tree" ? "ステージ一覧" : "道のり"}
-                  </button>
-                );
-              })}
-            </fieldset>
+            <HomeViewToggle
+              value={homeView}
+              onChange={(view) => {
+                setPendingFocusId(null);
+                if (view === "lanes") closeCourse();
+                setHomeView(view);
+              }}
+              className="pointer-events-auto ml-3 lg:absolute lg:left-[376px] lg:top-0 lg:ml-0"
+            />
           ) : null}
         </div>
 
-        {/* スマホ・タブレットでは上下のカードの間で道のりをスクロールする。 */}
+        {/* スマホ・タブレットのカード表示は上下のカードの間でスクロールする。 */}
         {showViewToggle && homeView === "lanes" ? (
           <SkillLanes
             nodes={nodes}
