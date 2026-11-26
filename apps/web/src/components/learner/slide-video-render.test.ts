@@ -235,19 +235,21 @@ describe("動画の字幕", () => {
   const mockCue = (onDark: boolean) => {
     vi.mocked(useVideoCaptions).mockReturnValueOnce({
       available: true,
-      cues: [{ text: "字幕の文 <例>", onDark, key: "cue" }],
+      cues: [
+        { text: "字幕の文 <例>", onDark, key: "cue" },
+        { text: "次の字幕", onDark: !onDark, key: "next-cue" },
+      ],
       picture: { left: 180, top: 0, width: 640, height: 360 },
     });
   };
 
-  it.each([
-    [false, "video-caption"],
-    [true, "video-caption-on-dark"],
-  ])("暗い画面の印が %s の字幕に %s を適用する", (onDark, className) => {
+  it.each([false, true])("on-dark が %s でも同じ帯を使い、帯の外で改行する", (onDark) => {
     mockCue(onDark);
     const html = renderVideo();
     expect(html).toMatch(/<div class="pointer-events-none absolute" aria-hidden="true"/);
-    expect(html).toContain(`<span class="${className}">字幕の文 &lt;例&gt;</span>`);
+    expect(html).toContain(
+      '<span class="video-caption">字幕の文 &lt;例&gt;</span>\n<span class="video-caption">次の字幕</span>',
+    );
     expect(html).toContain("font-size:12.48px");
   });
 

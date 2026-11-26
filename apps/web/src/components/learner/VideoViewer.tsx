@@ -11,6 +11,7 @@
  */
 
 import {
+  Fragment,
   type Ref,
   useCallback,
   useEffect,
@@ -804,13 +805,10 @@ export function VideoViewer({
                   style={{ fontSize: picture.width * 0.0195 }}
                 >
                   {cues.map((cue, index) => (
-                    <span
-                      key={cue.key}
-                      className={cue.onDark ? "video-caption-on-dark" : "video-caption"}
-                    >
+                    <Fragment key={cue.key}>
                       {index > 0 ? "\n" : null}
-                      {cue.text}
-                    </span>
+                      <span className="video-caption">{cue.text}</span>
+                    </Fragment>
                   ))}
                 </p>
               </div>
