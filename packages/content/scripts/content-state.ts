@@ -66,17 +66,30 @@ function d1DatabaseId(): string {
   return id;
 }
 
-function currentFingerprint(): string {
+function seedInputIndex(): string {
   // ls-files は index を見る。CI の checkout は index = そのコミットなので、
   // 「このコミットの内容」と一致する。ローカルの未 add な変更は含まれない。
-  const out = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
+  return execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
     cwd: rootDir,
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  return fingerprintFrom(out, SEED_INPUT_PATHS, {
+}
+
+export function checkoutContentFingerprint(): { checkoutFingerprint: string; dirty: boolean } {
+  const checkoutFingerprint = fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS);
+  const status = execFileSync("git", ["status", "--porcelain", "--", ...SEED_INPUT_PATHS], {
+    cwd: rootDir,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  return { checkoutFingerprint, dirty: status.length > 0 };
+}
+
+function currentFingerprint(databaseId?: string): string {
+  return fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS, {
     pdfKeySalt: saltDigest(),
-    d1DatabaseId: d1DatabaseId(),
+    d1DatabaseId: databaseId ?? d1DatabaseId(),
   });
 }
 
@@ -91,7 +104,7 @@ export async function requireDeployedContent(
   readState: () => Promise<Uint8Array | null>,
 ): Promise<void> {
   const retry =
-    "デプロイが終わってから、もう一度実行してください。作った動画は台帳にあるので、force を外せば読み上げを使わずに登録できます。";
+    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトで bun run video:register を再実行してください。教材の版が変わった場合は video:sync --cached-only から作り直してください。deploy で PDF_KEY_SALT を設定している場合は同じ値を設定してください。値が違うと指紋が合わず登録できません。";
   let previous: ContentState | null;
   try {
     const body = await readState();
@@ -103,9 +116,13 @@ export async function requireDeployedContent(
     throw new Error(`本番教材の指紋が一致しません。 ${retry}`);
 }
 
-export async function verifyRemoteContent(): Promise<void> {
+export async function verifyRemoteContent({
+  databaseId,
+}: {
+  databaseId?: string;
+} = {}): Promise<void> {
   const r2 = createR2Client(BUCKET, true);
-  await requireDeployedContent(currentFingerprint(), () => r2.get(CONTENT_STATE_KEY));
+  await requireDeployedContent(currentFingerprint(databaseId), () => r2.get(CONTENT_STATE_KEY));
 }
 
 async function main(): Promise<void> {

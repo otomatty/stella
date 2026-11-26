@@ -108,19 +108,20 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 管理者はステージ詳細の構成タブとレッスン画面で、動画の状態 (公開中・前の版を公開中・未作成) と理由を確かめられます。
 
-トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに台本があります。本番の動画は main への push では作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を手動実行します。
+トピックに台本 `narration.json` を置くと、ナレーション・字幕付きの動画を作れます。旧 it-basics の9トピックと TypeScript の1トピックで検証しました。両ステージの退役に伴い、旧台本は Git 履歴に保存されています。現行カタログでは dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに台本があります。本番の動画は main への push では作りません。手元の PC で作って公開します。
 
 - 台本のルールは [NARRATION_GUIDE.md](NARRATION_GUIDE.md)。読み辞書は `narration/readings.json`
 - **台本のあるトピックの `slides.md` (本文・ノート・title・takeaway) を直すと `check:ci` が落ちます** (台本が古くなったため)。台本を直すか、内容が今のスライドに合っていれば `bun run --filter=@stella/content narrate -- <トピックのパス> --accept` で承認してください
 - 検査: `bun run --filter=@stella/content narration:check` (`check:ci` に含まれる)
 - 手元では最初に `bun run --filter=@stella/content video:tts:setup` を 1 回実行します。Python 3.10〜3.13 と `pyopenjtalk-plus` の wheel を使います。`video:scenes`・`content:video`・ローカルの `video:sync` は、`--tts` を省くと Open JTalk で日本語の音声を合成します。`bun run content:video -- dev-env-basics` の出力先は `dist/video/` です。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。読み上げなしで描画を確かめるには `--tts fake` を指定すると仮の音で作れます
-- 手元で動画を見てから上げるときは、`video:sync --preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げます。`--preview` は Gemini の回数を台帳の `ttsUsage` に足しますが、動画・台帳の公開情報・`dist/video-manifest.json` は書きません。`--cached-only` はキャッシュにある音声だけで作り、呼び出しが残っていれば 1 本も上げずに止まります。上げたあとの D1 への登録は `packages/shared/scripts/register-lesson-videos.ts` のままです。`video:scenes` で作った音声も同じ `dist/video-cache` に入ります。`video:scenes` の `--tts gemini` は台帳の回数に数えません。
+- 本番の公開は、デプロイ済みの main と同じ変更のないチェックアウトで行います。対象と TTS の回数を `video:sync --dry-run` で確かめ、`--preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げ、`bun run video:register` で D1 に登録します。詳しくは [教材動画の公開](../../docs/ci-cd.md#教材動画の公開) を参照してください。
+- `--preview` は Gemini の回数を台帳の `ttsUsage` に足します。R2 の動画と台帳の公開情報、`dist/video-manifest.json` と本番登録用の `dist/video-manifest.source.json` の書き込みは `--cached-only` のときに行います。`--cached-only` はキャッシュにある音声だけで作り、呼び出しが残っていれば 1 本も上げずに止まります。`video:scenes` で作った音声も同じ `dist/video-cache` に入ります。
 - 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。R2 の資格情報・公開バケットは PDF と同じです
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。強制作成では内容ハッシュに版の接尾辞を付け、台帳に最新の版を控えます。旧版は残します
 - `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
-- 本番の生成は `.github/workflows/videos.yml` (main の手動実行) です。入力は `stage` (任意の slug。空なら全ステージ)、`topics` (任意。トピック ID のカンマ区切り。`stage` が必須)、`force` (既定 false。`topics` を指定したときだけ、台帳にあっても別の R2 キーへ作り直す)、`dry_run` (既定 false。対象と必要な TTS の回数・残りを出すだけで、R2 と D1 に書かない)。既定の対象は、台帳に今の内容ハッシュの動画が無いトピックです。GitHub Repository Secret `GEMINI_API_KEY` が必要です。`VIDEO_TTS_DAILY_LIMIT` (既定 100) はリポジトリの Variables にあれば渡します。`deployment.json` には載せません
-- 作る前に Gemini の呼び出し回数を見積もります。新方式も旧方式もトピック (動画) ごとに 1 回で、`dist/video-cache` にある音声は数えません。新方式は音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。必要な回数が 1 日の残りを超えるときは、1 本も作らず R2 と manifest に書かずに失敗します。`dry_run` は同じ表を出して終了します。この回数は `video:sync`（`--preview` を含む）の呼び出しだけです。`video:scenes` などの手元の `--tts gemini` や、同じ API キーの別用途 (清書・イラスト・チュートリアル) は数えません。残りは最低 0 回で、必要 0 回なら続けます。台帳が存在しないときは空から始め、取得エラーや不正な台帳が見つかったときは生成前に失敗します。使った回数 (失敗した呼び出しを含む) は、呼び出した時点の太平洋時間の日付ごとに `lesson-video/state.json` の `ttsUsage` へ足します。計測開始後は、途中で失敗した場合も台帳を一度保存します。workflow は生成に失敗した場合も音声と映像のキャッシュを保存します。実行中に 429 で 1 日の上限に当たったら、その場で止めます
-- manifest ができると、R2 の教材指紋と照合し、一致時だけ `packages/shared/scripts/register-lesson-videos.ts` が既存レッスンの動画列を更新します。指紋が無いか異なるときは、デプロイ完了後に `force` を外して再実行すると、台帳にある動画を読み上げなしで登録できます。一部のトピックが失敗しても、できた動画は登録し、失敗理由は `lessons.video_issue` に記録します (管理者の画面に表示)。deploy の seed は動画 manifest を渡さず、台本のある既存レッスンの動画を保ちます
+- 作る前に Gemini の呼び出し回数を見積もります。新方式も旧方式もトピック (動画) ごとに 1 回で、`dist/video-cache` にある音声は数えません。新方式は音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。1 日の上限は `VIDEO_TTS_DAILY_LIMIT` (既定 100) です。必要な回数が 1 日の残りを超えるときは、1 本も作らず R2 と manifest に書かずに失敗します。残りは最低 0 回で、必要 0 回なら続けます。実行中に 429 で 1 日の上限に当たったら、その場で止めます。
+- この回数は手元の `video:sync` (`--preview` を含む) の呼び出しだけです。`video:scenes` などの手元の `--tts gemini` や、同じ API キーの別用途 (清書・イラスト・チュートリアル) は数えません。台帳が存在しないときは空から始め、取得エラーや不正な台帳が見つかったときは生成前に失敗します。使った回数 (失敗した呼び出しを含む) は、呼び出した時点の太平洋時間の日付ごとに公開 R2 の `lesson-video/state.json` の `ttsUsage` へ足します。計測開始後は、途中で失敗した場合も台帳を一度保存します。音声と場面の映像は手元の `packages/content/dist/video-cache` に残ります。
+- 登録時は付帯ファイルと今のチェックアウトの教材指紋が一致し、どちらにも未コミットの教材変更がないことを確かめてから、R2 の教材指紋と照合します。一致時だけ `packages/shared/scripts/register-lesson-videos.ts` が既存レッスンの動画列を更新します。デプロイ完了後に登録を再試行します。チェックアウトや教材を替えたら `--cached-only` から作り直します。deploy で `PDF_KEY_SALT` を設定している場合は同じ値を設定します。値が違うと指紋が合わず登録できません。一部のトピックが失敗しても、manifest ができていれば、できた動画は登録し、失敗理由は `lessons.video_issue` に記録します (管理者の画面に表示)。deploy の seed は動画 manifest を渡さず、台本のある既存レッスンの動画を保ちます
 - レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になります。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。
 - 3ファイルがあれば収録版を優先し、TTS とスライド撮影を省きます。一部だけあると `narration:check` と動画生成がエラーになります。
@@ -170,7 +171,7 @@ Basic = 新18ステージ、それ以外は Extra (`audience: granted`)。講師
 
 退役した19ステージと、2026-10 に退役した AI駆動開発の島の6ステージの教材ディレクトリは削除し、seed の `RETIRED_STAGES` が安定 UUID のステージと関連データを削除します。引き継ぐ6つの slug をこの一覧に追加しないでください。旧 TypeScript 課題66問は `packages/shared/src/problems/` と既存D1に保持し、新タスクへ転用しません。
 
-新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに新しい台本を配置済みです。本番の動画は Lesson videos の手動実行で生成・配信します。
+新18ステージのサムネイルと `icon.svg` は `scripts/build_thumbnails.py` の `SPECS` から生成します。24×24 のアイコンは単色シルエットです。外部ロゴは使いません。画像・本文は main への push で R2 と D1 に反映されます。旧 it-basics の動画台本は新教材に流用せず、dev-env-basics の8トピックと html-css-basics の冒頭の4トピックに新しい台本を配置済みです。本番の動画は手元の PC で生成し、R2 にアップロードして D1 に登録します。
 
 残す教材の本文は維持します。新しいステージと教材の追加手順は [ADDING_STAGE.md](ADDING_STAGE.md)、執筆規則は [STYLE_GUIDE.md](STYLE_GUIDE.md) を参照してください。
 

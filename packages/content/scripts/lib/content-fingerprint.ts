@@ -84,6 +84,8 @@ export const SEED_INPUT_PATHS = [
   "packages/content/scripts/build-pdf.ts",
   "packages/content/scripts/build-video.ts",
   "packages/content/scripts/upload-videos.ts",
+  "packages/content/scripts/content-state.ts",
+  "packages/content/scripts/lib/content-fingerprint.ts",
   "packages/content/scripts/lib/ffmpeg.ts",
   "packages/content/scripts/lib/narration-topics.ts",
   "packages/content/scripts/lib/tts.ts",

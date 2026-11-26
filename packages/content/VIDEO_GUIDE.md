@@ -360,9 +360,13 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 
 ## 公開のされ方
 
-デプロイ (main への push) では動画を作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を main で手動実行します。実行は `video:sync --remote --tts gemini` で、`video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。Gemini TTS の呼び出しは新方式・旧方式ともトピックごとに 1 回と見積もり、キャッシュにある音声は数えません。新方式で音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。必要な回数が `VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら 1 本も作りません。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。Gemini の音声は動画ごと、映像は場面ごとに videos.yml のキャッシュで使い回します。
+デプロイ (main への push) では動画を作りません。デプロイ済みの main と同じ変更のないチェックアウトで、手元の PC から公開します。実行は `video:sync --remote --tts gemini` で、`video.json` のあるトピックを新方式で作ります。`--dry-run` で Gemini TTS の回数を確かめ、`--preview` で動画と字幕を確認します。同じステージと `--topics` を指定し、`--cached-only` でキャッシュの音声を使って R2 に上げます。`bun run video:register` は同期時と現在の教材指紋を照合し、本番の教材指紋も一致すれば D1 に登録します。チェックアウトや教材を替えたら `--cached-only` から作り直します。deploy で `PDF_KEY_SALT` を設定している場合は同じ値を設定します。値が違うと指紋が合わず登録できません。コマンドと環境変数は [教材動画の公開](../../docs/ci-cd.md#教材動画の公開) を参照してください。
 
-手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。`video:sync --remote` の既定は Gemini です。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
+Gemini TTS の呼び出しは新方式・旧方式ともトピックごとに 1 回と見積もり、キャッシュにある音声は数えません。新方式で音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。必要な回数が `VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら 1 本も作りません。手元の `video:sync` で使った Gemini の回数は公開 R2 の台帳の `ttsUsage` に足します。
+
+同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。Gemini の音声は動画ごと、映像は場面ごとに手元の `packages/content/dist/video-cache` で使い回します。
+
+ローカル環境で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。`video:sync --remote` の既定は Gemini です。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
 
 ```bash
 bun run --filter=@stella/content video:sync dev-env-basics

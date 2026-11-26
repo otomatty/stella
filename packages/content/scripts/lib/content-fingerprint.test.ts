@@ -1,11 +1,13 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { requireDeployedContent } from "../content-state.js";
+import { requireDeployedContent, verifyRemoteContent } from "../content-state.js";
 import { SEED_INPUT_PATHS, fingerprintFrom, parseContentState } from "./content-fingerprint.js";
+import { parseD1DatabaseId, readWranglerToml } from "./wrangler-config.js";
 
 const rootDir = fileURLToPath(new URL("../../../..", import.meta.url));
 
@@ -250,5 +252,44 @@ describe("requireDeployedContent", () => {
         throw new Error("R2 read failed");
       }),
     ).rejects.toThrow("デプロイが終わってから");
+  });
+});
+
+describe("verifyRemoteContent", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("指定した D1 ID を指紋に使い、省略時は wrangler.toml の ID を使う", async () => {
+    const databaseId = "12345678-1234-1234-1234-123456789abc";
+    const salt = "test-salt";
+    const gitIndex = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
+      cwd: rootDir,
+      encoding: "utf8",
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    const contentState = (id: string) =>
+      Response.json({
+        version: 1,
+        fingerprint: fingerprintFrom(gitIndex, SEED_INPUT_PATHS, {
+          pdfKeySalt: createHash("sha256").update(salt).digest("hex"),
+          d1DatabaseId: id,
+        }),
+        updatedAt: "2026-11-23T00:00:00Z",
+      });
+    const fetchR2 = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchR2);
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "test-token");
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "test-account");
+    vi.stubEnv("PDF_KEY_SALT", salt);
+
+    fetchR2.mockResolvedValueOnce(contentState(databaseId));
+    await expect(verifyRemoteContent({ databaseId })).resolves.toBeUndefined();
+
+    const configuredId = parseD1DatabaseId(readWranglerToml(), "stella-db");
+    if (!configuredId) throw new Error("wrangler.toml に stella-db の database_id がありません");
+    fetchR2.mockResolvedValueOnce(contentState(configuredId));
+    await expect(verifyRemoteContent()).resolves.toBeUndefined();
   });
 });
