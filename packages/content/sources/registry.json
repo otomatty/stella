@@ -6225,6 +6225,142 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-docs-request-size-limits-20261126",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Request size limits",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-handle-stream-errors-20261126",
+      "title": "Handle errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/handle-errors",
+      "section": "Handle an error in a stream",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-stream-recovery-20261126",
+      "title": "Streaming messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "section": "Error recovery",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-mid-conversation-system-20261126",
+      "title": "Mid-conversation system messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages",
+      "section": "When to use a mid-conversation system message / How it works / Combining with prompt caching",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-app-system-prompts-20261126",
+      "title": "System prompts",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/release-notes/system-prompts/overview",
+      "section": "System prompts",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-sharing-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Cache storage and sharing",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-validation-errors-20261126",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Common validation errors",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-limitations-20261126",
+      "title": "Message Batches API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "Batch limitations",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

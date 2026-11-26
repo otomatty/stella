@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-20261031, SRC-claude-docs-ts-sdk-20261031]
+sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-20261031, SRC-claude-docs-ts-sdk-20261031, SRC-claude-docs-request-size-limits-20261126, SRC-claude-docs-context-overflow-20261031]
 ---
 # レッスン2-1 エラーと制限
 
@@ -8,6 +8,7 @@ sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-202610
 - [ ] 送り直してよいエラーと、送り直しても通らないエラーを見分けられます。
 - [ ] 間隔を広げ、回数の上限を決めた送り直しを書けます。
 - [ ] request ID とレート制限のヘッダーを、調査と送る速さの調整に使えます。
+- [ ] 400 と 413 で、どこを直せばよいかを判断できます。
 
 ## 2-1-1 送り直せるエラー
 
@@ -60,6 +61,21 @@ logger.info({ requestId: response._request_id });
 レート制限は、一定の時間に使える回数や量の上限です。組織の利用段階ごとに決まり、モデルの区分ごとに、1 分あたりのリクエスト数・入力トークン数・出力トークン数で測ります。
 
 応答のレスポンスヘッダーには、上限・残り・元に戻る時刻が入ります。たとえば `anthropic-ratelimit-requests-remaining` は残りのリクエスト数、`anthropic-ratelimit-tokens-remaining` は残りのトークン数です。残りが少なくなったら送る速さを落とすと、429 を待たずに済みます。
+
+## 2-1-5 送り直さないエラー
+
+> **400 と 413 は送り直しても通らないので、リクエストを直します。**
+
+月次報告の添付を増やしたら、同じリクエストを送り直しても失敗しました。request ID で失敗した呼び出しを見つけ、エラーの種類と実際に送った内容を照らし合わせます。
+
+| ステータスと種別 | 確認して直すこと |
+| --- | --- |
+| 400 `invalid_request_error` | エラー本文を読み、不足している項目や型の違いを直す |
+| 400 で「prompt is too long」 | 入力だけでモデルが扱えるトークン数を超えたので、資料や履歴を絞る |
+| 413 `request_too_large` | 送信するデータ全体が大きすぎるので、添付を減らすか必要な部分に分ける |
+
+バイト数は、添付を含めて実際に送るデータの大きさです。Claude API のリクエストの上限は、Messages API が 128 MB、バッチが 256 MB、Files API が 500 MB です。出力の `max_tokens` を変えても、入力の資料や添付は小さくなりません。
+
 
 ## もっと知りたい人へ
 
