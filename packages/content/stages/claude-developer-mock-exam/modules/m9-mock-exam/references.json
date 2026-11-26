@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-mock-exam/m9-mock-exam@1",
-  "contentHash": "d22707308c974334272e4617e0b398ef0e88ccee88ea3879d0de7347134ef644",
+  "unitId": "claude-developer-mock-exam/m9-mock-exam@2",
+  "contentHash": "ddbe93d375cc80b74ccb16414472b5144a517078ac9bd8db0ca51b1aee8684fa",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -68,7 +68,7 @@
         "SRC-claude-docs-batch-20261031",
         "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "試験当日の案内と v1.1 の時間・出題数・採点の扱い、バッチの期限切れを含む条件の読み方、講座内の復習判断を示す。",
+      "usedFor": "実務場面に基づく出題、バッチの期限切れを含む条件の読み方、v1.1 の 8 分野・問題数・時間配分・採点対象の扱い、資格別の準備講座の置き場所。学習の仕上がりを判断する手順は教材独自。",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -80,7 +80,7 @@
         "SRC-claude-docs-batch-20261031",
         "SRC-claude-developer-guide-v11-20261118"
       ],
-      "usedFor": "教材独自の 4 問。v1.1 の 8 分野に沿った受験の準備と、バッチの件数・容量・期限の判断を問う。",
+      "usedFor": "教材独自の 3 問。場面の条件の読み方、バッチの件数・容量・期限、v1.1 の 8 分野と 70 問・120 分の形式に沿った学習の仕上がりの確認を問う。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

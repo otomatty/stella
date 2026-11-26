@@ -4926,6 +4926,40 @@
       }
     },
     {
+      "id": "SRC-claude-certification-faq-prep-20261126",
+      "title": "FAQ - Certifications",
+      "publisher": "Anthropic",
+      "url": "https://anthropic-partners.skilljar.com/page/faq-certifications#faq-prep",
+      "section": "Exam content and prep",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-developer-guide-v11-ja-20261126",
+      "title": "Claude Certified Developer – Foundations 試験ガイド（2026年12月7日適用）",
+      "publisher": "Anthropic",
+      "url": "https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946795/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7_Japanese.pdf",
+      "section": "4. 試験の概要 / 5. 出題範囲の概要（ブループリント） / 6. 試験の準備方法 / 7. サンプル問題 / 8. 採点方法 / 11. 試験当日の流れと行動規範",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "バージョン1.1 · 2026年12月7日発効"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
       "id": "SRC-claude-developer-guide-v11-20261118",
       "title": "Claude Certified Developer – Foundations Exam Guide (exams from December 7)",
       "publisher": "Anthropic",
