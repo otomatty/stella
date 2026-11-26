@@ -966,8 +966,20 @@ async function openNextProblemAfterSubmission(
       viewColumn: vscode.ViewColumn.One,
       preview: false,
     });
+    const submitted = problemFiles(RUNNERS[manifest.runner].plan, problemId);
+    if (!submitted) return;
+    const tabs = vscode.window.tabGroups.all.flatMap(({ tabs }) =>
+      tabs.filter((tab) => {
+        if (tab.isDirty || tab.isPinned || !(tab.input instanceof vscode.TabInputText))
+          return false;
+        const { uri } = tab.input;
+        const rel = isFileUri(uri) ? relativeInRoot(root, uri.fsPath) : undefined;
+        return rel !== next.source && (rel === submitted.source || rel === submitted.test);
+      }),
+    );
+    if (tabs.length > 0) await vscode.window.tabGroups.close(tabs, true);
   } catch {
-    // 次のファイルを開けなくても、提出は受理されている。
+    // ファイルを開くかタブを閉じる操作に失敗しても、提出は受理されている。
   }
 }
 

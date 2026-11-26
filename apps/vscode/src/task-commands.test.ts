@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { RunResult } from "@stella/shared/tasks/run-result";
-import type { ExtensionContext } from "vscode";
+import { type ExtensionContext, TabInputText, Uri } from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore } from "./auth.js";
@@ -19,11 +19,14 @@ import {
 } from "./task-run-events.js";
 import { prepareLocalTaskSubmission } from "./task-submission.js";
 
+type MockTab = { input: unknown; isDirty: boolean; isPinned: boolean };
+
 const state = vi.hoisted(() => ({
   handlers: new Map<string, () => Promise<void> | void>(),
   trusted: true,
   cancelProgress: false,
   activeFile: undefined as string | undefined,
+  tabGroups: [] as { tabs: MockTab[] }[],
   folders: [] as string[],
   warningChoice: undefined as string | undefined,
   /** 設定すると保存の確認ダイアログはこの Promise のまま待つ。 */
@@ -72,6 +75,7 @@ const vscodeMock = vi.hoisted(() => ({
   getSecret: vi.fn(),
   setCurrentTask: vi.fn(),
   showTextDocument: vi.fn(),
+  closeTabs: vi.fn(async () => true),
   showInputBox: vi.fn(),
   showSubmissionForm: vi.fn(),
   sendTaskSubmission: vi.fn(),
@@ -105,6 +109,9 @@ vi.mock("vscode", () => ({
     file: (fsPath: string) => ({ scheme: "file", fsPath }),
     parse: (url: string) => ({ scheme: new URL(url).protocol.slice(0, -1), url }),
   },
+  TabInputText: class {
+    constructor(readonly uri: unknown) {}
+  },
   env: { openExternal: vscodeMock.openExternal },
   ViewColumn: { One: 1, Two: 2 },
   window: {
@@ -132,6 +139,12 @@ vi.mock("vscode", () => ({
       return item;
     },
     showTextDocument: vscodeMock.showTextDocument,
+    tabGroups: {
+      get all() {
+        return state.tabGroups;
+      },
+      close: vscodeMock.closeTabs,
+    },
     get activeTextEditor() {
       return state.activeFile
         ? { document: { uri: { scheme: "file", fsPath: state.activeFile } } }
@@ -303,6 +316,7 @@ beforeEach(() => {
   state.trusted = true;
   state.cancelProgress = false;
   state.activeFile = undefined;
+  state.tabGroups = [];
   state.folders = [];
   state.warningChoice = undefined;
   state.warningResult = undefined;
@@ -1481,6 +1495,19 @@ const problemTask = {
 };
 
 describe("問題つきの課題", () => {
+  function textTab(
+    root: string,
+    file: string,
+    flags: Partial<Pick<MockTab, "isDirty" | "isPinned">> = {},
+  ): MockTab {
+    return {
+      input: new TabInputText(Uri.file(path.join(root, file))),
+      isDirty: false,
+      isPinned: false,
+      ...flags,
+    };
+  }
+
   async function problemRoot(
     source = "export const add = 1;\n",
     outcome: "passed" | "failed" = "passed",
@@ -1827,6 +1854,9 @@ describe("問題つきの課題", () => {
 
   it("説明欄を出さず、提出したら件数を出して次の問題を開く", async () => {
     const root = await problemRoot();
+    const sourceTab = textTab(root, "src/q01-add.ts");
+    const testTab = textTab(root, "tests/q01-add.test.ts");
+    state.tabGroups = [{ tabs: [sourceTab, testTab] }];
     apiRequest.mockImplementation(async (...args: unknown[]) => {
       if (args[0] === "/api/submissions") {
         return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
@@ -1846,6 +1876,7 @@ describe("問題つきの課題", () => {
       { uri: { scheme: "file", fsPath: path.join(root, "src", "q02-sub.ts") } },
       { viewColumn: 1, preview: false },
     );
+    expect(vscodeMock.closeTabs).toHaveBeenCalledExactlyOnceWith([sourceTab, testTab], true);
     const body = apiRequest.mock.calls.find((call) => call[0] === "/api/submissions")?.[1] as {
       body: { problemId: string; files: { path: string }[]; explanation: string };
     };
@@ -2051,6 +2082,8 @@ describe("問題つきの課題", () => {
     { label: "提出済みの問題を解き直した", resubmission: true, opens: false },
     { label: "次のファイルがない", missing: true, opens: false },
     { label: "取り直せないが次は解ける", refreshFailed: true, opens: true },
+    { label: "次のファイルを開けない", openFails: true, opens: true },
+    { label: "提出したファイルのタブを閉じられない", closeFails: true, opens: true },
   ])("段階のある課題で提出したあと $label", async (scenario) => {
     const {
       nextState = "open",
@@ -2058,10 +2091,38 @@ describe("問題つきの課題", () => {
       resubmission = false,
       missing = false,
       refreshFailed = false,
+      openFails = false,
+      closeFails = false,
       opens,
     } = scenario;
     const root = await problemRoot(undefined, "passed", true);
     const nextFile = path.join(root, "src", "q02-sub.ts");
+    const sourceTab = textTab(root, "src/q01-add.ts");
+    const testTab = textTab(root, "tests/q01-add.test.ts");
+    state.tabGroups = [
+      {
+        tabs: [
+          sourceTab,
+          textTab(root, "src/q02-sub.ts"),
+          textTab(root, "tests/q01-add.test.ts", { isDirty: true }),
+        ],
+      },
+      {
+        tabs: [
+          testTab,
+          textTab(root, "src/q01-add.ts", { isPinned: true }),
+          textTab(root, "tests/q02-sub.test.ts"),
+          textTab(root, "../src/q01-add.ts"),
+          {
+            input: { uri: Uri.file(path.join(root, "src/q01-add.ts")) },
+            isDirty: false,
+            isPinned: false,
+          },
+        ],
+      },
+    ];
+    if (openFails) vscodeMock.showTextDocument.mockRejectedValueOnce(new Error("open failed"));
+    if (closeFails) vscodeMock.closeTabs.mockRejectedValueOnce(new Error("close failed"));
     let submitted = false;
     apiRequest.mockImplementation(async (url: unknown) => {
       if (url === "/api/submissions") {
@@ -2100,6 +2161,12 @@ describe("問題つきの課題", () => {
       );
     } else {
       expect(vscodeMock.showTextDocument).not.toHaveBeenCalled();
+    }
+    if (opens && !openFails) {
+      expect(vscodeMock.closeTabs).toHaveBeenCalledExactlyOnceWith([sourceTab, testTab], true);
+      expect(vscodeMock.closeTabs).toHaveBeenCalledAfter(vscodeMock.showTextDocument);
+    } else {
+      expect(vscodeMock.closeTabs).not.toHaveBeenCalled();
     }
   });
 
