@@ -1,0 +1,72 @@
+{
+  "id": "claude-developer-foundations/m2-integration/q04-fix-stream-end",
+  "title": "途中で切れた回答を完了と表示するのを直す",
+  "kind": "debug",
+  "pattern": "stream-accumulate",
+  "skills": {
+    "uses": [
+      "claude-stop-reason"
+    ],
+    "assesses": [
+      "claude-streaming"
+    ]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": [
+      "src/render-stream.js"
+    ],
+    "explanation": false,
+    "debuggingRecord": true
+  },
+  "review": {
+    "rules": [
+      {
+        "id": "CR-SCOPE-01",
+        "required": true
+      },
+      {
+        "id": "CR-DEBUG-01",
+        "required": false
+      }
+    ],
+    "rubric": [
+      {
+        "id": "message-end",
+        "criterion": "本文の差分だけを順につなぎ、ブロックの終端では受信を続け、message_stop で控えた停止理由に応じた状態を返している",
+        "required": true
+      },
+      {
+        "id": "failed-or-interrupted",
+        "criterion": "error には受信済みの本文とエラー種別を返し、終端なしの受信終了を区別し、未知のイベントは読み飛ばしている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed"
+  },
+  "sources": [
+    "SRC-claude-docs-streaming-20261031",
+    "SRC-claude-docs-streaming-deltas-20261031",
+    "SRC-claude-docs-stop-reasons-20261031",
+    "SRC-claude-docs-handle-stream-errors-20261126"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

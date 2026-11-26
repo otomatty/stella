@@ -61,17 +61,20 @@ describe("教材動画の配信", () => {
     expect(summarizeVideoError("あ".repeat(201))).toBe(`${"あ".repeat(199)}…`);
     expect(summarizeVideoError("😀".repeat(201))).toBe(`${"😀".repeat(199)}…`);
   });
-  it("format 2 の slides を動画用に集め、配布 PDF の対象は変えない", () => {
+  it("format 2 の slides を seed と同じ本文で動画用に集める", () => {
     const manifest = buildContentManifest();
-    expect(
-      collectPdfTargets(manifest).some(
-        (t) => t.stageSlug === "dev-env-basics" && t.kind === "slides",
-      ),
-    ).toBe(false);
-    const topics = collectPdfTargets(manifest, { includeFormat2Slides: true });
-    expect(
-      topics.find((t) => t.stageSlug === "dev-env-basics" && t.lessonId === "00-1-1")?.kind,
-    ).toBe("slides");
+    const lesson = manifest.stages
+      .find((stage) => stage.id === "dev-env-basics")
+      ?.sections?.flatMap((section) => section.lessons)
+      .find((row) => row.id === "00-1-1");
+    expect(lesson?.type).toBe("slides");
+    expect(collectPdfTargets()).toContainEqual(
+      expect.objectContaining({
+        stageSlug: "dev-env-basics",
+        lessonId: "00-1-1",
+        source: lesson?.markdown,
+      }),
+    );
   }, 60_000);
   const keys = videoKeys("dev-env-basics", "0-1-1", "abc123");
   it("動画・字幕・表紙は同じハッシュで、旧版と別のキーを使う", () => {

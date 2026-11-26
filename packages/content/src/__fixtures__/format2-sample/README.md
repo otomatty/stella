@@ -10,6 +10,6 @@
 `references.json` の `contentHash` は、この配置と台帳で `unitContentHash` により計算した値。
 見本そのものを改訂するときだけ、内容を確認して更新する。テスト実行時には計算値で上書きしない。
 
-通常の seed・PDF は `buildContentManifest()` の既定の `stages/` のみを読む。
+通常の seed は `buildContentManifest()` の既定の `stages/` のみを読む。
 `content:check` の列挙も `stage-roots.mjs` などの `stages/` 起点で、このフォルダーは対象外。
 `SEED_INPUT_PATHS` にも含めない（`format-2.test.ts` で確認する）。

@@ -16,6 +16,7 @@ import {
   decideOutcome,
   type HashedFile,
   type RunResult,
+  type RunStepId,
   type RunStepResult,
 } from "@stella/shared/tasks/run-result";
 import { normalizeForHash } from "@stella/shared/tasks/hash";
@@ -114,11 +115,17 @@ export async function loadTask(root: string): Promise<LoadedTask> {
   };
 }
 
+export type RunProgress =
+  | { type: "plan"; steps: { id: RunStepId; label: string }[] }
+  | { type: "step-start"; index: number }
+  | { type: "step-finish"; index: number; step: RunStepResult };
+
 export interface RunTaskOptions {
   root: string;
   manifest: TaskManifest;
   manifestSha256: string;
   signal?: AbortSignal;
+  onProgress?: (event: RunProgress) => void;
   /** 実行ログ (手順の見出しと道具の出力)。 */
   log?: (text: string) => void;
   platform?: NodeJS.Platform;
@@ -178,6 +185,8 @@ export async function importedEditableFiles(
   return [...visited].filter((file) => file !== source).sort();
 }
 
+const FILES_STEP = { id: "files", label: "提出するファイルの確認" } as const;
+
 async function collectFiles(
   root: string,
   manifest: TaskManifest,
@@ -187,10 +196,8 @@ async function collectFiles(
   files: HashedFile[];
   protected: HashedFile[];
   imported: HashedFile[];
-} | null> {
-  if (manifest.submit.files.length === 0 && manifest.protected.length === 0) return null;
+}> {
   const started = Date.now();
-  const base = { id: "files" as const, label: "提出するファイルの確認" };
   let listed: string[];
   try {
     listed = await listFiles(root);
@@ -200,7 +207,7 @@ async function collectFiles(
         ? `課題フォルダーのファイルが多すぎます (${LIMITS.walkedFiles} 件まで)`
         : "課題フォルダーを読めませんでした";
     return {
-      step: { ...base, status: "error", summary, durationMs: Date.now() - started },
+      step: { ...FILES_STEP, status: "error", summary, durationMs: Date.now() - started },
       files: [],
       protected: [],
       imported: [],
@@ -260,7 +267,7 @@ async function collectFiles(
     imported = [];
   }
   const step: RunStepResult = {
-    ...base,
+    ...FILES_STEP,
     status: problems.length > 0 ? "failed" : "passed",
     summary: problems.length > 0 ? problems.join("。") : `提出するファイル ${files.length} 件`,
     durationMs: Date.now() - started,
@@ -302,6 +309,19 @@ function resolveRunProblem(
  */
 export function normalizeTaskRoot(root: string, platform: NodeJS.Platform): string {
   return platform === "win32" ? root.replace(/^[a-z]:/i, (drive) => drive.toUpperCase()) : root;
+}
+
+/** 同じ課題フォルダーか。Windows ではドライブ文字の大小を区別しない。 */
+export function sameTaskRoot(
+  a: string | undefined,
+  b: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    normalizeTaskRoot(a, platform) === normalizeTaskRoot(b, platform)
+  );
 }
 
 export async function runTask(options: RunTaskOptions): Promise<RunResult> {
@@ -394,12 +414,30 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     exec,
   };
 
+  const report = (event: RunProgress): void => {
+    try {
+      options.onProgress?.(event.type === "step-finish" ? structuredClone(event) : event);
+    } catch {
+      // 表示の例外で課題の確認を止めない。
+    }
+  };
+  const plan = buildPlan(manifest);
+  const hasFilesStep = manifest.submit.files.length > 0 || manifest.protected.length > 0;
+  const plannedSteps = plan.map(({ id, label }) => ({ id, label }));
+  if (hasFilesStep) plannedSteps.push({ ...FILES_STEP });
+  report({ type: "plan", steps: plannedSteps });
+
   const steps: RunStepResult[] = [];
+  const finishStep = (step: RunStepResult): void => {
+    const index = steps.length;
+    steps.push(step);
+    report({ type: "step-finish", index, step });
+  };
   let stopReason: string | null = null;
-  for (const step of buildPlan(manifest)) {
+  for (const step of plan) {
     if (stopReason === null && options.signal?.aborted) stopReason = "中断したため省略しました";
     if (stopReason !== null) {
-      steps.push({
+      finishStep({
         id: step.id,
         label: step.label,
         status: "skipped",
@@ -412,7 +450,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
     if (blocked) {
       const summary = `「${blocked.label}」が通らなかったため省略しました`;
       log(`\n▶ ${step.label}\n`);
-      steps.push({
+      finishStep({
         id: step.id,
         label: step.label,
         status: "skipped",
@@ -422,6 +460,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
       log(`  → ${summary}\n`);
       continue;
     }
+    report({ type: "step-start", index: steps.length });
     log(`\n▶ ${step.label}\n`);
     const started = Date.now();
     let outcome: Awaited<ReturnType<typeof step.run>>;
@@ -433,7 +472,7 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
         summary: `${step.label}で予期しないエラーが出ました: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
-    steps.push({ id: step.id, label: step.label, durationMs: Date.now() - started, ...outcome });
+    finishStep({ id: step.id, label: step.label, durationMs: Date.now() - started, ...outcome });
     log(`  → ${outcome.summary}\n`);
     if (outcome.status === "error") {
       stopReason = options.signal?.aborted
@@ -445,14 +484,13 @@ export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   let files: HashedFile[] = [];
   let protectedFiles: HashedFile[] = [];
   let imported: HashedFile[] = [];
-  if (!options.signal?.aborted) {
+  if (hasFilesStep && !options.signal?.aborted) {
+    report({ type: "step-start", index: steps.length });
     const collected = await collectFiles(root, manifest, selected.problem?.source);
-    if (collected) {
-      steps.push(collected.step);
-      files = collected.files;
-      protectedFiles = collected.protected;
-      imported = collected.imported;
-    }
+    finishStep(collected.step);
+    files = collected.files;
+    protectedFiles = collected.protected;
+    imported = collected.imported;
   }
 
   return {

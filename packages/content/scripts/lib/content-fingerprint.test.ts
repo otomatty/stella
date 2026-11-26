@@ -2,20 +2,19 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { requireDeployedContent } from "../content-state.js";
+import { requireDeployedContent, verifyRemoteContent } from "../content-state.js";
 import { SEED_INPUT_PATHS, fingerprintFrom, parseContentState } from "./content-fingerprint.js";
+import { parseD1DatabaseId, readWranglerToml } from "./wrangler-config.js";
 
 const rootDir = fileURLToPath(new URL("../../../..", import.meta.url));
 
-/** seed・PDF・画像アップロードの入口。ここから値 import を辿る。 */
+/** seed・動画・画像アップロードの入口。ここから値 import を辿る。 */
 const GENERATORS = [
   "packages/shared/scripts/export-seed-sql.ts",
-  "packages/content/scripts/upload-pdfs.ts",
   "packages/content/scripts/upload-videos.ts",
   "packages/content/scripts/upload-materials.ts",
-  "packages/content/scripts/build-pdf.ts",
   "apps/api/scripts/seed-d1.ts",
 ];
 
@@ -35,7 +34,6 @@ const READ_BY_PATH = [
   "packages/content/patterns.json",
   "packages/content/environments",
   "packages/content/sources/registry.json",
-  "packages/content/scripts/pdf/print-doc.css",
   "apps/web/src/components/learner/slides-skin.css",
   "apps/api/drizzle",
 ];
@@ -124,7 +122,7 @@ describe("SEED_INPUT_PATHS", () => {
    * 教材パイプラインが飛ばされる。値 import は入口から辿り、パスで読む台帳は
    * READ_BY_PATH に足す。
    */
-  it("seed と PDF の生成が読むファイルを全部覆う", () => {
+  it("seed・動画・画像の生成が読むファイルを全部覆う", () => {
     const missing = generatorInputs().filter((file) => !covers(file));
     expect(missing).toEqual([]);
     for (const file of READ_BY_PATH) expect(covers(file), file).toBe(true);
@@ -193,13 +191,15 @@ describe("fingerprintFrom", () => {
     );
   });
 
-  it("リポジトリ外の入力 (PDF_KEY_SALT) が変われば指紋が変わる", () => {
-    // 塩は PDF の R2 キーに入る。替えたのに「変わっていない」と判定すると、
-    // 全キーが変わったまま PDF 生成と seed が走らない。
-    const withSalt = fingerprintFrom(lines, SEED_INPUT_PATHS, { pdfKeySalt: "aaa" });
-    expect(withSalt).not.toBe(fingerprintFrom(lines, SEED_INPUT_PATHS, { pdfKeySalt: "bbb" }));
-    expect(withSalt).not.toBe(fingerprintFrom(lines, SEED_INPUT_PATHS, { pdfKeySalt: "none" }));
-    expect(withSalt).toBe(fingerprintFrom(lines, SEED_INPUT_PATHS, { pdfKeySalt: "aaa" }));
+  it("リポジトリ外の入力 (D1 ID) が変われば指紋が変わる", () => {
+    const withDatabase = fingerprintFrom(lines, SEED_INPUT_PATHS, { d1DatabaseId: "aaa" });
+    expect(withDatabase).not.toBe(
+      fingerprintFrom(lines, SEED_INPUT_PATHS, { d1DatabaseId: "bbb" }),
+    );
+    expect(withDatabase).not.toBe(
+      fingerprintFrom(lines, SEED_INPUT_PATHS, { d1DatabaseId: "none" }),
+    );
+    expect(withDatabase).toBe(fingerprintFrom(lines, SEED_INPUT_PATHS, { d1DatabaseId: "aaa" }));
   });
 
   it("対象パスを足したら指紋が変わる (新しい入力を見ない回が出ないように)", () => {
@@ -250,5 +250,41 @@ describe("requireDeployedContent", () => {
         throw new Error("R2 read failed");
       }),
     ).rejects.toThrow("デプロイが終わってから");
+  });
+});
+
+describe("verifyRemoteContent", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("指定した D1 ID を指紋に使い、省略時は wrangler.toml の ID を使う", async () => {
+    const databaseId = "12345678-1234-1234-1234-123456789abc";
+    const gitIndex = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
+      cwd: rootDir,
+      encoding: "utf8",
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    const contentState = (id: string) =>
+      Response.json({
+        version: 1,
+        fingerprint: fingerprintFrom(gitIndex, SEED_INPUT_PATHS, {
+          d1DatabaseId: id,
+        }),
+        updatedAt: "2026-11-23T00:00:00Z",
+      });
+    const fetchR2 = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchR2);
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "test-token");
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "test-account");
+
+    fetchR2.mockResolvedValueOnce(contentState(databaseId));
+    await expect(verifyRemoteContent({ databaseId })).resolves.toBeUndefined();
+
+    const configuredId = parseD1DatabaseId(readWranglerToml(), "stella-db");
+    if (!configuredId) throw new Error("wrangler.toml に stella-db の database_id がありません");
+    fetchR2.mockResolvedValueOnce(contentState(configuredId));
+    await expect(verifyRemoteContent()).resolves.toBeUndefined();
   });
 });

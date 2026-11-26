@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-requests-20261031, SRC-claude-docs-streaming-deltas-20261031]
+sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-requests-20261031, SRC-claude-docs-streaming-deltas-20261031, SRC-claude-docs-stop-reasons-20261031, SRC-claude-docs-handle-stream-errors-20261126]
 ---
 ## 知識問題
 
@@ -69,5 +69,34 @@ sourceRefs: [SRC-claude-docs-streaming-20261031, SRC-claude-docs-errors-long-req
 <summary>解答</summary>
 
 **A** — finalMessage() は中でストリーミングを使い、messages.create と同じ形の応答を返します。長い処理をストリーミングなしで待つと、応答の前に通信が切れる場合があります。
+
+</details>
+
+### Q6. 設備点検の画面が、最初の content_block_stop で受信を止め、「完了」と表示します。長い回答が出力上限で切れた場合もそうなります。どう直しますか？
+<!-- kind: single; skills: claude-streaming -->
+
+- A. max_tokens を増やし、最初の content_block_stop で確定する
+- B. ストリーミングをやめ、受け取った回答を毎回「完了」として保存する
+- C. message_delta の stop_reason を控え、message_stop まで読んで、上限に届いた場合は「上限で中断」と表示する
+- D. 本文が短ければ同じ依頼を送り直し、最初の content_block_stop で確定する
+
+<details>
+<summary>解答</summary>
+
+**C** — ブロックの終わりでは受信を続けます。応答を受信し終えたら、控えた停止理由で回答を確定できるかを判定します。
+
+</details>
+
+### Q7. 会議メモの受信中に、HTTP 200 のあとで type が error のイベントが来ました。混雑による中断か、どこで判断しますか？
+<!-- kind: single; skills: claude-streaming -->
+
+- A. イベントの error.type が overloaded_error かを確かめる
+- B. HTTP ステータスが 529 になったかを確かめる
+- C. 最後に届いた本文の文字数で判断する
+
+<details>
+<summary>解答</summary>
+
+**A** — HTTP のステータスは受信を始めたときの結果です。途中で届いた error の中にある type が原因を表します。
 
 </details>

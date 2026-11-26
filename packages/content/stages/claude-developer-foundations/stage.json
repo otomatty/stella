@@ -8,7 +8,7 @@
   "tenantId": "ses",
   "audience": "granted",
   "prerequisites": ["dev-env-basics"],
-  "plannedHours": 41,
+  "plannedHours": 69,
   "environment": "node-test-01",
   "canDo": "Claude を組み込む設計を選び、テストと実行記録を根拠に説明できる",
   "theme": "資格で示すAI開発力",
@@ -21,7 +21,7 @@
     "m5-tools-and-mcp": "M5. ツール使用と MCP",
     "m6-agents": "M6. ワークフローとエージェント",
     "m7-safety": "M7. 安全性とセキュリティ",
-    "m8-claude-code-and-evals": "M8. Claude Code の設定と評価・デバッグ",
+    "m8-claude-code-and-evals": "M8. Claude Code の運用と評価・診断",
     "m10-final-review": "総合演習. 問い合わせに答えるアプリを仕上げる"
   }
 }

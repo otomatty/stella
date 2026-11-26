@@ -1,6 +1,6 @@
 # Claude Certified Developer – Foundations 対策
 
-Claude を初めて使うところから、開発者向け資格 CCDV-F の受験までを扱います。「STELLAの使い方」を修了した受講者に、基礎・一問一答・模擬試験の3ステージを順に割り当てます。目安は合計46時間です。演習用の原文、回答例、テストデータが付いているので、有料の契約やAPIキーは不要です。
+Claude を初めて使うところから、開発者向け資格 CCDV-F の受験までを扱います。「STELLAの使い方」を修了した受講者に、基礎・一問一答・模擬試験の3ステージを順に割り当てます。目安は合計74時間です。演習用の原文、回答例、テストデータが付いているので、有料の契約やAPIキーは不要です。
 
 ## 試験の形式と公式の準備講座
 
@@ -12,7 +12,7 @@ Partner Academy の公式準備講座は全5部です。モデルの基礎は M1
 
 | ステージ | 目安 | 学ぶことと次に進む目安 |
 | --- | ---: | --- |
-| [Claude の基礎と API 開発](./stage.json) | 41時間 | 最初に研修案内を読み、Claude への依頼を書き、回答中の日時と持ち物が原文にあるかを調べます。その後、API・ツール・エージェントへ進み、20件のコード課題で実行結果を確かめます。 |
+| [Claude の基礎と API 開発](./stage.json) | 69時間 | 最初に研修案内を読み、Claude への依頼を書き、回答中の日時と持ち物が原文にあるかを調べます。その後、API・ツール・エージェントへ進み、26件のコード課題で実行結果を確かめます。 |
 | [Claude Developer 実務一問一答](../claude-developer-practice/stage.json) | 2時間 | 8領域を各3問、1問ずつ解きます。回答のたびに採点し、条件を一つ変えたら判断も変わるかを解説で確かめます。 |
 | [Claude Developer 模擬試験](../claude-developer-mock-exam/stage.json) | 3時間 | 分野名の付いた予備演習で弱点を確認してから、初見の70問を120分で通して解きます。採点後は誤答に加え、根拠を説明できなかった正答も復習します。 |
 
@@ -35,10 +35,10 @@ Partner Academy の公式準備講座は全5部です。モデルの基礎は M1
 
 | 段階 | 単元と目安 | 受講者が残すもの |
 | --- | --- | --- |
-| 計画 | M0（2時間） | 入口のケースで説明に詰まった領域を記録し、配点と照らして復習時間を決める |
-| API とモデル | M1（5時間）、M2（6時間）、M3（5時間） | 応答の履歴、失敗したリクエストの扱い、採用モデルを変える条件 |
-| プロンプトと実行 | M4（4時間）、M5（4時間）、M6（5時間）、M7（3時間） | 入力の根拠、ツール結果、ループが終了した理由、許可範囲を確認できるテスト |
-| 設定と品質 | M8（5時間） | 設定の共有範囲、変更前後の評価、採点器が通してしまった回答の一覧 |
+| 計画 | M0（2時間） | 24 スキルの自己評価を記録し、分野ごとの配点と照らして復習時間を決める |
+| API とモデル | M1（5時間）、M2（9時間）、M3（9時間） | 応答の履歴、失敗したリクエストの扱い、採用モデルを変える条件 |
+| プロンプトと実行 | M4（4時間）、M5（7時間）、M6（10時間）、M7（7時間） | 入力の根拠、ツール結果、ループが終了した理由、許可範囲を確認できるテスト |
+| 運用と評価・診断 | M8（14時間） | 設定の共有範囲、権限判定で止まる条件、失敗の原因と修正箇所、変更前後の評価 |
 | 基礎の総合演習 | M10（2時間） | 確認Aの実行結果と、失敗が混じった問い合わせをどう扱ったかの説明 |
 | 一問一答 | 第2ステージ（2時間） | 各領域の3問で判断を分けた条件 |
 | 模擬試験 | 第3ステージ（3時間） | 予備演習、120分の初見結果、誤答の根拠と次に戻る領域 |
@@ -58,12 +58,13 @@ takeaway は公式ドキュメントの見出しの範囲で確かめてから�
 | 0-0-2 | `l0-first-conversation/t2-check-answer` | 回答を原文で確かめる | 答えに含まれる事実を原文と照らし、根拠が見つからない項目を区別します。 | 原文との照合 | Claude |
 | 0-0-3 | `l0-first-conversation/t3-choose-interface` | ウェブで試した依頼をアプリから送る | 手作業で試した依頼は、Claude API を通じて自分のアプリから送れます。 | Claude API | Claude, チャット |
 | 0-1-1 | `l1-exam-overview/t1-developer-cert` | Developer 資格が測るもの | Developer: Foundations は、Claude でアプリを作るエンジニアの資格です。 | 認定試験, Developer資格, ツール使用, エージェント | Claude API |
-| 0-1-2 | `l1-exam-overview/t2-who-can-take` | 受験できる人 | 受験できるのは、Claude Partner Network に加盟した組織の人です。 | Claude Partner Network, Partner Academy | 認定試験 |
-| 0-1-3 | `l1-exam-overview/t3-proctored-exam` | 監督つきの試験 | 試験は監督つきで行われ、始める前に本人確認があります。 | 監督つき試験, 本人確認, デジタルバッジ | 認定試験 |
-| 0-2-1 | `l2-official-sources/t1-exam-guide` | 範囲は試験ガイドで確かめる | 出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。 | 試験ガイド, 出題範囲, 配点 | 認定試験, Partner Academy |
+| 0-1-4 | `l1-exam-overview/t2-exam-format` | 場面を読んで選ぶ試験 | 本番は、実務の場面を読んで対応を選ぶ問題を、120 分で 70 問解きます。 | 選択問題, 換算スコア | 認定試験 |
+| 0-1-5 | `l1-exam-overview/t3-spot-wrong-answers` | 誤りの選択肢を見分ける | 誤りの選択肢の多くは、症状を減らすだけか、原因から離れた場所を直します。 | — | 選択問題 |
+| 0-2-1 | `l2-official-sources/t1-exam-guide` | 範囲は試験ガイドで確かめる | 出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。 | 試験ガイド, 出題範囲, 配点, Partner Academy | 認定試験 |
 | 0-2-2 | `l2-official-sources/t2-platform-docs` | API の仕様は公式ドキュメントで確かめる | API の動きは、公式ドキュメントの該当ページで確かめます。 | 公式ドキュメント, Messages API | Claude API |
 | 0-2-3 | `l2-official-sources/t3-code-docs` | Agent SDK の仕様は Claude Code のドキュメントにある | Agent SDK の仕様は、Claude Code のドキュメントで確かめます。 | Agent SDK, Claude Code | 公式ドキュメント, エージェント |
 | 0-2-4 | `l2-official-sources/t4-no-leaked-questions` | 本番の問題を写した教材は使わない | 本番の問題を写したとされる問題集は、学習に使いません。 | 非公式の問題集 | 試験ガイド |
+| 0-2-5 | `l2-official-sources/t5-self-assess` | スキルごとに現状を確かめる | 学習の前に、試験ガイドのスキルを 1 つずつ説明できるか確かめ、弱い分野に時間を配ります。 | 自己評価 | 試験ガイド, 配点 |
 
 ### M1 Messages API の基本(本文・課題あり)
 
@@ -88,14 +89,20 @@ takeaway は公式ドキュメントの見出しの範囲で確かめてから�
 | 2-1-2 | `l1-errors/t2-backoff` | 送り直しの間隔 | 送り直しは、間隔を広げながら回数の上限を決めて行います。 | 指数バックオフ, retry-after | 429, 529, SDK |
 | 2-1-3 | `l1-errors/t3-request-id` | request ID を控える | 調査と問い合わせのために、応答の request ID を記録します。 | request ID | 応答, SDK |
 | 2-1-4 | `l1-errors/t4-rate-limit-headers` | 制限の残りを見る | 応答のヘッダーで、レート制限の残りを確かめます。 | レート制限, レスポンスヘッダー | 429, 応答 |
+| 2-1-5 | `l1-errors/t5-do-not-retry` | 送り直さないエラー | 400 と 413 は送り直しても通らないので、リクエストを直します。 | 400, 413 | HTTP ステータス, 送り直し, リクエスト |
 | 2-2-1 | `l2-streaming/t1-show-as-it-arrives` | 届いた順に表示する | 長い応答は、ストリーミングで届いた順に表示します。 | ストリーミング | 応答, max_tokens, SDK |
 | 2-2-2 | `l2-streaming/t2-delta-events` | 差分のイベント | ストリーミングでは、本文が差分のイベントとして順に届きます。 | イベント, text_delta, message_delta | ストリーミング, stop_reason, コンテンツブロック |
 | 2-2-3 | `l2-streaming/t3-final-message` | まとめた応答を受け取る | イベントを1つずつ扱わなくても、SDK で最後にまとめた応答を受け取れます。 | finalMessage | イベント, SDK |
+| 2-2-4 | `l2-streaming/t4-terminal-event` | 応答の終わりを見分ける | content_block_stop はブロックの終わりで、応答の終わりは message_stop です。 | content_block_stop, message_stop | イベント, コンテンツブロック, message_delta, stop_reason, max_tokens |
+| 2-2-5 | `l2-streaming/t5-stream-error` | 途中で届くエラー | ストリームの途中のエラーは error イベントで届くので、イベントの種類で分けます。 | error イベント | ストリーミング, イベント, HTTP ステータス, SDK, message_stop |
 | 2-3-1 | `l3-batches/t1-batch-when` | 急がない大量の処理 | 急がない大量の処理は、Message Batches API にまとめて送ります。 | Message Batches API, バッチ, custom_id | リクエスト, Messages API |
 | 2-3-2 | `l3-batches/t2-batch-price` | バッチの料金 | Message Batches API の料金は、通常の半額です。 | バッチの料金 | Message Batches API |
 | 2-3-3 | `l3-batches/t3-batch-results` | バッチの結果を受け取る | バッチの結果は、すべて終わるか 24 時間たつと受け取れます。 | バッチの結果 | バッチ, custom_id |
 | 2-4-1 | `l4-files-and-media/t1-files-api` | 何度も使うファイル | 何度も使うファイルは、Files API に上げて ID で指します。 | Files API, file_id | コンテンツブロック, リクエスト |
 | 2-4-2 | `l4-files-and-media/t2-images-and-pdf` | 画像と PDF を渡す | 画像と PDF は、content のブロックとして渡します。 | image ブロック, document ブロック | content, file_id |
+| 2-5-1 | `l5-app-boundary/t1-operator-and-user` | system は運用者の指示 | system は運用者の指示、user の発言は利用者の言葉として読まれ、食い違えば system が優先されます。 | 運用者 | system, role, messages |
+| 2-5-2 | `l5-app-boundary/t2-api-is-not-the-app` | API にアプリの前提はない | claude.ai のアプリが持つ指示や機能は、API のリクエストには付きません。 | — | Claude API, チャット, system, リクエスト |
+| 2-5-3 | `l5-app-boundary/t3-append-only-history` | 履歴は足すだけにする | 会話の履歴は書き換えずに後ろへ足し、利用者ごとに保存場所を分けます。 | 追記 | 会話の履歴, messages, system, file_id |
 
 ### M3 モデルの選択と費用・速度の調整(本文・課題あり)
 
@@ -111,6 +118,13 @@ takeaway は公式ドキュメントの見出しの範囲で確かめてから�
 | 3-3-1 | `l3-tokens-and-speed/t1-count-tokens` | 送る前に量を数える | 入力のトークン数は、送る前にトークン数を数える API で確かめます。 | トークン数を数える API, countTokens | トークン, リクエスト, SDK, 費用 |
 | 3-3-2 | `l3-tokens-and-speed/t2-thinking-limit` | 考える過程も出力に数える | 考える過程のトークンも出力に数えるので、出力の上限は max_tokens で決めます。 | 考える過程, thinking ブロック | effort, max_tokens, コンテンツブロック, 途中で切れた応答 |
 | 3-3-3 | `l3-tokens-and-speed/t3-latency` | 応答を速くする | 応答を速くするには、モデル・トークンの量・ストリーミングの 3 つを見直します。 | 遅延, 最初のトークンまでの時間 | 速度, ストリーミング, effort, max_tokens |
+| 3-4-1 | `l4-cost-diagnosis/t1-layered-breakpoints` | 変わる頻度で区切る | 変わる頻度の違う部分は、それぞれの終わりにキャッシュの区切りを置きます。 | 階層型の区切り | キャッシュの区切り, キャッシュの読み込み, system, messages |
+| 3-4-2 | `l4-cost-diagnosis/t2-rolling-breakpoint` | 伸びる会話を追いかける | 伸びていく会話では、最後のブロックに区切りを置いて、前のターンまでを読み込みます。 | ローリングの区切り, 自動キャッシュ | キャッシュの区切り, コンテンツブロック, 会話の履歴, cache_control |
+| 3-4-3 | `l4-cost-diagnosis/t3-find-cache-miss` | 外れた原因を探す | キャッシュが読まれないときは、区切りより前に毎回変わる値がないかを先に調べます。 | キャッシュの診断 | キャッシュの区切り, usage, cache_read_input_tokens, system |
+| 3-4-4 | `l4-cost-diagnosis/t4-biggest-cost-first` | いちばん大きい費用から直す | 使用量の内訳でいちばん大きい項目を見つけ、その項目に効く手段を選びます。 | — | usage, input_tokens, cache_creation_input_tokens, cache_read_input_tokens, バッチ, effort, 費用 |
+| 3-5-1 | `l5-release-planning/t1-outputs-vary` | 同じ入力でも出力は変わる | 同じ入力でも出力は毎回同じとは限らないので、複数回の結果で判断します。 | 出力の揺れ | リクエスト, 応答, 評価のセット, モデル ID |
+| 3-5-2 | `l5-release-planning/t2-models-retire` | モデルには終わりがある | モデルは予告のあとに廃止されるので、廃止日より前に次のモデルで評価します。 | モデルの廃止 | モデル ID, スナップショット, 評価のセット, HTTP ステータス |
+| 3-5-3 | `l5-release-planning/t3-regression-before-switch` | 替える前に同じ評価を回す | モデルを替える前に、同じ評価のセットで品質・速度・費用を比べ直します。 | 回帰評価 | 評価のセット, モデルの廃止, effort, 遅延, 費用, countTokens |
 
 書く前の一覧(9 トピック)から、公式ドキュメントに合わせて次を変えました。effort をモデル選びのレッスンへ移し、
 組み合わせは「1 つのモデルの effort を調整してから考える」順番として書きました(Optimizing for cost and intelligence の Combine models)。
@@ -154,6 +168,14 @@ Control the format of responses)を足しました。prefill が Claude 4.6 以�
 | 5-3-1 | `l3-mcp/t1-what-is-mcp` | 共通の約束でつなぐ | MCP は、ツールやデータを AI のアプリにつなぐための、公開された共通の規格です。 | MCP, MCP サーバー | ツール |
 | 5-3-2 | `l3-mcp/t2-mcp-connector` | API から MCP を使う | MCP コネクターを使うと、Messages API からリモートの MCP サーバーのツールを使えます。 | MCP コネクター, mcp_servers, mcp_toolset | MCP サーバー, Messages API, tools |
 | 5-3-3 | `l3-mcp/t3-sdk-mcp` | SDK から MCP を使う | Agent SDK では、MCP サーバーを設定に足し、使うツールを allowedTools で許可します。 | mcpServers, allowedTools | Agent SDK, MCP サーバー |
+| 5-4-1 | `l4-build-mcp-server/t1-three-primitives` | サーバーが出す 3 つ | MCP サーバーは、ツール・リソース・プロンプトの 3 つを出します。 | MCP ホスト, MCP クライアント, リソース | MCP サーバー, ツール, プロンプト |
+| 5-4-2 | `l4-build-mcp-server/t2-choose-transport` | つなぎ方を選ぶ | 手元の 1 つのアプリ向けなら stdio、離れた場所から複数で使うなら HTTP でつなぎます。 | stdio, Streamable HTTP | MCP クライアント, MCP コネクター |
+| 5-4-3 | `l4-build-mcp-server/t3-protect-remote-server` | 離れたサーバーを守る | HTTP の MCP サーバーは、トークンをヘッダーで受け取り、自分あてのものかを確かめます。 | 認可, audience | Streamable HTTP, MCP サーバー, レスポンスヘッダー |
+| 5-5-1 | `l5-shape-and-select/t1-shape-the-result` | 結果を絞って返す | ツールの結果は、次の判断に要る項目だけに絞って返します。 | ページ分割 | ツール, tool_result, コンテキスト |
+| 5-5-2 | `l5-shape-and-select/t2-actionable-error` | 次の一手が分かるエラー | ツールのエラーには、何が違い、どう直せばよいかを書きます。 | — | is_error, ツールの説明 |
+| 5-5-3 | `l5-shape-and-select/t3-approve-before-run` | 実行前に承認を取る | 取り消せない操作のツールは、実行の前にアプリが人の承認を取ります。 | 実行前の承認 | tool_use, tool_result, ツール使用のループ |
+| 5-5-4 | `l5-shape-and-select/t4-skill-or-mcp` | 知識は Skill、接続は MCP | 手順や知識を足すなら Skill、外のシステムにつなぐなら MCP を選びます。 | Skill | Claude, MCP, ツール |
+| 5-5-5 | `l5-shape-and-select/t5-where-it-lives` | 置き場所と持ち主で選ぶ | 機能の出し方は、どこで動かし、誰が直し、Claude がどう見つけるかで選びます。 | — | サーバーツール, クライアントツール, MCP サーバー, Skill, コンテキスト |
 
 書く前の一覧から、公式ドキュメントに合わせて次を変えました。「ツールを使わせる」(tool_choice で必ず使わせる)は、
 Claude Opus 5.5・Claude Sonnet 5.5・Claude Fable 5.1 で `any`・`tool` が 400 エラーになる(Define tools の Forcing tool use)ため、
@@ -176,6 +198,16 @@ Claude Opus 5.5・Claude Sonnet 5.5・Claude Fable 5.1 で `any`・`tool` が 40
 | 6-3-1 | `l3-agent-sdk/t1-agent-loop` | エージェントのループ | Agent SDK は、ツールの実行と結果の受け渡しを繰り返すループを持っています。 | query, ResultMessage | Agent SDK, ツール使用のループ |
 | 6-3-2 | `l3-agent-sdk/t2-subagents` | サブエージェントに渡す | サブエージェントは自分の会話で動くので、要る情報をプロンプトに書いて渡します。 | サブエージェント | query, コンテキスト |
 | 6-3-3 | `l3-agent-sdk/t3-sessions` | 作業を再開する | 続きの作業は、セッションの ID を控えておき、resume で再開します。 | セッション, resume | query, ResultMessage |
+| 6-4-1 | `l4-runtime-and-limits/t1-stop-conditions` | 止まる条件を決める | エージェントには最大ターン数と予算の上限を決め、結果の種別を見てから結果を使います。 | maxTurns, maxBudgetUsd, subtype | Agent SDK, ResultMessage, 費用 |
+| 6-4-2 | `l4-runtime-and-limits/t2-choose-runtime` | 動かす場所を選ぶ | 自分で運用するなら Agent SDK、長時間の作業を任せるなら Managed Agents を選びます。 | Managed Agents, サンドボックス | Agent SDK, Messages API, セッション, イベント |
+| 6-4-3 | `l4-runtime-and-limits/t3-fixed-steps-for-audit` | 監査が要るなら手順を固定する | 監査や誤りの許容度が厳しい業務は、手順を固定したワークフローにします。 | 監査 | ワークフロー, エージェント, 並列化 |
+| 6-5-1 | `l5-long-running/t1-prune-tool-results` | 古いツール結果を減らす | 古いツール結果が溜まったら、コンテキストの編集で古い結果から外します。 | ツール検索 | コンテキストの編集, 圧縮, プロンプトキャッシュ, tools |
+| 6-5-2 | `l5-long-running/t2-isolate-research` | 調べものを切り離す | 文脈を埋める調べものはサブエージェントに任せ、親は要約だけを受け取ります。 | — | サブエージェント, コンテキスト, 並列化 |
+| 6-5-3 | `l5-long-running/t3-start-fresh` | 新しく始める基準 | 2 回直しても直らないときと、関係のない作業に移るときは、新しいセッションで始めます。 | — | セッション, resume, 圧縮 |
+| 6-5-4 | `l5-long-running/t4-persist-memory` | セッションをまたいで覚える | セッションをまたいで要る情報は、ファイルやメモリーに書き出します。 | メモリーツール, メモリーストア | セッション, コンテキストの編集, resume |
+| 6-6-1 | `l6-diagnose/t1-read-the-trace` | トレースで原因を探す | エージェントの不具合は、実行の記録を順に読み、どの設計が欠けているかで分けます。 | トレース | tool_use, tool_result, stop_reason, コンテキスト |
+| 6-6-2 | `l6-diagnose/t2-endless-loop` | 終わらないループ | 終わらないループには、止まる条件と回数の上限を足します。 | — | ツール使用のループ, stop_reason, is_error, maxTurns, maxBudgetUsd |
+| 6-6-3 | `l6-diagnose/t3-paused-turn` | 途中で返ってきた応答 | stop_reason が pause_turn の応答は、内容を変えずに送り直して続きを受け取ります。 | pause_turn | stop_reason, サーバーツール, messages, content, tools |
 
 書く前の一覧から、公式ドキュメントに合わせて次を変えました。「段に分けてつなぐ」には、段の間のゲート(Building effective agents の
 Prompt chaining)を takeaway に入れました。「サブエージェントに渡す」は、親から渡るのが呼び出すときのプロンプトだけ(What subagents
@@ -193,6 +225,13 @@ Building effective agents は 2024 年 12 月の記事で、冒頭に道具の�
 | 7-2-1 | `l2-reliable-answers/t1-allow-unknown` | 分からないと言わせる | 分からないときは分からないと答えてよい、と指示に書きます。 | ハルシネーション | 指示 |
 | 7-2-2 | `l2-reliable-answers/t2-quote-first` | 引用から答えさせる | 長い資料の事実は、先に引用を抜き出させてから答えさせます。 | 根拠の引用 | 長い資料, ハルシネーション |
 | 7-2-3 | `l2-reliable-answers/t3-hide-secrets` | 秘密を見せない | API キーなどの秘密はエージェントに渡さず、外側のプロキシで付け足します。 | プロキシ | API キー, エージェント, 最小権限 |
+| 7-3-1 | `l3-grounding/t1-citations` | 出典を付けて返す | 資料に基づく回答は、引用の機能で出典の位置を付けて返します。 | 引用の機能, citations | 根拠の引用, コンテンツブロック, Messages API |
+| 7-3-2 | `l3-grounding/t2-drop-unsupported` | 引用のない主張を外す | 資料の引用が付かない主張は、答えから外すか「資料にない」と返します。 | 回答不能 | citations, ハルシネーション, 評価のセット |
+| 7-3-3 | `l3-grounding/t3-full-or-retrieve` | 全部入れるか、探して入れるか | 資料が小さく変わらないなら全文を入れ、大きいか変わりやすいなら要る部分だけを探して入れます。 | search_result, BM25 | プロンプトキャッシュ, コンテキストの劣化, tool_result, citations |
+| 7-4-1 | `l4-keys/t1-server-side-key` | キーはサーバーに置く | API キーは画面のコードに入れず、自分のサーバーから Claude を呼びます。 | — | API キー, SDK, 環境変数 |
+| 7-4-2 | `l4-keys/t2-workspace-per-env` | 環境ごとに分ける | 開発と本番はワークスペースを分け、キーも使用量も別にします。 | ワークスペース, サービスアカウント | API キー, Files API, バッチ, プロンプトキャッシュ |
+| 7-4-3 | `l4-keys/t3-admin-key` | 管理用のキーは別物 | Admin キーは組織の管理のためのキーで、Claude の呼び出しには使いません。 | Admin キー, Admin API | API キー, Messages API, ワークスペース |
+| 7-4-4 | `l4-keys/t4-rotate-and-watch` | 入れ替えて見張る | キーには期限を付けて定期的に入れ替え、使用量をキーごとに見張ります。 | キーの入れ替え | API キー, ワークスペース, Admin API, HTTP ステータス |
 
 書く前の一覧から、公式ドキュメントに合わせて次を変えました。「外の文章は指示ではない」は、Mitigate jailbreaks and prompt
 injections の Indirect prompt injection に合わせ、外の文章を tool_result の中に入れる(JSON にして包む)と具体にしました。タグで包む
@@ -201,7 +240,7 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 ついての公式の節が見つからなかったため、Securely deploying AI agents の Credential management に合わせて「秘密を見せない」
 (外側のプロキシで付け足す)にしました。
 
-### M8 Claude Code の設定と評価・デバッグ(本文・課題あり)
+### M8. Claude Code の運用と評価・診断(本文・課題あり)
 
 | ID | ディレクトリ | タイトル | takeaway | introduces | requires |
 | --- | --- | --- | --- | --- | --- |
@@ -212,6 +251,27 @@ injections の Indirect prompt injection に合わせ、外の文章を tool_res
 | 8-2-2 | `l2-evals/t2-compare-evals` | 同じ評価で比べる | プロンプトを変えたら、同じ評価のセットを自動で採点して前と比べます。 | 採点, LLM による採点 | 評価のセット, 成功の基準 |
 | 8-2-3 | `l2-evals/t3-tool-misuse` | ツールの誤用を直す | ツールの誤用は、ツールの説明・スキーマ・strict から直します。 | ツールの誤用 | ツールの説明, strict, input_schema |
 | 8-2-4 | `l2-evals/t4-calibrate-judge` | 採点器の見逃しを調べる | 人の判定と採点器の判定を同じ回答で照合し、誤って通した回答を特定します。 | 誤合格, 校正用データ | LLM による採点, 評価のセット |
+| 8-3-1 | `l3-instructions-and-permissions/t1-claude-md-layers` | CLAUDE.md は重ねて読まれる | 複数の場所にある CLAUDE.md は、広い範囲から順に重ねて読み込まれます。 | — | CLAUDE.md, 指示 |
+| 8-3-2 | `l3-instructions-and-permissions/t2-path-rules` | ファイルで絞る約束 | 特定のファイルにだけ効かせたい約束は、パスを指定したルールファイルに書きます。 | ルールファイル, パス指定 | CLAUDE.md, 圧縮 |
+| 8-3-3 | `l3-instructions-and-permissions/t3-deny-first` | 拒否が先に決まる | 権限のルールは拒否・確認・許可の順に判定され、拒否が最優先です。 | 権限のルール | 設定ファイル, 管理された設定 |
+| 8-3-4 | `l3-instructions-and-permissions/t4-permission-modes` | 権限モードを選ぶ | 権限モードは、作業の危険度に合わせて選びます。 | 権限モード | permissionMode, 最小権限, 権限のルール, フック |
+| 8-4-1 | `l4-run-and-sessions/t1-non-interactive` | 対話なしで実行する | スクリプトや CI からは -p で対話なしに実行し、許可するツールを指定します。 | 対話なしの実行, CI | 権限モード, allowedTools, disallowedTools, 最小権限, フック, MCP サーバー |
+| 8-4-2 | `l4-run-and-sessions/t2-clear-or-resume` | 作業の区切りで会話を分ける | 関係のない作業に移るときは会話を消し、同じ作業の続きはセッションを再開します。 | チェックポイント | セッション, resume, 圧縮 |
+| 8-4-3 | `l4-run-and-sessions/t3-where-config-reaches` | 設定が届く範囲 | リポジトリに入れた設定はチームと CI に届き、端末だけの設定はその端末に残ります。 | サーバーで管理する設定 | 設定ファイル, 管理された設定, CI, CLAUDE.md, MCP サーバー |
+| 8-5-1 | `l5-extend/t1-skills` | 繰り返す手順を Skill にする | 繰り返し使う手順や知識は、Skill にして必要なときだけ読み込ませます。 | SKILL.md | Claude Code, CLAUDE.md, Skill |
+| 8-5-2 | `l5-extend/t2-choose-mechanism` | 仕組みを選ぶ | 常に効かせるなら CLAUDE.md、繰り返すなら Skill、必ず実行するならフックを選びます。 | — | CLAUDE.md, ルールファイル, Skill, フック, PreToolUse, PostToolUse, サブエージェント, MCP サーバー |
+| 8-5-3 | `l5-extend/t3-plugins` | まとめて配る | 複数のリポジトリで使う設定は、プラグインにまとめ、依存の版の範囲を決めて配ります。 | プラグイン, マニフェスト, 依存の版の範囲 | Skill, フック |
+| 8-6-1 | `l6-config-sdlc/t1-pin-model` | モデルを固定する | 再現性が要る実行では、別名ではなく完全なモデル ID で固定します。 | モデルの別名 | Claude Code, モデル ID, スナップショット, CI |
+| 8-6-2 | `l6-config-sdlc/t2-ci-secrets` | CI で動かす | CI では、秘密の値をシークレットに置き、許可するツールを絞って実行します。 | シークレット | CI, 対話なしの実行, 最小権限, 権限モード, allowedTools, モデル ID |
+| 8-6-3 | `l6-config-sdlc/t3-version-prompts` | プロンプトを版で管理する | プロンプトと設定はリポジトリで版を管理し、変えるたびに同じ評価を回します。 | プロンプトの版管理 | プロンプト, 設定ファイル, 評価のセット, モデル ID |
+| 8-7-1 | `l7-agent-guardrails/t1-sdk-hooks` | SDK でもフックで止める | Agent SDK でも、必ず止めたい呼び出しは PreToolUse のフックで拒否します。 | ハーネス, matcher | Agent SDK, query, PreToolUse, PostToolUse, Skill |
+| 8-7-2 | `l7-agent-guardrails/t2-decision-order` | 許可は順に判定される | ツールの許可は、フック・拒否・確認・権限モード・許可ルール・canUseTool の順に判定します。 | canUseTool | PreToolUse, 権限のルール, 権限モード, allowedTools |
+| 8-7-3 | `l7-agent-guardrails/t3-hook-failure` | フックが失敗したとき | フックが失敗しても操作を止めるには、失敗時に遮断する設定を付けます。 | onFailure | PreToolUse, matcher |
+| 8-8-1 | `l8-failure-modes/t1-which-layer` | どの層の失敗かを分ける | 失敗は、まず HTTP のエラーか、成功した応答の中身かで分けます。 | 障害モード | HTTP ステータス, stop_reason, 拒否, ハルシネーション |
+| 8-8-2 | `l8-failure-modes/t2-under-acting` | 提案で終わってしまう | 実行してほしいときは、依頼に実行する操作を明記します。 | 行動不足 | プロンプト, 指示, ツール |
+| 8-8-3 | `l8-failure-modes/t3-context-loss` | 前の指示を忘れる | 途中の指示が消えたら、圧縮や削除で外れていないかを履歴で確かめます。 | コンテキストの喪失 | 圧縮, コンテキストの編集, 会話の履歴, ハーネス |
+| 8-8-4 | `l8-failure-modes/t4-format-drift` | 形が崩れてくる | 出力の形が崩れるなら、構造化出力で必要な形を指定します。 | フォーマットのドリフト | 構造化出力, JSON スキーマ, stop_reason |
+| 8-8-5 | `l8-failure-modes/t5-fix-the-cause` | 原因のある場所を直す | 対策は、失敗の原因がある場所に合わせて選びます。 | トランスクリプト | 障害モード, 拒否, 評価のセット, 採点 |
 
 書く前の一覧から、公式ドキュメントに合わせて次を具体にしました。CLAUDE.md は「短く具体的に」(How Claude remembers your project
 の Write effective instructions)、設定は置き場所を `.claude/settings.json` と名指し(Settings files and precedence)、評価は
@@ -260,8 +320,10 @@ M0〜M8 と M10 に、VS Code 拡張の「STELLA: 課題を確認する」で確
 | M2 | `q01-retry-transient` 送り直せるエラーだけを送り直す(**実装済み**) | 自力 | 429・500・529 だけを、retry-after か倍になる間隔で、上限の回数まで送り直す(待ち時間の関数は引数で受け取る。説明欄あり) |
 | M2 | `q02-collect-stream` ストリームから本文を組み立てる(**実装済み**) | 基礎 | イベントの列から text_delta の差分だけをつなぎ、message_delta の stop_reason を返す(知らないイベントは読み飛ばす) |
 | M2 | `q03-batch-requests` バッチのリクエストを組み立てる(**実装済み**) | 基礎 | 問い合わせの一覧から custom_id の重ならないリクエストの束を作り、結果を custom_id で引く |
+| M2 | `q04-fix-stream-end` 途中で切れた回答を完了と表示するのを直す(**実装済み**) | 修正 | 2-2-4・2-2-5 のあとに、障害の報告とイベントの記録から、応答の終端・停止理由・途中のエラーを区別する処理に直す(修正記録あり) |
 | M3 | `q01-cache-friendly-prompt` キャッシュが効く順に並べる(**実装済み**) | 基礎 | 変わらない指示と資料を system に、変わる時刻と質問を messages に置き、毎回同じ部分の最後のブロックにだけ cache_control を付ける。usage の 3 つの値から入力の合計と、読み込み・書き込み・キャッシュなしを返す |
 | M3 | `q02-estimate-cost` 費用を見積もる(**実装済み**) | 自力 | usage の内訳と単価(引数、100 万トークンあたり)から費用を求め、キャッシュの有無(1 回目は書き込み・最低の長さ)とバッチの割引で比べる(説明欄あり) |
+| M3 | `q03-place-breakpoints` 変わる頻度に合わせてキャッシュを区切る(**実装済み**) | 自力 | 3-4 のあとに、共通の指示と資料に区切りを置き、今回の最後の区切りまでで最初に違う層を返す(説明欄あり) |
 | M4 | `q01-tagged-prompt` 指示と資料を分ける(**実装済み**) | 基礎 | 資料・例・指示・質問を XML のタグで包み、資料を先頭・質問を最後に並べたプロンプトを作る。応答からタグの中身を取り出し、なければ null を返す |
 | M4 | `q02-extraction-schema` 抽出のスキーマを書く(**実装済み**) | 自力 | メールの欠損値を表す構造化出力を作る。保存済みの応答を読み直し、不正な JSON、型の違い、デモ希望と希望日の矛盾を区別する。日程未定の希望を受け付ける例と、登録を止める例を提出する |
 | M5 | `q01-tool-loop` ツール使用のループを回す(**実装済み**) | 自力 | 偽の送信の関数で、tool_use を実行して tool_use_id で結んだ tool_result を 1 つの user の発言で返し、end_turn か maxTurns まで繰り返す。知らないツールは is_error で返す(説明欄あり) |
@@ -269,15 +331,57 @@ M0〜M8 と M10 に、VS Code 拡張の「STELLA: 課題を確認する」で確
 | M5 | `q03-mcp-catalog` MCP で品目表と在庫検索を提供する | 自力 | 品目表を読むリソースと在庫を調べるツールを、公開する情報と権限の境界に沿って実装する |
 | M6 | `q01-router` 入力で振り分ける(**実装済み**) | 自力 | 分類の結果の空白・大文字と小文字・末尾の句読点をそろえ、種類ごとのモデル・指示・上限で答えさせる。当てはまらない分類は fallback に回し fellBack で示す(説明欄あり) |
 | M6 | `q02-chain-with-gate` 段に分けてつなぐ(**実装済み**) | 自力 | 段の出力をゲートで確かめ、条件を満たさないか例外なら次の段へ進まずに止まった段と理由を返す。retries の回数まで、ゲートの理由を feedback にしてやり直す(説明欄あり) |
+| M6 | `q03-stop-conditions` 止まる条件のあるループを書く(**実装済み**) | 自力 | 6-4 と 6-6 のあとに、回数・予算・一時停止・同じツールの失敗で止まる条件を付け、終了の種別と実行履歴を返す(説明欄あり) |
 | M7 | `q01-wrap-untrusted` 外の文章をデータとして渡す(**実装済み**) | 基礎 | ツールで取った内容を出どころと一緒に JSON にして tool_result に入れ(タグで包まない)、アプリの指示は tool_result のあとの text ブロックで渡す |
 | M7 | `q02-least-privilege` 要るツールだけを許可する(**実装済み**) | 自力 | 作業の種類から allowedTools を最小にし(Bash は npm test だけ、MCP は名前で 1 つずつ)、dontAsk と、Bash の要らない作業では disallowedTools の Bash でほかを断る(説明欄あり) |
+| M7 | `q03-grounded-answer` 資料に基づく回答だけを返す(**実装済み**) | 自力 | 7-3 のあとに、引用を有効にした文書と質問からリクエストを作り、引用の付いたテキストだけを残す(説明欄あり) |
 | M8 | `q01-eval-compare` 評価のセットで比べる(**実装済み**) | 自力 | 評価のケースをすべて回してコードで採点し合格率を出す(生成の失敗は不合格として残す)。同じセットの前後を比べ、合格率の差と、悪化したケース・直ったケースを返す(説明欄あり) |
 | M8 | `q02-calibrate-judge` 採点器の見逃しを調べる | 自力 | 人と採点器の判定を突き合わせ、誤合格・誤不合格を ID で残し、受入基準で採用か再調整かを決める |
+| M8 | `q03-decide-tool-call` ツールの呼び出しを順に判定する(**実装済み**) | 自力 | 8-3 と 8-7 のあとに、フック・拒否・確認・モード・許可・追加の判定を順に調べ、判定とその理由を返す(説明欄あり) |
+| M8 | `q04-triage-failures` 失敗の記録を層と原因に分ける(**実装済み**) | 自力 | 8-8 のあとに、HTTP ステータス、停止理由、応答の中身の順に層と次の操作を返す(説明欄あり) |
 | M10 | `q01-support-assistant` 問い合わせに答えるアシスタント(**実装済み**) | 確認A | 複数の注文を照会し、成功・失敗が混じった結果と再照会の履歴をツール ID で追う。取り消しを実行させず、回答に不要な注文データを除く。拒否・応答の中断・SDK の再試行後の障害を区別し、提出時に実行記録を説明する |
 
 M1〜M8 の課題は、リクエスト・応答・イベント・結果・usage・権限の設定・評価のケースの形をした値や、偽の送信・分類・段・生成の関数を扱う関数なので、クライアントは使いません。M10 の確認Aだけが `client.messages.create(本文, 設定)` の形のクライアントを受け取り、テストは SDK が送り直したあとの結果を返す偽のクライアント(`tests/fake-client.js`)を渡します。
 
 確認Aの「送り直し」は、書く前の一覧では自分で送り直す処理を想定していましたが、M1(1-2-1)と M2(2-1-2)で「送り直しは SDK に任せ、足りるかを先に考える」と教えたので、リクエストごとに `maxRetries` を渡し、SDK が送り直したあとのエラーをアプリで重ねて送り直さない形にしました。ツール使用で thinking ブロックを返すこと(Thinking の Preserving thinking blocks)も、Claude 5 のモデルが考える過程を既定で使うため(3-3-2)、仕様に入れました。
+
+## 試験ガイド v1.1 に合わせた追加(計画)
+
+2026-12-07 適用の CCDV-F 試験ガイドに合わせて追加します。対応スキルの番号は分野とその中の順番です。
+
+| 単元 | レッスン(ディレクトリ) | トピック(タイトル — takeaway) | 対応スキル | 状態 |
+| --- | --- | --- | --- | --- |
+| M8 | `l3-instructions-and-permissions` | 上の takeaway 一覧の 8-3-1〜8-3-4 | 3-1 | 済 |
+| M8 | `l4-run-and-sessions` | 上の takeaway 一覧の 8-4-1〜8-4-3 | 3-1、2-3 | 済 |
+| M8 | `l5-extend` | 上の takeaway 一覧の 8-5-1〜8-5-3 | 3-2、2-3 | 済 |
+| M8 | `l6-config-sdlc` | 上の takeaway 一覧の 8-6-1〜8-6-3 | 2-3 | 済 |
+| M8 | `l7-agent-guardrails` | 上の takeaway 一覧の 8-7-1〜8-7-3 | 1-2、7-2 | 済 |
+| M8 | `l8-failure-modes` | 上の takeaway 一覧の 8-8-1〜8-8-5 | 4-2 | 済 |
+| M2 | `l1-errors`(追加)、`l2-streaming`(追加) | 送り直さないエラー — 400 と 413 は送り直しても通らないので、リクエストを直します。<br>応答の終わりを見分ける — content_block_stop はブロックの終わりで、応答の終わりは message_stop です。<br>途中で届くエラー — ストリームの途中のエラーは error イベントで届くので、イベントの種類で分けます。 | 2-4 | 済 |
+| M2 | `l5-app-boundary` | system は運用者の指示 — system は運用者の指示、user の発言は利用者の言葉として読まれ、食い違えば system が優先されます。<br>API にアプリの前提はない — claude.ai のアプリが持つ指示や機能は、API のリクエストには付きません。<br>履歴は足すだけにする — 会話の履歴は書き換えずに後ろへ足し、利用者ごとに保存場所を分けます。 | 2-2 | 済 |
+| M3 | `l4-cost-diagnosis` | 変わる頻度で区切る — 変わる頻度の違う部分は、それぞれの終わりにキャッシュの区切りを置きます。<br>伸びる会話を追いかける — 伸びていく会話では、最後のブロックに区切りを置いて、前のターンまでを読み込みます。<br>外れた原因を探す — キャッシュが読まれないときは、区切りより前に毎回変わる値がないかを先に調べます。<br>いちばん大きい費用から直す — 使用量の内訳でいちばん大きい項目を見つけ、その項目に効く手段を選びます。 | 5-3 | 済 |
+| M3 | `l5-release-planning` | 同じ入力でも出力は変わる — 同じ入力でも出力は毎回同じとは限らないので、複数回の結果で判断します。<br>モデルには終わりがある — モデルは予告のあとに廃止されるので、廃止日より前に次のモデルで評価します。<br>替える前に同じ評価を回す — モデルを替える前に、同じ評価のセットで品質・速度・費用を比べ直します。 | 5-1、5-2 | 済 |
+| M5 | `l4-build-mcp-server` | サーバーが出す 3 つ — MCP サーバーは、ツール・リソース・プロンプトの 3 つを出します。<br>つなぎ方を選ぶ — 手元の 1 つのアプリ向けなら stdio、離れた場所から複数で使うなら HTTP でつなぎます。<br>離れたサーバーを守る — HTTP の MCP サーバーは、トークンをヘッダーで受け取り、自分あてのものかを確かめます。 | 8-2 | 済 |
+| M5 | `l5-shape-and-select` | 結果を絞って返す — ツールの結果は、次の判断に要る項目だけに絞って返します。<br>次の一手が分かるエラー — ツールのエラーには、何が違い、どう直せばよいかを書きます。<br>実行前に承認を取る — 取り消せない操作のツールは、実行の前にアプリが人の承認を取ります。<br>知識は Skill、接続は MCP — 手順や知識を足すなら Skill、外のシステムにつなぐなら MCP を選びます。<br>置き場所と持ち主で選ぶ — 機能の出し方は、どこで動かし、誰が直し、Claude がどう見つけるかで選びます。 | 8-1、8-3 | 済 |
+| M6 | `l4-runtime-and-limits` | 止まる条件を決める — エージェントには最大ターン数と予算の上限を決め、結果の種別を見てから結果を使います。<br>動かす場所を選ぶ — 自分で運用するなら Agent SDK、長時間の作業を任せるなら Managed Agents を選びます。<br>監査が要るなら手順を固定する — 監査や誤りの許容度が厳しい業務は、手順を固定したワークフローにします。 | 済 |
+| M6 | `l5-long-running` | 古いツール結果を減らす — 古いツール結果が溜まったら、コンテキストの編集で古い結果から外します。<br>調べものを切り離す — 文脈を埋める調べものはサブエージェントに任せ、親は要約だけを受け取ります。<br>新しく始める基準 — 2 回直しても直らないときと、関係のない作業に移るときは、新しいセッションで始めます。<br>セッションをまたいで覚える — セッションをまたいで要る情報は、会話ではなくファイルやメモリーに書き出します。 | 済 |
+| M6 | `l6-diagnose` | トレースで原因を探す — エージェントの不具合は、実行の記録を順に読み、どの設計が欠けているかで分けます。<br>終わらないループ — 終わらないループには、止まる条件と回数の上限を足します。<br>途中で返ってきた応答 — stop_reason が pause_turn の応答は、内容を変えずに送り直して続きを受け取ります。 | 済 |
+| M7 | `l3-grounding` | 出典を付けて返す — 資料に基づく回答は、引用の機能で出典の位置を付けて返します。<br>引用のない主張を外す — 資料の引用が付かない主張は、答えから外すか「資料にない」と返します。<br>全部入れるか、探して入れるか — 資料が小さく変わらないなら全文を入れ、大きいか変わりやすいなら要る部分だけを探して入れます。 | 6-4 | 済 |
+| M7 | `l4-keys` | キーはサーバーに置く — API キーは画面のコードに入れず、自分のサーバーから Claude を呼びます。<br>環境ごとに分ける — 開発と本番はワークスペースを分け、キーも使用量も別にします。<br>管理用のキーは別物 — Admin キーは組織の管理のためのキーで、Claude の呼び出しには使いません。<br>入れ替えて見張る — キーには期限を付けて定期的に入れ替え、使用量をキーごとに見張ります。 | 7-3 | 済 |
+| M0 | `l1-exam-overview`(改訂)、`l2-official-sources`(追加) | 上の takeaway 一覧の 0-1-4・0-1-5・0-2-5 | — | 済 |
+
+### 追加する課題
+
+状態はこの計画での作業について記します。
+
+- M2 `q04-fix-stream-end`（修正・済、2-4）
+- M3 `q03-place-breakpoints`（自力・済、5-3）
+- M5 `q03-mcp-catalog`（計画済みの課題を実装・未着手）。課題フォルダーは既存です。
+- M6 `q03-stop-conditions`（自力・済、1-2、1-3）
+- M7 `q03-grounded-answer`（自力・済、6-4）
+- M8 `q02-calibrate-judge`（計画済みの課題を実装・未着手）。課題フォルダーは既存です。
+- M8 `q03-decide-tool-call`（自力・済、1-2、7-2、3-1）
+- M8 `q04-triage-failures`（自力・済、4-2）
 
 ## クレジット(原典)
 

@@ -1,5 +1,5 @@
 {
-  "plannedHours": 5,
+  "plannedHours": 9,
   "skills": {
     "uses": ["claude-messages-request", "claude-batches"],
     "assesses": ["claude-model-selection", "claude-prompt-caching", "claude-token-cost"]

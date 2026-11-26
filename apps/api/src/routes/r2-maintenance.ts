@@ -97,6 +97,7 @@ async function markdownReferencedPaths(db: Db, into: Set<string>): Promise<void>
  * 配布資料 + レッスンの動画 / スライド + 本文中の画像 + ステージのサムネイルを対象にする。
  */
 async function referencedPaths(db: Db): Promise<Set<string>> {
+  // 配布資料の機能は廃止したが、行と R2 の実体を残しているので参照として数える。
   const materialRows = await db
     .select({ path: lessonMaterials.path })
     .from(lessonMaterials)

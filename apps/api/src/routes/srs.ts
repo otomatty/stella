@@ -87,6 +87,7 @@ async function selectAccessibleCards(
  * 「カードが 1 枚でもあれば全体をスキップ」にすると、 リリース後に先に新しいクイズを
  * 解いたユーザーの過去受験分が永久に欠落するため、 設問単位で差分を見る。
  * 当時の answers に無い設問 (受験後に追加された設問・未解答) はカード化しない。
+ * 受験後に更新された設問も除く。同じ ID に別の設問が入ることがあり、旧版の解答では採点できない。
  * 欠落が無ければ軽い 2 クエリで抜けるので毎回呼んでよい。
  */
 async function backfillCards(db: Db, caller: Caller): Promise<void> {
@@ -143,7 +144,7 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
         .where(and(inArray(quizQuestions.quizId, idsChunk), eq(quizOptions.isCorrect, true)))),
     );
   }
-  const questionById = new Map(questionRows.map((q) => [q.id, q]));
+  const questionsById = new Map(questionRows.map((q) => [q.id, q]));
   const correctByQuestion = new Map<string, Set<string>>();
   for (const r of correctRows) {
     const set = correctByQuestion.get(r.questionId) ?? new Set<string>();
@@ -160,11 +161,8 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
     // 解答済み・未カード化・現存する設問だけ。 削除済み設問の解答は捨てる。
     const outcomes = [...selectedByQuestion].flatMap(([questionId, sel]) => {
       if (carded.has(questionId)) return [];
-      const question = questionById.get(questionId);
-      if (!question || question.quizId !== quizId) return [];
-      // 設問の UUID は並び順で決まるため、差し替えても変わらない。
-      // 受験後に更新された設問には、差し替え前の回答で正誤を付けない。
-      if (question.updatedAt > attempt.submittedAt) return [];
+      const question = questionsById.get(questionId);
+      if (question?.quizId !== quizId || question.updatedAt > attempt.submittedAt) return [];
       return [
         {
           questionId,

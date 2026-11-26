@@ -1,0 +1,76 @@
+{
+  "id": "claude-developer-foundations/m8-claude-code-and-evals/q03-decide-tool-call",
+  "title": "ツールの呼び出しを順に判定する",
+  "kind": "independent",
+  "pattern": "ordered-permission-check",
+  "skills": {
+    "uses": ["claude-tool-design"],
+    "assesses": ["claude-code-config", "claude-safety"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/decide-tool-call.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      {
+        "id": "CR-SCOPE-01",
+        "required": true
+      },
+      {
+        "id": "CR-EXPLAIN-01",
+        "required": true
+      }
+    ],
+    "rubric": [
+      {
+        "id": "ordered-decisions",
+        "criterion": "フックの拒否、拒否ルール、確認、モード、許可、追加の判定の順で分岐し、先に判定が決まった場合は canUseTool を呼ばない",
+        "required": true
+      },
+      {
+        "id": "hook-failure-policy",
+        "criterion": "一致したフックを順に呼び、通常の拒否と onFailure が block のときの例外による拒否を decidedBy で区別している",
+        "required": true
+      },
+      {
+        "id": "match-rule-target",
+        "criterion": "ツール名だけのルールは名前で判定し、括弧つきのルールは対象の入力の全体をワイルドカードで照合している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed",
+    "attempts": 5
+  },
+  "sources": [
+    "SRC-claude-code-sdk-permissions-20261031",
+    "SRC-claude-code-permission-rules-20261031",
+    "SRC-claude-sdk-hook-callbacks-20261126",
+    "SRC-claude-sdk-hook-failure-20261126"
+  ],
+  "refs": [
+    "m8-claude-code-and-evals/l3-instructions-and-permissions",
+    "m8-claude-code-and-evals/l7-agent-guardrails"
+  ],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

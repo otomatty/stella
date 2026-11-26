@@ -35,7 +35,6 @@ export const webShots = {
       const lesson = lessonScreen(page);
       await lesson.getByRole("heading", { name: "00-1 まとめ", exact: true }).waitFor();
       await lesson.getByTestId("lesson-doc").getByText("このレッスンの目標").waitFor();
-      await lesson.getByRole("tab", { name: /^資料/ }).getByText(/^\d+$/).waitFor();
     },
   },
 } satisfies Record<string, WebShot>;

@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkoutContentFingerprint } from "./content-state.js";
 import {
   buildVideos,
   formatVideoFailure,
@@ -313,12 +314,15 @@ export async function uploadVideos(args: string[]): Promise<void> {
   const tts = loadVideoVoice(videoTtsOf(args, remote)).provider;
   logVideoTts(tts);
   const manifestFile = join(contentRoot, "dist/video-manifest.json");
+  const sourceFile = join(contentRoot, "dist/video-manifest.source.json");
   // 古い manifest を誤って seed に渡さない。鍵なしでは R2 に一切触れない。
+  rmSync(sourceFile, { force: true });
   rmSync(manifestFile, { force: true });
   if (tts === "gemini" && !process.env.GEMINI_API_KEY && !dryRun) {
     console.log("キーが無いので動画を作りません");
     return;
   }
+  const source = remote && !preview && !dryRun ? checkoutContentFingerprint() : undefined;
   const buildArgs = [
     ...args.filter((arg) => !["--remote", "--dry-run", "--preview", "--cached-only"].includes(arg)),
     ...(args.includes("--tts") ? [] : ["--tts", tts]),
@@ -526,8 +530,18 @@ export async function uploadVideos(args: string[]): Promise<void> {
     }
     return;
   }
+  if (source) {
+    const current = checkoutContentFingerprint();
+    if (source.checkoutFingerprint !== current.checkoutFingerprint) {
+      throw new Error(
+        "動画の同期中に教材の版が変わりました。このチェックアウトで同じコマンドを実行してください。",
+      );
+    }
+    source.dirty ||= current.dirty;
+  }
   mkdirSync(dirname(manifestFile), { recursive: true });
   writeFileSync(manifestFile, serializeVideoManifest(manifest));
+  if (source) writeFileSync(sourceFile, JSON.stringify(source));
   console.log(`✓ video manifest: 成功 ${successCount} 件 / 失敗 ${failures.length} 件`);
   appendStepSummary(`\n- 生成: 成功 ${successCount} 件 / 失敗 ${failures.length} 件\n`);
   if (failures.length > 0) {

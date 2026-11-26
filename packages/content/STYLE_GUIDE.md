@@ -54,7 +54,7 @@
 
 まとめ (`doc.md`) と課題文 (`tasks/<課題>/README.md`。問題つきの課題には README がありません) に、行頭から `:::tutorial overview` のように1行で書く。閉じる行は不要。id は英小文字・数字・ハイフンで、`apps/web/scripts/tutorials/scenarios/` にあるシナリオの id を使う。`:::os` の中にも書ける。スライドと知識問題には書かない。
 
-これは STELLA アプリの操作動画を参照する指定で、教材そのものの動画ではない。Web では再生、VS Code では Web へのリンク、配布 PDF では Web 版で見られる旨を表示する。
+これは STELLA アプリの操作動画を参照する指定で、教材そのものの動画ではない。Web では再生、VS Code では Web へのリンクを表示する。
 
 ## OS別の手順(`:::os`)のルール
 
@@ -87,7 +87,6 @@ npm --version
 - WindowsはPowerShell、macOSはターミナル(06 §3)。1つのブロックに両方のOSのコマンドを混ぜない。PowerShellのnpmは `npm.cmd` と書く(実行ポリシーで `npm.ps1` が止まることがあるため)
 - OSごとの画像は `<名前>.windows.png` / `<名前>.macos.png` の対にしてトピックの `assets/` に置き、それぞれのOSのブロックの中で `![説明](t1-…/assets/<名前>.windows.png)` の形で参照する。ブロックの外やスライドでは使わない。課題文には教材内の画像を使えない(配布されないため)
 - 画像を差し替えるときは、ファイル名を変える(例: `install.v2.windows.png` と `install.v2.macos.png`)。教材の画像はファイル名で決まる固定のURLで配信するので、同じ名前で上書きすると、古い画像がブラウザーやCDNのキャッシュに残る
-- 配布PDFは、`stage.json` に `"pdfByOs": true` を書いたステージ(`dev-env-basics`)ではOSごとに別のPDFになる。それ以外は1つのPDFに「Windows の場合」「macOS の場合」の見出しで両方を並べる
 - VS Codeの拡張は画像を表示できない。画像だけに頼らず、操作は文でも書く
 
 `bun run content:check` が、記法の誤り・片方のOSしか無い組・書けない場所のブロック・対になっていない画像を検出します。

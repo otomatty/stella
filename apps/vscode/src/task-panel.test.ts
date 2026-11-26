@@ -11,10 +11,17 @@ import {
   showTaskPanel,
   showTaskReadme,
   sideColumn,
+  updateTaskPanelCheck,
+  updateTaskReadmeCheck,
 } from "./task-panel.js";
+import { finishTaskCheck, progressTaskCheck, startTaskCheck } from "./task-run-events.js";
 import { expectedActual } from "./task-test-message.js";
 
 vi.mock("vscode", () => ({
+  EventEmitter: class {
+    event = vi.fn();
+    fire = vi.fn();
+  },
   window: {
     createWebviewPanel: vi.fn(),
     showTextDocument: vi.fn(),
@@ -582,6 +589,7 @@ describe("課題文のパネル", () => {
       viewColumn: vscode.ViewColumn.Two,
       webview: {
         html: "",
+        postMessage: vi.fn().mockResolvedValue(true),
         onDidReceiveMessage: vi.fn((_listener: (message: unknown) => void) => ({
           dispose: disposeMessages,
         })),
@@ -707,6 +715,205 @@ describe("課題文のパネル", () => {
     expect(html).toContain("<li>ローカルの資料 — 教材チーム / 配列");
     expect(html).not.toContain('href="file:///source.md"');
   });
+
+  const root = "/w/task";
+  const input = {
+    root,
+    title: manifest.title,
+    markdown,
+    guide: { root, manifest, edit: { files: [], missing: [] } },
+  };
+  const check = {
+    progress: { steps: [{ label: "型の確認", status: "running" as const }] },
+    target: "問1 値を選ぶ",
+    note: "確認だけを行います。",
+  };
+  const slot = '<div id="check-progress">';
+  const checklist = '<section class="check-progress"';
+
+  it.each([false, true])(
+    "進め方と今のカードの間にチェックリストの場所を作る (問題つき %s)",
+    (hasProblems) => {
+      const guide = {
+        ...input.guide,
+        manifest: hasProblems
+          ? { ...manifest, problems: [{ id: "q01", title: "値を選ぶ" }] }
+          : manifest,
+      };
+      const idle = buildTaskReadmeHtml({ ...input, guide });
+      expect(idle.split(slot)).toHaveLength(2);
+      expect(idle).toContain(`${slot}</div>`);
+      expect(idle).not.toContain('<body class="checking">');
+      const html = buildTaskReadmeHtml({ ...input, guide, check });
+      expect(html.split(slot)).toHaveLength(2);
+      expect(html).toContain('<body class="checking">');
+      expect(html).toContain(slot + checklist);
+      const guideProgress = hasProblems ? 'class="problem-progress"' : 'class="stepper"';
+      expect(html.indexOf(guideProgress)).toBeGreaterThan(-1);
+      expect(html.indexOf(slot)).toBeGreaterThan(html.indexOf(guideProgress));
+      expect(html.indexOf('class="now-card ')).toBeGreaterThan(html.indexOf(slot));
+    },
+  );
+
+  it("同じ課題文のパネルだけを描き直すかメッセージで更新し、終了時に空にする", () => {
+    const panel = mockReadmePanel();
+    const create = vi.mocked(vscode.window.createWebviewPanel);
+    create.mockReturnValueOnce(panel as never);
+    showTaskReadme(input);
+    try {
+      const idle = panel.webview.html;
+      updateTaskReadmeCheck("/別の課題", check, { rerender: true });
+      updateTaskReadmeCheck("/別の課題", check);
+      expect(panel.webview.html).toBe(idle);
+      expect(panel.webview.postMessage).not.toHaveBeenCalled();
+
+      updateTaskReadmeCheck(root, check, { rerender: true });
+      const running = panel.webview.html;
+      expect(running).toContain(slot + checklist);
+      expect(running).toContain('<body class="checking">');
+      expect(running).not.toContain("  reportWidth();");
+      expect(panel.webview.postMessage).not.toHaveBeenCalled();
+
+      updateTaskReadmeCheck(root, { ...check, target: "問2 値を選ぶ" });
+      expect(panel.webview.html).toBe(running);
+      expect(panel.webview.postMessage).toHaveBeenCalledExactlyOnceWith({
+        type: "check-progress",
+        html: expect.stringContaining("問2 値を選ぶ"),
+      });
+
+      // 裏のタブを再表示したときなど、再読み込みした Webview にも最新の内容を送る。
+      const receive = panel.webview.onDidReceiveMessage.mock.calls[0]?.[0];
+      receive?.({ type: "check-progress-ready" });
+      expect(panel.webview.postMessage).toHaveBeenCalledTimes(2);
+      expect(panel.webview.postMessage).toHaveBeenLastCalledWith({
+        type: "check-progress",
+        html: expect.stringContaining("問2 値を選ぶ"),
+      });
+
+      updateTaskReadmeCheck(root, undefined);
+      expect(panel.webview.html).toBe(running);
+      expect(panel.webview.postMessage).toHaveBeenLastCalledWith({
+        type: "check-progress",
+        html: "",
+      });
+      updateTaskReadmeCheck(root, undefined, { rerender: true });
+      expect(panel.webview.html).toContain(`${slot}</div>`);
+      expect(panel.webview.html).not.toContain('<body class="checking">');
+      expect(panel.reveal).not.toHaveBeenCalled();
+    } finally {
+      panel.onDidDispose.mock.calls[0]?.[0]();
+    }
+    const created = create.mock.calls.length;
+    updateTaskReadmeCheck(root, check, { rerender: true });
+    expect(create).toHaveBeenCalledTimes(created);
+  });
+
+  it("実行中に課題文を描き直しても、同じ課題の最新の進み具合を出す", () => {
+    const panel = mockReadmePanel();
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    startTaskCheck({ root, taskId: manifest.id, target: check.target, note: check.note });
+    progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト" }] });
+    try {
+      showTaskReadme(input);
+      expect(panel.webview.html).toContain(slot + checklist);
+      expect(panel.webview.html).toContain("問1 値を選ぶ");
+      expect(panel.webview.html).toContain('class="check-label">テスト<');
+      progressTaskCheck({ type: "step-start", index: 0 });
+      showTaskReadme({ ...input, markdown: "新しい課題文" }, { reveal: false });
+      expect(panel.webview.html).toContain("新しい課題文");
+      expect(panel.webview.html).toContain('<li class="running" aria-current="step">');
+      expect(panel.reveal).not.toHaveBeenCalled();
+    } finally {
+      finishTaskCheck({ root, manifest, result: result(), saved: false });
+      panel.onDidDispose.mock.calls[0]?.[0]();
+    }
+  });
+
+  it("同じ課題の結果だけを差し替え、終了時に最後に描いた結果に戻す", () => {
+    const panel = mockReadmePanel();
+    const create = vi.mocked(vscode.window.createWebviewPanel);
+    const created = create.mock.calls.length;
+    const titledCheck = { ...check, title: "確認中の <課題>" };
+    updateTaskPanelCheck(root, titledCheck);
+    expect(create).toHaveBeenCalledTimes(created);
+    create.mockReturnValueOnce(panel as never);
+    const panelInput = { kind: "result" as const, root, manifest, result: result() };
+    showTaskPanel(panelInput);
+    try {
+      const previous = panel.webview.html;
+      updateTaskPanelCheck("/別の課題", titledCheck);
+      expect(panel.webview.html).toBe(previous);
+      updateTaskPanelCheck(root, titledCheck);
+      const head = (html: string) => html.split("</head>")[0]?.replace(/<title>.*?<\/title>/, "");
+      expect(head(panel.webview.html)).toBe(head(previous));
+      expect(panel.webview.html).toContain("<h1>確認中の &lt;課題&gt;</h1>");
+      expect(panel.webview.html).toContain(checklist);
+      expect(panel.webview.html).toContain('href="command:stella.showRunLog"');
+      expect(panel.webview.html).not.toMatch(/<div class="summary|<script/);
+      updateTaskPanelCheck(root, undefined);
+      expect(panel.webview.html).toBe(previous);
+
+      updateTaskPanelCheck(root, titledCheck);
+      const next = { ...panelInput, result: result({ outcome: "passed" }) };
+      showTaskPanel(next, { reveal: false });
+      expect(panel.webview.html).toBe(buildTaskPanelHtml(next));
+      updateTaskPanelCheck(root, undefined);
+      expect(panel.webview.html).toBe(buildTaskPanelHtml(next));
+
+      const invalid = { kind: "invalid" as const, root, errors: ["定義のエラー"] };
+      showTaskPanel(invalid, { reveal: false });
+      updateTaskPanelCheck(root, titledCheck);
+      expect(panel.webview.html).toBe(buildTaskPanelHtml(invalid));
+      expect(panel.reveal).not.toHaveBeenCalled();
+      expect(panel.webview.postMessage).not.toHaveBeenCalled();
+    } finally {
+      for (const [dispose] of panel.onDidDispose.mock.calls) dispose();
+    }
+    updateTaskPanelCheck(root, titledCheck);
+    expect(create).toHaveBeenCalledTimes(created + 1);
+  });
+
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b"],
+    ["c:\\a\\b", "C:\\a\\b"],
+  ])(
+    "ドライブ文字の大小が違っても両方のパネルで進捗を表示する (%s / %s)",
+    (panelRoot, checkRoot) => {
+      const platform = process.platform;
+      const readme = mockReadmePanel();
+      const resultPanel = mockReadmePanel();
+      vi.mocked(vscode.window.createWebviewPanel)
+        .mockReturnValueOnce(readme as never)
+        .mockReturnValueOnce(resultPanel as never);
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        startTaskCheck({ root: checkRoot, taskId: manifest.id });
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "最初の手順" }] });
+        showTaskReadme({ ...input, root: panelRoot, guide: { ...input.guide, root: panelRoot } });
+        expect(readme.webview.html).toContain(slot + checklist);
+        expect(readme.webview.html).toContain("最初の手順");
+        updateTaskReadmeCheck(checkRoot, check);
+        expect(readme.webview.postMessage).toHaveBeenCalledExactlyOnceWith({
+          type: "check-progress",
+          html: expect.stringContaining("型の確認"),
+        });
+
+        const panelInput = { kind: "result" as const, root: panelRoot, manifest, result: result() };
+        showTaskPanel(panelInput);
+        const previous = resultPanel.webview.html;
+        updateTaskPanelCheck(checkRoot, { ...check, title: manifest.title });
+        expect(resultPanel.webview.html).toContain(checklist);
+        expect(resultPanel.webview.html).toContain("型の確認");
+        updateTaskPanelCheck(checkRoot, undefined);
+        expect(resultPanel.webview.html).toBe(previous);
+      } finally {
+        Object.defineProperty(process, "platform", { value: platform });
+        finishTaskCheck({ root: checkRoot, manifest, result: result(), saved: false });
+        for (const [dispose] of readme.onDidDispose.mock.calls) dispose();
+        for (const [dispose] of resultPanel.onDidDispose.mock.calls) dispose();
+      }
+    },
+  );
 
   it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
     showTaskReadme({ title: "最初のページ", markdown, root: "/x" }, { reveal: false });

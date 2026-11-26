@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m2-integration@5",
-  "contentHash": "8327c393e7542ab7f0db61d5436944c90028b1dd0d024e5ed7bb7b99eaf8d51e",
+  "unitId": "claude-developer-foundations/m2-integration@7",
+  "contentHash": "f731e91f6a8a4911aeb3270c7b47ade71d293c694bacbeddbdda8f25d83900df",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -41,28 +41,43 @@
       "reviewStatus": "approved"
     },
     {
+      "contentId": "l1-errors/t5-do-not-retry/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-request-size-limits-20261126",
+        "SRC-claude-docs-context-overflow-20261031"
+      ],
+      "usedFor": "400 と 413 の原因、入力トークンとリクエスト全体のバイト数の切り分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
       "contentId": "l1-errors/doc.md",
       "sourceRefs": [
         "SRC-claude-docs-errors-20261031",
         "SRC-claude-docs-rate-limits-20261031",
-        "SRC-claude-docs-ts-sdk-20261031"
+        "SRC-claude-docs-ts-sdk-20261031",
+        "SRC-claude-docs-request-size-limits-20261126",
+        "SRC-claude-docs-context-overflow-20261031"
       ],
-      "usedFor": "レッスン2-1の4トピック(送り直せるエラー・間隔・request ID・レート制限のヘッダー)の読み物",
+      "usedFor": "レッスン2-1の4トピック(送り直せるエラー・間隔・request ID・レート制限のヘッダー)の読み物。追加範囲は400 の入力の長さと 413 のバイト数の上限を見分ける手順",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-errors/knowledge.md",
       "sourceRefs": [
         "SRC-claude-docs-errors-20261031",
         "SRC-claude-docs-rate-limits-20261031",
-        "SRC-claude-docs-ts-sdk-20261031"
+        "SRC-claude-docs-ts-sdk-20261031",
+        "SRC-claude-docs-request-size-limits-20261126"
       ],
-      "usedFor": "送り直せるエラー・retry-after・利用額の上限の 429・request ID・レート制限のヘッダーを問う自作問題の正答と解説",
+      "usedFor": "送り直せるエラー・retry-after・利用額の上限の 429・request ID・レート制限のヘッダーを問う自作問題の正答と解説。追加範囲は413 に対する添付の削減を問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-streaming/t1-show-as-it-arrives/slides.md",
@@ -95,14 +110,37 @@
       "reviewStatus": "approved"
     },
     {
+      "contentId": "l2-streaming/t4-terminal-event/slides.md",
+      "sourceRefs": ["SRC-claude-docs-streaming-20261031", "SRC-claude-docs-stop-reasons-20261031"],
+      "usedFor": "イベントを読み切り、出力の上限に届いた応答を確定しないこと",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l2-streaming/t5-stream-error/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-handle-stream-errors-20261126"
+      ],
+      "usedFor": "HTTP 200 の後に届く error イベント、SDK の扱いと接続切断の切り分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
       "contentId": "l2-streaming/doc.md",
       "sourceRefs": [
         "SRC-claude-docs-streaming-20261031",
         "SRC-claude-docs-errors-long-requests-20261031",
         "SRC-claude-docs-streaming-deltas-20261031",
-        "SRC-claude-docs-stop-vs-errors-20261031"
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-handle-stream-errors-20261126",
+        "SRC-claude-docs-stream-recovery-20261126",
+        "SRC-claude-docs-validation-errors-20261126"
       ],
-      "usedFor": "ストリームの終了と HTTP 成功後のエラーを2つの翻訳記録で区別する演習",
+      "usedFor": "ストリームの終了と HTTP 成功後のエラーを2つの翻訳記録で区別する演習。追加範囲は終端と停止理由による確定、途中のエラーと切断の区別、テキストの続きの受け取り方",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -112,9 +150,11 @@
       "sourceRefs": [
         "SRC-claude-docs-streaming-20261031",
         "SRC-claude-docs-errors-long-requests-20261031",
-        "SRC-claude-docs-streaming-deltas-20261031"
+        "SRC-claude-docs-streaming-deltas-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-handle-stream-errors-20261126"
       ],
-      "usedFor": "ストリーミングの使いどころ・イベントの種類・finalMessage を問う自作問題の正答と解説",
+      "usedFor": "ストリーミングの使いどころ・イベントの種類・finalMessage を問う自作問題の正答と解説。追加範囲は終端と停止理由を使った完了判定、混雑による途中のエラーを問う自作問題の正答と解説",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -200,6 +240,64 @@
       "reviewStatus": "approved"
     },
     {
+      "contentId": "l5-app-boundary/t1-operator-and-user/slides.md",
+      "sourceRefs": ["SRC-claude-docs-mid-conversation-system-20261126"],
+      "usedFor": "運用者の指示と利用者の発言の優先順",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-app-boundary/t2-api-is-not-the-app/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-app-system-prompts-20261126",
+        "SRC-claude-docs-messages-20261031"
+      ],
+      "usedFor": "Claude のアプリから自作アプリへ移したときの指示と機能の確認",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-app-boundary/t3-append-only-history/slides.md",
+      "sourceRefs": ["SRC-claude-docs-messages-20261031", "SRC-claude-docs-files-20261031"],
+      "usedFor": "会話を追記で保存することと、利用者の履歴とファイルを対応付けること",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-app-boundary/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-mid-conversation-system-20261126",
+        "SRC-claude-docs-app-system-prompts-20261126",
+        "SRC-claude-docs-messages-20261031",
+        "SRC-claude-docs-structured-considerations-20261031",
+        "SRC-claude-docs-validation-errors-20261126",
+        "SRC-claude-docs-cache-sharing-20261126",
+        "SRC-claude-docs-batch-limitations-20261126",
+        "SRC-claude-docs-files-20261031"
+      ],
+      "usedFor": "指示の優先順、API に移すときの入力と出力、会話の追記と利用者ごとの保存範囲",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-app-boundary/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-mid-conversation-system-20261126",
+        "SRC-claude-docs-app-system-prompts-20261126",
+        "SRC-claude-docs-messages-20261031",
+        "SRC-claude-docs-structured-considerations-20261031",
+        "SRC-claude-docs-files-20261031"
+      ],
+      "usedFor": "運用者の方針と利用者の言葉の優先順、API に渡す指示と出力条件、履歴の追記と添付の照合を問う自作問題の正答と解説",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
       "contentId": "tasks/q01-retry-transient/README.md",
       "sourceRefs": [
         "SRC-claude-docs-errors-20261031",
@@ -229,6 +327,19 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q04-fix-stream-end/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-streaming-20261031",
+        "SRC-claude-docs-streaming-deltas-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-handle-stream-errors-20261126"
+      ],
+      "usedFor": "ストリームの差分・イベントの順序・停止理由・受信途中のエラーに基づく修正課題の仕様とイベント記録",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     }
   ]
 }

@@ -10,7 +10,7 @@
  * :::
  * ```
  *
- * Web・VS Code・配布 PDF・`content:check` が同じ解析を使う。記法は次のとおり厳格に決める。
+ * Web・VS Code・`content:check` が同じ解析を使う。記法は次のとおり厳格に決める。
  *
  * - 開始は行頭の `:::os <OS>`、終わりは行頭の `:::` だけの行。OS は `windows` / `macos`。
  * - 入れ子にしない。リストや引用の中にも書けない (行頭から書く)。
@@ -230,7 +230,7 @@ export function orderedOsBlocks(blocks: readonly OsBlock[]): OsBlock[] {
   return [...blocks].sort((a, b) => OS_NAMES.indexOf(a.os) - OS_NAMES.indexOf(b.os));
 }
 
-/** 1 つの OS だけの本文にする (OS 別の配布 PDF)。 */
+/** 1 つの OS だけの本文にする。 */
 export function selectOsMarkdown(source: string, os: OsName): string {
   return parseOsBlocks(source)
     .segments.map((s) =>

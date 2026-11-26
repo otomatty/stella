@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-20261031, SRC-claude-docs-ts-sdk-20261031]
+sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-20261031, SRC-claude-docs-ts-sdk-20261031, SRC-claude-docs-request-size-limits-20261126]
 ---
 ## 知識問題
 
@@ -70,5 +70,19 @@ sourceRefs: [SRC-claude-docs-errors-20261031, SRC-claude-docs-rate-limits-202610
 <summary>解答</summary>
 
 **A** — レスポンスヘッダーにレート制限の残りが入ります。残りが少なくなったら送る速さを落とします。
+
+</details>
+
+### Q6. 画像を含む月次報告を送ると 413 が返りました。集計に使う画像は全体の一部です。どこを直しますか？
+<!-- kind: single; skills: claude-api-errors -->
+
+- A. 送り直しの待ち時間を長くする
+- B. 集計に要る画像を選び、送るリクエストのバイト数を減らす
+- C. 出力の max_tokens を下げる
+
+<details>
+<summary>解答</summary>
+
+**B** — 413 はリクエスト全体のバイト数の上限を超えています。添付を絞ると、送るデータが小さくなります。
 
 </details>

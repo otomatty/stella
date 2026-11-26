@@ -14,8 +14,19 @@ import path from "node:path";
 import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
-import { findTaskRoot, loadTask } from "./runner/run-task.js";
+import { findTaskRoot, loadTask, sameTaskRoot } from "./runner/run-task.js";
+import {
+  type CheckProgress,
+  checkProgressLabel,
+  checkProgressShortLabel,
+} from "./task-check-progress.js";
 import { problemTaskProgress } from "./task-problems.js";
+import {
+  activeTaskCheck,
+  onDidFinishTaskCheck,
+  onDidProgressTaskCheck,
+  onDidStartTaskCheck,
+} from "./task-run-events.js";
 import { loadTaskProblems } from "./task-update-guard.js";
 import {
   getTaskState,
@@ -68,17 +79,31 @@ async function taskRootOfFile(file: string): Promise<string | null> {
   return owner ? findTaskRoot(file, [owner]) : null;
 }
 
-function renderState(item: vscode.StatusBarItem, task: CurrentTask): boolean {
+function renderCheck(
+  item: vscode.StatusBarItem,
+  task: CurrentTask,
+  progress?: CheckProgress,
+): void {
+  const shortLabel = progress && checkProgressShortLabel(progress);
+  const label = progress && checkProgressLabel(progress);
+  item.text = shortLabel ? `$(sync~spin) 確認中 ${shortLabel}` : "$(sync~spin) 確認中…";
+  item.tooltip = `「${task.title}」を確認しています${label ? `: ${label}` : ""}`;
+  item.command = "stella.showRunLog";
+}
+
+function renderState(
+  item: vscode.StatusBarItem,
+  task: CurrentTask,
+  checkProgress?: CheckProgress,
+): boolean {
   const state = task.taskId ? getTaskState(task.root, task.taskId) : undefined;
   const { running, lmsStatus, lastRun } = state ?? {};
   const passed = lmsStatus === "passed" || lmsStatus === "ai-passed";
   const inReview = lmsStatus === "submitted" || lmsStatus === "instructor-pending";
   const resubmit = lmsStatus === "resubmit" && (!lastRun || lastRun.outcome === "passed");
   const taskTitle = `「${task.title}」`;
-  if (running) {
-    item.text = "$(sync~spin) 確認中…";
-    item.tooltip = `${taskTitle}を確認しています`;
-    item.command = "stella.showRunLog";
+  if (running || checkProgress) {
+    renderCheck(item, task, checkProgress);
   } else if (passed || inReview || resubmit) {
     const label = passed ? "合格" : TASK_STATUS_LABELS[lmsStatus];
     const icon = passed ? "pass-filled" : inReview ? "clock" : "error";
@@ -144,6 +169,9 @@ function render(): void {
     title: "課題文を表示する",
     arguments: [current.root],
   };
+  const active = activeTaskCheck();
+  const checkProgress =
+    active && sameTaskRoot(active.root, current.root) ? active.progress : undefined;
   const progress = current.problemProgress;
   if (progress) {
     const { currentProblem } = current;
@@ -160,9 +188,13 @@ function render(): void {
       arguments: [current.root],
     };
     stateItem.show();
-    // 解ける問題が無いあいだは出さない。古い deferred の書き出し待ちも出さない。
-    if (current.problemActionsAvailable === false || !currentProblem) submitItem.hide();
-    else {
+    if (checkProgress) {
+      renderCheck(submitItem, current, checkProgress);
+      submitItem.show();
+    } else if (current.problemActionsAvailable === false || !currentProblem) {
+      // 解ける問題が無いあいだは出さない。古い deferred の書き出し待ちも出さない。
+      submitItem.hide();
+    } else {
       submitItem.text = "$(play) 確認して提出";
       submitItem.tooltip = `${currentProblem.label}を確認して提出します (${shortcut})`;
       submitItem.command = {
@@ -172,7 +204,7 @@ function render(): void {
       };
       submitItem.show();
     }
-  } else if (renderState(stateItem, current)) submitItem.hide();
+  } else if (renderState(stateItem, current, checkProgress)) submitItem.hide();
   else submitItem.show();
   readmeItem.show();
 }
@@ -282,10 +314,16 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     51,
   );
   stateItem.name = "STELLA: 課題の状態";
+  const renderTaskCheck = ({ root }: { root: string }) => {
+    if (sameTaskRoot(root, current?.root)) render();
+  };
   context.subscriptions.push(
     submitItem,
     readmeItem,
     stateItem,
+    onDidStartTaskCheck(renderTaskCheck),
+    onDidProgressTaskCheck(renderTaskCheck),
+    onDidFinishTaskCheck(renderTaskCheck),
     onDidChangeTaskState((root) => {
       if (root === undefined || root === current?.root) render();
     }),

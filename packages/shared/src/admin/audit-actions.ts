@@ -35,9 +35,6 @@ const LABELS = {
   stage_unpublish: "ステージ非公開",
   stage_status_change: "ステージ状態変更",
   stage_delete: "ステージ削除",
-  // 配布資料
-  material_withdraw: "配布資料を配信から外す",
-  material_restore: "配布資料を配信に戻す",
   lesson_comment_delete: "動画コメントの削除",
   // 受講登録 (#20)
   //
@@ -86,6 +83,8 @@ const LABELS = {
  * `AUDIT_ACTION_FILTER_LABELS` が両方を混ぜて作るので、 定義が 2 か所に割れることもない。
  */
 const DEPRECATED_LABELS: Record<string, string> = {
+  material_withdraw: "配布資料を配信から外す",
+  material_restore: "配布資料を配信に戻す",
   course_publish: "ステージ公開 (旧)",
   course_unpublish: "ステージ非公開 (旧)",
   course_status_change: "ステージ状態変更 (旧)",

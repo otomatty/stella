@@ -146,8 +146,7 @@ const UNHASHED_NAME =
  * - 参照元の対応の記録: 単元直下の references.json、公開教材の front-matter の sourceRefs、
  *   課題の task.json の sources (付け替えだけでは改訂にならない)
  * - stage.json の経路・予定時間 (前提・parent・扇への配置・plannedHours)、スキルツリーの
- *   掲載 (audience・category・theme。誰に出すか・どの島か・霧のテーマ名で、本文は変わらない)、
- *   配布 PDF を OS ごとに分けるか (pdfByOs)
+ *   掲載 (audience・category・theme。誰に出すか・どの島か・霧のテーマ名で、本文は変わらない)
  * - .gitignore 済みの生成物と OS の管理ファイル (`UNHASHED_NAME`)
  *
  * 単元ディレクトリの通常のファイルは拡張子を問わず相対パスの順に含め、参照元の記録を外す
@@ -224,14 +223,13 @@ export function unitContentHash(
     exercises: Object.fromEntries(unitExercises),
   };
   // 学習内容と無関係な経路変更・予定時間 (学習ペースの見積もり)・スキルツリーの掲載
-  // (誰に出すか・島・霧のテーマ)・配布 PDF の分け方は除外し、演習・単元名は影響する単元だけに含める。
+  // (誰に出すか・島・霧のテーマ)は除外し、演習・単元名は影響する単元だけに含める。
   for (const key of [
     "prerequisites",
     "parent",
     "appearances",
     "appearancePrerequisites",
     "plannedHours",
-    "pdfByOs",
     "audience",
     "category",
     "theme",

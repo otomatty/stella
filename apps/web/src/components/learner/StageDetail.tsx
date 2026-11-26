@@ -10,7 +10,6 @@ import {
   Clock,
   Calendar,
   Play,
-  Download,
   CheckCircle,
   Circle,
   Lock,
@@ -29,7 +28,6 @@ import type { LucideProps } from "lucide-react";
 import type { StageCompletion } from "@stella/shared/cms/types";
 import type { TaskSummary } from "@stella/shared/tasks/catalog";
 import { StageThumb } from "@/components/common/StageThumb";
-import { StageMaterialsDialog } from "@/components/learner/StageMaterialsDialog";
 import { TaskList, TaskRowsSkeleton } from "./TaskList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,7 +103,6 @@ export const StageDetail = ({
   const guidance = guided.stages.find((item) => item.stage_id === stage.id);
   const guidanceDue = guidedDeadline(guidance?.due_at ?? null);
   const sections = stage.sections ?? [];
-  const [materialsOpen, setMaterialsOpen] = useState(false);
   const { submissions } = useMySubmissions(true);
   // TaskList が取得した一覧を、シラバスと仕上げでも使う。
   const [loadedTasks, setLoadedTasks] = useState<{
@@ -390,11 +387,6 @@ export const StageDetail = ({
               {wrapup && !nextLesson && !stage.completed ? (
                 <p className="mt-2 text-[11.5px] leading-relaxed text-ink-3">{wrapup.detail}</p>
               ) : null}
-              {/* 旧スタブを実装 (Issue #77): ステージ内の配布資料をまとめて一覧・DL する。 */}
-              <Button size="full" className="mt-2" onClick={() => setMaterialsOpen(true)}>
-                <Download size={13} />
-                教材をダウンロード
-              </Button>
             </CardContent>
           </Card>
 
@@ -436,13 +428,6 @@ export const StageDetail = ({
           ) : null}
         </div>
       </div>
-
-      <StageMaterialsDialog
-        open={materialsOpen}
-        onOpenChange={setMaterialsOpen}
-        stageId={stage.id}
-        stageTitle={stage.title}
-      />
     </>
   );
 };

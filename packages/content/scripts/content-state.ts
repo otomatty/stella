@@ -13,7 +13,6 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,18 +37,6 @@ const command = args.find((a) => !a.startsWith("-")) ?? "check";
 const remote = args.includes("--remote");
 
 /**
- * PDF の R2 キーは PDF_KEY_SALT (repo Secret) 入りのハッシュ。塩を替えると全キーが
- * 変わるので、教材が 1 文字も動いていなくても PDF の作り直しと seed が要る。
- * リポジトリの中身だけ見ていると、その push を「変わっていない」と判定してしまう。
- *
- * 塩そのものは記録に出さない (指紋へ混ぜるだけ)。記録は公開バケットに置くため。
- */
-function saltDigest(): string {
-  const salt = process.env.PDF_KEY_SALT;
-  return salt ? createHash("sha256").update(salt).digest("hex") : "none";
-}
-
-/**
  * seed の宛先 D1。記録は「この内容を **この DB へ** 入れ終えた」という意味なので、
  * DB を作り直す / 差し替える (wrangler.toml の database_id だけ動く) 変更で指紋が
  * 一致してしまうと、migration と API だけ新 DB に入り、教材の入っていない DB を
@@ -66,17 +53,29 @@ function d1DatabaseId(): string {
   return id;
 }
 
-function currentFingerprint(): string {
+function seedInputIndex(): string {
   // ls-files は index を見る。CI の checkout は index = そのコミットなので、
   // 「このコミットの内容」と一致する。ローカルの未 add な変更は含まれない。
-  const out = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
+  return execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
     cwd: rootDir,
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  return fingerprintFrom(out, SEED_INPUT_PATHS, {
-    pdfKeySalt: saltDigest(),
-    d1DatabaseId: d1DatabaseId(),
+}
+
+export function checkoutContentFingerprint(): { checkoutFingerprint: string; dirty: boolean } {
+  const checkoutFingerprint = fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS);
+  const status = execFileSync("git", ["status", "--porcelain", "--", ...SEED_INPUT_PATHS], {
+    cwd: rootDir,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  return { checkoutFingerprint, dirty: status.length > 0 };
+}
+
+function currentFingerprint(databaseId?: string): string {
+  return fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS, {
+    d1DatabaseId: databaseId ?? d1DatabaseId(),
   });
 }
 
@@ -91,7 +90,7 @@ export async function requireDeployedContent(
   readState: () => Promise<Uint8Array | null>,
 ): Promise<void> {
   const retry =
-    "デプロイが終わってから、もう一度実行してください。作った動画は台帳にあるので、force を外せば読み上げを使わずに登録できます。";
+    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトで bun run video:register を再実行してください。教材の版が変わった場合は video:sync --cached-only から作り直してください。";
   let previous: ContentState | null;
   try {
     const body = await readState();
@@ -103,9 +102,13 @@ export async function requireDeployedContent(
     throw new Error(`本番教材の指紋が一致しません。 ${retry}`);
 }
 
-export async function verifyRemoteContent(): Promise<void> {
+export async function verifyRemoteContent({
+  databaseId,
+}: {
+  databaseId?: string;
+} = {}): Promise<void> {
   const r2 = createR2Client(BUCKET, true);
-  await requireDeployedContent(currentFingerprint(), () => r2.get(CONTENT_STATE_KEY));
+  await requireDeployedContent(currentFingerprint(databaseId), () => r2.get(CONTENT_STATE_KEY));
 }
 
 async function main(): Promise<void> {

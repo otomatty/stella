@@ -1,9 +1,4 @@
-import type {
-  LessonRow,
-  LessonType,
-  StageWithChildren,
-  StageMaterialRow,
-} from "@stella/shared/cms/types";
+import type { LessonRow, LessonType, StageWithChildren } from "@stella/shared/cms/types";
 import type { SOLUTION_UNLOCK_ATTEMPTS } from "@stella/shared/tasks/help";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
 import type { StaffStageTask } from "@stella/shared/tasks/staff-stage";
@@ -12,9 +7,9 @@ import type { StaffStageTask } from "@stella/shared/tasks/staff-stage";
 // 共有定数が変われば型検査が失敗し、表示の更新漏れを防ぐ。
 const solutionUnlockAttempts: typeof SOLUTION_UNLOCK_ATTEMPTS = 5;
 
-export type StaffStageTab = "tasks" | "outline" | "learners" | "materials";
+export type StaffStageTab = "tasks" | "outline" | "learners";
 export function parseStaffStageTab(value: unknown): StaffStageTab {
-  return value === "outline" || value === "learners" || value === "materials" ? value : "tasks";
+  return value === "outline" || value === "learners" ? value : "tasks";
 }
 
 export function groupStageSections(stage: StageWithChildren, tasks: readonly StaffStageTask[]) {
@@ -81,27 +76,6 @@ export function prerequisitesLabel(prerequisites: readonly { title: string }[]):
 }
 
 /** API の単元・レッスン・資料順を保つ。同名のレッスンは ID で区別する。 */
-export function groupStageMaterials(materials: readonly StageMaterialRow[]) {
-  const sections: {
-    title: string;
-    lessons: { id: string; title: string; materials: StageMaterialRow[] }[];
-  }[] = [];
-  for (const material of materials) {
-    let section = sections.find((candidate) => candidate.title === material.section_title);
-    if (!section) {
-      section = { title: material.section_title, lessons: [] };
-      sections.push(section);
-    }
-    let lesson = section.lessons.find((candidate) => candidate.id === material.lesson_id);
-    if (!lesson) {
-      lesson = { id: material.lesson_id, title: material.lesson_title, materials: [] };
-      section.lessons.push(lesson);
-    }
-    lesson.materials.push(material);
-  }
-  return sections;
-}
-
 export function lessonVideoStatus(
   lesson: Pick<LessonRow, "type" | "video_path" | "video_issue">,
 ): "published" | "stale" | "missing" | "none" {

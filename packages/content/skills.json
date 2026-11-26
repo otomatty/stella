@@ -80,6 +80,10 @@
     "title": "ファイル・画像・PDF を渡す"
   },
   {
+    "id": "claude-app-boundary",
+    "title": "Claude API で運用者の指示と利用者ごとのデータを扱う"
+  },
+  {
     "id": "claude-model-selection",
     "title": "モデルと effort を、性能・速度・費用で選ぶ"
   },

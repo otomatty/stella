@@ -44,24 +44,20 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
-      # 動画はここでは作らない。手動の videos.yml が生成と動画の登録を行う。
-      # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
+      # 教材パイプライン (R2 画像 → seed) を流す必要があるかを先に決める。
+      # 動画は手元で生成し、register-lesson-videos.ts で登録する。
+      # 判定は seed・画像・動画の生成が読むファイルの内容指紋
       # (content-fingerprint.ts の SEED_INPUT_PATHS。教材の正本・旧演習・
       # migration と、生成コードの値 import) と、前回 seed まで通ったときに
       # R2 へ記録した指紋の比較。型だけの変更や API の実装では流さない。
       # コミット間の diff ではなく内容そのものを見るので、前回が seed の手前で
       # 落ちていた場合や Re-run / force push のあとでも「まだ入っていない教材を
       # 飛ばす」は起きない。
-      # PDF_KEY_SALT は PDF の R2 キーに入るので、塩を替えた push は教材が同じでも
-      # PDF と seed をやり直す必要がある。指紋にも混ぜる (記録に残るのは指紋だけ)。
       - name: Check whether course content changed
         id: content
         run: bun run content:state:check:remote
-        env:
-          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
-      # 教材の更新中は videos.yml が前回の指紋で動画を登録できないようにする。
+      # 教材の更新中は手元の register-lesson-videos.ts が前回の指紋で登録できないようにする。
       # seed まで通れば下のステップで新しい指紋を記録する。
       - name: Clear previous course content fingerprint
         if: steps.content.outputs.changed == 'true'
@@ -71,7 +67,7 @@ jobs:
       #
       # D1 スキーマに触れる 2 ステップ (migrate → seed) の間に、旧スキーマ前提の
       # 稼働中 Worker が新スキーマを読む時間ができる。後方非互換な migration では
-      # そこが障害の窓になるので、時間の読めない R2 アップロード / PDF 生成を先に
+      # そこが障害の窓になるので、時間の読めない R2 アップロードを先に
       # 済ませ、migrate → deploy:api → seed を隙間なく並べて窓を最小化する。
       #
       # 教材画像 (図解 SVG + 講座サムネイル) を seed より先に R2 へ置く。
@@ -82,37 +78,6 @@ jobs:
       - name: Upload course materials (figures + thumbnails) to R2 (remote)
         if: steps.content.outputs.changed == 'true'
         run: bun run content:upload:remote
-
-      # 教材 PDF (配布資料) の差分生成 + R2 アップロード。R2 上の台帳
-      # (lesson-pdf/state.json — put 済みキーの記録) と突き合わせ、変わった教材だけ
-      # Playwright で PDF 化して put する。seed より先に流すのは図解・サムネイルと
-      # 同じ理由 (D1 が存在しないオブジェクトを指す時間を作らない)。マニフェストは
-      # 次の seed が PDF_MANIFEST で読む。
-      #
-      # ブラウザは ~/.cache/ms-playwright に入る。 キャッシュのキーは
-      # packages/content の playwright のバージョン (bun.lock) で、 上がった日だけ
-      # 落とし直す。 OS 依存パッケージ (--with-deps) はキャッシュに載らないので
-      # install 自体は毎回呼ぶ (ブラウザ本体がキャッシュにあれば数秒で終わる)。
-      - name: Cache Playwright browsers
-        if: steps.content.outputs.changed == 'true'
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: playwright-${{ runner.os }}-
-      - name: Install Playwright Chromium
-        if: steps.content.outputs.changed == 'true'
-        run: bunx --bun playwright install --with-deps chromium
-        working-directory: packages/content
-      # PDF_KEY_SALT (任意の長いランダム文字列を repo Secrets に登録) を設定すると
-      # R2 キーのハッシュが HMAC になり、リポジトリ内容からキーを計算できなくなる
-      # (公開バケット直リンクの緩和)。未設定でも動くが、キーは内容から計算可能。
-      # 途中で変えると全キーが変わり、次のデプロイで全教材が新版として作り直される。
-      - name: Generate & upload lesson PDFs to R2 (remote)
-        if: steps.content.outputs.changed == 'true'
-        run: bun run content:pdf:sync:remote
-        env:
-          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
       # migrate / api / web は教材が変わっていなくても毎回。 migration が
       # 「何もしない」判断は今どおり wrangler に任せる。
@@ -149,15 +114,13 @@ jobs:
         run: bun run deploy:api
 
       # seed は D1 の HTTP API へ直接書く (Worker を経由しない) ので、deploy:api の
-      # 後でも成立する。PDF_MANIFEST を読む。VIDEO_MANIFEST は渡さないので、
+      # 後でも成立する。VIDEO_MANIFEST は渡さないので、
       # 既存の lessons.video_path はそのまま残る。
       - name: Seed D1 content (remote)
         if: steps.content.outputs.changed == 'true'
         run: bun run db:seed:remote:content
-        env:
-          PDF_MANIFEST: ${{ github.workspace }}/packages/content/dist/pdf-manifest.json
 
-      # 指紋の記録は R2・PDF・seed が全部通ってから。 途中で落ちた回は記録されない
+      # 指紋の記録は R2 画像・seed が全部通ってから。 途中で落ちた回は記録されない
       # ので、 次の push が (教材が変わっていなくても) もう一度フルで流す。
       # 動画はこのワークフローでは作らない。
       #
@@ -168,8 +131,6 @@ jobs:
         if: steps.content.outputs.changed == 'true'
         continue-on-error: true
         run: bun run content:state:save:remote
-        env:
-          PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
       # 検証ゲート (verify ジョブ) の dist は使えない。 VITE_SERVER_URL /
       # VITE_MATERIALS_BASE_URL はビルド時に焼き込むので、 それを持たない

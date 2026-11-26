@@ -3,8 +3,8 @@ sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-developer-guide-v11-2026
 id: 0-2-1
 title: 範囲は試験ガイドで確かめる
 takeaway: "出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。"
-introduces: [試験ガイド, 出題範囲, 配点]
-requires: [認定試験, Partner Academy]
+introduces: [試験ガイド, 出題範囲, 配点, Partner Academy]
+requires: [認定試験]
 header: "Claude Developer資格対策"
 ---
 <!-- _class: lead -->
@@ -18,7 +18,7 @@ header: "Claude Developer資格対策"
 ---
 # 試験ガイドが正本
 出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。
-<!-- ノート: 配点は、範囲ごとの出題の割合です。 -->
+<!-- ノート: Partner Academy は、準備講座や試験ガイドが置かれている学習サイトです。配点は、範囲ごとの出題の割合です。 -->
 ---
 # 時間の配り方
 1. 試験ガイドで、範囲ごとの配点を確かめる

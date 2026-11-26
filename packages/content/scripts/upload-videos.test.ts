@@ -24,7 +24,10 @@ vi.mock("./build-video.js", async (original) => {
   return { ...actual, buildVideos };
 });
 
+vi.mock("./content-state.js", () => ({ checkoutContentFingerprint: vi.fn() }));
+
 import { videoKeyHash, videoKeys, videoManifestKey } from "../src/material-video.js";
+import { checkoutContentFingerprint } from "./content-state.js";
 import { createR2Client, putAll } from "./lib/r2.js";
 import { createTtsProvider, lessonVideoTtsCacheDir, synthesizeCached } from "./lib/tts.js";
 import {
@@ -36,6 +39,7 @@ import {
 import type { PendingVideoTts } from "./build-video.js";
 
 const manifest = join(import.meta.dirname, "../dist/video-manifest.json");
+const manifestSource = join(import.meta.dirname, "../dist/video-manifest.source.json");
 
 afterEach(() => {
   buildVideos.mockReset();
@@ -45,11 +49,48 @@ afterEach(() => {
   get.mockReset();
   get.mockResolvedValue(null);
   vi.mocked(createR2Client).mockClear();
+  vi.mocked(checkoutContentFingerprint).mockReset();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   rmSync(manifest, { force: true });
+  rmSync(manifestSource, { force: true });
   delete process.env.VIDEO_TTS_MODEL;
   delete process.env.GITHUB_STEP_SUMMARY;
+});
+
+it.each([false, true])("本番同期は教材の指紋と dirty=%s を manifest の隣に書く", async (dirty) => {
+  const source = { checkoutFingerprint: "checkout", dirty };
+  vi.mocked(checkoutContentFingerprint).mockReturnValue(source);
+  vi.stubEnv("GEMINI_API_KEY", "test-key");
+  buildVideos.mockImplementation(async (_args, _skip, beforeGenerate) => {
+    await beforeGenerate([]);
+    return { reports: [], failures: [] };
+  });
+
+  await uploadVideos(["--remote", "--tts", "gemini", "--cached-only"]);
+
+  expect(JSON.parse(readFileSync(manifest, "utf8"))).toEqual({});
+  expect(JSON.parse(readFileSync(manifestSource, "utf8"))).toEqual(source);
+
+  await uploadVideos(["--remote", "--tts", "gemini", "--dry-run"]);
+
+  expect(() => readFileSync(manifest, "utf8")).toThrow(/ENOENT/);
+  expect(() => readFileSync(manifestSource, "utf8")).toThrow(/ENOENT/);
+  expect(checkoutContentFingerprint).toHaveBeenCalledTimes(2);
+});
+
+it("本番同期中に教材の版が変わったときは manifest を書かない", async () => {
+  vi.mocked(checkoutContentFingerprint)
+    .mockReturnValueOnce({ checkoutFingerprint: "before", dirty: false })
+    .mockReturnValueOnce({ checkoutFingerprint: "after", dirty: false });
+  vi.stubEnv("GEMINI_API_KEY", "test-key");
+  buildVideos.mockResolvedValue({ reports: [], failures: [] });
+
+  await expect(uploadVideos(["--remote", "--tts", "gemini", "--cached-only"])).rejects.toThrow(
+    "動画の同期中に教材の版が変わりました",
+  );
+  expect(() => readFileSync(manifest, "utf8")).toThrow(/ENOENT/);
+  expect(() => readFileSync(manifestSource, "utf8")).toThrow(/ENOENT/);
 });
 
 function targets(speeches: string[]): PendingVideoTts[] {

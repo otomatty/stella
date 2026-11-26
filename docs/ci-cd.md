@@ -7,8 +7,7 @@ GitHub Actions を単一基盤とする。CI は認証不要、CD は `main` pus
 | ファイル | トリガ | 内容 |
 |---------|--------|------|
 | `.github/workflows/ci.yml` | `pull_request`（全ブランチ） + `workflow_call` | **検証ゲートの正本**。`verify`（deploy:config:check → typecheck → test → lint → content:check → 図解 lint → build）、`core-loop`（API スモーク）、`e2e`（PR のブラウザー E2E とリリースのお知らせ用スクリーンショットの撮影） |
-| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote) → 教材 PDF sync(remote)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版のスクリーンショットを撮影・公開し、GitHub Release に更新の要点を添付 |
-| `.github/workflows/videos.yml` | 手動 (`workflow_dispatch`、main のみ) | 教材動画。既定は台帳に今の内容ハッシュが無いトピック。`stage` / `topics` / `force` / `dry_run`。作る前に Gemini TTS の回数を数え、`VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら作らない。manifest があれば、本番の教材指紋が一致するときだけ D1 の既存レッスンの動画列を更新する。`concurrency` は `lesson-videos` (`cancel-in-progress: false`)。deploy の `deploy-main` とは分ける |
+| `.github/workflows/deploy.yml` | `main` への push | `ci.yml` を呼ぶ（`verify` + `core-loop`）→ deploy:prepare → 教材の変更判定 →〔教材が変わっていれば R2 教材画像 upload(remote)〕→ D1 migrate(remote) → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → deploy:api →〔教材が変わっていれば D1 seed(remote) → 指紋の記録〕→ deploy:web → deploy:health:check → 本棚 R2 の片付け (失敗してもデプロイは成功) → Web の新しい版のスクリーンショットを撮影・公開し、GitHub Release に更新の要点を添付 |
 | `.github/workflows/release-vscode.yml` | `main` への push（`apps/vscode/**` 変更時） | `ci.yml` を `scope: code` で呼ぶ → 新しい版のスクリーンショットを撮影・公開 → `.vsix` を GitHub Release（タグ `vscode-v<版>`）に添付 → 未掲載の版を Visual Studio Marketplace へ Trusted Publishing（`vsce publish --oidc`）で公開 → 公開できた版の Release に更新の要点を添付 |
 | `.github/workflows/release-announce.yml` | 毎日 7:50（日本時間）または手動（main のみ） | 送信待ちの版をまとめて Google Chat に投稿（任意） |
 
@@ -44,10 +43,10 @@ Playwright がインストールした Chromium を使う場合は `E2E_CHROMIUM
 
 ## 教材が変わっていない push は教材パイプラインを飛ばす
 
-`main` への push は毎回 R2 画像 126 件の put・Playwright 導入・PDF 差分・D1 seed をフルで
-流していた。UI だけの変更でもそこに 11 分使うので、**seed に入るものが 1 バイトも
-変わっていない push では画像 upload / Playwright / PDF sync / D1 seed を丸ごと飛ばす**
-（Issue #266）。検証ゲート・migrate・deploy:api・deploy:web は毎回走る。
+配布 PDF の廃止に伴い、GitHub の Secret `PDF_KEY_SALT` は不要になったため、管理者が削除できる。
+指紋の入力が変わるため、廃止後の最初のデプロイでは教材画像のアップロードと seed が走る。
+
+**seed の入力が変わっていない push では、教材画像の R2 アップロードと D1 seed を飛ばす**（Issue #266）。検証ゲート・migrate・deploy:api・deploy:web は毎回走る。
 
 判定は git の diff ではなく**内容指紋**（`packages/content/scripts/lib/content-fingerprint.ts`）。
 下の範囲を `git ls-files -s`（= 内容ハッシュ）で並べて SHA-256 を取り、前回 **seed まで
@@ -55,16 +54,15 @@ Playwright がインストールした Chromium を使う場合は `E2E_CHROMIUM
 
 | 見ている範囲 | 理由 |
 |---|---|
-| `packages/content/stages` と規則・スキル・パターン・環境・参照元の台帳 | 教材の正本。seed SQL と PDF・図解の中身 |
-| 生成コードが値として import しているファイル (`SEED_INPUT_PATHS`) | `export-seed-sql.ts`、PDF / 画像の変換、旧演習の課題定義 (`packages/shared/src/problems`。README とテストは除く)、seed の適用 (`seed-d1.ts`)、`packages/content/package.json` の依存の版 (playwright / remark など)。型だけの import は見ない。`bun.lock` 全体は見ない。値 import を足したのに一覧に無いと `content-fingerprint.test.ts` が落とす |
+| `packages/content/stages` と規則・スキル・パターン・環境・参照元の台帳 | 教材の正本。seed SQL と図解の中身 |
+| 生成コードが値として import しているファイル (`SEED_INPUT_PATHS`) | `export-seed-sql.ts`、動画・画像の生成、旧演習の課題定義 (`packages/shared/src/problems`。README とテストは除く)、seed の適用 (`seed-d1.ts`)、`packages/content/package.json` の依存の版 (playwright / remark など)。型だけの import は見ない。`bun.lock` 全体は見ない。値 import を足したのに一覧に無いと `content-fingerprint.test.ts` が落とす |
 | `apps/api/drizzle` | migration。新しい列を seed が埋める形の変更があるので、スキーマが動いた push では教材が同じでも seed を流す |
 | 見ないもの | API の実装、レビュー画面、課題ランナーの実行時コード、`apps/api/scripts` の seed 以外、`wrangler.toml` の vars。ここをディレクトリごと広げると、教材が変わっていない push でもパイプラインが走る |
-| `PDF_KEY_SALT`（リポジトリ外） | PDF の R2 キーに入る塩。替えると全キーが変わるので、教材が同じでも PDF 生成と seed が要る。指紋には塩の要約だけを混ぜ、記録に塩そのものは出さない |
 | seed の宛先 D1（`wrangler.toml` の `database_id`） | 記録は「この内容を**この DB へ**入れ終えた」という意味。DB を作り直す / 差し替える変更で指紋が一致すると、migration と API だけ新 DB に入り、教材の無い DB を指したまま成功扱いになる。`wrangler.toml` を丸ごと対象にはしない（`ALLOWED_ORIGINS` やモデル名など seed と無関係な vars のたびに流し直すことになるため） |
 
 指紋は「前回のコミット」ではなく「前回デプロイが成功したときの内容」と比べる。前回が
 seed の手前で落ちていた回・Re-run・force push のあとでも、**まだ D1 に入っていない教材を
-飛ばす**ことが起きない（記録は R2 → PDF → seed が全部通ったあとにだけ更新するため）。
+飛ばす**ことが起きない（記録は R2 画像のアップロードと seed が全部通ったあとにだけ更新するため）。
 記録が読めないときは「変わった」に倒す（冪等なパイプラインをもう一度流す方が安い）。書き込みに失敗したときもデプロイは止めない（本番の状態は正しく、起きるのは次のデプロイがもう一度流すことだけなので、それで Web デプロイを止める方が損）。
 
 R2 のオブジェクトを手で消した / 別経路で壊したときは、指紋が一致する限りスキップされる
@@ -75,26 +73,6 @@ R2 のオブジェクトを手で消した / 別経路で壊したときは、�
 
 このステップは `CLOUDFLARE_API_TOKEN` に **Workers R2 Storage: Edit** 権限を要求する。権限が無いとここで落ち、seed 以降は動かない（D1 が存在しない画像を指すことはない）。
 
-教材動画は deploy では作らない。`.github/workflows/videos.yml` を main で手動実行する。入力は `stage` (任意の slug。空なら全ステージ)、`topics` (任意。トピック ID のカンマ区切り。例 `1-1-9,1-2-3`。`stage` が必須)、`force` (既定 false。`topics` を指定したときだけ、台帳にあっても別の R2 キーへ作り直す)、`dry_run` (既定 false。対象のトピックと必要な TTS の回数・残りを出すだけで、何も作らず R2 と D1 に書かない)。既定の対象は、公開 R2 の台帳 `lesson-video/state.json` に今の内容ハッシュの動画が無いトピックである。
-
-作る前に Gemini TTS の呼び出し回数を数える。新方式 (`video.json`) も旧方式 (`narration.json`) もトピック (動画) ごとに 1 回で、`dist/video-cache` に同じ音声があれば数えない。残りの下限は 0 回。必要な回数が残りを超えるときは、生成と書き込みを始める前に失敗する。台帳からの再登録や収録版など、必要回数が 0 の処理は続ける。トピックごとの回数と合計・残りをジョブのサマリに出し、`topics` で絞るよう案内する。`dry_run` は同じ表を出して終える。上限は `VIDEO_TTS_DAILY_LIMIT` (既定 100)。リポジトリの Variables にあれば workflow が渡す。`apps/api/deployment.json` には載せない (deploy.yml が読まないため)。使った回数 (失敗した呼び出しを含む) は台帳の `ttsUsage` に、呼び出した時点の太平洋時間の日付 (`YYYY-MM-DD`) ごとに足す。合成の計測開始後は、途中で失敗した場合も台帳を一度保存する。台帳がまだ存在しないときは空から始め、取得エラーや不正な台帳が見つかったときは生成前に失敗する。この回数は `video:sync` の呼び出しだけを数える。手元の `--tts gemini` や、同じ API キーの別用途は数えない。実行中に 429 で 1 日の上限に当たったら、その場で止める。
-
-`GEMINI_API_KEY` は videos.yml だけが読む Repository Secret で、API Worker には同期しない。`deployment.json` の対象外である。manifest ができると `packages/shared/scripts/register-lesson-videos.ts` に `VIDEO_MANIFEST` を渡す。成功したトピックは既存行の `video_path` と `video_scenes` を更新し、`video_issue` を解除する。失敗したトピックは配信中の動画を保持し、`video_issue` に理由を記録する (管理者の画面に表示)。レッスンの UUID は seed と同じ方法で求める。ffmpeg は Ubuntu ランナーのものを使い、無ければ apt で導入する。
-
-`concurrency` は `lesson-videos` (`cancel-in-progress: false`) で、deploy の `deploy-main` とは分ける。GitHub Actions は `cancel-in-progress: false` でも、同じグループの待機中の実行を 1 つしか残さず、あとから来た実行が待機中の実行を取り消す。グループを共有すると、デプロイの実行中に動画を始めると待機中のデプロイが取り消される (またはその逆)。
-
-登録の直前に、deploy と同じ方法 (D1 の ID と `PDF_KEY_SALT` を含む) で計算した教材指紋を、R2 の `deploy/content-state.json` と照合する。教材が変わるデプロイは、処理の開始時に前回の指紋を消し、seed が成功したあとに指紋を記録する。指紋が無い、読めない、または一致しないときは動画を登録せずジョブが失敗する。デプロイ完了後、同じ内容で `force` を外して再実行すれば、作成済みの動画は台帳から読み上げを使わずに登録できる。
-
-公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。強制作成では内容ハッシュに版の接尾辞を付け、台帳と manifest に新しい版を記録する。旧版は残る。manifest のキーは `<slug>/<トピックID>` とする。deploy の seed は動画の manifest を渡さず、台本が残るトピックの既存動画を保持する。台本が消えたトピックは seed が参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
-
-デプロイは毎回、教材の公開バケット `stella-materials-public` に CORS (本番の Web とローカルの 5173 から GET/HEAD) を設定する。無いと動画・字幕・表紙をブラウザーが読み込まない。
-
-手元は ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意し、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。R2 の認証とバケットは PDF と共通。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になる。`/start` は進捗を記録しない。
-
-動画の方式はトピックごとに `video.json` → 収録版 (`screen.*`) → スライド版 (`narration.json`) の順で選ぶ。新方式は音声合成・ブラウザ起動の前に内容ハッシュを計算し、台帳に動画・字幕・ポスターがあれば生成を省く。ハッシュは正規化した `boards`・`scenes`・イラストの領域、実際の読み上げ文 (読み辞書適用後)、音声のモデル・声・話し方、間の定数、使うショット・クリップ・イラストの中身、描画・配置・時刻・書き出しのコードとフォントを含む。`brief`・`polish`・イラストの `prompt` は含めない。公開用の `video:sync` は `--tts-model`・`VIDEO_TTS_MODEL` を受け付けず、`narration/voice.json` のモデルを使う。
-
-新方式の Gemini は動画 1 本を 1 回で読み、無音の位置で文ごとに切る。検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分ける。追加の呼び出しは事前の回数に含めず、呼んだあとに台帳へ足す。Gemini の音声は動画ごと、映像は場面ごとに `dist/video-cache` に内容ハッシュで置く。読み上げを 1 文でも直すと音声を作り直し、全場面を描き直す。videos.yml は `actions/cache/restore` で復元し、生成を始めた実行は失敗時も `actions/cache/save` で保存する。生成の失敗はジョブに反映する。キャッシュが無い・壊れている場合は作り直す。`video:sync` の終了時に使用したファイルの更新時刻を更新し、今回使わず最終更新から30日を超えたクリップ・音声を削除する。上限超えと `dry_run` ではキャッシュを消さない。
-
 seed は SQL を D1 の 100KB/query に収まるチャンクへ割って**直列に**適用する（FK 順と upsert 順があるので並列にしないこと）。remote は 1 プロセスから D1 の HTTP API (`/query`) を叩く（`apps/api/scripts/lib/d1-remote.ts`）。チャンクごとに `bunx wrangler d1 execute` を起こしていた頃は、D1 上の実行時間が合計 4 秒なのに壁時計が 8 分半で、差はすべて CLI の起動と通信だった。途中で落ちたら何チャンク目かを出して失敗させる（「成功したことにしない」）。HTTP 側で問題が出たときは `cd apps/api && bun run scripts/seed-d1.ts --remote --content-only --wrangler` で旧経路（チャンクごとに `wrangler d1 execute`）に戻せる。local (`--local`) は miniflare の実体に書く必要があるので wrangler のままで、チャンクに割らず全文を 1 回で流す（起動だけで 1 回 3〜4 秒かかるので、チャンクごとに起こすと 20 分を超える）。
 
 seed は `packages/content/stages/<slug>/` を正本として各ステージを D1 に upsert し、GitHub から消えたトピック / セクションは prune する。旧デモのステージ (`web-fundamentals` 等) は安定 UUID で削除する。デプロイ時は `db:seed:remote:content` を使い、remote の seed は常に教材だけを適用する。検証用の `seed-*` ユーザー・提出・受講登録は local の `db:seed` だけが作る。CMS で作った別 ID のコースのレッスンツリーは触らない。
@@ -102,6 +80,40 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 **seed は内容の変わった行だけを書く**（upsert の `do update ... where 列 is not excluded.列 or ...`。`export-seed-sql.ts` の `doUpdate`）。D1 は内容が同じでも書き直した行を書き込み行数に数え、**無料枠は 1 日 10 万行の書き込み**で止まる（2026-10-06 に全行を書き直す seed でデプロイが止まった）。remote の seed はログの最後に D1 が返した `rows_written` の合計を出す。upsert を足すときも `doUpdate` を通し、`export-seed-sql-writes.test.ts`（2 回目の seed は 0 行）を通すこと。
 
 本棚の廃止 (2026-11) に伴い、D1 の本棚の表は `0080_integration_events` の後の `0081_drop_personal_library` で削除する。最後に `retire-library-storage.ts` が非公開 R2 `stella-library-private` を削除する。空でなければ、全オブジェクトの削除と未完了のマルチパートアップロードの中止を作成から 1 日で行うライフサイクルを設定し、次のデプロイで削除を再試行する。この step は `continue-on-error: true` で、失敗してもアプリのデプロイは成功のまま。バケットが消えたら step とスクリプトを削除してよい。
+
+## 教材動画の公開
+
+教材動画は deploy では作らない。作業用の PC から、動画・字幕・ポスターを公開 R2 に上げ、既存のレッスンに登録する。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) を用意する。
+
+- `GEMINI_API_KEY` は対象と回数の確認を始める前に設定する。プレビューで Gemini を呼び、アップロード時もコマンドがキーの設定を確認する。
+- `CLOUDFLARE_API_TOKEN` には Workers R2 Storage: Edit と D1: Edit が必要。`CLOUDFLARE_ACCOUNT_ID` は `apps/api/wrangler.toml` の `account_id` とそろえる。
+- `VIDEO_TTS_DAILY_LIMIT` は任意。既定値は 100。
+
+リポジトリのルートで実行する。
+
+1. デプロイ済みの main と同じコミットをチェックアウトし、未コミットの変更がない状態にする。教材を変更したデプロイの直後は、新しい指紋が記録されてから登録する。
+2. `bun run --filter=@stella/content video:sync <stage> --topics <ID,...> --remote --tts gemini --dry-run` で対象と Gemini TTS の必要回数・残りを確認する。この段階では生成や R2・D1 への書き込みは行わない。`--topics` はトピック ID をカンマ区切りで指定し、長い実行は数本ずつに分ける。
+3. `--dry-run` を `--preview` に替えて生成する。`python3 -m http.server -d packages/content/dist/video` を実行し、`http://localhost:8000/` の確認ページで動画と字幕を見る。
+4. 同じステージとトピックの指定で `--preview` を `--cached-only` に替えて R2 に上げる。キャッシュにある音声だけを使うため、Gemini は呼ばない。結果は `packages/content/dist/video-manifest.json` に、同期時の教材指紋は隣の `video-manifest.source.json` に書く。
+5. `bun run video:register` で D1 に登録する。数本ずつ進める場合は、次の組の `video:sync` を実行する前に登録する。別の manifest を使う場合は `VIDEO_MANIFEST` にパスを指定し、同じ名前の `.source.json` を隣に置く。
+
+`--cached-only` と `video:register` は同じチェックアウトで続けて行う。チェックアウトや教材を替えたら `--cached-only` から manifest を作り直す (キャッシュの音声を使うため Gemini は呼ばない)。
+
+新方式 (`video.json`) も旧方式 (`narration.json`) も、Gemini TTS の必要回数は動画ごとに 1 回と見積もる。キャッシュ済みの音声は除く。必要回数が当日の残りを超えると、生成と書き込みを始める前に失敗する。残りの下限は 0 回。台帳からの再登録や収録版など、必要回数が 0 の処理は続ける。手元の `video:sync` は、`--preview` や失敗した呼び出しも含めて、使用回数を太平洋時間の日付 (`YYYY-MM-DD`) ごとに公開 R2 の `lesson-video/state.json` の `ttsUsage` に足す。`video:scenes` や同じ API キーの別用途の呼び出しは数えない。計測を始めた実行は途中で失敗しても台帳を保存する。台帳が無ければ空から始め、取得や検証に失敗すれば生成前に止まる。実行中に 429 で 1 日の上限に当たったら、その場で止まる。
+
+登録時は付帯ファイルと今のチェックアウトの教材指紋が一致し、どちらにも未コミットの教材変更がないことを確かめてから `stella-db` の本番 ID を取得する。書き込みの直前に、deploy と同じ方法 (D1 の ID を含む) で計算した教材指紋を、R2 の `deploy/content-state.json` と照合する。教材が変わるデプロイは開始時に前回の指紋を消し、seed の成功後に新しい指紋を記録する。指紋が無い、読めない、または一致しない場合は登録が止まる。デプロイ完了後、教材の版を確認して登録を再試行する。
+
+登録は成功したトピックの `video_path` と `video_scenes` を更新し、`video_issue` を解除する。生成に失敗したトピックは配信中の動画を保ち、`video_issue` に理由を記録する (管理者の画面に表示)。レッスンの UUID は seed と同じ方法で求める。一部のトピックが失敗すると `video:sync` は失敗を返す。manifest ができていれば、成功した動画と失敗理由を `bun run video:register` で登録できる。manifest を作り直す場合も、台帳にある同じ内容ハッシュの動画は読み上げを使わずに再登録できる。
+
+公開 R2 の `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を、`lesson-video/state.json` の台帳と照合して不足分を生成・アップロードする。強制作成では内容ハッシュに版の接尾辞を付け、台帳と manifest に新しい版を記録する。旧版は残る。manifest のキーは `<slug>/<トピックID>` とする。deploy の seed は動画の manifest を渡さず、台本が残るトピックの既存動画を保持する。台本が消えたトピックは seed が参照を外す。字幕・ポスターは Web が拡張子を置き換えて参照する。
+
+デプロイは毎回、教材の公開バケット `stella-materials-public` に CORS (本番の Web とローカルの 5173 から GET/HEAD) を設定する。無いと動画・字幕・表紙をブラウザーが読み込まない。
+
+ローカルで試す場合は、`bun run content:video -- dev-env-basics --tts fake` で生成だけを確認できる。台本を置いてから実行する。配信まで確認する場合は `bun run --filter=@stella/content video:sync dev-env-basics --tts fake` (local R2) → `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed`。スライドのレッスンと公開 `/start` は「動画」「スライド」を切り替えられ、字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になる。`/start` は進捗を記録しない。
+
+動画の方式はトピックごとに `video.json` → 収録版 (`screen.*`) → スライド版 (`narration.json`) の順で選ぶ。新方式は音声合成・ブラウザ起動の前に内容ハッシュを計算し、台帳に動画・字幕・ポスターがあれば生成を省く。ハッシュは正規化した `boards`・`scenes`・イラストの領域、実際の読み上げ文 (読み辞書適用後)、音声のモデル・声・話し方、間の定数、使うショット・クリップ・イラストの中身、描画・配置・時刻・書き出しのコードとフォントを含む。`brief`・`polish`・イラストの `prompt` は含めない。公開用の `video:sync` は `--tts-model`・`VIDEO_TTS_MODEL` を受け付けず、`narration/voice.json` のモデルを使う。
+
+新方式の Gemini は動画 1 本を 1 回で読み、無音の位置で文ごとに切る。検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分ける。追加の呼び出しは事前の回数に含めず、呼んだあとに台帳へ足す。Gemini の音声は動画ごと、映像は場面ごとに手元の `packages/content/dist/video-cache` に内容ハッシュで置く。読み上げを 1 文でも直すと音声を作り直し、全場面を描き直す。キャッシュが無い・壊れている場合はプレビューで作り直す。`video:sync` の終了時に使用したファイルの更新時刻を更新し、今回使わず最終更新から30日を超えたクリップ・音声を削除する。上限超えと `--dry-run` ではキャッシュを消さない。
 
 ## リリースと更新のお知らせ
 
@@ -189,7 +201,7 @@ Google のクライアント (`GOOGLE_CLIENT_ID` は `wrangler.toml`、`GOOGLE_C
 `OPENAI_API_KEY` は任意の Repository secret として同期する。一次レビューに `AI_REVIEW_PROVIDER = "openai"` を選んだ場合は `AI_REVIEW_MODEL` とこのキーもリモート処理前に検査する。設定は `apps/api/wrangler.toml`、比較と切り替えは [AI 一次レビューのプロバイダー](ai-review-providers.md) を参照。
 `GOOGLE_CHAT_WEBHOOK_URL` はリリース通知用の任意の Repository secret。未設定なら Google Chat への投稿を省略する。
 `release-announce.yml` が読む。`apps/api/deployment.json` は `deploy.yml` が読む設定だけを管理するため、この Secret は掲載対象外。
-`GEMINI_API_KEY` と `VIDEO_TTS_DAILY_LIMIT` も同様に掲載対象外である。前者は Lesson videos の Secret、後者は任意の Variable (未設定なら 100) で、deploy.yml はどちらも読まない。
+GitHub の Repository Secret `GEMINI_API_KEY` と Variable `VIDEO_TTS_DAILY_LIMIT` は使わなくなった。
 Cloudflare にだけキーが入っていても、次の deploy に備えて GitHub の Repository secret に同名で登録する。
 ローカル開発のキーは `apps/api/.dev.vars` に置く。Git にコミットしない。
 
@@ -219,14 +231,14 @@ Better Auth がセッションを作って Web の `/auth/callback` へ戻す。
 
 ## 失敗時の再デプロイ（自動ロールバックなし）
 
-デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → PDF → migrate → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → 本棚 R2 の片付けの順で進む。画像・PDF・seed・指紋の記録は教材が変わった場合だけ実行する。動画はこの順に入らない。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
+デプロイは直列で、deploy:prepare → 教材の変更判定 → 画像 → migrate → 教材 R2 の CORS → `BETTER_AUTH_SECRET`・`ANTHROPIC_API_KEY`・任意の `OPENAI_API_KEY` の同期 → api → seed → 指紋の記録 → web → deploy:health:check → 本棚 R2 の片付けの順で進む。画像のアップロード・seed・指紋の記録は教材が変わった場合だけ実行する。動画はこの順に入らない。api 成功・web 失敗などの部分失敗時に自動ロールバックはしない。
 
 - **web だけ失敗**: 修正 push、または Actions で該当 `deploy.yml` を Re-run。
 - **migrate 失敗**: スキーマ側を修正して再 push（api/web は動かない）。
 - **seed 失敗**: 教材 seed SQL を修正して再 push（migrate と api のデプロイは済んでいる。web とヘルスチェックは動かない）。
 - **教材画像 upload 失敗**: 画像か R2 認証 (API トークンの R2 権限) を直して再 push（seed 以降は動かない）。
-- **教材動画**: deploy では作らない。Actions の Lesson videos を手動実行する。上限を超えると 1 本も作らず失敗する。一部失敗した回は、できた動画を seed し、ジョブは失敗にする。429 で 1 日の上限に当たったらその場で止める。seed の直前にチェックアウトした commit が `origin/main` の先頭と違えば、seed を飛ばして失敗する。作った動画は台帳にあるので、もう一度実行すれば読み上げを使わずに登録だけを行う。
-- **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像 / PDF / seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。動画は指紋では再実行しない。
+- **教材動画**: [教材動画の公開](#教材動画の公開) の手順を手元で実行する。指紋が一致しない場合はデプロイ完了を待ち、登録を再実行する。
+- **教材パイプラインを飛ばした回**: 指紋が前回デプロイと一致した回は画像のアップロードと seed のステップが skipped になる。意図に反して飛んでいたら `bun run content:state:reset:remote` してから Re-run する。動画は指紋では再実行しない。
 - **手動再デプロイ**: ローカルから
   - API: `bun run deploy:api`
   - Web: `bun run deploy:web`
