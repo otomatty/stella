@@ -49,6 +49,16 @@ function errorMessage(data: unknown, fallback: string): string {
   return fallback;
 }
 
+/** 提出などの通信が返らないとき、確認や提出の操作を止めないための上限。 */
+export const API_TIMEOUT_MS = 60_000;
+
+const API_TIMEOUT_MESSAGE =
+  "LMS から応答がありませんでした。通信を確かめて、もう一度実行してください";
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+}
+
 type ApiInit = Omit<RequestInit, "body"> & {
   body?: unknown;
   /**
@@ -61,7 +71,7 @@ type ApiInit = Omit<RequestInit, "body"> & {
 export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T> {
   const auth = requireAuthStore();
   const url = `${serverUrl()}${path.startsWith("/") ? path : `/${path}`}`;
-  const { body: rawBody, session, ...rest } = init;
+  const { body: rawBody, session, signal: callerSignal, ...rest } = init;
   // 世代を確かめたトークンを、await を挟まずに送る (世代とトークンを不可分に扱う)。
   const token =
     session === undefined ? await auth.getToken() : await auth.getTokenInSession(session);
@@ -78,8 +88,26 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
     body = JSON.stringify(rawBody);
   }
 
-  const res = await fetch(url, { ...rest, headers, body });
-  const data: unknown = await res.json().catch(() => null);
+  const timeoutSignal = AbortSignal.timeout(API_TIMEOUT_MS);
+  const signal =
+    callerSignal == null ? timeoutSignal : AbortSignal.any([callerSignal, timeoutSignal]);
+  let res: Response;
+  let data: unknown;
+  try {
+    res = await fetch(url, { ...rest, headers, body, signal });
+    try {
+      data = await res.json();
+    } catch (error) {
+      // 中断・時間切れは下で案内に変える。JSON でない応答は今までどおり空にする。
+      if (isAbortError(error)) throw error;
+      data = null;
+    }
+  } catch (error) {
+    if (callerSignal?.aborted !== true && timeoutSignal.aborted && isAbortError(error)) {
+      throw new Error(API_TIMEOUT_MESSAGE);
+    }
+    throw error;
+  }
 
   if (res.status === 401) {
     // 前の世代のトークンが断られただけなら、切り替えたあとの接続を消さない。

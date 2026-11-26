@@ -14,6 +14,8 @@ import {
   onDidFinishTaskCheck,
   onDidProgressTaskCheck,
   onDidStartTaskCheck,
+  setTaskBusy,
+  taskBusy,
 } from "./task-run-events.js";
 import { prepareLocalTaskSubmission } from "./task-submission.js";
 
@@ -24,10 +26,30 @@ const state = vi.hoisted(() => ({
   activeFile: undefined as string | undefined,
   folders: [] as string[],
   warningChoice: undefined as string | undefined,
+  /** 設定すると保存の確認ダイアログはこの Promise のまま待つ。 */
+  warningResult: undefined as Promise<string | undefined> | undefined,
   /** 入力欄に順に返す値 (undefined は取り消し)。 */
   inputs: [] as (string | undefined)[],
   /** 課題文のパネルが出している課題フォルダー (taskReadmeRoot)。 */
   readmeRoot: undefined as string | undefined,
+  codeLens: undefined as
+    | {
+        onDidChangeCodeLenses: (listener: () => void) => { dispose: () => unknown };
+        provideCodeLenses: (
+          document: unknown,
+          token: unknown,
+        ) => Promise<
+          { command?: { title?: string; command?: string; arguments?: unknown[] } }[] | undefined
+        >;
+      }
+    | undefined,
+  statusItems: [] as {
+    id: string;
+    text: string;
+    tooltip: string;
+    command: unknown;
+    visible: boolean;
+  }[],
   dirtyDocs: [] as {
     isDirty: boolean;
     uri: { scheme: string; fsPath: string };
@@ -44,6 +66,7 @@ const vscodeMock = vi.hoisted(() => ({
   showTaskReadme: vi.fn(),
   updateTaskPanelCheck: vi.fn(),
   updateTaskReadmeCheck: vi.fn(),
+  syncTaskPanelsBusy: vi.fn(),
   onTaskReadmeVisible: vi.fn(),
   refreshLearningSidebar: vi.fn(),
   getSecret: vi.fn(),
@@ -74,6 +97,9 @@ vi.mock("vscode", () => ({
         }
       }
     }
+    dispose() {
+      this.listeners.clear();
+    }
   },
   Uri: {
     file: (fsPath: string) => ({ scheme: "file", fsPath }),
@@ -83,6 +109,28 @@ vi.mock("vscode", () => ({
   ViewColumn: { One: 1, Two: 2 },
   window: {
     onDidChangeWindowState: () => ({ dispose: () => undefined }),
+    onDidChangeActiveTextEditor: () => ({ dispose: () => undefined }),
+    createStatusBarItem: (id: string) => {
+      const item = {
+        id,
+        name: "",
+        text: "",
+        tooltip: "",
+        command: undefined as unknown,
+        visible: false,
+        show() {
+          this.visible = true;
+        },
+        hide() {
+          this.visible = false;
+        },
+        dispose() {
+          return undefined;
+        },
+      };
+      state.statusItems.push(item);
+      return item;
+    },
     showTextDocument: vscodeMock.showTextDocument,
     get activeTextEditor() {
       return state.activeFile
@@ -99,7 +147,7 @@ vi.mock("vscode", () => ({
     showInformationMessage: vscodeMock.showInformationMessage,
     showWarningMessage: (...args: unknown[]) => {
       vscodeMock.showWarningMessage(...args);
-      return Promise.resolve(state.warningChoice);
+      return state.warningResult ?? Promise.resolve(state.warningChoice);
     },
     showErrorMessage: (...args: unknown[]) => {
       vscodeMock.showErrorMessage(...args);
@@ -133,6 +181,9 @@ vi.mock("vscode", () => ({
       return state.dirtyDocs;
     },
     openTextDocument: async (uri: { fsPath: string }) => ({ uri }),
+    onDidSaveTextDocument: () => ({ dispose: () => undefined }),
+    onDidChangeWorkspaceFolders: () => ({ dispose: () => undefined }),
+    onDidGrantWorkspaceTrust: () => ({ dispose: () => undefined }),
   },
   commands: {
     registerCommand: (id: string, handler: () => Promise<void> | void) => {
@@ -142,6 +193,31 @@ vi.mock("vscode", () => ({
     executeCommand: vscodeMock.executeCommand,
   },
   ProgressLocation: { Notification: 15 },
+  StatusBarAlignment: { Left: 1 },
+  Range: class {
+    constructor(
+      public startLine: number,
+      public startCharacter = 0,
+      public endLine = startLine,
+      public endCharacter = 0,
+    ) {}
+  },
+  CodeLens: class {
+    constructor(
+      public range: unknown,
+      public command: unknown,
+    ) {}
+  },
+  languages: {
+    registerCodeLensProvider: (_selector: unknown, provider: typeof state.codeLens) => {
+      state.codeLens = provider;
+      return {
+        dispose: () => {
+          if (state.codeLens === provider) state.codeLens = undefined;
+        },
+      };
+    },
+  },
 }));
 
 vi.mock("./task-panel.js", () => ({
@@ -151,6 +227,7 @@ vi.mock("./task-panel.js", () => ({
   taskReadmeRoot: () => state.readmeRoot,
   updateTaskPanelCheck: vscodeMock.updateTaskPanelCheck,
   updateTaskReadmeCheck: vscodeMock.updateTaskReadmeCheck,
+  syncTaskPanelsBusy: vscodeMock.syncTaskPanelsBusy,
 }));
 vi.mock("./tree.js", () => ({ refreshLearningSidebar: vscodeMock.refreshLearningSidebar }));
 vi.mock("./task-status.js", () => ({ setCurrentTask: vscodeMock.setCurrentTask }));
@@ -228,9 +305,12 @@ beforeEach(() => {
   state.activeFile = undefined;
   state.folders = [];
   state.warningChoice = undefined;
+  state.warningResult = undefined;
   state.inputs = [];
   state.dirtyDocs = [];
   state.readmeRoot = undefined;
+  state.codeLens = undefined;
+  state.statusItems = [];
   auth = new AuthStore({
     get: vscodeMock.getSecret,
     store: async (_key: string, token: string) => {
@@ -248,6 +328,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const item of context.subscriptions) item?.dispose();
+  setTaskBusy(undefined);
   vi.unstubAllGlobals();
 });
 
@@ -543,6 +624,7 @@ describe("stella.submitTask", () => {
         await run("stella.submitTask", root);
         expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
           "いま確認しています。終わるまで待ってください",
+          "中断する",
         );
         await run("stella.runTask", root);
         expect(vscodeMock.progress).toHaveBeenCalledTimes(1);
@@ -555,6 +637,76 @@ describe("stella.submitTask", () => {
       );
     },
   );
+
+  it("保存の確認を待っている間にもう一度押すと、中断ボタンのない案内になる", async () => {
+    const root = await makeTask(staticTask, { "index.html": "<h1>x</h1>" });
+    state.folders = [root];
+    state.dirtyDocs = [
+      {
+        isDirty: true,
+        uri: { scheme: "file", fsPath: path.join(root, "index.html") },
+        save: vi.fn(),
+      },
+    ];
+    let releaseWarning: (choice: string | undefined) => void = () => undefined;
+    state.warningResult = new Promise((resolve) => {
+      releaseWarning = resolve;
+    });
+    const checking = run("stella.runTask");
+    try {
+      await vi.waitFor(() => expect(vscodeMock.showWarningMessage).toHaveBeenCalled());
+      vscodeMock.showInformationMessage.mockClear();
+      await run("stella.runTask");
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+        "いま確認しています。終わるまで待ってください",
+      );
+      expect(runTask).not.toHaveBeenCalled();
+    } finally {
+      state.warningResult = undefined;
+      releaseWarning(undefined);
+      await checking;
+    }
+  });
+
+  it("確認の途中に中断すると、その確認を止める", async () => {
+    const root = await distributedTask();
+    const actual =
+      await vi.importActual<typeof import("./runner/run-task.js")>("./runner/run-task.js");
+    let signal: AbortSignal | undefined;
+    vi.mocked(runTask).mockImplementationOnce(async (options) => {
+      signal = options.signal;
+      await new Promise<void>((resolve) => {
+        if (options.signal?.aborted) resolve();
+        else options.signal?.addEventListener("abort", () => resolve(), { once: true });
+      });
+      return actual.runTask(options);
+    });
+    const checking = run("stella.runTask", root);
+    try {
+      await vi.waitFor(() => expect(signal).toBeDefined());
+      expect(signal?.aborted).toBe(false);
+      vscodeMock.showInformationMessage.mockClear();
+      let choose: (value: string | undefined) => void = () => undefined;
+      vscodeMock.showInformationMessage.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            choose = resolve;
+          }),
+      );
+      await run("stella.submitTask", root);
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+        "いま確認しています。終わるまで待ってください",
+        "中断する",
+      );
+      choose("中断する");
+      await checking;
+      expect(signal?.aborted).toBe(true);
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith("確認を中断しました");
+    } finally {
+      signal?.dispatchEvent(new Event("abort"));
+      await checking;
+    }
+  });
 });
 
 describe("提出の振り返り画面", () => {
@@ -615,6 +767,65 @@ describe("提出後の案内", () => {
     return root;
   }
 
+  it.each([
+    ["submit", false],
+    ["submit", true],
+    ["consult", false],
+    ["consult", true],
+  ] as const)(
+    "フォームの %s 送信中も処理中にし、終了時に戻す (通信失敗: %s)",
+    async (mode, fail) => {
+      let release: () => void = () => undefined;
+      const pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vscodeMock.sendTaskSubmission.mockImplementationOnce(async () => {
+        await pending;
+        if (fail) throw new Error("通信に失敗しました");
+        return { id: "submission", attempt: 1 };
+      });
+      const sending = submit(mode).then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+      try {
+        await vi.waitFor(() => expect(vscodeMock.sendTaskSubmission).toHaveBeenCalledOnce());
+        expect(taskBusy()).toBe("submit");
+        expect(vscodeMock.syncTaskPanelsBusy).toHaveBeenLastCalledWith(true);
+        vscodeMock.showInformationMessage.mockClear();
+        const actions = vscodeMock.showSubmissionForm.mock.calls[0]?.[1] as {
+          submit: (draft: { explanation: string }) => Promise<void>;
+        };
+        await expect(actions.submit({ explanation: "振り返り" })).rejects.toThrow(
+          "いま処理しています。終わるまで待ってください",
+        );
+        expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+          "いま提出しています。終わるまで待ってください",
+        );
+        expect(vscodeMock.sendTaskSubmission).toHaveBeenCalledOnce();
+        for (const command of [
+          "stella.runTask",
+          "stella.submitTask",
+          "stella.consultTask",
+          "stella.diagnoseEnvironment",
+        ]) {
+          vscodeMock.showInformationMessage.mockClear();
+          await run(command);
+          expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+            "いま提出しています。終わるまで待ってください",
+          );
+          expect(taskBusy()).toBe("submit");
+        }
+      } finally {
+        release();
+        const error = await sending;
+        expect(error).toEqual(fail ? new Error("通信に失敗しました") : undefined);
+      }
+      expect(taskBusy()).toBeUndefined();
+      expect(vscodeMock.syncTaskPanelsBusy).toHaveBeenLastCalledWith(false);
+    },
+  );
+
   it.each(["submit", "consult"] as const)(
     "%s 成功後に開いている課題文と学習ガイドを更新する",
     async (mode) => {
@@ -651,7 +862,9 @@ describe("提出後の案内", () => {
   it("通知のボタンを選ぶのを待たずに、提出フォームの処理を完了する", async () => {
     await submit("submit", new Promise<string | undefined>(() => undefined));
     expect(vscodeMock.sendTaskSubmission).toHaveBeenCalledTimes(1);
-    expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
+    expect(
+      vscodeMock.executeCommand.mock.calls.filter(([command]) => command !== "setContext"),
+    ).toEqual([]);
   });
 
   it("課題一覧で分かったステージと課題文の ID をエンコードして Web で開く", async () => {
@@ -690,7 +903,9 @@ describe("提出後の案内", () => {
       scheme: "https",
       url: "https://stella.example/",
     });
-    expect(vscodeMock.executeCommand).not.toHaveBeenCalled();
+    expect(
+      vscodeMock.executeCommand.mock.calls.filter(([command]) => command !== "setContext"),
+    ).toEqual([]);
   });
 });
 
@@ -1318,6 +1533,115 @@ describe("問題つきの課題", () => {
     state.activeFile = path.join(root, "src", "q01-add.ts");
     return root;
   }
+
+  it("提出の通信中にもう一度押すと、提出中だと知らせる", async () => {
+    const root = await problemRoot();
+    let releaseSubmit: (value: {
+      problemId: string;
+      passedProblems: number;
+      totalProblems: number;
+      taskPassed: boolean;
+    }) => void = () => undefined;
+    const pending = new Promise<{
+      problemId: string;
+      passedProblems: number;
+      totalProblems: number;
+      taskPassed: boolean;
+    }>((resolve) => {
+      releaseSubmit = (value) => resolve(value);
+    });
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") return await pending;
+      return { problems: [], passedProblems: 0, totalProblems: 2, taskPassed: false };
+    });
+    const lensChanged = vi.fn();
+    const submitting = run("stella.submitTask", root);
+    try {
+      await vi.waitFor(() =>
+        expect(apiRequest.mock.calls.some(([url]) => url === "/api/submissions")).toBe(true),
+      );
+      expect(vscodeMock.progress).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "提出しています", location: 15 }),
+      );
+      vscodeMock.showInformationMessage.mockClear();
+      await run("stella.submitTask", root);
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+        "いま提出しています。終わるまで待ってください",
+      );
+      expect(apiRequest.mock.calls.filter(([url]) => url === "/api/submissions")).toHaveLength(1);
+      const { registerTaskCodeLens } = await import("./task-code-lens.js");
+      const { registerTaskStatus, setCurrentTask } =
+        await vi.importActual<typeof import("./task-status.js")>("./task-status.js");
+      registerTaskCodeLens(context);
+      const lensSubscription = state.codeLens?.onDidChangeCodeLenses(lensChanged);
+      if (lensSubscription) context.subscriptions.push(lensSubscription);
+      registerTaskStatus(context);
+      setCurrentTask({
+        root,
+        title: "計算",
+        problemProgress: { passed: 0, total: 2 },
+        currentProblem: { id: "q01-add", label: "問1" },
+      });
+      const source = path.join(root, "src", "q01-add.ts");
+      const text = "export const add = 1;\n";
+      const lens = async () =>
+        (await state.codeLens?.provideCodeLenses(
+          {
+            uri: { scheme: "file", fsPath: source },
+            getText: () => text,
+            positionAt: (offset: number) => ({
+              line: text.slice(0, offset).split("\n").length - 1,
+            }),
+          },
+          { isCancellationRequested: false },
+        )) ?? [];
+      const submitItem = () => state.statusItems.find((item) => item.id === "stella.submitTask");
+      expect((await lens())[0]?.command).toEqual({
+        title: "$(sync~spin) 提出中…",
+        command: "",
+      });
+      expect(submitItem()).toMatchObject({
+        visible: true,
+        text: "$(sync~spin) 提出中…",
+        tooltip: "いま処理しています。終わるまで待ってください",
+        command: undefined,
+      });
+      expect(vscodeMock.syncTaskPanelsBusy).toHaveBeenLastCalledWith(true);
+    } finally {
+      releaseSubmit({
+        problemId: "q01-add",
+        passedProblems: 1,
+        totalProblems: 2,
+        taskPassed: false,
+      });
+      await submitting;
+      expect(lensChanged).toHaveBeenCalledOnce();
+      expect(vscodeMock.syncTaskPanelsBusy).toHaveBeenLastCalledWith(false);
+      const source = path.join(root, "src", "q01-add.ts");
+      const text = "export const add = 1;\n";
+      const restored = await state.codeLens?.provideCodeLenses(
+        {
+          uri: { scheme: "file", fsPath: source },
+          getText: () => text,
+          positionAt: (offset: number) => ({ line: text.slice(0, offset).split("\n").length - 1 }),
+        },
+        { isCancellationRequested: false },
+      );
+      expect(restored?.[0]?.command).toEqual({
+        title: "▷ 確認して提出",
+        command: "stella.submitTask",
+        arguments: [root, "q01-add"],
+      });
+      expect(state.statusItems.find((item) => item.id === "stella.submitTask")).toMatchObject({
+        text: "$(play) 確認して提出",
+        command: {
+          command: "stella.submitTask",
+          title: "確認して提出",
+          arguments: [root, "q01-add"],
+        },
+      });
+    }
+  });
 
   it.each([
     ["問題のファイル URI", "src/q01-add.ts", "src/q02-sub.ts", "q01-add"],
@@ -2139,6 +2463,29 @@ describe("stella.diagnoseEnvironment", () => {
     state.trusted = false;
     await run("stella.diagnoseEnvironment");
     expect(vscodeMock.showTaskPanel).not.toHaveBeenCalled();
+  });
+
+  it("診断の途中にもう一度押すと、中断できる案内を出す", async () => {
+    let release: (value: RunResult) => void = () => undefined;
+    vi.mocked(runTask).mockImplementationOnce(
+      () =>
+        new Promise<RunResult>((resolve) => {
+          release = (value) => resolve(value);
+        }),
+    );
+    const diagnosing = run("stella.diagnoseEnvironment");
+    try {
+      await vi.waitFor(() => expect(runTask).toHaveBeenCalledOnce());
+      vscodeMock.showInformationMessage.mockClear();
+      await run("stella.diagnoseEnvironment");
+      expect(vscodeMock.showInformationMessage).toHaveBeenCalledExactlyOnceWith(
+        "いま開発環境を診断しています。終わるまで待ってください",
+        "中断する",
+      );
+    } finally {
+      release({ outcome: "passed" } as RunResult);
+      await diagnosing;
+    }
   });
 });
 
