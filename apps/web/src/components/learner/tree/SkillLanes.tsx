@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 import { buildLanes } from "./lanes";
 import { nextUnlockIds } from "./next-unlock";
-import { routeAccentOf, routeSolidOf } from "./route-accents";
-import { routeStyleOf, type ActiveStarInfo } from "./SkillTree";
+import { routeAccentOf, routeSolidOf, routeStyleOf } from "./route-accents";
+import type { ActiveStarInfo } from "./SkillTree";
 import { describeStar, type StarDetail } from "./star-detail";
 
 interface SkillLanesProps {
