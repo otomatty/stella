@@ -178,6 +178,31 @@ const editor = (file: string | undefined) =>
 const inTask = () => state.executeCommand.mock.calls.at(-1);
 
 describe("ステータスバーの課題のボタン", () => {
+  it.each([
+    ["linux", "Ctrl+Alt+Enter"],
+    ["darwin", "⌘⌥Enter"],
+  ])("%s では提出ボタンの tooltip に %s を表示する", (platform, shortcut) => {
+    registerTaskStatus(context);
+    const [submit] = state.items;
+    vi.stubGlobal("process", Object.create(process, { platform: { value: platform } }));
+    try {
+      const task = { root, title: "最初のページを作る" };
+      setCurrentTask(task);
+      expect(submit?.tooltip).toBe(
+        `「最初のページを作る」を確認して提出します。通らなければ何も送りません (${shortcut})`,
+      );
+
+      setCurrentTask({
+        ...task,
+        problemProgress: { passed: 0, total: 1 },
+        currentProblem: { id: "q01", label: "問1" },
+      });
+      expect(submit?.tooltip).toBe(`問1を確認して提出します (${shortcut})`);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("課題フォルダーのファイルを開くと「提出する」「課題文」を出し、課題フォルダーを渡す", async () => {
     state.activeFile = path.join(root, "index.html");
     registerTaskStatus(context);

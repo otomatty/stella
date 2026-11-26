@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildTimeline,
-  captionSegments,
   DEFAULT_TIMING,
   framesBetween,
   timelineToChaptersVtt,
@@ -70,16 +69,5 @@ describe("framesBetween", () => {
   it("境界を丸めてから差を取るので合計がずれない", () => {
     const frames = framesBetween([0, 1.01, 2.02, 3.03], 30);
     expect(frames.reduce((a, b) => a + b, 0)).toBe(Math.round(3.03 * 30));
-  });
-});
-
-describe("captionSegments", () => {
-  it("字幕の有無が変わるところで割り、隙間なく覆う", () => {
-    const tl = buildTimeline(input);
-    const segs = captionSegments(tl);
-    expect(segs[0]).toEqual({ slide: 0, cue: null, start: 0, end: 1 });
-    expect(segs[1]).toEqual({ slide: 0, cue: 0, start: 1, end: 3.15 });
-    for (let i = 1; i < segs.length; i++) expect(segs[i].start).toBe(segs[i - 1].end);
-    expect(segs.at(-1)?.end).toBe(tl.duration);
   });
 });

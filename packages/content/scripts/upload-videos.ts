@@ -10,9 +10,10 @@
  */
 import { beginVideoCacheRun, pruneVideoCache } from "./lib/scene-cache.js";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkoutContentFingerprint } from "./content-state.js";
 import {
   buildVideos,
   formatVideoFailure,
@@ -291,6 +292,10 @@ function summaryTable(
   ].join("\n");
 }
 
+function shellQuote(arg: string): string {
+  return /^[A-Za-z0-9_./:=,@%+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", "'\\''")}'`;
+}
+
 export async function uploadVideos(args: string[]): Promise<void> {
   validatePublishedVideoVoice(args);
   const topicIds = topicIdsFromArgs(args);
@@ -309,16 +314,18 @@ export async function uploadVideos(args: string[]): Promise<void> {
   const tts = loadVideoVoice(videoTtsOf(args, remote)).provider;
   logVideoTts(tts);
   const manifestFile = join(contentRoot, "dist/video-manifest.json");
+  const sourceFile = join(contentRoot, "dist/video-manifest.source.json");
   // 古い manifest を誤って seed に渡さない。鍵なしでは R2 に一切触れない。
+  rmSync(sourceFile, { force: true });
   rmSync(manifestFile, { force: true });
   if (tts === "gemini" && !process.env.GEMINI_API_KEY && !dryRun) {
     console.log("キーが無いので動画を作りません");
     return;
   }
+  const source = remote && !preview && !dryRun ? checkoutContentFingerprint() : undefined;
   const buildArgs = [
     ...args.filter((arg) => !["--remote", "--dry-run", "--preview", "--cached-only"].includes(arg)),
     ...(args.includes("--tts") ? [] : ["--tts", tts]),
-    ...(preview ? ["--burn-captions"] : []),
   ];
   const outDir = videoOutputDir(buildArgs);
   const voice = loadVideoVoice(videoTtsOf(buildArgs));
@@ -360,11 +367,6 @@ export async function uploadVideos(args: string[]): Promise<void> {
           return true;
         }
         pending.push(plan);
-        if (preview) {
-          const base = join(outDir, plan.stageSlug, plan.id);
-          rmSync(join(base, "video.captions.mp4"), { force: true });
-          rmSync(join(base, "preview-captioned.mp4"), { force: true });
-        }
         return false;
       },
       async (targets) => {
@@ -419,34 +421,7 @@ export async function uploadVideos(args: string[]): Promise<void> {
         }
       },
     ));
-    if (preview) {
-      const made: string[] = [];
-      for (const plan of pending) {
-        const report = reports.find(
-          (item) =>
-            item.stageSlug === plan.stageSlug &&
-            item.id === plan.id &&
-            item.sourceHash === plan.sourceHash,
-        );
-        if (!report) continue;
-        const base = join(outDir, plan.stageSlug, plan.id);
-        const burned = join(base, "video.captions.mp4");
-        const legacy = join(base, "preview-captioned.mp4");
-        if (existsSync(burned)) made.push(burned);
-        else if (existsSync(legacy)) made.push(legacy);
-        else made.push(`${join(base, "video.mp4")} （字幕を焼き込んだ版はありません）`);
-      }
-      if (made.length > 0) {
-        console.log("確認する動画:");
-        for (const file of made) console.log(`  ${file}`);
-      }
-      const again = args
-        .filter((arg) => arg !== "--preview" && arg !== "--cached-only" && arg !== "--dry-run")
-        .join(" ");
-      console.log(
-        `次に上げるコマンド: bun run --filter=@stella/content video:sync ${again} --cached-only`,
-      );
-    } else {
+    if (!preview) {
       for (const plan of pending) {
         const report = reports.find(
           (item) =>
@@ -535,6 +510,19 @@ export async function uploadVideos(args: string[]): Promise<void> {
   }
   if (failure) throw failure.error;
   if (preview) {
+    const serveDir = shellQuote(
+      outDir === videoOutputDir([]) ? "packages/content/dist/video" : outDir,
+    );
+    console.log(
+      `確認ページ: ${join(outDir, "index.html")} （python3 -m http.server -d ${serveDir} を実行し、http://localhost:8000/ を開く）`,
+    );
+    const again = args
+      .filter((arg) => arg !== "--preview")
+      .map(shellQuote)
+      .join(" ");
+    console.log(
+      `次に上げるコマンド: bun run --filter=@stella/content video:sync ${again} --cached-only`,
+    );
     if (failures.length > 0) {
       console.error(`作れなかった動画: ${failures.length} 件`);
       for (const item of failures) console.error(`  ${formatVideoFailure(item)}`);
@@ -542,8 +530,18 @@ export async function uploadVideos(args: string[]): Promise<void> {
     }
     return;
   }
+  if (source) {
+    const current = checkoutContentFingerprint();
+    if (source.checkoutFingerprint !== current.checkoutFingerprint) {
+      throw new Error(
+        "動画の同期中に教材の版が変わりました。このチェックアウトで同じコマンドを実行してください。",
+      );
+    }
+    source.dirty ||= current.dirty;
+  }
   mkdirSync(dirname(manifestFile), { recursive: true });
   writeFileSync(manifestFile, serializeVideoManifest(manifest));
+  if (source) writeFileSync(sourceFile, JSON.stringify(source));
   console.log(`✓ video manifest: 成功 ${successCount} 件 / 失敗 ${failures.length} 件`);
   appendStepSummary(`\n- 生成: 成功 ${successCount} 件 / 失敗 ${failures.length} 件\n`);
   if (failures.length > 0) {

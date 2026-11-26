@@ -45,7 +45,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       # 教材パイプライン (R2 画像 → PDF → seed) を流す必要があるかを先に決める。
-      # 動画はここでは作らない。手動の videos.yml が生成と動画の登録を行う。
+      # 動画は手元で生成し、register-lesson-videos.ts で登録する。
       # 判定は seed・PDF・画像の生成が読むファイルの内容指紋
       # (content-fingerprint.ts の SEED_INPUT_PATHS。教材の正本・旧演習・
       # migration と、生成コードの値 import) と、前回 seed まで通ったときに
@@ -61,7 +61,7 @@ jobs:
         env:
           PDF_KEY_SALT: ${{ secrets.PDF_KEY_SALT }}
 
-      # 教材の更新中は videos.yml が前回の指紋で動画を登録できないようにする。
+      # 教材の更新中は手元の register-lesson-videos.ts が前回の指紋で登録できないようにする。
       # seed まで通れば下のステップで新しい指紋を記録する。
       - name: Clear previous course content fingerprint
         if: steps.content.outputs.changed == 'true'

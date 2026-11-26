@@ -400,6 +400,26 @@ describe("gemini プロバイダ", () => {
     await expect(p.synthesize("こんにちは")).rejects.toThrow(/--tts openjtalk/);
   });
 
+  it("長い音声の合成に 5 分の時間切れを渡す", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "k");
+    const signal = new AbortController().signal;
+    const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(signal);
+    const fetchMock = vi.fn(async () =>
+      Response.json({ output_audio: { data: Buffer.from([1, 2]).toString("base64") } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await createTtsProvider({ provider: "gemini" }).synthesize("読み上げ");
+      expect(timeout).toHaveBeenCalledExactlyOnceWith(300_000);
+      expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+        expect.any(String),
+        expect.objectContaining({ signal }),
+      );
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+
   it("参考設計書の形で呼び、PCM で返ってきても WAV にする", async () => {
     vi.stubEnv("GEMINI_API_KEY", "k");
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
@@ -704,7 +724,7 @@ describe("読み上げ回数の数え方", () => {
     vi.unstubAllEnvs();
   });
 
-  it("キャッシュにある場面は数えず、同じ読み上げと収録版も 1 回にまとめる", async () => {
+  it("キャッシュにある動画と収録版を数えず、同じ読み上げは 1 回にまとめる", async () => {
     const dir = mkdtempSync(join(tmpdir(), "tts-count-"));
     const identity = "gemini/count-test";
     const provider: TtsProvider = {
@@ -715,26 +735,26 @@ describe("読み上げ回数の数え方", () => {
       synthesize: async () => ({ bytes: Uint8Array.from([1, 2, 3]), ext: "wav" }),
     };
     try {
-      const scenes = ["場面1", "場面2", "場面3"];
+      const sceneSpeech = "題名\n\n場面1\n\n場面2";
       expect(
         countTtsCalls(
-          [{ stageSlug: "stage", id: "1-1", kind: "scene", speeches: scenes }],
+          [{ stageSlug: "stage", id: "1-1", kind: "scene", speeches: [sceneSpeech] }],
           identity,
           dir,
         ),
       ).toEqual({
-        topics: [{ stageSlug: "stage", id: "1-1", kind: "scene", calls: 3 }],
-        needed: 3,
+        topics: [{ stageSlug: "stage", id: "1-1", kind: "scene", calls: 1 }],
+        needed: 1,
       });
-      await synthesizeCached(provider, "場面2", dir);
-      expect(hasCachedTts(identity, "場面2", dir)).toBe(true);
+      await synthesizeCached(provider, sceneSpeech, dir);
+      expect(hasCachedTts(identity, sceneSpeech, dir)).toBe(true);
       writeFileSync(join(dir, `${cueHash(identity, "空")}.wav`), Buffer.alloc(0));
       expect(hasCachedTts(identity, "空", dir)).toBe(false);
       writeFileSync(join(dir, `${cueHash(identity, "mp3")}.mp3`), Buffer.from([9]));
       expect(hasCachedTts(identity, "mp3", dir)).toBe(true);
       const counted = countTtsCalls(
         [
-          { stageSlug: "stage", id: "1-1", kind: "scene", speeches: scenes },
+          { stageSlug: "stage", id: "1-1", kind: "scene", speeches: [sceneSpeech] },
           { stageSlug: "stage", id: "1-2", kind: "narration", speeches: ["トピックの読み"] },
           { stageSlug: "stage", id: "1-3", kind: "narration", speeches: ["トピックの読み"] },
           { stageSlug: "stage", id: "rec", kind: "recorded", speeches: [] },
@@ -742,8 +762,8 @@ describe("読み上げ回数の数え方", () => {
         identity,
         dir,
       );
-      expect(counted.topics.map((topic) => topic.calls)).toEqual([2, 1, 0, 0]);
-      expect(counted.needed).toBe(3);
+      expect(counted.topics.map((topic) => topic.calls)).toEqual([0, 1, 0, 0]);
+      expect(counted.needed).toBe(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

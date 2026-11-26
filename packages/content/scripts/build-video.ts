@@ -2,7 +2,7 @@
  * 教材動画 (ナレーション付き解説動画) の生成。
  *
  *   bun run --filter=@stella/content video -- stages/it-basics --tts openjtalk
- *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake --captioned
+ *   bun run --filter=@stella/content video -- it-basics typescript-basics --tts fake
  *
  * `video.json` があれば場面方式を使う。無ければ `narration.json` を持つトピックが対象。トピックごとに:
  *   ② 読み上げ   Gemini はトピックごと、他は字幕ごとに TTS (dist/video-cache/tts にキャッシュ)
@@ -12,8 +12,7 @@
  *
  * 出力は `--out` (既定 dist/video) の `<stage>/<topicId>/`。一覧の確認ページ
  * `index.html` も書く (字幕 <track> は file:// では読めないので
- * `python3 -m http.server -d dist/video` などで開く)。`--captioned` を付けると、
- * 字幕を焼き込んだ確認用の `preview-captioned.mp4` も作る (本番は焼き込まない)。
+ * `python3 -m http.server -d dist/video` などで開く)。
  *
  * 配信は upload-videos.ts がこの生成処理を呼び、R2 と seed 用 manifest に登録する。
  */
@@ -57,7 +56,6 @@ import { storyboardAssets } from "../src/storyboard-assets.js";
 import type { VideoStoryboard } from "../src/video-storyboard.js";
 import {
   buildTimeline,
-  captionSegments,
   DEFAULT_TIMING,
   framesBetween,
   type Timeline,
@@ -143,7 +141,6 @@ function narrationTtsSpeeches(
 interface BuildOptions {
   outDir: string;
   cacheDir: string;
-  captioned: boolean;
   keepWork: boolean;
   voice: VoiceConfig;
 }
@@ -266,7 +263,7 @@ interface TopicReport {
   /** 読み上げ文の字数 / 音声の秒数。 */
   charsPerSec: number;
   loudness: Loudness;
-  bytes: { video: number; captionedPreview?: number };
+  bytes: { video: number };
   timingsMs: { audio: number; render: number; encode: number };
   warnings: string[];
   anomalies: string[];
@@ -307,15 +304,7 @@ function sourceHashOf(
   return h.digest("hex").slice(0, 32);
 }
 
-const VIDEO_CSS = `html, body { margin: 0; padding: 0; background: #fff; }
-.video-caption {
-  position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
-  max-width: 1120px; width: max-content; box-sizing: border-box;
-  padding: 10px 24px; border-radius: 8px;
-  background: rgba(24, 24, 30, 0.82); color: #fff;
-  font: 500 30px/1.45 "Noto Sans JP", sans-serif; text-align: center; z-index: 10;
-  text-wrap: balance; word-break: auto-phrase;
-}`;
+const VIDEO_CSS = `html, body { margin: 0; padding: 0; background: #fff; }`;
 
 function slidesHeadings(topic: VideoTopic) {
   return splitSlides(topic.slidesSource).map((s) => ({
@@ -329,8 +318,6 @@ async function screenshotSlides(
   browser: Browser,
   topic: VideoTopic,
   workDir: string,
-  cues: CuePlan[],
-  captioned: boolean,
 ): Promise<void> {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
@@ -358,17 +345,6 @@ async function screenshotSlides(
     }
     for (let i = 0; i < count; i++) {
       await slides.nth(i).screenshot({ path: join(workDir, `slide-${i}.png`) });
-      if (!captioned) continue;
-      for (const cue of cues.filter((c) => c.slide === i)) {
-        await slides.nth(i).evaluate((el, text) => {
-          const cap = document.createElement("div");
-          cap.className = "video-caption";
-          cap.textContent = text;
-          el.appendChild(cap);
-        }, cue.text);
-        await slides.nth(i).screenshot({ path: join(workDir, `slide-${i}-cue-${cue.index}.png`) });
-        await slides.nth(i).evaluate((el) => el.querySelector(".video-caption")?.remove());
-      }
     }
   } finally {
     await context.close();
@@ -376,10 +352,9 @@ async function screenshotSlides(
 }
 
 async function encodeFromSegments(
-  segments: { start: number; end: number; png: string }[],
+  segments: { start: number; png: string }[],
   totalSec: number,
   workDir: string,
-  prefix: string,
   audio: string,
   out: string,
 ): Promise<void> {
@@ -388,18 +363,18 @@ async function encodeFromSegments(
   const files: string[] = [];
   for (let i = 0; i < segments.length; i++) {
     if (frames[i] <= 0) continue;
-    const file = join(workDir, `${prefix}-${i}.mp4`);
+    const file = join(workDir, `seg-${i}.mp4`);
     await encodeStill(segments[i].png, frames[i], file);
     files.push(file);
   }
-  await concatAndMux(files, join(workDir, `${prefix}.txt`), audio, out);
+  await concatAndMux(files, join(workDir, "seg.txt"), audio, out);
 }
 
 async function buildTopic(
   { topic, cues, sourceHash, warnings, assetHashes }: TopicPlan,
   provider: TtsProvider,
   browser: Browser,
-  { outDir, cacheDir, captioned, keepWork, voice }: BuildOptions,
+  { outDir, cacheDir, keepWork, voice }: BuildOptions,
 ): Promise<TopicReport> {
   const topicOut = join(outDir, topic.stageSlug, topic.id);
   const workDir = join(topicOut, "work");
@@ -487,7 +462,7 @@ async function buildTopic(
 
   // ④ 描画
   t0 = Date.now();
-  await screenshotSlides(browser, topic, workDir, cues, captioned);
+  await screenshotSlides(browser, topic, workDir);
   const renderMs = Date.now() - t0;
 
   // ⑤ 書き出し
@@ -496,35 +471,13 @@ async function buildTopic(
   await encodeFromSegments(
     timeline.slides.map((s) => ({
       start: s.start,
-      end: s.start + s.duration,
       png: join(workDir, `slide-${s.index}.png`),
     })),
     timeline.duration,
     workDir,
-    "seg",
     narrationM4a,
     videoFile,
   );
-  let captionedBytes: number | undefined;
-  if (captioned) {
-    const previewFile = join(topicOut, "preview-captioned.mp4");
-    await encodeFromSegments(
-      captionSegments(timeline).map((s) => ({
-        start: s.start,
-        end: s.end,
-        png: join(
-          workDir,
-          s.cue === null ? `slide-${s.slide}.png` : `slide-${s.slide}-cue-${s.cue}.png`,
-        ),
-      })),
-      timeline.duration,
-      workDir,
-      "cap",
-      narrationM4a,
-      previewFile,
-    );
-    captionedBytes = statSync(previewFile).size;
-  }
   writeFileSync(join(topicOut, "captions.vtt"), timelineToVtt(timeline));
   writeFileSync(join(topicOut, "chapters.vtt"), timelineToChaptersVtt(timeline));
   const posterSlide = Math.max(
@@ -571,7 +524,7 @@ async function buildTopic(
     speechChars,
     charsPerSec: Math.round((speechChars / audioSec) * 100) / 100,
     loudness,
-    bytes: { video: statSync(videoFile).size, captionedPreview: captionedBytes },
+    bytes: { video: statSync(videoFile).size },
     timingsMs: { audio: audioMs, render: renderMs, encode: encodeMs },
     warnings,
     anomalies,
@@ -634,7 +587,8 @@ async function copyRecordedTopic(
 
 // ---------------------------------------------------------------- 一覧ページ
 
-function indexHtml(reports: TopicReport[], outDir: string): string {
+async function indexHtml(reports: TopicReport[], outDir: string): Promise<string> {
+  const { VIDEO_CUE_CSS } = await import("./lib/video-preview-page.js");
   const fmt = (sec: number) =>
     `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, "0")}`;
   const cards = reports
@@ -663,11 +617,7 @@ function indexHtml(reports: TopicReport[], outDir: string): string {
   <track kind="captions" srclang="ja" label="日本語" src="${base}/captions.vtt" default>
   ${recorded ? "" : `<track kind="chapters" srclang="ja" src="${base}/chapters.vtt">`}
 </video>
-<p class="meta">長さ ${fmt(r.durationSec)} ・ 字幕 ${r.cues}${recorded ? "" : ` ・ ${r.charsPerSec} 字/秒`} ・ ${r.loudness.integratedLufs} LUFS ・ ${(r.bytes.video / 1024 / 1024).toFixed(1)} MB ・ ${escapeHtml(r.voice)}${
-        r.bytes.captionedPreview
-          ? ` ・ <a href="${base}/preview-captioned.mp4">字幕焼き込み版</a>`
-          : ""
-      }</p>
+<p class="meta">長さ ${fmt(r.durationSec)} ・ 字幕 ${r.cues}${recorded ? "" : ` ・ ${r.charsPerSec} 字/秒`} ・ ${r.loudness.integratedLufs} LUFS ・ ${(r.bytes.video / 1024 / 1024).toFixed(1)} MB ・ ${escapeHtml(r.voice)}</p>
 ${notes ? `<ul class="notes">${notes}</ul>` : ""}
 ${recorded ? "" : `<details><summary>台本 (${r.cues} 字幕)</summary><table><thead><tr><th>時刻</th><th>枚</th><th>字幕</th></tr></thead><tbody>${rows}</tbody></table></details>`}
 </section>`;
@@ -682,20 +632,21 @@ ${recorded ? "" : `<details><summary>台本 (${r.cues} 字幕)</summary><table><
 body { margin: 0 auto; max-width: 980px; padding: 24px 16px 64px; font: 15px/1.6 system-ui, "Noto Sans JP", sans-serif; color: var(--fg); background: var(--bg); }
 h1 { font-size: 22px; } h2 { font-size: 18px; margin: 40px 0 8px; } small { color: var(--muted); font-weight: normal; }
 video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; }
+${VIDEO_CUE_CSS}
 .meta { color: var(--muted); font-size: 13px; } .notes { color: #b25c00; font-size: 13px; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
 td:first-child, td:nth-child(2) { white-space: nowrap; color: var(--muted); } .speech { color: var(--muted); }
 </style></head><body>
 <h1>教材動画 PoC</h1>
-<p class="meta">生成 ${new Date().toISOString()} ・ ${reports.length} 本。字幕は &lt;track&gt; なので HTTP で開いてください (例: <code>python3 -m http.server -d packages/content/dist/video</code>)。</p>
+<p class="meta">生成 ${new Date().toISOString()} ・ ${reports.length} 本。字幕は動画に焼き込まず、&lt;track&gt; で重ねています。HTTP で開いてください (例: <code>python3 -m http.server -d packages/content/dist/video</code>)。</p>
 ${cards}
 </body></html>`;
 }
 
 /** 1 トピックの出力一式。どれかが欠けていれば作り直す。 */
-function outputFiles(captioned: boolean, recorded: boolean): string[] {
+function outputFiles(recorded: boolean): string[] {
   if (recorded) return ["video.mp4", "captions.vtt", "poster.jpg", "report.json"];
-  const base = [
+  return [
     "video.mp4",
     "captions.vtt",
     "chapters.vtt",
@@ -703,7 +654,6 @@ function outputFiles(captioned: boolean, recorded: boolean): string[] {
     "timeline.json",
     "report.json",
   ];
-  return captioned ? [...base, "preview-captioned.mp4"] : base;
 }
 
 // ---------------------------------------------------------------- main
@@ -758,9 +708,6 @@ export async function buildVideos(
   const outDir = videoOutputDir(args);
   const cacheDir = lessonVideoTtsCacheDir(contentRoot);
   const concurrency = Number(argValue("--concurrency") ?? 2);
-  const burnCaptions = args.includes("--burn-captions");
-  // 旧方式の焼き込み版は `--captioned`。`--burn-captions` も同じ確認版を作る。
-  const captioned = args.includes("--captioned") || burnCaptions;
   const force = args.includes("--force");
   const keepWork = args.includes("--keep-work");
   const topicIds = topicIdsFromArgs(args);
@@ -840,8 +787,7 @@ export async function buildVideos(
       return false;
     }
     const base = join(outDir, topic.stageSlug, topic.id);
-    if (force || outputFiles(false, true).some((f) => !existsSync(join(base, f)))) return true;
-    if (burnCaptions && !existsSync(join(base, "video.captions.mp4"))) return true;
+    if (force || outputFiles(true).some((f) => !existsSync(join(base, f)))) return true;
     try {
       return JSON.parse(readFileSync(join(base, "report.json"), "utf8")).sourceHash !== sourceHash;
     } catch {
@@ -862,7 +808,7 @@ export async function buildVideos(
     if (force) return true;
     const topicOut = join(outDir, topic.stageSlug, topic.id);
     // 1 つでも欠けていれば作り直す (途中で止まった回や、一部だけ消された出力を補う)。
-    if (outputFiles(captioned, recorded).some((f) => !existsSync(join(topicOut, f)))) return true;
+    if (outputFiles(recorded).some((f) => !existsSync(join(topicOut, f)))) return true;
     const report = JSON.parse(readFileSync(join(topicOut, "report.json"), "utf8")) as TopicReport;
     return report.sourceHash !== sourceHash;
   });
@@ -925,7 +871,6 @@ export async function buildVideos(
           {
             selectors,
             stills: false,
-            ...(burnCaptions ? { burnCaptions: true } : {}),
             tts: voice.provider,
             ttsModel: undefined,
             out: outDir,
@@ -1094,7 +1039,6 @@ export async function buildVideos(
           const report = await buildTopic(plan, provider, sharedBrowser, {
             outDir,
             cacheDir,
-            captioned,
             keepWork,
             voice,
           });
@@ -1139,7 +1083,7 @@ export async function buildVideos(
     });
   const allReports = [...legacyReports, ...allSceneReports];
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "index.html"), indexHtml(allReports, outDir));
+  writeFileSync(join(outDir, "index.html"), await indexHtml(allReports, outDir));
   writeFileSync(
     join(outDir, "summary.json"),
     `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length + sceneReports.length, failures: failures.map(formatVideoFailure) }, null, 2)}\n`,

@@ -111,6 +111,10 @@ function renderState(item: vscode.StatusBarItem, task: CurrentTask): boolean {
   return passed || inReview;
 }
 
+function submitShortcutLabel(): string {
+  return process.platform === "darwin" ? "⌘⌥Enter" : "Ctrl+Alt+Enter";
+}
+
 function render(): void {
   void vscode.commands.executeCommand(
     "setContext",
@@ -125,8 +129,9 @@ function render(): void {
     readmeItem.hide();
     return;
   }
+  const shortcut = submitShortcutLabel();
   submitItem.text = "$(cloud-upload) 提出する";
-  submitItem.tooltip = `「${current.title}」を確認して提出します。通らなければ何も送りません`;
+  submitItem.tooltip = `「${current.title}」を確認して提出します。通らなければ何も送りません (${shortcut})`;
   submitItem.command = {
     command: "stella.submitTask",
     title: "提出する",
@@ -159,7 +164,7 @@ function render(): void {
     if (current.problemActionsAvailable === false || !currentProblem) submitItem.hide();
     else {
       submitItem.text = "$(play) 確認して提出";
-      submitItem.tooltip = `${currentProblem.label}を確認して提出します`;
+      submitItem.tooltip = `${currentProblem.label}を確認して提出します (${shortcut})`;
       submitItem.command = {
         command: "stella.submitTask",
         title: "確認して提出",

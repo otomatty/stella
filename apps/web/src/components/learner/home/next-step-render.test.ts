@@ -103,7 +103,7 @@ describe("NextStep first-stage", () => {
     expect(markup).toContain("はじめの一歩");
     expect(markup).toContain("『開発環境とWebの入口』から始めましょう");
     expect(markup).toContain("最初のステージを始める");
-    expect(markup).toContain("ステージ一覧で見る");
+    expect(markup).toContain("ツリーで見る");
   });
 });
 
@@ -203,7 +203,7 @@ describe("NextStep choose card", () => {
     const markup = renderToStaticMarkup(createElement(LaterSteps, { ...handlers, steps }));
     expect(markup).toContain("次に始めるステージをステージ一覧から選ぶ");
     expect(markup).not.toContain("HTML/CSSとデザイン基礎");
-    expect(markup).not.toContain("ステージ一覧で見る");
+    expect(markup).not.toContain("ツリーで見る");
     expect(markup).not.toContain("<button");
   });
 });

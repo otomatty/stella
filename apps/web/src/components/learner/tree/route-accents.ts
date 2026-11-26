@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /**
  * ルート (本土のカテゴリ) と島ごとのメイン色 — roadmap.sh を参考にした構成の色分け。
  *
@@ -62,4 +64,18 @@ export function routeSolidOf(sector: string): string | undefined {
 
 export function routeAccentOf(sector: string): string | undefined {
   return ROUTE_ACCENTS.get(sector);
+}
+
+/** ルート色を持つ扇の星に渡す CSS 変数 (index.css の tree-star-* が拾う)。 */
+export function routeStyleOf(accent: string | undefined, solid: string | undefined): CSSProperties {
+  if (!accent) return {};
+  return {
+    "--route-solid": solid ? `rgb(${solid})` : undefined,
+    "--route-border": `rgb(${accent} / 0.95)`,
+    "--route-halo": `rgb(${accent} / 0.16)`,
+    "--route-open-glow": `rgb(${accent} / 0.5)`,
+    "--route-border-dim": `rgb(${accent} / 0.45)`,
+    "--route-glow": `rgb(${accent} / 0.28)`,
+    "--route-glow-strong": `rgb(${accent} / 0.6)`,
+  } as CSSProperties;
 }

@@ -111,7 +111,7 @@ it-basicsはスキルツリーの唯一の根であり、4つの島の表示条�
 | テスト | `manifest.test.ts`、`export-seed-sql.test.ts`、`islands.test.ts`がit-basicsを前提にしている | テストが落ちる |
 | 文書 | `AGENTS.md`、`packages/content/CLAUDE.md`(唯一の前提なしステージ・動画PoCの説明)、`helpContent.ts`の受講者向けヘルプ | 説明が古くなる |
 
-旧it-basicsの台本は流用せず、`dev-env-basics`の12トピックに新しい台本(`narration.json`)を配置済みである。GitHub Secret `GEMINI_API_KEY` は登録済みである。デプロイ (main への push) では動画を作らず、`.github/workflows/videos.yml` (Lesson videos) を手動で実行する。作る前に Gemini TTS の回数を確かめる。`dev-env-basics` は収録版5トピック、00-1-1は新方式 (`video.json`)、残りはスライド版を使う。生成・公開R2へのアップロード・seed・レッスン画面の配信は、その手動実行で行う(`packages/content/CLAUDE.md` の教材動画の記述に従う)。
+旧it-basicsの台本は流用せず、`dev-env-basics`の12トピックに新しい台本(`narration.json`)を配置済みである。教材動画はデプロイ (main への push) では作らない。手元で Gemini TTS の回数を確かめて生成し、動画と字幕を確認する。`dev-env-basics` は収録版5トピック、00-1-1は新方式 (`video.json`)、残りはスライド版を使う。確認した動画は公開 R2 に上げて D1 に登録し、レッスン画面で配信する。手順は [教材動画の公開](../ci-cd.md#教材動画の公開) を参照する。
 
 ### 3.4 残すステージの前提の付け替え
 
