@@ -1716,6 +1716,69 @@ describe("問題つきの課題", () => {
     });
   });
 
+  it.each([
+    { label: "次が解ける", nextState: "open", opens: true },
+    { label: "次の動画が未視聴", nextState: "locked-video", opens: false },
+    { label: "次に前の問題が必要", nextState: "locked-previous", opens: false },
+    { label: "課題外のファイルに移った", activePath: "../src/q01-add.ts", opens: false },
+    { label: "同じ問題のテストに移った", activePath: "tests/q01-add.test.ts", opens: true },
+    { label: "次の問題のファイルに移った", activePath: "src/q02-sub.ts", opens: true },
+    { label: "エディターがない", activePath: null, opens: true },
+    { label: "提出済みの問題を解き直した", resubmission: true, opens: false },
+    { label: "次のファイルがない", missing: true, opens: false },
+    { label: "取り直せないが次は解ける", refreshFailed: true, opens: true },
+  ])("段階のある課題で提出したあと $label", async (scenario) => {
+    const {
+      nextState = "open",
+      activePath = "src/q01-add.ts",
+      resubmission = false,
+      missing = false,
+      refreshFailed = false,
+      opens,
+    } = scenario;
+    const root = await problemRoot(undefined, "passed", true);
+    const nextFile = path.join(root, "src", "q02-sub.ts");
+    let submitted = false;
+    apiRequest.mockImplementation(async (url: unknown) => {
+      if (url === "/api/submissions") {
+        submitted = true;
+        state.activeFile = activePath === null ? undefined : path.join(root, activePath);
+        if (missing) await unlink(nextFile);
+        return { problemId: "q01-add", passedProblems: 1, totalProblems: 2, taskPassed: false };
+      }
+      if (submitted && refreshFailed) throw new Error("問題の状態を読み出せません");
+      return {
+        gated: true,
+        passedProblems: submitted || resubmission ? 1 : 0,
+        totalProblems: 2,
+        taskPassed: false,
+        problems: [
+          { id: "q01-add", state: submitted || resubmission ? "submitted" : "open" },
+          {
+            id: "q02-sub",
+            state: submitted || refreshFailed || resubmission ? nextState : "locked-previous",
+          },
+        ],
+      };
+    });
+
+    await run("stella.submitTask", root);
+
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      "提出しました (1/2 問)",
+      "Web で開く",
+    );
+    expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
+    if (opens) {
+      expect(vscodeMock.showTextDocument).toHaveBeenCalledExactlyOnceWith(
+        { uri: { scheme: "file", fsPath: nextFile } },
+        { viewColumn: 1, preview: false },
+      );
+    } else {
+      expect(vscodeMock.showTextDocument).not.toHaveBeenCalled();
+    }
+  });
+
   it("API の提出拒否の理由をそのまま表示する", async () => {
     const root = await problemRoot(undefined, "passed", true);
     const reason = "この問題はまだ解けません。先に前の問題を提出してください。";
