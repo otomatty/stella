@@ -19,6 +19,7 @@ import { RUNNERS, type RunnerPlanKind } from "@stella/shared/tasks/runners";
 import { isRunResult } from "@stella/shared/tasks/submission";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { escapeHtml } from "./markdown-html.js";
+import { checkProgressHtml, type TaskCheckView } from "./task-check-progress-view.js";
 import { listFiles, matchEditableFiles, readFileInRoot } from "./runner/files.js";
 import {
   PROBLEM_STATUS_LABELS,
@@ -196,6 +197,7 @@ export interface TaskGuideInput {
   nextProblemReason?: string;
   problemPreparationError?: string;
   os: OsName;
+  check?: TaskCheckView;
 }
 
 function commandHref(id: GuideCommand, args: unknown[] = []): string {
@@ -731,6 +733,10 @@ function problemNowHtml(input: TaskGuideInput, now: ReturnType<typeof problemNow
   );
 }
 
+function checkProgressSlot(check: TaskCheckView | undefined): string {
+  return `<div id="check-progress">${check ? checkProgressHtml(check.progress, check) : ""}</div>`;
+}
+
 function buildProblemGuideHtml(input: TaskGuideInput): string {
   const { root, manifest, problemResults, helpLabel } = input;
   const items = guideProblems(input);
@@ -742,6 +748,7 @@ function buildProblemGuideHtml(input: TaskGuideInput): string {
     `<header class="problem-header"><h1>${escapeHtml(manifest.title)}</h1>${link("stella.showTaskReadme", [root], "表示を更新する")}</header>`,
     '<div class="guide problem-guide">',
     problemProgressHtml(items, now),
+    checkProgressSlot(input.check),
     problemNowHtml(input, now),
     problemTestExamplesHtml(input, now),
     input.releaseError ? `<p>${escapeHtml(input.releaseError)}</p>` : "",
@@ -763,6 +770,7 @@ export function buildTaskGuideHtml(input: TaskGuideInput): string {
   return [
     '<section class="guide" aria-label="この課題の進め方">',
     `<ol class="stepper">${steps}</ol>`,
+    checkProgressSlot(input.check),
     card,
     '<details class="all-steps"><summary>進め方をすべて見る</summary><ol>',
     "<li><strong>課題文を読む</strong> — 下の課題文で、作るものと、確かめられる条件を読みます。</li>",

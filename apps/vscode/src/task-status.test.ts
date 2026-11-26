@@ -116,7 +116,7 @@ import { AuthStore } from "./auth.js";
 import { loadTask } from "./runner/run-task.js";
 import { installTask } from "./task-distribution.js";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
+import { finishTaskCheck, progressTaskCheck, startTaskCheck } from "./task-run-events.js";
 import {
   getTaskState,
   onDidChangeTaskState,
@@ -584,6 +584,74 @@ async function openTaskEditor(): Promise<void> {
 }
 
 describe("ステータスバーの課題の状態", () => {
+  it.each([true, false])("問題つきの課題で確認の進捗を表示する (提出可: %s)", async (canSubmit) => {
+    const loaded = await loadTask(root);
+    if (!loaded.ok) throw new Error("課題を読めません");
+    registerTaskStatus(context);
+    setCurrentTask({
+      root,
+      title: "計算",
+      problemProgress: { passed: 1, total: 2 },
+      currentProblem: canSubmit ? { id: "q02", label: "問2" } : undefined,
+    });
+    expect(submitItem()?.visible).toBe(canSubmit);
+    startTaskCheck({ root, taskId, problemId: "q02", forSubmission: true });
+    expect(submitItem()).toMatchObject({ visible: true, text: "$(sync~spin) 確認中…" });
+    progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
+    progressTaskCheck({ type: "step-start", index: 0 });
+    expect(submitItem()).toMatchObject({
+      visible: true,
+      text: "$(sync~spin) 確認中 1/1 テスト",
+      tooltip: "「計算」を確認しています: 1/1 テスト (Vitest)",
+      command: "stella.showRunLog",
+    });
+    finishTaskCheck({ root, manifest: loaded.manifest, result: result("passed"), saved: false });
+    expect(submitItem()?.visible).toBe(canSubmit);
+    if (canSubmit) {
+      expect(submitItem()).toMatchObject({
+        text: "$(play) 確認して提出",
+        command: { command: "stella.submitTask", arguments: [root, "q02"] },
+      });
+    }
+  });
+
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b"],
+    ["c:\\a\\b", "C:\\a\\b"],
+  ])(
+    "ドライブ文字の大小が違っても確認イベントで表示を更新する (%s / %s)",
+    async (editorRoot, checkRoot) => {
+      const loaded = await loadTask(root);
+      if (!loaded.ok) throw new Error("課題を読めません");
+      const platform = process.platform;
+      registerTaskStatus(context);
+      setCurrentTask({ root: editorRoot, title: loaded.manifest.title });
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        startTaskCheck({ root: checkRoot, taskId });
+        expect(stateItem()).toMatchObject({ visible: true, text: "$(sync~spin) 確認中…" });
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
+        progressTaskCheck({ type: "step-start", index: 0 });
+        expect(stateItem()).toMatchObject({
+          visible: true,
+          text: "$(sync~spin) 確認中 1/1 テスト",
+        });
+      } finally {
+        try {
+          finishTaskCheck({
+            root: checkRoot,
+            manifest: loaded.manifest,
+            result: result("cancelled"),
+            saved: false,
+          });
+        } finally {
+          Object.defineProperty(process, "platform", { value: platform });
+        }
+      }
+      expect(stateItem()?.visible).toBe(false);
+    },
+  );
+
   it("未確認なら状態は隠し、状態の項目は「提出する」の左に置く", async () => {
     registerTaskStatus(context);
     await openTaskEditor();
@@ -616,6 +684,13 @@ describe("ステータスバーの課題の状態", () => {
         command: "stella.showRunLog",
       });
       expect(submitItem()?.visible).toBe(true);
+      progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
+      progressTaskCheck({ type: "step-start", index: 0 });
+      expect(stateItem()).toMatchObject({
+        text: "$(sync~spin) 確認中 1/1 テスト",
+        tooltip: "「最初のページを作る」を確認しています: 1/1 テスト (Vitest)",
+        command: "stella.showRunLog",
+      });
       const run = result(outcome, passed);
       await saveResult(run);
       finishTaskCheck({ root, manifest: loaded.manifest, result: run, saved: true });

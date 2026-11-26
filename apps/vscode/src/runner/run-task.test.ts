@@ -6,13 +6,15 @@ import { promisify } from "node:util";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
 import { canSubmit, type RunStepResult } from "@stella/shared/tasks/run-result";
 import { contentHash, verifyTaskSubmission } from "@stella/shared/tasks/submission";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   findTaskRoot,
   importedEditableFiles,
   loadTask,
   normalizeTaskRoot,
+  type RunProgress,
   runTask,
+  sameTaskRoot,
   saveRunResult,
   unmetNeed,
 } from "./run-task.js";
@@ -37,6 +39,20 @@ describe("normalizeTaskRoot", () => {
     for (const root of ["c:\\x", "/home/a/task"]) {
       expect(normalizeTaskRoot(root, platform)).toBe(root);
     }
+  });
+});
+
+describe("sameTaskRoot", () => {
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b", "win32", true],
+    ["c:\\a\\b", "C:\\a\\b", "win32", true],
+    ["C:\\a\\b", "c:\\A\\b", "win32", false],
+    ["C:\\a\\b", "c:\\a\\b", "linux", false],
+    [undefined, "C:\\a\\b", "win32", false],
+    ["C:\\a\\b", undefined, "win32", false],
+    [undefined, undefined, "win32", false],
+  ] as const)("%s と %s を %s で比べると %s", (a, b, platform, expected) => {
+    expect(sameTaskRoot(a, b, platform)).toBe(expected);
   });
 });
 
@@ -145,6 +161,7 @@ describe("runTask (Vitest の手順)", () => {
       "export const f = (v, k) => v.filter((x) => x >= k);\n",
     );
     const logs: string[] = [];
+    const events: RunProgress[] = [];
     const task = manifest();
     const manifestText = JSON.stringify(task);
     const manifestSha256 = await contentHash(Buffer.from(manifestText));
@@ -154,6 +171,7 @@ describe("runTask (Vitest の手順)", () => {
       manifestSha256,
       toolchain: { node: NODE, npm: { file: NODE, prefixArgs: [npmCli] } },
       log: (text) => logs.push(text),
+      onProgress: (event) => events.push(event),
     });
     expect(result.steps.map((s) => [s.id, s.status])).toEqual([
       ["deps", "passed"],
@@ -161,6 +179,22 @@ describe("runTask (Vitest の手順)", () => {
       ["format", "passed"],
       ["test", "passed"],
       ["files", "passed"],
+    ]);
+    expect(events).toEqual([
+      {
+        type: "plan",
+        steps: [
+          { id: "deps", label: "依存パッケージの準備" },
+          { id: "lint", label: "lint (ESLint)" },
+          { id: "format", label: "整形 (Prettier)" },
+          { id: "test", label: "テスト (Vitest)" },
+          { id: "files", label: "提出するファイルの確認" },
+        ],
+      },
+      ...result.steps.flatMap((step, index) => [
+        { type: "step-start", index },
+        { type: "step-finish", index, step },
+      ]),
     ]);
     expect(result.outcome).toBe("passed");
     expect(result).not.toHaveProperty("problemId");
@@ -279,11 +313,13 @@ describe("runTask (Vitest の手順)", () => {
 
   it("Node.js が無ければ環境の問題として止め、残りは省略する", async () => {
     const { root } = await vitestTask("x");
+    const events: RunProgress[] = [];
     const result = await runTask({
       root,
       manifest: manifest(),
       manifestSha256: "m",
       toolchain: { node: null, npm: null },
+      onProgress: (event) => events.push(event),
     });
     expect(result.outcome).toBe("error");
     expect(result.steps.map((s) => [s.id, s.status])).toEqual([
@@ -294,6 +330,12 @@ describe("runTask (Vitest の手順)", () => {
       ["files", "passed"],
     ]);
     expect(result.steps[0]?.summary).toMatch(/Node\.js が見つかりません/);
+    expect(events.slice(1)).toEqual([
+      { type: "step-start", index: 0 },
+      ...result.steps.slice(0, 4).map((step, index) => ({ type: "step-finish", index, step })),
+      { type: "step-start", index: 4 },
+      { type: "step-finish", index: 4, step: result.steps[4] },
+    ]);
   });
 
   it("提出が多すぎれば lint・整形に渡さず、提出ファイルの確認で要修正にする", async () => {
@@ -455,6 +497,34 @@ describe("runTask (HTML の確認)", () => {
     expect(result.outcome).toBe("passed");
     expect(result.steps.map((s) => s.id)).toEqual(["static", "files"]);
   });
+
+  it("進捗を受け取る処理が投げても実行結果は同じ", async () => {
+    const root = await makeTask({ "index.html": "<h1>x</h1>" });
+    const options = {
+      root,
+      manifest: manifest({
+        runner: "static-preview",
+        submit: { files: ["index.html"] },
+        protected: [],
+        checks: { lint: false, format: false },
+        static: { checks: [{ type: "file-exists", path: "index.html" }] },
+      }),
+      manifestSha256: "m",
+      now: () => new Date(1_000),
+    };
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
+    const onProgress = vi.fn(() => {
+      throw new Error("進捗の表示に失敗");
+    });
+    try {
+      const baseline = await runTask(options);
+      const result = await runTask({ ...options, onProgress });
+      expect(JSON.stringify(result)).toBe(JSON.stringify(baseline));
+      expect(onProgress).toHaveBeenCalledTimes(5);
+    } finally {
+      now.mockRestore();
+    }
+  });
 });
 
 describe("runTask (中断)", () => {
@@ -462,6 +532,7 @@ describe("runTask (中断)", () => {
     const root = await makeTask({ "index.html": "<h1>x</h1>" });
     const controller = new AbortController();
     controller.abort();
+    const events: RunProgress[] = [];
     const result = await runTask({
       root,
       manifest: manifest({
@@ -473,11 +544,22 @@ describe("runTask (中断)", () => {
       }),
       manifestSha256: "m",
       signal: controller.signal,
+      onProgress: (event) => events.push(event),
       env: { PATH: "" },
     });
     expect(result.outcome).toBe("cancelled");
     expect(result.steps.every((s) => s.status === "skipped")).toBe(true);
     expect(result.files).toEqual([]);
+    expect(events).toEqual([
+      {
+        type: "plan",
+        steps: [
+          { id: "static", label: "HTML の確認" },
+          { id: "files", label: "提出するファイルの確認" },
+        ],
+      },
+      { type: "step-finish", index: 0, step: result.steps[0] },
+    ]);
   });
 
   it("Node.js の版を調べている最中に中断しても、例外にせず中断として返す", async () => {

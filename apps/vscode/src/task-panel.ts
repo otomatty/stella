@@ -26,6 +26,14 @@ import {
   type PublicSourceReference,
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
+import { sameTaskRoot } from "./runner/run-task.js";
+import { activeTaskCheck } from "./task-run-events.js";
+import {
+  CHECK_PROGRESS_CSS,
+  checkProgressHtml,
+  seconds,
+  type TaskCheckView,
+} from "./task-check-progress-view.js";
 import { defaultOsForPlatform, escapeHtml, markdownToHtml, OS_TABS_CSS } from "./markdown-html.js";
 import {
   buildTaskGuideHtml,
@@ -104,6 +112,7 @@ export function sideColumn(): vscode.ViewColumn {
 
 const VIEW_TYPE = "stella.taskResult";
 let currentPanel: vscode.WebviewPanel | undefined;
+let currentPanelInput: TaskPanelInput | undefined;
 
 export type TaskPanelInput =
   | {
@@ -114,10 +123,6 @@ export type TaskPanelInput =
       root?: string;
     }
   | { kind: "invalid"; root: string; errors: string[] };
-
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(1)} 秒`;
-}
 
 /** 帰属表示の文言と、原作者・再利用範囲・利用条件・条件の確認日。詳細に畳まず常に見せる。 */
 function attributionHtml(ref: PublicSourceReference): string {
@@ -295,6 +300,10 @@ function renderInvalid(input: Extract<TaskPanelInput, { kind: "invalid" }>): {
 
 export function buildTaskPanelHtml(input: TaskPanelInput): string {
   const { title, body } = input.kind === "result" ? renderResult(input) : renderInvalid(input);
+  return taskPanelPage(title, body);
+}
+
+function taskPanelPage(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -399,7 +408,7 @@ ${FAILED_TEST_CSS}
     .badge.failed { color: var(--vscode-testing-iconFailed); }
     .badge.skipped { color: var(--vscode-descriptionForeground); }
     ul, ol { padding-left: 1.4rem; }
-    .tests.ok { color: var(--vscode-descriptionForeground); }${RUN_SUMMARY_CSS}
+    .tests.ok { color: var(--vscode-descriptionForeground); }${RUN_SUMMARY_CSS}${CHECK_PROGRESS_CSS}
   </style>
 </head>
 <body>
@@ -427,12 +436,29 @@ export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean
     trackTaskSidePanel(currentPanel);
     currentPanel.onDidDispose(() => {
       currentPanel = undefined;
+      currentPanelInput = undefined;
     });
   } else {
     currentPanel.title = title;
     if (options.reveal !== false) currentPanel.reveal(sideColumn(), true);
   }
+  currentPanelInput = input;
   currentPanel.webview.html = html;
+}
+
+/** 同じ課題の結果が開いていれば、確認の進み具合を出す。 */
+export function updateTaskPanelCheck(
+  root: string,
+  check: (TaskCheckView & { title: string }) | undefined,
+): void {
+  const input = currentPanelInput;
+  if (!currentPanel || input?.kind !== "result" || !sameTaskRoot(input.root, root)) return;
+  currentPanel.webview.html = check
+    ? taskPanelPage(
+        check.title,
+        `<h1>${escapeHtml(check.title)}</h1>${checkProgressHtml(check.progress, check)}<p><a href="command:stella.showRunLog">実行ログを表示</a></p>`,
+      )
+    : buildTaskPanelHtml(input);
 }
 
 // ---------------------------------------------------------------
@@ -441,6 +467,8 @@ export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean
 
 const README_VIEW_TYPE = "stella.taskReadme";
 let readmePanel: vscode.WebviewPanel | undefined;
+let readmeInput: TaskReadmeInput | undefined;
+let readmeNeedsProgressRefresh = false;
 /** 課題文のパネルが出している課題フォルダー。 */
 let readmeRoot: string | undefined;
 let readmeVisibleListener: ((root: string) => void) | undefined;
@@ -459,7 +487,8 @@ export interface TaskReadmeInput {
   markdown: string;
   os?: OsName;
   /** 課題の定義を読めたときの「進め方」。読めなければ課題文だけを出す。 */
-  guide?: Omit<TaskGuideInput, "os">;
+  guide?: Omit<TaskGuideInput, "os" | "check">;
+  check?: TaskCheckView;
 }
 
 /**
@@ -469,16 +498,20 @@ export interface TaskReadmeInput {
  * 課題文の中のリンクは HTTP(S) と mailto だけで、コマンドのリンクは「進め方」にしか出ない。
  */
 export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
+  return taskReadmePage(input, true);
+}
+
+function taskReadmePage(input: TaskReadmeInput, reportInitialLayout: boolean): string {
   const nonce = randomBytes(16).toString("base64");
   const os = input.os ?? defaultOsForPlatform();
   const guide = input.guide;
   const body = guide?.manifest.problems?.length
-    ? `${buildTaskGuideHtml({ ...guide, os })}\n${referencesHtml(guide.manifest.references)}`
+    ? `${buildTaskGuideHtml({ ...guide, os, check: input.check })}\n${referencesHtml(guide.manifest.references)}`
     : guide
       ? [
           `<h1>${escapeHtml(input.title)}</h1>`,
           `<p class="meta">${escapeHtml(guideMetaText(guide.manifest))}</p>`,
-          buildTaskGuideHtml({ ...guide, os }),
+          buildTaskGuideHtml({ ...guide, os, check: input.check }),
           `<h2 class="readme-title">課題文</h2>`,
           markdownToHtml(stripLeadingTitle(input.markdown, input.title), { os }),
         ].join("\n")
@@ -522,20 +555,31 @@ export function buildTaskReadmeHtml(input: TaskReadmeInput): string {
       border: 1px solid var(--vscode-panel-border);
       padding: 0.35rem 0.6rem;
       text-align: left;
-    }${OS_TABS_CSS}${GUIDE_CSS}${guide?.manifest.problems?.length ? FAILED_TEST_CSS : ""}
+    }
+    body.checking .now-card, #check-progress:empty { display: none; }
+${CHECK_PROGRESS_CSS}${OS_TABS_CSS}${GUIDE_CSS}${guide?.manifest.problems?.length ? FAILED_TEST_CSS : ""}
   </style>
 </head>
-<body>
+<body${input.check ? ' class="checking"' : ""}>
 ${body}
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
   const reportWidth = () => vscode.postMessage({ type: "layout", width: Math.round(window.innerWidth) });
   let resizeTimer;
-  reportWidth();
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(reportWidth, 150);
   });
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (!message || message.type !== "check-progress" || typeof message.html !== "string") return;
+    const slot = document.getElementById("check-progress");
+    if (!slot) return;
+    slot.innerHTML = message.html;
+    document.body.classList.toggle("checking", message.html !== "");
+  });
+  vscode.postMessage({ type: "check-progress-ready" });
+  ${reportInitialLayout ? "reportWidth();" : ""}
 </script>
 </body>
 </html>`;
@@ -587,8 +631,30 @@ export function taskReadmeRoot(): string | undefined {
   return readmePanel ? readmeRoot : undefined;
 }
 
+/** 同じ課題の課題文が開いていれば、前面に出さずに確認の進み具合を更新する。 */
+export function updateTaskReadmeCheck(
+  root: string,
+  check: TaskCheckView | undefined,
+  options: { rerender?: boolean } = {},
+): void {
+  if (!readmePanel || !readmeInput || !sameTaskRoot(readmeRoot, root)) return;
+  readmeInput = { ...readmeInput, check };
+  if (options.rerender) {
+    readmeNeedsProgressRefresh = false;
+    // 確認だけの描き直しで幅を再通知すると、配置の切り替えで前面に出ることがある。
+    readmePanel.webview.html = taskReadmePage(readmeInput, false);
+  } else {
+    // Webview が再読み込みされると、最後に設定した HTML に戻る。
+    readmeNeedsProgressRefresh = true;
+    void readmePanel.webview.postMessage({
+      type: "check-progress",
+      html: check ? checkProgressHtml(check.progress, check) : "",
+    });
+  }
+}
+
 /**
- * 課題文のパネルを開く (描き直す)。スクリプトは幅の通知だけを行い、コマンドのリンクは
+ * 課題文のパネルを開く (描き直す)。スクリプトは幅の通知と確認の進み具合の差し替えを行い、コマンドのリンクは
  * 「進め方」の固定のコマンドだけを許す。広いときは右の列に出してファイルにフォーカスを残す。
  * `reveal: false` なら前面に出さずに描き直す。
  */
@@ -600,7 +666,12 @@ export function showTaskReadme(
   // 受講者がパネルを閉じた・別の課題の課題文に切り替えたなら、作り直しも上書きもしない
   // (確かめるのは書き込む直前のここ。呼び出し元の確認は読み込みより前なので間に合わない)。
   if (options.reveal === false && (!readmePanel || readmeRoot !== input.root)) return;
-  const html = buildTaskReadmeHtml(input);
+  const active = activeTaskCheck();
+  const nextInput = {
+    ...input,
+    check: input.check ?? (sameTaskRoot(active?.root, input.root) ? active : undefined),
+  };
+  const html = buildTaskReadmeHtml(nextInput);
   const title = `課題: ${input.title}`;
   const beside = hasLeftEditor() && !compact;
   readmeRoot = input.root;
@@ -616,12 +687,25 @@ export function showTaskReadme(
     );
     readmePanel = panel;
     const messages = panel.webview.onDidReceiveMessage((message: unknown) => {
+      if (
+        message &&
+        typeof message === "object" &&
+        "type" in message &&
+        message.type === "check-progress-ready"
+      ) {
+        if (readmeNeedsProgressRefresh && readmeRoot && readmeInput) {
+          updateTaskReadmeCheck(readmeRoot, readmeInput.check);
+        }
+        return;
+      }
       updateReadmeLayout(panel, message);
     });
     panel.onDidDispose(() => {
       messages.dispose();
       readmePanel = undefined;
       readmeRoot = undefined;
+      readmeInput = undefined;
+      readmeNeedsProgressRefresh = false;
     });
     let wasVisible = panel.visible;
     const refreshedAt = new Map<string, number>();
@@ -641,5 +725,7 @@ export function showTaskReadme(
     if (options.reveal !== false)
       readmePanel.reveal(beside ? vscode.ViewColumn.Two : activeColumn(), beside);
   }
+  readmeInput = nextInput;
+  readmeNeedsProgressRefresh = false;
   readmePanel.webview.html = html;
 }
