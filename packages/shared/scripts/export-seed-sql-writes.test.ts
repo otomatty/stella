@@ -132,7 +132,11 @@ function migratedDb(): DatabaseSync {
 /** 書いた文を `表:id` (insert) か文の頭 (update / delete) で表す。 */
 function describeStatement(statement: string): string {
   const insert = /^insert into (\w+) \([^)]*\) (?:values \(|select )'([^']*)'/.exec(statement);
-  return insert ? `${insert[1]}:${insert[2]}` : statement.slice(0, 160);
+  if (insert) return `${insert[1]}:${insert[2]}`;
+  const questionUpdate = /^update quiz_questions set updated_at = .+? where id = '([^']+)'/.exec(
+    statement,
+  );
+  return questionUpdate ? `quiz_questions:${questionUpdate[1]}` : statement.slice(0, 160);
 }
 
 /** seed-d1 と同じ分割で 1 文ずつ流し、行を書いた文と行数を返す。 */
@@ -453,12 +457,29 @@ describe("seed の書き込み行数", () => {
   let sql = "";
   let changed = "";
   let revised = "";
+  let references = "";
+  const referencesStage = "claude-developer-foundations";
+  const referencesUnit = "m8-claude-code-and-evals";
+  const referencesSection = stableUuid(`section:ses:${referencesStage}:${referencesUnit}`);
+  const findReferencesUnit = (manifest: Manifest) => {
+    const unit = manifest.units.find(
+      (unit) => unit.stageId === referencesStage && unit.unitId === referencesUnit,
+    );
+    if (!unit) throw new Error(`単元がありません: ${referencesUnit}`);
+    return unit;
+  };
+  const readUnitReferences = (db: DatabaseSync) =>
+    db.prepare('select "references" from content_units where section_id = ?').get(referencesSection)
+      ?.references;
   const revisedTask = "claude-developer-foundations/m0-exam-and-sources/q01-study-plan";
   const lessonId = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
+  const questionId = stableUuid(`quiz-q:ses:${COURSE}:${QUIZ_LESSON}:0`);
   const optionId = stableUuid(`quiz-o:ses:${COURSE}:${QUIZ_LESSON}:0:0`);
 
   beforeAll(async () => {
-    sql = await exportSql();
+    sql = await exportSql((manifest) => {
+      references = JSON.stringify(findReferencesUnit(manifest).references);
+    });
     // 教材を 2 か所だけ変える: スライドのレッスンの題名と、確認クイズの選択肢 1 つの文面。
     changed = await exportSql((manifest) => {
       const stage = manifest.stages.find((c) => c.id === COURSE);
@@ -560,6 +581,80 @@ describe("seed の書き込み行数", () => {
     expect(() => chunkStatements(statements, MAX_CHUNK_BYTES)).not.toThrow();
   });
 
+  it("小さい単元は従来の upsert 1 文で書く", () => {
+    const id = stableUuid(`section:ses:${COURSE}:u00-start`);
+    const statements = splitSqlStatements(sql).filter(
+      (statement) =>
+        /^(insert into|update) content_units /.test(statement) && statement.includes(id),
+    );
+    expect(statements).toEqual([
+      `insert into content_units (section_id, planned_hours, skills, reuses, "references") values ('${id}', 0.5, '{"uses":[],"assesses":["stella-task-loop"]}', '[]', '[]') on conflict (section_id) do update set planned_hours = excluded.planned_hours, skills = excluded.skills, reuses = excluded.reuses, "references" = excluded."references" where content_units.planned_hours is not excluded.planned_hours or content_units.skills is not excluded.skills or content_units.reuses is not excluded.reuses or content_units."references" is not excluded."references";`,
+    ]);
+  });
+
+  it(
+    "大きな単元の参照元は、同じ長さの 1 文字の変更も、長さの変わる変更も反映する",
+    async () => {
+      const db = migratedDb();
+      try {
+        apply(db, sql);
+        for (const sameLength of [true, false]) {
+          let expected = "";
+          const next = await exportSql((manifest) => {
+            const unit = findReferencesUnit(manifest);
+            const entry = sameLength ? unit.references.at(-1) : unit.references[0];
+            if (!entry) throw new Error("変える参照元が見つかりません");
+            entry.usedFor = sameLength ? `'${entry.usedFor.slice(1)}` : `📚${entry.usedFor}`;
+            expected = JSON.stringify(unit.references);
+          });
+          expect(expected).not.toBe(references);
+          if (sameLength) {
+            expect(Array.from(expected)).toHaveLength(Array.from(references).length);
+            expect(Buffer.from(expected).subarray(0, 40_000)).toEqual(
+              Buffer.from(references).subarray(0, 40_000),
+            );
+          }
+          const writes = apply(db, next);
+          expect(Object.keys(writes).length).toBeGreaterThan(0);
+          expect(
+            Object.keys(writes).every((statement) => statement.startsWith("update content_units ")),
+          ).toBe(true);
+          expect(readUnitReferences(db)).toBe(expected);
+          expect(apply(db, next)).toEqual({});
+        }
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
+    "単元の参照元を先頭の断片だけ書いて止まっても、次の seed で完成する",
+    () => {
+      const db = migratedDb();
+      try {
+        const statements = splitSqlStatements(sql);
+        const first = statements.findIndex(
+          (statement) =>
+            statement.startsWith('update content_units set "references" = "references" ||') &&
+            statement.includes(`section_id = '${referencesSection}'`),
+        );
+        expect(first).toBeGreaterThanOrEqual(0);
+        apply(db, statements.slice(0, first + 1).join("\n"));
+        const partial = String(readUnitReferences(db));
+        expect(partial.length).toBeGreaterThan(0);
+        expect(partial.length).toBeLessThan(references.length);
+        expect(references.startsWith(partial)).toBe(true);
+        apply(db, sql);
+        expect(readUnitReferences(db)).toBe(references);
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
   it(
     "大きな配布一式も断片から組み立て、途中で止まった seed は次の seed が続きから埋める",
     () => {
@@ -645,6 +740,7 @@ describe("seed の書き込み行数", () => {
       const db = migratedDb();
       try {
         expect(total(apply(db, sql))).toBeGreaterThan(4000);
+        expect(readUnitReferences(db)).toBe(references);
         expect(apply(db, sql)).toEqual({});
       } finally {
         db.close();
@@ -669,7 +765,11 @@ describe("seed の書き込み行数", () => {
             title: string;
             updated_at: number;
           };
-        const expected = { [`lessons:${lessonId}`]: 1, [`quiz_options:${optionId}`]: 1 };
+        const expected = {
+          [`lessons:${lessonId}`]: 1,
+          [`quiz_questions:${questionId}`]: 1,
+          [`quiz_options:${optionId}`]: 1,
+        };
         expect(apply(db, changed)).toEqual(expected);
         expect(lesson(lessonId).title).toMatch(/ \(改\)$/);
         // updated_at は比べない列。内容が変わった行でだけ一緒に進む。
@@ -678,6 +778,59 @@ describe("seed の書き込み行数", () => {
         expect(apply(db, changed)).toEqual({});
         expect(apply(db, sql)).toEqual(expected);
         expect(apply(db, sql)).toEqual({});
+      } finally {
+        db.close();
+      }
+    },
+    SEED_TIMEOUT,
+  );
+
+  it(
+    "選択肢が変わった設問のカードを消し、旧版の受験からの補完対象から外す",
+    () => {
+      const db = migratedDb();
+      try {
+        apply(db, sql);
+        const unchangedId = stableUuid(`quiz-q:ses:${COURSE}:${QUIZ_LESSON}:1`);
+        const questionIds = [questionId, unchangedId];
+        const updatedAt = db.prepare("select updated_at from quiz_questions where id = ?");
+        // seed 間隔に依存せず、旧版の設問と受験の時刻を再現する。
+        db.prepare("update quiz_questions set updated_at = 1 where id in (?, ?)").run(
+          ...questionIds,
+        );
+        const answers = questionIds.map((id) => ({
+          question_id: id,
+          selected_option_ids: db
+            .prepare("select id from quiz_options where question_id = ? and is_correct = 1")
+            .all(id)
+            .map((option) => option.id),
+        }));
+        db.prepare(
+          `insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, answers, submitted_at)
+           select 'old-attempt', 'ses', quiz_id, 'seed-learner', 2, 2, 1, ?, 2 from quiz_questions where id = ?`,
+        ).run(JSON.stringify(answers), questionId);
+        const insertCard = db.prepare(
+          `insert into review_cards (id, tenant_id, user_id, question_id, due_date, last_reviewed_at, created_at)
+           values (?, 'ses', 'seed-learner', ?, '2020-01-01', 2, 2)`,
+        );
+        insertCard.run("changed-card", questionId);
+        insertCard.run("unchanged-card", unchangedId);
+
+        apply(db, changed);
+
+        expect(Number(updatedAt.get(questionId)?.updated_at)).toBeGreaterThan(2);
+        expect(updatedAt.get(unchangedId)).toEqual({ updated_at: 1 });
+        expect(
+          db.prepare("select id from review_cards where user_id = 'seed-learner'").all(),
+        ).toEqual([{ id: "unchanged-card" }]);
+        const currentAnswers = db.prepare(
+          `select q.id from quiz_attempts a
+           join json_each(a.answers) answer
+           join quiz_questions q on q.id = json_extract(answer.value, '$.question_id')
+             and q.quiz_id = a.quiz_id
+           where a.id = 'old-attempt' and q.updated_at <= a.submitted_at`,
+        );
+        expect(currentAnswers.all()).toEqual([{ id: unchangedId }]);
       } finally {
         db.close();
       }

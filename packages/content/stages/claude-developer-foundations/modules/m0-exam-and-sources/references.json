@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m0-exam-and-sources@6",
-  "contentHash": "c351c41f1db0549c4404067470ac438614fcf450bdcc945bbb32bcd0f2458250",
+  "unitId": "claude-developer-foundations/m0-exam-and-sources@7",
+  "contentHash": "c2bc2d42b55f7f37bc74f9fcc838d653f742bd771f95debe38e23db37d9018e5",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -61,33 +61,40 @@
       "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-exam-overview/t2-who-can-take/slides.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-anthropic-services-track-20261031"],
-      "usedFor": "試験が Claude Partner Network の加盟組織の人に開かれ、加盟は無料で組織が受験者を登録すること、認定が個人に属することの説明",
+      "contentId": "l1-exam-overview/t2-exam-format/slides.md",
+      "sourceRefs": ["SRC-claude-developer-guide-v11-ja-20261126"],
+      "usedFor": "場面に基づく選択問題の数と持ち時間、選ぶ数、全問に答える理由、換算スコアと分野別の正答率の見方",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
-      "contentId": "l1-exam-overview/t3-proctored-exam/slides.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031"],
-      "usedFor": "試験が Pearson により監督つきで行われ、開始前に本人確認があり、合格者に Credly のデジタルバッジが届くことの説明",
+      "contentId": "l1-exam-overview/t3-spot-wrong-answers/slides.md",
+      "sourceRefs": ["SRC-claude-developer-guide-v11-ja-20261126"],
+      "usedFor": "サンプル問題の誤答解説を手がかりに教材独自に整理した、原因と条件に合う対応の見分け方。窓の例は自作",
       "authorship": "summary",
       "reuse": "concept-reference",
-      "reviewStatus": "approved"
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l1-exam-overview/doc.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-anthropic-services-track-20261031"],
-      "usedFor": "レッスン0-1の3トピック(資格の対象・受験できる人・監督つきの試験)を読み物にまとめた説明",
+      "sourceRefs": [
+        "SRC-claude-four-certs-20261031",
+        "SRC-claude-developer-guide-v11-ja-20261126",
+        "SRC-claude-certification-faq-prep-20261126"
+      ],
+      "usedFor": "資格の対象、試験の形式・言語と結果の読み方、サンプル問題の誤答解説をもとに整理した選択肢の見分け方。日常の場面と対応の例は自作",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     },
     {
       "contentId": "l1-exam-overview/knowledge.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-anthropic-services-track-20261031"],
-      "usedFor": "資格の対象・受験資格・本人確認・認定の帰属を問う自作問題の正答と解説",
+      "sourceRefs": [
+        "SRC-claude-four-certs-20261031",
+        "SRC-claude-developer-guide-v11-ja-20261126"
+      ],
+      "usedFor": "資格の対象、解答のペースと結果の読み方、場面の原因と条件に合う対応を問う自作問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -95,7 +102,7 @@
     {
       "contentId": "l2-official-sources/t1-exam-guide/slides.md",
       "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-claude-developer-guide-v11-20261118"],
-      "usedFor": "CCDV-F ガイドの領域別配点と入口診断を使い、復習する単元と確認方法を決める手順",
+      "usedFor": "Partner Academy で試験ガイドを参照し、分野別の配点と入口診断から復習する単元を決める手順",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -123,6 +130,14 @@
       "authorship": "original",
       "reuse": "original",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l2-official-sources/t5-self-assess/slides.md",
+      "sourceRefs": ["SRC-claude-developer-guide-v11-ja-20261126"],
+      "usedFor": "出題目標ごとの自己評価。3 段階の評価と、弱いスキルに練習時間を配る手順は教材独自",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l2-official-sources/doc.md",
@@ -158,9 +173,10 @@
         "SRC-claude-docs-evals-20261031",
         "SRC-claude-docs-tool-troubleshooting-20261031",
         "SRC-claude-developer-guide-v11-20261118",
-        "SRC-claude-developer-prep-20261118"
+        "SRC-claude-developer-prep-20261118",
+        "SRC-claude-developer-guide-v11-ja-20261126"
       ],
-      "usedFor": "70問形式の時間・採点・8領域の配点、3つの実装場面による入口診断、公式準備講座で対応するレッスンの選び方",
+      "usedFor": "出題分野と配点、入口診断、公式準備講座の使い方。日本語版の分野別出題目標に照らして 24 スキルの見出しを確認し、教材独自の自己評価表と時間配分の手順に使用",
       "authorship": "summary",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -174,9 +190,10 @@
         "SRC-claude-code-agent-sdk-overview-20261031",
         "SRC-claude-developer-guide-v11-20261118",
         "SRC-claude-docs-batch-usage-20261031",
-        "SRC-anthropic-agent-evals-20261118"
+        "SRC-anthropic-agent-evals-20261118",
+        "SRC-claude-developer-guide-v11-ja-20261126"
       ],
-      "usedFor": "組み込みと評価の配点・誤答理由を踏まえて復習課題を選び、公式の仕様を確かめる自作問題",
+      "usedFor": "分野の配点、誤答理由とスキルごとの自己評価を踏まえて復習課題を選び、公式の仕様を確かめる自作問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

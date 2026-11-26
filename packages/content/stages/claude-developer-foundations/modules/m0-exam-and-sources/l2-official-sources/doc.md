@@ -1,25 +1,21 @@
 ---
-sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-features-20261031, SRC-claude-docs-messages-20261031, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-docs-stop-reasons-20261031, SRC-claude-docs-errors-20261031, SRC-claude-docs-streaming-20261031, SRC-claude-docs-batch-20261031, SRC-claude-docs-choosing-model-20261031, SRC-claude-docs-prompt-caching-20261031, SRC-claude-docs-effort-20261031, SRC-claude-docs-prompting-20261031, SRC-claude-docs-context-windows-20261031, SRC-claude-docs-structured-outputs-20261031, SRC-anthropic-context-engineering-20261031, SRC-claude-docs-tool-use-20261031, SRC-claude-docs-define-tools-20261031, SRC-claude-docs-handle-tool-calls-20261031, SRC-claude-docs-mcp-connector-20261031, SRC-anthropic-writing-tools-20261031, SRC-anthropic-effective-agents-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-docs-jailbreaks-20261031, SRC-claude-docs-hallucinations-20261031, SRC-claude-code-sdk-permissions-20261031, SRC-claude-code-memory-20261031, SRC-claude-code-hooks-guide-20261031, SRC-claude-docs-evals-20261031, SRC-claude-docs-tool-troubleshooting-20261031, SRC-claude-developer-guide-v11-20261118, SRC-claude-developer-prep-20261118]
+sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-features-20261031, SRC-claude-docs-messages-20261031, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-docs-stop-reasons-20261031, SRC-claude-docs-errors-20261031, SRC-claude-docs-streaming-20261031, SRC-claude-docs-batch-20261031, SRC-claude-docs-choosing-model-20261031, SRC-claude-docs-prompt-caching-20261031, SRC-claude-docs-effort-20261031, SRC-claude-docs-prompting-20261031, SRC-claude-docs-context-windows-20261031, SRC-claude-docs-structured-outputs-20261031, SRC-anthropic-context-engineering-20261031, SRC-claude-docs-tool-use-20261031, SRC-claude-docs-define-tools-20261031, SRC-claude-docs-handle-tool-calls-20261031, SRC-claude-docs-mcp-connector-20261031, SRC-anthropic-writing-tools-20261031, SRC-anthropic-effective-agents-20261031, SRC-claude-code-agent-loop-20261031, SRC-claude-code-sdk-subagents-20261031, SRC-claude-docs-jailbreaks-20261031, SRC-claude-docs-hallucinations-20261031, SRC-claude-code-sdk-permissions-20261031, SRC-claude-code-memory-20261031, SRC-claude-code-hooks-guide-20261031, SRC-claude-docs-evals-20261031, SRC-claude-docs-tool-troubleshooting-20261031, SRC-claude-developer-guide-v11-20261118, SRC-claude-developer-prep-20261118, SRC-claude-developer-guide-v11-ja-20261126]
 ---
 # レッスン0-2 公式の情報源で学ぶ
 
 ## このレッスンの目標
 
 - [ ] 出題の範囲と配点を確かめる資料を選べます。
-- [ ] 調べたい機能に合う公式ドキュメントを開けます。
-- [ ] 学習に使わない教材を見分けられます。
+- [ ] 公式ドキュメントを選び、学習に使わない教材を見分けられます。
+- [ ] スキルごとに自己評価し、復習する分野と練習を決められます。
 
 ## 0-2-1 範囲は試験ガイドで確かめる
 
 > **出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。**
 
-試験ガイドには、出題範囲と各領域からどの程度出題されるか（配点）が示されています。CCDV-F の「Exam Content Outline」で、各領域の配点と求められる判断を確かめます。
+Partner Academy は、準備講座や試験ガイドが置かれている学習サイトです。試験ガイドの出題範囲の節で、各領域からどの程度出題されるか（配点）と、求められる判断を確かめます。
 
 公式ガイドの配点を使って、各領域にかける時間の目安を出します。次に、下の診断で解けなかった領域に復習の時間を足します。Partner Academy の公式準備講座でも復習できます。たとえば、M5 でツールの接続に迷ったら「Claude Code, MCP & Integration」、M8 で採点の根拠を説明できなかったら「Production Engineering, Evals & Security」を開いてください。[Developer – Foundations の公式準備講座](https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations)
-
-### 70問を120分で解く
-
-Claude Certified Developer: Foundations の資格コードは **CCDV-F** です。本番では120分で70問を解きます。採点対象は60問で、残りの10問は試験中に見分けられません。本番の得点は100〜1,000の尺度で示され、720点が合格です。最後の模試ステージでは70問をすべて採点し、領域別の正答率で復習先を決めます。[公式試験ガイド（日本語）](https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946795/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7_Japanese.pdf) ／ [公式試験ガイド（英語）](https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946771/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7.pdf)
 
 ### 8領域をどこで練習するか
 
@@ -74,7 +70,46 @@ Messages API・ツール使用・プロンプトは Claude Developer Platform、
 
 本番の問題を集めたとうたう問題集や学習ガイドがあります。人気のある学習ガイドでも、問題を「実際の試験の資料から取った」と書いているものがあります。こうした非公式の問題集(Anthropic 以外が作った問題集)は使いません。答えが正しいかを確かめる方法がなく、受験の規約に反するおそれもあるためです。答えを覚えるだけでは、場面ごとに作り方を選ぶ力も身につきません。
 
-代わりに、試験ガイドとその中のサンプル問題、Partner Academy の準備の講座、公式ドキュメントを使います。このステージの知識問題は、すべて教材のために作ったものです。受験の規約は、申し込むときに必ず読みます。
+代わりに、試験ガイドとその中のサンプル問題、Partner Academy の準備の講座、公式ドキュメントを使います。このステージの知識問題は、すべて教材のために作ったものです。
+
+## 0-2-5 スキルごとに現状を確かめる
+
+> **学習の前に、試験ガイドのスキルを 1 つずつ説明できるか確かめ、弱い分野に時間を配ります。**
+
+自己評価は、自分で答えてみて、どこまで説明できるかを記録することです。表のスキルを 1 行ずつ見て、どんな場面で使い、何を手がかりに対応を選ぶかを口に出します。最初に何を確かめるかが浮かばなければ「知らない」に印を付けます。対応は浮かぶけれど理由が言えなければ「あいまい」です。場面、対応、選ぶ理由を自分の言葉で言えたら「説明できる」です。
+
+24 スキルのうち 7 つは、状況を分析し、原因や要因を特定して対処を選ぶ力を扱います。たとえば「統合のレジリエンス」では、応答が届かなかった記録を見て、どこで止まったか、どんな対応を選ぶかを説明します。初めて見る用語は、対応する単元で確かめます。
+
+| 分野・配点 | スキル | 説明できる | あいまい | 知らない |
+| --- | --- | :---: | :---: | :---: |
+| 1 エージェントとワークフロー（17%） | アーキテクチャとランタイムの選択 | □ | □ | □ |
+| 1 | Agent SDKによる構築とフック | □ | □ | □ |
+| 1 | エージェントパターンの診断 | □ | □ | □ |
+| 2 アプリケーションと統合（20%） | Messages APIの仕組み | □ | □ | □ |
+| 2 | アプリケーション境界とサーフェスごとの動作 | □ | □ | □ |
+| 2 | 設定とSDLCへの統合 | □ | □ | □ |
+| 2 | 統合のレジリエンス | □ | □ | □ |
+| 3 Claude Code（8%） | Claude Codeの操作 | □ | □ | □ |
+| 3 | Claude Codeのカスタマイズと拡張 | □ | □ | □ |
+| 4 評価、テスト、デバッグ（10%） | 評価の設計 | □ | □ | □ |
+| 4 | 障害モードの診断 | □ | □ | □ |
+| 5 モデルの選択と最適化（12%） | 生成の仕組みとモデルのオプション | □ | □ | □ |
+| 5 | モデルティアの選択とリリース計画 | □ | □ | □ |
+| 5 | コストの診断と最適化 | □ | □ | □ |
+| 6 プロンプトとコンテキストのエンジニアリング（15%） | 長時間実行セッションのコンテキスト管理 | □ | □ | □ |
+| 6 | プロンプトの改訂 | □ | □ | □ |
+| 6 | 構造化出力と防御的パース | □ | □ | □ |
+| 6 | グラウンディングと出典の引用 | □ | □ | □ |
+| 7 セキュリティと安全性（8%） | プロンプトインジェクションとジェイルブレイクへの防御 | □ | □ | □ |
+| 7 | 決定論的なガードレールと最小権限 | □ | □ | □ |
+| 7 | APIキーと認証情報の取り扱い | □ | □ | □ |
+| 8 ツールとMCP（10%） | ツールの設計とレスポンスの整形 | □ | □ | □ |
+| 8 | MCPサーバーの開発と統合 | □ | □ | □ |
+| 8 | 機能の提供手段の選択 | □ | □ | □ |
+
+単元の課題「配点に合わせて学習時間を配る」では、配点をもとに時間を配る関数を作ります。自分の学習計画でも、配点で決めた時間を出発点にします。「あいまい」「知らない」の行を見て、練習を足す分野を決めます。たとえば「統合のレジリエンス」があいまいなら、M2 で応答が止まった理由ごとに、次の対応を説明する時間を取ります。
+
+準備講座は、弱いスキルを練習するために使えます。受講が必須の講座はなく、特定の教材で合格が保証されることもありません。練習したあとに同じスキルを説明し、表の印と次の時間配分を見直します。
 
 ## もっと知りたい人へ
 
@@ -134,8 +169,9 @@ Messages API・ツール使用・プロンプトは Claude Developer Platform、
 - [Define success criteria and build evaluations](https://platform.claude.com/docs/en/test-and-evaluate/develop-tests) — 成功の基準の決め方と、評価の作り方
 - [Troubleshooting tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use) — ツールを選び違えるとき、ない引数を作るときの直し方
 
-### 試験の制度
+### 試験の準備
 
-- [Four role-based certifications for the people who put Claude to work for customers](https://claude.com/resources/articles/four-role-based-claude-certifications) — 準備の講座の置き場所と、試験の受け方(英語)
+- 出題分野ごとのスキルの詳細を読み、自己評価の基準を確かめます。[試験ガイド（日本語 PDF）](https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946795/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7_Japanese.pdf)
+- 資格ごとの準備講座の置き場所を確かめます。[資格の概要（英語）](https://claude.com/resources/articles/four-role-based-claude-certifications)
 
 知識問題で、このレッスンの内容を確かめます。単元の課題「配点に合わせて学習時間を配る」は、課題一覧の「VS Code で開く」から取り組みます。

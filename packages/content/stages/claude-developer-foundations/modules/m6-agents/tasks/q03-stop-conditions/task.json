@@ -1,0 +1,72 @@
+{
+  "id": "claude-developer-foundations/m6-agents/q03-stop-conditions",
+  "title": "止まる条件のあるループを書く",
+  "kind": "independent",
+  "pattern": "tool-use-loop",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-tool-use"],
+    "assesses": ["claude-agent-sdk"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/run-agent.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      {
+        "id": "CR-SCOPE-01",
+        "required": true
+      },
+      {
+        "id": "CR-EXPLAIN-01",
+        "required": true
+      }
+    ],
+    "rubric": [
+      {
+        "id": "preserve-history",
+        "criterion": "応答の内容を変えずに履歴へ足し、ツールの結果を呼び出し ID で対応させて応答ごとに1つの user の発言にまとめている",
+        "required": true
+      },
+      {
+        "id": "bound-continuation",
+        "criterion": "送信回数と応答ごとの費用を記録し、上限、4回目の連続した一時停止、同じツールと入力の2回連続の失敗で次の送信を止めている",
+        "required": true
+      },
+      {
+        "id": "return-stop-reason",
+        "criterion": "終了の条件を subtype で区別し、end_turn の応答のテキストを成功時だけ result に入れている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed",
+    "attempts": 5
+  },
+  "sources": [
+    "SRC-claude-docs-stop-reasons-20261031",
+    "SRC-claude-docs-handle-tool-calls-20261031",
+    "SRC-claude-code-agent-loop-control-20261031"
+  ],
+  "refs": ["m6-agents/l4-runtime-and-limits", "m6-agents/l6-diagnose"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": {
+    "lint": true,
+    "format": true
+  }
+}

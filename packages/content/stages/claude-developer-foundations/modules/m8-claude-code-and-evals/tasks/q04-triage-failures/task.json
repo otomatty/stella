@@ -1,0 +1,59 @@
+{
+  "id": "claude-developer-foundations/m8-claude-code-and-evals/q04-triage-failures",
+  "title": "失敗の記録を層と原因に分ける",
+  "kind": "independent",
+  "pattern": "failure-triage",
+  "skills": {
+    "uses": ["claude-api-errors", "claude-stop-reason", "claude-structured-output"],
+    "assesses": ["claude-evals"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/triage.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "status-before-stop",
+        "criterion": "HTTP ステータスを停止理由より先に見て、400・413・拒否・上限を送り直す操作にしていない",
+        "required": true
+      },
+      {
+        "id": "empty-and-format",
+        "criterion": "end_turn で本文が空、かつ直前の発言がツール結果のあとにテキストを足しているときをメッセージの組み立てに分け、JSON として読めない応答を構造化出力に分けている",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed",
+    "attempts": 5
+  },
+  "sources": [
+    "SRC-claude-docs-errors-20261031",
+    "SRC-claude-docs-stop-vs-errors-20261031",
+    "SRC-claude-docs-stop-reasons-20261031",
+    "SRC-claude-docs-structured-outputs-20261031"
+  ],
+  "refs": ["m8-claude-code-and-evals/l8-failure-modes"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": { "lint": true, "format": true }
+}

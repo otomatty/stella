@@ -4926,6 +4926,40 @@
       }
     },
     {
+      "id": "SRC-claude-certification-faq-prep-20261126",
+      "title": "FAQ - Certifications",
+      "publisher": "Anthropic",
+      "url": "https://anthropic-partners.skilljar.com/page/faq-certifications#faq-prep",
+      "section": "Exam content and prep",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-developer-guide-v11-ja-20261126",
+      "title": "Claude Certified Developer – Foundations 試験ガイド（2026年12月7日適用）",
+      "publisher": "Anthropic",
+      "url": "https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946795/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7_Japanese.pdf",
+      "section": "4. 試験の概要 / 5. 出題範囲の概要（ブループリント） / 6. 試験の準備方法 / 7. サンプル問題 / 8. 採点方法 / 11. 試験当日の流れと行動規範",
+      "kind": "reference",
+      "language": "ja",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "バージョン1.1 · 2026年12月7日発効"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
       "id": "SRC-claude-developer-guide-v11-20261118",
       "title": "Claude Certified Developer – Foundations Exam Guide (exams from December 7)",
       "publisher": "Anthropic",
@@ -5440,6 +5474,1485 @@
         "revision": "2026-10-26"
       },
       "checkedAt": "2026-11-19",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-memory-rules-20261126",
+      "title": "How Claude remembers your project",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/memory",
+      "section": "Organize rules with .claude/rules/ / Instructions seem lost after /compact",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-memory-load-20261126",
+      "title": "How Claude remembers your project",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/memory",
+      "section": "Choose where to put CLAUDE.md files / Write effective instructions / Import additional files / How CLAUDE.md files load",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-context-window-20261126",
+      "title": "Explore the context window",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/context-window",
+      "section": "What survives compaction",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-permission-order-20261126",
+      "title": "Configure permissions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/permissions",
+      "section": "Manage permissions / Match all uses of a tool",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-permission-modes-20261126",
+      "title": "Choose a permission mode",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/permission-modes",
+      "section": "Available modes / Which mode a session starts in / Allow only pre-approved tools with dontAsk mode / Skip all checks with bypassPermissions mode",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-headless-unattended-20261126",
+      "title": "Run Claude Code programmatically",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/headless",
+      "section": "Start faster with bare mode / Auto-approve tools / Turn off permission prompts in unattended runs / Continue conversations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-cli-reference-20261126",
+      "title": "CLI reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/cli-reference",
+      "section": "CLI flags",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sessions-20261126",
+      "title": "Manage sessions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/sessions",
+      "section": "Resume a session / Branch a session / Manage context within a session",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-checkpointing-20261126",
+      "title": "Checkpointing",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/checkpointing",
+      "section": "How checkpoints work / Limitations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-best-practices-20261126",
+      "title": "Best practices for Claude Code",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Keep cost and context down / Steer the session",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-platforms-20261126",
+      "title": "Platforms and integrations",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/platforms",
+      "section": "Where to run Claude Code / Work when you are away from your terminal",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-cloud-sessions-20261126",
+      "title": "Use Claude Code in the cloud",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/claude-code-on-the-web",
+      "section": "Cloud environments / Security and isolation / Limitations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-server-managed-settings-20261126",
+      "title": "Configure server-managed settings",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/server-managed-settings",
+      "section": "Choose between server-managed and endpoint-managed settings / Platform availability",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-skill-config-20261126",
+      "title": "Extend Claude with skills",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/skills",
+      "section": "Resolve skills that share a name / Frontmatter reference / Add supporting files / Control who invokes a skill / Skill content lifecycle / Pre-approve tools for a skill",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-best-practices-extension-20261126",
+      "title": "Best practices for Claude Code",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Keep CLAUDE.md short / Scope rules to one part of the codebase / Put team procedures in skills / Enforce steps with hooks",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-hook-types-20261126",
+      "title": "Hooks reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "section": "Exit code 2 behavior per event / PreToolUse / PostToolUse / Prompt-based hooks / Agent-based hooks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-manifest-20261126",
+      "title": "Plugin manifest reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/manifest-reference",
+      "section": "Manifest file / Validate the manifest / Fields / Component path forms",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-create-20261126",
+      "title": "Create a Claude Code plugin",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/create",
+      "section": "Create a Claude Code plugin / Test and debug",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-dependencies-20261126",
+      "title": "Plugin dependencies",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/dependencies",
+      "section": "Declare a dependency with a version constraint / How dependencies behave for your users",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-loading-20261126",
+      "title": "Plugin loading reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/loading",
+      "section": "Versions and updates",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-install-20261126",
+      "title": "Install and manage plugins",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/install",
+      "section": "Choose an install scope / Add a marketplace / Install from your shell",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-marketplace-file-20261126",
+      "title": "Marketplace reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/marketplace-reference",
+      "section": "Marketplace file",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-model-config-20261126",
+      "title": "Model configuration",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/model-config",
+      "section": "Model aliases / Setting your model / Checking your current model / Pin models for third-party deployments",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-github-actions-20261126",
+      "title": "Claude Code GitHub Actions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/github-actions",
+      "section": "Interactive and automation modes / Define project standards in CLAUDE.md / Protect your credentials / Action parameters / Pass CLI arguments",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-hook-callbacks-20261126",
+      "title": "Intercept and control agent behavior with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "section": "Configure hooks / Matchers / Callback functions",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-hook-failure-20261126",
+      "title": "Intercept and control agent behavior with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "section": "Block the action when a callback fails",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-settings-sources-20261126",
+      "title": "Configure your agent",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/configuration",
+      "section": "Load settings files",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-refusal-manual-retry-20261126",
+      "title": "Refusals and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback",
+      "section": "Writing the retry yourself / Common pitfalls",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-prompt-tool-usage-20261126",
+      "title": "Prompting best practices",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "section": "Tool use / Tool usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-compaction-on-demand-20261126",
+      "title": "Compaction on demand",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/compaction-on-demand",
+      "section": "Continue from the summary / Write your own summarization prompt / Limits and interactions with other features",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-context-editing-20261126",
+      "title": "Context editing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-editing",
+      "section": "Tool result clearing usage / Configuration options for tool result clearing / Context editing response",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-output-consistency-20261126",
+      "title": "Increase output consistency",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/increase-consistency",
+      "section": "Specify the output format you want / Constrain with examples / Use retrieval for contextual consistency / Chain prompts for complex tasks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sdk-hosting-20261126",
+      "title": "Hosting the Agent SDK",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hosting",
+      "section": "The subprocess model / State that lives on local disk",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-environment-20261126",
+      "title": "Choosing an agent environment",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/choosing-an-environment",
+      "section": "Compare the options / When to choose a self-hosted sandbox / What a self-hosted sandbox doesn’t change",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-data-handling-20261126",
+      "title": "Claude Managed Agents overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/overview",
+      "section": "Data handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-permission-policies-20261126",
+      "title": "Permission policies",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/permission-policies",
+      "section": "Permission policy types / Custom tools",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-migration-20261126",
+      "title": "Migration",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/migration",
+      "section": "What changes / Features that move to your client",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-budgets-20261126",
+      "title": "Session budgets",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/budgets",
+      "section": "Set a budget at session creation / When a session reaches its budget",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-anthropic-multi-agent-research-20261126",
+      "title": "How we built our multi-agent research system",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/engineering/multi-agent-research-system",
+      "section": "Benefits of a multi-agent system / Prompt engineering and evaluations for research agents",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-manage-tool-context-20261126",
+      "title": "Manage tool context",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/manage-tool-context",
+      "section": "The four approaches / Combining approaches",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-subagent-cost-20261126",
+      "title": "Best practices",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Know what subagents cost",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-memory-tool-20261126",
+      "title": "Memory tool",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+      "section": "How it works / Context editing integration / Multisession software development pattern",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-memory-20261126",
+      "title": "Using agent memory",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/memory",
+      "section": "Overview / Attach a memory store to a session",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-server-tools-20261126",
+      "title": "Server tools",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/server-tools",
+      "section": "The server-side loop and pause_turn",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-parallel-tool-use-20261126",
+      "title": "Parallel tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+      "section": "Execution semantics / Troubleshooting",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-result-troubleshooting-20261126",
+      "title": "Troubleshooting tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use",
+      "section": "Parallel tool calls don’t work / Errors at request time",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-request-size-limits-20261126",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Request size limits",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-handle-stream-errors-20261126",
+      "title": "Handle errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/handle-errors",
+      "section": "Handle an error in a stream",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-stream-recovery-20261126",
+      "title": "Streaming messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "section": "Error recovery",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-mid-conversation-system-20261126",
+      "title": "Mid-conversation system messages",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages",
+      "section": "When to use a mid-conversation system message / How it works / Combining with prompt caching",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-app-system-prompts-20261126",
+      "title": "System prompts",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/release-notes/system-prompts/overview",
+      "section": "System prompts",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-sharing-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Cache storage and sharing",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-validation-errors-20261126",
+      "title": "Claude API errors",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "section": "Common validation errors",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-batch-limitations-20261126",
+      "title": "Message Batches API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing",
+      "section": "Batch limitations",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-prefix-checking-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "How automatic prefix checking works / When to use multiple breakpoints / Understanding cache breakpoint costs",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-automatic-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Automatic caching / How automatic caching works in multi-turn conversations / Combining with block-level caching",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-invalidation-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Cache limitations / What invalidates the cache / Troubleshooting common issues",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-diagnostics-20261126",
+      "title": "Cache diagnostics",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics",
+      "section": "How cache diagnostics works / Basic usage / Cache miss reason types / Reading diagnostics alongside usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cost-per-task-20261126",
+      "title": "Optimizing for cost and intelligence",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence",
+      "section": "Cache repeated context / Batch work that can wait / Compare models on cost per task / Tune effort / Set budgets and output caps / Measure on your own workload",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-pricing-tokens-20261126",
+      "title": "Pricing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "section": "Model pricing / Prompt caching / Batch processing",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-temperature-20261126",
+      "title": "Glossary",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/glossary",
+      "section": "Temperature",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-sampling-removal-20261126",
+      "title": "Migrating to API version 2026-10-21",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/migration-2026-10-21",
+      "section": "Sampling parameters are removed",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-10-21"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-eval-reliability-20261126",
+      "title": "Demystifying evals for AI agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/demystifying-evals-for-ai-agents",
+      "section": "Capability vs. regression evals / How to think about non-determinism in evaluations for agents",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-01-09"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-serving-20261126",
+      "title": "Model IDs and versions",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+      "section": "Model weights versus serving infrastructure",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-deprecations-20261126",
+      "title": "Model deprecations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "section": "Overview / Migrating to replacements / Notifications / Auditing model usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-opus-5-5-migration-20261126",
+      "title": "Claude Opus 5.5 migration guide",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/models/opus-5-5/migration-guide",
+      "section": "Every starting model",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-cache-20261126",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Prompt modification and token costs",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-architecture-20261126",
+      "title": "Architecture",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/architecture",
+      "section": "Core Components",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-prompts-20261126",
+      "title": "Prompts",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/prompts",
+      "section": "User Interaction Model / Getting a Prompt",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-stdio-20261126",
+      "title": "stdio",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+      "section": "Sending Messages / Receiving Messages",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-streamable-http-20261126",
+      "title": "Streamable HTTP",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+      "section": "Security & Endpoint / Sending Messages / Receiving Messages / Backward Compatibility",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-authorization-20261126",
+      "title": "Authorization",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+      "section": "Purpose and Scope / Roles / Authorization Server Discovery / Access Token Usage / Error Handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-stateless-20261126",
+      "title": "Key Changes",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+      "section": "Major changes",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-mcp-20261126",
+      "title": "Connect Claude Code to tools via MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/mcp",
+      "section": "Installing MCP servers / MCP installation scopes / Use MCP resources / Use MCP prompts as commands",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-mcp-oauth-20261126",
+      "title": "Connect to external tools with MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/mcp",
+      "section": "OAuth2 authentication",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-runner-20261126",
+      "title": "Tool runner (SDK)",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-runner",
+      "section": "Basic usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-search-20261126",
+      "title": "Tool search tool",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+      "section": "Deferred tool loading / MCP integration / When to use tool search",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-agent-skills-availability-20261126",
+      "title": "Agent Skills",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+      "section": "Cross-surface availability",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-citations-20261126",
+      "title": "Citations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/citations",
+      "section": "How citations work / Citation indices / Token costs / Feature compatibility / Get structured data with citations / Document types / Response structure",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-search-results-20261126",
+      "title": "Search results",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/search-results",
+      "section": "Search result schema / Claude’s response with citations / Citation control / For tool-based search (Method 1)",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-contextual-retrieval-20261126",
+      "title": "Introducing Contextual Retrieval",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/contextual-retrieval",
+      "section": "A note on simply using a longer prompt / A primer on RAG: scaling to larger knowledge bases / Further boosting performance with Reranking",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2024-09-19"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-embeddings-20261126",
+      "title": "Embeddings",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/embeddings",
+      "section": "How to get embeddings with Anthropic",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-authentication-keys-20261126",
+      "title": "Authentication",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/authentication",
+      "section": "Key types / Create and use a key / Key expiration / Browser-based applications / Workload Identity Federation",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-workspaces-20261126",
+      "title": "Workspaces",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/workspaces",
+      "section": "API keys and resource scoping / Setting workspace limits / Usage and cost tracking / Environment separation",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-admin-api-keys-management-20261126",
+      "title": "Admin API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/admin-api",
+      "section": "Admin API key / Key concepts / API keys / Usage and cost reports / Best practices",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-create-admin-key-20261126",
+      "title": "Create an Admin API key",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/admin-api-keys",
+      "section": "Which key do you need? / Create a key for a Claude Console organization",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-usage-cost-analytics-20261126",
+      "title": "Usage and Cost Analytics API",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api",
+      "section": "Usage endpoint / Cost endpoint",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
       "review": {
         "status": "draft"
       }

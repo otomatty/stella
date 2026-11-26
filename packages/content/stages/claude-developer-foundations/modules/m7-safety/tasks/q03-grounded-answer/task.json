@@ -1,0 +1,54 @@
+{
+  "id": "claude-developer-foundations/m7-safety/q03-grounded-answer",
+  "title": "資料に基づく回答だけを返す",
+  "kind": "independent",
+  "pattern": "grounded-answer",
+  "skills": {
+    "uses": ["claude-messages-request", "claude-structured-output"],
+    "assesses": ["claude-grounding"]
+  },
+  "runner": "node-test",
+  "environment": "node-test-01",
+  "submit": {
+    "files": ["src/grounded-answer.js"],
+    "explanation": true,
+    "debuggingRecord": false
+  },
+  "review": {
+    "rules": [
+      { "id": "CR-SCOPE-01", "required": true },
+      { "id": "CR-EXPLAIN-01", "required": true }
+    ],
+    "rubric": [
+      {
+        "id": "cited-request",
+        "criterion": "文書ブロックを渡した順に並べ、各文書の citations.enabled を true にし、質問のテキストを最後に置き、output_config を付けていない",
+        "required": true
+      },
+      {
+        "id": "cited-text-only",
+        "criterion": "stop_reason が refusal と max_tokens のときは本文を見ず、それ以外は引用が 1 件以上あるテキストだけをつなぎ、引用の title と quote を重複なく出現順に残している",
+        "required": true
+      }
+    ],
+    "escalateWhen": []
+  },
+  "support": {
+    "hintLevels": 2,
+    "solutionUnlock": "attempts-or-passed",
+    "attempts": 5
+  },
+  "sources": ["SRC-claude-docs-citations-20261126"],
+  "refs": ["m7-safety/l3-grounding"],
+  "estimatedMinutes": 60,
+  "protected": [
+    "package.json",
+    "package-lock.json",
+    "vitest.config.js",
+    "eslint.config.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "tests/**"
+  ],
+  "checks": { "lint": true, "format": true }
+}

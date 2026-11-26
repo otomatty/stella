@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-features-20261031, SRC-claude-docs-messages-20261031, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-developer-guide-v11-20261118, SRC-claude-docs-batch-usage-20261031, SRC-anthropic-agent-evals-20261118]
+sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-features-20261031, SRC-claude-docs-messages-20261031, SRC-claude-code-agent-sdk-overview-20261031, SRC-claude-developer-guide-v11-20261118, SRC-claude-docs-batch-usage-20261031, SRC-anthropic-agent-evals-20261118, SRC-claude-developer-guide-v11-ja-20261126]
 ---
 ## 知識問題
 
@@ -69,5 +69,19 @@ sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-features-20261031, 
 <summary>解答</summary>
 
 **A, B** — 本番の問題を写したとされる問題集は、答えを確かめる方法がなく、受験の規約に反するおそれもあるので使いません。
+
+</details>
+
+### Q6. 自己評価で、Claude Code の操作は場面と理由を説明できました。同じ分野の「Claude Codeのカスタマイズと拡張」は、対応の候補は浮かぶものの、選ぶ理由を説明できません。学習計画にどう反映しますか？
+<!-- kind: single; skills: claude-cert-exam-plan -->
+
+- A. 操作を説明できたので、Claude Code の分野をすべて「説明できる」にする
+- B. 分野の配点は 8% なので、配点の高い分野を先に読み、自己評価は時間配分に使わない
+- C. カスタマイズと拡張を「あいまい」にして、場面に合う拡張の選び方を練習する時間を取る
+
+<details>
+<summary>解答</summary>
+
+**C** — スキルごとに、対応の理由まで言えるかを確かめます。配点で決めた時間をもとに、理由があいまいだったスキルを練習する時間を取ります。
 
 </details>

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m5-tools-and-mcp@5",
-  "contentHash": "0324d8e52dea5c574613017f041bdb86dacc1c1d4e4bf51b6c013ad19f98f38a",
+  "unitId": "claude-developer-foundations/m5-tools-and-mcp@6",
+  "contentHash": "dd64f7d4dfc1f4c7db46220f6c8179f9751f9ef271ae66d7032f3c6f638f719e",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -228,6 +228,192 @@
       "contentId": "tasks/q03-mcp-catalog/README.md",
       "sourceRefs": ["SRC-mcp-tools-spec-20260728", "SRC-mcp-resources-spec-20260728"],
       "usedFor": "MCP 2026-07-28 の一覧、資料読み取り、ツール結果とエラーの区別に沿って、架空の倉庫で検査するサーバー側の関数の仕様を作成",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-build-mcp-server/t1-three-primitives/slides.md",
+      "sourceRefs": [
+        "SRC-mcp-architecture-20261126",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-mcp-resources-spec-20260728",
+        "SRC-mcp-prompts-20261126",
+        "SRC-claude-code-mcp-20261126"
+      ],
+      "usedFor": "MCP の役割分担、提供する機能の選び方、ツール実行と通信のエラー",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-build-mcp-server/t2-choose-transport/slides.md",
+      "sourceRefs": [
+        "SRC-mcp-stdio-20261126",
+        "SRC-mcp-streamable-http-20261126",
+        "SRC-claude-code-mcp-20261126",
+        "SRC-claude-code-sdk-mcp-20261031",
+        "SRC-claude-docs-mcp-connector-usage-20261031"
+      ],
+      "usedFor": "stdio と Streamable HTTP の選択、標準出力と標準エラー、クライアントへの登録",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-build-mcp-server/t3-protect-remote-server/slides.md",
+      "sourceRefs": ["SRC-mcp-authorization-20261126", "SRC-claude-sdk-mcp-oauth-20261126"],
+      "usedFor": "HTTP の認可、Bearer ヘッダー、自分あてのトークンの検査",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/t1-shape-the-result/slides.md",
+      "sourceRefs": ["SRC-anthropic-writing-tools-20261031"],
+      "usedFor": "ツール結果の項目選択、名前、絞り込みと打ち切り",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/t2-actionable-error/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-choice-20261031",
+        "SRC-anthropic-writing-tools-20261031"
+      ],
+      "usedFor": "無効な入力を特定し、次の行動を案内するエラー",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/t3-approve-before-run/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-runner-20261126",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-managed-agent-permission-policies-20261126"
+      ],
+      "usedFor": "実行前の承認の位置、拒否時のツール結果と実行環境ごとの確認",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/t4-skill-or-mcp/slides.md",
+      "sourceRefs": [
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-agent-skills-availability-20261126",
+        "SRC-claude-code-skills-20261118",
+        "SRC-mcp-server-concepts-20261118"
+      ],
+      "usedFor": "Skill の構成と MCP との分担、利用面ごとの配布",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/t5-where-it-lives/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-tool-use-20261031",
+        "SRC-claude-docs-tool-choice-20261031",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-claude-docs-tool-search-20261126",
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-code-skills-20261118"
+      ],
+      "usedFor": "4 つの提供手段の実行場所、保守、見つけ方、文脈の使用量",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-build-mcp-server/doc.md",
+      "sourceRefs": [
+        "SRC-mcp-architecture-20261126",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-mcp-resources-spec-20260728",
+        "SRC-mcp-prompts-20261126",
+        "SRC-claude-code-mcp-20261126",
+        "SRC-mcp-stdio-20261126",
+        "SRC-mcp-streamable-http-20261126",
+        "SRC-claude-code-sdk-mcp-20261031",
+        "SRC-claude-docs-mcp-connector-usage-20261031",
+        "SRC-mcp-authorization-20261126",
+        "SRC-claude-sdk-mcp-oauth-20261126",
+        "SRC-mcp-stateless-20261126"
+      ],
+      "usedFor": "MCP の 3 つの機能、エラーの境界、接続設定と HTTP の認可",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/doc.md",
+      "sourceRefs": [
+        "SRC-anthropic-writing-tools-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-choice-20261031",
+        "SRC-claude-docs-tool-runner-20261126",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-managed-agent-permission-policies-20261126",
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-agent-skills-availability-20261126",
+        "SRC-claude-code-skills-20261118",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-claude-docs-tool-use-20261031",
+        "SRC-claude-docs-tool-search-20261126"
+      ],
+      "usedFor": "結果の絞り込みと修正可能なエラー、実行を止める承認、機能の配り方の比較",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-build-mcp-server/knowledge.md",
+      "sourceRefs": [
+        "SRC-mcp-architecture-20261126",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-mcp-resources-spec-20260728",
+        "SRC-mcp-prompts-20261126",
+        "SRC-claude-code-mcp-20261126",
+        "SRC-mcp-stdio-20261126",
+        "SRC-mcp-streamable-http-20261126",
+        "SRC-claude-code-sdk-mcp-20261031",
+        "SRC-claude-docs-mcp-connector-usage-20261031",
+        "SRC-mcp-authorization-20261126",
+        "SRC-claude-sdk-mcp-oauth-20261126"
+      ],
+      "usedFor": "機能を選ぶ主体、失敗の返し先、stdio と HTTP、トークン検査を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-shape-and-select/knowledge.md",
+      "sourceRefs": [
+        "SRC-anthropic-writing-tools-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-choice-20261031",
+        "SRC-claude-docs-tool-runner-20261126",
+        "SRC-mcp-tools-spec-20260728",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-managed-agent-permission-policies-20261126",
+        "SRC-claude-agent-skills-20261118",
+        "SRC-claude-agent-skills-availability-20261126",
+        "SRC-claude-code-skills-20261118",
+        "SRC-mcp-server-concepts-20261118",
+        "SRC-claude-docs-tool-use-20261031",
+        "SRC-claude-docs-tool-search-20261126"
+      ],
+      "usedFor": "結果の打ち切り、入力違い、承認、配り方と定義の読み込みを問う自作問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

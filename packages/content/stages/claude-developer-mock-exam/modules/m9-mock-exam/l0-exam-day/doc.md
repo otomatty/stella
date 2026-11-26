@@ -1,12 +1,12 @@
 ---
 sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-batch-20261031, SRC-claude-developer-guide-v11-20261118]
 ---
-# 受験の準備と当日
+# 受験の準備
 
 ## このレッスンの目標
 
 - [ ] 問題文から場面の条件を拾い、選択肢を比べられます。
-- [ ] 申し込みの前と当日に確かめることを、順に言えます。
+- [ ] ドリルと総合課題の結果をもとに、復習する範囲を決められます。
 
 ## 10-4-1 場面の条件を読む
 
@@ -31,18 +31,15 @@ sourceRefs: [SRC-claude-four-certs-20261031, SRC-claude-docs-batch-20261031, SRC
 
 ## 受験の前に確かめること
 
-申し込みの判断材料として、一問一答で判断に迷った場面と、基礎ステージの総合課題の実行結果を並べてください。3 問の根拠を説明できなかった範囲には戻るトピックを、失敗したテストには期待値と実測値を記します。修正して全件を通し、再照会と API 障害の違いを履歴から説明できたら、申し込みの案内を確認します。これは STELLA の学習目安です。
+受験の準備ができたかを判断するため、一問一答で判断に迷った場面と、基礎ステージの総合課題の実行結果を並べてください。3 問の根拠を説明できなかった範囲には戻るトピックを、失敗したテストには期待値と実測値を記します。修正してテストを全件通し、再照会と API 障害の違いを履歴から説明できることを、STELLA では準備の目安にします。
 
-1. **受験資格**: 所属する組織が Claude Partner Network に加盟し、受験する人を登録しているか(0-1-2)。
-2. **範囲と時間配分**。Developer 試験ガイド v1.1 の 8 分野と、自分のドリルの記録を照合します。本番は 120 分で 70 問に答えます。採点対象の 60 問と対象外の 10 問は画面で区別できないため、全問に答える時間を取ります。
-3. **準備の講座**: Partner Academy に、資格ごとの準備の講座があります。試験ガイドと合わせて使います。
-4. **当日の受け方**: 試験は Pearson が監督つきで行い、始める前に本人確認があります(0-1-3)。本人確認に要るもの・受ける場所・時間は、申し込みの案内で前日までに確かめます。
-5. **合格のあと**: 合格すると、Credly のデジタルバッジが届きます。
+1. **範囲と時間配分**。Developer 試験ガイド v1.1 の 8 分野と、自分のドリルの記録を照合します。本番と同じ 120 分で 70 問を通して解く練習をします。採点対象の 60 問と対象外の 10 問は画面で区別できないため、全問に答える時間を取ります。
+2. **準備の講座**。Partner Academy に、資格ごとの準備の講座があります。試験ガイドと合わせて使います。
 
 ## もっと知りたい人へ
 
 - [Developer 試験ガイド v1.1（英語、PDF）](https://cc.sj-cdn.net/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1794946771/Claude_Certified_Developer_-_Foundations_Exam_Guide_Updated_Dec_7.pdf)
-- [Four role-based certifications for the people who put Claude to work for customers](https://claude.com/resources/articles/four-role-based-claude-certifications) — 資格の対象、試験の受け方(監督・本人確認・デジタルバッジ)、準備の講座(英語)
+- 資格ごとの準備の講座の置き場所を確認できます。[資格の概要（英語）](https://claude.com/resources/articles/four-role-based-claude-certifications)
 - [Batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing) — バッチの件数・容量、処理期限と未完了の結果（英語）
 
 知識問題で、このレッスンの内容を確かめます。

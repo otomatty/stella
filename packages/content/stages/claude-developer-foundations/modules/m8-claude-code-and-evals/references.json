@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@5",
-  "contentHash": "a5db9c116828df6702fbacc15f6851f23804d548d0f5b563193063133c48415d",
+  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@11",
+  "contentHash": "097c9801c7e816df8ca75d2331bffcd9ad1c6289b6ffe0a2dba4bada2c286724",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -132,6 +132,467 @@
       "reuse": "concept-reference",
       "sourceRefs": ["SRC-anthropic-agent-evals-20261118", "SRC-claude-docs-eval-grading-20261031"],
       "usedFor": "照合と採用基準、独立した事例で採点器を再評価する課題の受入条件",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t1-claude-md-layers/slides.md",
+      "sourceRefs": ["SRC-claude-code-memory-20261031", "SRC-claude-code-memory-load-20261126"],
+      "usedFor": "複数の CLAUDE.md の読み込み順と、サブディレクトリの読み込み時点",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t2-path-rules/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126"
+      ],
+      "usedFor": "パス指定によるルールの読み込みと圧縮後にルールが戻る条件",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t3-deny-first/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031"
+      ],
+      "usedFor": "拒否・確認・許可の優先順、狭い許可との衝突、ツール名だけの拒否",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t4-permission-modes/slides.md",
+      "sourceRefs": ["SRC-claude-code-permission-modes-20261126"],
+      "usedFor": "権限モードの用途と、分類による自動判断と固定の拒否との違い",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t1-non-interactive/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126"
+      ],
+      "usedFor": "非対話実行の起動とツール許可、対話なしで読み込まれるリポジトリの構成",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t2-clear-or-resume/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-best-practices-20261126"
+      ],
+      "usedFor": "関係のない作業での /clear と、同じ作業を続ける再開操作",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t3-where-config-reaches/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "リポジトリで共有する設定と端末設定の違い、クラウドに届く管理設定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-20261031",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126",
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-permission-modes-20261126"
+      ],
+      "usedFor": "指示ファイルの読み込み順と圧縮後の扱い、権限の照合順、作業に合うモードの選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126",
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-permission-modes-20261126"
+      ],
+      "usedFor": "指示の読み込み順、ルールの範囲と圧縮後の扱い、権限の判定順とモード選択を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126",
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-checkpointing-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "非対話実行の入出力と許可、セッションの再開や巻き戻し、利用環境ごとの設定の共有範囲",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126",
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-checkpointing-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "無人実行の許可と構成、会話の切り替えと復元の範囲、CI とクラウドへの設定配布を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-extend/t1-skills/slides.md",
+      "sourceRefs": ["SRC-claude-code-skills-20261118", "SRC-claude-code-skill-config-20261126"],
+      "usedFor": "Skill の配置、説明と本文を読む時点、手動呼び出しの指定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-extend/t2-choose-mechanism/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-extensions-20261118",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-best-practices-extension-20261126",
+        "SRC-claude-code-hooks-guide-20261031",
+        "SRC-claude-code-hook-types-20261126"
+      ],
+      "usedFor": "作業の範囲、指示の読み込み、処理を実行する時点に応じた機能の選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-extend/t3-plugins/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-plugins-20261118",
+        "SRC-claude-code-plugin-manifest-20261126",
+        "SRC-claude-code-plugin-create-20261126",
+        "SRC-claude-code-plugin-dependencies-20261126"
+      ],
+      "usedFor": "プラグインにまとめる部品、マニフェストの場所、依存先の版の範囲",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-config-sdlc/t1-pin-model/slides.md",
+      "sourceRefs": ["SRC-claude-code-model-config-20261126", "SRC-claude-docs-model-ids-20261031"],
+      "usedFor": "Claude Code のモデル別名と完全なモデル ID による固定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-config-sdlc/t2-ci-secrets/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-github-actions-20261126",
+        "SRC-claude-code-headless-unattended-20261126"
+      ],
+      "usedFor": "GitHub Actions の起動条件、キーを渡す入力、モデルとツールの指定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-config-sdlc/t3-version-prompts/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-evals-20261031",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-best-practices-extension-20261126"
+      ],
+      "usedFor": "指示と設定を版で追い、同じ評価で比較する運用の組み立て",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-extend/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-skills-20261118",
+        "SRC-claude-code-skill-config-20261126",
+        "SRC-claude-code-extensions-20261118",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-best-practices-extension-20261126",
+        "SRC-claude-code-hooks-guide-20261031",
+        "SRC-claude-code-hook-types-20261126",
+        "SRC-claude-code-plugins-20261118",
+        "SRC-claude-code-plugin-manifest-20261126",
+        "SRC-claude-code-plugin-create-20261126",
+        "SRC-claude-code-plugin-dependencies-20261126",
+        "SRC-claude-code-plugin-loading-20261126",
+        "SRC-claude-code-plugin-install-20261126",
+        "SRC-claude-code-marketplace-file-20261126"
+      ],
+      "usedFor": "Skill の構成と呼び出し、要件ごとの機能の選択、プラグインの配布と依存の版の管理",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-config-sdlc/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-model-config-20261126",
+        "SRC-claude-docs-model-ids-20261031",
+        "SRC-claude-code-github-actions-20261126",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-docs-evals-20261031",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-best-practices-extension-20261126"
+      ],
+      "usedFor": "モデル指定の優先順、GitHub Actions への認証情報と許可の設定、指示の変更前後を比較する評価の運用",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-extend/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-skill-config-20261126",
+        "SRC-claude-code-extensions-20261118",
+        "SRC-claude-code-hook-types-20261126",
+        "SRC-claude-code-plugin-manifest-20261126",
+        "SRC-claude-code-plugin-create-20261126",
+        "SRC-claude-code-plugin-dependencies-20261126",
+        "SRC-claude-code-plugin-install-20261126"
+      ],
+      "usedFor": "Skill の呼び出しとツールの許可、要件に合う機能、依存の版とプラグインの構成を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-config-sdlc/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-model-config-20261126",
+        "SRC-claude-docs-model-ids-20261031",
+        "SRC-claude-code-github-actions-20261126",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-docs-evals-20261031",
+        "SRC-claude-code-memory-load-20261126"
+      ],
+      "usedFor": "モデルの固定と優先順、CI の秘密と設定の範囲、版をそろえた比較と記録を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l7-agent-guardrails/t1-sdk-hooks/slides.md",
+      "sourceRefs": ["SRC-claude-sdk-hooks-20261118", "SRC-claude-sdk-hook-callbacks-20261126"],
+      "usedFor": "SDK の実行前・実行後フック",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l7-agent-guardrails/t2-decision-order/slides.md",
+      "sourceRefs": ["SRC-claude-code-sdk-permissions-20261031"],
+      "usedFor": "SDK の権限判定順",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l7-agent-guardrails/t3-hook-failure/slides.md",
+      "sourceRefs": [
+        "SRC-claude-sdk-hook-failure-20261126",
+        "SRC-claude-sdk-hook-callbacks-20261126"
+      ],
+      "usedFor": "コールバック失敗時の遮断",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/t1-which-layer/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-hallucinations-20261031"
+      ],
+      "usedFor": "HTTP エラーと終了理由の区別",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/t2-under-acting/slides.md",
+      "sourceRefs": ["SRC-claude-docs-prompt-tool-usage-20261126"],
+      "usedFor": "操作を明示する依頼",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/t3-context-loss/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-compaction-on-demand-20261126",
+        "SRC-claude-docs-context-editing-20261126"
+      ],
+      "usedFor": "圧縮後に残す履歴",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/t4-format-drift/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-structured-outputs-20261031",
+        "SRC-claude-docs-structured-considerations-20261031",
+        "SRC-claude-docs-output-consistency-20261126"
+      ],
+      "usedFor": "出力形式の指定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/t5-fix-the-cause/slides.md",
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031", "SRC-anthropic-agent-evals-20261118"],
+      "usedFor": "終了理由と実行結果の診断",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l7-agent-guardrails/doc.md",
+      "sourceRefs": [
+        "SRC-claude-sdk-hooks-20261118",
+        "SRC-claude-sdk-hook-callbacks-20261126",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-sdk-hook-failure-20261126",
+        "SRC-claude-sdk-settings-sources-20261126",
+        "SRC-claude-code-sdk-permission-rules-20261031",
+        "SRC-claude-code-hook-types-20261126"
+      ],
+      "usedFor": "SDK フックの登録・判定・障害時の動作",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-hallucinations-20261031",
+        "SRC-claude-docs-prompt-tool-usage-20261126",
+        "SRC-claude-docs-compaction-on-demand-20261126",
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-structured-outputs-20261031",
+        "SRC-claude-docs-structured-considerations-20261031",
+        "SRC-claude-docs-output-consistency-20261126",
+        "SRC-claude-docs-refusal-manual-retry-20261126",
+        "SRC-anthropic-agent-evals-20261118",
+        "SRC-claude-docs-refusals-20261031"
+      ],
+      "usedFor": "障害モードごとの原因と対策",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l7-agent-guardrails/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-sdk-hooks-20261118",
+        "SRC-claude-sdk-hook-callbacks-20261126",
+        "SRC-claude-sdk-hook-failure-20261126",
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-sdk-permission-rules-20261031",
+        "SRC-claude-sdk-settings-sources-20261126"
+      ],
+      "usedFor": "SDK のフックと権限を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l8-failure-modes/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-refusal-manual-retry-20261126",
+        "SRC-claude-docs-prompt-tool-usage-20261126",
+        "SRC-claude-docs-compaction-on-demand-20261126",
+        "SRC-claude-docs-structured-outputs-20261031",
+        "SRC-anthropic-agent-evals-20261118"
+      ],
+      "usedFor": "応答・指示・履歴・評価の診断を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-decide-tool-call/README.md",
+      "sourceRefs": [
+        "SRC-claude-code-sdk-permissions-20261031",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-sdk-hook-callbacks-20261126",
+        "SRC-claude-sdk-hook-failure-20261126"
+      ],
+      "usedFor": "権限の判定順、ルールの対象、フックの一致と例外時の扱いを簡略化した設定で確かめる自作課題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-triage-failures/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-structured-outputs-20261031"
+      ],
+      "usedFor": "教材独自の課題。HTTP ステータス、停止理由、応答の中身の順に失敗の層と次の操作を返す関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
       "reviewStatus": "draft"
     }
   ]

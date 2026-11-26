@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m6-agents@5",
-  "contentHash": "a4ee0cb92e666466c855f060235f5cb3a470e526b91855f256da8773b6bc9c56",
+  "unitId": "claude-developer-foundations/m6-agents@7",
+  "contentHash": "192d8f05072cdff40c2a5d122e3c379f252543ee9f91caff08ed9fa43508dff4",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -205,6 +205,244 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "l4-runtime-and-limits/t1-stop-conditions/slides.md",
+      "sourceRefs": ["SRC-claude-code-agent-loop-control-20261031"],
+      "usedFor": "回数と費用の上限、予算を超えうる理由、結果の種別と画面表示の判断",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-runtime-and-limits/t2-choose-runtime/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-agent-sdk-overview-20261031",
+        "SRC-claude-code-sdk-hosting-20261126",
+        "SRC-claude-managed-agents-20261118",
+        "SRC-claude-managed-agent-environment-20261126"
+      ],
+      "usedFor": "ループの運用主体と、サンドボックスの場所によるデータの流れ",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-runtime-and-limits/t3-fixed-steps-for-audit/slides.md",
+      "sourceRefs": [
+        "SRC-anthropic-effective-agents-20261031",
+        "SRC-anthropic-multi-agent-research-20261126"
+      ],
+      "usedFor": "監査で実行経路を示せる固定手順と、複数のエージェントが向く業務の条件",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/t1-prune-tool-results/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126",
+        "SRC-claude-docs-context-windows-20261031"
+      ],
+      "usedFor": "サーバー側のツール結果削除、直近の結果の保持、ツール検索や圧縮との使い分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/t2-isolate-research/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-sdk-subagents-20261031",
+        "SRC-claude-code-subagent-cost-20261126",
+        "SRC-anthropic-multi-agent-research-20261126"
+      ],
+      "usedFor": "親から調査を分離する条件、報告形式と保存先、トークン費用",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/t3-start-fresh/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-code-sdk-sessions-20261031"
+      ],
+      "usedFor": "修正が繰り返し失敗したときの再出発、別件への切り替え、引き継ぐ事実の選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/t4-persist-memory/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-memory-tool-20261126",
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-managed-agent-memory-20261126",
+        "SRC-claude-code-sdk-sessions-20261031"
+      ],
+      "usedFor": "節目で残す情報、メモリーツールの保存場所、セッション履歴と共有メモリーの使い分け",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-diagnose/t1-read-the-trace/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-result-troubleshooting-20261126",
+        "SRC-claude-docs-parallel-tool-use-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126"
+      ],
+      "usedFor": "呼び出しと結果の対応、送信順、症状ごとに観察する実行記録",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-diagnose/t2-endless-loop/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-code-agent-loop-control-20261031"
+      ],
+      "usedFor": "ループの出口と失敗時の再試行上限、SDK の回数・予算制限",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-diagnose/t3-paused-turn/slides.md",
+      "sourceRefs": [
+        "SRC-claude-docs-server-tools-20261126",
+        "SRC-claude-docs-stop-reasons-20261031"
+      ],
+      "usedFor": "pause_turn の発生条件、assistant 内容と tools を保つ続行、続行回数の上限",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-runtime-and-limits/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-agent-loop-control-20261031",
+        "SRC-claude-code-agent-sdk-overview-20261031",
+        "SRC-claude-code-sdk-hosting-20261126",
+        "SRC-claude-managed-agents-20261118",
+        "SRC-claude-managed-agent-environment-20261126",
+        "SRC-claude-managed-agent-data-handling-20261126",
+        "SRC-claude-managed-agent-permission-policies-20261126",
+        "SRC-claude-managed-agent-migration-20261126",
+        "SRC-claude-managed-agent-budgets-20261126",
+        "SRC-anthropic-effective-agents-20261031",
+        "SRC-anthropic-multi-agent-research-20261126"
+      ],
+      "usedFor": "Agent SDK の回数・費用・終了結果と、実行基盤の担当、許可やデータの条件、監査と並列化に応じた設計の選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126",
+        "SRC-claude-docs-context-windows-20261031",
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-code-sdk-subagents-20261031",
+        "SRC-claude-code-subagent-cost-20261126",
+        "SRC-anthropic-multi-agent-research-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-docs-memory-tool-20261126",
+        "SRC-claude-managed-agent-memory-20261126",
+        "SRC-claude-code-sdk-sessions-20261031"
+      ],
+      "usedFor": "ツール結果・定義・会話ごとの文脈の節約、調査の分離、会話を新しくする条件、ファイルやメモリーでの引き継ぎ",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-diagnose/doc.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-result-troubleshooting-20261126",
+        "SRC-claude-docs-parallel-tool-use-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126",
+        "SRC-claude-code-agent-loop-control-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-server-tools-20261126",
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-code-sdk-subagents-20261031",
+        "SRC-claude-docs-memory-tool-20261126",
+        "SRC-claude-code-sdk-sessions-20261031"
+      ],
+      "usedFor": "実行の順に原因を絞る表、複数の結果の受け渡し、回数上限と終了の分岐、サーバーツールの途中からの続行",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-runtime-and-limits/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-agent-loop-control-20261031",
+        "SRC-claude-managed-agents-20261118",
+        "SRC-claude-managed-agent-environment-20261126",
+        "SRC-claude-managed-agent-permission-policies-20261126",
+        "SRC-anthropic-effective-agents-20261031",
+        "SRC-anthropic-multi-agent-research-20261126"
+      ],
+      "usedFor": "上限で終わったときの扱いと費用の見積もり、基盤・権限・監査経路・並列化の判断を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l5-long-running/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126",
+        "SRC-claude-docs-context-windows-20261031",
+        "SRC-claude-docs-compaction-20261031",
+        "SRC-claude-code-sdk-subagents-20261031",
+        "SRC-anthropic-multi-agent-research-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-docs-memory-tool-20261126"
+      ],
+      "usedFor": "古い結果と定義の整理、子からの報告、会話の切り替えと作業状態の保存を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l6-diagnose/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-docs-tool-result-troubleshooting-20261126",
+        "SRC-claude-code-agent-loop-control-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-server-tools-20261126",
+        "SRC-claude-docs-context-editing-20261126",
+        "SRC-claude-docs-manage-tool-context-20261126"
+      ],
+      "usedFor": "ツール結果の送信順、終わらないループ、一時停止、文脈の劣化を短い実行記録から診断する自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-stop-conditions/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-handle-tool-calls-20261031",
+        "SRC-claude-code-agent-loop-control-20261031"
+      ],
+      "usedFor": "応答の停止理由、ツール結果と呼び出し ID の対応、ターン・予算の上限と結果の種別を扱う自作課題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     }
   ]
 }
