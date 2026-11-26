@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
+sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values, SRC-typescriptbook-builtin-api-regexp]
 ---
 ## 知識問題
 
@@ -29,7 +29,7 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbo
 <details>
 <summary>解答</summary>
 
-**A, B** — 比較や真偽値を組み合わせた式の結果は真偽値です。数値の3は、そのまま返せません。
+**A, B** — 比較や真偽値を組み合わせた式の結果は真偽値です。`!true` は false になり、真偽が逆になります。数値の3は、そのまま返せません。
 
 </details>
 

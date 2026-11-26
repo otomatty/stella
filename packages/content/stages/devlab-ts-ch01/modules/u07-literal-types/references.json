@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u07-literal-types@5",
-  "contentHash": "682daa3caae9a2033c411ab3622a392eb64bbe9d18de4171de48a0d5ae785605",
+  "contentHash": "a64a939418211559ead5d5e6ba1a3a3fbfb08708f50a81ab9b4e6d502918e3f5",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-literal-types/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "リテラル型の背景。店の札で引数と戻り値の候補を指定する例、お湯の温度を上から判定して return する例と問題別ヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -15,7 +15,7 @@
     {
       "contentId": "l1-literal-types/knowledge.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "引数と戻り値の候補、型の | と条件の || の違い、return で関数が終わる位置を確かめる独自の知識問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-literal-types/t1-fixed-values/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "店の札で引数と戻り値の候補を決める独自例。string との範囲の違い、数値の候補、実行前の型の確認。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -31,7 +31,7 @@
     {
       "contentId": "l1-literal-types/t2-return-early/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "リテラル型の戻り値の背景。条件を上から確かめ、その場で値を返す教材独自の例と図解。",
+      "usedFor": "リテラル型の戻り値の背景。お湯が90度以上かを判定し、if の中で return すると後ろへ進まないことを示す教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -39,7 +39,7 @@
     {
       "contentId": "tasks/q07/README.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-literal-types"],
-      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "usedFor": "教材独自の課題。文字列や数値の候補をリテラル型で指定し、条件に応じて候補の値を返すドリルと応用問題の受入条件。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

@@ -24,6 +24,7 @@ function shippingLabel(fee: any): any {
   // 小数点以下をなくして表示するつもりの行
   return fee.toFixd(0);
 }
+console.log(shippingLabel(650)); // エラー: fee.toFixd is not a function
 ```
 
 数値を渡して実行すると、存在しないメソッドを呼び出して止まります。引数を `number`、戻り値を `string` に直すと、実行する前に `toFixd` のエラーが出ます。正しい名前の `toFixed` に直します。
@@ -34,8 +35,7 @@ function shippingLabel(fee: number): string {
   // 小数点以下をなくして表示する
   return fee.toFixed(0);
 }
-// 結果を表示する（"650"）
-console.log(shippingLabel(650));
+console.log(shippingLabel(650)); // => "650"
 ```
 
 受け取る値と返す値は、別々に型を決めます。数値は `number`、文字列は `string`、真偽値は `boolean` です。型の確認が通っても、計算の内容まで正しいとは限りません。期待する結果になるかも確かめます。
@@ -46,9 +46,10 @@ console.log(shippingLabel(650));
 // 荷物の区画名は文字列
 const zoneName: string = "南倉庫";
 // 間違い: 文字数に値を入れようとしている
-zoneName.length = 3;
-// 文字数が三かどうかを比べる
+// zoneName.length = 3; // エラー: length は読み取り専用
+// 文字数が3かどうかを比べる
 const isThree = zoneName.length === 3;
+console.log(isThree); // => true
 ```
 
 `zoneName.length = 3` は型のエラーになります。`=` は値を入れる記号で、等しいかを比べる記号は `===` です。この課題では、any を一つでも残すと書き方の確認でエラーになります。型と、型を付けて見つかった間違いを直しましょう。
@@ -64,8 +65,7 @@ const isThree = zoneName.length === 3;
 const ticketText = "42";
 // 数値に変えてから、次の番号を求める
 const next = Number(ticketText) + 1;
-// 次の番号を表示する（43）
-console.log(next);
+console.log(next); // => 43
 ```
 
 `Number` は先頭が大文字です。かっこの中に変えたい文字列を書きます。文字列のまま足す場合とは、結果も型も違います。
@@ -87,8 +87,7 @@ function countDays(steps: number[]): number {
   // 並んでいる値の数を返す
   return steps.length;
 }
-// 三日ぶんの記録の件数を表示する（3）
-console.log(countDays([3200, 5100, 4800]));
+console.log(countDays([3200, 5100, 4800])); // => 3
 ```
 
 `steps` には並び全体を渡します。配列の `length` が表すのは、並んでいる値の数です。この例では合計の `13100` ではなく、件数の `3` が返ります。空の配列 `[]` の件数は `0` です。
@@ -105,8 +104,7 @@ for (const step of steps) {
   // その日の歩数を合計に足す
   total += step;
 }
-// 合計の歩数を表示する（13100）
-console.log(total);
+console.log(total); // => 13100
 ```
 
 `number[]` を付けると、並んだ値が数値かどうかや、使うプロパティの名前を確かめられます。

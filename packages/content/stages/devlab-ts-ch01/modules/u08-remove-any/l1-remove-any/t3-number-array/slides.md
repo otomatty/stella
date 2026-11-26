@@ -34,14 +34,13 @@ header: "開発ラボG 事前課題 第1部"
 # 数値を並べた配列の型
 
 ```ts
-// 歩数の記録が何日ぶんあるか返す
 function countDays(steps: number[]): number {
-  // 並んでいる値の数を返す
   return steps.length;
 }
+console.log(countDays([3200, 5100, 4800])); // => 3
 ```
 
-<!-- ノート: steps は数値を並べた配列です。length で数えるのは日数で、戻り値は数値一つです。 -->
+<!-- ノート: steps は数値を並べた配列です。3日ぶんの記録を渡すと、console.log には3と出ます。length で数えるのは日数で、戻り値は数値1つです。 -->
 
 ---
 

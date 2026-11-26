@@ -35,27 +35,27 @@ header: "開発ラボG 事前課題 第1部"
 # 晴れていて、9人そろったら始める
 
 ```ts
-// 晴れていて、選手が9人以上そろったかを返す
 function canStartGame(isSunny: boolean, players: number): boolean {
-  // 天気と人数の条件を組み合わせて返す
   return isSunny && players >= 9;
 }
+console.log(canStartGame(true, 8), canStartGame(true, 9)); // => false true
 ```
 
-<!-- ノート: isSunny は晴れているかを表します。players が9以上かを比べ、両方が true のときだけ true を返す式です。 -->
+<!-- ノート: isSunny は晴れているかを表します。人数が9以上かも比べ、両方が true のときだけ true を返します。呼び出した結果は、晴れで8人なら false、9人なら true です。 -->
 
 ---
 
 # 中止の条件も、そのまま返す
 
 `isRainy || players < 9` は「雨、または9人未満」です。
-`!canStartGame(isSunny, players)` なら、開始できるかの結果を逆にします。
+`!canStartGame(isSunny, players)` も、開始できないなら中止という判定です。
+この例の天気は晴れか雨のどちらかとし、`isRainy` は `!isSunny` と同じ値です。
 
 複数のまとまりは `(isSunny && hasField) || (hasRoof && hasLights)` のようにかっこで示せます。
 
 参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明とコード例は教材用に作成しています。
 
-<!-- ノート: またはは、片方でも true なら true です。でないは真偽を逆にします。かっこを使うと、屋外と屋内のような条件のまとまりを読み取れます。 -->
+<!-- ノート: この例では晴れでなければ雨とします。またはで中止の条件を組み合わせても、開始できるかを反転させても、同じ中止の判定です。かっこを使うと、屋外と屋内のような条件のまとまりを読み取れます。 -->
 
 ---
 

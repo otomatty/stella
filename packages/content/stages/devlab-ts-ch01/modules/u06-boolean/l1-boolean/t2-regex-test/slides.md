@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
+sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values, SRC-typescriptbook-builtin-api-regexp]
 id: 6-1-2
 title: 合う文字が含まれるか調べる
 takeaway: "正規表現.test(文字列) は、合う部分があれば true を返します。"
@@ -35,13 +35,13 @@ header: "開発ラボG 事前課題 第1部"
 # 数字が1文字でもあれば true
 
 ```ts
-// 部屋の札に半角数字が含まれるかを調べる
 const hasNumber = /\d/.test("B2倉庫");
+console.log(hasNumber); // => true
 ```
 
 `/\d/` は半角数字1文字を表します。この式の結果は `true` です。
 
-<!-- ノート: 正規表現の後ろに test を書き、かっこの中に調べる文字列を渡します。B2倉庫の2が合うので、全体が数字でなくても true です。 -->
+<!-- ノート: 正規表現の後ろに test を書き、かっこの中に調べる文字列を渡します。B2倉庫の2が合うので、console.log には true と出ます。全体が数字である必要はありません。 -->
 
 ---
 
@@ -52,7 +52,7 @@ const hasNumber = /\d/.test("B2倉庫");
 
 `includes("2")` は決まった文字を探します。数字のどれかを探すには、正規表現の `test` を使います。
 
-参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明とコード例は教材用に作成しています。
+参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)・[RegExp](https://typescriptbook.jp/reference/builtin-api/regexp)。説明とコード例は教材用に作成しています。
 
 <!-- ノート: 探す形を英大文字に替えても、合う部分が一つあれば true という決まりは同じです。includes に数字という形をそのまま渡すことはできません。 -->
 

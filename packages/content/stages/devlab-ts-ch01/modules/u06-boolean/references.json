@@ -1,16 +1,17 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u06-boolean@5",
-  "contentHash": "691507d58d4e01939a1b3b906f95622f256bb64382ad305f1c4fb5a326dac13a",
+  "contentHash": "27b7b591ba101f0bfa8b4edcab64b34b36a3a331996ca69599a266c9b7a53d08",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-boolean/doc.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-boolean",
-        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values",
+        "SRC-typescriptbook-builtin-api-regexp"
       ],
-      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
+      "usedFor": "真偽値と条件式の背景。送料・予約・試合の開始と中止・屋内外の条件、部屋の札を test で調べる独自例と問題別ヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -19,9 +20,10 @@
       "contentId": "l1-boolean/knowledge.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-boolean",
-        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values",
+        "SRC-typescriptbook-builtin-api-regexp"
       ],
-      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
+      "usedFor": "真偽値を返す式、&&・||・! と条件のまとまり、正規表現の test と includes の違いを確かめる独自の知識問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -32,7 +34,7 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
+      "usedFor": "試合の開始と中止、屋内外の条件を題材に、&&・||・! の判定結果をそのまま返す教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -41,9 +43,10 @@
       "contentId": "l1-boolean/t2-regex-test/slides.md",
       "sourceRefs": [
         "SRC-typescriptbook-values-types-variables-boolean",
-        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values",
+        "SRC-typescriptbook-builtin-api-regexp"
       ],
-      "usedFor": "真偽値の背景。正規表現の test で合う部分の有無を調べる、部屋の札の独自例。",
+      "usedFor": "真偽値と正規表現の test の背景。部屋の札で数字・英大文字を探し、includes との違いを示す教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -54,7 +57,7 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "usedFor": "教材独自の課題。比較・条件の組み合わせ・否定・文字列の判定から boolean を返すドリルと応用問題の受入条件。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

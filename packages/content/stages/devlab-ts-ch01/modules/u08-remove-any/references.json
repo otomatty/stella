@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
   "unitId": "devlab-ts-ch01/u08-remove-any@5",
-  "contentHash": "1583bcff1e98e17caaeb563d87b6a13b27814dc46464d986d237342807dc272c",
+  "contentHash": "d0ddb8c43fdad45cb35b8b832351cdcffc4af14bf43854be27b24fa9c3c79a12",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-remove-any/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "三つの動画に対応する教材独自の解説と、既存の問題別ヒント。",
+      "usedFor": "any と具体的な型による確認の違いの背景。送料のつづりの修正、文字列のプロパティ、整理券の数値変換、歩数の件数と合計の独自例と問題別ヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-remove-any/t1-replace-any/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "any と具体的な型の確認の違い。送料の表示とプロパティの比較を示す教材独自の例。",
+      "usedFor": "any と具体的な型による確認の違い。送料の表示で toFixd と toFixed を対比し、名前の間違いを見つける教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -31,7 +31,7 @@
     {
       "contentId": "tasks/q08/README.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "usedFor": "教材独自の課題。any を引数と戻り値に合う型へ直し、メソッド名・比較・数値変換・配列の扱いを修正する受入条件。",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -39,7 +39,7 @@
     {
       "contentId": "l1-remove-any/t2-to-number/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "文字列を数値へ変える教材独自の整理券の例。既存の型と値の扱いの参照を引き継ぐ。",
+      "usedFor": "整理券の文字列を Number で数値に変えてから1を足す教材独自の例。文字列の連結と数値の加算の対比。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -47,7 +47,7 @@
     {
       "contentId": "l1-remove-any/t3-number-array/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "数値の配列の型と件数を示す教材独自の歩数の例。既存の型と値の扱いの参照を引き継ぐ。",
+      "usedFor": "歩数の記録を number[] で受け取り、length で件数を返す教材独自の例。件数の3と合計の13100の区別。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

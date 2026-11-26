@@ -25,10 +25,10 @@ function signText(state: "open" | "closed"): "営業中" | "準備中" {
 }
 // 開いている店の札を表示する
 console.log(signText("open"));
-// 結果: "営業中"
+// => "営業中"
 ```
 
-引数は `"open" | "closed"`、戻り値は `"営業中" | "準備中"` です。候補にない `signText("maybe")` は、実行する前に型の確認でエラーになります。
+引数は `"open" | "closed"`、戻り値は `"営業中" | "準備中"` です。候補にない `signText("maybe")` は、実行する前に型の確認でエラーになります。型は、実行中に値を確かめるものではありません。型のエラーを無視して出力した JavaScript を実行すると、この例では比較が偽になり、`"準備中"` を返します。
 
 `string` はどんな文字列でも受け付けます。値そのものを書くリテラル型とは、受け付ける範囲が違います。型を `|` でつなぐ書き方は、既習のユニオン型です。型の `|` は1本、条件の「または」の `||` は2本です。
 
@@ -52,8 +52,9 @@ function waterLabel(temp: number): "熱い" | "適温" | "ぬるい" {
   return "ぬるい";
 }
 // 75度のお湯の表示を確かめる
-console.log(waterLabel(75));
-// 結果: "適温"
+console.log(waterLabel(75)); // => "適温"
+console.log(waterLabel(95)); // => "熱い"
+console.log(waterLabel(50)); // => "ぬるい"
 ```
 
 75度は90度以上ではないので、最初の `if` では返しません。次の60度以上に合うため、`"適温"` を返して関数が終わります。後ろの `return "ぬるい";` は実行されません。
@@ -61,6 +62,12 @@ console.log(waterLabel(75));
 最後の行に来るのは、前の二つの条件に合わなかったときだけです。候補が3つ以上でも、`else` を何重にも重ねずに書けます。
 
 95度なら、最初の条件で `"熱い"` を返します。60度以上でもありますが、次の条件には進みません。広い条件を先に置くと返す値が変わるため、条件の順番も確かめましょう。
+
+参考: サバイバルTypeScript [リテラル型](https://typescriptbook.jp/reference/values-types-variables/literal-types)。説明とコード例は教材用に作成しています。
+
+## もっと知りたい人へ
+
+- [サバイバルTypeScriptのリテラル型](https://typescriptbook.jp/reference/values-types-variables/literal-types)で、値そのものを型として指定する書き方を確認できます。
 
 ## 問題ごとのヒント
 

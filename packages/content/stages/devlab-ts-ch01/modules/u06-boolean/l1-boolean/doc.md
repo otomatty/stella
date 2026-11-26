@@ -1,5 +1,5 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
+sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values, SRC-typescriptbook-builtin-api-regexp]
 ---
 
 # レッスン6-1 q06 boolean型
@@ -27,7 +27,7 @@ function isFreeShipping(subtotal: number): boolean {
 }
 // isFreeShipping に 6000 と 3000 を渡した結果を表示する
 console.log(isFreeShipping(6000), isFreeShipping(3000));
-// 結果: true false
+// => true false
 ```
 
 `&&` は「かつ」、`||` は「または」、`!` は「でない」です。
@@ -49,7 +49,7 @@ function canReserve(seats: number, isClosed: boolean): boolean {
 }
 // 空席がある営業日と休業日の結果を表示する
 console.log(canReserve(3, false), canReserve(3, true));
-// 結果: true false
+// => true false
 ```
 
 よくある間違いは、`: boolean` の関数で数値をそのまま返すことです。
@@ -60,44 +60,61 @@ console.log(canReserve(3, false), canReserve(3, true));
 `!isClosed` は `isClosed === false` と同じ判定を短く書けます。
 複数の条件をまとめるときは、かっこでまとまりを示せます。
 
-
 試合の例では、天気と人数を組み合わせて返します。
+ここでは天気を晴れか雨のどちらかとし、晴れでなければ雨とします。
 
 ```ts
-// 晴れていて、選手が9人以上そろったかを返す
 function canStartGame(isSunny: boolean, players: number): boolean {
-  // 天気と人数の条件を組み合わせて返す
   return isSunny && players >= 9;
 }
+console.log(canStartGame(true, 8), canStartGame(true, 9)); // => false true
 ```
 
+雨か人数不足なら中止です。晴れでも8人なら、中止の判定になります。
+
 ```ts
-// 雨か人数不足なら、試合を中止する
 function shouldCancelGame(isRainy: boolean, players: number): boolean {
-  // 片方でも当てはまれば中止にする
   return isRainy || players < 9;
 }
+console.log(shouldCancelGame(false, 8)); // => true
+console.log(shouldCancelGame(false, 9)); // => false
+console.log(shouldCancelGame(true, 9)); // => true
 ```
 
+同じ中止の判定を、開始できるかの結果を `!` で反転させても書けます。
+次の例には、呼び出す `canStartGame` の定義も含めています。
+
 ```ts
-// 試合を始められないときは待つ
-function shouldWait(isSunny: boolean, players: number): boolean {
-  // 開始できるかの結果を逆にする
+function canStartGame(isSunny: boolean, players: number): boolean {
+  return isSunny && players >= 9;
+}
+function shouldCancelByStart(isSunny: boolean, players: number): boolean {
   return !canStartGame(isSunny, players);
 }
+console.log(shouldCancelByStart(true, 8)); // => true
+console.log(shouldCancelByStart(true, 9)); // => false
+console.log(shouldCancelByStart(false, 9)); // => true
 ```
+
+`shouldCancelGame` は雨かどうか、`shouldCancelByStart` は晴れかどうかを受け取ります。
+同じ天気と人数なら、どちらも同じ中止の判定を返します。
 
 真のときに `return true;`、偽のときに `return false;` と分けた形と、判定は同じです。
 `if` の中で `return` すると、関数はそこで終わります。
 
-屋外なら晴れとグラウンド、屋内なら屋根と照明が必要だとします。
+会場の条件も組み合わせられます。屋外なら晴れとグラウンド、屋内なら屋根と照明が必要だとします。
 どちらか一組がそろえばよい条件は、次のようにまとめられます。
-各変数には、それぞれの条件を満たすかを真偽値で入れておきます。
 
 ```ts
-// 屋外か屋内のどちらかで試合ができるかを調べる
+const isSunny = false;
+const hasField = true;
+const hasRoof = true;
+const hasLights = true;
 const canPlay = (isSunny && hasField) || (hasRoof && hasLights);
+console.log(canPlay); // => true
 ```
+
+この例では屋外の条件は満たしませんが、屋内の条件を満たすので `true` です。
 
 ## 6-1-2 合う文字が含まれるか調べる
 
@@ -115,8 +132,7 @@ const canPlay = (isSunny && hasField) || (hasRoof && hasLights);
 ```ts
 // 部屋の札に半角数字が含まれるかを調べる
 const hasNumber = /\d/.test("B2倉庫");
-// 結果を表示する（true）
-console.log(hasNumber);
+console.log(hasNumber); // => true
 ```
 
 「B2倉庫」では、数字の2だけが合います。それでも結果は `true` です。
@@ -127,15 +143,20 @@ console.log(hasNumber);
 const hasCapital = /[A-Z]/.test("B2倉庫");
 // 数字だけの札も調べる
 const numberOnly = /[A-Z]/.test("305");
-// 結果を表示する（true false）
-console.log(hasCapital, numberOnly);
+console.log(hasCapital, numberOnly); // => true false
 ```
 
 `includes("2")` は、決まった文字の2を探します。
 `"305".includes("2")` は `false` でも、`/\d/.test("305")` は `true` です。
 数字のどれか一文字を探すときは、正規表現で形を指定します。
 
-参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明とコード例は教材用に作成しています。
+参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)・[RegExp](https://typescriptbook.jp/reference/builtin-api/regexp)。説明とコード例は教材用に作成しています。
+
+## もっと知りたい人へ
+
+- [サバイバルTypeScriptの boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)で、true と false を表す型を確認できます。
+- [サバイバルTypeScriptの truthyな値、falsyな値](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)で、真偽値以外を条件に使ったときの扱いを確認できます。
+- [サバイバルTypeScriptの RegExp](https://typescriptbook.jp/reference/builtin-api/regexp)で、正規表現の test による文字列の判定を確認できます。
 
 ## 問題ごとのヒント
 
