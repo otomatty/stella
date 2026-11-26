@@ -6582,6 +6582,193 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-mcp-architecture-20261126",
+      "title": "Architecture",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/architecture",
+      "section": "Core Components",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-prompts-20261126",
+      "title": "Prompts",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/prompts",
+      "section": "User Interaction Model / Getting a Prompt",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-stdio-20261126",
+      "title": "stdio",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio",
+      "section": "Sending Messages / Receiving Messages",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-streamable-http-20261126",
+      "title": "Streamable HTTP",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+      "section": "Security & Endpoint / Sending Messages / Receiving Messages / Backward Compatibility",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-authorization-20261126",
+      "title": "Authorization",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+      "section": "Purpose and Scope / Roles / Authorization Server Discovery / Access Token Usage / Error Handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-mcp-stateless-20261126",
+      "title": "Key Changes",
+      "publisher": "Model Context Protocol",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+      "section": "Major changes",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-07-28"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-mcp-20261126",
+      "title": "Connect Claude Code to tools via MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/mcp",
+      "section": "Installing MCP servers / MCP installation scopes / Use MCP resources / Use MCP prompts as commands",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-mcp-oauth-20261126",
+      "title": "Connect to external tools with MCP",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/mcp",
+      "section": "OAuth2 authentication",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-runner-20261126",
+      "title": "Tool runner (SDK)",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-runner",
+      "section": "Basic usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-search-20261126",
+      "title": "Tool search tool",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+      "section": "Deferred tool loading / MCP integration / When to use tool search",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-agent-skills-availability-20261126",
+      "title": "Agent Skills",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+      "section": "Cross-surface availability",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }

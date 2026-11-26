@@ -3,8 +3,8 @@ sourceRefs: [SRC-claude-code-skills-20261118, SRC-claude-code-skill-config-20261
 id: 8-5-1
 title: 繰り返す手順を Skill にする
 takeaway: "繰り返し使う手順や知識は、Skill にして必要なときだけ読み込ませます。"
-introduces: [Skill]
-requires: [Claude Code, CLAUDE.md]
+introduces: [SKILL.md]
+requires: [Claude Code, CLAUDE.md, Skill]
 header: "Claude Developer資格対策"
 ---
 <!-- _class: lead -->
