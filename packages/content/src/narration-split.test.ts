@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import topic31 from "./fixtures/narration-split/gemini-topic-31.json";
+import topic65 from "./fixtures/narration-split/gemini-topic-65.json";
 import { splitNarration, trimSilence } from "./narration-split.js";
 
 const rate = 48_000;
@@ -52,6 +54,34 @@ describe("splitNarration", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.reason);
     expect(result.segments[0].end / rate).toBeCloseTo(2.75, 2);
+  });
+
+  it("読点の間が段落の間より長くても、文ごとの有音時間が合う段落の間で切る", () => {
+    const result = splitNarration(audio(1, -0.5, 1, -0.47, 2), rate, [2, 2]);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.segments[0].end).toBe(Math.round(2.735 * rate));
+  });
+
+  it.each([topic31, topic65])("実測の $name で全ての文の切れ目を選ぶ", (fixture) => {
+    const sampleRate = 8000;
+    const frameSize = Math.round(fixture.frameSec * sampleRate);
+    const pcm = new Int16Array(fixture.runs.reduce((sum, frames) => sum + frames, 0) * frameSize);
+    let offset = 0;
+    // runs は無音から始まり、奇数番目の添字が有音。
+    for (const [i, frames] of fixture.runs.entries()) {
+      const end = offset + frames * frameSize;
+      if (i % 2 === 1) pcm.fill(8000, offset, end);
+      offset = end;
+    }
+
+    const result = splitNarration(pcm, sampleRate, fixture.weights);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.segments).toHaveLength(fixture.boundaries.length + 1);
+    for (const [i, [start, end]] of fixture.boundaries.entries()) {
+      const cut = result.segments[i].end / frameSize;
+      expect(cut, `切れ目 ${i + 1}`).toBeGreaterThanOrEqual(start);
+      expect(cut, `切れ目 ${i + 1}`).toBeLessThan(end);
+    }
   });
 
   it("候補が足りないとき、足りない切れ目を示す", () => {

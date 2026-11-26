@@ -25,7 +25,7 @@ function speechFrames(pcm: Int16Array, sampleRate: number, thresholdDb: number) 
   return { frameSize, voiced, first: voiced.indexOf(true), last: voiced.lastIndexOf(true) };
 }
 
-/** 段落の間を優先しながら、推定長に近い無音の中点で字幕に分ける。 */
+/** 長い無音を優先しつつ、文ごとの有音時間が推定に近くなるよう字幕に分ける。 */
 export function splitNarration(
   pcm: Int16Array,
   sampleRate: number,
@@ -65,40 +65,51 @@ export function splitNarration(
       reason: `切れ目 ${candidates.length + 1}: 無音候補が足りません (${candidates.length} / ${count})`,
     };
   }
-  const total = weights.reduce((sum, w) => sum + w, 0);
-  const speechStart = first * frameSize;
-  const speechEnd = Math.min(pcm.length, (last + 1) * frameSize);
+  const voicedSamples = [0];
+  for (let i = 0; i < voiced.length; i++) {
+    const samples = voiced[i] ? Math.min(frameSize, pcm.length - i * frameSize) : 0;
+    voicedSamples.push(voicedSamples[i] + samples);
+  }
+  const totalVoicedSec = voicedSamples[voiced.length] / sampleRate;
+  const scale = totalVoicedSec / weights.reduce((sum, w) => sum + w, 0);
+  const expected = weights.map((w) => w * scale);
+  // 無音区間の始点・中点・終点で有音時間の累積は同じ。
+  const voicedAt = candidates.map((c) => voicedSamples[c.start / frameSize] / sampleRate);
+  const pauseBonus = options.pauseBonus ?? 2;
+  const pauseRewards = candidates.map((c) => (pauseBonus * (c.end - c.start)) / sampleRate);
+
+  // previous[j] は直前の切れ目を候補 j に置いた場合の最小費用。
+  let previous = voicedAt.map((seconds, j) => Math.abs(seconds - expected[0]) - pauseRewards[j]);
   const parents: number[][] = [];
-  let previous = candidates.map(() => 0);
-  let cumulative = 0;
-  for (let k = 0; k < count; k++) {
-    cumulative += weights[k];
-    const expected = speechStart + ((speechEnd - speechStart) * cumulative) / total;
+  for (let k = 1; k < count; k++) {
     const current = candidates.map(() => Number.POSITIVE_INFINITY);
     parents[k] = candidates.map(() => -1);
-    let best = Number.POSITIVE_INFINITY;
-    let bestIndex = -1;
-    for (let j = 0; j < candidates.length; j++) {
-      if (k === 0) best = 0;
-      else if (j > 0 && previous[j - 1] < best) {
-        best = previous[j - 1];
-        bestIndex = j - 1;
+    for (let j = k; j < candidates.length; j++) {
+      for (let i = k - 1; i < j; i++) {
+        const duration = voicedAt[j] - voicedAt[i];
+        const cost = previous[i] + Math.abs(duration - expected[k]) - pauseRewards[j];
+        if (cost < current[j]) {
+          current[j] = cost;
+          parents[k][j] = i;
+        }
       }
-      const c = candidates[j];
-      current[j] =
-        best +
-        (Math.abs((c.start + c.end) / 2 - expected) -
-          (options.pauseBonus ?? 2) * (c.end - c.start)) /
-          sampleRate;
-      parents[k][j] = bestIndex;
     }
     previous = current;
   }
-  let index = previous.indexOf(Math.min(...previous));
+  let index = count - 1;
+  let best = Number.POSITIVE_INFINITY;
+  for (let j = count - 1; j < candidates.length; j++) {
+    const duration = totalVoicedSec - voicedAt[j];
+    const cost = previous[j] + Math.abs(duration - expected[count]);
+    if (cost < best) {
+      best = cost;
+      index = j;
+    }
+  }
   const chosen: Segment[] = [];
   for (let k = count - 1; k >= 0; k--) {
     chosen[k] = candidates[index];
-    index = parents[k][index];
+    if (k > 0) index = parents[k][index];
   }
   const boundaries = [0, ...chosen.map((c) => Math.floor((c.start + c.end) / 2)), pcm.length];
   return {
