@@ -334,6 +334,22 @@ describe("動画単位の音声合成", () => {
     expect(synthesize).toHaveBeenCalledExactlyOnceWith(full);
   });
 
+  it.each([false, true])(
+    "--refresh-audio の有無で分割後のキャッシュを使い分ける (%s)",
+    async (refresh) => {
+      cacheAudio(first);
+      cacheAudio(last);
+      synthesize.mockImplementation(async (speech) =>
+        audioBytes(spokenPcm(speech, speech === full ? 3 : 1)),
+      );
+      const { refreshAudio } = argumentsOf(refresh ? ["--refresh-audio", long.id] : []);
+      await run(scenes, refreshAudio);
+      expect(synthesize.mock.calls).toEqual(
+        refresh ? [[full], [full], [first], [last]] : [[full], [full]],
+      );
+    },
+  );
+
   it("cached-only は検査に落ちても作り直さず、キャッシュにある前半と後半を使う", async () => {
     cacheAudio(full, 3);
     cacheAudio(first);
@@ -653,6 +669,7 @@ describe("音声モデルと日次上限", () => {
       ]);
       expect(createTtsProvider).not.toHaveBeenCalled();
       expect(synthesizeCached).not.toHaveBeenCalled();
+      expect(existsSync(join(root, "out", "scenes.html"))).toBe(false);
       const screenshots = page.screenshot.mock.calls.map(([args]) => args.path);
       expect(screenshots[0]).toContain("scene-1-beat-1.png");
       expect(screenshots).toContain(join(dir, `scene-${storyboard.scenes.length + 1}-beat-1.png`));
@@ -661,6 +678,73 @@ describe("音声モデルと日次上限", () => {
         2 * (storyboard.scenes.reduce((n, s) => n + s.beats.length, 0) + 2),
       );
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    [undefined, ["first", "second", "third"]],
+    [new Error("合成に失敗"), ["first", "third"]],
+    [new QuotaExhaustedError("日次上限"), ["first"]],
+  ] as const)("確認ページには今回作れた動画だけを載せる (%s)", async (failure, made) => {
+    const { root, topics } = fixture();
+    const out = join(root, "out");
+    const preview = join(out, "scenes.html");
+    const index = join(out, "index.html");
+    const exitCode = process.exitCode;
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      topics[0].title = "動画 <script> & 字幕";
+      topics.push({ ...topics[1], id: "third" });
+      mkdirSync(join(out, "fixture", "second"), { recursive: true });
+      writeFileSync(join(out, "fixture", "second", "video.mp4"), "前回の動画");
+      writeFileSync(index, "video:sync の一覧");
+      vi.mocked(createTtsProvider).mockReturnValue(provider("topic"));
+      vi.mocked(decodePcm).mockImplementation(async () =>
+        spokenPcm(vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? ""),
+      );
+      if (failure)
+        vi.mocked(synthesizeCached)
+          .mockResolvedValueOnce({ file: "fixture.wav", cached: false })
+          .mockRejectedValueOnce(failure);
+
+      await buildSceneVideos([
+        "fixture",
+        "--tts",
+        "gemini",
+        "--tts-model",
+        "alternate-model",
+        "--out",
+        out,
+      ]);
+
+      const html = readFileSync(preview, "utf8");
+      for (const id of made) {
+        expect(html).toContain(`<h2>fixture/${id} `);
+        expect(html).toContain(
+          `<video controls preload="metadata" poster="fixture/${id}/poster.jpg">`,
+        );
+        expect(html).toContain(`<source src="fixture/${id}/video.mp4" type="video/mp4">`);
+        expect(html).toContain(
+          `<track kind="captions" srclang="ja" label="日本語" src="fixture/${id}/captions.vtt" default>`,
+        );
+      }
+      expect(html.match(/<video /g)).toHaveLength(made.length);
+      expect(html).toContain("動画 &lt;script&gt; &amp; 字幕");
+      expect(html).not.toContain("<script>");
+      expect(html).toContain("video::cue {");
+      expect(html).toMatch(/長さ \d+\.\d{2} 秒/);
+      expect(readFileSync(index, "utf8")).toBe("video:sync の一覧");
+      expect(info).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `${preview} （python3 -m http.server -d '${out}' を実行し、http://localhost:8000/scenes.html`,
+        ),
+      );
+    } finally {
+      process.exitCode = exitCode;
+      info.mockRestore();
+      error.mockRestore();
       rmSync(root, { recursive: true, force: true });
     }
   });

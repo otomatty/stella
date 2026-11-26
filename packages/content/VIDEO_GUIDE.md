@@ -350,6 +350,8 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 
 静止画の一覧で、囲みの位置・寄ったときに文字が読めるか・札のはみ出しを見てから音声を作ります。一覧の各コマの下には対応する文を載せます。
 
+`video:scenes` で動画を作ると、`<出力先>/scenes.html` に確認ページを書きます。`python3 -m http.server -d <出力先>` を実行し、`http://localhost:8000/scenes.html` で動画と字幕を確かめます。
+
 `--refresh-audio` に場面の ID をカンマ区切りで指定します。Gemini は指定した場面を含む動画全体の音声を作り直します。文ごとに合成する TTS は指定した場面の文だけを作り直します。
 
 公開前の確認には `video:sync --preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、`http://localhost:8000/` の確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げます。

@@ -70,6 +70,7 @@ import {
   type TtsProviderName,
   type VoiceConfig,
 } from "./lib/tts.js";
+import type { SceneVideoPreviewItem } from "./lib/video-preview-page.js";
 
 export const SCENE_GENERATOR_VERSION = 3;
 const GENERATOR_VERSION = SCENE_GENERATOR_VERSION;
@@ -241,8 +242,9 @@ export async function topicAudio(
   }
 
   const weights = speeches.map((group) => group.map(estimateSpeechSeconds));
+  const refresh = scenes.some((scene) => refreshIds.includes(scene.id));
 
-  async function audioFor(from: number, to: number, refresh = false) {
+  async function audioFor(from: number, to: number, refresh: boolean) {
     const groupSpeeches = speeches.slice(from, to);
     const speech = topicSpeech(groupSpeeches);
     const segmentWeights = weights.slice(from, to).flat();
@@ -280,11 +282,7 @@ export async function topicAudio(
     return result.ok || isCachedTtsRequired() ? result : attempt(true);
   }
 
-  const full = await audioFor(
-    0,
-    scenes.length,
-    scenes.some((scene) => refreshIds.includes(scene.id)),
-  );
+  const full = await audioFor(0, scenes.length, refresh);
   if (full.ok) return full.pcms;
   const failure = (reason: string) =>
     new Error(`${topicLabel}: 音声の分割・長さの検査に失敗しました: ${reason}`);
@@ -306,9 +304,9 @@ export async function topicAudio(
   console.warn(
     `${topicLabel}: ${full.reason}。音声を場面 ${scenes[boundary].id} の手前で 2 つに分けます`,
   );
-  const first = await audioFor(0, boundary);
+  const first = await audioFor(0, boundary, refresh);
   if (!first.ok) throw failure(first.reason);
-  const last = await audioFor(boundary, scenes.length);
+  const last = await audioFor(boundary, scenes.length, refresh);
   if (!last.ok) throw failure(last.reason);
   return [...first.pcms, ...last.pcms];
 }
@@ -834,22 +832,36 @@ export async function buildSceneVideos(args: string[]) {
   const browser = await chromium.launch(
     existsSync("/opt/pw-browsers/chromium") ? { executablePath: "/opt/pw-browsers/chromium" } : {},
   );
+  const previews: SceneVideoPreviewItem[] = [];
   try {
     for (const topic of topics)
       try {
-        await buildSceneTopic(browser, options, topic, provider);
+        const report = await buildSceneTopic(browser, options, topic, provider);
+        if (report) {
+          const { stageSlug, id, title } = topic;
+          previews.push({ stageSlug, id, title, durationSec: report.durationSec });
+        }
       } catch (e) {
         process.exitCode = 1;
         if (e instanceof QuotaExhaustedError) {
           console.error(
             `${topic.stageSlug}/${topic.id}: ${provider?.identity}: ${e.message}。--tts-model <別のモデル> で別のモデルを使えます`,
           );
-          return;
+          break;
         }
         console.error(`${topic.stageSlug}/${topic.id}: ${(e as Error).message}`);
       }
   } finally {
     await browser.close();
+  }
+  if (previews.length > 0) {
+    const { sceneVideosPreviewHtml } = await import("./lib/video-preview-page.js");
+    const previewPath = join(options.out, "scenes.html");
+    writeFileSync(previewPath, sceneVideosPreviewHtml(previews));
+    const serveDir = `'${options.out.replaceAll("'", "'\\''")}'`;
+    console.info(
+      `確認ページ: ${previewPath} （python3 -m http.server -d ${serveDir} を実行し、http://localhost:8000/scenes.html を開く）`,
+    );
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

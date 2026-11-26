@@ -587,7 +587,8 @@ async function copyRecordedTopic(
 
 // ---------------------------------------------------------------- 一覧ページ
 
-function indexHtml(reports: TopicReport[], outDir: string): string {
+async function indexHtml(reports: TopicReport[], outDir: string): Promise<string> {
+  const { VIDEO_CUE_CSS } = await import("./lib/video-preview-page.js");
   const fmt = (sec: number) =>
     `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, "0")}`;
   const cards = reports
@@ -631,14 +632,7 @@ ${recorded ? "" : `<details><summary>台本 (${r.cues} 字幕)</summary><table><
 body { margin: 0 auto; max-width: 980px; padding: 24px 16px 64px; font: 15px/1.6 system-ui, "Noto Sans JP", sans-serif; color: var(--fg); background: var(--bg); }
 h1 { font-size: 22px; } h2 { font-size: 18px; margin: 40px 0 8px; } small { color: var(--muted); font-weight: normal; }
 video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; }
-/* apps/web/src/components/learner/VideoViewer.css の .video-viewer-media::cue に合わせる。 */
-video::cue {
-  color: #fff;
-  background-color: rgba(0, 0, 0, 0.8);
-  font-family: "Noto Sans JP", system-ui, sans-serif;
-  font-weight: 700;
-  text-shadow: none;
-}
+${VIDEO_CUE_CSS}
 .meta { color: var(--muted); font-size: 13px; } .notes { color: #b25c00; font-size: 13px; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
 td:first-child, td:nth-child(2) { white-space: nowrap; color: var(--muted); } .speech { color: var(--muted); }
@@ -1089,7 +1083,7 @@ export async function buildVideos(
     });
   const allReports = [...legacyReports, ...allSceneReports];
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "index.html"), indexHtml(allReports, outDir));
+  writeFileSync(join(outDir, "index.html"), await indexHtml(allReports, outDir));
   writeFileSync(
     join(outDir, "summary.json"),
     `${JSON.stringify({ voice: provider.identity, ttsMs, generated: reports.length + sceneReports.length, failures: failures.map(formatVideoFailure) }, null, 2)}\n`,

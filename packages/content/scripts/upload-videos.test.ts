@@ -465,18 +465,28 @@ it.each(["openjtalk", "grok"] as const)(
   },
 );
 
-it("--preview は --out の確認ページと HTTP での開き方を案内する", async () => {
-  const out = mkdtempSync(join(tmpdir(), "stella-video preview-"));
+it("--preview は --out の確認ページと再実行コマンドで引数を引用する", async () => {
+  const root = mkdtempSync(join(tmpdir(), "stella-video-"));
   const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
   try {
     buildVideos.mockResolvedValue({ reports: [], failures: [] });
-    await uploadVideos(["--tts", "fake", "--preview", "--out", out]);
-    expect(
-      log.mock.calls.find(([message]) => String(message).startsWith("確認ページ"))?.[0],
-    ).toContain(`${join(out, "index.html")} （python3 -m http.server -d '${out}'`);
+    for (const [name, quoted] of [
+      ["a b", `'${root}/a b'`],
+      ["a'b", `'${root}/a'\\''b'`],
+      ["a_b-1", `${root}/a_b-1`],
+    ]) {
+      const out = join(root, name);
+      await uploadVideos(["dev-env-basics", "--tts", "fake", "--preview", "--out", out, ""]);
+      expect(log).toHaveBeenCalledWith(
+        `確認ページ: ${join(out, "index.html")} （python3 -m http.server -d ${quoted} を実行し、http://localhost:8000/ を開く）`,
+      );
+      expect(log).toHaveBeenCalledWith(
+        `次に上げるコマンド: bun run --filter=@stella/content video:sync dev-env-basics --tts fake --out ${quoted} '' --cached-only`,
+      );
+    }
   } finally {
     log.mockRestore();
-    rmSync(out, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

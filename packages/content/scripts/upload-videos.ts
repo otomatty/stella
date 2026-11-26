@@ -291,6 +291,10 @@ function summaryTable(
   ].join("\n");
 }
 
+function shellQuote(arg: string): string {
+  return /^[A-Za-z0-9_./:=,@%+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", "'\\''")}'`;
+}
+
 export async function uploadVideos(args: string[]): Promise<void> {
   validatePublishedVideoVoice(args);
   const topicIds = topicIdsFromArgs(args);
@@ -502,14 +506,16 @@ export async function uploadVideos(args: string[]): Promise<void> {
   }
   if (failure) throw failure.error;
   if (preview) {
-    const serveDir =
-      outDir === videoOutputDir([])
-        ? "packages/content/dist/video"
-        : `'${outDir.replaceAll("'", "'\\''")}'`;
+    const serveDir = shellQuote(
+      outDir === videoOutputDir([]) ? "packages/content/dist/video" : outDir,
+    );
     console.log(
       `確認ページ: ${join(outDir, "index.html")} （python3 -m http.server -d ${serveDir} を実行し、http://localhost:8000/ を開く）`,
     );
-    const again = args.filter((arg) => arg !== "--preview").join(" ");
+    const again = args
+      .filter((arg) => arg !== "--preview")
+      .map(shellQuote)
+      .join(" ");
     console.log(
       `次に上げるコマンド: bun run --filter=@stella/content video:sync ${again} --cached-only`,
     );
