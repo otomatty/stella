@@ -7,38 +7,37 @@ export interface PeerStageSnapshot {
 }
 
 export type PeerNow =
-  | { kind: "progress"; title: string; percent: number; compact: string }
-  | { kind: "ahead"; label: string; compact: string }
-  | { kind: "cleared"; title: string; label: string; compact: string }
-  | { kind: "not-started"; label: string; compact: string };
-
-const AHEAD_LABEL = "›› 先に進んでいます";
-const NOT_STARTED_LABEL = "まだ始めていません";
+  | { kind: "stage"; title: string }
+  | { kind: "ahead" }
+  | { kind: "done"; label: string }
+  | { kind: "empty" };
 
 /**
- * 「いま」の列。並び順で最初の、修了でなく割合が 0 より大きいステージを出す。
- * それが無いときは、先に進んでいること、最後に修了したステージ、未着手の順。
+ * 「いま」の列。割合は出さない。
+ * 1. 修了でなく割合が 0 より大きい、並び順で最初のステージ
+ * 2. 見えないステージを始めている (`ahead`) → 題名を伏せる
+ * 3. 最後に修了したステージより後ろの最初の未修了 (無ければ並び順で最初の未修了)。未着手もここ
+ * 4. 見えるステージがすべて修了で見えないステージがある → 次は見えないので題名を伏せる
+ * 5. グループのステージをすべて修了 → 「まで修了」
  */
-export function peerNow(stages: readonly PeerStageSnapshot[], ahead: boolean): PeerNow {
+export function peerNow(
+  stages: readonly PeerStageSnapshot[],
+  ahead: boolean,
+  hasHiddenStages: boolean,
+): PeerNow {
   const current = stages.find((stage) => !stage.cleared && stage.percent > 0);
-  if (current) {
-    return {
-      kind: "progress",
-      title: current.title,
-      percent: current.percent,
-      compact: `${current.title} · ${current.percent}%`,
-    };
-  }
-  if (ahead) return { kind: "ahead", label: AHEAD_LABEL, compact: AHEAD_LABEL };
-  let index = stages.length - 1;
-  while (index >= 0 && !stages[index]?.cleared) index--;
-  const lastCleared = stages[index];
-  if (lastCleared) {
-    const suffix = stages.slice(0, index).every((stage) => stage.cleared) ? "まで修了" : " 修了";
-    const label = `✓ ${lastCleared.title}${suffix}`;
-    return { kind: "cleared", title: lastCleared.title, label, compact: label };
-  }
-  return { kind: "not-started", label: NOT_STARTED_LABEL, compact: NOT_STARTED_LABEL };
+  if (current) return { kind: "stage", title: current.title };
+  if (ahead) return { kind: "ahead" };
+  let lastCleared = stages.length - 1;
+  while (lastCleared >= 0 && !stages[lastCleared]?.cleared) lastCleared--;
+  const next =
+    stages.slice(lastCleared + 1).find((stage) => !stage.cleared) ??
+    stages.find((stage) => !stage.cleared);
+  if (next) return { kind: "stage", title: next.title };
+  if (hasHiddenStages) return { kind: "ahead" };
+  const last = stages[stages.length - 1];
+  if (last) return { kind: "done", label: `✓ ${last.title}まで修了` };
+  return { kind: "empty" };
 }
 
 /** 題名の「NN章」の数字。1 つでも無ければ並び順の 1 始まり。 */
@@ -50,24 +49,6 @@ export function peerStageShortLabels(titles: readonly string[]): string[] {
     return numbers;
   }
   return titles.map((_, index) => String(index + 1));
-}
-
-/**
- * 凡例に出す題名。短いラベルが題名の「NN章」の番号のときは、先頭の「NN章」と続く空白を除く。
- * 並び順の番号のとき、章番号が先頭に無いとき、除くと空になるときは題名のまま。
- */
-export function peerLegendTitles(titles: readonly string[], shorts: readonly string[]): string[] {
-  const fromChapter =
-    titles.length > 0 &&
-    titles.length === shorts.length &&
-    titles.every((title, index) => CHAPTER_NUMBER.exec(title)?.[1] === shorts[index]);
-  if (!fromChapter) return [...titles];
-  return titles.map((title, index) => {
-    const prefix = `${shorts[index]}章`;
-    if (!title.startsWith(prefix)) return title;
-    const rest = title.slice(prefix.length).replace(/^\s+/, "");
-    return rest === "" ? title : rest;
-  });
 }
 
 /**
