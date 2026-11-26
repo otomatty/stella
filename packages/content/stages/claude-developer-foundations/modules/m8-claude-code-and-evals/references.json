@@ -282,10 +282,7 @@
     },
     {
       "contentId": "l5-extend/t1-skills/slides.md",
-      "sourceRefs": [
-        "SRC-claude-code-skills-20261118",
-        "SRC-claude-code-skill-config-20261126"
-      ],
+      "sourceRefs": ["SRC-claude-code-skills-20261118", "SRC-claude-code-skill-config-20261126"],
       "usedFor": "Skill の配置、説明と本文を読む時点、手動呼び出しの指定",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -321,10 +318,7 @@
     },
     {
       "contentId": "l6-config-sdlc/t1-pin-model/slides.md",
-      "sourceRefs": [
-        "SRC-claude-code-model-config-20261126",
-        "SRC-claude-docs-model-ids-20261031"
-      ],
+      "sourceRefs": ["SRC-claude-code-model-config-20261126", "SRC-claude-docs-model-ids-20261031"],
       "usedFor": "Claude Code のモデル別名と完全なモデル ID による固定",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -429,10 +423,7 @@
     },
     {
       "contentId": "l7-agent-guardrails/t1-sdk-hooks/slides.md",
-      "sourceRefs": [
-        "SRC-claude-sdk-hooks-20261118",
-        "SRC-claude-sdk-hook-callbacks-20261126"
-      ],
+      "sourceRefs": ["SRC-claude-sdk-hooks-20261118", "SRC-claude-sdk-hook-callbacks-20261126"],
       "usedFor": "SDK の実行前・実行後フック",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -440,9 +431,7 @@
     },
     {
       "contentId": "l7-agent-guardrails/t2-decision-order/slides.md",
-      "sourceRefs": [
-        "SRC-claude-code-sdk-permissions-20261031"
-      ],
+      "sourceRefs": ["SRC-claude-code-sdk-permissions-20261031"],
       "usedFor": "SDK の権限判定順",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -474,9 +463,7 @@
     },
     {
       "contentId": "l8-failure-modes/t2-under-acting/slides.md",
-      "sourceRefs": [
-        "SRC-claude-docs-prompt-tool-usage-20261126"
-      ],
+      "sourceRefs": ["SRC-claude-docs-prompt-tool-usage-20261126"],
       "usedFor": "操作を明示する依頼",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -507,10 +494,7 @@
     },
     {
       "contentId": "l8-failure-modes/t5-fix-the-cause/slides.md",
-      "sourceRefs": [
-        "SRC-claude-docs-stop-reasons-20261031",
-        "SRC-anthropic-agent-evals-20261118"
-      ],
+      "sourceRefs": ["SRC-claude-docs-stop-reasons-20261031", "SRC-anthropic-agent-evals-20261118"],
       "usedFor": "終了理由と実行結果の診断",
       "authorship": "summary",
       "reuse": "concept-reference",

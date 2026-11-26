@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m3-models-and-cost@6",
-  "contentHash": "e2980ecb44564eab4027cc790e406812d2d1afb6945c328f4b88ea7165aa6e83",
+  "unitId": "claude-developer-foundations/m3-models-and-cost@7",
+  "contentHash": "f3df3d1c78ba6877f290a8a751f76afb321b03da9199c1739fdf28156ff735cc",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -257,7 +257,10 @@
     },
     {
       "contentId": "l5-release-planning/t2-models-retire/slides.md",
-      "sourceRefs": ["SRC-claude-docs-model-deprecations-20261126", "SRC-claude-docs-model-ids-20261031"],
+      "sourceRefs": [
+        "SRC-claude-docs-model-deprecations-20261126",
+        "SRC-claude-docs-model-ids-20261031"
+      ],
       "usedFor": "モデルの状態と廃止予告、固定したモデル ID の移行",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -346,6 +349,19 @@
         "SRC-claude-docs-token-counting-20261031"
       ],
       "usedFor": "複数回の結果の判定、廃止前の移行、回帰評価と実際の通信での確認を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q03-place-breakpoints/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-prompt-caching-20261031",
+        "SRC-claude-docs-caching-structure-20261031",
+        "SRC-claude-docs-cache-invalidation-20261126",
+        "SRC-claude-docs-cache-diagnostics-20261126"
+      ],
+      "usedFor": "更新頻度の違う入力への区切りの配置と、リクエストの前半の差を層ごとに探す課題の仕様",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

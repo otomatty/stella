@@ -1,5 +1,5 @@
 {
-  "plannedHours": 8,
+  "plannedHours": 9,
   "skills": {
     "uses": ["claude-messages-request", "claude-stop-reason"],
     "assesses": [

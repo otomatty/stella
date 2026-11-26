@@ -263,10 +263,7 @@
     },
     {
       "contentId": "l4-build-mcp-server/t3-protect-remote-server/slides.md",
-      "sourceRefs": [
-        "SRC-mcp-authorization-20261126",
-        "SRC-claude-sdk-mcp-oauth-20261126"
-      ],
+      "sourceRefs": ["SRC-mcp-authorization-20261126", "SRC-claude-sdk-mcp-oauth-20261126"],
       "usedFor": "HTTP の認可、Bearer ヘッダー、自分あてのトークンの検査",
       "authorship": "summary",
       "reuse": "concept-reference",
@@ -274,9 +271,7 @@
     },
     {
       "contentId": "l5-shape-and-select/t1-shape-the-result/slides.md",
-      "sourceRefs": [
-        "SRC-anthropic-writing-tools-20261031"
-      ],
+      "sourceRefs": ["SRC-anthropic-writing-tools-20261031"],
       "usedFor": "ツール結果の項目選択、名前、絞り込みと打ち切り",
       "authorship": "summary",
       "reuse": "concept-reference",

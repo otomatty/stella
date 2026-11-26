@@ -90,7 +90,10 @@
     },
     {
       "contentId": "l1-exam-overview/knowledge.md",
-      "sourceRefs": ["SRC-claude-four-certs-20261031", "SRC-claude-developer-guide-v11-ja-20261126"],
+      "sourceRefs": [
+        "SRC-claude-four-certs-20261031",
+        "SRC-claude-developer-guide-v11-ja-20261126"
+      ],
       "usedFor": "資格の対象、解答のペースと結果の読み方、場面の原因と条件に合う対応を問う自作問題",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
