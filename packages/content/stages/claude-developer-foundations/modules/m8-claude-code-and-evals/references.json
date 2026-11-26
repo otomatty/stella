@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@5",
-  "contentHash": "a5db9c116828df6702fbacc15f6851f23804d548d0f5b563193063133c48415d",
+  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@6",
+  "contentHash": "48403aac911e4279bff186bb21ef05344e31d1d04aef96fc0999d02deb32dcc2",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -132,6 +132,152 @@
       "reuse": "concept-reference",
       "sourceRefs": ["SRC-anthropic-agent-evals-20261118", "SRC-claude-docs-eval-grading-20261031"],
       "usedFor": "照合と採用基準、独立した事例で採点器を再評価する課題の受入条件",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t1-claude-md-layers/slides.md",
+      "sourceRefs": ["SRC-claude-code-memory-20261031", "SRC-claude-code-memory-load-20261126"],
+      "usedFor": "複数の CLAUDE.md の読み込み順と、サブディレクトリの読み込み時点",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t2-path-rules/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126"
+      ],
+      "usedFor": "パス指定によるルールの読み込みと圧縮後にルールが戻る条件",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t3-deny-first/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031"
+      ],
+      "usedFor": "拒否・確認・許可の優先順、狭い許可との衝突、ツール名だけの拒否",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/t4-permission-modes/slides.md",
+      "sourceRefs": ["SRC-claude-code-permission-modes-20261126"],
+      "usedFor": "権限モードの用途と、分類による自動判断と固定の拒否との違い",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t1-non-interactive/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126"
+      ],
+      "usedFor": "非対話実行の起動とツール許可、対話なしで読み込まれるリポジトリの構成",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t2-clear-or-resume/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-best-practices-20261126"
+      ],
+      "usedFor": "関係のない作業での /clear と、同じ作業を続ける再開操作",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/t3-where-config-reaches/slides.md",
+      "sourceRefs": [
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "リポジトリで共有する設定と端末設定の違い、クラウドに届く管理設定",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-20261031",
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126",
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-permission-modes-20261126"
+      ],
+      "usedFor": "指示ファイルの読み込み順と圧縮後の扱い、権限の照合順、作業に合うモードの選択",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l3-instructions-and-permissions/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-memory-load-20261126",
+        "SRC-claude-code-memory-rules-20261126",
+        "SRC-claude-code-context-window-20261126",
+        "SRC-claude-code-permission-order-20261126",
+        "SRC-claude-code-permission-rules-20261031",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-permission-modes-20261126"
+      ],
+      "usedFor": "指示の読み込み順、ルールの範囲と圧縮後の扱い、権限の判定順とモード選択を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/doc.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126",
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-checkpointing-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "非対話実行の入出力と許可、セッションの再開や巻き戻し、利用環境ごとの設定の共有範囲",
+      "authorship": "summary",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l4-run-and-sessions/knowledge.md",
+      "sourceRefs": [
+        "SRC-claude-code-headless-20261118",
+        "SRC-claude-code-headless-unattended-20261126",
+        "SRC-claude-code-cli-reference-20261126",
+        "SRC-claude-code-sessions-20261126",
+        "SRC-claude-code-checkpointing-20261126",
+        "SRC-claude-code-best-practices-20261126",
+        "SRC-claude-code-settings-20261031",
+        "SRC-claude-code-platforms-20261126",
+        "SRC-claude-code-cloud-sessions-20261126",
+        "SRC-claude-code-server-managed-settings-20261126"
+      ],
+      "usedFor": "無人実行の許可と構成、会話の切り替えと復元の範囲、CI とクラウドへの設定配布を問う自作問題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
       "reviewStatus": "draft"
     }
   ]

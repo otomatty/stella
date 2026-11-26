@@ -5443,6 +5443,227 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-code-memory-rules-20261126",
+      "title": "How Claude remembers your project",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/memory",
+      "section": "Organize rules with .claude/rules/ / Instructions seem lost after /compact",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-memory-load-20261126",
+      "title": "How Claude remembers your project",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/memory",
+      "section": "Choose where to put CLAUDE.md files / Write effective instructions / Import additional files / How CLAUDE.md files load",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-context-window-20261126",
+      "title": "Explore the context window",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/context-window",
+      "section": "What survives compaction",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-permission-order-20261126",
+      "title": "Configure permissions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/permissions",
+      "section": "Manage permissions / Match all uses of a tool",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-permission-modes-20261126",
+      "title": "Choose a permission mode",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/permission-modes",
+      "section": "Available modes / Which mode a session starts in / Allow only pre-approved tools with dontAsk mode / Skip all checks with bypassPermissions mode",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-headless-unattended-20261126",
+      "title": "Run Claude Code programmatically",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/headless",
+      "section": "Start faster with bare mode / Auto-approve tools / Turn off permission prompts in unattended runs / Continue conversations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-cli-reference-20261126",
+      "title": "CLI reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/cli-reference",
+      "section": "CLI flags",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-sessions-20261126",
+      "title": "Manage sessions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/sessions",
+      "section": "Resume a session / Branch a session / Manage context within a session",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-checkpointing-20261126",
+      "title": "Checkpointing",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/checkpointing",
+      "section": "How checkpoints work / Limitations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-best-practices-20261126",
+      "title": "Best practices for Claude Code",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Keep cost and context down / Steer the session",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-platforms-20261126",
+      "title": "Platforms and integrations",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/platforms",
+      "section": "Where to run Claude Code / Work when you are away from your terminal",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-cloud-sessions-20261126",
+      "title": "Use Claude Code in the cloud",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/claude-code-on-the-web",
+      "section": "Cloud environments / Security and isolation / Limitations",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-server-managed-settings-20261126",
+      "title": "Configure server-managed settings",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/server-managed-settings",
+      "section": "Choose between server-managed and endpoint-managed settings / Platform availability",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
