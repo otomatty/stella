@@ -116,7 +116,7 @@ it("見積もりにも読み辞書を使い、headerは読み上げに含めな�
     sceneVideoSequence([], [], topic)[0].timing.duration,
   );
 });
-it("字幕の時刻にタイトルと前の場面の長さを足し、読み上げ中だけの cue を書く", () => {
+it("字幕の時刻にタイトルと前の場面の長さを足し、話し終わってからも残す", () => {
   const sequence = sceneVideoSequence(
     [
       {
@@ -160,13 +160,123 @@ it("字幕の時刻にタイトルと前の場面の長さを足し、読み上�
   ]);
   expect(captions.split("\n\n")).toEqual([
     "WEBVTT",
-    "1\n00:00:05.400 --> 00:00:06.400\n<c.on-dark>A &lt; B &amp; B &gt; C</c>",
-    "2\n00:00:10.500 --> 00:00:11.500\n<c.on-dark>コードを見ます。</c>",
-    "3\n00:00:24.200 --> 00:00:25.200\n<c.on-dark>画面を見ます。</c>",
-    "4\n00:00:28.300 --> 00:00:29.300\n次へ進みます。",
+    "1\n00:00:05.400 --> 00:00:07.900\n<c.on-dark>A &lt; B &amp; B &gt; C</c>",
+    "2\n00:00:10.500 --> 00:00:13.000\n<c.on-dark>コードを見ます。</c>",
+    "3\n00:00:24.200 --> 00:00:26.700\n<c.on-dark>画面を見ます。</c>",
+    "4\n00:00:28.300 --> 00:00:30.800\n次へ進みます。",
     "",
   ]);
   expect(sceneCaptionsVtt([])).toBe("WEBVTT\n\n");
+});
+
+describe("字幕の終わり", () => {
+  it("次の文までの間が bridge 以下なら、終わりを次の文の開始に合わせる", () => {
+    // 話し終わり 12 秒、次の開始 14 秒。間は 2 秒で bridge と同じなのでつなぐ。
+    const captions = sceneCaptionsVtt([
+      {
+        timing: {
+          start: 10,
+          duration: 20,
+          beats: [
+            { start: 1, end: 2, say: "つなぐ" },
+            { start: 4, end: 5, say: "次" },
+          ],
+        },
+        onDark: [false, false],
+      },
+    ]);
+    expect(captions.split("\n\n")).toEqual([
+      "WEBVTT",
+      "1\n00:00:11.000 --> 00:00:14.000\nつなぐ",
+      "2\n00:00:14.000 --> 00:00:16.500\n次",
+      "",
+    ]);
+  });
+
+  it("次の文までの間が bridge より長いなら、終わりは話し終わりの 1.5 秒後", () => {
+    // 話し終わり 1 秒、次の開始 4 秒。間は 3 秒で bridge より長い。
+    const captions = sceneCaptionsVtt([
+      {
+        timing: {
+          start: 0,
+          duration: 20,
+          beats: [
+            { start: 0, end: 1, say: "残す" },
+            { start: 4, end: 5, say: "次" },
+          ],
+        },
+        onDark: [false, false],
+      },
+    ]);
+    expect(captions.split("\n\n")).toEqual([
+      "WEBVTT",
+      "1\n00:00:00.000 --> 00:00:02.500\n残す",
+      "2\n00:00:04.000 --> 00:00:06.500\n次",
+      "",
+    ]);
+  });
+
+  it("場面の最後の文は、hold が残りより長くても場面の終わりで止まる", () => {
+    // 話し終わり 10 秒。1.5 秒足すと 11.5 秒だが、場面は 11 秒で終わる。
+    const captions = sceneCaptionsVtt([
+      {
+        timing: {
+          start: 8,
+          duration: 3,
+          beats: [{ start: 1, end: 2, say: "さいご" }],
+        },
+        onDark: [false],
+      },
+    ]);
+    expect(captions.split("\n\n")).toEqual([
+      "WEBVTT",
+      "1\n00:00:09.000 --> 00:00:11.000\nさいご",
+      "",
+    ]);
+  });
+
+  it("場面をまたいでつながらない", () => {
+    // 4 秒で話し終わり、次の場面の文は 5.5 秒に始まる。間は 1.5 秒だが場面で切る。
+    const captions = sceneCaptionsVtt([
+      {
+        timing: { start: 0, duration: 5, beats: [{ start: 2, end: 4, say: "まえ" }] },
+        onDark: [false],
+      },
+      {
+        timing: { start: 5, duration: 4, beats: [{ start: 0.5, end: 1, say: "あと" }] },
+        onDark: [false],
+      },
+    ]);
+    expect(captions.split("\n\n")).toEqual([
+      "WEBVTT",
+      "1\n00:00:02.000 --> 00:00:05.000\nまえ",
+      "2\n00:00:05.500 --> 00:00:07.500\nあと",
+      "",
+    ]);
+  });
+
+  it("終わりは次の文の開始を超えない", () => {
+    // 配列順は開始の逆。前の文は 1 秒で終わり、次は 2 秒。1.5 秒足すと 2.5 秒で次を過ぎる。
+    const captions = sceneCaptionsVtt([
+      {
+        timing: {
+          start: 0,
+          duration: 10,
+          beats: [
+            { start: 2, end: 3, say: "後の文" },
+            { start: 0, end: 1, say: "前の文" },
+          ],
+        },
+        onDark: [false, false],
+      },
+    ]);
+    expect(captions.split("\n\n")).toEqual([
+      "WEBVTT",
+      "1\n00:00:00.000 --> 00:00:02.000\n前の文",
+      "2\n00:00:02.000 --> 00:00:04.500\n後の文",
+      "",
+    ]);
+  });
 });
 describe("場面の時刻", () => {
   it("冒頭・文間・末尾の間を足し、30fpsの境界へ丸める", () => {
