@@ -70,14 +70,19 @@ function fixture() {
   vi.mocked(collectNarrationTopics).mockReturnValue([topic]);
   return { root, topic };
 }
-it("--burn-captions を場面の生成へ渡す", async () => {
+it("確認ページの字幕に Web プレイヤーと同じ ::cue のスタイルを入れる", async () => {
   const { root } = fixture();
-  vi.mocked(chromium.launch).mockResolvedValue({ close: vi.fn() } as unknown as Awaited<
-    ReturnType<typeof chromium.launch>
-  >);
-  vi.mocked(buildSceneTopic).mockResolvedValue(undefined);
-  await buildVideos(["--tts", "fake", "--out", join(root, "out"), "--burn-captions"]);
-  expect(vi.mocked(buildSceneTopic).mock.calls[0][1]).toMatchObject({ burnCaptions: true });
+  const out = join(root, "out");
+  await buildVideos(["--tts", "fake", "--out", out], () => true);
+  const html = readFileSync(join(out, "index.html"), "utf8");
+  expect(html).toContain(`video::cue {
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.8);
+  font-family: "Noto Sans JP", system-ui, sans-serif;
+  font-weight: 700;
+  text-shadow: none;
+}`);
+  expect(html).toContain("字幕は動画に焼き込まず、&lt;track&gt; で重ねています。");
 });
 it.each([undefined, "gemini", "openjtalk", "fake", "grok"] as const)(
   "content:video の読み上げ指定 %s で配信計画を作る",
@@ -249,6 +254,11 @@ it("新方式の成功を配信のreportに載せ、出力が同じなら次回�
       ],
     }),
   ]);
+  const html = readFileSync(join(root, "out/index.html"), "utf8");
+  expect(html).toContain('src="fixture/first/video.mp4"');
+  expect(html).toContain(
+    '<track kind="captions" srclang="ja" label="日本語" src="fixture/first/captions.vtt" default>',
+  );
   const again = await buildVideos(args);
   expect(again.reports).toEqual(result.reports);
   expect(buildSceneTopic).toHaveBeenCalledOnce();
@@ -367,6 +377,12 @@ it.each([false, true])(
     } else {
       expect(result.failures).toEqual([]);
       expect(existsSync(reportFile)).toBe(true);
+      const html = readFileSync(join(out, "index.html"), "utf8");
+      expect(html).toContain('src="fixture/legacy/video.mp4"');
+      expect(html).toContain(
+        '<track kind="captions" srclang="ja" label="日本語" src="fixture/legacy/captions.vtt" default>',
+      );
+      expect(html).toContain('src="fixture/legacy/chapters.vtt"');
       expect(result.reports[0].videoScenes).toMatchObject([
         {
           id: "slide-1",
@@ -469,7 +485,7 @@ it("作る前に新方式は場面ごと、旧方式はトピックごとの読�
   expect(slide?.speeches[0]).toContain("ふたつ。");
 });
 
-it("新方式は通常の出力が揃っていても焼き込み版が無ければ作る", async () => {
+it("新方式は出力が揃っていても字幕ファイルを失ったら作り直す", async () => {
   const { root, topic } = fixture();
   const out = join(root, "out");
   const hash = planSceneTopic(topic, createTtsProvider(loadVideoVoice("fake")).identity);
@@ -482,8 +498,9 @@ it("新方式は通常の出力が揃っていても焼き込み版が無けれ�
   expect(idle.failures).toEqual([]);
   expect(buildSceneTopic).not.toHaveBeenCalled();
   let pending: string[] = [];
+  rmSync(join(base, "captions.vtt"));
   await expect(
-    buildVideos(["--tts", "fake", "--out", out, "--burn-captions"], undefined, (items) => {
+    buildVideos(["--tts", "fake", "--out", out], undefined, (items) => {
       pending = items.map((item) => item.id);
       throw new Error("halt");
     }),
@@ -491,7 +508,7 @@ it("新方式は通常の出力が揃っていても焼き込み版が無けれ�
   expect(pending).toEqual([topic.id]);
 });
 
-it("旧方式は --burn-captions で焼き込み版が無ければ作る", async () => {
+it("旧方式は出力が揃っていても字幕ファイルを失ったら作り直す", async () => {
   const { root, topic } = fixture();
   const legacyDir = join(root, "legacy");
   mkdirSync(legacyDir);
@@ -534,8 +551,9 @@ it("旧方式は --burn-captions で焼き込み版が無ければ作る", async
     }),
   ).rejects.toThrow("idle");
   expect(pending).toEqual([]);
+  rmSync(join(base, "captions.vtt"));
   await expect(
-    buildVideos(["--tts", "fake", "--out", out, "--burn-captions"], undefined, (items) => {
+    buildVideos(["--tts", "fake", "--out", out], undefined, (items) => {
       pending = items.map((item) => item.id);
       throw new Error("halt");
     }),

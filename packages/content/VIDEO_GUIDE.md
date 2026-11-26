@@ -342,7 +342,6 @@ bun run --filter=@stella/content video:polish -- <トピックのパス> --apply
 bun run --filter=@stella/content video:check                                   # 絵コンテの検査
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --stills      # 文ごとの静止画 (API を呼ばない)
 bun run --filter=@stella/content video:scenes -- <トピックのパス>               # Open JTalk で動画まで
-bun run --filter=@stella/content video:scenes -- <トピックのパス> --burn-captions  # 字幕付きの確認用動画も作る
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts fake    # 仮の音で動画まで
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini  # 本番の音声
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --tts-model gemini-3.8-flash-lite-tts  # 別の音声モデル
@@ -351,7 +350,7 @@ bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts g
 
 静止画の一覧で、囲みの位置・寄ったときに文字が読めるか・札のはみ出しを見てから音声を作ります。一覧の各コマの下には対応する文を載せます。
 
-`--burn-captions` を付けると、同じ出力先に `video.captions.mp4` を追加します。Web プレイヤーと同じ CSS と Noto Sans JP の太字で、Chromium が字幕を透明な PNG に描きます。ffmpeg が読み上げの時刻に合わせて重ね、音声はそのままコピーします。配信では `video.mp4` と `captions.vtt` を使います。
+公開前の確認には `video:sync --preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、`http://localhost:8000/` の確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げます。
 
 1 日の上限に達したら、`--tts-model` で別のモデルを指定して書き出せます。環境変数 `VIDEO_TTS_MODEL` でも指定でき、`--tts-model` が優先します。公開する版は、上書き指定を外して `narration/voice.json` のモデルで作り直してください。
 

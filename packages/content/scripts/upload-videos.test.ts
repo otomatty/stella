@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
@@ -297,37 +297,28 @@ it("--preview は動画を上げず、呼び出し回数だけ台帳に残し、
     id: `preview-${crypto.randomUUID()}`,
     sourceHash: "hash",
   };
-  const dir = join(import.meta.dirname, "../dist/video", plan.stageSlug, plan.id);
-  const burned = join(dir, "video.captions.mp4");
-  try {
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(burned, "burned");
-    buildVideos.mockImplementation(async (args, skip, beforeGenerate) => {
-      expect(args).toContain("--burn-captions");
-      expect(skip(plan)).toBe(false);
-      expect(existsSync(burned)).toBe(false);
-      writeFileSync(burned, "burned");
-      await beforeGenerate?.([]);
-      const synthesize = (text: string) =>
-        createTtsProvider({ provider: "gemini" }).synthesize(text);
-      await expect(synthesize("確認用")).rejects.toThrow("429");
-      return { reports: [{ ...plan, durationSec: 4 }], failures: [] };
-    });
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    await uploadVideos(["dev-env-basics", "--topics", plan.id, "--tts", "gemini", "--preview"]);
-    expect(putAll).not.toHaveBeenCalled();
-    expect(put).toHaveBeenCalledTimes(1);
-    const saved = JSON.parse(new TextDecoder().decode(put.mock.calls[0][1]));
-    expect(saved.objects).toEqual({ kept: 1 });
-    expect(saved.durations).toEqual({});
-    expect(saved.ttsUsage).toEqual({ "2026-11-23": 1 });
-    expect(() => readFileSync(manifest, "utf8")).toThrow();
-    expect(log.mock.calls.map((call) => String(call[0])).join("\n")).toContain(burned);
-    expect(log.mock.calls.map((call) => String(call[0])).join("\n")).toContain("--cached-only");
-    log.mockRestore();
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  buildVideos.mockImplementation(async (args, skip, beforeGenerate) => {
+    expect(args).toEqual(["dev-env-basics", "--topics", plan.id, "--tts", "gemini"]);
+    expect(skip(plan)).toBe(false);
+    await beforeGenerate?.([]);
+    const synthesize = (text: string) => createTtsProvider({ provider: "gemini" }).synthesize(text);
+    await expect(synthesize("確認用")).rejects.toThrow("429");
+    return { reports: [{ ...plan, durationSec: 4 }], failures: [] };
+  });
+  const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+  await uploadVideos(["dev-env-basics", "--topics", plan.id, "--tts", "gemini", "--preview"]);
+  expect(putAll).not.toHaveBeenCalled();
+  expect(put).toHaveBeenCalledTimes(1);
+  const saved = JSON.parse(new TextDecoder().decode(put.mock.calls[0][1]));
+  expect(saved.objects).toEqual({ kept: 1 });
+  expect(saved.durations).toEqual({});
+  expect(saved.ttsUsage).toEqual({ "2026-11-23": 1 });
+  expect(() => readFileSync(manifest, "utf8")).toThrow();
+  expect(log.mock.calls.map((call) => String(call[0])).join("\n")).toMatch(
+    /確認ページ: .*dist\/video\/index\.html .*python3 -m http\.server -d packages\/content\/dist\/video/,
+  );
+  expect(log.mock.calls.map((call) => String(call[0])).join("\n")).toContain("--cached-only");
+  log.mockRestore();
 });
 
 it("--cached-only は必要回数が 1 以上なら何も書かずに失敗する", async () => {
@@ -474,36 +465,18 @@ it.each(["openjtalk", "grok"] as const)(
   },
 );
 
-it("--preview は残った焼き込み版を消し、作れなければ字幕なしの動画を案内する", async () => {
-  const plan = {
-    stageSlug: "dev-env-basics",
-    id: `stale-${crypto.randomUUID()}`,
-    sourceHash: "hash",
-  };
-  const dir = join(import.meta.dirname, "../dist/video", plan.stageSlug, plan.id);
-  const burned = join(dir, "video.captions.mp4");
-  const legacy = join(dir, "preview-captioned.mp4");
-  const plain = join(dir, "video.mp4");
+it("--preview は --out の確認ページと HTTP での開き方を案内する", async () => {
+  const out = mkdtempSync(join(tmpdir(), "stella-video preview-"));
+  const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
   try {
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(burned, "old");
-    writeFileSync(legacy, "old");
-    writeFileSync(plain, "plain");
-    buildVideos.mockImplementation(async (_args, skip) => {
-      expect(skip(plan)).toBe(false);
-      expect(existsSync(burned)).toBe(false);
-      expect(existsSync(legacy)).toBe(false);
-      return { reports: [{ ...plan, durationSec: 1 }], failures: [] };
-    });
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    await uploadVideos([plan.stageSlug, "--topics", plan.id, "--tts", "fake", "--preview"]);
-    const text = log.mock.calls.map((call) => String(call[0])).join("\n");
-    expect(text).toContain(plain);
-    expect(text).toContain("字幕を焼き込んだ版はありません");
-    expect(text).not.toContain("video.captions.mp4");
-    log.mockRestore();
+    buildVideos.mockResolvedValue({ reports: [], failures: [] });
+    await uploadVideos(["--tts", "fake", "--preview", "--out", out]);
+    expect(
+      log.mock.calls.find(([message]) => String(message).startsWith("確認ページ"))?.[0],
+    ).toContain(`${join(out, "index.html")} （python3 -m http.server -d '${out}'`);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    log.mockRestore();
+    rmSync(out, { recursive: true, force: true });
   }
 });
 

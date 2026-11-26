@@ -724,7 +724,6 @@ describe("音声モデルと日次上限", () => {
         expect(captions).toMatch(/^WEBVTT\n\n1\n00:00:03.400 --> [^\n]+\n読みます。/);
         expect(captions.match(/ --> /g)).toHaveLength(storyboard.scenes.length);
         expect(captions).not.toContain(topics[0].title);
-        expect(existsSync(join(out, "video.captions.mp4"))).toBe(false);
         expect(runFfmpeg).toHaveBeenCalledTimes(1);
         expect(encodeNarration).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
         const sfxWavs = vi
@@ -746,7 +745,7 @@ describe("音声モデルと日次上限", () => {
       }
     },
   );
-  it("--burn-captions は公開用の動画と字幕を保ち、字幕の PNG を重ねた確認版を作る", async () => {
+  it("暗い場面の字幕には印を付け、読み上げ用の文を字幕に含めない", async () => {
     const { root, topics, storyboard, page, browser } = fixture();
     try {
       const roles = [
@@ -812,94 +811,24 @@ describe("音声モデルと日次上限", () => {
         const speech = vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? "";
         return new Int16Array(Math.round(estimateSpeechSeconds(speech) * AUDIO_RATE)).fill(10000);
       });
-      const plain = join(root, "plain");
-      const burned = join(root, "確認用's video");
-      const args = ["fixture", "--tts", "fake"];
-      await buildSceneVideos([...args, "--out", plain]);
+      const out = join(root, "out");
+      await buildSceneVideos(["fixture", "--tts", "fake", "--out", out]);
       expect(runFfmpeg).toHaveBeenCalledTimes(1);
-      expect(existsSync(join(plain, "fixture/first/video.captions.mp4"))).toBe(false);
       expect(page.screenshot).not.toHaveBeenCalledWith(
         expect.objectContaining({ omitBackground: true }),
       );
-      const timing = () =>
-        vi
-          .mocked(writeNarrationWav)
-          .mock.calls.map(([file, duration, placements]) => [
-            file.split("/").at(-1),
-            duration,
-            placements,
-          ]);
-      const audioAndSfx = timing();
-      const speechKeys = () =>
-        vi
-          .mocked(synthesizeCached)
-          .mock.calls.map(([tts, speech]) => cueHash(tts.identity, speech));
-      const keys = speechKeys();
+      const keys = vi
+        .mocked(synthesizeCached)
+        .mock.calls.map(([tts, speech]) => cueHash(tts.identity, speech));
       expect(keys).toContain(cueHash("fixture", "順番を確かめます。"));
-      vi.mocked(writeNarrationWav).mockClear();
-      vi.mocked(synthesizeCached).mockClear();
-
-      let track = "";
-      vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) => {
-        const file = ffmpegArgs.at(-1) ?? "";
-        const preview = ffmpegArgs.includes("-filter_complex");
-        if (preview) track = readFileSync(ffmpegArgs[7], "utf8");
-        writeFileSync(file, preview ? "preview" : "video");
-      });
-      try {
-        await buildSceneVideos([...args, "--out", burned, "--burn-captions"]);
-      } finally {
-        vi.mocked(runFfmpeg).mockImplementation(async (ffmpegArgs) =>
-          writeFileSync(ffmpegArgs.at(-1) ?? "", "video"),
-        );
-      }
-
       expect(browser.newContext).toHaveBeenLastCalledWith({
         viewport: { width: 1920, height: 1080 },
         deviceScaleFactor: 1,
       });
-      expect(runFfmpeg).toHaveBeenCalledTimes(3);
-      expect(runFfmpeg).toHaveBeenLastCalledWith([
-        "-i",
-        expect.stringMatching(/\/video\.mp4$/),
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        expect.stringMatching(/\/captions\.ffconcat$/),
-        "-filter_complex",
-        "[0:v:0][1:v:0]overlay[v]",
-        "-map",
-        "[v]",
-        "-map",
-        "0:a:0",
-        "-c:v",
-        "libx264",
-        "-crf",
-        "20",
-        "-c:a",
-        "copy",
-        "-movflags",
-        "+faststart",
-        expect.stringMatching(/\/video\.captions\.mp4$/),
-      ]);
-      expect(track).toMatch(/^ffconcat version 1\.0\nfile 'caption-blank\.png'/);
-      const screenshots = page.screenshot.mock.calls.filter(([args]) => "omitBackground" in args);
-      expect(screenshots).toHaveLength(roles.length + 1);
-      for (const file of ["video.mp4", "captions.vtt"])
-        expect(readFileSync(join(burned, "fixture/first", file))).toEqual(
-          readFileSync(join(plain, "fixture/first", file)),
-        );
-      const captions = readFileSync(join(plain, "fixture/first/captions.vtt"), "utf8");
+      const captions = readFileSync(join(out, "fixture/first/captions.vtt"), "utf8");
       expect(captions.match(/<c\.on-dark>/g)).toHaveLength(3);
       expect(captions).toContain("<c.on-dark>二つの値を比べます。</c>");
       expect(captions).not.toContain("順番を確かめます。");
-      expect(readFileSync(join(burned, "fixture/first/video.captions.mp4"), "utf8")).toBe(
-        "preview",
-      );
-      expect(timing()).toEqual(audioAndSfx);
-      expect(speechKeys()).toEqual(keys);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

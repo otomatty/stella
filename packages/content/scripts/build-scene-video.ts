@@ -58,12 +58,7 @@ import {
 } from "./lib/narration-topics.js";
 import { sceneCacheHash, sceneVideoSourceHash, touchVideoCacheFile } from "./lib/scene-cache.js";
 import { sceneHtml, textSceneHtml, sceneFontCss, type ScenePageWindow } from "./lib/scene-html.js";
-import {
-  encodeScene,
-  encodeSceneFrames,
-  renderCaptionTrack,
-  runFfmpeg,
-} from "./lib/scene-encode.js";
+import { encodeScene, encodeSceneFrames, runFfmpeg } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
   lessonVideoTtsCacheDir,
@@ -101,7 +96,6 @@ export function argumentsOf(args: string[]) {
   const refreshAudio: string[] = [];
   const topicIds = topicIdsFromArgs(args);
   let stills = false,
-    burnCaptions = false,
     tts: TtsProviderName | undefined,
     ttsModel = process.env.VIDEO_TTS_MODEL?.trim() || undefined,
     out = join(contentRoot, "dist/video");
@@ -109,7 +103,6 @@ export function argumentsOf(args: string[]) {
     const a = args[i];
     if (a === "--") continue;
     if (a === "--stills") stills = true;
-    else if (a === "--burn-captions") burnCaptions = true;
     else if (a === "--refresh-audio") {
       const value = args[++i];
       if (!value || value.startsWith("--") || value.split(",").some((id) => !id.trim()))
@@ -139,11 +132,9 @@ export function argumentsOf(args: string[]) {
   }
   if (stills && refreshAudio.length)
     throw new Error("--refresh-audio と --stills は同時に指定できません");
-  if (stills && burnCaptions) throw new Error("--burn-captions と --stills は同時に指定できません");
   return {
     selectors,
     stills,
-    ...(burnCaptions ? { burnCaptions } : {}),
     tts,
     ttsModel,
     out,
@@ -710,36 +701,6 @@ export async function buildSceneTopic(
     copyFileSync(join(work, "poster.jpg"), join(out, "poster.jpg"));
     writeFileSync(join(out, "captions.vtt"), captions);
     writeFileSync(join(out, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
-    if (options.burnCaptions) {
-      const preview = join(work, "video.captions.mp4");
-      const track = await renderCaptionTrack(page, captions, work);
-      await runFfmpeg([
-        "-i",
-        video,
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        track,
-        "-filter_complex",
-        "[0:v:0][1:v:0]overlay[v]",
-        "-map",
-        "[v]",
-        "-map",
-        "0:a:0",
-        "-c:v",
-        "libx264",
-        "-crf",
-        "20",
-        "-c:a",
-        "copy",
-        "-movflags",
-        "+faststart",
-        preview,
-      ]);
-      copyFileSync(preview, join(out, "video.captions.mp4"));
-    }
     console.info(`${topic.stageSlug}/${topic.id}: ${duration.toFixed(2)}秒`);
     return report;
   } finally {
