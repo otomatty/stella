@@ -122,12 +122,16 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
 
   // D1 のバインド上限があるため、 quizIds を chunk してクエリを分ける
   // (100 以上のクイズを受験済みだと inArray 1 発では落ちる)。
-  const questionRows: Array<{ id: string; quizId: string }> = [];
+  const questionRows: Array<{ id: string; quizId: string; updatedAt: Date }> = [];
   const correctRows: Array<{ questionId: string; id: string }> = [];
   for (const idsChunk of chunk(quizIds, 50)) {
     questionRows.push(
       ...(await db
-        .select({ id: quizQuestions.id, quizId: quizQuestions.quizId })
+        .select({
+          id: quizQuestions.id,
+          quizId: quizQuestions.quizId,
+          updatedAt: quizQuestions.updatedAt,
+        })
         .from(quizQuestions)
         .where(inArray(quizQuestions.quizId, idsChunk))),
     );
@@ -139,7 +143,7 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
         .where(and(inArray(quizQuestions.quizId, idsChunk), eq(quizOptions.isCorrect, true)))),
     );
   }
-  const quizByQuestion = new Map(questionRows.map((q) => [q.id, q.quizId]));
+  const questionById = new Map(questionRows.map((q) => [q.id, q]));
   const correctByQuestion = new Map<string, Set<string>>();
   for (const r of correctRows) {
     const set = correctByQuestion.get(r.questionId) ?? new Set<string>();
@@ -156,7 +160,11 @@ async function backfillCards(db: Db, caller: Caller): Promise<void> {
     // 解答済み・未カード化・現存する設問だけ。 削除済み設問の解答は捨てる。
     const outcomes = [...selectedByQuestion].flatMap(([questionId, sel]) => {
       if (carded.has(questionId)) return [];
-      if (quizByQuestion.get(questionId) !== quizId) return [];
+      const question = questionById.get(questionId);
+      if (!question || question.quizId !== quizId) return [];
+      // 設問の UUID は並び順で決まるため、差し替えても変わらない。
+      // 受験後に更新された設問には、差し替え前の回答で正誤を付けない。
+      if (question.updatedAt > attempt.submittedAt) return [];
       return [
         {
           questionId,

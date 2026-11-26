@@ -375,6 +375,87 @@ describe("教材 seed の再実行", () => {
     db.close();
   }, 30_000);
 
+  it("今日の復習は受験後に更新された設問のカードを作らず、更新されていない設問だけを補完する", async () => {
+    const db = migratedDb();
+    try {
+      applyScript(db, seedSql);
+      db.exec(
+        "insert into profiles (id, tenant_id, role, display_name, created_at) values ('u-backfill', 'ses', 'student', '復習受講者', 1)",
+      );
+      const quiz = db
+        .prepare(
+          `select z.id, s.stage_id from quizzes z
+           join lessons l on l.id = z.lesson_id join sections s on s.id = l.section_id
+           join stages st on st.id = s.stage_id
+           where z.source = 'knowledge' and st.status = 'published'
+           and (select count(*) from quiz_questions q where q.quiz_id = z.id) >= 3 limit 1`,
+        )
+        .get() as { id: string; stage_id: string };
+      db.prepare(
+        "insert into enrollments (id, tenant_id, user_id, stage_id, status, required, enrolled_at) values ('en-backfill', 'ses', 'u-backfill', ?, 'active', 0, 1)",
+      ).run(quiz.stage_id);
+      const questions = db
+        .prepare('select id from quiz_questions where quiz_id = ? order by "order" limit 3')
+        .all(quiz.id) as { id: string }[];
+      expect(questions).toHaveLength(3);
+      const [changed, unchanged, sameTime] = questions;
+      const answers = questions.map((q) => ({
+        question_id: q.id,
+        selected_option_ids: (
+          db
+            .prepare("select id from quiz_options where question_id = ? and is_correct = 1")
+            .all(q.id) as { id: string }[]
+        ).map((o) => o.id),
+      }));
+      db.prepare(
+        `insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, answers, submitted_at)
+         values ('attempt-backfill', 'ses', ?, 'u-backfill', 3, 3, 1, ?, 2000)`,
+      ).run(quiz.id, JSON.stringify(answers));
+      db.prepare("update quiz_questions set updated_at = 1000 where quiz_id = ?").run(quiz.id);
+      db.prepare(
+        "update quiz_questions set prompt = '差し替え後の設問', updated_at = 3000 where id = ?",
+      ).run(changed.id);
+      db.prepare("update quiz_questions set updated_at = 2000 where id = ?").run(sameTime.id);
+      expect(countOf(db, "review_cards")).toBe(0);
+
+      const env = { DB: localD1(db), AUTH_JWT_SECRET: "test-backfill-secret" } as Env;
+      const { app } = mountTestApp(env, srsRoute);
+      const token = await signAccessToken(
+        env.AUTH_JWT_SECRET ?? "",
+        "u-backfill",
+        "test@example.com",
+      );
+      const response = await request(app, env, "/api/srs/today", { token });
+      expect(response.status).toBe(200);
+      const today = await json<{ review: { questions: { id: string }[] } }>(response);
+      expect(today.review.questions.map((q) => q.id).sort()).toEqual(
+        [unchanged.id, sameTime.id].sort(),
+      );
+      const cards = db
+        .prepare(
+          "select question_id, reps, last_reviewed_at from review_cards where user_id = 'u-backfill'",
+        )
+        .all();
+      expect(cards).toHaveLength(2);
+      expect(cards).toEqual(
+        expect.arrayContaining(
+          [unchanged.id, sameTime.id].map((id) => ({
+            question_id: id,
+            reps: 1,
+            last_reviewed_at: 2000,
+          })),
+        ),
+      );
+      expect(
+        db.prepare("select answers from quiz_attempts where id = 'attempt-backfill'").get(),
+      ).toEqual({
+        answers: JSON.stringify(answers),
+      });
+    } finally {
+      db.close();
+    }
+  }, 30_000);
+
   it("非公開の素材の版を内容ハッシュで追記し、seed を流し直しても既存の版を書き換えない", () => {
     const db = migratedDb();
     applyScript(db, seedSql);
