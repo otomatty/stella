@@ -1,0 +1,717 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "Agent SDK の仕様を調べるとき、Claude Code のドキュメントを選び、その理由を説明できる。",
+    "stuck": "自分のアプリを作る道具なので、Agent SDK の仕様も API のドキュメントにあると思い込む。",
+    "points": ["Agent SDK の仕様は、Claude Code のドキュメントで確かめます。"],
+    "leaveOut": [
+      "Agent SDK のコードや導入手順",
+      "道具やループの内部の動き",
+      "API の個別の項目と制限",
+      "試験ガイドや出題範囲の確認",
+      "次のトピックや原典の紹介"
+    ]
+  },
+  "art": {
+    "sewing-machine": {
+      "prompt": "A compact white sewing machine with blue controls and a violet spool of thread, shown as one complete physical object. No fabric or furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pattern-book": {
+      "prompt": "An open white sewing pattern booklet with a simple violet shirt silhouette and a blue skirt silhouette on its pages, showing garment designs without writing. No surrounding objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "machine-manual": {
+      "prompt": "An open light grey instruction booklet with a large blue sewing machine pictogram on one page and a simple violet spool pictogram on the other page. No surrounding objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "agent-kit": {
+      "prompt": "An open light grey toolbox holding a large blue wrench and a violet screwdriver, representing the tools used to build an agent. Objects only. The toolbox is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "code-docs": {
+      "prompt": "An open violet technical book with white blank pages beside a friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. This is a conceptual illustration of documentation, not an application screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "platform-docs": {
+      "prompt": "An open blue technical book with white blank pages and two empty blue speech bubbles hovering close above the pages. This represents documentation about exchanging messages, not an application screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pottery-booking": {
+      "prompt": "A small blue potter's wheel with a naturally terracotta coloured clay bowl beside a blank white reservation card held by a violet clip. The wheel is a complete freestanding object with no furniture or room. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "learner-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white note and pointing to it with one finger. Simple facial features, attentive expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "sewing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "machine",
+          "label": "ミシン",
+          "art": "sewing-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "pattern",
+          "label": "洋服の型紙",
+          "art": "pattern-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "manual",
+          "label": "ミシンの説明書",
+          "art": "machine-manual",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "tools": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "自分のアプリ",
+          "art": "learner-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "shared",
+          "from": "code",
+          "to": "sdk",
+          "label": "同じ道具"
+        },
+        {
+          "id": "use",
+          "from": "sdk",
+          "to": "app",
+          "label": "使う"
+        }
+      ]
+    },
+    "documents": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "platform",
+          "label": "開発基盤",
+          "art": "platform-docs",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-code",
+          "from": "sdk",
+          "to": "code",
+          "label": "仕様を読む"
+        }
+      ]
+    },
+    "choose": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "name",
+          "label": "道具の名前",
+          "art": "learner-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "name",
+          "to": "sdk",
+          "label": "確かめる"
+        },
+        {
+          "id": "open",
+          "from": "sdk",
+          "to": "code",
+          "label": "開く"
+        }
+      ]
+    },
+    "lost": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "platform",
+          "label": "開発基盤",
+          "art": "platform-docs",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "booking",
+          "label": "陶芸教室の予約",
+          "art": "pottery-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "仕様を探す",
+          "art": "learner-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 2]
+        },
+        {
+          "id": "platform",
+          "label": "開発基盤",
+          "art": "platform-docs",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "booking",
+          "label": "陶芸教室の予約",
+          "art": "pottery-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "uses",
+          "from": "booking",
+          "to": "sdk",
+          "label": "使う"
+        },
+        {
+          "id": "source",
+          "from": "sdk",
+          "to": "code",
+          "label": "仕様を読む"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "name",
+          "label": "使う道具を確認",
+          "art": "learner-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "開発キット",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-docs",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check-name",
+          "from": "name",
+          "to": "sdk",
+          "label": "名前"
+        },
+        {
+          "id": "find-docs",
+          "from": "sdk",
+          "to": "code",
+          "label": "資料を選ぶ"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べる道具から資料を選ぶ",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "ミシンの使い方を調べたい場面を考えます。",
+          "show": ["machine"]
+        },
+        {
+          "say": "手元にあるのは、洋服を作るための型紙です。",
+          "show": ["pattern"]
+        },
+        {
+          "say": "操作を知るには、ミシンの説明書を開きましょう。",
+          "show": ["manual"]
+        },
+        {
+          "say": "Agent SDK の仕様は、Claude Code の資料で確かめます。",
+          "speech": "エージェントエスディーケーの仕様は、クロードコードの資料で確かめます。",
+          "pulse": ["machine", "manual"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "manual-example",
+      "kind": "board",
+      "role": "example",
+      "title": "型紙と説明書の違い",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "型紙には、作りたい洋服の形が載っています。",
+          "pulse": ["pattern"]
+        },
+        {
+          "say": "ミシンの操作を知りたい人が、型紙を開きました。",
+          "mark": [
+            {
+              "on": "pattern",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "その人が探しているのは、道具を使うための説明です。",
+          "pulse": ["machine"]
+        },
+        {
+          "say": "調べたい道具に合う資料を選ぶと、説明を探せます。",
+          "pulse": ["manual"],
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "agent-tools",
+      "kind": "board",
+      "role": "syntax",
+      "title": "エージェントを作る道具",
+      "board": "tools",
+      "beats": [
+        {
+          "say": "Agent SDK は、エージェントを作るライブラリーです。",
+          "speech": "エージェントエスディーケーは、エージェントを作るライブラリーです。",
+          "term": {
+            "text": "Agent SDK",
+            "note": "エージェントを作る道具"
+          }
+        },
+        {
+          "say": "図の道具一式を、自分のアプリで使います。",
+          "show": ["sdk", "app", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "extension"
+          }
+        },
+        {
+          "say": "その道具とループは、Claude Code と同じものです。",
+          "speech": "その道具とループは、クロードコードと同じものです。",
+          "term": {
+            "text": "ClaudeCode",
+            "note": "同じ道具やループを使う"
+          }
+        },
+        {
+          "say": "この共通点を、図の線でたどりましょう。",
+          "show": ["code", "shared"],
+          "travel": {
+            "along": ["shared"],
+            "icon": "extension"
+          }
+        },
+        {
+          "say": "この道具やループを、自分のアプリで使えます。",
+          "pulse": ["sdk", "app"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "document-roles",
+      "kind": "board",
+      "role": "syntax",
+      "title": "二つの資料の分担",
+      "board": "documents",
+      "beats": [
+        {
+          "say": "道具がどう動くかを定めた内容が、仕様です。",
+          "term": {
+            "text": "仕様",
+            "ruby": "しよう",
+            "note": "道具の動きや使い方"
+          }
+        },
+        {
+          "say": "Agent SDK の仕様は、紫の本で確かめます。",
+          "speech": "エージェントエスディーケーの仕様は、紫の本で確かめます。",
+          "show": ["sdk", "code", "read-code"],
+          "travel": {
+            "along": ["read-code"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "青い本は、Claude Developer Platform の資料です。",
+          "speech": "青い本は、クロードデベロッパープラットフォームの資料です。",
+          "show": ["platform"]
+        },
+        {
+          "say": "Messages API やツール使用の説明は、青い本で探します。",
+          "speech": "メッセージズエーピーアイやツール使用の説明は、青い本で探します。",
+          "pulse": ["platform"],
+          "tag": {
+            "platform": "API"
+          }
+        },
+        {
+          "say": "プロンプトの説明も、この青い本が担当です。",
+          "tag": {
+            "platform": "プロンプト"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "choose-by-name",
+      "kind": "board",
+      "role": "apply",
+      "title": "道具と資料を対応させる",
+      "board": "choose",
+      "beats": [
+        {
+          "say": "まず、使う道具の名前を確かめましょう。",
+          "show": ["name"]
+        },
+        {
+          "say": "今回、仕様を調べたい道具は Agent SDK です。",
+          "speech": "今回、仕様を調べたい道具はエージェントエスディーケーです。",
+          "show": ["sdk", "identify"]
+        },
+        {
+          "say": "そこで、Claude Code のドキュメントを開きます。",
+          "speech": "そこで、クロードコードのドキュメントを開きます。",
+          "show": ["code", "open"],
+          "travel": {
+            "along": ["open"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "この資料は、Claude Code 自体も扱う資料です。",
+          "speech": "この資料は、クロードコード自体も扱う資料です。",
+          "pulse": ["code"],
+          "tag": {
+            "code": "本体も扱う"
+          }
+        },
+        {
+          "say": "その中で、Agent SDK の仕様を確かめましょう。",
+          "speech": "その中で、エージェントエスディーケーの仕様を確かめましょう。",
+          "tag": {
+            "code": "SDKの仕様"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "change-source",
+      "kind": "board",
+      "role": "apply",
+      "title": "見つからないときの戻り方",
+      "board": "lost",
+      "beats": [
+        {
+          "say": "Agent SDK の説明を、API の資料で探したとします。",
+          "speech": "エージェントエスディーケーの説明を、エーピーアイの資料で探したとします。",
+          "show": ["sdk", "platform"]
+        },
+        {
+          "say": "そこで見つからないことが、迷うきっかけです。",
+          "mark": [
+            {
+              "on": "platform",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "まず、調べている道具の名前に戻りましょう。",
+          "pulse": ["sdk"]
+        },
+        {
+          "say": "Agent SDK なら、Claude Code の資料へ移ります。",
+          "speech": "エージェントエスディーケーなら、クロードコードの資料へ移ります。",
+          "show": ["code"],
+          "pulse": ["code"],
+          "mark": [
+            {
+              "on": "code",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予約アプリの資料を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "練習として、陶芸教室の予約アプリを作るとします。",
+          "show": ["booking"]
+        },
+        {
+          "say": "エージェントを作る道具は、Agent SDK です。",
+          "speech": "エージェントを作る道具は、エージェントエスディーケーです。",
+          "show": ["sdk", "question"]
+        },
+        {
+          "say": "一人目は、Claude Code の資料で仕様を探しました。",
+          "speech": "一人目は、クロードコードの資料で仕様を探しました。",
+          "show": ["code"],
+          "tag": {
+            "code": "一人目"
+          }
+        },
+        {
+          "say": "二人目は、Claude Developer Platform を選びます。",
+          "speech": "二人目は、クロードデベロッパープラットフォームを選びます。",
+          "show": ["platform"],
+          "tag": {
+            "platform": "二人目"
+          }
+        },
+        {
+          "say": "この道具の仕様を確かめる資料は、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "code",
+              "kind": "question"
+            },
+            {
+              "on": "platform",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["sdk"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "一人目の資料を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、Claude Code の資料を選んだ一人目です。",
+          "speech": "答えは、クロードコードの資料を選んだ一人目です。",
+          "mark": [
+            {
+              "on": "code",
+              "kind": "check"
+            },
+            {
+              "on": "platform",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["code"]
+        },
+        {
+          "say": "Agent SDK の仕様は、この資料で確かめます。",
+          "speech": "エージェントエスディーケーの仕様は、この資料で確かめます。",
+          "pulse": ["sdk", "code"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-this-source",
+      "kind": "board",
+      "role": "explain",
+      "title": "題材より使う道具を見る",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "この問題の題材は、陶芸教室の予約でした。",
+          "show": ["booking"]
+        },
+        {
+          "say": "資料を選ぶ手がかりは、予約という言葉だけではありません。",
+          "mark": [
+            {
+              "on": "booking",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "調べたい道具の名前は、Agent SDK です。",
+          "speech": "調べたい道具の名前は、エージェントエスディーケーです。",
+          "show": ["sdk", "uses"],
+          "pulse": ["sdk"]
+        },
+        {
+          "say": "Claude Code と同じ道具やループを使えるようにしています。",
+          "speech": "クロードコードと同じ道具やループを使えるようにしています。",
+          "show": ["code", "source"],
+          "travel": {
+            "along": ["source"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "その仕様を読む場所が、Claude Code の資料です。",
+          "speech": "その仕様を読む場所が、クロードコードの資料です。",
+          "pulse": ["code"],
+          "mark": [
+            {
+              "on": "code",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-when-searching",
+      "kind": "board",
+      "role": "usage",
+      "title": "仕様を調べ始めるときに",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "アプリを作り始めるときは、使う道具の名前を確かめます。",
+          "show": ["name"]
+        },
+        {
+          "say": "選んだ道具は、Agent SDK だったとしましょう。",
+          "speech": "選んだ道具は、エージェントエスディーケーだったとしましょう。",
+          "show": ["sdk", "check-name"],
+          "pause": 0.5
+        },
+        {
+          "say": "開くのは、Claude Code のドキュメントです。",
+          "speech": "開くのは、クロードコードのドキュメントです。",
+          "show": ["code", "find-docs"],
+          "travel": {
+            "along": ["find-docs"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "迷ったら、この道具と資料の組を思い出しましょう。",
+          "pulse": ["sdk", "code"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "1a7376589ab460a29e319944deced06a568fa98203b8d39aff9eb1733731399c"
+  }
+}

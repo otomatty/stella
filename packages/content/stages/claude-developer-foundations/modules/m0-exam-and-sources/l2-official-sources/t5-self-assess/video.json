@@ -1,0 +1,686 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "スキルごとの説明を三段階で自己評価し、練習を足す分野と練習内容を決められる。",
+    "stuck": "分野に見覚えがあるだけで理解したと思い、対応を選ぶ理由まで説明できるか確かめていない。",
+    "points": [
+      "学習の前に、試験ガイドのスキルを 1 つずつ説明できるか確かめ、弱い分野に時間を配ります。"
+    ],
+    "leaveOut": [
+      "試験ガイドや公式ドキュメントの探し方",
+      "各分野の配点と全スキルの列挙",
+      "応答が届かない原因ごとの具体的な対処方法",
+      "学習時間を配る関数と課題の答え",
+      "準備講座の名前と受講方法"
+    ]
+  },
+  "art": {
+    "washing-machine": {
+      "prompt": "A compact white front-loading washing machine with a blue round door and a small pile of folded violet towels beside it. The controls are plain unmarked circles. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stained-shirt": {
+      "prompt": "A white shirt with a single irregular violet stain on one sleeve, held up by two hands for inspection. Show the whole shirt and the stain clearly. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "self-check-sheet": {
+      "prompt": "A white paper assessment sheet held by a blue clip, with three separate violet movable tabs along its edge and a violet pencil beside it. The paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "speaking-learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater, holding one blank white note and explaining it aloud with an open hand and one empty speech bubble. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "action-note": {
+      "prompt": "A hand choosing one white paper instruction slip from two separate slips, with a blue pencil placed beside the chosen slip. Both papers are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "record-inspection": {
+      "prompt": "An open white paper logbook with blue page tabs and a large violet magnifying glass held over one blank page. The logbook has no writing or symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "study-calendar": {
+      "prompt": "A white paper weekly planner with a blue binding, several movable violet page tabs and a small blue hourglass beside it. The pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "A small open blue laptop with a completely blank white screen and one empty violet speech bubble beside it, representing an app waiting for a reply. No interface controls and no imitation of a real application. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-receipt": {
+      "prompt": "A violet coat on a blue hanger beside a white paper dry-cleaning claim slip held by a hand. The coat is fully visible and the claim slip is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "routine",
+          "label": "洗濯の手順",
+          "art": "washing-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "trouble",
+          "label": "残ったしみ",
+          "art": "stained-shirt",
+          "at": [3, 1]
+        },
+        {
+          "id": "sheet",
+          "label": "できるか確認",
+          "art": "self-check-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "assessment": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "自分で説明",
+          "art": "speaking-learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "sheet",
+          "label": "自己評価",
+          "art": "self-check-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record",
+          "from": "learner",
+          "to": "sheet",
+          "label": "記録する"
+        }
+      ]
+    },
+    "basis": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "action",
+          "label": "対応",
+          "art": "action-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "evidence",
+          "label": "根拠",
+          "art": "record-inspection",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "support",
+          "from": "evidence",
+          "to": "action",
+          "label": "選ぶ理由"
+        }
+      ]
+    },
+    "levels": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clear",
+          "label": "説明できる",
+          "art": "self-check-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "vague",
+          "label": "あいまい",
+          "art": "self-check-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "unknown",
+          "label": "知らない",
+          "art": "self-check-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "app-skills": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "呼び出す例",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "届かない応答",
+          "art": "record-inspection",
+          "at": [3, 1]
+        },
+        {
+          "id": "sheet",
+          "label": "スキルごとの印",
+          "art": "self-check-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "plan": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "time",
+          "label": "配点で配る時間",
+          "art": "study-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "weak",
+          "label": "弱いスキル",
+          "art": "self-check-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "practice",
+          "label": "記録を読む練習",
+          "art": "record-inspection",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "review",
+          "from": "time",
+          "to": "weak",
+          "label": "見直す"
+        },
+        {
+          "id": "add",
+          "from": "weak",
+          "to": "practice",
+          "label": "練習を足す"
+        }
+      ]
+    },
+    "cleaning": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "服が見つからず",
+          "art": "cleaning-receipt",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "受付記録を見る",
+          "art": "record-inspection",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "選んだ理由",
+          "art": "speaking-learner",
+          "at": [5, 1]
+        },
+        {
+          "id": "rating",
+          "label": "付ける印",
+          "art": "self-check-sheet",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "coat",
+          "to": "record",
+          "label": "対応を選ぶ"
+        },
+        {
+          "id": "ask-why",
+          "from": "record",
+          "to": "reason",
+          "label": "理由を聞く"
+        },
+        {
+          "id": "assess",
+          "from": "reason",
+          "to": "rating"
+        }
+      ]
+    },
+    "revisit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "もう一度説明",
+          "art": "speaking-learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "sheet",
+          "label": "印を見直す",
+          "art": "self-check-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "time",
+          "label": "次の時間配分",
+          "art": "study-calendar",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reassess",
+          "from": "learner",
+          "to": "sheet",
+          "label": "確かめる"
+        },
+        {
+          "id": "replan",
+          "from": "sheet",
+          "to": "time",
+          "label": "配り直す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "何を説明できるか確かめる",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "洗濯の手順なら、人に説明できるとします。",
+          "show": ["routine"]
+        },
+        {
+          "say": "でも、しみが残ったときの対応には迷うかもしれません。",
+          "show": ["trouble"]
+        },
+        {
+          "say": "できることを、一つずつ確かめましょう。",
+          "show": ["sheet"]
+        },
+        {
+          "say": "学習でもスキルごとに説明し、弱い分野に時間を配ります。",
+          "pulse": ["routine", "trouble", "sheet"]
+        }
+      ]
+    },
+    {
+      "id": "laundry-example",
+      "kind": "board",
+      "role": "example",
+      "title": "同じ洗濯でも違う判断",
+      "board": "laundry",
+      "reset": true,
+      "beats": [
+        {
+          "say": "この人は、洗濯機を動かす手順を説明しました。",
+          "show": ["routine"],
+          "tag": {
+            "routine": "説明できる"
+          }
+        },
+        {
+          "say": "しみが残ると、何を確かめるかは浮かびません。",
+          "show": ["trouble"],
+          "mark": [
+            {
+              "on": "trouble",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "洗濯が分かるという一言では、この違いを見落とします。",
+          "pulse": ["routine", "trouble"]
+        },
+        {
+          "say": "練習が要るのは、しみが残った場面での判断です。",
+          "show": ["sheet"],
+          "tag": {
+            "sheet": "練習を足す"
+          },
+          "pulse": ["trouble", "sheet"]
+        }
+      ]
+    },
+    {
+      "id": "self-assessment",
+      "kind": "board",
+      "role": "syntax",
+      "title": "自分で説明して記録する",
+      "board": "assessment",
+      "beats": [
+        {
+          "say": "自分で答え、説明できる範囲を記録するのが自己評価です。",
+          "term": {
+            "text": "自己評価",
+            "ruby": "じこひょうか",
+            "note": "自分で答えて現状を記録"
+          }
+        },
+        {
+          "say": "試験ガイドのスキルを、一行ずつ確かめます。",
+          "show": ["sheet"],
+          "tag": {
+            "sheet": "一行ずつ"
+          }
+        },
+        {
+          "say": "どんな場面で使うかを、口に出してみましょう。",
+          "show": ["learner"],
+          "tag": {
+            "learner": "場面を挙げる"
+          }
+        },
+        {
+          "say": "説明できた範囲を、そのスキルの行に残します。",
+          "show": ["record"],
+          "travel": {
+            "along": ["record"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "action-and-evidence",
+      "kind": "board",
+      "role": "syntax",
+      "title": "対応を選ぶ理由も言う",
+      "board": "basis",
+      "beats": [
+        {
+          "say": "その場面で何をするかが、ここでいう対応です。",
+          "term": {
+            "text": "対応",
+            "ruby": "たいおう",
+            "note": "その場面で選ぶ行動"
+          }
+        },
+        {
+          "say": "思い浮かんだ対応を、まず言葉にします。",
+          "show": ["action"]
+        },
+        {
+          "say": "その対応を選ぶ理由のもとになるのが、根拠です。",
+          "term": {
+            "text": "根拠",
+            "ruby": "こんきょ",
+            "note": "対応を選ぶ理由のもと"
+          }
+        },
+        {
+          "say": "場面や記録の何を手がかりにしたかも説明しましょう。",
+          "show": ["evidence", "support"],
+          "travel": {
+            "along": ["support"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "three-levels",
+      "kind": "board",
+      "role": "syntax",
+      "title": "説明した内容で印を選ぶ",
+      "board": "levels",
+      "beats": [
+        {
+          "say": "場面と対応と理由を言えたら、「説明できる」に印を付けます。",
+          "show": ["clear"],
+          "tag": {
+            "clear": "理由も言える"
+          }
+        },
+        {
+          "say": "対応は浮かぶのに理由が言えないなら、「あいまい」です。",
+          "show": ["vague"],
+          "tag": {
+            "vague": "理由が言えず"
+          }
+        },
+        {
+          "say": "何を確かめるか浮かばなければ、「知らない」に付けましょう。",
+          "show": ["unknown"],
+          "tag": {
+            "unknown": "確認先が不明"
+          }
+        },
+        {
+          "say": "同じ分野でも、スキルごとに印を分けます。",
+          "pulse": ["clear", "vague", "unknown"]
+        },
+        {
+          "say": "練習を足す候補は、「あいまい」と「知らない」の行です。",
+          "pulse": ["vague", "unknown"]
+        }
+      ]
+    },
+    {
+      "id": "assess-app-skills",
+      "kind": "board",
+      "role": "apply",
+      "title": "アプリの例を分けて評価する",
+      "board": "app-skills",
+      "beats": [
+        {
+          "say": "アプリから Claude を呼ぶ例は、説明できたとします。",
+          "speech": "アプリからクロードを呼ぶ例は、説明できたとします。",
+          "show": ["app"],
+          "tag": {
+            "app": "説明できる"
+          }
+        },
+        {
+          "say": "一方、応答が届かないときは、調べる場所が浮かびません。",
+          "show": ["record"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この判断を扱うスキルには、「知らない」と記録します。",
+          "show": ["sheet"],
+          "tag": {
+            "sheet": "知らない"
+          }
+        },
+        {
+          "say": "呼び出しを説明できても、原因を探せるかは別の確認です。",
+          "pulse": ["app", "record"]
+        }
+      ]
+    },
+    {
+      "id": "add-practice",
+      "kind": "board",
+      "role": "apply",
+      "title": "弱いスキルの練習を予定する",
+      "board": "plan",
+      "beats": [
+        {
+          "say": "学習時間は、配点に合わせて配った時間を出発点にします。",
+          "show": ["time"]
+        },
+        {
+          "say": "そこから練習を足す手がかりが、自己評価の印です。",
+          "show": ["weak", "review"],
+          "tag": {
+            "weak": "知らない"
+          }
+        },
+        {
+          "say": "応答が届かなかった記録を読む練習を、予定に入れましょう。",
+          "show": ["practice", "add"],
+          "travel": {
+            "along": ["add"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "記録のどこで止まったかを、自分の言葉で説明します。",
+          "tag": {
+            "practice": "止まった場所"
+          },
+          "pulse": ["practice"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受付の対応を自己評価する",
+      "board": "cleaning",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニングで預けた服が見つからない場面を考えます。",
+          "show": ["coat"]
+        },
+        {
+          "say": "この人は、受付記録を見ると答えました。",
+          "show": ["record", "choose"]
+        },
+        {
+          "say": "ただ、その記録を見る理由は説明できません。",
+          "show": ["reason", "ask-why"],
+          "tag": {
+            "reason": "説明できず"
+          }
+        },
+        {
+          "say": "印は「説明できる」「あいまい」「知らない」の三つです。",
+          "show": ["rating", "assess"]
+        },
+        {
+          "say": "この人の説明には、どの印を付けるでしょうか。",
+          "pulse": ["rating"],
+          "mark": [
+            {
+              "on": "rating",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "あいまいに印を付ける",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "この場合の印は、「あいまい」です。",
+          "tag": {
+            "rating": "あいまい"
+          },
+          "unmark": ["rating"],
+          "pulse": ["rating"]
+        },
+        {
+          "say": "対応は浮かんでも、選ぶ理由までは言えていません。",
+          "pulse": ["record", "reason"]
+        }
+      ]
+    },
+    {
+      "id": "why-vague",
+      "kind": "board",
+      "role": "explain",
+      "title": "言えたことと言えないこと",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "服が見つからないという場面は、挙げられています。",
+          "pulse": ["coat"]
+        },
+        {
+          "say": "受付記録を見るという、対応の候補も出ていました。",
+          "pulse": ["record"]
+        },
+        {
+          "say": "足りないのは、その対応を選ぶ理由です。",
+          "pulse": ["reason"],
+          "mark": [
+            {
+              "on": "reason",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "何を確かめるかは浮かんだので、「知らない」にはしません。",
+          "pulse": ["record", "rating"]
+        },
+        {
+          "say": "次の練習では、記録から選ぶ理由まで口に出しましょう。",
+          "tag": {
+            "reason": "理由を練習"
+          },
+          "unmark": ["reason"],
+          "pulse": ["reason"]
+        }
+      ]
+    },
+    {
+      "id": "reassess-after-practice",
+      "kind": "board",
+      "role": "usage",
+      "title": "練習のあとに計画を見直す",
+      "board": "revisit",
+      "beats": [
+        {
+          "say": "練習したあと、同じスキルをもう一度説明します。",
+          "show": ["learner"]
+        },
+        {
+          "say": "場面と対応と理由を言えたかが、印を見直す基準です。",
+          "show": ["sheet", "reassess"],
+          "travel": {
+            "along": ["reassess"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "まだ迷うスキルに、次の練習時間を配りましょう。",
+          "show": ["time", "replan"],
+          "travel": {
+            "along": ["replan"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "自分で説明した結果を使って、学習計画を見直します。",
+          "pulse": ["learner", "sheet", "time"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2fa9829ee5b195ed282f229b1d2d6eabacea4027e5ac97e133da7c0036a0e913"
+  }
+}

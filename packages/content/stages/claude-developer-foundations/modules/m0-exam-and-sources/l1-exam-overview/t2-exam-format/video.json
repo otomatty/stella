@@ -1,0 +1,641 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "場面の条件と選ぶ数を確認して答え、120分70問をもとに練習のペースを決められる。",
+    "stuck": "用語だけを覚え、問題に書かれた条件や選ぶ数を見落としたり、一問に時間を使いすぎたりする。",
+    "points": ["本番は、実務の場面を読んで対応を選ぶ問題を、120 分で 70 問解きます。"],
+    "leaveOut": [
+      "資格ごとの対象者と出題範囲",
+      "誤りの選択肢を分類する詳しい方法",
+      "受験の申し込みと当日の環境設定",
+      "換算スコアの計算方法",
+      "APIの仕様とコードの書き方"
+    ]
+  },
+  "art": {
+    "indoor-shoes": {
+      "prompt": "A pair of clean blue indoor sports shoes with white soles, one shoe turned slightly to show its sole. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "condition-note": {
+      "prompt": "A white clipboard with a blank white sheet and a violet pencil clipped beside it, representing the conditions to read before making a choice. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choice-cards": {
+      "prompt": "Three separate white paper cards arranged in a fan, with a blue sleeve hand pointing to one of the blank cards. Objects and one hand only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-clock": {
+      "prompt": "A blue mechanical stopwatch with a white blank dial, two dark hands and a violet top button. No tick labels. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-stack": {
+      "prompt": "A thick stack of white question sheets clipped together with a blue binder clip, beside a violet pencil, with the top sheet completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "score-report": {
+      "prompt": "An open white paper report folder holding two blank white result sheets, with a blue clip on one sheet and a violet clip on the other. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-umbrella": {
+      "prompt": "One closed blue umbrella with a violet curved handle, lying diagonally beside a small blank white lost property tag. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "inquiry-phone": {
+      "prompt": "A blue telephone handset beside a closed blue umbrella and one empty light grey speech bubble, representing a lost umbrella inquiry. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "shoes",
+          "label": "体育館の靴",
+          "art": "indoor-shoes",
+          "at": [1, 1]
+        },
+        {
+          "id": "conditions",
+          "label": "使う条件",
+          "art": "condition-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "候補から選ぶ",
+          "art": "choice-cards",
+          "at": [5, 1]
+        },
+        {
+          "id": "clock",
+          "label": "120分70問",
+          "art": "exam-clock",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shoes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shoes",
+          "label": "借りる靴",
+          "art": "indoor-shoes",
+          "at": [1, 1]
+        },
+        {
+          "id": "conditions",
+          "label": "使う条件",
+          "art": "condition-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "選んだ靴",
+          "art": "choice-cards",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reading": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "situation",
+          "label": "場面の条件",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "choices",
+          "label": "対応の候補",
+          "art": "choice-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "選ぶ数",
+          "art": "question-stack",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pace": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clock",
+          "label": "制限時間",
+          "art": "exam-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "questions",
+          "label": "問題数",
+          "art": "question-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "one",
+          "label": "一問の目安",
+          "art": "exam-clock",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "all": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "全70問",
+          "art": "question-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "scored",
+          "label": "採点60問",
+          "art": "question-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "unscored",
+          "label": "対象外10問",
+          "art": "question-stack",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "results": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "結果の通知",
+          "art": "score-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "score",
+          "label": "換算スコア",
+          "art": "score-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "rates",
+          "label": "分野別正答率",
+          "art": "score-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "忘れた傘",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "窓口の質問",
+          "art": "inquiry-phone",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "二つ選ぶ",
+          "art": "question-stack",
+          "at": [5, 1]
+        },
+        {
+          "id": "color",
+          "label": "色を伝える",
+          "art": "choice-cards",
+          "at": [5, 2]
+        },
+        {
+          "id": "place",
+          "label": "場所を伝える",
+          "art": "choice-cards",
+          "at": [3, 2]
+        },
+        {
+          "id": "weather",
+          "label": "天気を話す",
+          "art": "choice-cards",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "conditions",
+          "label": "条件と選ぶ数",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "clock",
+          "label": "一問約100秒",
+          "art": "exam-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "review",
+          "label": "復習する分野",
+          "art": "score-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "条件を読んで選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "体育館で使う靴を、候補から選ぶ場面を考えます。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "選ぶ手がかりは、そこで使うための条件です。",
+          "show": ["conditions"]
+        },
+        {
+          "say": "条件を読み、合うものを選ぶ流れを確かめましょう。",
+          "show": ["choice"]
+        },
+        {
+          "say": "本番では場面を読んで対応を選び、120分で70問に答えます。",
+          "speech": "本番では場面を読んで対応を選び、百二十分で七十問に答えます。",
+          "show": ["clock"]
+        }
+      ]
+    },
+    {
+      "id": "shoe-example",
+      "kind": "board",
+      "role": "example",
+      "title": "体育館で靴を借りる",
+      "board": "shoes",
+      "beats": [
+        {
+          "say": "体育館の受付で、練習用の靴を借りるとします。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "受付の案内には、室内用を選ぶと書いてありました。",
+          "show": ["conditions"],
+          "tag": {
+            "conditions": "室内用"
+          }
+        },
+        {
+          "say": "自分の足に合うサイズも、選ぶ条件です。",
+          "tag": {
+            "shoes": "合うサイズ"
+          }
+        },
+        {
+          "say": "見慣れた靴でも、この条件に合うかを確かめましょう。",
+          "show": ["choice"],
+          "pulse": ["conditions", "shoes"]
+        }
+      ]
+    },
+    {
+      "id": "read-question",
+      "kind": "board",
+      "role": "syntax",
+      "title": "選択問題の読み方",
+      "board": "reading",
+      "beats": [
+        {
+          "say": "候補から対応を選ぶ問題を、選択問題と呼びます。",
+          "term": {
+            "text": "選択問題",
+            "ruby": "せんたくもんだい",
+            "note": "候補から対応を選ぶ問題"
+          }
+        },
+        {
+          "say": "最初に読むのは、起きたことや条件を示す場面です。",
+          "show": ["situation"]
+        },
+        {
+          "say": "場面に合う対応を、候補と照らして考えます。",
+          "show": ["choices"]
+        },
+        {
+          "say": "問題ごとに示される、選ぶ数も確かめてください。",
+          "show": ["count"]
+        }
+      ]
+    },
+    {
+      "id": "time-budget",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一問に使う時間の目安",
+      "board": "pace",
+      "beats": [
+        {
+          "say": "試験で使える時間の上限が、制限時間です。",
+          "term": {
+            "text": "制限時間",
+            "ruby": "せいげんじかん",
+            "note": "試験で使える時間の上限"
+          }
+        },
+        {
+          "say": "本番では、120分で70問を解きます。",
+          "speech": "本番では、百二十分で七十問を解きます。",
+          "show": ["clock", "questions"],
+          "tag": {
+            "clock": "120分",
+            "questions": "70問"
+          }
+        },
+        {
+          "say": "一問あたりに割り振ると、約103秒です。",
+          "speech": "一問あたりに割り振ると、約百三秒です。",
+          "show": ["one"],
+          "tag": {
+            "one": "約103秒"
+          }
+        },
+        {
+          "say": "練習では、一問約100秒を目安にしましょう。",
+          "speech": "練習では、一問約百秒を目安にしましょう。",
+          "tag": {
+            "one": "約100秒"
+          }
+        },
+        {
+          "say": "迷った一問に、時間を使いすぎないための目安です。",
+          "pulse": ["one"]
+        }
+      ]
+    },
+    {
+      "id": "choose-with-conditions",
+      "kind": "board",
+      "role": "apply",
+      "title": "条件と選ぶ数を合わせる",
+      "board": "shoes",
+      "reset": true,
+      "beats": [
+        {
+          "say": "先ほどの靴選びを、問題として読んでみましょう。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "室内用で、足に合うサイズという条件でした。",
+          "show": ["conditions"],
+          "tag": {
+            "conditions": "室内用",
+            "shoes": "合うサイズ"
+          }
+        },
+        {
+          "say": "問題に一つ選ぶとあれば、両方を満たす候補を選びます。",
+          "show": ["choice"],
+          "tag": {
+            "choice": "一つ選ぶ"
+          }
+        },
+        {
+          "say": "候補を選んだら、条件と選ぶ数をもう一度確認してください。",
+          "pulse": ["conditions", "shoes", "choice"]
+        }
+      ]
+    },
+    {
+      "id": "answer-every-question",
+      "kind": "board",
+      "role": "apply",
+      "title": "採点対象は見分けられない",
+      "board": "all",
+      "beats": [
+        {
+          "say": "本番の70問のうち、採点されるのは60問です。",
+          "speech": "本番の七十問のうち、採点されるのは六十問です。",
+          "show": ["all", "scored"]
+        },
+        {
+          "say": "残りの10問は、採点の対象に含まれません。",
+          "speech": "残りの十問は、採点の対象に含まれません。",
+          "show": ["unscored"]
+        },
+        {
+          "say": "ただし、どの問題が採点されるかは見分けられないのです。",
+          "tag": {
+            "all": "区別不可"
+          },
+          "pulse": ["all"]
+        },
+        {
+          "say": "採点されるかを推測せず、全問に答えましょう。",
+          "mark": [
+            {
+              "on": "all",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "all": "全問に答える"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-results",
+      "kind": "board",
+      "role": "note",
+      "title": "結果を復習に使う",
+      "board": "results",
+      "beats": [
+        {
+          "say": "結果には、合否や換算スコアなどが出ます。",
+          "show": ["report"]
+        },
+        {
+          "say": "換算スコアは、得点を決められた尺度で表した値です。",
+          "term": {
+            "text": "換算スコア",
+            "ruby": "かんさんすこあ",
+            "note": "得点を別の尺度で表した値"
+          }
+        },
+        {
+          "say": "尺度は100から1,000で、720以上なら合格になります。",
+          "speech": "尺度は百から千で、七百二十以上なら合格になります。",
+          "show": ["score"],
+          "tag": {
+            "score": "720以上"
+          }
+        },
+        {
+          "say": "720という値を、正答率72パーセントとは読めません。",
+          "speech": "七百二十という値を、正答率七十二パーセントとは読めません。",
+          "tag": {
+            "score": "正答率と別"
+          }
+        },
+        {
+          "say": "分野ごとの正答率を見て、復習する分野を決めましょう。",
+          "show": ["rates"],
+          "tag": {
+            "rates": "復習に使う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lost-umbrella-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "必要な対応を二つ選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "忘れた傘の問い合わせを、練習問題にします。",
+          "show": ["umbrella"]
+        },
+        {
+          "say": "窓口が知りたいのは、傘の色と忘れた場所です。",
+          "show": ["request"],
+          "tag": {
+            "request": "色と場所"
+          }
+        },
+        {
+          "say": "候補には、色を伝える、場所を伝える、天気を話すが並びます。",
+          "show": ["color", "place", "weather"]
+        },
+        {
+          "say": "問題文の指示は、必要な対応を二つ選ぶことです。",
+          "show": ["count"]
+        },
+        {
+          "say": "この場面で選ぶ対応は、どの二つでしょうか。",
+          "pulse": ["color", "place", "weather"]
+        }
+      ]
+    },
+    {
+      "id": "lost-umbrella-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "色と場所を伝える",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、色を伝えることと、場所を伝えることです。",
+          "mark": [
+            {
+              "on": "color",
+              "kind": "check"
+            },
+            {
+              "on": "place",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["color", "place"]
+        },
+        {
+          "say": "二つとも選んで、問題の指示に合わせます。",
+          "pulse": ["count"],
+          "tag": {
+            "count": "二つとも選ぶ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-these-two",
+      "kind": "board",
+      "role": "explain",
+      "title": "条件と選んだ数を確認する",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "窓口の質問には、傘の色が含まれていました。",
+          "pulse": ["request"],
+          "tag": {
+            "request": "傘の色"
+          }
+        },
+        {
+          "say": "色を伝える対応が、この条件に合います。",
+          "pulse": ["color"]
+        },
+        {
+          "say": "忘れた場所も尋ねられたので、場所を伝える対応も必要です。",
+          "pulse": ["place"],
+          "tag": {
+            "request": "忘れた場所"
+          }
+        },
+        {
+          "say": "天気を話しても、求められた色や場所には答えられません。",
+          "mark": [
+            {
+              "on": "weather",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["weather"]
+        },
+        {
+          "say": "場面の条件に合う二つを選べたか、確かめましょう。",
+          "pulse": ["color", "place", "count"]
+        }
+      ]
+    },
+    {
+      "id": "practice-usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "時間を測って練習する",
+      "board": "practice",
+      "beats": [
+        {
+          "say": "練習問題を開いたら、場面の条件と選ぶ数を確かめます。",
+          "show": ["conditions"]
+        },
+        {
+          "say": "一問に使う時間は、約100秒が目安です。",
+          "speech": "一問に使う時間は、約百秒が目安です。",
+          "show": ["clock"]
+        },
+        {
+          "say": "結果が出たら、分野ごとの正答率を復習に使いましょう。",
+          "show": ["review"]
+        },
+        {
+          "say": "本番の120分70問を意識して、条件を読む練習を重ねます。",
+          "speech": "本番の百二十分七十問を意識して、条件を読む練習を重ねます。",
+          "pulse": ["conditions", "clock"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "fc86c3172525608edb46a637caba5a1322b6b3057aae39ae269e4673d1b64b12"
+  }
+}

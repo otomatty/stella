@@ -1,0 +1,609 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "本番から写したとされる問題集を学習から外し、代わりに使う教材を選べる。",
+    "stuck": "本番そっくりという宣伝や人気を頼りに、答えを覚えればよいと思ってしまう。",
+    "points": ["本番の問題を写したとされる問題集は、学習に使いません。"],
+    "leaveOut": [
+      "試験ガイドの配点や試験形式",
+      "公式ドキュメントで仕様を調べる手順",
+      "受験の規約の個別の条文や処分",
+      "スキルごとの自己評価",
+      "実際の試験問題やその再現"
+    ]
+  },
+  "art": {
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a closed white workbook, considering which study material to use. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "copied-booklet": {
+      "prompt": "A light grey study booklet with several loose white duplicate sheets tucked inside and a violet paper clip. The booklet is blank and has no seal or certification symbol. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gift-box": {
+      "prompt": "A white gift box with its lid slightly lifted and a loose blue ribbon beside it, ready for wrapping. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ribbon-memo": {
+      "prompt": "A white paper memo clipped to a short cut length of blue ribbon, representing a record of ribbon previously used to wrap a gift. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "official-guide": {
+      "prompt": "An open white reference book with a blue spine and two violet page tabs. Blank pages, no symbols of approval. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rules-sheet": {
+      "prompt": "A white folded document with a blue binder clip, held open by a hand for careful reading. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "moving-estimate": {
+      "prompt": "A small blue moving truck beside two light grey moving cartons and a blank white estimate sheet. All cartons are light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "practice-sheet": {
+      "prompt": "A violet pencil beside an open white exercise notebook, with a blank loose white practice sheet resting across one page. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "勉強する人",
+          "art": "learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "copy",
+          "label": "本番の写し",
+          "art": "copied-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "official-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "wrapping": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "box",
+          "label": "贈り物の箱",
+          "art": "gift-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "前の長さ",
+          "art": "ribbon-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "practice",
+          "label": "結ぶ練習",
+          "art": "gift-box",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "source": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "非公式問題集",
+          "art": "copied-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "claim",
+          "label": "本番の写し",
+          "art": "copied-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "official-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "answer",
+          "label": "問題集の答え",
+          "art": "copied-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "rules",
+          "label": "受験の規約",
+          "art": "rules-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "practice",
+          "label": "場面の判断",
+          "art": "practice-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "alternatives": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "official-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "sample",
+          "label": "サンプル問題",
+          "art": "official-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "practice",
+          "label": "知識問題",
+          "art": "practice-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "includes",
+          "from": "guide",
+          "to": "sample",
+          "label": "中にある"
+        }
+      ]
+    },
+    "moving": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "move",
+          "label": "引っ越し",
+          "art": "moving-estimate",
+          "at": [1, 1]
+        },
+        {
+          "id": "copy",
+          "label": "本番の写し",
+          "art": "copied-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "practice",
+          "label": "教材用の問題",
+          "art": "practice-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "copy",
+          "label": "本番の写し",
+          "art": "copied-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "公式の資料",
+          "art": "official-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "受験の規約",
+          "art": "rules-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "choose-material",
+      "kind": "board",
+      "role": "goal",
+      "title": "学習に使う教材を選ぶ",
+      "board": "choice",
+      "beats": [
+        {
+          "say": "試験の勉強に使う問題集を探している場面です。",
+          "show": ["learner"]
+        },
+        {
+          "say": "本番の問題を集めたという問題集を見つけました。",
+          "show": ["copy"]
+        },
+        {
+          "say": "手元の試験ガイドと、どちらを使うか考えましょう。",
+          "show": ["guide"]
+        },
+        {
+          "say": "本番の問題を写したとされる問題集は、学習に使いません。",
+          "mark": [
+            {
+              "on": "copy",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["copy"]
+        }
+      ]
+    },
+    {
+      "id": "wrap-a-gift",
+      "kind": "board",
+      "role": "example",
+      "title": "答えだけを写すと",
+      "board": "wrapping",
+      "beats": [
+        {
+          "say": "贈り物の箱に、リボンをかける練習を考えます。",
+          "show": ["box"]
+        },
+        {
+          "say": "手元にあるのは、前に使ったリボンの長さのメモです。",
+          "show": ["memo"]
+        },
+        {
+          "say": "その長さだけを覚えて、新しい箱にも使おうとしました。",
+          "pulse": ["memo"],
+          "tag": {
+            "memo": "長さを暗記"
+          }
+        },
+        {
+          "say": "箱の大きさが違えば、同じ長さで結べるとは限りません。",
+          "tag": {
+            "box": "大きい箱"
+          },
+          "mark": [
+            {
+              "on": "box",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "箱を見て長さを決め、実際に結ぶ練習をしましょう。",
+          "show": ["practice"],
+          "tag": {
+            "practice": "箱に合わせる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-the-claim",
+      "kind": "board",
+      "role": "syntax",
+      "title": "問題集の説明を見る",
+      "board": "source",
+      "beats": [
+        {
+          "say": "Anthropic 以外が作ったものが、非公式の問題集です。",
+          "speech": "アンソロピック以外が作ったものが、非公式の問題集です。",
+          "term": {
+            "text": "非公式の問題集",
+            "ruby": "ひこうしきのもんだいしゅう",
+            "note": "Anthropic以外が作成"
+          }
+        },
+        {
+          "say": "この問題集も、公式の発行元とは別の人が作っています。",
+          "show": ["book"]
+        },
+        {
+          "say": "今回は、その中でも本番を写したとされるものが対象です。",
+          "show": ["claim"],
+          "tag": {
+            "claim": "本番から採録"
+          }
+        },
+        {
+          "say": "人気があるという評判だけでは、選べません。",
+          "tag": {
+            "book": "人気の教材"
+          },
+          "pulse": ["claim"]
+        },
+        {
+          "say": "本番から取ったという説明があれば、学習から外します。",
+          "mark": [
+            {
+              "on": "claim",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why-avoid",
+      "kind": "board",
+      "role": "syntax",
+      "title": "使わない理由",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "写された問題の答えが正しいか、確かめる方法がありません。",
+          "show": ["answer"],
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "受験するときに守る決まりが、規約です。",
+          "term": {
+            "text": "規約",
+            "ruby": "きやく",
+            "note": "受験するときに守る決まり"
+          }
+        },
+        {
+          "say": "本番の問題を写した教材は、規約に反するおそれがあります。",
+          "show": ["rules"],
+          "pulse": ["rules"]
+        },
+        {
+          "say": "また、答えだけの暗記では、場面の判断が身につきません。",
+          "show": ["practice"],
+          "tag": {
+            "practice": "理由を考える"
+          }
+        },
+        {
+          "say": "リボンの例と同じく、条件に合う選び方を練習しましょう。",
+          "pulse": ["practice"]
+        }
+      ]
+    },
+    {
+      "id": "set-aside",
+      "kind": "board",
+      "role": "apply",
+      "title": "宣伝を見て判断する",
+      "board": "source",
+      "reset": true,
+      "beats": [
+        {
+          "say": "ある問題集に、本番の資料から取ったと書かれていました。",
+          "show": ["book", "claim"],
+          "tag": {
+            "claim": "本番から採録"
+          }
+        },
+        {
+          "say": "見るのは、問題をどこから取ったかという説明です。",
+          "pulse": ["claim"]
+        },
+        {
+          "say": "その説明がある問題集は、学習に使いません。",
+          "mark": [
+            {
+              "on": "book",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "代わりに、手元の試験ガイドを開きます。",
+          "show": ["guide"],
+          "pulse": ["guide"]
+        }
+      ]
+    },
+    {
+      "id": "use-practice",
+      "kind": "board",
+      "role": "apply",
+      "title": "代わりの教材で練習する",
+      "board": "alternatives",
+      "beats": [
+        {
+          "say": "試験ガイドには、練習に使える問題が載っています。",
+          "show": ["guide"]
+        },
+        {
+          "say": "例として示された問題が、サンプル問題です。",
+          "term": {
+            "text": "サンプル問題",
+            "ruby": "さんぷるもんだい",
+            "note": "例として示された問題"
+          }
+        },
+        {
+          "say": "まずは、ガイドの中のサンプル問題を使いましょう。",
+          "show": ["sample", "includes"],
+          "travel": {
+            "along": ["includes"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "準備の講座や公式ドキュメントも、学習に使えます。",
+          "pulse": ["guide"],
+          "tag": {
+            "guide": "公式の資料"
+          }
+        },
+        {
+          "say": "この教材の知識問題は、学習のために新しく作ったものです。",
+          "show": ["practice"],
+          "tag": {
+            "practice": "教材用に作成"
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "どちらを学習に使うか",
+      "board": "moving",
+      "think": 8,
+      "beats": [
+        {
+          "say": "引っ越しの見積もりを題材に、判断を練習する場面です。",
+          "show": ["move"]
+        },
+        {
+          "say": "一つ目の問題集は、本番から写した問題を載せたと説明しています。",
+          "show": ["copy"],
+          "tag": {
+            "copy": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目は、この教材で学習用に作った知識問題です。",
+          "show": ["practice"],
+          "tag": {
+            "practice": "二つ目"
+          }
+        },
+        {
+          "say": "どちらも、見積もりの条件に合う対応を選びます。",
+          "pulse": ["move"]
+        },
+        {
+          "say": "学習に使うのは、どちらの問題でしょうか。",
+          "pulse": ["copy", "practice"],
+          "mark": [
+            {
+              "on": "copy",
+              "kind": "question"
+            },
+            {
+              "on": "practice",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moving-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "教材用に作った問題",
+      "board": "moving",
+      "beats": [
+        {
+          "say": "選ぶのは、教材のために作った二つ目の知識問題です。",
+          "mark": [
+            {
+              "on": "practice",
+              "kind": "check"
+            },
+            {
+              "on": "copy",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["practice"]
+        },
+        {
+          "say": "本番から写したという一つ目は、学習から外します。",
+          "pulse": ["copy"]
+        }
+      ]
+    },
+    {
+      "id": "follow-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "題材より問題の出どころ",
+      "board": "moving",
+      "beats": [
+        {
+          "say": "引っ越しという題材だけで、使うかどうかは決めません。",
+          "pulse": ["move"]
+        },
+        {
+          "say": "一つ目を外す理由は、本番から写したという説明です。",
+          "pulse": ["copy"],
+          "tag": {
+            "copy": "本番から採録"
+          }
+        },
+        {
+          "say": "二つ目では、見積もりの条件を読んで対応を考えます。",
+          "pulse": ["practice"],
+          "tag": {
+            "practice": "条件を読む"
+          }
+        },
+        {
+          "say": "選んだ理由まで説明する練習をしましょう。",
+          "tag": {
+            "practice": "理由を説明"
+          },
+          "mark": [
+            {
+              "on": "move",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "before-studying",
+      "kind": "board",
+      "role": "usage",
+      "title": "教材を選ぶときに使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "新しい問題集を見つけたら、問題の出どころを確かめます。",
+          "show": ["copy"]
+        },
+        {
+          "say": "本番を写したとされるものは、人気があっても使いません。",
+          "mark": [
+            {
+              "on": "copy",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "迷ったときは、公式の資料で確かめられるかが判断の目安です。",
+          "show": ["guide"],
+          "pulse": ["guide"]
+        },
+        {
+          "say": "受験を申し込むときには、規約も必ず読みましょう。",
+          "show": ["rules"],
+          "pulse": ["rules"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bb44405a2dc9987a0d2f9a15f0cdb5ef7147048fcbba74bee6fcb2940662a032"
+  }
+}
