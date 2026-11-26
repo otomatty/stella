@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { isBackendConfigured } from "@/lib/backend";
 import { fetchQuizForLearner, submitQuizAttempt } from "@/lib/quiz-attempts-api";
+import { quizOptionOutcome } from "@/lib/quiz-option-outcome";
 import { emitStageCleared, toStageClearedEvents } from "@/lib/stage-clear-events";
 import type {
   LearnerQuiz,
@@ -98,7 +99,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
 
   const toggleOption = useCallback(
     (question: LearnerQuizQuestion, optionId: string) => {
-      if (result) return; // 採点後は変更不可
+      if (result || submitting) return; // 採点後・送信中は変更不可
       setAnswers((prev) => {
         const current = new Set(prev[question.id] ?? []);
         if (question.kind === "multiple") {
@@ -112,7 +113,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
         return { ...prev, [question.id]: current };
       });
     },
-    [result],
+    [result, submitting],
   );
 
   const resultByQuestion = useMemo(() => {
@@ -348,23 +349,27 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
 
               {q.options.map((o, oi) => {
                 const isSelected = selected.has(o.id);
-                const showCorrect = Boolean(qResult) && correctIds.has(o.id);
-                const showWrong = Boolean(qResult) && isSelected && !correctIds.has(o.id);
+                const outcome = qResult
+                  ? quizOptionOutcome(isSelected, correctIds.has(o.id))
+                  : undefined;
+                const isNeutral = !isSelected && (outcome === undefined || outcome === "none");
                 return (
                   <button
                     type="button"
                     key={o.id}
                     data-testid="quiz-option"
                     data-selected={isSelected}
+                    data-outcome={outcome}
                     onClick={() => toggleOption(q, o.id)}
-                    disabled={Boolean(result)}
+                    disabled={Boolean(result) || submitting}
                     className={cn(
                       "w-full flex items-start gap-3 p-3.5 border rounded-md bg-card mb-2 transition-colors text-left",
                       result ? "cursor-default" : "cursor-pointer hover:border-ink-3",
                       isSelected && !result && "border-brand bg-brand-soft",
-                      showCorrect && "border-success bg-success-soft",
-                      showWrong && "border-danger bg-danger-soft",
-                      !isSelected && !showCorrect && !showWrong && "border-border-2",
+                      outcome === "hit" && "border-success bg-success-soft",
+                      outcome === "missed" && "border-dashed border-success",
+                      outcome === "wrong" && "border-danger bg-danger-soft",
+                      isNeutral && "border-border-2",
                     )}
                   >
                     <span
@@ -374,17 +379,15 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                         isSelected && !result && "border-brand bg-brand text-white",
                         // ダークの success / danger は明るい方に寄せてあるので、
                         // 白抜きだとコントラストが 3:1 を切る。 面と反対の色を敷く。
-                        showCorrect && "border-success bg-success text-card",
-                        showWrong && "border-danger bg-danger text-card",
-                        !isSelected &&
-                          !showCorrect &&
-                          !showWrong &&
-                          "border-border-strong text-ink-3",
+                        outcome === "hit" && "border-success bg-success text-card",
+                        outcome === "missed" && "border-dashed border-success text-success",
+                        outcome === "wrong" && "border-danger bg-danger text-card",
+                        isNeutral && "border-border-strong text-ink-3",
                       )}
                     >
-                      {showCorrect ? (
+                      {outcome === "hit" || outcome === "missed" ? (
                         <Check size={12} />
-                      ) : showWrong ? (
+                      ) : outcome === "wrong" ? (
                         <X size={12} />
                       ) : (
                         String.fromCharCode(65 + oi)
@@ -393,6 +396,20 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                     <span className="flex-1 text-sm leading-relaxed">
                       <InlineMarkdown>{o.label}</InlineMarkdown>
                     </span>
+                    {outcome && outcome !== "none" ? (
+                      <span
+                        className={cn(
+                          "shrink-0 self-center text-[11px]",
+                          outcome === "missed" ? "text-success font-semibold" : "text-ink-3",
+                        )}
+                      >
+                        {outcome === "missed"
+                          ? q.kind === "multiple"
+                            ? "選び忘れ"
+                            : "正解"
+                          : "あなたの回答"}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
