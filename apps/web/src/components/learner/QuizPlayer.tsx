@@ -99,7 +99,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
 
   const toggleOption = useCallback(
     (question: LearnerQuizQuestion, optionId: string) => {
-      if (result) return; // 採点後は変更不可
+      if (result || submitting) return; // 採点後・送信中は変更不可
       setAnswers((prev) => {
         const current = new Set(prev[question.id] ?? []);
         if (question.kind === "multiple") {
@@ -113,7 +113,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
         return { ...prev, [question.id]: current };
       });
     },
-    [result],
+    [result, submitting],
   );
 
   const resultByQuestion = useMemo(() => {
@@ -361,7 +361,7 @@ export function QuizPlayer({ lessonId, onComplete }: QuizPlayerProps) {
                     data-selected={isSelected}
                     data-outcome={outcome}
                     onClick={() => toggleOption(q, o.id)}
-                    disabled={Boolean(result)}
+                    disabled={Boolean(result) || submitting}
                     className={cn(
                       "w-full flex items-start gap-3 p-3.5 border rounded-md bg-card mb-2 transition-colors text-left",
                       result ? "cursor-default" : "cursor-pointer hover:border-ink-3",

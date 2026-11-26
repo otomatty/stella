@@ -74,13 +74,13 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
 
   const toggle = useCallback(
     (optionId: string, multiple: boolean) => {
-      if (feedback) return; // 解答後は変更不可。
+      if (feedback || submitting) return; // 解答後・送信中は変更不可。
       setSelected((prev) => {
         if (!multiple) return [optionId];
         return prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId];
       });
     },
-    [feedback],
+    [feedback, submitting],
   );
 
   const submit = useCallback(async () => {
@@ -190,7 +190,7 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
                     data-testid="review-option"
                     data-outcome={outcome}
                     type="button"
-                    disabled={feedback != null}
+                    disabled={feedback != null || submitting}
                     onClick={() => toggle(o.id, question.kind === "multiple")}
                     aria-pressed={isSelected}
                     className={cn(
