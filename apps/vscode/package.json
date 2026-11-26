@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "private": true,
   "repository": {
     "type": "git",
@@ -184,6 +184,14 @@
             }
           }
         ]
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "stella.submitTask",
+        "key": "ctrl+alt+enter",
+        "mac": "cmd+alt+enter",
+        "when": "stella.inTask && editorTextFocus && resourceScheme == file"
       }
     ],
     "menus": {
