@@ -1,6 +1,6 @@
 import path from "node:path";
 import * as vscode from "vscode";
-import { loadTask } from "./runner/run-task.js";
+import { loadTask, sameTaskRoot } from "./runner/run-task.js";
 import { checkProgressLabel } from "./task-check-progress.js";
 import { taskRootOf } from "./task-commands.js";
 import { problemForPath } from "./task-problems.js";
@@ -37,7 +37,7 @@ export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
           const line = firstExport ? document.positionAt(firstExport.index).line : 0;
           const range = new vscode.Range(line, 0, line, 0);
           const active = activeTaskCheck();
-          if (active?.root === root && active.problemId === problem.id) {
+          if (active && sameTaskRoot(active.root, root) && active.problemId === problem.id) {
             const label = checkProgressLabel(active.progress);
             return [
               new vscode.CodeLens(range, {

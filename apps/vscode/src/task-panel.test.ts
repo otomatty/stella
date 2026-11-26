@@ -873,6 +873,48 @@ describe("課題文のパネル", () => {
     expect(create).toHaveBeenCalledTimes(created + 1);
   });
 
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b"],
+    ["c:\\a\\b", "C:\\a\\b"],
+  ])(
+    "ドライブ文字の大小が違っても両方のパネルで進捗を表示する (%s / %s)",
+    (panelRoot, checkRoot) => {
+      const platform = process.platform;
+      const readme = mockReadmePanel();
+      const resultPanel = mockReadmePanel();
+      vi.mocked(vscode.window.createWebviewPanel)
+        .mockReturnValueOnce(readme as never)
+        .mockReturnValueOnce(resultPanel as never);
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        startTaskCheck({ root: checkRoot, taskId: manifest.id });
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "最初の手順" }] });
+        showTaskReadme({ ...input, root: panelRoot, guide: { ...input.guide, root: panelRoot } });
+        expect(readme.webview.html).toContain(slot + checklist);
+        expect(readme.webview.html).toContain("最初の手順");
+        updateTaskReadmeCheck(checkRoot, check);
+        expect(readme.webview.postMessage).toHaveBeenCalledExactlyOnceWith({
+          type: "check-progress",
+          html: expect.stringContaining("型の確認"),
+        });
+
+        const panelInput = { kind: "result" as const, root: panelRoot, manifest, result: result() };
+        showTaskPanel(panelInput);
+        const previous = resultPanel.webview.html;
+        updateTaskPanelCheck(checkRoot, { ...check, title: manifest.title });
+        expect(resultPanel.webview.html).toContain(checklist);
+        expect(resultPanel.webview.html).toContain("型の確認");
+        updateTaskPanelCheck(checkRoot, undefined);
+        expect(resultPanel.webview.html).toBe(previous);
+      } finally {
+        Object.defineProperty(process, "platform", { value: platform });
+        finishTaskCheck({ root: checkRoot, manifest, result: result(), saved: false });
+        for (const [dispose] of readme.onDidDispose.mock.calls) dispose();
+        for (const [dispose] of resultPanel.onDidDispose.mock.calls) dispose();
+      }
+    },
+  );
+
   it("確認のあとの描き直しは、閉じたパネルを作り直さない", () => {
     showTaskReadme({ title: "最初のページ", markdown, root: "/x" }, { reveal: false });
     expect(vscode.window.createWebviewPanel).not.toHaveBeenCalled();

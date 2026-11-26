@@ -14,7 +14,7 @@ import path from "node:path";
 import { TASK_STATUS_LABELS } from "@stella/shared/tasks/catalog";
 import * as vscode from "vscode";
 import { onDidChangeAuth } from "./auth.js";
-import { findTaskRoot, loadTask } from "./runner/run-task.js";
+import { findTaskRoot, loadTask, sameTaskRoot } from "./runner/run-task.js";
 import {
   type CheckProgress,
   checkProgressLabel,
@@ -170,7 +170,8 @@ function render(): void {
     arguments: [current.root],
   };
   const active = activeTaskCheck();
-  const checkProgress = active?.root === current.root ? active.progress : undefined;
+  const checkProgress =
+    active && sameTaskRoot(active.root, current.root) ? active.progress : undefined;
   const progress = current.problemProgress;
   if (progress) {
     const { currentProblem } = current;
@@ -314,7 +315,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
   );
   stateItem.name = "STELLA: 課題の状態";
   const renderTaskCheck = ({ root }: { root: string }) => {
-    if (root === current?.root) render();
+    if (sameTaskRoot(root, current?.root)) render();
   };
   context.subscriptions.push(
     submitItem,

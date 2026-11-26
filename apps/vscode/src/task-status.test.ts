@@ -615,6 +615,43 @@ describe("ステータスバーの課題の状態", () => {
     }
   });
 
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b"],
+    ["c:\\a\\b", "C:\\a\\b"],
+  ])(
+    "ドライブ文字の大小が違っても確認イベントで表示を更新する (%s / %s)",
+    async (editorRoot, checkRoot) => {
+      const loaded = await loadTask(root);
+      if (!loaded.ok) throw new Error("課題を読めません");
+      const platform = process.platform;
+      registerTaskStatus(context);
+      setCurrentTask({ root: editorRoot, title: loaded.manifest.title });
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        startTaskCheck({ root: checkRoot, taskId });
+        expect(stateItem()).toMatchObject({ visible: true, text: "$(sync~spin) 確認中…" });
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
+        progressTaskCheck({ type: "step-start", index: 0 });
+        expect(stateItem()).toMatchObject({
+          visible: true,
+          text: "$(sync~spin) 確認中 1/1 テスト",
+        });
+      } finally {
+        try {
+          finishTaskCheck({
+            root: checkRoot,
+            manifest: loaded.manifest,
+            result: result("cancelled"),
+            saved: false,
+          });
+        } finally {
+          Object.defineProperty(process, "platform", { value: platform });
+        }
+      }
+      expect(stateItem()?.visible).toBe(false);
+    },
+  );
+
   it("未確認なら状態は隠し、状態の項目は「提出する」の左に置く", async () => {
     registerTaskStatus(context);
     await openTaskEditor();

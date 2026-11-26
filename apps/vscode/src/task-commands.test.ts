@@ -2178,7 +2178,7 @@ describe("確認の開始と終了のイベント", () => {
       const note =
         command === "stella.submitTask"
           ? "すべて通ると、振り返りを書いて提出します。"
-          : "確認だけを行います。まだ何も送りません。";
+          : "確認だけを行います。まだ提出しません。";
       expect(start).toHaveBeenCalledExactlyOnceWith({
         root,
         taskId: staticTask.id,
@@ -2230,7 +2230,7 @@ describe("確認の開始と終了のイベント", () => {
       root,
       taskId: staticTask.id,
       title: staticTask.title,
-      note: "確認だけを行います。まだ何も送りません。",
+      note: "確認だけを行います。まだ提出しません。",
       progress: {
         steps: [
           { label: "HTML の確認", status: "passed", durationMs: expect.any(Number) },

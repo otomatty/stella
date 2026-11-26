@@ -311,6 +311,19 @@ export function normalizeTaskRoot(root: string, platform: NodeJS.Platform): stri
   return platform === "win32" ? root.replace(/^[a-z]:/i, (drive) => drive.toUpperCase()) : root;
 }
 
+/** 同じ課題フォルダーか。Windows ではドライブ文字の大小を区別しない。 */
+export function sameTaskRoot(
+  a: string | undefined,
+  b: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    normalizeTaskRoot(a, platform) === normalizeTaskRoot(b, platform)
+  );
+}
+
 export async function runTask(options: RunTaskOptions): Promise<RunResult> {
   const { manifest } = options;
   const platform = options.platform ?? process.platform;

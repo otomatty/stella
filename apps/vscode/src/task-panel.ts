@@ -26,6 +26,7 @@ import {
   type PublicSourceReference,
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
+import { sameTaskRoot } from "./runner/run-task.js";
 import { activeTaskCheck } from "./task-run-events.js";
 import {
   CHECK_PROGRESS_CSS,
@@ -451,7 +452,7 @@ export function updateTaskPanelCheck(
   check: (TaskCheckView & { title: string }) | undefined,
 ): void {
   const input = currentPanelInput;
-  if (!currentPanel || input?.kind !== "result" || input.root !== root) return;
+  if (!currentPanel || input?.kind !== "result" || !sameTaskRoot(input.root, root)) return;
   currentPanel.webview.html = check
     ? taskPanelPage(
         check.title,
@@ -636,7 +637,7 @@ export function updateTaskReadmeCheck(
   check: TaskCheckView | undefined,
   options: { rerender?: boolean } = {},
 ): void {
-  if (!readmePanel || !readmeInput || readmeRoot !== root) return;
+  if (!readmePanel || !readmeInput || !sameTaskRoot(readmeRoot, root)) return;
   readmeInput = { ...readmeInput, check };
   if (options.rerender) {
     readmeNeedsProgressRefresh = false;
@@ -668,7 +669,7 @@ export function showTaskReadme(
   const active = activeTaskCheck();
   const nextInput = {
     ...input,
-    check: input.check ?? (active?.root === input.root ? active : undefined),
+    check: input.check ?? (sameTaskRoot(active?.root, input.root) ? active : undefined),
   };
   const html = buildTaskReadmeHtml(nextInput);
   const title = `課題: ${input.title}`;

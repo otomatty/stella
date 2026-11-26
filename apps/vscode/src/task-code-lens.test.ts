@@ -49,7 +49,10 @@ vi.mock("vscode", () => ({
 }));
 
 vi.mock("./task-commands.js", () => ({ taskRootOf: state.taskRootOf }));
-vi.mock("./runner/run-task.js", () => ({ loadTask: state.loadTask }));
+vi.mock("./runner/run-task.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./runner/run-task.js")>()),
+  loadTask: state.loadTask,
+}));
 
 const root = "/workspace/q01";
 const token = { isCancellationRequested: false, onCancellationRequested: vi.fn() };
@@ -92,61 +95,74 @@ describe("問題ファイルの CodeLens", () => {
     for (const item of context.subscriptions) item.dispose();
   });
 
-  it("確認中の問題だけ進捗とログへのリンクを表示し、終了時に元に戻す", async () => {
-    const changed = vi.fn();
-    const listener = state.provider?.onDidChangeCodeLenses?.(changed);
-    if (listener) context.subscriptions.push(listener);
-    const source = `${root}/src/q01.ts`;
-    const text = "export {};";
-    startTaskCheck({ root, taskId: manifest.id, problemId: "q01" });
-    expect(changed).toHaveBeenCalledTimes(1);
-    expect((await lenses(source, text))?.[0]?.command).toEqual({
-      title: "$(sync~spin) 確認中…",
-      command: "stella.showRunLog",
-    });
+  it.each([
+    [root, root],
+    ["C:\\a\\b", "c:\\a\\b"],
+    ["c:\\a\\b", "C:\\a\\b"],
+  ])(
+    "確認中の問題だけ進捗とログへのリンクを表示し、終了時に元に戻す (%s / %s)",
+    async (editorRoot, checkRoot) => {
+      const changed = vi.fn();
+      const listener = state.provider?.onDidChangeCodeLenses?.(changed);
+      if (listener) context.subscriptions.push(listener);
+      const platform = process.platform;
+      state.taskRootOf.mockResolvedValue(editorRoot);
+      const source = `${editorRoot}/src/q01.ts`;
+      const text = "export {};";
+      if (editorRoot !== checkRoot) Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        startTaskCheck({ root: checkRoot, taskId: manifest.id, problemId: "q01" });
+        expect(changed).toHaveBeenCalledTimes(1);
+        expect((await lenses(source, text))?.[0]?.command).toEqual({
+          title: "$(sync~spin) 確認中…",
+          command: "stella.showRunLog",
+        });
 
-    progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
-    progressTaskCheck({ type: "step-start", index: 0 });
-    expect(changed).toHaveBeenCalledTimes(3);
-    expect((await lenses(source, text))?.[0]?.command).toEqual({
-      title: "$(sync~spin) 確認中 1/1 テスト (Vitest)",
-      command: "stella.showRunLog",
-    });
-    expect((await lenses(`${root}/src/q02.ts`, text))?.[0]?.command?.command).toBe(
-      "stella.submitTask",
-    );
-    const otherRoot = "/workspace/other/q01";
-    state.taskRootOf.mockResolvedValueOnce(otherRoot);
-    expect((await lenses(`${otherRoot}/src/q01.ts`, text))?.[0]?.command?.command).toBe(
-      "stella.submitTask",
-    );
-
-    finishTaskCheck({
-      root,
-      manifest,
-      saved: false,
-      result: {
-        schemaVersion: 1,
-        taskId: manifest.id,
-        runner: manifest.runner,
-        outcome: "cancelled",
-        startedAt: "2026-11-01T00:00:00.000Z",
-        durationMs: 1,
-        platform: "linux",
-        toolVersions: {},
-        steps: [],
-        files: [],
-        protected: [],
-        manifestSha256: "m",
-      },
-    });
-    expect(changed).toHaveBeenCalledTimes(4);
-    expect((await lenses(source, text))?.[0]?.command).toEqual({
-      title: "▷ 確認して提出",
-      command: "stella.submitTask",
-      arguments: [root, "q01"],
-    });
-  });
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
+        progressTaskCheck({ type: "step-start", index: 0 });
+        expect(changed).toHaveBeenCalledTimes(3);
+        expect((await lenses(source, text))?.[0]?.command).toEqual({
+          title: "$(sync~spin) 確認中 1/1 テスト (Vitest)",
+          command: "stella.showRunLog",
+        });
+        expect((await lenses(`${editorRoot}/src/q02.ts`, text))?.[0]?.command?.command).toBe(
+          "stella.submitTask",
+        );
+        const otherRoot = "/workspace/other/q01";
+        state.taskRootOf.mockResolvedValueOnce(otherRoot);
+        expect((await lenses(`${otherRoot}/src/q01.ts`, text))?.[0]?.command?.command).toBe(
+          "stella.submitTask",
+        );
+      } finally {
+        Object.defineProperty(process, "platform", { value: platform });
+        finishTaskCheck({
+          root: checkRoot,
+          manifest,
+          saved: false,
+          result: {
+            schemaVersion: 1,
+            taskId: manifest.id,
+            runner: manifest.runner,
+            outcome: "cancelled",
+            startedAt: "2026-11-01T00:00:00.000Z",
+            durationMs: 1,
+            platform: "linux",
+            toolVersions: {},
+            steps: [],
+            files: [],
+            protected: [],
+            manifestSha256: "m",
+          },
+        });
+      }
+      expect(changed).toHaveBeenCalledTimes(4);
+      expect((await lenses(source, text))?.[0]?.command).toEqual({
+        title: "▷ 確認して提出",
+        command: "stella.submitTask",
+        arguments: [editorRoot, "q01"],
+      });
+    },
+  );
 
   it.each([
     ["// export の説明\n\nexport const x = 1;\nexport const y = 2;", 2],

@@ -498,7 +498,7 @@ async function checkTask(
     const problemIndex = manifest.problems?.findIndex(({ id }) => id === problem) ?? -1;
     const problemTitle = manifest.problems?.[problemIndex]?.title;
     const note = !options.forSubmission
-      ? "確認だけを行います。まだ何も送りません。"
+      ? "確認だけを行います。まだ提出しません。"
       : manifest.problems?.length
         ? "すべて通ると、そのまま提出します。"
         : "すべて通ると、振り返りを書いて提出します。";

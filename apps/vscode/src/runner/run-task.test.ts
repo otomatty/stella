@@ -14,6 +14,7 @@ import {
   normalizeTaskRoot,
   type RunProgress,
   runTask,
+  sameTaskRoot,
   saveRunResult,
   unmetNeed,
 } from "./run-task.js";
@@ -38,6 +39,20 @@ describe("normalizeTaskRoot", () => {
     for (const root of ["c:\\x", "/home/a/task"]) {
       expect(normalizeTaskRoot(root, platform)).toBe(root);
     }
+  });
+});
+
+describe("sameTaskRoot", () => {
+  it.each([
+    ["C:\\a\\b", "c:\\a\\b", "win32", true],
+    ["c:\\a\\b", "C:\\a\\b", "win32", true],
+    ["C:\\a\\b", "c:\\A\\b", "win32", false],
+    ["C:\\a\\b", "c:\\a\\b", "linux", false],
+    [undefined, "C:\\a\\b", "win32", false],
+    ["C:\\a\\b", undefined, "win32", false],
+    [undefined, undefined, "win32", false],
+  ] as const)("%s と %s を %s で比べると %s", (a, b, platform, expected) => {
+    expect(sameTaskRoot(a, b, platform)).toBe(expected);
   });
 });
 
