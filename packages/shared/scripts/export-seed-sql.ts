@@ -550,8 +550,10 @@ function emitQuiz(
         optionUuids.length === 0
           ? `(select count(*) from quiz_options o where o.question_id = '${qUuid}') <> 0`
           : `exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and o.id not in (${sqlIn(optionUuids)})) or (select count(*) from quiz_options o where o.question_id = '${qUuid}') <> ${optionUuids.length} or exists (select 1 from quiz_options o where o.question_id = '${qUuid}' and (${optionPreds.join(" or ")}))`;
+      const questionMismatch = `exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and (qq.prompt <> ${strLit(q.prompt)} or qq.body <> ${body})) or ${optionMismatch}`;
       lines.push(
-        `delete from review_cards where question_id = '${qUuid}' and (exists (select 1 from quiz_questions qq where qq.id = '${qUuid}' and (qq.prompt <> ${strLit(q.prompt)} or qq.body <> ${body})) or ${optionMismatch});`,
+        `delete from review_cards where question_id = '${qUuid}' and (${questionMismatch});`,
+        `update quiz_questions set updated_at = ${nowExpr()} where id = '${qUuid}' and (${questionMismatch});`,
       );
     }
     lines.push(

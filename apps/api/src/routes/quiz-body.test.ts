@@ -59,6 +59,39 @@ async function call(path: string, user: string, input?: Record<string, unknown>)
   return response;
 }
 
+describe("今日の復習のカード補完", () => {
+  it("受験後に更新された設問を除き、同じ受験のほかの設問はカードにする", async () => {
+    const { sqlite } = database;
+    const answers = [
+      { question_id: "question", selected_option_ids: ["option"] },
+      { question_id: "revised-question", selected_option_ids: ["revised-option"] },
+    ];
+    sqlite.exec(`
+      delete from review_cards;
+      insert into quiz_questions (id, quiz_id, kind, prompt, created_at, updated_at)
+        values ('revised-question', 'quiz', 'single', '新版の設問', 1, 3);
+      insert into quiz_options (id, question_id, label, is_correct)
+        values ('revised-option', 'revised-question', '新版の正解', 1);
+    `);
+    sqlite
+      .prepare(
+        `insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, answers, submitted_at)
+         values ('old-attempt', 'ses', 'quiz', 'learner', 2, 2, 1, ?, 2)`,
+      )
+      .run(JSON.stringify(answers));
+
+    const response = await call("/api/srs/today", "learner");
+    const { review } = await json<{ review: SrsTodaySummary }>(response);
+    expect(review.questions.map((q) => q.id)).toEqual(["question"]);
+    const cards = () =>
+      sqlite.prepare("select question_id from review_cards order by question_id").all();
+    expect(cards()).toEqual([{ question_id: "question" }]);
+
+    await call("/api/quiz/quiz/attempt", "learner", { answers });
+    expect(cards()).toEqual([{ question_id: "question" }, { question_id: "revised-question" }]);
+  });
+});
+
 describe("知識問題の Markdown 本文", () => {
   it("レッスンのクイズで本文を返す", async () => {
     const res = await call("/api/quiz/for-lesson/lesson", "learner");
