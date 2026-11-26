@@ -5664,6 +5664,193 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-code-skill-config-20261126",
+      "title": "Extend Claude with skills",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/skills",
+      "section": "Resolve skills that share a name / Frontmatter reference / Add supporting files / Control who invokes a skill / Skill content lifecycle / Pre-approve tools for a skill",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-best-practices-extension-20261126",
+      "title": "Best practices for Claude Code",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Keep CLAUDE.md short / Scope rules to one part of the codebase / Put team procedures in skills / Enforce steps with hooks",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-hook-types-20261126",
+      "title": "Hooks reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "section": "Exit code 2 behavior per event / PreToolUse / PostToolUse / Prompt-based hooks / Agent-based hooks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-manifest-20261126",
+      "title": "Plugin manifest reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/manifest-reference",
+      "section": "Manifest file / Validate the manifest / Fields / Component path forms",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-create-20261126",
+      "title": "Create a Claude Code plugin",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/create",
+      "section": "Create a Claude Code plugin / Test and debug",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-dependencies-20261126",
+      "title": "Plugin dependencies",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/dependencies",
+      "section": "Declare a dependency with a version constraint / How dependencies behave for your users",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-loading-20261126",
+      "title": "Plugin loading reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/loading",
+      "section": "Versions and updates",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-plugin-install-20261126",
+      "title": "Install and manage plugins",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/install",
+      "section": "Choose an install scope / Add a marketplace / Install from your shell",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-marketplace-file-20261126",
+      "title": "Marketplace reference",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/plugins/marketplace-reference",
+      "section": "Marketplace file",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-model-config-20261126",
+      "title": "Model configuration",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/model-config",
+      "section": "Model aliases / Setting your model / Checking your current model / Pin models for third-party deployments",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-github-actions-20261126",
+      "title": "Claude Code GitHub Actions",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/github-actions",
+      "section": "Interactive and automation modes / Define project standards in CLAUDE.md / Protect your credentials / Action parameters / Pass CLI arguments",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
