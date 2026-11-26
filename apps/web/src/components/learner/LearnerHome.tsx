@@ -59,7 +59,7 @@ import {
   isGuidedStageStep,
   pickGuidedStage,
 } from "@/lib/home-guide";
-import { Compass, ListTree, Sparkles } from "@/lib/icons";
+import { LayoutGrid, Network, Sparkles } from "@/lib/icons";
 import { findNextLesson, loadMap, whenProgressReady } from "@/lib/lesson-progress";
 import { startStage as startGuidedStage } from "@/lib/skill-map-api";
 import { buildTodayPlan } from "@/lib/today-plan";
@@ -642,7 +642,7 @@ export const LearnerHome = ({
               className="pointer-events-auto ml-3 flex h-9 w-max shrink-0 items-center rounded-full border border-border bg-white/[0.86] p-0.5 shadow-sm backdrop-blur-md dark:bg-[rgba(12,14,24,0.78)] lg:absolute lg:left-[376px] lg:top-0 lg:ml-0"
             >
               {(["tree", "lanes"] as const).map((view) => {
-                const Icon = view === "tree" ? Compass : ListTree;
+                const Icon = view === "tree" ? Network : LayoutGrid;
                 return (
                   <button
                     key={view}
@@ -661,7 +661,7 @@ export const LearnerHome = ({
                     }}
                   >
                     <Icon size={14} />
-                    {view === "tree" ? "ステージ一覧" : "道のり"}
+                    {view === "tree" ? "ツリー" : "カード"}
                   </button>
                 );
               })}
@@ -669,7 +669,7 @@ export const LearnerHome = ({
           ) : null}
         </div>
 
-        {/* スマホ・タブレットでは上下のカードの間で道のりをスクロールする。 */}
+        {/* スマホ・タブレットのカード表示は上下のカードの間でスクロールする。 */}
         {showViewToggle && homeView === "lanes" ? (
           <SkillLanes
             nodes={nodes}

@@ -296,10 +296,10 @@ function LaneActions({
         ) : null}
         <button
           type="button"
-          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をステージ一覧で見る`}
+          aria-label={`${detail.obscured ? "名前の伏せられたスキル" : detail.label}をツリーで見る`}
           onClick={() => onShowInTree(stageId)}
         >
-          ステージ一覧で見る
+          ツリーで見る
         </button>
       </div>
     </div>
