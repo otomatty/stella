@@ -1,0 +1,918 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "続きの発言を送るとき、それまでのやり取りを messages の配列に並べて送る理由と並べ方を説明できる。",
+    "stuck": "チャットの画面と同じ感覚で、新しい発言だけを送れば前の話が通じると思ってしまう。",
+    "points": [
+      "Messages API は会話を覚えないので、それまでのやり取りを messages の配列で毎回送ります。"
+    ],
+    "leaveOut": [
+      "system や max_tokens などほかの項目",
+      "応答の content の取り出し方",
+      "履歴が長くなったときの扱い",
+      "SDK の呼び出し方",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "order-card": {
+      "prompt": "A blank paper order slip beside a small closed light grey cardboard delivery parcel sealed with blue tape, with one empty blue speech bubble above the slip. The parcel is light grey, not brown. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-reply": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark face, tilting its head gently toward an empty speech bubble. No counter or other characters. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-stack": {
+      "prompt": "A clipped stack of blank conversation cards, alternating blue and violet tabs, slightly fanned out so their order is visible. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "phone-agent": {
+      "prompt": "Two human telephone service agents at separate small desks, one in front and the other farther back, each wearing a headset, with blank memo trays. No robot. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-history": {
+      "prompt": "An open laptop beside a folder holding a stack of blank blue and violet conversation cards. The laptop has a completely blank blue screen, with no interface elements. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "meeting-room": {
+      "prompt": "A small meeting room with a table and exactly four empty chairs, a blank reservation card resting on the table. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "chat-use": {
+      "prompt": "A young adult learner with short dark hair and a plain violet sweater holding a phone with a completely blank screen, with two empty speech bubbles floating beside it. No interface elements. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "support-desk": {
+      "prompt": "A human service agent at an inquiry desk listening to a visitor holding a blank paper slip. Two empty speech bubbles float between them. No robot. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "draft-sheet": {
+      "prompt": "Two overlapping blank draft sheets and a violet pencil, with a small empty speech bubble beside the upper sheet. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "inquiry",
+          "label": "注文を尋ねる",
+          "art": "order-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "番号を尋ねる",
+          "art": "claude-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "number",
+          "label": "A-1024",
+          "art": "order-card",
+          "at": [5, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "まとめて送る",
+          "art": "history-stack",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "inquiry",
+          "to": "reply"
+        },
+        {
+          "id": "reply-to",
+          "from": "reply",
+          "to": "number"
+        }
+      ]
+    },
+    "telephone": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "desk",
+          "label": "電話の窓口",
+          "art": "phone-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "これまでのメモ",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の担当者",
+          "art": "phone-agent",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "memo",
+          "to": "next",
+          "label": "渡す"
+        }
+      ]
+    },
+    "exchange": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "呼び出すアプリ",
+          "art": "app-history",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "app",
+          "to": "claude",
+          "label": "リクエスト"
+        },
+        {
+          "id": "response",
+          "from": "claude",
+          "to": "app",
+          "label": "応答",
+          "route": "under"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "利用者の発言",
+          "art": "order-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "Claude の発言",
+          "art": "claude-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい発言",
+          "art": "order-card",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first-reply",
+          "from": "first",
+          "to": "reply"
+        },
+        {
+          "id": "reply-new",
+          "from": "reply",
+          "to": "new"
+        }
+      ]
+    },
+    "history": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "会話の履歴",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "呼び出すアプリ",
+          "art": "app-history",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "受け取った応答",
+          "art": "claude-reply",
+          "at": [1, 2]
+        },
+        {
+          "id": "new",
+          "label": "次の発言",
+          "art": "order-card",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "past",
+          "to": "app"
+        },
+        {
+          "id": "add-reply",
+          "from": "reply",
+          "to": "app"
+        },
+        {
+          "id": "add-user",
+          "from": "new",
+          "to": "app"
+        }
+      ]
+    },
+    "reservation": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "one",
+          "label": "会議室の予約",
+          "art": "meeting-room",
+          "at": [1, 1]
+        },
+        {
+          "id": "two",
+          "label": "日時を質問",
+          "art": "claude-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "three",
+          "label": "明日の午後",
+          "art": "meeting-room",
+          "at": [5, 1]
+        },
+        {
+          "id": "four",
+          "label": "人数を質問",
+          "art": "claude-reply",
+          "at": [5, 2]
+        },
+        {
+          "id": "five",
+          "label": "四人です",
+          "art": "meeting-room",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "one-two",
+          "from": "one",
+          "to": "two"
+        },
+        {
+          "id": "two-three",
+          "from": "two",
+          "to": "three"
+        },
+        {
+          "id": "three-four",
+          "from": "three",
+          "to": "four"
+        },
+        {
+          "id": "four-five",
+          "from": "four",
+          "to": "five"
+        }
+      ]
+    },
+    "reservationArray": {
+      "cols": 4,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "context",
+          "label": "予約と日時の話",
+          "art": "meeting-room",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "人数を尋ねた発言",
+          "art": "claude-reply",
+          "at": [2, 1]
+        },
+        {
+          "id": "new",
+          "label": "四人という返事",
+          "art": "meeting-room",
+          "at": [3, 1]
+        },
+        {
+          "id": "all",
+          "label": "五つの発言",
+          "art": "history-stack",
+          "at": [4, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "context-question",
+          "from": "context",
+          "to": "question"
+        },
+        {
+          "id": "question-new",
+          "from": "question",
+          "to": "new"
+        },
+        {
+          "id": "new-all",
+          "from": "new",
+          "to": "all"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "チャットの画面",
+          "art": "chat-use",
+          "at": [1, 1]
+        },
+        {
+          "id": "desk",
+          "label": "問い合わせ",
+          "art": "support-desk",
+          "at": [3, 1]
+        },
+        {
+          "id": "draft",
+          "label": "下書きの修正",
+          "art": "draft-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "番号だけでは伝わらない",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "「注文の状況を教えて」と送ります。",
+          "show": ["inquiry"]
+        },
+        {
+          "say": "返ってきたのは、注文番号を尋ねる言葉です。",
+          "show": ["reply", "ask"]
+        },
+        {
+          "say": "続けて「A-1024 です」とだけ送りました。",
+          "speech": "続けて「エーいちゼロにーよんです」とだけ送りました。",
+          "show": ["number", "reply-to"]
+        },
+        {
+          "say": "API は会話を覚えないので、番号だけでは通じません。",
+          "speech": "エーピーアイは会話を覚えないので、番号だけでは通じません。",
+          "pulse": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "それまでのやり取りを、毎回配列でまとめて送ります。",
+          "show": ["bundle"],
+          "pulse": ["bundle"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "telephone",
+      "kind": "board",
+      "role": "example",
+      "title": "毎回違う担当者に話す",
+      "board": "telephone",
+      "beats": [
+        {
+          "say": "電話するたびに、担当者が変わる窓口を考えましょう。",
+          "show": ["desk"]
+        },
+        {
+          "say": "次の担当者は、それまでの話を知りません。",
+          "show": ["next"]
+        },
+        {
+          "say": "そこで、やり取りを順に書いたメモを毎回渡します。",
+          "show": ["memo", "pass"],
+          "travel": {
+            "along": ["pass"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "メモがあれば、前の話の続きから説明できるわけです。",
+          "pulse": ["next"],
+          "mark": [
+            {
+              "on": "next",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exchange",
+      "kind": "board",
+      "role": "syntax",
+      "title": "リクエストと応答",
+      "board": "exchange",
+      "beats": [
+        {
+          "say": "アプリが API に送る依頼を、リクエストと呼びます。",
+          "speech": "アプリがエーピーアイに送る依頼を、リクエストと呼びます。",
+          "term": {
+            "text": "リクエスト",
+            "note": "アプリから送る依頼"
+          },
+          "show": ["app", "claude"]
+        },
+        {
+          "say": "注文の状況を尋ねる、この向きの依頼です。",
+          "show": ["request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "API から返る結果を、応答と呼びます。",
+          "speech": "エーピーアイから返る結果を、応答と呼びます。",
+          "term": {
+            "text": "応答",
+            "ruby": "おうとう",
+            "note": "API から返る結果"
+          }
+        },
+        {
+          "say": "注文番号を尋ねる言葉が、今回の応答でした。",
+          "show": ["response"],
+          "travel": {
+            "along": ["response"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "Messages API は、前のリクエストを覚えていません。",
+          "speech": "メッセージズエーピーアイは、前のリクエストを覚えていません。",
+          "pulse": ["claude"],
+          "tag": {
+            "claude": "前の話はない"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "message-parts",
+      "kind": "code",
+      "role": "syntax",
+      "title": "発言した側と中身",
+      "code": [
+        "// やり取りを順に並べる",
+        "const messages = [",
+        "  // 利用者が注文について尋ねる",
+        "  { role: \"user\", content: \"注文の状況を教えて\" },",
+        "  // Claude が注文番号を尋ねる",
+        "  { role: \"assistant\", content: \"注文番号を教えてください\" },",
+        "  // 利用者の新しい発言を最後に置く",
+        "  { role: \"user\", content: \"A-1024 です\" },",
+        "// 発言をまとめた配列を閉じる",
+        "];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "order"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "messages の配列に、発言を一つずつ並べます。",
+          "speech": "メッセージズの配列に、発言を一つずつ並べます。",
+          "part": {
+            "line": 1,
+            "text": "messages",
+            "note": "発言の配列"
+          },
+          "figure": {
+            "show": ["first", "reply", "new", "first-reply", "reply-new"]
+          }
+        },
+        {
+          "say": "発言した側を示す項目が role です。",
+          "speech": "発言した側を示す項目がロールです。",
+          "term": {
+            "text": "role",
+            "note": "発言した側"
+          },
+          "part": {
+            "line": 3,
+            "text": "role"
+          }
+        },
+        {
+          "say": "利用者の発言には、user を指定します。",
+          "speech": "利用者の発言には、ユーザーを指定します。",
+          "part": {
+            "line": 3,
+            "text": "\"user\"",
+            "note": "利用者"
+          },
+          "figure": {
+            "pulse": ["first"]
+          }
+        },
+        {
+          "say": "Claude の発言は、assistant です。",
+          "speech": "クロードの発言は、アシスタントです。",
+          "part": {
+            "line": 5,
+            "text": "\"assistant\"",
+            "note": "Claude"
+          },
+          "figure": {
+            "pulse": ["reply"]
+          }
+        },
+        {
+          "say": "content には、発言の中身を書きます。",
+          "speech": "コンテントには、発言の中身を書きます。",
+          "part": {
+            "line": 3,
+            "text": "content",
+            "note": "発言の中身"
+          },
+          "figure": {
+            "pulse": ["first"]
+          }
+        },
+        {
+          "say": "この行の中身は、注文の状況を尋ねる言葉です。",
+          "part": {
+            "line": 3,
+            "text": "注文の状況を教えて"
+          },
+          "figure": {
+            "tag": {
+              "first": "注文の状況"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "order-array",
+      "kind": "code",
+      "role": "apply",
+      "title": "注文のやり取りを並べる",
+      "code": [
+        "// やり取りを順に並べる",
+        "const messages = [",
+        "  // 利用者が注文について尋ねる",
+        "  { role: \"user\", content: \"注文の状況を教えて\" },",
+        "  // Claude が注文番号を尋ねる",
+        "  { role: \"assistant\", content: \"注文番号を教えてください\" },",
+        "  // 利用者の新しい発言を最後に置く",
+        "  { role: \"user\", content: \"A-1024 です\" },",
+        "// 発言をまとめた配列を閉じる",
+        "];"
+      ],
+      "show": [0, 1, 8, 9],
+      "panel": {
+        "kind": "figure",
+        "board": "order"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初に、注文の状況を尋ねた発言を入れます。",
+          "type": [2, 3],
+          "figure": {
+            "show": ["first"]
+          }
+        },
+        {
+          "say": "その次は、注文番号を尋ねた Claude の発言です。",
+          "speech": "その次は、注文番号を尋ねたクロードの発言です。",
+          "type": [4, 5],
+          "figure": {
+            "show": ["reply", "first-reply"]
+          }
+        },
+        {
+          "say": "最後に「A-1024 です」という新しい発言を置きます。",
+          "speech": "最後に「エーいちゼロにーよんです」という新しい発言を置きます。",
+          "type": [6, 7],
+          "figure": {
+            "show": ["new", "reply-new"]
+          }
+        },
+        {
+          "say": "利用者と Claude の発言が、交互に並んだ形です。",
+          "speech": "利用者とクロードの発言が、交互に並んだ形です。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "travel": {
+              "along": ["first-reply", "reply-new"]
+            }
+          }
+        },
+        {
+          "say": "配列ごと送れば、この番号が注文番号だと伝わります。",
+          "part": {
+            "line": 1,
+            "text": "messages"
+          },
+          "figure": {
+            "tag": {
+              "new": "注文番号"
+            },
+            "mark": [
+              {
+                "on": "new",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "keep-history",
+      "kind": "board",
+      "role": "note",
+      "title": "履歴はアプリが持つ",
+      "board": "history",
+      "beats": [
+        {
+          "say": "それまでのやり取りを、会話の履歴と呼びます。",
+          "term": {
+            "text": "会話の履歴",
+            "ruby": "かいわのりれき",
+            "note": "それまでのやり取り"
+          },
+          "show": ["past"]
+        },
+        {
+          "say": "履歴を持つのは、呼び出す側のアプリです。",
+          "show": ["app", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "受け取った応答を、assistant として履歴に足します。",
+          "speech": "受け取った応答を、アシスタントとして履歴に足します。",
+          "show": ["reply", "add-reply"],
+          "travel": {
+            "along": ["add-reply"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "次に加えるのは、user の新しい発言です。",
+          "speech": "次に加えるのは、ユーザーの新しい発言です。",
+          "show": ["new", "add-user"],
+          "travel": {
+            "along": ["add-user"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その二つを足した配列を、次のリクエストで送ります。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "まとめて送る"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "次に送る発言はいくつ",
+      "board": "reservation",
+      "think": 8,
+      "beats": [
+        {
+          "say": "利用者が、会議室を予約したいと伝えました。",
+          "show": ["one"],
+          "tag": {
+            "one": "利用者"
+          }
+        },
+        {
+          "say": "Claude が返したのは、日時を尋ねる言葉です。",
+          "speech": "クロードが返したのは、日時を尋ねる言葉です。",
+          "show": ["two", "one-two"],
+          "tag": {
+            "two": "Claude"
+          }
+        },
+        {
+          "say": "「明日の午後です」と答えると、人数を尋ねられます。",
+          "show": ["three", "four", "two-three", "three-four"],
+          "tag": {
+            "three": "利用者",
+            "four": "Claude"
+          }
+        },
+        {
+          "say": "そこで、利用者は「四人です」と答えました。",
+          "show": ["five", "four-five"],
+          "tag": {
+            "five": "利用者"
+          }
+        },
+        {
+          "say": "次の messages に入れる発言は、いくつでしょうか？",
+          "speech": "次のメッセージズに入れる発言は、いくつでしょうか？",
+          "pulse": ["one", "two", "three", "four", "five"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "五つとも入れる",
+      "board": "reservation",
+      "beats": [
+        {
+          "say": "答えは、最初から新しい発言までの五つです。",
+          "mark": [
+            {
+              "on": "one",
+              "kind": "check"
+            },
+            {
+              "on": "two",
+              "kind": "check"
+            },
+            {
+              "on": "three",
+              "kind": "check"
+            },
+            {
+              "on": "four",
+              "kind": "check"
+            },
+            {
+              "on": "five",
+              "kind": "check"
+            }
+          ],
+          "pause": 1.5
+        }
+      ]
+    },
+    {
+      "id": "why-all",
+      "kind": "code",
+      "role": "explain",
+      "title": "発言を順にたどる",
+      "code": [
+        "// 会議室の予約のやり取りを順に並べる",
+        "const messages = [",
+        "  // 利用者が会議室の予約を頼む",
+        "  { role: \"user\", content: \"会議室を予約したい\" },",
+        "  // Claude が日時を尋ねる",
+        "  { role: \"assistant\", content: \"いつ使いますか\" },",
+        "  // 利用者が日時を伝える",
+        "  { role: \"user\", content: \"明日の午後です\" },",
+        "  // Claude が人数を尋ねる",
+        "  { role: \"assistant\", content: \"何人で使いますか\" },",
+        "  // 利用者の新しい発言を最後に置く",
+        "  { role: \"user\", content: \"四人です\" },",
+        "// 五つの発言をまとめた配列を閉じる",
+        "];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "reservationArray"
+      },
+      "beats": [
+        {
+          "say": "最初の三つで、予約したい日時まで伝わります。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "show": ["context"]
+          }
+        },
+        {
+          "say": "その次は、人数を尋ねた Claude の発言です。",
+          "speech": "その次は、人数を尋ねたクロードの発言です。",
+          "part": {
+            "line": 9,
+            "text": "何人で使いますか"
+          },
+          "figure": {
+            "show": ["question", "context-question"]
+          }
+        },
+        {
+          "say": "最後に「四人です」という新しい発言を置きます。",
+          "part": {
+            "line": 11,
+            "text": "四人です"
+          },
+          "figure": {
+            "show": ["new", "question-new"]
+          }
+        },
+        {
+          "say": "それだけでは、何についての人数か伝わりません。",
+          "focus": [11],
+          "figure": {
+            "mark": [
+              {
+                "on": "new",
+                "kind": "question"
+              }
+            ]
+          }
+        },
+        {
+          "say": "前の話も配列に入れて送ると、予約の続きとして伝わります。",
+          "focus": [3, 5, 7, 9, 11],
+          "figure": {
+            "show": ["all", "new-all"],
+            "unmark": ["new"],
+            "mark": [
+              {
+                "on": "all",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "続けてやり取りする場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "チャットの画面では、前の発言を含めて送ります。",
+          "show": ["chat"]
+        },
+        {
+          "say": "問い合わせの窓口も、続けてやり取りする場面です。",
+          "show": ["desk"]
+        },
+        {
+          "say": "下書きを直す依頼でも、前の話を配列に入れます。",
+          "show": ["draft"]
+        },
+        {
+          "say": "続きの発言を送る前に、履歴の並びを確かめましょう。",
+          "pulse": ["chat", "desk", "draft"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "5242d13f616dd7141e41327fe42a1621fc3cf66815b5a60521fdaa771b6323d3"
+  }
+}

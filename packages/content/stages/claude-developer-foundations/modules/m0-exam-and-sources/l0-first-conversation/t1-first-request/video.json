@@ -1,0 +1,713 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "Claude への最初の依頼に、使う資料と作ってほしいものの両方を書ける。",
+    "stuck": "「短くして」とだけ頼み、何を材料に、だれ向けの何を作るかを伝えない。",
+    "points": ["使う資料と作ってほしいものを一緒に伝えます。"],
+    "leaveOut": [
+      "回答を原文と照らして確かめる方法",
+      "API やアプリからの送り方",
+      "プロンプトの細かい技法",
+      "Claude の仕組み"
+    ]
+  },
+  "art": {
+    "training-notice": {
+      "prompt": "A paper training announcement clipped to a small upright clipboard, with a simple pictorial vignette of a reception desk and a classroom doorway on the paper. The rest of the paper is blank. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a small blank paper card at reading distance, looking attentively at it. This character represents the person who will read an announcement. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sentence-card": {
+      "prompt": "One small horizontal white paper announcement card held by a blue paper clip, with a single broad pale violet band suggesting a short line of writing without any readable marks. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "colleague": {
+      "prompt": "A friendly office colleague in a plain blue shirt at a small desk, holding out an empty palm to receive a document, with one empty speech bubble beside their face. The desk is empty. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-chat": {
+      "prompt": "A simplified blue chat window containing two large blank rounded speech bubbles, one aligned on each side. A conceptual illustration of exchanging written requests and replies, with no controls or imitation of any real application interface. No robot or mascot. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-notice": {
+      "prompt": "A library information leaflet standing beside two upright books and one closed book lying flat, with a small open-book pictogram on the otherwise blank leaflet. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a pen above one blank white paper note, preparing a short written request. One empty light grey speech bubble floats beside the note. The hand, the note and the bubble sit directly on the pure white background: no desk, no table surface, no background panel, no frame, no rectangle behind them. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mail-draft": {
+      "prompt": "An open blue envelope with a blank white letter partly tucked inside and a small violet pencil beside it, representing an email draft based on the sender's notes. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "meeting-notes": {
+      "prompt": "A small stack of loose meeting notes beside a tidy clipboard, with a binder clip and several blank sticky notes being gathered into a neat group. Objects only. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "研修の案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "初参加の人",
+          "art": "reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "sentence",
+          "label": "短い一文",
+          "art": "sentence-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "colleague": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "渡す案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "colleague",
+          "label": "同僚",
+          "art": "colleague",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "読む人",
+          "art": "reader",
+          "at": [5, 1]
+        },
+        {
+          "id": "sentence",
+          "label": "作ってほしい文",
+          "art": "sentence-card",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "hand-over",
+          "from": "notice",
+          "to": "colleague",
+          "label": "渡す"
+        }
+      ]
+    },
+    "chat": {
+      "cols": 1,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "Claude",
+          "art": "claude-chat",
+          "at": [1, 1]
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "使う資料",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "読む人",
+          "art": "reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "作ってほしい物",
+          "art": "sentence-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "source": {
+      "cols": 1,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "研修の案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        }
+      ]
+    },
+    "reply": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "依頼と案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "chat",
+          "label": "Claude",
+          "art": "claude-chat",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答例の一文",
+          "art": "sentence-card",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "source",
+          "to": "chat",
+          "label": "送る"
+        },
+        {
+          "id": "receive",
+          "from": "chat",
+          "to": "reply",
+          "label": "回答例"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "first",
+          "label": "一つ目の依頼",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        },
+        {
+          "id": "second",
+          "label": "二つ目の依頼",
+          "tone": "violet",
+          "cells": [1, 2, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "short",
+          "label": "短くして",
+          "art": "request-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "source",
+          "label": "次の利用案内で",
+          "art": "library-notice",
+          "at": [1, 2]
+        },
+        {
+          "id": "reader",
+          "label": "新入生に",
+          "art": "reader",
+          "at": [3, 2]
+        },
+        {
+          "id": "output",
+          "label": "開室時間を一文",
+          "art": "sentence-card",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "使う資料",
+          "art": "library-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "読む人",
+          "art": "reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "作ってほしい物",
+          "art": "sentence-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "お知らせを短く",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "mail",
+          "label": "メールの下書き",
+          "art": "mail-draft",
+          "at": [3, 1]
+        },
+        {
+          "id": "meeting",
+          "label": "メモの整理",
+          "art": "meeting-notes",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "案内を短い一文に",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "研修の案内を、短い一文にまとめたいとします。",
+          "show": ["notice"]
+        },
+        {
+          "say": "読むのは、初めて研修に参加する人です。",
+          "show": ["reader"]
+        },
+        {
+          "say": "受付時刻と会場が伝わる一文を作りましょう。",
+          "show": ["sentence"]
+        },
+        {
+          "say": "使う資料と作ってほしいものを一緒に伝えます。",
+          "pulse": ["notice", "sentence"]
+        }
+      ]
+    },
+    {
+      "id": "colleague",
+      "kind": "board",
+      "role": "example",
+      "title": "同僚に頼むなら",
+      "board": "colleague",
+      "beats": [
+        {
+          "say": "同僚に、案内を短くしてもらう場面です。",
+          "show": ["colleague"]
+        },
+        {
+          "say": "「短くしておいて」とだけ伝えました。",
+          "tag": {
+            "colleague": "短くして"
+          }
+        },
+        {
+          "say": "案内がなければ、何を縮めるのか分かりません。",
+          "mark": [
+            {
+              "on": "colleague",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "まず、使ってほしい案内を渡します。",
+          "show": ["notice", "hand-over"],
+          "travel": {
+            "along": ["hand-over"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "読む人と必要な一文も、合わせて伝えましょう。",
+          "show": ["reader", "sentence"],
+          "tag": {
+            "sentence": "受付と会場"
+          },
+          "unmark": ["colleague"]
+        }
+      ]
+    },
+    {
+      "id": "meet-claude",
+      "kind": "board",
+      "role": "syntax",
+      "title": "Claude とチャット",
+      "board": "chat",
+      "beats": [
+        {
+          "say": "Claude は、文章を扱う AI です。",
+          "speech": "クロードは、文章を扱うエーアイです。",
+          "term": {
+            "text": "Claude",
+            "ruby": "クロード",
+            "note": "文章を読んだり作ったりするAI"
+          }
+        },
+        {
+          "say": "文章を読んで、質問に答えたり下書きを作ったりします。",
+          "show": ["chat"]
+        },
+        {
+          "say": "文章でやり取りする場が、チャットです。",
+          "term": {
+            "text": "チャット",
+            "note": "文章でやり取りする場"
+          }
+        },
+        {
+          "say": "ここに、してほしいことを書いて送りましょう。",
+          "pulse": ["chat"],
+          "tag": {
+            "chat": "依頼を送る"
+          }
+        },
+        {
+          "say": "返ってきた文章も、同じ場で読みます。",
+          "tag": {
+            "chat": "回答を読む"
+          }
+        }
+      ]
+    },
+    {
+      "id": "request-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "依頼に入れるもの",
+      "board": "request",
+      "beats": [
+        {
+          "say": "答えの材料にする文章などを、資料と呼びます。",
+          "term": {
+            "text": "資料",
+            "ruby": "しりょう",
+            "note": "答えの材料になる文章など"
+          }
+        },
+        {
+          "say": "今回は、研修の案内が資料です。",
+          "show": ["source"]
+        },
+        {
+          "say": "だれが読むのかも伝えましょう。",
+          "show": ["reader"]
+        },
+        {
+          "say": "作ってほしい内容と長さを、具体的に書きます。",
+          "show": ["output"]
+        },
+        {
+          "say": "この例なら、受付時刻と会場を知らせる一文です。",
+          "tag": {
+            "output": "受付と会場"
+          },
+          "pulse": ["output"]
+        }
+      ]
+    },
+    {
+      "id": "read-notice",
+      "kind": "board",
+      "role": "apply",
+      "title": "使う案内を読む",
+      "board": "source",
+      "beats": [
+        {
+          "say": "教材にある、研修の案内を読んでみましょう。",
+          "show": ["notice"]
+        },
+        {
+          "say": "受付は9時半からです。",
+          "tag": {
+            "notice": "受付9時半"
+          },
+          "speech": "受付は九時半からです。"
+        },
+        {
+          "say": "研修は10時に始まります。",
+          "tag": {
+            "notice": "開始10時"
+          },
+          "speech": "研修は十時に始まります。"
+        },
+        {
+          "say": "会場は北館2階です。",
+          "tag": {
+            "notice": "北館2階"
+          },
+          "speech": "会場は北館二階です。"
+        }
+      ]
+    },
+    {
+      "id": "write-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "依頼を組み立てる",
+      "board": "request",
+      "reset": true,
+      "beats": [
+        {
+          "say": "「次の案内だけを使い」で、使う資料を指定します。",
+          "show": ["source"],
+          "tag": {
+            "source": "この案内だけ"
+          }
+        },
+        {
+          "say": "「初参加の人に」は、読む人の指定です。",
+          "show": ["reader"],
+          "tag": {
+            "reader": "初参加の人"
+          }
+        },
+        {
+          "say": "「受付時刻と会場を一文で」と、内容と長さを伝えましょう。",
+          "show": ["output"],
+          "tag": {
+            "output": "一文"
+          }
+        },
+        {
+          "say": "最後に「知らせてください」と頼みます。",
+          "pulse": ["output"]
+        },
+        {
+          "say": "依頼のあとに、案内の本文も付けるのが大切です。",
+          "tag": {
+            "source": "本文も添える"
+          },
+          "pulse": ["source"]
+        }
+      ]
+    },
+    {
+      "id": "read-reply",
+      "kind": "board",
+      "role": "apply",
+      "title": "回答例の一文",
+      "board": "reply",
+      "beats": [
+        {
+          "say": "依頼と案内を、一緒に送ってみましょう。",
+          "show": ["source", "chat", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "回答例は、このような短い一文になります。",
+          "show": ["reply", "receive"]
+        },
+        {
+          "say": "受付は9時半から、会場は北館2階です。",
+          "tag": {
+            "reply": "受付と会場"
+          },
+          "pulse": ["reply"],
+          "speech": "受付は九時半から、会場は北館二階です。"
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "どちらの依頼が伝わるか",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "図書室の利用案内を短くする、二つの依頼を比べます。",
+          "show": ["first", "short"]
+        },
+        {
+          "say": "一つ目は、「短くしてください」だけです。",
+          "pulse": ["short"]
+        },
+        {
+          "say": "二つ目では、新入生に開室時間を一文で知らせるよう頼みました。",
+          "show": ["second", "source", "reader", "output"],
+          "pulse": []
+        },
+        {
+          "say": "二つ目には、利用案内の本文も付けています。",
+          "pulse": ["source"]
+        },
+        {
+          "say": "資料と作ってほしいものが伝わるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つ目の依頼",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、利用案内の本文を付けた二つ目の依頼です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "使う資料と作る一文が、両方とも伝わっています。",
+          "pulse": ["source", "output"]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "足りない指定をたどる",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "短くする依頼だけでは、使う資料が分かりません。",
+          "show": ["source"],
+          "tag": {
+            "source": "どの案内"
+          },
+          "mark": [
+            {
+              "on": "source",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "読む人が新入生だという指定も、抜けています。",
+          "show": ["reader"],
+          "tag": {
+            "reader": "だれ向け"
+          },
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "残す内容と長さも、まだ決まっていません。",
+          "show": ["output"],
+          "tag": {
+            "output": "内容と長さ"
+          },
+          "mark": [
+            {
+              "on": "output",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "もう一方には、使う案内と新入生向けだと書いてありました。",
+          "tag": {
+            "source": "次の利用案内",
+            "reader": "新入生"
+          },
+          "mark": [
+            {
+              "on": "source",
+              "kind": "check"
+            },
+            {
+              "on": "reader",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "開室時間を一文にする、という指定もそろっています。",
+          "tag": {
+            "output": "開室時間"
+          },
+          "mark": [
+            {
+              "on": "output",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "資料を渡して頼む場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "お知らせを短くするなら、材料は元の案内です。",
+          "show": ["notice"]
+        },
+        {
+          "say": "メールの下書きには、伝える用件を渡します。",
+          "show": ["mail"]
+        },
+        {
+          "say": "会議のメモから、決まったことを整理してもらいましょう。",
+          "show": ["meeting"]
+        },
+        {
+          "say": "どの場面でも、資料と作ってほしいものを一緒に伝えます。",
+          "pulse": ["notice", "mail", "meeting"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "946feaa460cf4518ecafaf2b588b2096d681dadbc01abdaa048901c69380aa96"
+  }
+}
