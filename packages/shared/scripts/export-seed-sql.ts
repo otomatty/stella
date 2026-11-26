@@ -693,9 +693,41 @@ for (const skill of skillRegistry)
 for (const unit of content.units) {
   const id = sectionIdMap.get(`ses:${unit.stageId}:${unit.unitId}`);
   if (!id) throw new Error(`unit section missing: ${unit.unitId}`);
+  const references = JSON.stringify(unit.references);
+  const parts = isSqlite ? splitUtf8(references, LITERAL_PART_BYTES) : [references];
+  const split = parts.length > 1;
+  const columns = ["planned_hours", "skills", "reuses"];
   lines.push(
-    `insert into content_units (section_id, planned_hours, skills, reuses, "references") values (${strLit(id)}, ${unit.config.plannedHours}, ${strLit(JSON.stringify(unit.config.skills))}, ${strLit(JSON.stringify(unit.config.reuses))}, ${strLit(JSON.stringify(unit.references))}) on conflict (section_id) ${doUpdate("content_units", ["planned_hours", "skills", "reuses", '"references"'])};`,
+    `insert into content_units (section_id, planned_hours, skills, reuses, "references") values (${strLit(id)}, ${unit.config.plannedHours}, ${strLit(JSON.stringify(unit.config.skills))}, ${strLit(JSON.stringify(unit.config.reuses))}, ${strLit(split ? "" : references)}) on conflict (section_id) ${doUpdate("content_units", split ? columns : [...columns, '"references"'])};`,
   );
+  if (!split) continue;
+
+  // 組み立て中は JSON として読めない。この列を読むコードがないことが前提。
+  // 読むコードを追加するときは、課題と同じく別に版を組み立ててから差し替える。
+  const section = `section_id = ${strLit(id)}`;
+  const reset = `update content_units set "references" = '' where ${section} and "references" <> ''`;
+  const fragments = parts.map((part) => ({
+    literal: strLit(part),
+    characters: Array.from(part).length,
+    bytes: Buffer.byteLength(part),
+  }));
+  const characters = fragments.reduce((sum, part) => sum + part.characters, 0);
+  lines.push(`${reset} and length("references") <> ${characters};`);
+  // SQLite の substr は UTF-16 の長さではなくコードポイントで位置を数える。
+  let start = 1;
+  for (const part of fragments) {
+    lines.push(
+      `${reset} and substr("references", ${start}, ${part.characters}) <> ${part.literal};`,
+    );
+    start += part.characters;
+  }
+  let bytes = 0;
+  for (const part of fragments) {
+    lines.push(
+      `update content_units set "references" = "references" || ${part.literal} where ${section} and length(cast("references" as blob)) = ${bytes};`,
+    );
+    bytes += part.bytes;
+  }
 }
 // 教材から外れた課題だけを止める。以前はステージの課題を毎回全部 active = 0 にしてから
 // 下の upsert で 1 に戻していて、内容が同じでも全課題を 2 回ずつ書いていた。
