@@ -191,7 +191,7 @@
         "command": "stella.submitTask",
         "key": "ctrl+alt+enter",
         "mac": "cmd+alt+enter",
-        "when": "stella.inTask && editorTextFocus && resourceScheme == file"
+        "when": "stella.inTask && editorTextFocus && resourceScheme == file && !findWidgetVisible"
       }
     ],
     "menus": {
