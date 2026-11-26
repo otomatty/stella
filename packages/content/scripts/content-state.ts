@@ -66,15 +66,28 @@ function d1DatabaseId(): string {
   return id;
 }
 
-function currentFingerprint(databaseId?: string): string {
+function seedInputIndex(): string {
   // ls-files は index を見る。CI の checkout は index = そのコミットなので、
   // 「このコミットの内容」と一致する。ローカルの未 add な変更は含まれない。
-  const out = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
+  return execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
     cwd: rootDir,
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  return fingerprintFrom(out, SEED_INPUT_PATHS, {
+}
+
+export function checkoutContentFingerprint(): { checkoutFingerprint: string; dirty: boolean } {
+  const checkoutFingerprint = fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS);
+  const status = execFileSync("git", ["status", "--porcelain", "--", ...SEED_INPUT_PATHS], {
+    cwd: rootDir,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  return { checkoutFingerprint, dirty: status.length > 0 };
+}
+
+function currentFingerprint(databaseId?: string): string {
+  return fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS, {
     pdfKeySalt: saltDigest(),
     d1DatabaseId: databaseId ?? d1DatabaseId(),
   });
@@ -91,7 +104,7 @@ export async function requireDeployedContent(
   readState: () => Promise<Uint8Array | null>,
 ): Promise<void> {
   const retry =
-    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトと同じ PDF_KEY_SALT で bun run video:register を再実行してください。";
+    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトで bun run video:register を再実行してください。教材の版が変わった場合は video:sync --cached-only から作り直してください。deploy で PDF_KEY_SALT を設定している場合は同じ値を設定してください。値が違うと指紋が合わず登録できません。";
   let previous: ContentState | null;
   try {
     const body = await readState();

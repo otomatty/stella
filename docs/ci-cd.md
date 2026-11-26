@@ -88,7 +88,7 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 
 - `GEMINI_API_KEY` は対象と回数の確認を始める前に設定する。プレビューで Gemini を呼び、アップロード時もコマンドがキーの設定を確認する。
 - `CLOUDFLARE_API_TOKEN` には Workers R2 Storage: Edit と D1: Edit が必要。`CLOUDFLARE_ACCOUNT_ID` は `apps/api/wrangler.toml` の `account_id` とそろえる。
-- `PDF_KEY_SALT` は deploy の GitHub Secret と同じ値を設定する。登録時の教材指紋に使う。
+- deploy で `PDF_KEY_SALT` を設定している場合は同じ値を設定する。値が違うと指紋が合わず登録できない。
 - `VIDEO_TTS_DAILY_LIMIT` は任意。既定値は 100。
 
 リポジトリのルートで実行する。
@@ -96,12 +96,14 @@ seed は `packages/content/stages/<slug>/` を正本として各ステージを 
 1. デプロイ済みの main と同じコミットをチェックアウトし、未コミットの変更がない状態にする。教材を変更したデプロイの直後は、新しい指紋が記録されてから登録する。
 2. `bun run --filter=@stella/content video:sync <stage> --topics <ID,...> --remote --tts gemini --dry-run` で対象と Gemini TTS の必要回数・残りを確認する。この段階では生成や R2・D1 への書き込みは行わない。`--topics` はトピック ID をカンマ区切りで指定し、長い実行は数本ずつに分ける。
 3. `--dry-run` を `--preview` に替えて生成する。`python3 -m http.server -d packages/content/dist/video` を実行し、`http://localhost:8000/` の確認ページで動画と字幕を見る。
-4. 同じステージとトピックの指定で `--preview` を `--cached-only` に替えて R2 に上げる。キャッシュにある音声だけを使うため、Gemini は呼ばない。結果は `packages/content/dist/video-manifest.json` に書く。
-5. `bun run video:register` で D1 に登録する。数本ずつ進める場合は、次の組の `video:sync` を実行する前に登録する。別の manifest を使う場合は `VIDEO_MANIFEST` にパスを指定する。
+4. 同じステージとトピックの指定で `--preview` を `--cached-only` に替えて R2 に上げる。キャッシュにある音声だけを使うため、Gemini は呼ばない。結果は `packages/content/dist/video-manifest.json` に、同期時の教材指紋は隣の `video-manifest.source.json` に書く。
+5. `bun run video:register` で D1 に登録する。数本ずつ進める場合は、次の組の `video:sync` を実行する前に登録する。別の manifest を使う場合は `VIDEO_MANIFEST` にパスを指定し、同じ名前の `.source.json` を隣に置く。
+
+`--cached-only` と `video:register` は同じチェックアウトで続けて行う。チェックアウトや教材を替えたら `--cached-only` から manifest を作り直す (キャッシュの音声を使うため Gemini は呼ばない)。
 
 新方式 (`video.json`) も旧方式 (`narration.json`) も、Gemini TTS の必要回数は動画ごとに 1 回と見積もる。キャッシュ済みの音声は除く。必要回数が当日の残りを超えると、生成と書き込みを始める前に失敗する。残りの下限は 0 回。台帳からの再登録や収録版など、必要回数が 0 の処理は続ける。手元の `video:sync` は、`--preview` や失敗した呼び出しも含めて、使用回数を太平洋時間の日付 (`YYYY-MM-DD`) ごとに公開 R2 の `lesson-video/state.json` の `ttsUsage` に足す。`video:scenes` や同じ API キーの別用途の呼び出しは数えない。計測を始めた実行は途中で失敗しても台帳を保存する。台帳が無ければ空から始め、取得や検証に失敗すれば生成前に止まる。実行中に 429 で 1 日の上限に当たったら、その場で止まる。
 
-登録時は `stella-db` の本番 ID を取得する。書き込みの直前に、deploy と同じ方法 (D1 の ID と `PDF_KEY_SALT` を含む) で計算した教材指紋を、R2 の `deploy/content-state.json` と照合する。教材が変わるデプロイは開始時に前回の指紋を消し、seed の成功後に新しい指紋を記録する。指紋が無い、読めない、または一致しない場合は登録が止まる。デプロイ完了後、チェックアウトと `PDF_KEY_SALT` を確認して `bun run video:register` を再実行する。
+登録時は付帯ファイルと今のチェックアウトの教材指紋が一致し、どちらにも未コミットの教材変更がないことを確かめてから `stella-db` の本番 ID を取得する。書き込みの直前に、deploy と同じ方法 (D1 の ID と `PDF_KEY_SALT` を含む) で計算した教材指紋を、R2 の `deploy/content-state.json` と照合する。教材が変わるデプロイは開始時に前回の指紋を消し、seed の成功後に新しい指紋を記録する。指紋が無い、読めない、または一致しない場合は登録が止まる。デプロイ完了後、教材の版と `PDF_KEY_SALT` の設定を確認して登録を再試行する。
 
 登録は成功したトピックの `video_path` と `video_scenes` を更新し、`video_issue` を解除する。生成に失敗したトピックは配信中の動画を保ち、`video_issue` に理由を記録する (管理者の画面に表示)。レッスンの UUID は seed と同じ方法で求める。一部のトピックが失敗すると `video:sync` は失敗を返す。manifest ができていれば、成功した動画と失敗理由を `bun run video:register` で登録できる。manifest を作り直す場合も、台帳にある同じ内容ハッシュの動画は読み上げを使わずに再登録できる。
 
