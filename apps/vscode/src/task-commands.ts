@@ -934,6 +934,55 @@ function reflectAcceptedProblem(
   };
 }
 
+async function openNextProblemAfterSubmission(
+  root: string,
+  manifest: TaskManifest,
+  problemId: string,
+  previous: TaskProblems,
+  next: ProblemState | undefined,
+  releasePending: boolean | undefined,
+  session: number | undefined,
+): Promise<void> {
+  if (
+    !next ||
+    next.id === problemId ||
+    previous.states.some(({ id, status }) => id === problemId && status === "submitted") ||
+    releasePending ||
+    session !== apiSession()
+  )
+    return;
+
+  try {
+    const file = vscode.Uri.file(await resolveFileInRoot(root, next.source));
+    const document = await vscode.workspace.openTextDocument(file);
+    if (session !== apiSession()) return;
+    const active = vscode.window.activeTextEditor?.document.uri;
+    if (active) {
+      const rel = isFileUri(active) ? relativeInRoot(root, active.fsPath) : undefined;
+      const problem = rel && (problemForPath(manifest, rel) ?? problemForTestPath(manifest, rel));
+      if (!problem || (problem.id !== problemId && problem.id !== next.id)) return;
+    }
+    await vscode.window.showTextDocument(document, {
+      viewColumn: vscode.ViewColumn.One,
+      preview: false,
+    });
+    const submitted = problemFiles(RUNNERS[manifest.runner].plan, problemId);
+    if (!submitted) return;
+    const tabs = vscode.window.tabGroups.all.flatMap(({ tabs }) =>
+      tabs.filter((tab) => {
+        if (tab.isDirty || tab.isPinned || !(tab.input instanceof vscode.TabInputText))
+          return false;
+        const { uri } = tab.input;
+        const rel = isFileUri(uri) ? relativeInRoot(root, uri.fsPath) : undefined;
+        return rel !== next.source && (rel === submitted.source || rel === submitted.test);
+      }),
+    );
+    if (tabs.length > 0) await vscode.window.tabGroups.close(tabs, true);
+  } catch {
+    // ファイルを開くかタブを閉じる操作に失敗しても、提出は受理されている。
+  }
+}
+
 /** 問題つきの課題を、説明欄なしで 1 問提出して次の問題を案内する。 */
 async function submitProblemTask(
   root: string,
@@ -989,6 +1038,15 @@ async function submitProblemTask(
           problemActionsAvailable: !problems.releasePending,
         });
         notifyProblemTaskOpened(root);
+        await openNextProblemAfterSubmission(
+          root,
+          manifest,
+          problemId,
+          previous,
+          problemToWorkOn(problems.states),
+          problems.releasePending,
+          session,
+        );
         if (taskReadmeRoot() === root)
           void renderTaskReadme(root, { reveal: false }, {}, problems).catch(() => undefined);
         if (problems.releaseError) void vscode.window.showWarningMessage(problems.releaseError);
@@ -1017,14 +1075,15 @@ async function submitProblemTask(
         void vscode.window.showInformationMessage(
           `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
         );
-        const next = nextUnsubmittedProblem(marked);
-        if (next) {
-          const file = vscode.Uri.file(await resolveFileInRoot(root, next.source));
-          await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file), {
-            viewColumn: vscode.ViewColumn.One,
-            preview: false,
-          });
-        }
+        await openNextProblemAfterSubmission(
+          root,
+          manifest,
+          problemId,
+          previous,
+          nextUnsubmittedProblem(marked),
+          snapshot.releasePending,
+          session,
+        );
       }
       if (taskReadmeRoot() === root) {
         void renderTaskReadme(root, { reveal: false }, {}, snapshot).catch(() => undefined);
