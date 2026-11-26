@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/api-client";
 import {
   peerHiddenBubble,
-  peerLegendTitles,
   peerNow,
   peerStageBubble,
   peerStageShortLabels,
@@ -23,9 +22,6 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_app/groups/$groupId")({
   component: GroupProgressPage,
 });
-
-const NOTICE =
-  "このグループのメンバーには、あなたの表示名・修了したステージ・進捗の割合が見えます。まだ開いていないステージの進み具合は「先に進んでいます」とだけ表示されます。";
 
 function GroupProgressPage() {
   const { groupId } = Route.useParams();
@@ -111,16 +107,8 @@ function GroupProgress({
           グループ一覧に戻る
         </Link>
       ) : null}
-      <header className="space-y-2">
+      <header>
         <h1 className="break-words text-2xl font-bold">{progress?.group.name ?? "グループ"}</h1>
-        {progress ? (
-          <p className="text-sm text-ink-3">{progress.members.length} 人</p>
-        ) : error ? null : (
-          <div className="flex h-5 items-center" aria-hidden="true">
-            <Skeleton className="h-4 w-12" />
-          </div>
-        )}
-        <p className="text-sm text-ink-3">{NOTICE}</p>
       </header>
       {progress ? (
         <PeerBands progress={progress} />
@@ -164,9 +152,6 @@ function PeerBandsSkeleton() {
                     <div className="flex h-5 items-center">
                       <Skeleton className="h-3.5 w-28" />
                     </div>
-                    <div className="flex h-[18px] items-center">
-                      <Skeleton className="h-3 w-10" />
-                    </div>
                   </div>
                   <div className="flex gap-[3px] sm:gap-1">
                     {segments.map((key) => (
@@ -185,7 +170,7 @@ function PeerBandsSkeleton() {
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-3 w-14" />
           <Skeleton className="h-3 w-14" />
           <Skeleton className="h-3 w-24" />
         </div>
@@ -201,6 +186,20 @@ interface DisplayStage {
   percent: number;
   cleared: boolean;
 }
+
+/** 「その先」の段の長さ。通常の段の何倍か。 */
+const HIDDEN_SEGMENT_RATIO = 0.5;
+
+/** 先に進んでいる人の「その先」の段。塗りつぶさず右へ薄くする。 */
+const AHEAD_FADE: CSSProperties = {
+  backgroundImage: "linear-gradient(to right, var(--brand), transparent)",
+};
+
+/**
+ * 先に進んでいる人の「いま」。見えないステージの題名は API から来ないので、
+ * ステージ名と同じ見た目でこの言葉を出す。
+ */
+const AHEAD_LABEL = "まだ開いていないステージ";
 
 const HATCH: CSSProperties = {
   backgroundColor: "var(--bg-muted)",
@@ -220,7 +219,7 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
   const occurrences = new Map<string, number>();
   const hasHiddenStages = progress.hasHiddenStages;
   const segmentCount = stages.length + Number(hasHiddenStages);
-  const segmentsWidth = 24 * (stages.length + (hasHiddenStages ? 1.6 : 0));
+  const segmentsWidth = 24 * stages.length + (hasHiddenStages ? 16 : 0);
   return (
     <div className="space-y-4">
       <section aria-label="仲間の進捗" className="overflow-x-auto p-1 [container-type:inline-size]">
@@ -250,7 +249,7 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
                   cleared: row?.cleared ?? false,
                 };
               });
-              const now = peerNow(snapshots, member.ahead);
+              const now = peerNow(snapshots, member.ahead, hasHiddenStages);
               return (
                 <li
                   key={JSON.stringify([member.name, occurrence])}
@@ -265,14 +264,9 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
                         <span className="truncate font-medium">{member.name}</span>
                         {member.isMe ? <Badge variant="accent">あなた</Badge> : null}
                       </div>
-                      <p
-                        className={cn(
-                          "max-w-[55%] shrink-0 truncate text-xs sm:hidden",
-                          nowTone(now),
-                        )}
-                      >
-                        {now.compact}
-                      </p>
+                      <div className="max-w-[55%] shrink-0 text-xs sm:hidden">
+                        <NowText now={now} />
+                      </div>
                     </div>
                     <div className="hidden min-w-0 sm:block">
                       <NowLines now={now} />
@@ -289,44 +283,24 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
           </ul>
         </div>
       </section>
-      <PeerLegend stages={stages} hasHiddenStages={hasHiddenStages} />
+      <PeerLegend hasHiddenStages={hasHiddenStages} />
     </div>
   );
 }
 
-function nowTone(now: PeerNow): string {
-  if (now.kind === "ahead") return "text-[#4f46e5]";
-  if (now.kind === "cleared") return "text-success";
-  if (now.kind === "not-started") return "text-ink-3";
-  return "text-ink";
+function NowLines({ now }: { now: PeerNow }) {
+  return (
+    <div className="min-w-0 text-[13px]">
+      <NowText now={now} />
+    </div>
+  );
 }
 
-function NowLines({ now }: { now: PeerNow }) {
-  if (now.kind === "progress") {
-    return (
-      <div className="min-w-0">
-        <p className="truncate text-[13px]">{now.title}</p>
-        <p className="text-[12px] text-ink-3 tabular-nums">{now.percent}%</p>
-      </div>
-    );
-  }
-  if (now.kind === "ahead") {
-    return (
-      <span className="inline-flex max-w-full items-center rounded-full bg-[#4f46e5] px-2 py-0.5 text-[11px] font-medium text-white">
-        {now.label}
-      </span>
-    );
-  }
-  return (
-    <p
-      className={cn(
-        "break-words text-[13px]",
-        now.kind === "cleared" ? "text-success" : "text-ink-3",
-      )}
-    >
-      {now.label}
-    </p>
-  );
+function NowText({ now }: { now: PeerNow }) {
+  if (now.kind === "stage") return <p className="truncate text-ink">{now.title}</p>;
+  if (now.kind === "ahead") return <p className="truncate text-ink">{AHEAD_LABEL}</p>;
+  if (now.kind === "done") return <p className="truncate text-success">{now.label}</p>;
+  return null;
 }
 
 function BandLabels({
@@ -348,8 +322,11 @@ function BandLabels({
         </div>
       ))}
       {hasHiddenStages ? (
-        <div className="min-w-[24px] flex-[1.6_1_0%] truncate text-center text-[10px] text-ink-3 sm:text-[11px]">
-          その先 ››
+        <div
+          className="min-w-[16px] truncate text-center text-[10px] text-ink-3 sm:text-[11px]"
+          style={{ flex: `${HIDDEN_SEGMENT_RATIO} 1 0%` }}
+        >
+          ››
         </div>
       ) : null}
     </div>
@@ -420,9 +397,10 @@ function SegmentButton({
           aria-label={label}
           aria-expanded={open}
           className={cn(
-            "flex min-h-[24px] min-w-[24px] items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-brand",
-            wide ? "flex-[1.6_1_0%]" : "flex-[1_1_0%]",
+            "flex min-h-[24px] items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-brand",
+            wide ? "min-w-[16px]" : "min-w-[24px] flex-[1_1_0%]",
           )}
+          style={wide ? { flex: `${HIDDEN_SEGMENT_RATIO} 1 0%` } : undefined}
           onPointerDown={(event) => {
             touch.current = event.pointerType === "touch";
             if (touch.current) clearTimeout(closeTimer.current);
@@ -452,22 +430,13 @@ function SegmentButton({
               kind === "progress" && "bg-brand-soft",
               kind === "idle" && "border border-border bg-card",
             )}
-            style={
-              kind === "hidden"
-                ? HATCH
-                : kind === "ahead"
-                  ? { backgroundColor: "#4f46e5" }
-                  : undefined
-            }
+            style={kind === "hidden" ? HATCH : kind === "ahead" ? AHEAD_FADE : undefined}
           >
             {kind === "progress" ? (
               <span
                 className="absolute inset-y-0 left-0 bg-brand"
                 style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
               />
-            ) : null}
-            {kind === "ahead" ? (
-              <span className="text-[10px] font-semibold text-white sm:text-xs">››</span>
             ) : null}
           </span>
         </button>
@@ -492,66 +461,38 @@ function SegmentButton({
   );
 }
 
-function PeerLegend({
-  stages,
-  hasHiddenStages,
-}: {
-  stages: { id: string; short: string; title: string }[];
-  hasHiddenStages: boolean;
-}) {
-  const legendTitles = peerLegendTitles(
-    stages.map((stage) => stage.title),
-    stages.map((stage) => stage.short),
-  );
+function PeerLegend({ hasHiddenStages }: { hasHiddenStages: boolean }) {
   return (
-    <div className="space-y-3 text-xs text-ink-2">
-      <ul className="flex flex-wrap gap-x-4 gap-y-2">
-        <li className="flex items-center gap-1.5">
-          <span className="h-3 w-5 rounded-[4px] bg-success" aria-hidden="true" />
-          修了
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span
-            className="relative h-3 w-5 overflow-hidden rounded-[4px] bg-brand-soft"
-            aria-hidden="true"
-          >
-            <span className="absolute inset-y-0 left-0 w-1/2 bg-brand" />
-          </span>
-          受講中 (塗りが進捗の割合)
-        </li>
-        <li className="flex items-center gap-1.5">
-          <span className="h-3 w-5 rounded-[4px] border border-border bg-card" aria-hidden="true" />
-          未着手
-        </li>
-        {hasHiddenStages ? (
-          <>
-            <li className="flex items-center gap-1.5">
-              <span className="h-3 w-5 rounded-[4px]" style={HATCH} aria-hidden="true" />
-              その先 (まだ開いていないステージ)
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span
-                className="flex h-3 w-5 items-center justify-center rounded-[4px] text-[8px] font-semibold text-white"
-                style={{ backgroundColor: "#4f46e5" }}
-                aria-hidden="true"
-              >
-                ››
-              </span>
-              先に進んでいます
-            </li>
-          </>
-        ) : null}
-      </ul>
-      {stages.length > 0 ? (
-        <ul aria-label="段のラベル" className="flex flex-wrap gap-x-4 gap-y-1 text-ink-3">
-          {stages.map((stage, index) => (
-            <li key={stage.id}>
-              <span className="font-medium text-ink-2">{stage.short}</span>
-              <span className="ml-1">{legendTitles[index]}</span>
-            </li>
-          ))}
-        </ul>
+    <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-ink-2">
+      <li className="flex items-center gap-1.5">
+        <span className="h-3 w-5 rounded-[4px] bg-success" aria-hidden="true" />
+        修了
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span
+          className="relative h-3 w-5 overflow-hidden rounded-[4px] bg-brand-soft"
+          aria-hidden="true"
+        >
+          <span className="absolute inset-y-0 left-0 w-1/2 bg-brand" />
+        </span>
+        受講中
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span className="h-3 w-5 rounded-[4px] border border-border bg-card" aria-hidden="true" />
+        未着手
+      </li>
+      {hasHiddenStages ? (
+        <>
+          <li className="flex items-center gap-1.5">
+            <span className="h-3 w-5 rounded-[4px]" style={HATCH} aria-hidden="true" />
+            その先 (まだ開いていないステージ)
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="h-3 w-5 rounded-[4px]" style={AHEAD_FADE} aria-hidden="true" />
+            先に進んでいます
+          </li>
+        </>
       ) : null}
-    </div>
+    </ul>
   );
 }

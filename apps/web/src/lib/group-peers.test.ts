@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   peerHiddenBubble,
-  peerLegendTitles,
   peerNow,
   peerStageBubble,
   peerStageShortLabels,
@@ -19,55 +18,49 @@ describe("peerNow", () => {
     stage("08章 応用", 10),
   ];
 
-  it("並び順で最初の、修了でなく進んでいるステージを出す", () => {
-    expect(peerNow(stages, true)).toEqual({
-      kind: "progress",
-      title: "07章 継承",
-      percent: 45,
-      compact: "07章 継承 · 45%",
+  it("並び順で最初の、修了でなく進んでいるステージを割合なしで出す", () => {
+    expect(peerNow(stages, true, true)).toEqual({ kind: "stage", title: "07章 継承" });
+  });
+
+  it("進んでいるステージが無く先に進んでいれば題名を伏せる", () => {
+    expect(peerNow([stage("06章 クラス", 0)], true, true)).toEqual({ kind: "ahead" });
+  });
+
+  it("まだ始めていなければ最初のステージを出す", () => {
+    expect(peerNow([stage("00章", 0), stage("01章", 0)], false, true)).toEqual({
+      kind: "stage",
+      title: "00章",
     });
   });
 
-  it("修了で割合が 100 のステージは受講中にしない", () => {
-    expect(peerNow([stage("06章 クラス", 100, true)], false)).toEqual({
-      kind: "cleared",
-      title: "06章 クラス",
-      label: "✓ 06章 クラスまで修了",
-      compact: "✓ 06章 クラスまで修了",
+  it("修了したステージの次があれば、修了ではなく次のステージを出す", () => {
+    expect(peerNow([stage("00章", 100, true), stage("01章", 0)], false, false)).toEqual({
+      kind: "stage",
+      title: "01章",
     });
   });
 
-  it("進んでいるステージが無く先に進んでいればその旨を出す", () => {
-    expect(peerNow([stage("06章 クラス", 0)], true)).toEqual({
+  it("途中に未修了があり後ろに続きが無ければ、並び順で最初の未修了を出す", () => {
+    expect(
+      peerNow([stage("00章", 100, true), stage("01章", 0), stage("02章", 100, true)], false, false),
+    ).toEqual({ kind: "stage", title: "01章" });
+  });
+
+  it("見えるステージをすべて修了し、見えないステージがあれば題名を伏せる", () => {
+    expect(peerNow([stage("00章", 100, true), stage("01章", 100, true)], false, true)).toEqual({
       kind: "ahead",
-      label: "›› 先に進んでいます",
-      compact: "›› 先に進んでいます",
     });
   });
 
-  it("途中に未修了があれば、最後に修了したステージだけを表示する", () => {
-    expect(
-      peerNow([stage("00章", 100, true), stage("01章", 0), stage("02章", 100, true)], false),
-    ).toEqual({
-      kind: "cleared",
-      title: "02章",
-      label: "✓ 02章 修了",
-      compact: "✓ 02章 修了",
+  it("グループのステージをすべて修了したら「まで修了」と出す", () => {
+    expect(peerNow([stage("00章", 100, true), stage("01章", 100, true)], false, false)).toEqual({
+      kind: "done",
+      label: "✓ 01章まで修了",
     });
   });
 
-  it("前のステージがすべて修了なら「まで修了」と表示する", () => {
-    expect(
-      peerNow([stage("00章", 100, true), stage("01章", 100, true), stage("02章", 0)], false),
-    ).toMatchObject({ label: "✓ 01章まで修了", compact: "✓ 01章まで修了" });
-  });
-
-  it("どれも無ければまだ始めていない", () => {
-    expect(peerNow([stage("06章 クラス", 0)], false)).toEqual({
-      kind: "not-started",
-      label: "まだ始めていません",
-      compact: "まだ始めていません",
-    });
+  it("ステージが無ければ何も出さない", () => {
+    expect(peerNow([], false, false)).toEqual({ kind: "empty" });
   });
 });
 
@@ -84,32 +77,6 @@ describe("peerStageShortLabels", () => {
 
   it("3 桁の数字に続く章は 2 桁の章番号にしない", () => {
     expect(peerStageShortLabels(["100章", "06章"])).toEqual(["1", "2"]);
-  });
-});
-
-describe("peerLegendTitles", () => {
-  it("章番号のラベルのときは先頭の章番号と続く空白を除く", () => {
-    expect(peerLegendTitles(["00章 環境の確認", "01章 はじめてのファイル"], ["00", "01"])).toEqual([
-      "環境の確認",
-      "はじめてのファイル",
-    ]);
-    expect(peerLegendTitles(["00章   環境の確認"], ["00"])).toEqual(["環境の確認"]);
-  });
-
-  it("並び順の番号のときは題名のまま", () => {
-    expect(peerLegendTitles(["06章 クラス", "確認A"], ["1", "2"])).toEqual([
-      "06章 クラス",
-      "確認A",
-    ]);
-  });
-
-  it("並び順の番号が題名の章番号と一致しても除かない", () => {
-    expect(peerLegendTitles(["確認A", "10章 応用"], ["1", "10"])).toEqual(["確認A", "10章 応用"]);
-  });
-
-  it("章番号が先頭に無いときと、除くと空になるときは題名のまま", () => {
-    expect(peerLegendTitles(["導入 00章 環境の確認"], ["00"])).toEqual(["導入 00章 環境の確認"]);
-    expect(peerLegendTitles(["00章"], ["00"])).toEqual(["00章"]);
   });
 });
 
