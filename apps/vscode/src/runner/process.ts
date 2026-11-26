@@ -253,7 +253,11 @@ export function runProcess(
         clearTimeout(timer);
         timer = undefined;
       }
-      closeGrace = setTimeout(() => finishAfterCut(code), closeGraceMs);
+      closeGrace = setTimeout(() => {
+        // 親が終わっても、同じグループでパイプを持つ子孫は残っていることがある。
+        stop();
+        finishAfterCut(code);
+      }, closeGraceMs);
     });
     child.on("close", (code) => finish(code));
   });

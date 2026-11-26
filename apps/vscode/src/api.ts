@@ -54,6 +54,8 @@ export const API_TIMEOUT_MS = 60_000;
 
 const API_TIMEOUT_MESSAGE =
   "LMS から応答がありませんでした。通信を確かめて、もう一度実行してください";
+const API_WRITE_TIMEOUT_MESSAGE =
+  "LMS から応答がありませんでした。送った内容が届いている場合があります。Web の教材の画面で提出の状態を確かめてから、必要ならもう一度送ってください";
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
@@ -104,7 +106,10 @@ export async function apiRequest<T>(path: string, init: ApiInit = {}): Promise<T
     }
   } catch (error) {
     if (callerSignal?.aborted !== true && timeoutSignal.aborted && isAbortError(error)) {
-      throw new Error(API_TIMEOUT_MESSAGE);
+      const method = init.method?.toUpperCase() ?? "GET";
+      throw new Error(
+        method === "GET" || method === "HEAD" ? API_TIMEOUT_MESSAGE : API_WRITE_TIMEOUT_MESSAGE,
+      );
     }
     throw error;
   }

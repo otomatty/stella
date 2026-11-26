@@ -1,7 +1,7 @@
 import { readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   childEnv,
   type KillTreeDeps,
@@ -84,11 +84,11 @@ describe("runProcess", () => {
     expect(out.spawnError).toBe("ENOENT");
   });
 
-  function grandchildScript(pidFile: string, after: string): string {
+  function grandchildScript(pidFile: string, after: string, detached = true): string {
     return [
       "const { spawn } = require('node:child_process');",
       "const fs = require('node:fs');",
-      "const grandchild = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'inherit', detached: true, windowsHide: true });",
+      `const grandchild = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'inherit', detached: ${detached}, windowsHide: true });`,
       "grandchild.unref();",
       `fs.writeFileSync(${JSON.stringify(pidFile)}, String(grandchild.pid ?? ''));`,
       after,
@@ -145,6 +145,33 @@ describe("runProcess", () => {
       stopGrandchild(pidFile);
     }
   });
+
+  it.skipIf(process.platform === "win32")(
+    "親の exit 後に同じグループの孫がパイプを持っていても、猶予で止めて親の終了コードを返す",
+    async () => {
+      const pidFile = path.join(tmpdir(), `stella-proc-group-${process.pid}-${Date.now()}.pid`);
+      try {
+        const out = await runProcess(
+          { ...base, args: ["-e", grandchildScript(pidFile, "process.exit(4);", false)] },
+          { closeGraceMs: 200 },
+        );
+        expect(out).toMatchObject({ exitCode: 4, timedOut: false, aborted: false });
+        const pid = Number(readFileSync(pidFile, "utf8"));
+        expect(Number.isInteger(pid)).toBe(true);
+        expect(pid).toBeGreaterThan(0);
+        await vi.waitFor(
+          () => {
+            expect(() => process.kill(pid, 0)).toThrowError(
+              expect.objectContaining({ code: "ESRCH" }),
+            );
+          },
+          { timeout: 2_000, interval: 50 },
+        );
+      } finally {
+        stopGrandchild(pidFile);
+      }
+    },
+  );
 });
 
 describe("子プロセスごと止める", () => {

@@ -18,13 +18,29 @@ function hangUntilAbort(_url: string, init?: RequestInit): Promise<Response> {
   });
 }
 
+const readTimeoutMessage =
+  "LMS から応答がありませんでした。通信を確かめて、もう一度実行してください";
+const writeTimeoutMessage =
+  "LMS から応答がありませんでした。送った内容が届いている場合があります。Web の教材の画面で提出の状態を確かめてから、必要ならもう一度送ってください";
+
 describe("apiRequest の時間切れ", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
-  it("既定の時間で打ち切ると、通信を確かめる案内を出す", async () => {
+  it.each([
+    [undefined, readTimeoutMessage],
+    ["GET", readTimeoutMessage],
+    ["HEAD", readTimeoutMessage],
+    ["get", readTimeoutMessage],
+    ["head", readTimeoutMessage],
+    ["POST", writeTimeoutMessage],
+    ["post", writeTimeoutMessage],
+    ["PUT", writeTimeoutMessage],
+    ["PATCH", writeTimeoutMessage],
+    ["DELETE", writeTimeoutMessage],
+  ])("%s の通信を既定の時間で打ち切ると、操作に合う案内を出す", async (method, message) => {
     const realTimeout = AbortSignal.timeout.bind(AbortSignal);
     vi.spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => {
       expect(ms).toBe(API_TIMEOUT_MS);
@@ -32,12 +48,13 @@ describe("apiRequest の時間切れ", () => {
     });
     initApi(auth, () => "https://stella.example");
     vi.stubGlobal("fetch", vi.fn(hangUntilAbort));
-    await expect(apiRequest("/api/submissions", { method: "POST", body: {} })).rejects.toThrow(
-      "LMS から応答がありませんでした。通信を確かめて、もう一度実行してください",
-    );
+    await expect(apiRequest("/api/submissions", { method })).rejects.toThrow(message);
   });
 
-  it("応答本文の読み取りが時間切れでも、同じ案内を出す", async () => {
+  it.each([
+    ["GET", readTimeoutMessage],
+    ["POST", writeTimeoutMessage],
+  ])("%s の応答本文の読み取りが時間切れでも、操作に合う案内を出す", async (method, message) => {
     const timeoutSignal = AbortSignal.abort(new DOMException("timed out", "TimeoutError"));
     vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeoutSignal);
     initApi(auth, () => "https://stella.example");
@@ -51,9 +68,7 @@ describe("apiRequest の時間切れ", () => {
         },
       })),
     );
-    await expect(apiRequest("/api/me")).rejects.toThrow(
-      "LMS から応答がありませんでした。通信を確かめて、もう一度実行してください",
-    );
+    await expect(apiRequest("/api/submissions", { method })).rejects.toThrow(message);
   });
 
   it("呼び出し側の signal で中断した例外は、そのまま投げる", async () => {
