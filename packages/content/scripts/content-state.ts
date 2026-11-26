@@ -66,7 +66,7 @@ function d1DatabaseId(): string {
   return id;
 }
 
-function currentFingerprint(): string {
+function currentFingerprint(databaseId?: string): string {
   // ls-files は index を見る。CI の checkout は index = そのコミットなので、
   // 「このコミットの内容」と一致する。ローカルの未 add な変更は含まれない。
   const out = execFileSync("git", ["ls-files", "-s", "--", ...SEED_INPUT_PATHS], {
@@ -76,7 +76,7 @@ function currentFingerprint(): string {
   });
   return fingerprintFrom(out, SEED_INPUT_PATHS, {
     pdfKeySalt: saltDigest(),
-    d1DatabaseId: d1DatabaseId(),
+    d1DatabaseId: databaseId ?? d1DatabaseId(),
   });
 }
 
@@ -91,7 +91,7 @@ export async function requireDeployedContent(
   readState: () => Promise<Uint8Array | null>,
 ): Promise<void> {
   const retry =
-    "デプロイが終わってから、もう一度実行してください。作った動画は台帳にあるので、force を外せば読み上げを使わずに登録できます。";
+    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトと同じ PDF_KEY_SALT で bun run video:register を再実行してください。";
   let previous: ContentState | null;
   try {
     const body = await readState();
@@ -103,9 +103,13 @@ export async function requireDeployedContent(
     throw new Error(`本番教材の指紋が一致しません。 ${retry}`);
 }
 
-export async function verifyRemoteContent(): Promise<void> {
+export async function verifyRemoteContent({
+  databaseId,
+}: {
+  databaseId?: string;
+} = {}): Promise<void> {
   const r2 = createR2Client(BUCKET, true);
-  await requireDeployedContent(currentFingerprint(), () => r2.get(CONTENT_STATE_KEY));
+  await requireDeployedContent(currentFingerprint(databaseId), () => r2.get(CONTENT_STATE_KEY));
 }
 
 async function main(): Promise<void> {

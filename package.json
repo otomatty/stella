@@ -20,6 +20,7 @@
     "content:pdf:sync": "bun run --filter=@stella/content pdf:sync",
     "content:pdf:sync:remote": "bun run --filter=@stella/content pdf:sync:remote",
     "content:video": "bun run --filter=@stella/content video",
+    "video:register": "bun run packages/shared/scripts/register-lesson-videos.ts",
     "content:upload:thumbnails:remote": "bun run --filter=@stella/content upload:thumbnails:remote",
     "content:state:check:remote": "bun run --filter=@stella/content state:check:remote",
     "content:state:save:remote": "bun run --filter=@stella/content state:save:remote",
