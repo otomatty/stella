@@ -9,7 +9,7 @@
  * ステージのレッスンツリーは触らない。
  *
  * 教材リポジトリも DB もステージの語彙 (`stages/<slug>/stage.json`、
- * `QuizSeed.stageId`、PDF マニフェストの `stageSlug`)。
+ * `QuizSeed.stageId`)。
  * `stableUuid` の名前空間キー (`course:...`) だけは **改名しない** —
  * 変えると既存 D1 のステージ UUID が総入れ替えになり、受講登録・進捗・
  * 修了証の参照がまとめて切れるため。
@@ -594,78 +594,6 @@ function emitQuiz(
   );
 }
 
-/** upload-pdfs.ts が出すマニフェスト 1 行ぶん。 */
-interface PdfManifestEntry {
-  tenantId: string;
-  stageSlug: string;
-  lessonId: string;
-  /** OS ごとに分けた PDF (stage.json の `pdfByOs`) の OS。分けない PDF には無い。 */
-  os?: string;
-  hash: string;
-  key: string;
-  fileName: string;
-  sizeBytes: number;
-}
-
-/**
- * 自動生成 PDF (配布資料) の登録。
- *
- * `PDF_MANIFEST` に upload-pdfs.ts のマニフェストを渡されたときだけ出す (deploy が
- * R2 への put を終えてから seed を流す — D1 が存在しないオブジェクトを指す時間を
- * 作らない、サムネイルと同じ順序)。auto の行はレッスンにつき 1 行 (OS ごとに分けた
- * PDF は OS ごとに 1 行) で常に最新版を指し、版履歴は lesson_material_versions に積む。
- * ハッシュが前回と同じなら版は増えない (冪等)。旧版の R2 オブジェクトは消さない (版の
- * 保持は仕様)。
- *
- * OS ごとに分ける・分けないを切り替えたレッスンでは、マニフェストに無くなった auto の
- * 行に `archived_at` を付ける。受講者の一覧とダウンロードからは外れる (「まとめ.pdf」と
- * 「まとめ (Windows).pdf」が並んで古い方を開かないように) が、行と版履歴は残すので staff は
- * 旧版を取れる。また作るようになった資料は upsert が `archived_at` を戻し、版履歴の続きに
- * 積む。マニフェストに載らないレッスン (ステージを絞ったローカル実行) は触らない。
- */
-function emitPdfMaterials() {
-  const manifestPath = process.env.PDF_MANIFEST;
-  if (!manifestPath || !isSqlite) return;
-  const entries = JSON.parse(readFileSync(manifestPath, "utf8")) as PdfManifestEntry[];
-  /** レッスンの UUID → そのレッスンで今回登録する auto 資料の ID。 */
-  const current = new Map<string, string[]>();
-  for (const e of entries) {
-    if (typeof e.sizeBytes !== "number") {
-      throw new Error(`pdf manifest: sizeBytes がありません: ${e.key}`);
-    }
-    if (e.os !== undefined && e.os !== "windows" && e.os !== "macos") {
-      throw new Error(`pdf manifest: 未知の OS です: ${e.os} (${e.key})`);
-    }
-    const lessonId = lessonUuid(e.tenantId, e.stageSlug, e.lessonId);
-    // OS を分けない PDF の ID は従来のまま (既存の行と版履歴を引き継ぐ)。
-    const materialId = stableUuid(
-      `lesson-material-pdf:${e.tenantId}:${lessonNamespace(e.stageSlug, e.lessonId)}:${e.lessonId}${e.os ? `:${e.os}` : ""}`,
-    );
-    current.set(lessonId, [...(current.get(lessonId) ?? []), materialId]);
-    lines.push(
-      [
-        "insert into lesson_materials (id, lesson_id, path, file_name, size_bytes, mime_type, source, created_by, created_at)",
-        `select '${materialId}', l.id, '${esc(e.key)}', ${strLit(e.fileName)}, ${e.sizeBytes}, 'application/pdf', 'auto', null, ${nowExpr()}`,
-        `from lessons l where l.id = '${lessonId}'`,
-        `on conflict (id) ${doUpdate("lesson_materials", ["path", "file_name", "size_bytes", "mime_type", "source", ["archived_at", "null"]])};`,
-      ].join(" "),
-    );
-    lines.push(
-      [
-        "insert into lesson_material_versions (material_id, version, path, source_hash, lesson_revision, size_bytes, created_at)",
-        `select '${materialId}', coalesce((select max(v.version) from lesson_material_versions v where v.material_id = '${materialId}'), 0) + 1, '${esc(e.key)}', '${e.hash}', (select max(r.revision) from lesson_revisions r where r.lesson_id = '${lessonId}'), ${e.sizeBytes}, ${nowExpr()}`,
-        `where exists (select 1 from lesson_materials m where m.id = '${materialId}')`,
-        `and coalesce((select v2.source_hash from lesson_material_versions v2 where v2.material_id = '${materialId}' order by v2.version desc limit 1), '') <> '${e.hash}';`,
-      ].join(" "),
-    );
-  }
-  for (const [lessonId, materialIds] of current) {
-    lines.push(
-      `update lesson_materials set archived_at = ${nowExpr()} where lesson_id = '${lessonId}' and source = 'auto' and archived_at is null and id not in (${materialIds.map((id) => `'${id}'`).join(", ")});`,
-    );
-  }
-}
-
 if (isSqlite) {
   // 問題でなくなったレッスンの列を、新しいレッスンへ同じ課題・問題を付け直す前に空にする。
   const problemLessonIds = content.tasks.flatMap((task) =>
@@ -887,7 +815,6 @@ lines.push(
 );
 
 emitRetiredStages();
-emitPdfMaterials();
 
 lines.push(
   `delete from ${tbl("lesson_progress")} where lesson_id not in (select id from ${tbl("lessons")});`,

@@ -8,7 +8,6 @@ import { TASK_KINDS } from "../../shared/src/tasks/manifest.js";
 import { unitContentHash } from "./check-source-references.js";
 import { SEED_INPUT_PATHS } from "../scripts/lib/content-fingerprint.js";
 import { buildContentManifest } from "./manifest.js";
-import { collectPdfTargets, pdfFileName, pdfObjectKey, pdfSourceHash } from "./material-pdf.js";
 import { assertProblemFiles } from "./task-content.js";
 import { parseTaskDefinition, type TaskDefinition, toRuntimeManifest } from "./task-schema.js";
 
@@ -52,9 +51,6 @@ describe("format 2 の教材", () => {
         .flatMap((section) => section.lessons)
         .some((lesson) => lesson.id === "sample-public-slides"),
     ).toBe(false);
-    expect(collectPdfTargets(real).some((target) => target.lessonId === "doc-sample-public")).toBe(
-      false,
-    );
   });
   it("単元と課題を読み込み、runtime に執筆用の情報と解答を混ぜない", () => {
     const manifest = buildContentManifest(join(fixture(), "stages"));
@@ -100,7 +96,7 @@ describe("format 2 の教材", () => {
     );
     expect(lessons).toContainEqual(expect.objectContaining({ id: "doc-0-1", title: "0-1 まとめ" }));
   });
-  it("題のある知識問題だけを一つのレッスンとして配り、解説はPDFに出さない", () => {
+  it("題のある知識問題だけを一つのレッスンとして配り", () => {
     const root = fixture();
     const unit = join(root, "stages/dev-env-basics/modules/m0-first-page");
     const lesson = join(unit, "l2-drill");
@@ -125,9 +121,8 @@ describe("format 2 の教材", () => {
     expect(
       manifest.quizzes.find((quiz) => quiz.lessonId === `quiz-${key}`)?.questions,
     ).toHaveLength(3);
-    expect(collectPdfTargets(manifest).some((target) => target.lessonId.endsWith(key))).toBe(false);
   });
-  it("非公開領域の本文は、公開用と似た名前でも bundle・レッスン・PDF に混ぜない", () => {
+  it("非公開領域の本文は、公開用と似た名前でも bundle・レッスン に混ぜない", () => {
     const root = fixture();
     const taskDir = join(root, "stages/dev-env-basics/modules/m0-first-page/tasks/q01-first-page");
     const marker = "PRIVATE_CONTENT_MARKER_28";
@@ -152,9 +147,6 @@ describe("format 2 の教材", () => {
       .join("\n");
     expect(publicText).not.toContain(marker);
     expect(JSON.stringify(manifest.stages)).not.toContain(marker);
-    expect(collectPdfTargets(manifest).some((target) => target.source.includes(marker))).toBe(
-      false,
-    );
   });
   it.each(["README.md", "readme.md", ".stella", "tests", "tests/README.md", "tests/readme.md"])(
     "starter/%s が予約済みの配布パスと衝突したら拒否する",
@@ -488,108 +480,6 @@ describe("format 2 の教材", () => {
       });
       expect(() => build(renamed)).toThrow("-fixed-start");
     });
-  });
-  it("新形式PDFは公開解説と課題文だけで、旧形式は解答編を維持する", () => {
-    const targets = collectPdfTargets();
-    const fresh = collectPdfTargets(buildContentManifest(join(fixture(), "stages")));
-    expect(fresh.map((t) => [t.lessonId, t.kind, t.os])).toEqual([
-      ["doc-0-1", "doc", undefined],
-      ["task-m0-first-page-q01-first-page", "task", undefined],
-      ["doc-sample-public", "doc", undefined],
-    ]);
-    expect(fresh.find((t) => t.kind === "task")?.source).toContain("単元の参照元");
-    expect(fresh.some((t) => /<details>/.test(t.source))).toBe(false);
-    // 新形式のまとめと課題文には解答編を含めない。
-    expect(
-      fresh
-        .filter((t) => t.lessonId === "doc-0-1" || t.kind === "task")
-        .some((t) => /解答例/.test(t.source)),
-    ).toBe(false);
-    expect(
-      targets.some(
-        (t) =>
-          t.stageSlug === "salesforce-dev-basics" &&
-          t.kind === "practice" &&
-          t.source.includes("解答例と解説"),
-      ),
-    ).toBe(true);
-  });
-  it("本文のある問題の PDF にだけ題名の見出しを足す", () => {
-    const problemTitle = "問1 税込価格を返す";
-    const problemMarkdown = "税率10%。税額の1円未満は切り捨て";
-    const summaryMarkdown = "# まとめ\n\n関数の返り値を確認します。";
-    const text = { type: "text", status: "todo", duration: "" } as const;
-    const targets = collectPdfTargets({
-      stages: [
-        {
-          id: "dev-env-basics",
-          title: "STELLAの使い方",
-          format: 2,
-          category: "基礎",
-          color: "indigo",
-          lessonsCount: 3,
-          progress: 0,
-          sections: [
-            {
-              id: "unit",
-              title: "関数",
-              lessons: [
-                { ...text, id: "problem-tax", title: problemTitle, markdown: problemMarkdown },
-                { ...text, id: "problem-empty", title: "問2 割り勘", markdown: "" },
-                { ...text, id: "doc-summary", title: "関数のまとめ", markdown: summaryMarkdown },
-              ],
-            },
-          ],
-        },
-      ],
-      quizzes: [],
-    });
-    expect(targets.map(({ lessonId, source }) => [lessonId, source])).toEqual([
-      ["problem-tax", `# ${problemTitle}\n\n${problemMarkdown}`],
-      ["doc-summary", summaryMarkdown],
-    ]);
-  });
-  it("OS 別のブロックを含むまとめは、pdfByOs のステージでは OS ごとの PDF にする", () => {
-    const root = fixture();
-    const stage = join(root, "stages/dev-env-basics");
-    const doc = join(stage, "modules/m0-first-page/l1-save-and-preview/doc.md");
-    writeFileSync(
-      doc,
-      `${readFileSync(doc, "utf8")}\n:::os windows\nPowerShell で確認します。\n:::\n\n:::os macos\nターミナルで確認します。\n:::\n`,
-    );
-    const manifest = buildContentManifest(join(root, "stages"));
-    expect(manifest.pdfByOs).toEqual(["dev-env-basics"]);
-    const byOs = collectPdfTargets(manifest).filter((t) => t.lessonId === "doc-0-1");
-    expect(byOs.map((t) => t.os)).toEqual(["windows", "macos"]);
-    expect(byOs.map((t) => pdfFileName(t))).toEqual([
-      "0-1 まとめ (Windows).pdf",
-      "0-1 まとめ (macOS).pdf",
-    ]);
-    const [windows, macos] = byOs.map((t) => pdfObjectKey(t, pdfSourceHash(t)));
-    expect(windows).not.toBe(macos);
-    // OS 別のブロックが無い課題文は 1 つのまま
-    expect(
-      collectPdfTargets(manifest)
-        .filter((t) => t.kind === "task")
-        .map((t) => t.os),
-    ).toEqual([undefined]);
-
-    // pdfByOs を外したステージは、1 つの PDF に両方を並べる (キーは OS を持たない計算のまま)
-    const config = JSON.parse(readFileSync(join(stage, "stage.json"), "utf8"));
-    delete config.pdfByOs;
-    writeFileSync(join(stage, "stage.json"), JSON.stringify(config));
-    const combined = collectPdfTargets(buildContentManifest(join(root, "stages"))).filter(
-      (t) => t.lessonId === "doc-0-1",
-    );
-    expect(combined).toHaveLength(1);
-    expect(combined[0]?.os).toBeUndefined();
-    expect(pdfFileName(combined[0] ?? byOs[0])).toBe("0-1 まとめ.pdf");
-    expect(pdfSourceHash({ ...byOs[0], os: undefined })).toBe(
-      pdfSourceHash(combined[0] ?? byOs[0]),
-    );
-    config.pdfByOs = "yes";
-    writeFileSync(join(stage, "stage.json"), JSON.stringify(config));
-    expect(() => buildContentManifest(join(root, "stages"))).toThrow(/pdfByOs/);
   });
 });
 

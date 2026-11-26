@@ -9,7 +9,6 @@
   "prerequisites": [],
   "plannedHours": 2.5,
   "environment": "static-web-02",
-  "pdfByOs": true,
   "canDo": "VS Codeで課題を開き、編集・保存して、確認・提出し、結果を読める",
   "theme": "開発を始める力",
   "modules": {

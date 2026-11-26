@@ -13,7 +13,6 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,18 +35,6 @@ const rootDir = resolve(here, "..", "..", "..");
 const args = process.argv.slice(2);
 const command = args.find((a) => !a.startsWith("-")) ?? "check";
 const remote = args.includes("--remote");
-
-/**
- * PDF の R2 キーは PDF_KEY_SALT (repo Secret) 入りのハッシュ。塩を替えると全キーが
- * 変わるので、教材が 1 文字も動いていなくても PDF の作り直しと seed が要る。
- * リポジトリの中身だけ見ていると、その push を「変わっていない」と判定してしまう。
- *
- * 塩そのものは記録に出さない (指紋へ混ぜるだけ)。記録は公開バケットに置くため。
- */
-function saltDigest(): string {
-  const salt = process.env.PDF_KEY_SALT;
-  return salt ? createHash("sha256").update(salt).digest("hex") : "none";
-}
 
 /**
  * seed の宛先 D1。記録は「この内容を **この DB へ** 入れ終えた」という意味なので、
@@ -88,7 +75,6 @@ export function checkoutContentFingerprint(): { checkoutFingerprint: string; dir
 
 function currentFingerprint(databaseId?: string): string {
   return fingerprintFrom(seedInputIndex(), SEED_INPUT_PATHS, {
-    pdfKeySalt: saltDigest(),
     d1DatabaseId: databaseId ?? d1DatabaseId(),
   });
 }
@@ -104,7 +90,7 @@ export async function requireDeployedContent(
   readState: () => Promise<Uint8Array | null>,
 ): Promise<void> {
   const retry =
-    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトで bun run video:register を再実行してください。教材の版が変わった場合は video:sync --cached-only から作り直してください。deploy で PDF_KEY_SALT を設定している場合は同じ値を設定してください。値が違うと指紋が合わず登録できません。";
+    "デプロイが終わってから、デプロイ済みの main と同じチェックアウトで bun run video:register を再実行してください。教材の版が変わった場合は video:sync --cached-only から作り直してください。";
   let previous: ContentState | null;
   try {
     const body = await readState();

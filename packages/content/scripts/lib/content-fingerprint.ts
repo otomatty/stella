@@ -1,7 +1,7 @@
 /**
  * 「seed に入るもの」の内容指紋。
  *
- * デプロイの教材パイプライン (R2 画像 → PDF → D1 seed) は、正本が 1 バイトも
+ * デプロイの教材パイプライン (R2 画像 → D1 seed) は、正本が 1 バイトも
  * 変わっていない push でもフルで走っていた (Issue #266)。指紋を R2 に置いておき、
  * 前回デプロイ成功時と同じなら丸ごと飛ばす。
  *
@@ -14,15 +14,14 @@
 import { createHash } from "node:crypto";
 
 /**
- * seed・教材 PDF・図解アップロードの入力になるパス。
+ * seed・教材動画・図解アップロードの入力になるパス。
  *
- * この指紋は教材パイプライン全体 (R2 画像 → PDF → D1 seed) の入口なので、
- * 広く取るほど API だけの push でも Playwright と seed が走る。2026-10-06 は
+ * この指紋は教材パイプライン全体 (R2 画像 → D1 seed) の入口なので、
+ * 広く取るほど API だけの push でも seed が走る。2026-10-06 は
  * その seed が D1 の 1 日の書き込み枠を使い切った。見るのは次だけにする。
  *
  * - 生成結果に入るファイル (ステージ・規則・スキル・環境・旧演習・migration)
- * - 生成コードが **値として** import しているファイル (型だけの import は SQL も
- *   PDF も変わらないので見ない)
+ * - 生成コードが **値として** import しているファイル (型だけの import は生成結果を変えないので見ない)
  * - 生成コードが readFileSync で読むファイル (import に出ない)
  *
  * 値 import を足したのにここに無いと `content-fingerprint.test.ts` が落とす。
@@ -63,7 +62,7 @@ export const SEED_INPUT_PATHS = [
   // 宣言した生成依存 (playwright / remark など) の版。bun.lock は含めない
   // (ワークスペースの無関係な依存の更新で seed を流さない)。
   "packages/content/package.json",
-  // seed / PDF / 画像アップロードの生成コード (値 import の先)。
+  // seed / 動画 / 画像アップロードの生成コード (値 import の先)。
   "packages/content/src/coding-rules.ts",
   "packages/content/src/index.ts",
   "packages/content/src/manifest.ts",
@@ -76,12 +75,10 @@ export const SEED_INPUT_PATHS = [
   "packages/content/src/parse-knowledge.ts",
   "packages/content/src/parse-quiz.ts",
   "packages/content/src/parse-slides.ts",
-  "packages/content/src/practice-pdf.ts",
   "packages/content/src/source-references.ts",
   "packages/content/src/split-slides.ts",
   "packages/content/src/task-content.ts",
   "packages/content/src/task-schema.ts",
-  "packages/content/scripts/build-pdf.ts",
   "packages/content/scripts/build-video.ts",
   "packages/content/scripts/upload-videos.ts",
   "packages/content/scripts/content-state.ts",
@@ -90,12 +87,9 @@ export const SEED_INPUT_PATHS = [
   "packages/content/scripts/lib/narration-topics.ts",
   "packages/content/scripts/lib/tts.ts",
   "packages/content/scripts/upload-materials.ts",
-  "packages/content/scripts/upload-pdfs.ts",
-  "packages/content/scripts/lib/doc-html.ts",
   "packages/content/scripts/lib/r2.ts",
   "packages/content/scripts/lib/slide-html.ts",
   "packages/content/scripts/lib/wrangler-config.ts",
-  "packages/content/scripts/pdf/print-doc.css",
   "packages/shared/scripts/export-seed-sql.ts",
   "packages/shared/scripts/lesson-video-sql.ts",
   "packages/shared/scripts/seed-ids.ts",
@@ -153,8 +147,7 @@ export interface ContentState {
  * 対象パスの一覧も混ぜる — 対象を足したのに指紋が変わらないと、その push だけ
  * 新しい入力を見ないまま飛ばしてしまう。
  *
- * `extra` はリポジトリの外にある入力 (今は PDF_KEY_SALT の要約)。値そのものは
- * 呼び出し側でハッシュ済みのものを渡す — 記録は公開バケットに置くため。
+ * `extra` はリポジトリの外にある入力 (seed の宛先 D1 の ID)。
  */
 export function fingerprintFrom(
   lsFilesOutput: string,
@@ -175,7 +168,7 @@ export function fingerprintFrom(
 
 /**
  * 旧演習ディレクトリは課題定義の置き場なのでまとめて見る。説明の README と
- * テストは seed も PDF も読まないので、そこだけの変更ではパイプラインを流さない。
+ * テストは seed が読まないので、そこだけの変更ではパイプラインを流さない。
  */
 function countsTowardFingerprint(lsFilesLine: string): boolean {
   const path = lsFilesLine.split("\t").at(-1) ?? "";

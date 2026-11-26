@@ -49,9 +49,7 @@ export async function registerLessonVideos(): Promise<void> {
     const missing = Object.entries({ CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID })
       .filter(([, value]) => !value)
       .map(([name]) => name);
-    throw new Error(
-      `環境変数 ${missing.join(", ")} を設定してください。deploy で PDF_KEY_SALT を設定している場合は同じ値を設定してください。値が違うと指紋が合わず登録できません。`,
-    );
+    throw new Error(`環境変数 ${missing.join(", ")} を設定してください。`);
   }
 
   const file =

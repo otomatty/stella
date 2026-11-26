@@ -126,7 +126,7 @@ S3 ツールが metadata キーの大文字小文字を変えた場合も不一�
 移行先に事前コピーがある場合、旧環境で削除されたキーが余っていないことも確認する。
 
 4. GitHub Variables を更新する。`VITE_SERVER_URL=https://stella-api.a-sugai.workers.dev`、
-   `VITE_MATERIALS_BASE_URL` は新バケットの公開 URL にする。Secrets の名前と `PDF_KEY_SALT` の値は維持する。
+   `VITE_MATERIALS_BASE_URL` は新バケットの公開 URL にする。
    旧 Variable 値は復旧用に控える。新 Web の build が済むまでユーザーに再開を案内しない。
 
 ## 3. デプロイと再開判定
@@ -138,7 +138,7 @@ S3 ツールが metadata キーの大文字小文字を変えた場合も不一�
 2. API の `/api/healthz` で OAuth / JWT の設定が true であることを確認する。
    旧 JWT による認証が新 API で 401 になり、再ログイン後の JWT が通ることを確認する。
    旧 API は引き続き到達不能であることも確認する。
-3. 新 Web から Google ログイン、ステージの進捗、提出、教材画像、最新・過去版 PDF の取得を確認する。
+3. 新 Web から Google ログイン、ステージの進捗、提出、教材画像を確認する。
    private スキルシートは認可された API 経由だけで取得できることを確認する。
    面談の質問音声・録音の文字起こし、チャット・レビュー下書きが `stella-ai` 経由で動くことを確認する。
 4. VS Code の既存設定値を新 API / Web URL に変更し、拡張から切断後、新 Web の「VS Code で開く」で再接続する。

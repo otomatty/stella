@@ -116,14 +116,13 @@ env:
     expect(() => parseWrangler('{ "account_id":', "wrangler.jsonc")).toThrow(/invalid/);
   });
 
-  it("requires inputs before remote work but allows the optional PDF secret", () => {
+  it("requires inputs before remote work but allows the optional OpenAI secret", () => {
     const env = Object.fromEntries(
       [...deployment.github.variables, ...deployment.github.secrets].map((name) => [
         name,
         "test-value",
       ]),
     );
-    delete env.PDF_KEY_SALT;
     delete env.OPENAI_API_KEY;
     expect(() => requireDeploymentInputs(env)).not.toThrow();
     env.ANTHROPIC_API_KEY = " ";

@@ -47,7 +47,7 @@ packages/content/stages/<slug>/
 
 参照元の作成・講師承認・旧形式への段階的な適用は [SOURCE_GUIDE.md](SOURCE_GUIDE.md) を参照してください。共通台帳は `sources/registry.json`、使用箇所は単元の `references.json` です。
 
-単元は **モジュール** に対応します。`stage.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `stages/dev-env-basics/` です。format を省略したステージは従来の読み込み・seed・PDFのままです。
+単元は **モジュール** に対応します。`stage.json` に `"format": 2`・`plannedHours`（正の時間数）・`environment`（環境台帳の ID）を書きます。見本は `stages/dev-env-basics/` です。format を省略したステージは従来の読み込みと seed のままです。
 
 スライドを作らないレッスンは `doc.md` と `knowledge.md` を置きます。一問一答などクイズだけで完結するレッスンは、`knowledge.md` の先頭の front-matter に `title: 表示名` を書くと、スライドと `doc.md` を省けます。スライドがない場合は、単元とレッスンのディレクトリ名からレッスン ID が決まります。
 
@@ -140,9 +140,9 @@ modules/<unit>/
 
 LMS は7状態と「VS Code で開く」を表示します。課題文のレッスンにも同じボタンが出ます (seed が `tasks.lesson_id` で結ぶ)。拡張は学習フォルダー (既定は `~/web-training`。受講者が初回に選ぶ) の `<ステージ>/<単元>/<課題>/` へ準備し、既存のファイルを上書きしません。
 
-`fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・`.stella/task.json` と、問題の無い課題の README は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点を置く課題は `task.json` に `"fixedStart": { "covers": ["<ステージ>/<単元>/<課題>"] }` を書き、開始点が動く実装を含む前の課題を示します。順序から推測しないので必須で、同じステージでこの課題より前の課題だけを書けます (自分自身・重複は不可。開始点の無い課題には書けません)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを `covers` と一緒に記録します (その課題と `covers` の課題の、受け取ったあとの提出は「支援付き」になります。開始点を写せば前の課題も出せるためで、受け取る前の提出は変わりません)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。format 2 の配布PDFは課題文・単元の参照元・公開解説のみで、知識問題・解答編・スライドPDFは生成しません。旧形式のPDFは変わりません。
+`fixed-start/` は任意です。前の課題で作った成果物を使う課題で、その実装が壊れていて先へ進めない受講者に配る一式を置きます。starter の代わりに作業フォルダー直下へ置かれ、tests・`.stella/task.json` と、問題の無い課題の README は通常の配布と同じです。`protected` に当たるファイルは変えられず、この課題の解答例 (`private/solution/`) と同じファイルは置けません。確認A・Bには置けません。課題のフォルダー名を `-fixed-start` で終わらせることもできません (学習フォルダーで開始点のフォルダー名に使うため)。`content:check` は開始点に解答例を重ねて手元のランナーに通ることも確かめます。通常の配布一式と開始点は、それぞれ 1 ファイル 1MiB・合計 1.2MB までです (D1 の 1 行に収めるため。`TASK_BUNDLE_LIMITS`)。開始点を置く課題は `task.json` に `"fixedStart": { "covers": ["<ステージ>/<単元>/<課題>"] }` を書き、開始点が動く実装を含む前の課題を示します。順序から推測しないので必須で、同じステージでこの課題より前の課題だけを書けます (自分自身・重複は不可。開始点の無い課題には書けません)。開始点は bundle に混ぜず D1 `task_fixed_starts` に入り、受講者が拡張のコマンドで求めたときだけ API が返して、使ったことを `covers` と一緒に記録します (その課題と `covers` の課題の、受け取ったあとの提出は「支援付き」になります。開始点を写せば前の課題も出せるためで、受け取る前の提出は変わりません)。手元の合格は修了の判定と分けて記録します。課題文は資料用のテキストレッスンにも載ります。
 
-WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。OS の差が大きいステージは `stage.json` に `"pdfByOs": true` を書くと、OS 別のブロックを含むまとめ・課題文の配布PDFを Windows 版と macOS 版に分けます（資料タブに「… (Windows).pdf」「… (macOS).pdf」が並びます）。書かないステージは1つのPDFに両方の OS を見出し付きで並べます。`dev-env-basics` は分けます。
+WindowsとmacOSで手順が違うところは、`doc.md` と課題文の `README.md` に OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）を書きます。書き方と画像の置き方（`<名前>.windows.png` / `<名前>.macos.png`）は [STYLE_GUIDE.md の OS 別の手順](STYLE_GUIDE.md#os別の手順osのルール) です。Web と VS Code は OS のタブで出し、既定は受講者の OS です。
 
 ### 予備の類題 (コードの復習)
 

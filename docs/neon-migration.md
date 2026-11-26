@@ -57,8 +57,7 @@ strangler-fig 方式で、 各コミットで `bun run typecheck` を green に�
 - ドメイン: **analytics** (`/api/analytics/*`, テナント KPI / 講師概況)
 - ドメイン: **submissions** (`/api/submissions`, staff キュー / 提出 / 添削 + review_completed 通知)
 - ドメイン: **cms** (`/api/cms/*`, course/section/lesson/quiz/assignment。現在は section・lesson の削除と並べ替え、assignment の書き込みを廃止)
-- 配布資料: **materials** (Cloudflare R2 Workers バインディングでダウンロード・版履歴を提供。アップロード・削除 API は廃止し、教材リポジトリからの配置・seed 登録に統一)
-- 配布資料一覧: **materials** (`/api/materials?lessonId=` / `?courseId=`, 受講者は published + active enrollment)
+- 配布資料は移行後の 2026-11-26 に廃止。D1 の表・行と R2 の配布済み PDF は保管している。
 - ドメイン: **search** (`/api/search`, コース / レッスン横断検索 — staff は同テナント全件、 受講者は受講中コースのみ)
 - ドメイン: **admin-users / organizations** (`/api/admin/*`, ロール変更 / 無効化 / 組織 CRUD)
 

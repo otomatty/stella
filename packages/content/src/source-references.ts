@@ -387,7 +387,7 @@ function markdownBody(source: string): string {
   return /^---\r?\n/.test(source) ? stripFrontMatter(source) : source;
 }
 /**
- * Markdown の画像の参照先。受講者の画面・配布 PDF と同じ CommonMark + GFM の構文木で読むので、
+ * Markdown の画像の参照先。受講者の画面と同じ CommonMark + GFM の構文木で読むので、
  * alt のエスケープ (`![a\]b](...)`)・`<...>` 囲み・括弧・タイトル付きの参照先も、参照形式
  * (`![図][page]`・`![page][]`・`![page]` と `[page]: assets/page.svg`) の画像も拾う。
  * コード・HTML コメントの中の画像の書き方は画像として描かれないので数えない。

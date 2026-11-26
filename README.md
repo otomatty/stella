@@ -258,7 +258,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 前提: `dev:api` + `dev`、Google ログイン、必要なら admin 昇格。
 受講登録は **学習者が自分で作る**（Phase 3b で管理者の割当は廃止）。
 
-- [ ] Admin がステージを公開し、seed が登録した配布資料をダウンロードできる
+- [ ] Admin がステージを公開し、受講者がレッスンを開ける
 - [ ] 受講登録が 0 件の学習者のホームに「学びの地図へようこそ」（プレースメント）が出て、
       ツリーの星の「ここから始める」を押すとそのステージが進行中になる（「あとで選ぶ」で閉じられる）
 - [ ] ホームの「ステージの道」／スキルツリーで、解放済みの星から「ここから始める」で開始できる
@@ -299,8 +299,7 @@ UI を含めた確認。API レベルの検証は上記のスモークで代替�
 2. Dashboard → R2 → バケット → **Settings** で **Public Development URL** (`r2.dev`) または
    **Custom Domain** を有効化し、 公開ベース URL を `VITE_MATERIALS_BASE_URL` に設定する
    (例: `https://pub-xxxx.r2.dev`)。
-3. 教材の正本は `packages/content/stages/`。画像・PDF は `main` への push で R2 に配置され、
-   配布資料は seed が登録する。配布資料のアップロード・削除 API は提供しない。
+3. 教材の正本は `packages/content/stages/`。画像は `main` への push で R2 に配置される。
 4. 既存オブジェクトを R2 へ移送する（必要なら）。
 
 seed 教材パスは `tenant/ses/courses/{stageUuid}/...` 形式 (`courses/` は改名前からの R2 キーで、値は変えていない)。オブジェクトが R2 に無いと再生は失敗する。同キーへの教材の配置を確認する。
@@ -319,7 +318,7 @@ API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/ad
 `next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
 「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
 走査・削除とも保存済みの `tenant/ses/` 配下に限定し、
-参照判定には配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
+参照判定には廃止後も保管している配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
 （`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
 削除は監査ログ（`r2_orphan_cleanup`）に残る。
 
@@ -418,13 +417,13 @@ AI 下書き (`POST /api/review-draft`) は API キー未設定時はルール�
 | **P1** | 教材閲覧 (PDFスライドビューア + 動画プレイヤー + 進捗) | #3 |
 | **P2** | コード演習統合 (VS Code 拡張 + AI チャット〔廃止〕) | #4 |
 | **P3** | 講師添削ワークフロー (提出 → AI下書き → ルーブリック採点 → 確定) | #8 |
-| **P5** | 教材管理 — 管理者がステージ・課題の詳細と配布資料を確認 (教材の編集はリポジトリ) | #10 |
+| **P5** | 教材管理 — 管理者がステージ・課題の詳細を確認 (教材の編集はリポジトリ) | #10 |
 
 ## デプロイ
 
 **通常のデプロイは GitHub Actions が自動実行する**（手動 `wrangler` ではない）。
 `pull_request` は `ci.yml` が lint/typecheck/test/build を検証ゲートとして実行し、
-`main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像 / PDF の R2 アップロード → D1 migrate(remote) → API デプロイ → D1 seed(remote) → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
+`main` への push は `deploy.yml` が同じ検証 → 教材の変更判定 → 教材画像の R2 アップロード → D1 migrate(remote) → API デプロイ → D1 seed(remote) → Web デプロイを直列実行する。seed は教材ファイルを正本として D1 を upsert / prune する。教材もスキーマも変わっていない push では教材まわり（画像 / PDF / seed）を丸ごと飛ばす。
 GitHub リポジトリの Secrets（`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`）と
 Variables（`VITE_SERVER_URL` / `VITE_MATERIALS_BASE_URL`）の設定が必要。
 詳細（ワークフロー一覧・必須チェック設定・OAuth Console 手順・失敗時の再デプロイ）は
@@ -448,7 +447,7 @@ Git 上のゼロ UUID はローカル専用で、本番デプロイには使わ�
 | `GOOGLE_CLIENT_SECRET` | Secret | Google OAuth シークレット |
 | `ANTHROPIC_API_KEY` | Secret | Anthropic API |
 | `DB` | D1 binding | データベース (`wrangler.toml`) |
-| `MATERIALS_BUCKET` | R2 binding | 配布資料のダウンロード・ステージ削除時の旧添付の削除 |
+| `MATERIALS_BUCKET` | R2 binding | 教材メディアの保守・ステージ削除時の旧添付の削除 |
 | `ALLOWED_ORIGINS` | var | CORS 許可オリジン |
 
 ### バックエンド — 完全 Cloudflare

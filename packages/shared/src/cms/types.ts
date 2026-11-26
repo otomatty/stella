@@ -118,50 +118,6 @@ export interface LessonRow {
   updated_at: string;
 }
 
-/**
- * レッスン配布資料 (lesson_materials 行 / Issue #72)。 実体は R2 上のオブジェクト。
- * R2 の `path` はサーバ内部でのみ扱い、 クライアントへは返さない
- * (ダウンロードは id ベースの `/api/materials/:id/download` プロキシ経由)。
- */
-export interface LessonMaterialRow {
-  id: string;
-  lesson_id: string;
-  file_name: string;
-  size_bytes: number;
-  mime_type: string;
-  /** upload = 手動アップロード / auto = CI が教材から生成した PDF (削除不可・版履歴あり)。 */
-  source: "upload" | "auto";
-  created_by: string | null;
-  created_at: string;
-  /**
-   * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えた旧資料)。
-   * staff が `includeArchived=1` で取ったときだけ並ぶ。版履歴から旧版を取れる。
-   */
-  archived_at?: string | null;
-}
-
-/**
- * 自動生成資料の版履歴 1 行 (`GET /api/materials/:id/versions` / staff のみ)。
- * ダウンロードは `GET /api/materials/:id/versions/:version/download`。
- */
-export interface LessonMaterialVersionRow {
-  version: number;
-  source_hash: string;
-  /** 生成元となった本文リビジョン (lesson_revisions.revision)。 */
-  lesson_revision: number | null;
-  size_bytes: number;
-  created_at: string;
-}
-
-/**
- * ステージ単位で引いた配布資料 (`GET /api/materials?stageId=...` / Issue #77)。
- * 一覧をレッスン・セクションでグルーピングできるよう表示名を同梱する。
- */
-export interface StageMaterialRow extends LessonMaterialRow {
-  lesson_title: string;
-  section_title: string;
-}
-
 export type QuestionKind = "single" | "multiple" | "boolean";
 
 export interface QuizRow {
