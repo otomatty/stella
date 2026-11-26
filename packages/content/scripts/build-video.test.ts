@@ -34,7 +34,7 @@ vi.mock("./lib/tts.js", async (original) => ({
 }));
 import { chromium } from "playwright";
 import { buildVideos, loadVideoVoice, videoTtsOf, type PendingVideoTts } from "./build-video.js";
-import { buildSceneTopic, planSceneTopic } from "./build-scene-video.js";
+import { buildSceneTopic, planSceneTopic, sceneTopicTtsSpeeches } from "./build-scene-video.js";
 import { probeDuration } from "./lib/ffmpeg.js";
 import { collectNarrationTopics, type NarrationTopic } from "./lib/narration-topics.js";
 import { collectPdfTargets } from "../src/material-pdf.js";
@@ -431,11 +431,8 @@ it("台本も絵コンテも無いトピック ID は動画の対象ではない
   expect(buildSceneTopic).not.toHaveBeenCalled();
 });
 
-it("作る前に新方式は場面ごと、旧方式はトピックごとの読み上げを渡す", async () => {
+it("Gemini には新方式も旧方式もトピックごとの読み上げを渡す", async () => {
   const { root, topic } = fixture();
-  const storyboard = JSON.parse(readFileSync(join(root, "video.json"), "utf8")) as {
-    scenes: unknown[];
-  };
   const legacyDir = join(root, "legacy");
   mkdirSync(legacyDir);
   const legacy: NarrationTopic = {
@@ -478,7 +475,8 @@ it("作る前に新方式は場面ごと、旧方式はトピックごとの読�
   const scene = pending.find((item) => item.id === topic.id);
   const slide = pending.find((item) => item.id === "legacy");
   expect(scene?.kind).toBe("scene");
-  expect(scene?.speeches).toHaveLength(storyboard.scenes.length + 1);
+  expect(scene?.speeches).toEqual(sceneTopicTtsSpeeches(topic, "topic"));
+  expect(scene?.speeches).toHaveLength(1);
   expect(slide).toMatchObject({ kind: "narration" });
   expect(slide?.speeches).toHaveLength(1);
   expect(slide?.speeches[0]).toContain("ひとつ。");

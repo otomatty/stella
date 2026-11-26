@@ -61,6 +61,7 @@ import { sceneHtml, textSceneHtml, sceneFontCss, type ScenePageWindow } from "./
 import { encodeScene, encodeSceneFrames, runFfmpeg } from "./lib/scene-encode.js";
 import {
   createTtsProvider,
+  isCachedTtsRequired,
   lessonVideoTtsCacheDir,
   QuotaExhaustedError,
   mapPool,
@@ -91,6 +92,8 @@ export function prepareSceneStills(outputRoot: string, stage: string, topic: str
   }
   return dir;
 }
+const REFRESH_AUDIO_SCOPE = "Gemini は動画全体、それ以外は指定した場面の音声を作り直します";
+
 export function argumentsOf(args: string[]) {
   const selectors: string[] = [];
   const refreshAudio: string[] = [];
@@ -106,7 +109,9 @@ export function argumentsOf(args: string[]) {
     else if (a === "--refresh-audio") {
       const value = args[++i];
       if (!value || value.startsWith("--") || value.split(",").some((id) => !id.trim()))
-        throw new Error("--refresh-audio にカンマ区切りの場面のidを指定してください");
+        throw new Error(
+          `--refresh-audio にカンマ区切りの場面のidを指定してください。${REFRESH_AUDIO_SCOPE}`,
+        );
       const ids = value.split(",").map((id) => id.trim());
       if (ids.includes("summary"))
         throw new Error("summary の場面は廃止されました。--refresh-audio には指定できません");
@@ -143,17 +148,11 @@ export function argumentsOf(args: string[]) {
   };
 }
 
-/** 場面の読み上げ。Gemini (unit が topic) は場面ごとに 1 回、それ以外は文ごと。 */
-export function sceneTtsSpeeches(
-  scene: Scene | TextScene,
-  readings: Record<string, string>,
-  unit: "cue" | "topic",
-): string[] {
-  const speeches = sceneSpeeches(scene, readings);
-  return unit === "topic" ? [speeches.join("\n\n")] : speeches;
+function topicSpeech(speechesByScene: string[][]): string {
+  return speechesByScene.flat().join("\n\n");
 }
 
-/** 生成が sceneAudio に渡すのと同じ読み上げ。タイトル画面を含む。 */
+/** 生成と同じ読み上げを合成単位ごとに返す。タイトル画面を含む。 */
 export function sceneTopicTtsSpeeches(
   topic: ReturnType<typeof collectNarrationTopics>[number],
   unit: "cue" | "topic",
@@ -176,7 +175,8 @@ export function sceneTopicTtsSpeeches(
     undefined,
     storyboard.schema,
   );
-  return sequence.flatMap(({ scene }) => sceneTtsSpeeches(scene, topic.readings, unit));
+  const speeches = sequence.map(({ scene }) => sceneSpeeches(scene, topic.readings));
+  return unit === "topic" ? [topicSpeech(speeches)] : speeches.flat();
 }
 
 /** 壊れた復元音声は捨てて再合成する。合成そのもののエラーは呼び出し元へ返す。 */
@@ -196,43 +196,17 @@ async function cachedScenePcm(
   } catch (error) {
     if (!result.cached) throw error;
     rmSync(result.file, { force: true });
-    return cachedScenePcm(provider, speech, cache, true, decode);
+    return cachedScenePcm(provider, speech, cache, !isCachedTtsRequired(), decode);
   }
 }
-export async function sceneAudio(
+async function cueSceneAudio(
   scene: Scene | TextScene,
-  readings: Record<string, string>,
+  speeches: string[],
   provider: TtsProvider,
   cache: string,
-  refresh = false,
+  refresh: boolean,
 ): Promise<Int16Array[]> {
-  const speeches = sceneTtsSpeeches(scene, readings, provider.unit);
-  const weights = sceneSpeeches(scene, readings).map(estimateSpeechSeconds);
-  if (provider.unit === "topic") {
-    const speech = speeches[0] ?? "";
-    let problems: string[] = [];
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const pcm = await cachedScenePcm(
-          provider,
-          speech,
-          cache,
-          refresh || attempt === 1,
-          decodePcm,
-        ),
-        split = splitNarration(pcm, AUDIO_RATE, weights);
-      if (!split.ok) {
-        problems = [split.reason];
-        continue;
-      }
-      const pcms = split.segments.map((s) => trimSilence(pcm.subarray(s.start, s.end), AUDIO_RATE));
-      problems = pcms.flatMap((p, i) => {
-        const ratio = p.length / AUDIO_RATE / weights[i];
-        return ratio < 0.4 || ratio > 2 ? [`文${i + 1}の音声の長さが推定と合いません`] : [];
-      });
-      if (!problems.length) return pcms;
-    }
-    throw new Error(`${scene.id}: 音声の分割・長さの検査に失敗しました: ${problems.join(" / ")}`);
-  }
+  const weights = speeches.map(estimateSpeechSeconds);
   return mapPool(speeches, provider.concurrency, async (speech, i) => {
     let pcm = await cachedScenePcm(provider, speech, cache, refresh, decodeTrimmedPcm);
     const abnormal = () => {
@@ -244,6 +218,99 @@ export async function sceneAudio(
     if (abnormal()) throw new Error(`${scene.id}: 文${i + 1}の音声の長さが推定と合いません`);
     return pcm;
   });
+}
+
+/** 動画の読み上げを場面ごと・文ごとの PCM にする。 */
+export async function topicAudio(
+  scenes: readonly (Scene | TextScene)[],
+  readings: Record<string, string>,
+  provider: TtsProvider,
+  cache: string,
+  refreshIds: readonly string[] = [],
+  topicLabel = "動画",
+): Promise<Int16Array[][]> {
+  const speeches = scenes.map((scene) => sceneSpeeches(scene, readings));
+  if (provider.unit === "cue") {
+    const pcms: Int16Array[][] = [];
+    for (const [i, scene] of scenes.entries()) {
+      pcms.push(
+        await cueSceneAudio(scene, speeches[i], provider, cache, refreshIds.includes(scene.id)),
+      );
+    }
+    return pcms;
+  }
+
+  const weights = speeches.map((group) => group.map(estimateSpeechSeconds));
+
+  async function audioFor(from: number, to: number, refresh = false) {
+    const groupSpeeches = speeches.slice(from, to);
+    const speech = topicSpeech(groupSpeeches);
+    const segmentWeights = weights.slice(from, to).flat();
+    const offset = speeches.slice(0, from).flat().length;
+
+    async function attempt(refresh: boolean) {
+      const pcm = await cachedScenePcm(provider, speech, cache, refresh, decodePcm);
+      const split = splitNarration(pcm, AUDIO_RATE, segmentWeights);
+      if (!split.ok) {
+        const first = offset + 1;
+        const last = offset + segmentWeights.length;
+        const range = first === last ? `文${first}` : `文${first}〜${last}`;
+        return { ok: false, reason: `${range}: ${split.reason}` } as const;
+      }
+      const pcms = split.segments.map(({ start, end }) =>
+        trimSilence(pcm.subarray(start, end), AUDIO_RATE),
+      );
+      const problems = pcms.flatMap((p, i) => {
+        const ratio = p.length / AUDIO_RATE / segmentWeights[i];
+        return ratio < 0.4 || ratio > 2
+          ? [`文${offset + i + 1}の音声の長さが推定と合いません`]
+          : [];
+      });
+      if (problems.length) return { ok: false, reason: problems.join(" / ") } as const;
+      let index = 0;
+      const grouped = groupSpeeches.map((group) => {
+        const scenePcms = pcms.slice(index, index + group.length);
+        index += group.length;
+        return scenePcms;
+      });
+      return { ok: true, pcms: grouped } as const;
+    }
+
+    const result = await attempt(refresh);
+    return result.ok || isCachedTtsRequired() ? result : attempt(true);
+  }
+
+  const full = await audioFor(
+    0,
+    scenes.length,
+    scenes.some((scene) => refreshIds.includes(scene.id)),
+  );
+  if (full.ok) return full.pcms;
+  const failure = (reason: string) =>
+    new Error(`${topicLabel}: 音声の分割・長さの検査に失敗しました: ${reason}`);
+  if (scenes.length < 2) throw failure(full.reason);
+
+  const seconds = weights.map((group) => group.reduce((sum, weight) => sum + weight, 0));
+  const midpoint = seconds.reduce((sum, weight) => sum + weight, 0) / 2;
+  let boundary = 1;
+  let elapsed = 0;
+  let bestDistance = Infinity;
+  for (let i = 1; i < scenes.length; i++) {
+    elapsed += seconds[i - 1];
+    const distance = Math.abs(elapsed - midpoint);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      boundary = i;
+    }
+  }
+  console.warn(
+    `${topicLabel}: ${full.reason}。音声を場面 ${scenes[boundary].id} の手前で 2 つに分けます`,
+  );
+  const first = await audioFor(0, boundary);
+  if (!first.ok) throw failure(first.reason);
+  const last = await audioFor(boundary, scenes.length);
+  if (!last.ok) throw failure(last.reason);
+  return [...first.pcms, ...last.pcms];
 }
 
 function sceneGenerationCode(hasMotion = false): Record<string, string> {
@@ -510,17 +577,15 @@ export async function buildSceneTopic(
       return;
     }
     if (!provider) throw new Error("音声プロバイダーがありません");
-    const pcms: Int16Array[][] = [];
-    for (const { scene } of sequence)
-      pcms.push(
-        await sceneAudio(
-          scene,
-          topic.readings,
-          provider,
-          lessonVideoTtsCacheDir(contentRoot),
-          options.refreshAudio.includes(scene.id),
-        ),
-      );
+    const scenes = sequence.map(({ scene }) => scene);
+    const pcms = await topicAudio(
+      scenes,
+      topic.readings,
+      provider,
+      lessonVideoTtsCacheDir(contentRoot),
+      options.refreshAudio,
+      `${topic.stageSlug}/${topic.id}`,
+    );
     sequence = sceneVideoSequence(
       storyboard.scenes,
       sequence.flatMap(({ scene }, i) =>
@@ -731,7 +796,8 @@ export async function buildSceneVideos(args: string[]) {
       }),
     );
     for (const id of options.refreshAudio)
-      if (!known.has(id)) throw new Error(`知らない場面のid: ${id}`);
+      if (!known.has(id))
+        throw new Error(`知らない場面のid: ${id}。--refresh-audio は ${REFRESH_AUDIO_SCOPE}`);
   }
   if (!topics.length) {
     console.info("video.json のあるトピックはありません");

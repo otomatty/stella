@@ -11,7 +11,7 @@ import {
   existsSync,
   symlinkSync,
 } from "node:fs";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import { synthesizeSceneSfx } from "../src/scene-sfx.js";
 import { estimateSpeechSeconds } from "../src/narration.js";
 import { sceneSpeeches, sceneVideoSequence, type TextScene } from "../src/scene-timeline.js";
@@ -47,16 +47,12 @@ vi.mock("./lib/narration-topics.js", async (original) => ({
   ...(await original<typeof import("./lib/narration-topics.js")>()),
   collectNarrationTopics: vi.fn(),
 }));
-vi.mock("../src/narration-split.js", async (original) => ({
-  ...(await original<typeof import("../src/narration-split.js")>()),
-  trimSilence: (pcm: Int16Array) => pcm,
-}));
-
 import { chromium } from "playwright";
 import {
   argumentsOf,
   buildSceneVideos,
-  sceneAudio,
+  topicAudio,
+  sceneTopicTtsSpeeches,
   prepareSceneStills,
   planSceneTopic,
 } from "./build-scene-video.js";
@@ -70,7 +66,15 @@ import {
 } from "./lib/ffmpeg.js";
 import { encodeScene, runFfmpeg } from "./lib/scene-encode.js";
 import { collectNarrationTopics, contentRoot } from "./lib/narration-topics.js";
-import { createTtsProvider, cueHash, synthesizeCached, QuotaExhaustedError } from "./lib/tts.js";
+import {
+  countTtsCalls,
+  createTtsProvider,
+  cueHash,
+  pcmToWav,
+  QuotaExhaustedError,
+  requireCachedTts,
+  synthesizeCached,
+} from "./lib/tts.js";
 const videoFile = new URL("../src/__fixtures__/board-video.json", import.meta.url);
 const sample = JSON.parse(readFileSync(videoFile, "utf8")) as BoardStoryboard;
 const scene = sample.scenes[0];
@@ -78,6 +82,26 @@ const pcmFor = (scene: Scene) =>
   new Int16Array(
     scene.beats.reduce((n, b) => n + Math.round(estimateSpeechSeconds(b.say) * AUDIO_RATE), 0),
   ).fill(10000);
+function spokenPcm(speech: string, scale = 1): Int16Array {
+  const lengths = speech
+    .split("\n\n")
+    .map((line) => Math.round(estimateSpeechSeconds(line) * AUDIO_RATE * scale));
+  const gap = AUDIO_RATE * 0.35;
+  const pcm = new Int16Array(
+    lengths.reduce((total, length) => total + length, 0) + (lengths.length - 1) * gap,
+  );
+  let start = 0;
+  for (const [i, length] of lengths.entries()) {
+    pcm.fill(10_000 + i, start, start + length);
+    start += length + gap;
+  }
+  return pcm;
+}
+const audioBytes = (pcm: Int16Array) => ({
+  bytes: pcmToWav(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength), AUDIO_RATE),
+  ext: "wav" as const,
+});
+
 const provider = (unit: "topic" | "cue"): TtsProvider => ({
   unit,
   concurrency: 1,
@@ -107,7 +131,7 @@ describe("場面音声の作り直し", () => {
         );
         vi.mocked(decodePcm).mockResolvedValue(pcm);
         vi.mocked(decodeTrimmedPcm).mockResolvedValue(pcm);
-        const result = await sceneAudio(scene, readings, tts, "/tmp/fixture-cache", true);
+        const [result] = await topicAudio([scene], readings, tts, "/tmp/fixture-cache", ["title"]);
         expect(result).toHaveLength(1);
         expect(result[0].length).toBe(pcm.length);
       }
@@ -121,7 +145,7 @@ describe("場面音声の作り直し", () => {
     const text: TextScene = { kind: "text", id: "title", title: "タイトルです", duration: 2.6 };
     vi.mocked(decodePcm).mockResolvedValue(new Int16Array(AUDIO_RATE * 20).fill(10000));
     vi.mocked(decodeTrimmedPcm).mockResolvedValue(new Int16Array(AUDIO_RATE * 20).fill(10000));
-    await expect(sceneAudio(text, {}, provider(unit), "/tmp/fixture-cache")).rejects.toThrow(
+    await expect(topicAudio([text], {}, provider(unit), "/tmp/fixture-cache")).rejects.toThrow(
       "長さ",
     );
   });
@@ -165,42 +189,188 @@ describe("場面音声の作り直し", () => {
     );
     expect(chromium.launch).not.toHaveBeenCalled();
   });
-  for (const unit of ["topic", "cue"] as const)
-    it(`${unit}方式は選んだ場面だけrefreshを渡す`, async () => {
-      vi.mocked(decodePcm).mockResolvedValue(pcmFor(scene));
-      vi.mocked(decodeTrimmedPcm).mockResolvedValue(
-        new Int16Array(Math.round(estimateSpeechSeconds(scene.beats[0].say) * AUDIO_RATE)),
-      );
-      const singleBeat = { ...scene, beats: [scene.beats[0]] };
-      const other = { ...singleBeat, id: "other" };
-      vi.mocked(decodePcm).mockResolvedValue(pcmFor(singleBeat));
-      const options = argumentsOf(["dev-env-basics", "--refresh-audio", scene.id]);
-      const tts = provider(unit);
-      for (const current of [singleBeat, other])
-        await sceneAudio(
-          current,
-          {},
-          tts,
-          "/tmp/fixture-cache",
-          options.refreshAudio.includes(current.id),
-        );
-      expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual([true, false]);
-      expect(tts.synthesize).not.toHaveBeenCalled();
-    });
+  it.each(["topic", "cue"] as const)("%s方式で場面を指定したときの作り直し範囲", async (unit) => {
+    const singleBeat = { ...scene, beats: [scene.beats[0]] };
+    const other = { ...singleBeat, id: "other" };
+    vi.mocked(decodeTrimmedPcm).mockResolvedValue(pcmFor(singleBeat));
+    vi.mocked(decodePcm).mockImplementation(async () =>
+      spokenPcm(vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? ""),
+    );
+    const options = argumentsOf(["dev-env-basics", "--refresh-audio", other.id]);
+    await topicAudio(
+      [singleBeat, other],
+      {},
+      provider(unit),
+      "/tmp/fixture-cache",
+      options.refreshAudio,
+    );
+    expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual(
+      unit === "topic" ? [true] : [false, true],
+    );
+  });
   it("文単位の方式では選んだ場面の全beatを作り直す", async () => {
     vi.mocked(decodeTrimmedPcm).mockImplementation(async () =>
       pcmFor({ ...scene, beats: [scene.beats[0]] }),
     );
     // 比較する文の長さをそろえ、分割・音量に依存しない条件で確認する。
     const repeated = { ...scene, beats: [scene.beats[0], scene.beats[0]] };
-    await sceneAudio(repeated, {}, provider("cue"), "/tmp/fixture-cache", true);
+    await topicAudio([repeated], {}, provider("cue"), "/tmp/fixture-cache", [repeated.id]);
     expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual([true, true]);
   });
-  it("通常実行は場面音声の既存キャッシュを使う", async () => {
+  it("通常実行は動画音声の既存キャッシュを使う", async () => {
     const singleBeat = { ...scene, beats: [scene.beats[0]] };
     vi.mocked(decodePcm).mockResolvedValue(pcmFor(singleBeat));
-    await sceneAudio(singleBeat, {}, provider("topic"), "/tmp/fixture-cache");
+    await topicAudio([singleBeat], {}, provider("topic"), "/tmp/fixture-cache");
     expect(vi.mocked(synthesizeCached).mock.calls[0][3]).toBe(false);
+  });
+});
+
+describe("動画単位の音声合成", () => {
+  const title: TextScene = { kind: "text", id: "title", title: "動画のタイトル", duration: 2.6 };
+  const single = { ...scene, beats: [{ ...scene.beats[0], say: "短い文です。" }] };
+  const long = {
+    ...scene,
+    beats: [
+      { ...scene.beats[0], say: "長い文を読み上げます。".repeat(2) },
+      { ...scene.beats[0], say: "続けて長い文を読みます。".repeat(2) },
+    ],
+  };
+  const scenes = [title, long, ...[1, 2, 3, 4].map((i) => ({ ...single, id: `short-${i}` }))];
+  const speechOfScenes = (items: (Scene | TextScene)[]) =>
+    items.flatMap((item) => sceneSpeeches(item, {})).join("\n\n");
+  const full = speechOfScenes(scenes);
+  const first = speechOfScenes(scenes.slice(0, 2));
+  const last = speechOfScenes(scenes.slice(2));
+  let cache: string;
+  const synthesize = vi.fn(async (speech: string) => audioBytes(spokenPcm(speech)));
+  const voice = { ...provider("topic"), synthesize };
+  const run = (items = scenes, refreshIds: string[] = []) =>
+    topicAudio(items, {}, voice, cache, refreshIds, "stage/topic");
+  let warn: MockInstance<typeof console.warn>;
+  const cached = vi.mocked(synthesizeCached);
+  const mockSynthesis = cached.getMockImplementation();
+
+  beforeEach(async () => {
+    cache = mkdtempSync(join(tmpdir(), "stella-topic-audio-"));
+    warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const actual = await vi.importActual<typeof import("./lib/tts.js")>("./lib/tts.js");
+    cached.mockImplementation(actual.synthesizeCached);
+    synthesize.mockReset().mockImplementation(async (speech) => audioBytes(spokenPcm(speech)));
+    // pcmToWav の固定長のヘッダを省き、保存したサンプルをそのまま返す。
+    vi.mocked(decodePcm).mockImplementation(async (file) => {
+      const bytes = readFileSync(file).subarray(44);
+      return Int16Array.from({ length: bytes.length / 2 }, (_, i) => bytes.readInt16LE(i * 2));
+    });
+  });
+
+  afterEach(() => {
+    requireCachedTts(false);
+    if (mockSynthesis) cached.mockImplementation(mockSynthesis);
+    warn.mockRestore();
+    rmSync(cache, { recursive: true, force: true });
+  });
+
+  it("全文を 1 回読み、元の場面と文の順に PCM を返す", async () => {
+    const pcms = await run();
+    expect(synthesize).toHaveBeenCalledExactlyOnceWith(full);
+    expect(pcms.map((group) => group.length)).toEqual([1, 2, 1, 1, 1, 1]);
+    expect(pcms.flat().map((pcm) => pcm[Math.floor(pcm.length / 2)])).toEqual([
+      10000, 10001, 10002, 10003, 10004, 10005, 10006,
+    ]);
+  });
+
+  it("無音の切れ目が足りなければ全文を 1 回作り直す", async () => {
+    synthesize.mockResolvedValueOnce(audioBytes(new Int16Array(AUDIO_RATE).fill(10000)));
+    await run();
+    expect(synthesize.mock.calls).toEqual([[full], [full]]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("全文が 2 回落ちたら推定時間が半分に最も近い場面の切れ目で分ける", async () => {
+    synthesize.mockImplementation(async (speech) =>
+      audioBytes(spokenPcm(speech, speech === full ? 3 : 1)),
+    );
+    const pcms = await run();
+    expect(synthesize.mock.calls).toEqual([[full], [full], [first], [last]]);
+    expect(pcms.map((group) => group.length)).toEqual([1, 2, 1, 1, 1, 1]);
+    expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("short-1 の手前"));
+  });
+
+  it("後半も落ちたら 1 回作り直し、動画全体での文番号を示す", async () => {
+    synthesize.mockImplementation(async (speech) =>
+      audioBytes(spokenPcm(speech, speech === first ? 1 : 3)),
+    );
+    await expect(run()).rejects.toThrow(/stage\/topic:.*文4の音声の長さが推定と合いません/);
+    expect(synthesize.mock.calls).toEqual([[full], [full], [first], [last], [last]]);
+  });
+
+  it("場面が 1 つなら分けずに文番号と分割できない理由を示す", async () => {
+    synthesize.mockImplementation(async () => audioBytes(new Int16Array(AUDIO_RATE)));
+    await expect(run([title])).rejects.toThrow(/stage\/topic:.*文1: 有音フレームがありません/);
+    expect(synthesize).toHaveBeenCalledTimes(2);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it.each([new QuotaExhaustedError("日次上限"), new Error("通信に失敗しました")])(
+    "合成でエラーが出たら同じエラーを返す (%s)",
+    async (error) => {
+      synthesize.mockRejectedValueOnce(error);
+      await expect(run()).rejects.toBe(error);
+      expect(synthesize).toHaveBeenCalledExactlyOnceWith(full);
+      expect(warn).not.toHaveBeenCalled();
+    },
+  );
+
+  function cacheAudio(speech: string, scale = 1) {
+    writeFileSync(
+      join(cache, `${cueHash(voice.identity, speech)}.wav`),
+      audioBytes(spokenPcm(speech, scale)).bytes,
+    );
+  }
+
+  it("場面 ID を指定すると既存キャッシュがあっても全文を作り直す", async () => {
+    cacheAudio(full);
+    await run(scenes, [long.id]);
+    expect(synthesize).toHaveBeenCalledExactlyOnceWith(full);
+  });
+
+  it("cached-only は検査に落ちても作り直さず、キャッシュにある前半と後半を使う", async () => {
+    cacheAudio(full, 3);
+    cacheAudio(first);
+    cacheAudio(last);
+    requireCachedTts(true);
+    expect((await run()).map((group) => group.length)).toEqual([1, 2, 1, 1, 1, 1]);
+    expect(cached.mock.calls.map((call) => [call[1], call[3]])).toEqual([
+      [full, false],
+      [first, false],
+      [last, false],
+    ]);
+    expect(synthesize).not.toHaveBeenCalled();
+  });
+
+  it("cached-only で後半のキャッシュが無ければ --preview を案内する", async () => {
+    cacheAudio(full, 3);
+    cacheAudio(first);
+    requireCachedTts(true);
+    await expect(run()).rejects.toThrow("先に --preview で作って確かめてください");
+    expect(cached.mock.calls.map((call) => [call[1], call[3]])).toEqual([
+      [full, false],
+      [first, false],
+      [last, false],
+    ]);
+    expect(synthesize).not.toHaveBeenCalled();
+  });
+
+  it("cached-only で前半のキャッシュ自体が検査に落ちても作り直さない", async () => {
+    cacheAudio(full, 3);
+    cacheAudio(first, 3);
+    requireCachedTts(true);
+    await expect(run()).rejects.toThrow(/stage\/topic:.*文1の音声の長さが推定と合いません/);
+    expect(cached.mock.calls.map((call) => [call[1], call[3]])).toEqual([
+      [full, false],
+      [first, false],
+    ]);
+    expect(synthesize).not.toHaveBeenCalled();
   });
 });
 
@@ -659,10 +829,19 @@ describe("音声モデルと日次上限", () => {
         vi.mocked(collectNarrationTopics).mockReturnValue(topics.slice(0, 1));
         topics[0].readings = { Web: "ウェブ", "VS Code": "ブイエスコード" };
         const identity = `${name}/alternate-model/Charon/style`;
+        const synthesize = vi.fn(async (speech: string) => audioBytes(spokenPcm(speech)));
         vi.mocked(createTtsProvider).mockReturnValue({
           ...provider(name === "gemini" ? "topic" : "cue"),
           identity,
+          synthesize,
         });
+        const ttsCache = join(root, "tts-cache");
+        if (name === "gemini") {
+          const actual = await vi.importActual<typeof import("./lib/tts.js")>("./lib/tts.js");
+          vi.mocked(synthesizeCached).mockImplementationOnce((voice, speech, _cache, refresh) =>
+            actual.synthesizeCached(voice, speech, ttsCache, refresh),
+          );
+        }
         const decode = async () =>
           new Int16Array(
             Math.round(
@@ -670,7 +849,9 @@ describe("音声モデルと日次上限", () => {
                 AUDIO_RATE,
             ),
           ).fill(10000);
-        vi.mocked(decodePcm).mockImplementation(decode);
+        vi.mocked(decodePcm).mockImplementation(async () =>
+          spokenPcm(vi.mocked(synthesizeCached).mock.calls.at(-1)?.[1] ?? ""),
+        );
         vi.mocked(decodeTrimmedPcm).mockImplementation(decode);
         await buildSceneVideos([
           "fixture",
@@ -702,13 +883,24 @@ describe("音声モデルと日次上限", () => {
         expect(report.durationSec).toBeCloseTo(
           report.scenes.reduce((n: number, s: { durationSec: number }) => n + s.durationSec, 0),
         );
-        expect(synthesizeCached).toHaveBeenCalledTimes(storyboard.scenes.length + 1);
+        const unit = name === "gemini" ? "topic" : "cue";
         const calls = vi.mocked(synthesizeCached).mock.calls;
-        expect(calls[0][1]).toBe(topics[0].title);
-        expect(
-          calls.some((call) => call[1] === "ウェブで読み、ブイエスコードで課題を書きます。"),
-        ).toBe(false);
-        expect(calls.map((call) => call[3])).toEqual([true, false, false, false]);
+        const planned = sceneTopicTtsSpeeches(topics[0], unit);
+        expect(calls.map((call) => call[1])).toEqual(planned);
+        expect(planned).toHaveLength(name === "gemini" ? 1 : storyboard.scenes.length + 1);
+        expect(planned[0].split("\n\n")[0]).toBe(topics[0].title);
+        expect(planned.join("\n\n")).not.toContain(
+          "ウェブで読み、ブイエスコードで課題を書きます。",
+        );
+        expect(calls.map((call) => call[3])).toEqual(
+          name === "gemini" ? [true] : [true, false, false, false],
+        );
+        if (name === "gemini") {
+          expect(synthesize).toHaveBeenCalledExactlyOnceWith(planned[0]);
+          const ttsPlan = [{ ...topics[0], kind: "scene" as const, speeches: planned }];
+          expect(countTtsCalls(ttsPlan, identity, root).needed).toBe(1);
+          expect(countTtsCalls(ttsPlan, identity, ttsCache).needed).toBe(0);
+        }
         const wavs = vi
           .mocked(writeNarrationWav)
           .mock.calls.filter(([file]) => /audio-\d+\.wav$/.test(file));
@@ -968,7 +1160,7 @@ it("復元した音声キャッシュが壊れていれば、再合成して続�
   vi.mocked(decodePcm)
     .mockRejectedValueOnce(new Error("invalid cached audio"))
     .mockResolvedValueOnce(pcmFor(singleBeat));
-  await sceneAudio(singleBeat, {}, provider("topic"), "/tmp/fixture-cache");
+  await topicAudio([singleBeat], {}, provider("topic"), "/tmp/fixture-cache");
   expect(vi.mocked(synthesizeCached).mock.calls.map((call) => call[3])).toEqual([false, true]);
 });
 
@@ -984,7 +1176,7 @@ for (const unit of ["topic", "cue"] as const)
       decode.mockResolvedValueOnce(new Int16Array(10)).mockResolvedValueOnce(pcmFor(single));
       const synthesize = vi.fn(async () => ({ bytes: new Uint8Array([1]), ext: "wav" as const }));
       const tts = { ...provider(unit), nondeterministic: true, synthesize };
-      await sceneAudio(single, {}, tts, root, true);
+      await topicAudio([single], {}, tts, root, [single.id]);
       expect(synthesize).toHaveBeenCalledTimes(2);
     } finally {
       if (mocked) vi.mocked(synthesizeCached).mockImplementation(mocked);

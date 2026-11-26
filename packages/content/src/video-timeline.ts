@@ -134,30 +134,3 @@ export function framesBetween(boundaries: number[], fps: number): number[] {
   const frames = boundaries.map((t) => Math.round(t * fps));
   return frames.slice(1).map((f, i) => f - frames[i]);
 }
-
-export interface CaptionSegment {
-  slide: number;
-  /** 表示する字幕。字幕の無い区間 (スライド頭・字幕の間・余韻) は null。 */
-  cue: number | null;
-  start: number;
-  end: number;
-}
-
-/**
- * 字幕を焼き込むプレビュー用: 「スライド × 字幕の有無」が変わる区間に割る。
- * 本番の動画は字幕を焼き込まない (VTT を <track> で配る) ので、確認用にだけ使う。
- */
-export function captionSegments(timeline: Timeline): CaptionSegment[] {
-  const segments: CaptionSegment[] = [];
-  for (const slide of timeline.slides) {
-    const slideEnd = ms(slide.start + slide.duration);
-    let t = slide.start;
-    for (const cue of timeline.cues.filter((c) => c.slide === slide.index)) {
-      if (cue.start > t) segments.push({ slide: slide.index, cue: null, start: t, end: cue.start });
-      segments.push({ slide: slide.index, cue: cue.index, start: cue.start, end: cue.end });
-      t = cue.end;
-    }
-    if (slideEnd > t) segments.push({ slide: slide.index, cue: null, start: t, end: slideEnd });
-  }
-  return segments;
-}
