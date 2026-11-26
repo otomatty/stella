@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import type { Page } from "playwright";
 import { escapeHtml, type ScenePageWindow } from "./scene-html.js";
 
-// 字幕の位置・文字・影は apps/web の VideoViewer.tsx / VideoViewer.css と同じ値にそろえる。
+// 字幕の位置・文字・帯は apps/web の VideoViewer.tsx / VideoViewer.css と同じ値にそろえる。
 const CAPTION_CSS = `
 html, body { margin: 0; background: transparent; }
 .caption {
@@ -19,12 +19,15 @@ html, body { margin: 0; background: transparent; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  color: #0E0E10;
-  text-shadow: 0 0 .1em #FFFFFF, 0 0 .22em #FFFFFF, 0 0 .5em rgba(255,255,255,.9), 0 0 .9em rgba(255,255,255,.6);
 }
-.caption.on-dark {
-  color: #FFFFFF;
-  text-shadow: 0 .05em .1em rgba(0,0,0,.8), 0 0 .26em rgba(0,0,0,.65), 0 0 .6em rgba(0,0,0,.4);
+.caption span {
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 0 0.4em;
+  border-radius: 0.2em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  text-shadow: none;
 }
 `;
 
@@ -44,7 +47,7 @@ export async function renderCaptionTrack(page: Page, vtt: string, work: string):
       .replace(/&amp;/g, "&");
     writeFileSync(
       html,
-      `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${fontCss}${CAPTION_CSS}</style><div class="caption${onDark ? " on-dark" : ""}">${escapeHtml(text)}</div></html>`,
+      `<!doctype html><html lang="ja"><meta charset="utf-8"><style>${fontCss}${CAPTION_CSS}</style><div class="caption">${text ? `<span>${escapeHtml(text)}</span>` : ""}</div></html>`,
     );
     await page.goto(pathToFileURL(html).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
