@@ -23,9 +23,12 @@ import {
 import { problemTaskProgress } from "./task-problems.js";
 import {
   activeTaskCheck,
+  onDidChangeTaskBusy,
   onDidFinishTaskCheck,
   onDidProgressTaskCheck,
   onDidStartTaskCheck,
+  TASK_BUSY_LABEL,
+  taskBusy,
 } from "./task-run-events.js";
 import { loadTaskProblems } from "./task-update-guard.js";
 import {
@@ -77,6 +80,15 @@ async function taskRootOfFile(file: string): Promise<string | null> {
     .map((folder) => folder.uri.fsPath)
     .find((root) => isInside(file, root));
   return owner ? findTaskRoot(file, [owner]) : null;
+}
+
+function renderBusySubmit(item: vscode.StatusBarItem): boolean {
+  const busy = taskBusy();
+  if (!busy) return false;
+  item.text = TASK_BUSY_LABEL[busy];
+  item.tooltip = "いま処理しています。終わるまで待ってください";
+  item.command = busy === "submit" ? undefined : "stella.showRunLog";
+  return true;
 }
 
 function renderCheck(
@@ -133,7 +145,7 @@ function renderState(
     return false;
   }
   item.show();
-  return passed || inReview;
+  return Boolean(running || checkProgress || passed || inReview);
 }
 
 function submitShortcutLabel(): string {
@@ -194,6 +206,8 @@ function render(): void {
     } else if (current.problemActionsAvailable === false || !currentProblem) {
       // 解ける問題が無いあいだは出さない。古い deferred の書き出し待ちも出さない。
       submitItem.hide();
+    } else if (renderBusySubmit(submitItem)) {
+      submitItem.show();
     } else {
       submitItem.text = "$(play) 確認して提出";
       submitItem.tooltip = `${currentProblem.label}を確認して提出します (${shortcut})`;
@@ -205,7 +219,10 @@ function render(): void {
       submitItem.show();
     }
   } else if (renderState(stateItem, current, checkProgress)) submitItem.hide();
-  else submitItem.show();
+  else {
+    renderBusySubmit(submitItem);
+    submitItem.show();
+  }
   readmeItem.show();
 }
 
@@ -324,6 +341,7 @@ export function registerTaskStatus(context: vscode.ExtensionContext): void {
     onDidStartTaskCheck(renderTaskCheck),
     onDidProgressTaskCheck(renderTaskCheck),
     onDidFinishTaskCheck(renderTaskCheck),
+    onDidChangeTaskBusy(() => render()),
     onDidChangeTaskState((root) => {
       if (root === undefined || root === current?.root) render();
     }),

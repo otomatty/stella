@@ -12,6 +12,12 @@ const availableCommands = new Set([
 const walkthrough = walkthroughs.find(({ id }) => id === "stella.gettingStarted");
 
 describe("STELLA の課題の進め方", () => {
+  it("処理中は確認・提出・相談のコマンドを止める", () => {
+    for (const id of ["stella.runTask", "stella.submitTask", "stella.consultTask"]) {
+      expect(commands.find((item) => item.command === id)?.enablement).toBe("!stella.taskBusy");
+    }
+  });
+
   it("4 段を順に登録し、開くコマンドを公開する", () => {
     expect(walkthrough?.steps.map(({ id }) => id)).toEqual(["open", "edit", "submit", "review"]);
     expect(availableCommands.has("stella.openWalkthrough")).toBe(true);

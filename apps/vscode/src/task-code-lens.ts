@@ -6,9 +6,12 @@ import { taskRootOf } from "./task-commands.js";
 import { problemForPath } from "./task-problems.js";
 import {
   activeTaskCheck,
+  onDidChangeTaskBusy,
   onDidFinishTaskCheck,
   onDidProgressTaskCheck,
   onDidStartTaskCheck,
+  TASK_BUSY_LABEL,
+  taskBusy,
 } from "./task-run-events.js";
 
 export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
@@ -18,6 +21,7 @@ export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
     onDidStartTaskCheck(() => changes.fire()),
     onDidProgressTaskCheck(() => changes.fire()),
     onDidFinishTaskCheck(() => changes.fire()),
+    onDidChangeTaskBusy(() => changes.fire()),
     vscode.workspace.onDidGrantWorkspaceTrust(() => changes.fire()),
     vscode.languages.registerCodeLensProvider(
       { scheme: "file", pattern: "**/src/*.{ts,cs}" },
@@ -43,6 +47,15 @@ export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
               new vscode.CodeLens(range, {
                 title: label ? `$(sync~spin) 確認中 ${label}` : "$(sync~spin) 確認中…",
                 command: "stella.showRunLog",
+              }),
+            ];
+          }
+          const busy = taskBusy();
+          if (busy) {
+            return [
+              new vscode.CodeLens(range, {
+                title: TASK_BUSY_LABEL[busy],
+                command: busy === "submit" ? "" : "stella.showRunLog",
               }),
             ];
           }

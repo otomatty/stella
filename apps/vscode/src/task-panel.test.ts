@@ -11,10 +11,16 @@ import {
   showTaskPanel,
   showTaskReadme,
   sideColumn,
+  syncTaskPanelsBusy,
   updateTaskPanelCheck,
   updateTaskReadmeCheck,
 } from "./task-panel.js";
-import { finishTaskCheck, progressTaskCheck, startTaskCheck } from "./task-run-events.js";
+import {
+  finishTaskCheck,
+  progressTaskCheck,
+  setTaskBusy,
+  startTaskCheck,
+} from "./task-run-events.js";
 import { expectedActual } from "./task-test-message.js";
 
 vi.mock("vscode", () => ({
@@ -38,6 +44,7 @@ vi.mock("vscode", () => ({
     },
   },
   ViewColumn: { Active: -1, Beside: -2, One: 1, Two: 2 },
+  commands: { executeCommand: vi.fn() },
 }));
 
 const manifest: TaskManifest = {
@@ -99,6 +106,65 @@ function result(overrides: Partial<RunResult> = {}): RunResult {
 }
 
 describe("buildTaskPanelHtml", () => {
+  it("処理中は提出と相談を押せなくし、課題文に busy を付ける", () => {
+    setTaskBusy("submit");
+    try {
+      const readme = buildTaskReadmeHtml({ title: "課題", markdown: "# 課題" });
+      expect(readme).toContain('<body class="busy">');
+      const html = buildTaskPanelHtml({ kind: "result", manifest, result: result() });
+      expect(html).toContain('<span class="button disabled" aria-disabled="true">提出する</span>');
+      expect(html).toContain('<span aria-disabled="true">管理者に相談</span>');
+      expect(html).toContain(".button.disabled { opacity: 0.5; cursor: default; }");
+      expect(html).not.toContain("command:stella.submitTask");
+      expect(html).not.toContain("command:stella.consultTask");
+      const diagnose = buildTaskPanelHtml({
+        kind: "result",
+        manifest,
+        result: result(),
+        standalone: true,
+      });
+      expect(diagnose).toContain(
+        '<span class="button disabled" aria-disabled="true">もう一度確認する</span>',
+      );
+    } finally {
+      setTaskBusy(undefined);
+    }
+  });
+
+  it("確認の進み具合を出しているあいだは、処理中でも結果を作り直さない", () => {
+    const panel = {
+      title: "",
+      reveal: vi.fn(),
+      onDidDispose: vi.fn(),
+      webview: { html: "" },
+    };
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    showTaskPanel({ kind: "result", root: "/w/task", manifest, result: result() });
+    try {
+      setTaskBusy("submit");
+      syncTaskPanelsBusy(true);
+      expect(panel.webview.html).toContain('aria-disabled="true"');
+      updateTaskPanelCheck("/w/task", {
+        title: "確認",
+        progress: { steps: [{ label: "テスト", status: "running" as const }] },
+      });
+      const during = panel.webview.html;
+      expect(during).toContain("確認");
+      syncTaskPanelsBusy(true);
+      expect(panel.webview.html).toBe(during);
+      updateTaskPanelCheck("/w/task", undefined);
+      expect(panel.webview.html).toContain('aria-disabled="true"');
+      setTaskBusy(undefined);
+      syncTaskPanelsBusy(false);
+      expect(panel.webview.html).toContain('href="command:stella.submitTask?');
+      expect(panel.webview.html).toContain('href="command:stella.consultTask?');
+      expect(panel.webview.html).not.toContain('aria-disabled="true"');
+    } finally {
+      setTaskBusy(undefined);
+      for (const [dispose] of panel.onDidDispose.mock.calls) dispose();
+    }
+  });
+
   it("課題の出典・読む箇所・必要な帰属表示を安全に表示する", () => {
     const html = buildTaskPanelHtml({
       kind: "result",
@@ -731,6 +797,50 @@ describe("課題文のパネル", () => {
   const slot = '<div id="check-progress">';
   const checklist = '<section class="check-progress"';
 
+  it("処理中に開く課題文は、初めからリンクを無効にし、確認中のクラスも残す", () => {
+    setTaskBusy("check");
+    try {
+      const html = buildTaskReadmeHtml({ ...input, check });
+      expect(html).toContain('<body class="checking busy">');
+      const actions = [
+        ...html.matchAll(
+          /<a\b[^>]*href="command:stella\.(?:submitTask|runTask|consultTask)[^>]*>/g,
+        ),
+      ];
+      expect(actions.length).toBeGreaterThan(0);
+      for (const [action] of actions) {
+        expect(action).toContain('aria-disabled="true"');
+        expect(action).toContain('tabindex="-1"');
+      }
+      expect(html).toContain('href="command:stella.showRunLog">');
+    } finally {
+      setTaskBusy(undefined);
+    }
+  });
+
+  it("処理中の変更は課題文を描き直さず通知し、再読み込み時にも現在の状態を送る", () => {
+    const panel = mockReadmePanel();
+    vi.mocked(vscode.window.createWebviewPanel).mockReturnValueOnce(panel as never);
+    showTaskReadme(input);
+    try {
+      const idle = panel.webview.html;
+      const receive = panel.webview.onDidReceiveMessage.mock.calls[0]?.[0];
+      for (const busy of [true, false]) {
+        setTaskBusy(busy ? "submit" : undefined);
+        syncTaskPanelsBusy(busy);
+        expect(panel.webview.html).toBe(idle);
+        expect(panel.webview.postMessage).toHaveBeenLastCalledWith({ type: "busy", busy });
+        panel.webview.postMessage.mockClear();
+        receive?.({ type: "check-progress-ready" });
+        expect(panel.webview.postMessage).toHaveBeenCalledExactlyOnceWith({ type: "busy", busy });
+      }
+      expect(panel.reveal).not.toHaveBeenCalled();
+    } finally {
+      setTaskBusy(undefined);
+      panel.onDidDispose.mock.calls[0]?.[0]();
+    }
+  });
+
   it.each([false, true])(
     "進め方と今のカードの間にチェックリストの場所を作る (問題つき %s)",
     (hasProblems) => {
@@ -784,11 +894,12 @@ describe("課題文のパネル", () => {
       // 裏のタブを再表示したときなど、再読み込みした Webview にも最新の内容を送る。
       const receive = panel.webview.onDidReceiveMessage.mock.calls[0]?.[0];
       receive?.({ type: "check-progress-ready" });
-      expect(panel.webview.postMessage).toHaveBeenCalledTimes(2);
-      expect(panel.webview.postMessage).toHaveBeenLastCalledWith({
+      expect(panel.webview.postMessage).toHaveBeenCalledTimes(3);
+      expect(panel.webview.postMessage).toHaveBeenNthCalledWith(2, {
         type: "check-progress",
         html: expect.stringContaining("問2 値を選ぶ"),
       });
+      expect(panel.webview.postMessage).toHaveBeenLastCalledWith({ type: "busy", busy: false });
 
       updateTaskReadmeCheck(root, undefined);
       expect(panel.webview.html).toBe(running);

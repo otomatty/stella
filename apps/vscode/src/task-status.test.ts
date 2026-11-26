@@ -116,7 +116,12 @@ import { AuthStore } from "./auth.js";
 import { loadTask } from "./runner/run-task.js";
 import { installTask } from "./task-distribution.js";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
-import { finishTaskCheck, progressTaskCheck, startTaskCheck } from "./task-run-events.js";
+import {
+  finishTaskCheck,
+  progressTaskCheck,
+  setTaskBusy,
+  startTaskCheck,
+} from "./task-run-events.js";
 import {
   getTaskState,
   onDidChangeTaskState,
@@ -169,6 +174,7 @@ beforeEach(async () => {
   registerTaskState(context, auth);
 });
 afterEach(async () => {
+  setTaskBusy(undefined);
   for (const item of context.subscriptions) item.dispose();
   await rm(workspace, { recursive: true, force: true });
 });
@@ -178,6 +184,30 @@ const editor = (file: string | undefined) =>
 const inTask = () => state.executeCommand.mock.calls.at(-1);
 
 describe("ステータスバーの課題のボタン", () => {
+  it("処理中は提出ボタンを押せなくする", () => {
+    registerTaskStatus(context);
+    setCurrentTask({ root, title: "最初のページを作る", taskId });
+    setTaskBusy("check");
+    expect(submitItem()).toMatchObject({
+      visible: true,
+      text: "$(sync~spin) 確認中…",
+      tooltip: "いま処理しています。終わるまで待ってください",
+      command: "stella.showRunLog",
+    });
+    setTaskBusy("diagnose");
+    expect(submitItem()?.text).toBe("$(sync~spin) 開発環境を診断中…");
+    setTaskBusy("submit");
+    expect(submitItem()).toMatchObject({
+      text: "$(sync~spin) 提出中…",
+      command: undefined,
+    });
+    setTaskBusy(undefined);
+    expect(submitItem()).toMatchObject({
+      text: "$(cloud-upload) 提出する",
+      command: { command: "stella.submitTask", arguments: [root] },
+    });
+  });
+
   it.each([
     ["linux", "Ctrl+Alt+Enter"],
     ["darwin", "⌘⌥Enter"],
@@ -584,6 +614,106 @@ async function openTaskEditor(): Promise<void> {
 }
 
 describe("ステータスバーの課題の状態", () => {
+  it.each([true, false])(
+    "処理中でも実行中の手順の表示を優先する (問題つき: %s)",
+    async (hasProblems) => {
+      const loaded = await loadTask(root);
+      if (!loaded.ok) throw new Error("課題を読めません");
+      registerTaskStatus(context);
+      setCurrentTask({
+        root,
+        title: "計算",
+        ...(hasProblems
+          ? {
+              problemProgress: { passed: 0, total: 1 },
+              currentProblem: { id: "q01", label: "問1" },
+            }
+          : {}),
+      });
+      startTaskCheck({ root, taskId });
+      try {
+        progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト" }] });
+        progressTaskCheck({ type: "step-start", index: 0 });
+        setTaskBusy("submit");
+        expect(hasProblems ? submitItem() : stateItem()).toMatchObject({
+          visible: true,
+          text: "$(sync~spin) 確認中 1/1 テスト",
+          command: "stella.showRunLog",
+        });
+        expect(submitItem()?.visible).toBe(hasProblems);
+        expect(
+          state.items.filter((item) => item.visible && item.text.startsWith("$(sync~spin) 確認中")),
+        ).toHaveLength(1);
+      } finally {
+        finishTaskCheck({
+          root,
+          manifest: loaded.manifest,
+          result: result("passed"),
+          saved: false,
+        });
+      }
+      expect(submitItem()).toMatchObject({
+        visible: true,
+        text: "$(sync~spin) 提出中…",
+        command: undefined,
+      });
+    },
+  );
+
+  it("問題つきでない課題は共有状態の running だけでも確認中を1つにし、終了後に提出を戻す", async () => {
+    const taskState = await import("./task-state.js");
+    const getState = vi.spyOn(taskState, "getTaskState").mockReturnValue({ running: true });
+    try {
+      registerTaskStatus(context);
+      setCurrentTask({ root, title: "最初のページを作る", taskId });
+      for (const busy of [undefined, "check", "submit", "diagnose"] as const) {
+        setTaskBusy(busy);
+        expect(stateItem()).toMatchObject({
+          visible: true,
+          text: "$(sync~spin) 確認中…",
+          command: "stella.showRunLog",
+        });
+        expect(submitItem()?.visible).toBe(false);
+        expect(
+          state.items.filter((item) => item.visible && item.text.startsWith("$(sync~spin) 確認中")),
+        ).toHaveLength(1);
+      }
+      getState.mockReturnValue({ running: false });
+      setTaskBusy("submit");
+      expect(submitItem()).toMatchObject({
+        visible: true,
+        text: "$(sync~spin) 提出中…",
+        command: undefined,
+      });
+      setTaskBusy(undefined);
+      expect(submitItem()).toMatchObject({
+        visible: true,
+        text: "$(cloud-upload) 提出する",
+        command: { command: "stella.submitTask", arguments: [root] },
+      });
+    } finally {
+      getState.mockRestore();
+    }
+  });
+
+  it.each([false, true])(
+    "処理中でも解ける問題がなければ提出を隠す (配布待ち: %s)",
+    (releasePending) => {
+      registerTaskStatus(context);
+      setCurrentTask({
+        root,
+        title: "計算",
+        problemProgress: { passed: 0, total: 1 },
+        currentProblem: releasePending ? { id: "q01", label: "問1" } : undefined,
+        problemActionsAvailable: !releasePending,
+      });
+      for (const busy of ["check", "submit", "diagnose"] as const) {
+        setTaskBusy(busy);
+        expect(submitItem()?.visible).toBe(false);
+      }
+    },
+  );
+
   it.each([true, false])("問題つきの課題で確認の進捗を表示する (提出可: %s)", async (canSubmit) => {
     const loaded = await loadTask(root);
     if (!loaded.ok) throw new Error("課題を読めません");
@@ -683,7 +813,7 @@ describe("ステータスバーの課題の状態", () => {
         text: "$(sync~spin) 確認中…",
         command: "stella.showRunLog",
       });
-      expect(submitItem()?.visible).toBe(true);
+      expect(submitItem()?.visible).toBe(false);
       progressTaskCheck({ type: "plan", steps: [{ id: "test", label: "テスト (Vitest)" }] });
       progressTaskCheck({ type: "step-start", index: 0 });
       expect(stateItem()).toMatchObject({
@@ -691,6 +821,7 @@ describe("ステータスバーの課題の状態", () => {
         tooltip: "「最初のページを作る」を確認しています: 1/1 テスト (Vitest)",
         command: "stella.showRunLog",
       });
+      expect(submitItem()?.visible).toBe(false);
       const run = result(outcome, passed);
       await saveResult(run);
       finishTaskCheck({ root, manifest: loaded.manifest, result: run, saved: true });
@@ -702,6 +833,7 @@ describe("ステータスバーの課題の状態", () => {
           command: { command: "stella.showLastResult", arguments: [root] },
         }),
       );
+      expect(submitItem()?.visible).toBe(true);
     },
   );
 
@@ -733,7 +865,7 @@ describe("ステータスバーの課題の状態", () => {
     expect(submitItem()?.visible).toBe(submitVisible);
     startTaskCheck({ root, taskId });
     expect(stateItem()?.text).toBe("$(sync~spin) 確認中…");
-    expect(submitItem()?.visible).toBe(submitVisible);
+    expect(submitItem()?.visible).toBe(false);
   });
 
   it("取得中も共有し、ファイルを変えても 30 秒までは問い合わせない", async () => {

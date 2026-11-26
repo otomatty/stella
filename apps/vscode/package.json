@@ -2,7 +2,7 @@
   "name": "stella-lms",
   "displayName": "STELLA 研修",
   "publisher": "saedgewell",
-  "version": "0.12.5",
+  "version": "0.12.6",
   "private": true,
   "repository": {
     "type": "git",
@@ -92,7 +92,8 @@
       {
         "command": "stella.runTask",
         "title": "STELLA: 課題を確認する",
-        "icon": "$(beaker)"
+        "icon": "$(beaker)",
+        "enablement": "!stella.taskBusy"
       },
       {
         "command": "stella.showLastResult",
@@ -109,11 +110,13 @@
       {
         "command": "stella.submitTask",
         "title": "STELLA: 課題を提出する",
-        "icon": "$(cloud-upload)"
+        "icon": "$(cloud-upload)",
+        "enablement": "!stella.taskBusy"
       },
       {
         "command": "stella.consultTask",
-        "title": "STELLA: 管理者に相談する"
+        "title": "STELLA: 管理者に相談する",
+        "enablement": "!stella.taskBusy"
       },
       {
         "command": "stella.chooseTrainingFolder",

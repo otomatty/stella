@@ -27,7 +27,7 @@ import {
 } from "@stella/shared/tasks/source-reference";
 import type { OsName } from "@stella/shared/markdown/os-blocks";
 import { sameTaskRoot } from "./runner/run-task.js";
-import { activeTaskCheck } from "./task-run-events.js";
+import { activeTaskCheck, taskBusy } from "./task-run-events.js";
 import {
   CHECK_PROGRESS_CSS,
   checkProgressHtml,
@@ -113,6 +113,8 @@ export function sideColumn(): vscode.ViewColumn {
 const VIEW_TYPE = "stella.taskResult";
 let currentPanel: vscode.WebviewPanel | undefined;
 let currentPanelInput: TaskPanelInput | undefined;
+/** 確認の進み具合を出しているあいだは、処理中でも結果の HTML を作り直さない。 */
+let resultShowsCheck = false;
 
 export type TaskPanelInput =
   | {
@@ -196,6 +198,15 @@ function renderPassedStep(step: RunStepResult): string {
   return `<li class="${step.status}"><div class="row"><b>${STEP_MARKS[step.status]}</b><span class="step-name">${escapeHtml(step.label)}</span><span class="step-summary">${escapeHtml(step.summary)}</span><span class="time">${seconds(step.durationMs)}</span></div>${renderPassedTests(step.tests)}</li>`;
 }
 
+function commandControl(label: string, href: string, button: boolean): string {
+  if (taskBusy() === undefined) {
+    return `<a${button ? ' class="button"' : ""} href="${href}">${label}</a>`;
+  }
+  return button
+    ? `<span class="button disabled" aria-disabled="true">${label}</span>`
+    : `<span aria-disabled="true">${label}</span>`;
+}
+
 /** 外へのリンク。https の URL だけをリンクにし、それ以外は文字のまま出す。 */
 function externalLink(url: string): string {
   const href = safeHttpsHref(url);
@@ -254,11 +265,11 @@ function renderResult(input: Extract<TaskPanelInput, { kind: "result" }>): {
   };
   const summaryLine = summaryLines[outcome];
   const action = input.standalone
-    ? `<a class="button" href="command:stella.diagnoseEnvironment">もう一度確認する</a>`
-    : `<a class="button" href="command:stella.submitTask${submissionArgs}">提出する</a>`;
+    ? commandControl("もう一度確認する", "command:stella.diagnoseEnvironment", true)
+    : commandControl("提出する", `command:stella.submitTask${submissionArgs}`, true);
   const links = [
     !input.standalone && outcome !== "cancelled" && !canSubmit(result)
-      ? `<a href="command:stella.consultTask${submissionArgs}">管理者に相談</a>`
+      ? commandControl("管理者に相談", `command:stella.consultTask${submissionArgs}`, false)
       : "",
     `<a href="command:stella.showRunLog">実行ログを表示</a>`,
     input.standalone
@@ -375,6 +386,7 @@ function taskPanelPage(title: string, body: string): string {
       text-decoration: none;
     }
     .button:hover { background: var(--vscode-button-hoverBackground); }
+    .button.disabled { opacity: 0.5; cursor: default; }
     .step {
       margin: 0.75rem 0;
       padding: 0.6rem 0.9rem;
@@ -437,13 +449,22 @@ export function showTaskPanel(input: TaskPanelInput, options: { reveal?: boolean
     currentPanel.onDidDispose(() => {
       currentPanel = undefined;
       currentPanelInput = undefined;
+      resultShowsCheck = false;
     });
   } else {
     currentPanel.title = title;
     if (options.reveal !== false) currentPanel.reveal(sideColumn(), true);
   }
   currentPanelInput = input;
+  resultShowsCheck = false;
   currentPanel.webview.html = html;
+}
+
+/** 課題文は描き直さず、結果パネルは確認中でなければ作り直す。 */
+export function syncTaskPanelsBusy(busy: boolean): void {
+  void readmePanel?.webview.postMessage({ type: "busy", busy });
+  if (!currentPanel || !currentPanelInput || resultShowsCheck) return;
+  currentPanel.webview.html = buildTaskPanelHtml(currentPanelInput);
 }
 
 /** 同じ課題の結果が開いていれば、確認の進み具合を出す。 */
@@ -453,6 +474,7 @@ export function updateTaskPanelCheck(
 ): void {
   const input = currentPanelInput;
   if (!currentPanel || input?.kind !== "result" || !sameTaskRoot(input.root, root)) return;
+  resultShowsCheck = check !== undefined;
   currentPanel.webview.html = check
     ? taskPanelPage(
         check.title,
@@ -516,6 +538,14 @@ function taskReadmePage(input: TaskReadmeInput, reportInitialLayout: boolean): s
           markdownToHtml(stripLeadingTitle(input.markdown, input.title), { os }),
         ].join("\n")
       : markdownToHtml(input.markdown, { os });
+  const busy = taskBusy() !== undefined;
+  const bodyClass = [input.check ? "checking" : "", busy ? "busy" : ""].filter(Boolean).join(" ");
+  const content = busy
+    ? body.replace(
+        /<a\b([^>]*\bhref="command:stella\.(?:submitTask|runTask|consultTask)(?:\?[^"]*)?"[^>]*)>/g,
+        '<a$1 aria-disabled="true" tabindex="-1">',
+      )
+    : body;
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -557,14 +587,40 @@ function taskReadmePage(input: TaskReadmeInput, reportInitialLayout: boolean): s
       text-align: left;
     }
     body.checking .now-card, #check-progress:empty { display: none; }
+    body.busy a[href^="command:stella.submitTask"], body.busy a[href^="command:stella.runTask"], body.busy a[href^="command:stella.consultTask"] { pointer-events: none; opacity: 0.5; cursor: default; }
 ${CHECK_PROGRESS_CSS}${OS_TABS_CSS}${GUIDE_CSS}${guide?.manifest.problems?.length ? FAILED_TEST_CSS : ""}
   </style>
 </head>
-<body${input.check ? ' class="checking"' : ""}>
-${body}
+<body${bodyClass ? ` class="${bodyClass}"` : ""}>
+${content}
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
   const reportWidth = () => vscode.postMessage({ type: "layout", width: Math.round(window.innerWidth) });
+  const commandLink = "command" + ":";
+  const busySelector = [
+    "stella.submitTask",
+    "stella.runTask",
+    "stella.consultTask",
+  ].map((id) => 'a[href^="' + commandLink + id + '"]').join(", ");
+  const applyBusy = (busy) => {
+    document.body.classList.toggle("busy", busy);
+    for (const link of document.querySelectorAll(busySelector)) {
+      if (busy) {
+        link.setAttribute("aria-disabled", "true");
+        link.setAttribute("tabindex", "-1");
+      } else {
+        link.removeAttribute("aria-disabled");
+        link.removeAttribute("tabindex");
+      }
+    }
+  };
+  applyBusy(document.body.classList.contains("busy"));
+  // 処理が始まる前からフォーカスされていたリンクの Enter も止める。
+  document.addEventListener("click", (event) => {
+    if (document.body.classList.contains("busy") && event.target.closest?.(busySelector)) {
+      event.preventDefault();
+    }
+  });
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
@@ -572,7 +628,12 @@ ${body}
   });
   window.addEventListener("message", (event) => {
     const message = event.data;
-    if (!message || message.type !== "check-progress" || typeof message.html !== "string") return;
+    if (!message) return;
+    if (message.type === "busy" && typeof message.busy === "boolean") {
+      applyBusy(message.busy);
+      return;
+    }
+    if (message.type !== "check-progress" || typeof message.html !== "string") return;
     const slot = document.getElementById("check-progress");
     if (!slot) return;
     slot.innerHTML = message.html;
@@ -696,6 +757,7 @@ export function showTaskReadme(
         if (readmeNeedsProgressRefresh && readmeRoot && readmeInput) {
           updateTaskReadmeCheck(readmeRoot, readmeInput.check);
         }
+        void panel.webview.postMessage({ type: "busy", busy: taskBusy() !== undefined });
         return;
       }
       updateReadmeLayout(panel, message);
