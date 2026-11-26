@@ -5851,6 +5851,142 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-sdk-hook-callbacks-20261126",
+      "title": "Intercept and control agent behavior with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "section": "Configure hooks / Matchers / Callback functions",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-hook-failure-20261126",
+      "title": "Intercept and control agent behavior with hooks",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "section": "Block the action when a callback fails",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-sdk-settings-sources-20261126",
+      "title": "Configure your agent",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/configuration",
+      "section": "Load settings files",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-refusal-manual-retry-20261126",
+      "title": "Refusals and fallback",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback",
+      "section": "Writing the retry yourself / Common pitfalls",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-prompt-tool-usage-20261126",
+      "title": "Prompting best practices",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "section": "Tool use / Tool usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-compaction-on-demand-20261126",
+      "title": "Compaction on demand",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/compaction-on-demand",
+      "section": "Continue from the summary / Write your own summarization prompt / Limits and interactions with other features",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-context-editing-20261126",
+      "title": "Context editing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-editing",
+      "section": "Tool result clearing usage / Configuration options for tool result clearing / Context editing response",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-output-consistency-20261126",
+      "title": "Increase output consistency",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/increase-consistency",
+      "section": "Specify the output format you want / Constrain with examples / Use retrieval for contextual consistency / Chain prompts for complex tasks",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
