@@ -120,25 +120,47 @@ function vttTime(seconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(secs)}.${pad(total % 1000, 3)}`;
 }
 
-/** 絵コンテの各文を、読み上げ中だけ出す字幕にする。タイトルのタイムラインは渡さない。 */
+/** 字幕の表示時間。話し終わってから残す時間と、次の文までつなげる間の上限 (秒)。 */
+export const CAPTION_TIMING = { hold: 1.5, bridge: 2.0 } as const;
+
+/**
+ * 絵コンテの各文の字幕。話し終わってから hold 秒残し、短い間は次の文までつなぐ。
+ * 場面はまたがない。タイトルのタイムラインは渡さない。
+ */
 export function sceneCaptionsVtt(
   scenes: readonly { timing: SceneTimeline; onDark: readonly boolean[] }[],
 ): string {
   const cues = scenes
-    .flatMap(({ timing, onDark }) =>
-      timing.beats.map((beat, index) => {
+    .flatMap(({ timing, onDark }) => {
+      const ordered = timing.beats
+        .map((beat, index) => ({ beat, index }))
+        .sort(
+          (a, b) => (a.beat.speechStart ?? a.beat.start) - (b.beat.speechStart ?? b.beat.start),
+        );
+      const sceneEnd = timing.start + timing.duration;
+      return ordered.map(({ beat, index }, order) => {
         const text = beat.say
           .replace(/[\r\n]+/g, " ")
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
+        const speechEnd = timing.start + (beat.speechEnd ?? beat.end);
+        const next = ordered[order + 1]?.beat;
+        const nextStart = next ? timing.start + (next.speechStart ?? next.start) : undefined;
+        const cap = nextStart ?? sceneEnd;
+        const connect = nextStart !== undefined && nextStart - speechEnd <= CAPTION_TIMING.bridge;
+        // 上限が話し終わりより前なら、重ねず場面もまたがないようそこで止める。
+        const end =
+          cap < speechEnd
+            ? cap
+            : Math.max(speechEnd, connect ? cap : Math.min(speechEnd + CAPTION_TIMING.hold, cap));
         return {
           start: timing.start + (beat.speechStart ?? beat.start),
-          end: timing.start + (beat.speechEnd ?? beat.end),
+          end,
           text: onDark[index] ? `<c.on-dark>${text}</c>` : text,
         };
-      }),
-    )
+      });
+    })
     .sort((a, b) => a.start - b.start);
   const blocks = cues.map(
     ({ start, end, text }, index) =>

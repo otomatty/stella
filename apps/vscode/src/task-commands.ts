@@ -61,6 +61,7 @@ import {
   onTaskReadmeVisible,
   showTaskPanel,
   showTaskReadme,
+  syncTaskPanelsBusy,
   taskReadmeRoot,
   updateTaskPanelCheck,
   updateTaskReadmeCheck,
@@ -84,11 +85,14 @@ import {
 import { loadTaskProblems } from "./task-update-guard.js";
 import {
   finishTaskCheck,
+  onDidChangeTaskBusy,
   onDidFinishTaskCheck,
   onDidProgressTaskCheck,
   onDidStartTaskCheck,
   progressTaskCheck,
+  setTaskBusy,
   startTaskCheck,
+  taskBusy,
 } from "./task-run-events.js";
 import {
   getTaskState,
@@ -103,7 +107,30 @@ import { refreshLearningSidebar } from "./tree.js";
 
 let running = false;
 let submitting = false;
+/** runWithProgress が今走らせている確認。中断ボタンはこれだけを止める。 */
+let activeRun: AbortController | undefined;
 const OPEN_SUBMISSION_WEB = "Web で開く";
+const ABORT_RUN = "中断する";
+
+function showBusy(): void {
+  const run = activeRun;
+  const current = taskBusy();
+  if (current === "submit") {
+    void vscode.window.showInformationMessage("いま提出しています。終わるまで待ってください");
+    return;
+  }
+  const message =
+    current === "diagnose"
+      ? "いま開発環境を診断しています。終わるまで待ってください"
+      : "いま確認しています。終わるまで待ってください";
+  if (!run) {
+    void vscode.window.showInformationMessage(message);
+    return;
+  }
+  void vscode.window.showInformationMessage(message, ABORT_RUN).then((choice) => {
+    if (choice === ABORT_RUN) run.abort();
+  });
+}
 export { helpUrl } from "./task-state.js";
 
 function findSubmissionLesson(
@@ -276,11 +303,12 @@ async function runWithProgress<T>(
 ): Promise<T | undefined> {
   output.clear();
   output.appendLine(`[${new Date().toLocaleString()}] ${title}`);
+  const controller = new AbortController();
+  activeRun = controller;
   try {
     return await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title, cancellable: true },
       async (progress, token) => {
-        const controller = new AbortController();
         token.onCancellationRequested(() => controller.abort());
         let check = emptyCheckProgress();
         return work(
@@ -302,6 +330,8 @@ async function runWithProgress<T>(
     const message = error instanceof Error ? error.message : String(error);
     output.appendLine(message);
     void vscode.window.showErrorMessage(`確認を実行できませんでした: ${message}`);
+  } finally {
+    if (activeRun === controller) activeRun = undefined;
   }
 }
 
@@ -374,11 +404,12 @@ async function runTaskCommand(
   requested?: unknown,
   requestedProblem?: unknown,
 ): Promise<void> {
-  if (running || submitting) {
-    void vscode.window.showInformationMessage("いま確認しています。終わるまで待ってください");
+  if (running || submitting || taskBusy() !== undefined) {
+    showBusy();
     return;
   }
   running = true;
+  setTaskBusy("check");
   try {
     const root = await requestedTaskRoot(requested);
     if (!root) {
@@ -398,6 +429,7 @@ async function runTaskCommand(
     });
   } finally {
     running = false;
+    setTaskBusy(undefined);
   }
 }
 
@@ -618,11 +650,12 @@ async function checkTask(
 }
 
 async function diagnoseCommand(output: vscode.OutputChannel): Promise<void> {
-  if (running || submitting) {
-    void vscode.window.showInformationMessage("いま確認しています。終わるまで待ってください");
+  if (running || submitting || taskBusy() !== undefined) {
+    showBusy();
     return;
   }
   running = true;
+  setTaskBusy("diagnose");
   try {
     if (!(await requireTrust())) return;
     const root = await locateTask();
@@ -655,6 +688,7 @@ async function diagnoseCommand(output: vscode.OutputChannel): Promise<void> {
     });
   } finally {
     running = false;
+    setTaskBusy(undefined);
   }
 }
 
@@ -667,12 +701,13 @@ async function submitTaskCommand(
   requestedRoot?: unknown,
   requestedProblem?: unknown,
 ): Promise<void> {
-  if (mode === "submit" && (running || submitting)) {
-    void vscode.window.showInformationMessage("いま確認しています。終わるまで待ってください");
+  if (taskBusy() !== undefined || (mode === "submit" && (running || submitting))) {
+    showBusy();
     return;
   }
   if (submitting) return;
   submitting = true;
+  setTaskBusy(mode === "consult" ? "submit" : "check");
   try {
     const session = apiSession();
     const root =
@@ -791,49 +826,58 @@ async function submitTaskCommand(
       {
         save,
         submit: async (draft) => {
-          if (!workspaceRoots().some((owner) => isInside(root, owner)))
-            throw new Error("ワークスペース内の課題フォルダーを開いてください");
-          if (dirtyTaskDocuments(root).length > 0)
-            throw new Error(
-              mode === "consult"
-                ? "保存していない変更があります。保存してもう一度確認してください"
-                : `保存していない変更があります。${SUBMIT_AGAIN}`,
-            );
-          const notes = await notesFor(draft);
-          if (mode === "consult")
-            notes.support.push({
-              kind: "instructor",
-              at: new Date().toISOString(),
-              detail: CONSULT_SUPPORT_DETAIL,
-            });
+          if (running || submitting || taskBusy() !== undefined) {
+            showBusy();
+            throw new Error("いま処理しています。終わるまで待ってください");
+          }
+          setTaskBusy("submit");
           try {
-            if (problem) await sendProblemConsultation(root, problem.id, notes, session);
-            else await sendTaskSubmission(root, mode, notes, session, resubmitTaskId);
-          } catch (error) {
-            if (!(error instanceof AuthSessionChanged)) throw error;
-            void vscode.window.showWarningMessage(SUBMISSION_SESSION_CHANGED);
-            return;
+            if (!workspaceRoots().some((owner) => isInside(root, owner)))
+              throw new Error("ワークスペース内の課題フォルダーを開いてください");
+            if (dirtyTaskDocuments(root).length > 0)
+              throw new Error(
+                mode === "consult"
+                  ? "保存していない変更があります。保存してもう一度確認してください"
+                  : `保存していない変更があります。${SUBMIT_AGAIN}`,
+              );
+            const notes = await notesFor(draft);
+            if (mode === "consult")
+              notes.support.push({
+                kind: "instructor",
+                at: new Date().toISOString(),
+                detail: CONSULT_SUPPORT_DETAIL,
+              });
+            try {
+              if (problem) await sendProblemConsultation(root, problem.id, notes, session);
+              else await sendTaskSubmission(root, mode, notes, session, resubmitTaskId);
+            } catch (error) {
+              if (!(error instanceof AuthSessionChanged)) throw error;
+              void vscode.window.showWarningMessage(SUBMISSION_SESSION_CHANGED);
+              return;
+            }
+            if (!manifest.problems) void refreshTaskState(root, manifest.id, { forceLms: true });
+            refreshLearningSidebar();
+            if (taskReadmeRoot() === root) {
+              void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
+            }
+            const webUrl = submissionWebUrl(manifest.id, problem?.id);
+            const result = "結果を見る";
+            void vscode.window
+              .showInformationMessage(
+                mode === "consult"
+                  ? "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。"
+                  : "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
+                ...(mode === "consult" ? [OPEN_SUBMISSION_WEB] : [result, OPEN_SUBMISSION_WEB]),
+              )
+              .then(async (choice) => {
+                if (choice === result)
+                  await vscode.commands.executeCommand("stella.showTaskHelp", root);
+                else if (choice === OPEN_SUBMISSION_WEB)
+                  await vscode.env.openExternal(vscode.Uri.parse(webUrl));
+              });
+          } finally {
+            setTaskBusy(undefined);
           }
-          if (!manifest.problems) void refreshTaskState(root, manifest.id, { forceLms: true });
-          refreshLearningSidebar();
-          if (taskReadmeRoot() === root) {
-            void renderTaskReadme(root, { reveal: false }).catch(() => undefined);
-          }
-          const webUrl = submissionWebUrl(manifest.id, problem?.id);
-          const result = "結果を見る";
-          void vscode.window
-            .showInformationMessage(
-              mode === "consult"
-                ? "相談を送りました。管理者の返事は通知と、Web の教材の画面の『提出・レビューを確認する』に届きます。"
-                : "提出しました。AI が確かめた結果は、ふつう数分で届きます。",
-              ...(mode === "consult" ? [OPEN_SUBMISSION_WEB] : [result, OPEN_SUBMISSION_WEB]),
-            )
-            .then(async (choice) => {
-              if (choice === result)
-                await vscode.commands.executeCommand("stella.showTaskHelp", root);
-              else if (choice === OPEN_SUBMISSION_WEB)
-                await vscode.env.openExternal(vscode.Uri.parse(webUrl));
-            });
         },
       },
     );
@@ -843,6 +887,7 @@ async function submitTaskCommand(
     else void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e));
   } finally {
     submitting = false;
+    setTaskBusy(undefined);
   }
 }
 
@@ -934,97 +979,105 @@ async function submitProblemTask(
   previous: TaskProblems,
   session: number | undefined,
 ): Promise<void> {
-  const response = await sendProblemSubmission(root, problemId, session).catch((error: unknown) => {
-    if (session === apiSession() && taskReadmeRoot() === root)
-      void renderTaskReadme(root, { reveal: false }, {}, previous).catch(() => undefined);
-    throw error;
-  });
-  refreshLearningSidebar();
-  if (manifest.problemSteps) {
-    if (session !== apiSession()) return;
-    const webUrl = submissionWebUrl(manifest.id, problemId);
-    void vscode.window
-      .showInformationMessage(
-        response.taskPassed
-          ? "課題に合格しました"
-          : `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
-        OPEN_SUBMISSION_WEB,
-      )
-      .then(async (choice) => {
-        if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
-          await vscode.env.openExternal(vscode.Uri.parse(webUrl));
-      });
-    let refreshed: TaskProblems | undefined;
-    let refreshError: unknown;
-    try {
-      refreshed = await loadTaskProblems(root, manifest, {
-        afterSubmission: true,
-        trainingRoot: trainingRootOf(root),
-      });
-    } catch (error) {
-      refreshError = error;
-    }
-    if (session !== apiSession()) return;
-    const problems = refreshed?.server
-      ? refreshed
-      : reflectAcceptedProblem(previous, problemId, response, refreshed);
-    setCurrentTask({
-      root,
-      title: manifest.title,
-      ...problemTaskProgress(manifest, problems),
-      problemActionsAvailable: !problems.releasePending,
-    });
-    notifyProblemTaskOpened(root);
-    await openNextProblemAfterSubmission(
-      root,
-      manifest,
-      problemId,
-      previous,
-      problemToWorkOn(problems.states),
-      problems.releasePending,
-      session,
-    );
-    if (taskReadmeRoot() === root)
-      void renderTaskReadme(root, { reveal: false }, {}, problems).catch(() => undefined);
-    if (problems.releaseError) void vscode.window.showWarningMessage(problems.releaseError);
-    if (refreshError) throw refreshError;
-    return;
-  }
-  const marked = previous.states.map((state) =>
-    state.id === problemId ? { ...state, status: "submitted" as const } : state,
-  );
-  const snapshot: TaskProblems = {
-    ...previous,
-    server: {
-      ...previous.server,
-      problems: previous.server?.problems ?? [],
-      passedProblems: response.passedProblems,
-      totalProblems: response.totalProblems,
-      taskPassed: response.taskPassed,
+  setTaskBusy("submit");
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: "提出しています" },
+    async () => {
+      const response = await sendProblemSubmission(root, problemId, session).catch(
+        (error: unknown) => {
+          if (session === apiSession() && taskReadmeRoot() === root)
+            void renderTaskReadme(root, { reveal: false }, {}, previous).catch(() => undefined);
+          throw error;
+        },
+      );
+      refreshLearningSidebar();
+      if (manifest.problemSteps) {
+        if (session !== apiSession()) return;
+        const webUrl = submissionWebUrl(manifest.id, problemId);
+        void vscode.window
+          .showInformationMessage(
+            response.taskPassed
+              ? "課題に合格しました"
+              : `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
+            OPEN_SUBMISSION_WEB,
+          )
+          .then(async (choice) => {
+            if (choice === OPEN_SUBMISSION_WEB && session === apiSession())
+              await vscode.env.openExternal(vscode.Uri.parse(webUrl));
+          });
+        let refreshed: TaskProblems | undefined;
+        let refreshError: unknown;
+        try {
+          refreshed = await loadTaskProblems(root, manifest, {
+            afterSubmission: true,
+            trainingRoot: trainingRootOf(root),
+          });
+        } catch (error) {
+          refreshError = error;
+        }
+        if (session !== apiSession()) return;
+        const problems = refreshed?.server
+          ? refreshed
+          : reflectAcceptedProblem(previous, problemId, response, refreshed);
+        setCurrentTask({
+          root,
+          title: manifest.title,
+          ...problemTaskProgress(manifest, problems),
+          problemActionsAvailable: !problems.releasePending,
+        });
+        notifyProblemTaskOpened(root);
+        await openNextProblemAfterSubmission(
+          root,
+          manifest,
+          problemId,
+          previous,
+          problemToWorkOn(problems.states),
+          problems.releasePending,
+          session,
+        );
+        if (taskReadmeRoot() === root)
+          void renderTaskReadme(root, { reveal: false }, {}, problems).catch(() => undefined);
+        if (problems.releaseError) void vscode.window.showWarningMessage(problems.releaseError);
+        if (refreshError) throw refreshError;
+        return;
+      }
+      const marked = previous.states.map((state) =>
+        state.id === problemId ? { ...state, status: "submitted" as const } : state,
+      );
+      const snapshot: TaskProblems = {
+        ...previous,
+        server: {
+          ...previous.server,
+          problems: previous.server?.problems ?? [],
+          passedProblems: response.passedProblems,
+          totalProblems: response.totalProblems,
+          taskPassed: response.taskPassed,
+        },
+        states: marked,
+        progress: { passed: response.passedProblems, total: response.totalProblems },
+      };
+      setCurrentTask({ root, title: manifest.title, ...problemTaskProgress(manifest, snapshot) });
+      if (response.taskPassed) {
+        void vscode.window.showInformationMessage("課題に合格しました");
+      } else {
+        void vscode.window.showInformationMessage(
+          `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
+        );
+        await openNextProblemAfterSubmission(
+          root,
+          manifest,
+          problemId,
+          previous,
+          nextUnsubmittedProblem(marked),
+          snapshot.releasePending,
+          session,
+        );
+      }
+      if (taskReadmeRoot() === root) {
+        void renderTaskReadme(root, { reveal: false }, {}, snapshot).catch(() => undefined);
+      }
     },
-    states: marked,
-    progress: { passed: response.passedProblems, total: response.totalProblems },
-  };
-  setCurrentTask({ root, title: manifest.title, ...problemTaskProgress(manifest, snapshot) });
-  if (response.taskPassed) {
-    void vscode.window.showInformationMessage("課題に合格しました");
-  } else {
-    void vscode.window.showInformationMessage(
-      `提出しました (${problemCountLabel(response.passedProblems, response.totalProblems)})`,
-    );
-    await openNextProblemAfterSubmission(
-      root,
-      manifest,
-      problemId,
-      previous,
-      nextUnsubmittedProblem(marked),
-      snapshot.releasePending,
-      session,
-    );
-  }
-  if (taskReadmeRoot() === root) {
-    void renderTaskReadme(root, { reveal: false }, {}, snapshot).catch(() => undefined);
-  }
+  );
 }
 
 function taskLesson(taskId: string) {
@@ -1301,6 +1354,9 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
     onDidFinishTaskCheck(({ root }) => {
       updateTaskReadmeCheck(root, undefined, { rerender: true });
       updateTaskPanelCheck(root, undefined);
+    }),
+    onDidChangeTaskBusy((next) => {
+      syncTaskPanelsBusy(next !== undefined);
     }),
     onDidChangeAuthSession(() => {
       const root = taskReadmeRoot();

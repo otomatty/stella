@@ -1,6 +1,7 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
+import path from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import {
   childEnv,
   type KillTreeDeps,
@@ -82,6 +83,95 @@ describe("runProcess", () => {
     const out = await runProcess({ ...base, file: "/no/such/binary", args: [] });
     expect(out.spawnError).toBe("ENOENT");
   });
+
+  function grandchildScript(pidFile: string, after: string, detached = true): string {
+    return [
+      "const { spawn } = require('node:child_process');",
+      "const fs = require('node:fs');",
+      `const grandchild = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'inherit', detached: ${detached}, windowsHide: true });`,
+      "grandchild.unref();",
+      `fs.writeFileSync(${JSON.stringify(pidFile)}, String(grandchild.pid ?? ''));`,
+      after,
+    ].join("\n");
+  }
+
+  function stopGrandchild(pidFile: string): void {
+    try {
+      const pid = Number(readFileSync(pidFile, "utf8"));
+      if (Number.isInteger(pid) && pid > 0) process.kill(pid);
+    } catch {
+      // 孫はすでに終わっている。
+    }
+    try {
+      unlinkSync(pidFile);
+    } catch {
+      // 記録が無い。
+    }
+  }
+
+  it("孫が stdout を開いたままでも、猶予のあとで親の終了コードを返す", async () => {
+    const pidFile = path.join(tmpdir(), `stella-proc-close-${process.pid}-${Date.now()}.pid`);
+    try {
+      const out = await runProcess(
+        {
+          ...base,
+          args: ["-e", grandchildScript(pidFile, "setTimeout(() => process.exit(4), 50);")],
+          timeoutMs: 10_000,
+        },
+        { closeGraceMs: 200 },
+      );
+      expect(out).toMatchObject({ exitCode: 4, timedOut: false, aborted: false });
+      expect(out.durationMs).toBeGreaterThanOrEqual(200);
+      expect(out.durationMs).toBeLessThan(10_000);
+    } finally {
+      stopGrandchild(pidFile);
+    }
+  });
+
+  it("時間切れのあと close が来なくても、猶予で打ち切る", async () => {
+    const pidFile = path.join(tmpdir(), `stella-proc-kill-${process.pid}-${Date.now()}.pid`);
+    try {
+      const out = await runProcess(
+        {
+          ...base,
+          args: ["-e", grandchildScript(pidFile, "setInterval(() => {}, 1000);")],
+          timeoutMs: 300,
+        },
+        { killGraceMs: 200, closeGraceMs: 15_000 },
+      );
+      expect(out.timedOut).toBe(true);
+      expect(out.durationMs).toBeLessThan(5_000);
+    } finally {
+      stopGrandchild(pidFile);
+    }
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "親の exit 後に同じグループの孫がパイプを持っていても、猶予で止めて親の終了コードを返す",
+    async () => {
+      const pidFile = path.join(tmpdir(), `stella-proc-group-${process.pid}-${Date.now()}.pid`);
+      try {
+        const out = await runProcess(
+          { ...base, args: ["-e", grandchildScript(pidFile, "process.exit(4);", false)] },
+          { closeGraceMs: 200 },
+        );
+        expect(out).toMatchObject({ exitCode: 4, timedOut: false, aborted: false });
+        const pid = Number(readFileSync(pidFile, "utf8"));
+        expect(Number.isInteger(pid)).toBe(true);
+        expect(pid).toBeGreaterThan(0);
+        await vi.waitFor(
+          () => {
+            expect(() => process.kill(pid, 0)).toThrowError(
+              expect.objectContaining({ code: "ESRCH" }),
+            );
+          },
+          { timeout: 2_000, interval: 50 },
+        );
+      } finally {
+        stopGrandchild(pidFile);
+      }
+    },
+  );
 });
 
 describe("子プロセスごと止める", () => {

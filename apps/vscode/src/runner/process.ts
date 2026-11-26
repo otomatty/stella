@@ -4,6 +4,7 @@
  * - シェルを通さず、実行ファイルと引数の配列で起動する。引数は runner の固定の手順が
  *   決めたものだけで、課題ファイルや画面から来た文字列は入らない。
  * - 時間切れ・中断のときは子プロセスごと止める (npm や Vitest は子を起動するため)。
+ *   止めても出力が閉じなければ、猶予のあとで打ち切る。
  * - 出力は末尾だけを持つ。巨大なログでメモリを使い切らないため。
  */
 
@@ -19,6 +20,11 @@ export interface ProcessSpec {
   timeoutMs: number;
 }
 
+/** 時間切れ・中断で止めたあと、close をこれだけ待つ。 */
+const KILL_GRACE_MS = 3_000;
+/** プロセスが終わったあと、close をこれだけ待つ。孫がパイプを持ったまま残る場合のため。 */
+const CLOSE_GRACE_MS = 2_000;
+
 export interface ProcessOptions {
   signal?: AbortSignal;
   /** 出力を逐次受け取る (実行ログ用)。 */
@@ -26,6 +32,10 @@ export interface ProcessOptions {
   /** stdout・stderr それぞれに残す最大の文字数。 */
   maxOutputChars?: number;
   platform?: NodeJS.Platform;
+  /** 時間切れ・中断のあと close を待つ時間。既定は 3 秒。 */
+  killGraceMs?: number;
+  /** exit のあと close を待つ時間。既定は 2 秒。 */
+  closeGraceMs?: number;
 }
 
 export interface ProcessOutcome {
@@ -134,6 +144,8 @@ export function runProcess(
 ): Promise<ProcessOutcome> {
   const platform = options.platform ?? process.platform;
   const max = options.maxOutputChars ?? DEFAULT_MAX_OUTPUT_CHARS;
+  const killGraceMs = options.killGraceMs ?? KILL_GRACE_MS;
+  const closeGraceMs = options.closeGraceMs ?? CLOSE_GRACE_MS;
   const stdout = new TailBuffer(max);
   const stderr = new TailBuffer(max);
   const started = Date.now();
@@ -158,18 +170,24 @@ export function runProcess(
     let aborted = false;
     let child: ChildProcess | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let killGrace: ReturnType<typeof setTimeout> | undefined;
+    let closeGrace: ReturnType<typeof setTimeout> | undefined;
+    let onAbort: () => void = () => undefined;
 
     const stop = () => {
       if (child?.pid !== undefined) killTree(child.pid, platform);
     };
-    const onAbort = () => {
-      aborted = true;
-      stop();
+    // close が来ないとき、孫が持ったままのパイプを切って待つのをやめる。
+    const cutPipes = () => {
+      child?.stdout?.destroy();
+      child?.stderr?.destroy();
     };
     const finish = (exitCode: number | null, spawnError?: string) => {
       if (settled) return;
       settled = true;
       if (timer !== undefined) clearTimeout(timer);
+      if (killGrace !== undefined) clearTimeout(killGrace);
+      if (closeGrace !== undefined) clearTimeout(closeGrace);
       options.signal?.removeEventListener("abort", onAbort);
       resolve({
         exitCode,
@@ -182,6 +200,23 @@ export function runProcess(
         durationMs: Date.now() - started,
       });
     };
+    const finishAfterCut = (exitCode: number | null) => {
+      try {
+        cutPipes();
+      } finally {
+        finish(exitCode);
+      }
+    };
+    const armKillGrace = () => {
+      if (settled || killGrace !== undefined) return;
+      killGrace = setTimeout(() => finishAfterCut(null), killGraceMs);
+    };
+    onAbort = () => {
+      if (settled) return;
+      aborted = true;
+      stop();
+      armKillGrace();
+    };
 
     try {
       child = spawn(spec.file, [...spec.args], spawnOptions(spec, platform));
@@ -193,8 +228,10 @@ export function runProcess(
     }
 
     timer = setTimeout(() => {
+      if (settled) return;
       timedOut = true;
       stop();
+      armKillGrace();
     }, spec.timeoutMs);
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -209,6 +246,19 @@ export function runProcess(
       options.onOutput?.(chunk);
     });
     child.on("error", (error: NodeJS.ErrnoException) => finish(null, error.code ?? error.message));
+    child.on("exit", (code) => {
+      if (settled || closeGrace !== undefined) return;
+      // プロセスは終わっている。close を待つ間に時間切れへ進まない。
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+      closeGrace = setTimeout(() => {
+        // 親が終わっても、同じグループでパイプを持つ子孫は残っていることがある。
+        stop();
+        finishAfterCut(code);
+      }, closeGraceMs);
+    });
     child.on("close", (code) => finish(code));
   });
 }
