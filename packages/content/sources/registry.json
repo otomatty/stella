@@ -6361,6 +6361,227 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-docs-cache-prefix-checking-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "How automatic prefix checking works / When to use multiple breakpoints / Understanding cache breakpoint costs",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-automatic-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Automatic caching / How automatic caching works in multi-turn conversations / Combining with block-level caching",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-invalidation-20261126",
+      "title": "Prompt caching",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "section": "Cache limitations / What invalidates the cache / Troubleshooting common issues",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cache-diagnostics-20261126",
+      "title": "Cache diagnostics",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics",
+      "section": "How cache diagnostics works / Basic usage / Cache miss reason types / Reading diagnostics alongside usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-cost-per-task-20261126",
+      "title": "Optimizing for cost and intelligence",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence",
+      "section": "Cache repeated context / Batch work that can wait / Compare models on cost per task / Tune effort / Set budgets and output caps / Measure on your own workload",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-pricing-tokens-20261126",
+      "title": "Pricing",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "section": "Model pricing / Prompt caching / Batch processing",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-temperature-20261126",
+      "title": "Glossary",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/glossary",
+      "section": "Temperature",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-sampling-removal-20261126",
+      "title": "Migrating to API version 2026-10-21",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/api/migration-2026-10-21",
+      "section": "Sampling parameters are removed",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-10-21"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-eval-reliability-20261126",
+      "title": "Demystifying evals for AI agents",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/research/demystifying-evals-for-ai-agents",
+      "section": "Capability vs. regression evals / How to think about non-determinism in evaluations for agents",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "fixed",
+        "revision": "2026-01-09"
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-serving-20261126",
+      "title": "Model IDs and versions",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+      "section": "Model weights versus serving infrastructure",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-model-deprecations-20261126",
+      "title": "Model deprecations",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "section": "Overview / Migrating to replacements / Notifications / Auditing model usage",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-opus-5-5-migration-20261126",
+      "title": "Claude Opus 5.5 migration guide",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/models/opus-5-5/migration-guide",
+      "section": "Every starting model",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-structured-cache-20261126",
+      "title": "Structured outputs",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "section": "Prompt modification and token costs",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
