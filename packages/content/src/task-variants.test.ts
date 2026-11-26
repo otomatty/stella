@@ -14,7 +14,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { parsePublicTaskBundle } from "../../shared/src/tasks/catalog.js";
 import { mutantsFail, solutionPasses } from "../scripts/lib/task-run-check.js";
 import { buildContentManifest } from "./manifest.js";
-import { collectPdfTargets } from "./material-pdf.js";
 
 /** 予備の類題 (#39) の書き方と検査。見本の課題に類題を足した一時の教材で確かめる。 */
 const content = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -359,15 +358,10 @@ describe("予備の類題", () => {
       // 参照元は親の課題文のものを使う。
       expect(bundle.manifest.references).toEqual(parent?.bundle.manifest.references);
     }
-    // 類題は課題文のレッスンを作らない (Web の課題一覧・資料・PDF に出ない)。
+    // 類題は課題文のレッスンを作らない (Web の課題一覧に出ない)。
     const lessons = JSON.stringify(manifest.stages);
     expect(lessons).not.toContain("v01-profile");
     expect(lessons).not.toContain("VARIANT_ONLY_PROFILE_MARKER_39");
-    expect(
-      collectPdfTargets(manifest).some((target) =>
-        target.source.includes("VARIANT_ONLY_PROFILE_MARKER_39"),
-      ),
-    ).toBe(false);
   });
 
   it("類題のパターンが親と違えば落とす", () => {

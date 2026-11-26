@@ -1,6 +1,6 @@
 /**
  * スライド (slides レッスンの markdown) をアプリと同じ見た目の HTML にする。
- * 配布 PDF (scripts/build-pdf.ts) と教材動画 (scripts/build-video.ts) が共用する。
+ * 教材動画 (scripts/build-video.ts) の生成とプレビューに使う。
  *
  * - apps/web の slides-skin.css をそのまま読み込み、1 スライド = 1280x720 の `.sf-slide`
  * - コードハイライトは MarkdownSlides と同じ highlight.js (GitHub Light)
@@ -130,7 +130,7 @@ export function splitLessonSlides(markdown: string): string[] {
 
 /**
  * スライド全部を 1 枚の HTML にする (`.sf-slide` が縦に並ぶ)。
- * `extraCss` は用途ごとの追記 (PDF の @page、動画の字幕帯など)。
+ * `extraCss` は動画用の追加 CSS。
  */
 export function slidesHtml(
   markdown: string,

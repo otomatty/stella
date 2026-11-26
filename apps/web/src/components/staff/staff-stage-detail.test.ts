@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { LessonRow, StageWithChildren, StageMaterialRow } from "@stella/shared/cms/types";
+import type { LessonRow, StageWithChildren } from "@stella/shared/cms/types";
 import type { StaffStageTask } from "@stella/shared/tasks/staff-stage";
 import { SOLUTION_UNLOCK_ATTEMPTS } from "@stella/shared/tasks/help";
 import {
@@ -8,7 +8,6 @@ import {
   summarizeStageVideos,
   filterStaffStageTasks,
   groupStageSections,
-  groupStageMaterials,
   prerequisitesLabel,
   parseStaffStageTab,
   taskSupportLabel,
@@ -36,9 +35,9 @@ const task: StaffStageTask = {
 
 describe("stage detail", () => {
   it("検索パラメーターの不正値は課題に戻す", () => {
-    for (const value of [undefined, null, "invalid", ["outline"], 1, "tasks"])
+    for (const value of [undefined, null, "invalid", "materials", ["outline"], 1, "tasks"])
       expect(parseStaffStageTab(value)).toBe("tasks");
-    for (const value of ["outline", "learners", "materials"] as const)
+    for (const value of ["outline", "learners"] as const)
       expect(parseStaffStageTab(value)).toBe(value);
   });
   it("ヒントとすべての解答例の条件を表示する", () => {
@@ -134,41 +133,10 @@ describe("stage detail", () => {
   });
 });
 
-describe("ステージの前提と配布資料", () => {
+describe("ステージの前提", () => {
   it("前提の題を定義順に読点でつなぎ、空なら「なし」を出す", () => {
     expect(prerequisitesLabel([])).toBe("なし");
     expect(prerequisitesLabel([{ title: "HTML" }, { title: "CSS" }])).toBe("HTML、CSS");
-  });
-  it("資料を単元・レッスンごとにまとめ、API の順番と同名の別レッスンを保つ", () => {
-    const material = (id: string, section: string, lesson: string): StageMaterialRow => ({
-      id,
-      section_title: section,
-      lesson_id: lesson,
-      lesson_title: "同じ題",
-      file_name: id,
-      size_bytes: 1024,
-      mime_type: "application/pdf",
-      source: "auto",
-      created_by: null,
-      created_at: "",
-    });
-    const rows = [
-      material("a", "M0. 全体像", "l1"),
-      material("b", "M0. 全体像", "l1"),
-      material("c", "M0. 全体像", "l2"),
-      material("d", "M1. 次", "l3"),
-    ];
-    expect(groupStageMaterials([])).toEqual([]);
-    const groups = groupStageMaterials(rows);
-    expect(groups.map((section) => section.title)).toEqual(["M0. 全体像", "M1. 次"]);
-    expect(
-      groups[0]?.lessons.map((lesson) => [lesson.id, lesson.materials.map((m) => m.id)]),
-    ).toEqual([
-      ["l1", ["a", "b"]],
-      ["l2", ["c"]],
-    ]);
-    expect(groups[1]?.lessons[0]?.materials).toEqual([rows[3]]);
-    expect(rows.map((m) => m.id)).toEqual(["a", "b", "c", "d"]);
   });
 });
 

@@ -1,11 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import type {
-  StageWithChildren,
-  StageGradebook,
-  LessonMaterialRow,
-  StageMaterialRow,
-} from "@stella/shared/cms/types";
+import type { StageWithChildren, StageGradebook } from "@stella/shared/cms/types";
 import { TASK_KIND_LABELS, type TaskKind } from "@stella/shared/tasks/manifest";
 import type { StaffStageTasksResponse } from "@stella/shared/tasks/staff-stage";
 import { FilterBar, FilterField } from "@/components/common/FilterBar";
@@ -27,16 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getStageWithChildren,
-  listStageMaterials,
-  setLessonMaterialArchived,
-  downloadLessonMaterial,
-  listLessonMaterialVersions,
-  downloadLessonMaterialVersion,
-} from "@/lib/cms-api";
+import { getStageWithChildren } from "@/lib/cms-api";
 import { fetchStageGradebook } from "@/lib/certificates-api";
-import { toast } from "sonner";
 import { getStaffSkillMap, type StaffSkillMapStageNode } from "@/lib/skill-map-api";
 import { fetchStaffStageTasks } from "@/lib/staff-stage-api";
 import { VideoStatusBadge } from "./VideoStatusBadge";
@@ -48,7 +35,6 @@ import {
   summarizeStageVideos,
   filterStaffStageTasks,
   groupStageSections,
-  groupStageMaterials,
   prerequisitesLabel,
   LESSON_TYPE_LABELS,
   parseStaffStageTab,
@@ -73,17 +59,11 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
   const [visited, setVisited] = useState({
     stageId,
     learners: tab === "learners",
-    materials: tab === "materials",
   });
   useEffect(() => {
     setVisited((previous) => {
-      if (previous.stageId !== stageId)
-        return { stageId, learners: tab === "learners", materials: tab === "materials" };
-      return tab === "learners" || tab === "materials"
-        ? previous[tab]
-          ? previous
-          : { ...previous, [tab]: true }
-        : previous;
+      if (previous.stageId !== stageId) return { stageId, learners: tab === "learners" };
+      return tab === "learners" && !previous.learners ? { stageId, learners: true } : previous;
     });
   }, [tab, stageId]);
   const [grantOpen, setGrantOpen] = useState(false);
@@ -235,7 +215,6 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
               </TabsTrigger>
               <TabsTrigger value="outline">構成</TabsTrigger>
               <TabsTrigger value="learners">受講者</TabsTrigger>
-              <TabsTrigger value="materials">配布資料</TabsTrigger>
             </TabsList>
             <TabsContent value="tasks">
               <TasksTab sections={sections} slug={stage.slug} stageId={stageId} />
@@ -251,11 +230,6 @@ export function StaffStageDetail({ stageId }: { stageId: string }) {
             <TabsContent value="learners" forceMount hidden={tab !== "learners"}>
               {visited.stageId === stageId && visited.learners ? (
                 <LearnersTab key={stageId} stageId={stageId} />
-              ) : null}
-            </TabsContent>
-            <TabsContent value="materials" forceMount hidden={tab !== "materials"}>
-              {visited.stageId === stageId && visited.materials ? (
-                <MaterialsTab key={stageId} stageId={stageId} />
               ) : null}
             </TabsContent>
           </Tabs>
@@ -347,7 +321,6 @@ function StaffStageDetailSkeleton() {
             { tab: "tasks", width: "w-14" },
             { tab: "outline", width: "w-10" },
             { tab: "learners", width: "w-10" },
-            { tab: "materials", width: "w-14" },
           ].map(({ tab, width }) => (
             <div key={tab} className="shrink-0 px-3.5 py-2">
               <Skeleton className={`h-4 max-w-full ${width}`} />
@@ -746,159 +719,5 @@ function LearnersTab({ stageId }: { stageId: string }) {
         </Card>
       )}
     </div>
-  );
-}
-
-function MaterialsTab({ stageId }: { stageId: string }) {
-  const load = useCallback(() => listStageMaterials(stageId, { includeArchived: true }), [stageId]);
-  const { data, error } = useTabData(load);
-  const [materials, setMaterials] = useState<StageMaterialRow[] | null>(null);
-  useEffect(() => setMaterials(data), [data]);
-  const replaceMaterial = (updated: LessonMaterialRow) => {
-    setMaterials(
-      (rows) => rows?.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)) ?? null,
-    );
-  };
-  if (error)
-    return (
-      <p role="alert" className="text-sm text-danger">
-        {error}
-      </p>
-    );
-  if (!materials) return <SkeletonRows />;
-  if (materials.length === 0) return <p className="text-sm text-ink-3">配布資料はまだありません</p>;
-  return (
-    <div className="space-y-4">
-      {groupStageMaterials(materials).map((section) => (
-        <Card key={section.title} className="space-y-4 p-4">
-          <h2 className="text-sm font-semibold">{section.title}</h2>
-          {section.lessons.map((lesson) => (
-            <div key={lesson.id} className="space-y-2">
-              <h3 className="text-[13px] font-medium">{lesson.title}</h3>
-              {lesson.materials.map((material) => (
-                <MaterialItem key={material.id} material={material} onUpdate={replaceMaterial} />
-              ))}
-            </div>
-          ))}
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-async function downloadMaterial(material: StageMaterialRow, version?: number) {
-  try {
-    if (version === undefined) await downloadLessonMaterial(material);
-    else await downloadLessonMaterialVersion(material, version);
-  } catch (err) {
-    toast.error(`ダウンロードに失敗: ${err instanceof Error ? err.message : "失敗"}`);
-  }
-}
-
-function MaterialItem({
-  material,
-  onUpdate,
-}: {
-  material: StageMaterialRow;
-  onUpdate: (material: LessonMaterialRow) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [visited, setVisited] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const toggleArchived = async () => {
-    setSaving(true);
-    const archived = !material.archived_at;
-    try {
-      onUpdate(await setLessonMaterialArchived(material.id, archived));
-      toast.success(archived ? "配信から外しました" : "配信に戻しました");
-    } catch (err) {
-      toast.error(`配信の変更に失敗: ${err instanceof Error ? err.message : "失敗"}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <div className="rounded border border-border p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="min-w-0 flex-1 break-words text-[13px]">{material.file_name}</span>
-        {material.source === "upload" ? <Badge>手動アップロード</Badge> : null}
-        {material.archived_at ? (
-          <Badge
-            title={
-              material.source === "upload"
-                ? "管理者が配信から外した資料です。受講者の資料タブとダウンロードには出ません。"
-                : "教材から作らなくなった資料です。受講者の資料タブには出ません。バージョン履歴から以前のバージョンを取得できます。"
-            }
-          >
-            {material.source === "upload" ? "配信から外した" : "アーカイブ"}
-          </Badge>
-        ) : null}
-        <Button size="sm" variant="outline" onClick={() => void downloadMaterial(material)}>
-          ダウンロード
-        </Button>
-        {material.source === "upload" ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={saving}
-            onClick={() => void toggleArchived()}
-          >
-            {material.archived_at ? "配信に戻す" : "配信から外す"}
-          </Button>
-        ) : null}
-        {material.source === "auto" ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-expanded={open}
-            onClick={() => {
-              setVisited(true);
-              setOpen(!open);
-            }}
-          >
-            バージョン履歴
-          </Button>
-        ) : null}
-      </div>
-      {visited ? (
-        <div hidden={!open}>
-          <MaterialVersionHistory material={material} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function MaterialVersionHistory({ material }: { material: StageMaterialRow }) {
-  const load = useCallback(() => listLessonMaterialVersions(material.id), [material.id]);
-  const { data, error } = useTabData(load);
-  if (error)
-    return (
-      <p role="alert" className="text-xs text-danger">
-        {error}
-      </p>
-    );
-  if (!data) return <SkeletonRows rows={2} />;
-  if (data.length === 0)
-    return <p className="mt-2 text-xs text-ink-3">バージョン履歴はまだありません</p>;
-  return (
-    <ul className="mt-3 divide-y divide-border">
-      {data.map((v, index) => (
-        <li key={v.version} className="flex flex-wrap items-center gap-2 py-2 text-xs text-ink-2">
-          <span className="font-medium">v{v.version}</span>
-          {index === 0 ? <Badge>最新</Badge> : null}
-          <span>{new Date(v.created_at).toLocaleString("ja-JP")}</span>
-          <span>{(v.size_bytes / 1024).toFixed(1)} KB</span>
-          {v.lesson_revision !== null ? <span>本文 rev.{v.lesson_revision}</span> : null}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => void downloadMaterial(material, v.version)}
-          >
-            v{v.version} をダウンロード
-          </Button>
-        </li>
-      ))}
-    </ul>
   );
 }

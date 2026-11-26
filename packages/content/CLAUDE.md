@@ -16,9 +16,9 @@
 
 WindowsとmacOSで手順が違う説明は、`doc.md` と課題文の `README.md` にだけ OS 別のブロック（`:::os windows` / `:::os macos` … `:::`）で書きます。スライドと動画は OS に依存しない説明にします。ショートカットキーの併記は例外です。書き方は [STYLE_GUIDE.md](STYLE_GUIDE.md#os別の手順osのルール) にあります。
 
-format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・配布PDF・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
+format 2 では `practice.md` を配信しません。実装課題は課題ディレクトリ、知識問題は `knowledge.md` に分けます。解答・解説・レビュー用素材・未出題の類題は課題の `private/` で管理し、公開API・拡張のbundleに混ぜません。公開する解説は `doc.md` に書きます。参照元は課題文の近くと単元台帳に記録します。
 
-教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略したステージは旧形式のまま読み込みます。参照元の対応を整えた単元には、同じ出典表示を加えます。未改訂単元の配信とPDFは維持します。
+教材を直したら `bun run content:check` を通します。解答例は拡張と同じランナーで検証します。format を省略したステージは旧形式のまま読み込みます。参照元の対応を整えた単元には、同じ出典表示を加えます。未改訂単元の配信は維持します。
 
 ## 教材の単位(3層)
 
@@ -116,12 +116,12 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 - 手元では最初に `bun run --filter=@stella/content video:tts:setup` を 1 回実行します。Python 3.10〜3.13 と `pyopenjtalk-plus` の wheel を使います。`video:scenes`・`content:video`・ローカルの `video:sync` は、`--tts` を省くと Open JTalk で日本語の音声を合成します。`bun run content:video -- dev-env-basics` の出力先は `dist/video/` です。ffmpeg と Playwright Chromium (`bunx --bun playwright install chromium`) が必要です。読み上げなしで描画を確かめるには `--tts fake` を指定すると仮の音で作れます
 - 本番の公開は、デプロイ済みの main と同じ変更のないチェックアウトで行います。対象と TTS の回数を `video:sync --dry-run` で確かめ、`--preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げ、`bun run video:register` で D1 に登録します。詳しくは [教材動画の公開](../../docs/ci-cd.md#教材動画の公開) を参照してください。
 - `--preview` は Gemini の回数を台帳の `ttsUsage` に足します。R2 の動画と台帳の公開情報、`dist/video-manifest.json` と本番登録用の `dist/video-manifest.source.json` の書き込みは `--cached-only` のときに行います。`--cached-only` はキャッシュにある音声だけで作り、呼び出しが残っていれば 1 本も上げずに止まります。`video:scenes` で作った音声も同じ `dist/video-cache` に入ります。
-- 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。R2 の資格情報・公開バケットは PDF と同じです
+- 配信は `bun run --filter=@stella/content video:sync dev-env-basics` でローカル R2 まで確かめられます。本番の声で作るには `--tts gemini` (`GEMINI_API_KEY`) を指定します。本番 R2 に上げる `video:sync --remote` の既定は Gemini です。本番の R2 の設定は [教材動画の公開](../../docs/ci-cd.md#教材動画の公開) を参照します
 - `lesson-video/ses/<slug>/<lessonId>/<hash>.mp4` と同名の `.vtt`・`.jpg` を置きます。ハッシュはスライド・台本・読み辞書・CSS・TTS 設定を含み、台帳に3ファイルがあれば生成を省きます。強制作成では内容ハッシュに版の接尾辞を付け、台帳に最新の版を控えます。旧版は残します
-- `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。PDF も反映するなら `PDF_MANIFEST` を同時に渡します。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
+- `VIDEO_MANIFEST=$PWD/packages/content/dist/video-manifest.json bun run db:seed` で `lessons.video_path` を更新します。manifest のキーは `<slug>/<トピックID>` です。動画 manifest が無いときは既存の動画を保持し、台本を削除したトピックは動画の参照を外します
 - 作る前に Gemini の呼び出し回数を見積もります。新方式も旧方式もトピック (動画) ごとに 1 回で、`dist/video-cache` にある音声は数えません。新方式は音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。1 日の上限は `VIDEO_TTS_DAILY_LIMIT` (既定 100) です。必要な回数が 1 日の残りを超えるときは、1 本も作らず R2 と manifest に書かずに失敗します。残りは最低 0 回で、必要 0 回なら続けます。実行中に 429 で 1 日の上限に当たったら、その場で止めます。
 - この回数は手元の `video:sync` (`--preview` を含む) の呼び出しだけです。`video:scenes` などの手元の `--tts gemini` や、同じ API キーの別用途 (清書・イラスト・チュートリアル) は数えません。台帳が存在しないときは空から始め、取得エラーや不正な台帳が見つかったときは生成前に失敗します。使った回数 (失敗した呼び出しを含む) は、呼び出した時点の太平洋時間の日付ごとに公開 R2 の `lesson-video/state.json` の `ttsUsage` へ足します。計測開始後は、途中で失敗した場合も台帳を一度保存します。音声と場面の映像は手元の `packages/content/dist/video-cache` に残ります。
-- 登録時は付帯ファイルと今のチェックアウトの教材指紋が一致し、どちらにも未コミットの教材変更がないことを確かめてから、R2 の教材指紋と照合します。一致時だけ `packages/shared/scripts/register-lesson-videos.ts` が既存レッスンの動画列を更新します。デプロイ完了後に登録を再試行します。チェックアウトや教材を替えたら `--cached-only` から作り直します。deploy で `PDF_KEY_SALT` を設定している場合は同じ値を設定します。値が違うと指紋が合わず登録できません。一部のトピックが失敗しても、manifest ができていれば、できた動画は登録し、失敗理由は `lessons.video_issue` に記録します (管理者の画面に表示)。deploy の seed は動画 manifest を渡さず、台本のある既存レッスンの動画を保ちます
+- 登録時は付帯ファイルと今のチェックアウトの教材指紋が一致し、どちらにも未コミットの教材変更がないことを確かめてから、R2 の教材指紋と照合します。一致時だけ `packages/shared/scripts/register-lesson-videos.ts` が既存レッスンの動画列を更新します。デプロイ完了後に登録を再試行します。チェックアウトや教材を替えたら `--cached-only` から作り直します。一部のトピックが失敗しても、manifest ができていれば、できた動画は登録し、失敗理由は `lessons.video_issue` に記録します (管理者の画面に表示)。deploy の seed は動画 manifest を渡さず、台本のある既存レッスンの動画を保ちます
 - レッスンは「動画」を既定とし「スライド」へ切り替えられます。字幕は既定でオン。受講者のレッスン画面では動画を 9 割まで見るとレッスンが完了になります。公開単元の slides は `/start` でも再生でき、進捗は記録しません
 - 収録済みの動画は、トピックの `slides.md`・`narration.json` と同じ場所に `screen.mp4`・`screen.vtt`・`screen.jpg` をそろえてコミットします。Git LFS は使いません。
 - 3ファイルがあれば収録版を優先し、TTS とスライド撮影を省きます。一部だけあると `narration:check` と動画生成がエラーになります。
@@ -133,7 +133,7 @@ Python 3 と `pip install python-pptx pygments playwright` / `playwright install
 
 1. **1トピック = 1 Takeaway を崩さない** — スライドを足したくなったら、まずトピックを割れないか考えてください。「関連情報」は Takeaway を強化する枠(図解 or 失敗例)1つだけに収めます。詰め込みは粒度の設計を壊します。
 2. **語彙台帳を必ず更新する** — トピックを追加・移動・改稿したら `introduces` / `requires` を更新し、`bun run --filter=@stella/content materials` で検査を通してください。
-3. **参照元と必要な帰属表示を教材に残す** — [新設計05](../../docs/curriculum/05-sources-and-attribution.md)に従い、台帳 `sources/registry.json` と単元の `references.json` に資料・使用箇所・対象環境・利用方法を記録します。トピック・まとめ・知識問題の front-matter は `sourceRefs`、課題の `task.json` は `sources` でIDを指定します。解説・課題の近く、単元末尾、IDE、配布PDFに出典を載せます。一覧の表示（知識問題と課題文の例外を含む）は [SOURCE_GUIDE.md の「配信と履歴」](SOURCE_GUIDE.md#配信と履歴) に従います。引用・転載・改変では条件と必要な表示も確認します。技術のトップページだけを根拠にせず、講師が対応を確認して `approved` にします。詳細は [SOURCE_GUIDE.md](SOURCE_GUIDE.md)。新形式は参照元の記録・整合性の検査が初回公開から必須、旧形式は新規・内容改訂の単元から必須、未改訂単元は警告です。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約で追い、講師が後から確かめて承認します。AIは `approved` を付けません。
+3. **参照元と必要な帰属表示を教材に残す** — [新設計05](../../docs/curriculum/05-sources-and-attribution.md)に従い、台帳 `sources/registry.json` と単元の `references.json` に資料・使用箇所・対象環境・利用方法を記録します。トピック・まとめ・知識問題の front-matter は `sourceRefs`、課題の `task.json` は `sources` でIDを指定します。解説・課題の近く、単元末尾、IDEに出典を載せます。一覧の表示（知識問題と課題文の例外を含む）は [SOURCE_GUIDE.md の「配信と履歴」](SOURCE_GUIDE.md#配信と履歴) に従います。引用・転載・改変では条件と必要な表示も確認します。技術のトップページだけを根拠にせず、講師が対応を確認して `approved` にします。詳細は [SOURCE_GUIDE.md](SOURCE_GUIDE.md)。新形式は参照元の記録・整合性の検査が初回公開から必須、旧形式は新規・内容改訂の単元から必須、未改訂単元は警告です。承認待ちはマージ・公開を止めず、`content:check` の警告と CI の要約で追い、講師が後から確かめて承認します。AIは `approved` を付けません。
 4. **`STYLE_GUIDE.md` に従う** — 文体、コード例の書き方、構成のルールがすべて定義されています。新規作成・修正の前に読んでください。
 5. **図解は `.claude/skills/diagram-design/` の規約に従う** — 型を選び、テンプレートから作り、出力前チェックリストを通してください。配色・寸法の正本は `references/style-guide.md` です。
 

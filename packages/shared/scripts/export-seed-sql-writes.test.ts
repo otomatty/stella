@@ -35,7 +35,7 @@ import { videoKeys, videoManifestKey } from "../../content/src/material-video.js
  *   - 教材を 1 か所変えると、その行だけを書く
  *
  * を確かめる。seed-d1 と同じ分割で 1 文ずつ流し、文ごとに total_changes() の差を取る
- * (D1 の rows_written も文ごと)。本番の deploy と同じく配布 PDF のマニフェストも渡し、
+ * (D1 の rows_written も文ごと)。
  * 検証用 fixture (profiles / enrollments / submissions) を含む local の seed で見る
  * (本番の CONTENT_ONLY はその部分集合)。
  */
@@ -69,25 +69,9 @@ const LESSON = "0-1-1";
 const QUIZ_LESSON = "quiz-0-1";
 const VIDEO_SCENES = [{ id: "intro", startSec: 2.6, durationSec: 3.125, hash: "0123456789abcdef" }];
 
-const pdfDir = mkdtempSync(join(tmpdir(), "stella-seed-writes-"));
-const pdfManifest = join(pdfDir, "pdf-manifest.json");
-const pdfEntry = (lessonId: string, os?: "windows" | "macos") => ({
-  tenantId: "ses",
-  stageSlug: COURSE,
-  lessonId,
-  ...(os ? { os } : {}),
-  hash: `hash-${lessonId}-${os ?? "both"}`,
-  key: `lesson-pdf/ses/${COURSE}/${lessonId}/hash-${lessonId}-${os ?? "both"}.pdf`,
-  fileName: `${lessonId}${os ? ` (${os})` : ""}.pdf`,
-  sizeBytes: 10,
-});
-writeFileSync(
-  pdfManifest,
-  JSON.stringify([pdfEntry("doc-0-1"), pdfEntry(LESSON, "windows"), pdfEntry(LESSON, "macos")]),
-);
-
+const manifestDir = mkdtempSync(join(tmpdir(), "stella-seed-writes-"));
 afterAll(() => {
-  rmSync(pdfDir, { recursive: true, force: true });
+  rmSync(manifestDir, { recursive: true, force: true });
 });
 
 /** seed の SQL を同じプロセスで組み立てる。`mutate` で教材 (manifest) を書き換えられる。 */
@@ -98,7 +82,6 @@ async function exportSql(
   fixture.mutate = mutate ?? null;
   vi.stubEnv("DIALECT", "sqlite");
   vi.stubEnv("CONTENT_ONLY", "0");
-  vi.stubEnv("PDF_MANIFEST", pdfManifest);
   if (videoPath) vi.stubEnv("VIDEO_MANIFEST", videoPath);
   else vi.stubEnv("VIDEO_MANIFEST", "");
   const logs: string[] = [];
@@ -294,7 +277,7 @@ describe("seed の書き込み行数", () => {
     "動画 manifest を反映し、同一 seed は書かず、未指定は保持し、台本削除で解除する",
     async () => {
       const db = migratedDb();
-      const file = join(pdfDir, "video-manifest.json");
+      const file = join(manifestDir, "video-manifest.json");
       const path = `lesson-video/ses/${COURSE}/${LESSON}/hash.mp4`;
       const otherStage = "devlab-ts-ch00";
       const otherVideo = videoKeys(otherStage, LESSON, "other");
@@ -365,7 +348,7 @@ describe("seed の書き込み行数", () => {
     "動画の成功で理由を消し、失敗は動画を残して理由だけ書き、未実行と別ステージは保持する",
     async () => {
       const db = migratedDb();
-      const file = join(pdfDir, "video-issue-manifest.json");
+      const file = join(manifestDir, "video-issue-manifest.json");
       const id = stableUuid(`lesson:ses:${COURSE}:${LESSON}`);
       const path = `lesson-video/ses/${COURSE}/${LESSON}/new.mp4`;
       const mutate =
@@ -735,13 +718,36 @@ describe("seed の書き込み行数", () => {
   );
 
   it(
-    "同じ seed を 2 回流すと、2 回目は 1 行も書かない",
+    "同じ seed を 2 回流すと、廃止した配布資料と版履歴を保持し、2 回目は 1 行も書かない",
     () => {
       const db = migratedDb();
       try {
         expect(total(apply(db, sql))).toBeGreaterThan(4000);
         expect(readUnitReferences(db)).toBe(references);
+        db.prepare(
+          "insert into lesson_materials (id, lesson_id, path, file_name, source, created_at) values ('retained-material', ?, 'lesson-pdf/current.pdf', 'current.pdf', 'auto', 1)",
+        ).run(lessonId);
+        db.exec(
+          "insert into lesson_material_versions (material_id, version, path, source_hash, created_at) values ('retained-material', 1, 'lesson-pdf/original.pdf', 'original-hash', 1), ('retained-material', 2, 'lesson-pdf/current.pdf', 'current-hash', 1)",
+        );
         expect(apply(db, sql)).toEqual({});
+        expect(
+          db
+            .prepare(
+              "select path, archived_at from lesson_materials where id = 'retained-material'",
+            )
+            .get(),
+        ).toEqual({ path: "lesson-pdf/current.pdf", archived_at: null });
+        expect(
+          db
+            .prepare(
+              "select version, path from lesson_material_versions where material_id = 'retained-material' order by version",
+            )
+            .all(),
+        ).toEqual([
+          { version: 1, path: "lesson-pdf/original.pdf" },
+          { version: 2, path: "lesson-pdf/current.pdf" },
+        ]);
       } finally {
         db.close();
       }

@@ -183,9 +183,7 @@ function collectTopics(listed: NarrationTopic[]): {
   invalid: VideoFailure[];
 } {
   const slidesTargets = new Map(
-    collectPdfTargets(undefined, { includeFormat2Slides: true })
-      .filter((t) => t.kind === "slides")
-      .map((t) => [`${t.stageSlug}/${t.lessonId}`, t]),
+    collectPdfTargets().map((t) => [`${t.stageSlug}/${t.lessonId}`, t]),
   );
   const topics: VideoTopic[] = [];
   const invalid: VideoFailure[] = [];
@@ -325,7 +323,7 @@ async function screenshotSlides(
   });
   try {
     const page = await context.newPage();
-    // PDF と同じく file:// 以外を遮断する (動画はリポジトリ内容だけから決まる)。
+    // file:// 以外を遮断する (動画はリポジトリ内容だけから決まる)。
     await page.route(
       (url) => url.protocol !== "file:",
       (route) => route.abort(),

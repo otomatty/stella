@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { toast } from "sonner";
 import {
   Check,
   CheckCircle,
@@ -23,12 +22,9 @@ import {
   CircleDashed,
   Contrast,
   Code,
-  Download,
   FileText,
-  Folder,
   Clock,
   ListTree,
-  Loader2,
   User,
   X,
 } from "@/lib/icons";
@@ -46,7 +42,7 @@ import {
 } from "@/components/ui/drawer";
 import { AppShellContext } from "@/components/shell/app-shell-context";
 import { TopbarSlot } from "@/components/shell/TopbarSlot";
-import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LessonTypeIcon, LessonStatusIcon, lessonTypeLabel } from "./StageDetail";
 import { LessonCompleteCallout, LessonNavFooter } from "./LessonNav";
 import { LessonComments } from "./LessonComments";
@@ -78,10 +74,7 @@ import {
   problemLockReason,
 } from "@/lib/problem-lesson";
 import { useVideoLessonComments } from "@/hooks/useLessonComments";
-import { useLessonMaterials } from "@/hooks/useLessonMaterials";
 import { useIsNarrowViewport } from "@/hooks/useIsNarrowViewport";
-import { downloadLessonMaterial } from "@/lib/cms-api";
-import type { LessonMaterialRow } from "@stella/shared/cms/types";
 import { isBackendConfigured } from "@/lib/backend";
 import { cn } from "@/lib/utils";
 import { AssignmentSubmitPanel } from "./AssignmentSubmitPanel";
@@ -215,19 +208,11 @@ export const LessonPlayer = ({
   const trackTextProgress =
     !problemLesson && !problemOverview && (!tasksEnabled || stageTasks != null);
 
-  // 配布資料は CMS の実体レッスン (uuid) のみ取得する (fixtures は空状態のまま)。
-  const materialsEnabled = isBackendConfigured() && UUID_RE.test(lessonId);
-  const {
-    materials,
-    loading: materialsLoading,
-    error: materialsError,
-  } = useLessonMaterials(lessonObj?.id ?? null, materialsEnabled && !problemOverview);
-
   const showVideo = Boolean(lessonObj && isVideoLesson(lessonObj));
   const threadFromRoute = lessonId === initialLesson?.id ? focusThreadId : undefined;
   const video = useVideoLessonComments(
     lessonId,
-    showVideo && materialsEnabled,
+    showVideo && isBackendConfigured() && UUID_RE.test(lessonId),
     lessonObj?.videoPath,
     threadFromRoute,
   );
@@ -676,15 +661,6 @@ export const LessonPlayer = ({
                       教材
                     </TabsTrigger>
                   )}
-                  {/* ロード中は 0 と誤解されないよう件数バッジを出さない */}
-                  <TabsTrigger
-                    value="resources"
-                    className={showVideo ? "min-h-11 sm:min-h-8" : undefined}
-                    icon={<Folder />}
-                    count={materialsLoading ? undefined : materials.length}
-                  >
-                    資料
-                  </TabsTrigger>
                 </TabsList>
 
                 {showVideo ? (
@@ -770,13 +746,6 @@ export const LessonPlayer = ({
                     )}
                   </TabsContent>
                 )}
-                <TabsContent value="resources">
-                  <ResourcesList
-                    materials={materials}
-                    loading={materialsLoading}
-                    error={materialsError}
-                  />
-                </TabsContent>
               </Tabs>
             </div>
           </>
@@ -1185,101 +1154,5 @@ const LessonReadable = ({
       </div>
       {afterContent ? <div className="mt-4 space-y-4">{afterContent}</div> : null}
     </>
-  );
-};
-
-/** ファイルサイズ表記 (1024 基数)。 */
-const formatBytes = (bytes: number): string => {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-};
-
-/**
- * 資料タブ。 配布資料 (lesson_materials) の実データを一覧し、 API 経由でダウンロードする。
- * 資料が無いレッスンでは空状態を表示する。
- */
-const ResourcesList = ({
-  materials,
-  loading,
-  error,
-}: {
-  materials: LessonMaterialRow[];
-  loading: boolean;
-  error: string | null;
-}) => {
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-
-  const handleDownload = async (material: LessonMaterialRow) => {
-    setDownloadingId(material.id);
-    try {
-      await downloadLessonMaterial(material);
-    } catch (err) {
-      console.error("[ResourcesList] download failed", err);
-      toast.error(err instanceof Error ? err.message : "ダウンロードに失敗しました");
-    } finally {
-      setDownloadingId(null);
-    }
-  };
-
-  if (loading) {
-    return <SkeletonRows rows={3} className="py-4" />;
-  }
-
-  // 取得失敗は「資料なし」と区別して表示する。
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
-        <Folder size={28} className="text-ink-4" />
-        <div className="font-medium text-danger">配布資料の取得に失敗しました</div>
-        <div className="text-[12.5px]">{error}</div>
-      </div>
-    );
-  }
-
-  if (materials.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-ink-3">
-        <Folder size={28} className="text-ink-4" />
-        <div className="font-medium text-ink-2">配布資料はありません</div>
-        <div className="text-[12.5px]">
-          この教材に配布資料が追加されると、 ここからダウンロードできます。
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {materials.map((m) => (
-        <div
-          key={m.id}
-          className="flex items-center gap-3 rounded-md border border-border bg-card px-3.5 py-2.5"
-        >
-          <div className="grid place-items-center w-9 h-9 rounded-md bg-sunken text-ink-3 shrink-0">
-            <FileText size={16} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-medium truncate">{m.file_name}</div>
-            <div className="text-[11.5px] text-ink-3">{formatBytes(m.size_bytes)}</div>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={downloadingId === m.id}
-            onClick={() => void handleDownload(m)}
-          >
-            {downloadingId === m.id ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <Download size={13} />
-            )}
-            ダウンロード
-          </Button>
-        </div>
-      ))}
-    </div>
   );
 };

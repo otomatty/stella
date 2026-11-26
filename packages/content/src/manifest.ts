@@ -202,8 +202,6 @@ function readStageConfig(stageDir: string, slug: string): StageConfig & { tenant
     if (Object.keys(raw.exercises ?? {}).length)
       throw new Error(`stages/${slug}: format 2 は exercises ではなく tasks を使います`);
   }
-  if (raw.pdfByOs !== undefined && typeof raw.pdfByOs !== "boolean")
-    throw new Error(`stages/${slug}/stage.json の pdfByOs は true / false にしてください`);
   if (typeof raw.title !== "string" || raw.title.trim() === "") {
     throw new Error(`stages/${slug}/stage.json の title が空です。`);
   }
@@ -988,14 +986,11 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
   tasks: TaskSeed[];
   units: UnitSeed[];
   codingRules: CodingRule[];
-  /** 配布 PDF を OS ごとに分けるステージの slug (stage.json の `pdfByOs`)。 */
-  pdfByOs: string[];
 } {
   const stages: Stage[] = [];
   const quizzes: QuizSeed[] = [];
   const tasks: TaskSeed[] = [];
   const units: UnitSeed[] = [];
-  const pdfByOs: string[] = [];
   const refLessonsByStage = new Map<string, TaskRefLessons>();
 
   for (const slug of dirsIn(stagesRoot)) {
@@ -1004,7 +999,6 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
     if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) continue;
     const config = readStageConfig(stageDir, slug);
     const built = buildOneStage(slug, stageDir, modulesRoot, config);
-    if (config.pdfByOs) pdfByOs.push(slug);
     stages.push(built.stage);
     quizzes.push(...built.quizzes);
     tasks.push(...built.tasks);
@@ -1049,7 +1043,7 @@ export function buildContentManifest(stagesRoot: string = defaultStagesRoot()): 
       prerequisitesOf,
     );
 
-  return { stages, quizzes, tasks, units, pdfByOs, codingRules };
+  return { stages, quizzes, tasks, units, codingRules };
 }
 
 /**

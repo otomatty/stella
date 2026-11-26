@@ -22,7 +22,6 @@ import {
   unitContentHash,
 } from "./check-source-references.js";
 import { buildContentManifest } from "./manifest.js";
-import { collectPdfTargets, pdfSourceHash } from "./material-pdf.js";
 import { findAssignment } from "../../shared/src/problems/index.js";
 import {
   getEntryFile,
@@ -732,17 +731,6 @@ describe("参照元の公開ゲートと表示", () => {
     });
     expect(unitContentHash(unit)).toBe(before);
   });
-  it("配布 PDF を OS ごとに分けるか (pdfByOs) の切り替えでは指紋を変えない", () => {
-    const { root, unit } = fixture();
-    const before = unitContentHash(unit);
-    for (const value of [false, true, undefined]) {
-      patch(join(root, "stages/dev-env-basics/stage.json"), (row) => {
-        if (value === undefined) delete row.pdfByOs;
-        else row.pdfByOs = value;
-      });
-      expect(unitContentHash(unit)).toBe(before);
-    }
-  });
   it.each(["id", "title"])(
     "旧演習の %s の変更は該当単元だけを公開検査の必須対象にする",
     (field) => {
@@ -870,7 +858,7 @@ describe("参照元の公開ゲートと表示", () => {
     );
     expect(unitContentHash(unit)).toBe(before);
   });
-  it("本文・単元末尾・IDEの配布manifest・PDFから同じ出典を読める", () => {
+  it("本文・単元末尾・IDEの配布manifestから同じ出典を読める", () => {
     const { root } = fixture();
     const manifest = buildContentManifest(join(root, "stages"));
     const publicTask = manifest.tasks[0].bundle;
@@ -899,12 +887,6 @@ describe("参照元の公開ゲートと表示", () => {
     expect(readme).toContain("確認すること: 教材独自の課題。");
     expect(readme).toContain(
       "教材独自の課題・概念の参照 / 資料: 更新型 / 確認日: 2026-10-05 / 環境: static-web-01@1",
-    );
-    const targets = collectPdfTargets(manifest);
-    expect(targets.every((t) => t.source.includes("MDN Web Docs contributors"))).toBe(true);
-    const first = targets[0];
-    expect(pdfSourceHash({ ...first, source: first.source + "参照元の更新" })).not.toBe(
-      pdfSourceHash(first),
     );
   });
   it("知識問題の参照元は帰属表示が必要な資料だけを載せる", () => {

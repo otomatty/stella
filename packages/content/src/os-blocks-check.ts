@@ -8,7 +8,7 @@
  * - OS ごとの画像 (`name.windows.png` / `name.macos.png`) は、その OS のブロックの中で使い、
  *   同じ組のもう一方の OS のブロックで対になる画像を使う。`assets/` にも両方を置く。
  *
- * 記法の解析は Web・VS Code・配布 PDF と同じ `@stella/shared/markdown/os-blocks`。
+ * 記法の解析は Web・VS Code と同じ `@stella/shared/markdown/os-blocks`。
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";

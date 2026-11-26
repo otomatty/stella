@@ -15,10 +15,11 @@ test("受講中のステージのまとめを読める", async ({ page }) => {
   await expect(lesson.getByRole("heading", { name: "00-1 まとめ", exact: true })).toBeVisible();
   await expect(lesson.getByTestId("lesson-doc").getByText("このレッスンの目標")).toBeVisible();
 
-  const materials = lesson.getByRole("tab", { name: /^資料/ });
-  const count = materials.locator("span").filter({ hasText: /^\d+$/ });
-  await expect(count).toBeVisible();
-  await expect(page).toHaveScreenshot("lesson-summary.png", { mask: [count] });
+  await expect(lesson.getByRole("tab", { name: "教材", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page).toHaveScreenshot("lesson-summary.png");
 });
 
 // export-seed-sql.ts の安定 UUID。開発ラボG 01章「問1 税込価格を返す」のシード行。
@@ -135,7 +136,7 @@ test("問題のレッスンは手元の進捗でロックし、提出は取り�
   await expect(handoff).toContainText("を終えると解けます");
   await expect(open).toHaveCount(0);
   await expect(lesson.getByRole("tab", { name: "教材" })).toBeVisible();
-  await expect(lesson.getByRole("tab", { name: /^資料/ })).toBeVisible();
+  await expect(lesson.getByRole("tab")).toHaveCount(1);
   await expect(lesson.getByRole("navigation", { name: "パンくず" })).toHaveCount(0);
   await expect(lesson.getByRole("link", { name: "問題の一覧", exact: true })).toHaveCount(0);
   await expect(lesson.getByText("src/q01-01-add-tax.ts", { exact: true })).toBeVisible();
