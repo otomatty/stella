@@ -1,286 +1,905 @@
 {
-  "schema": 1,
+  "schema": 2,
   "brief": {
-    "goal": "any を具体的な型に変え、名前の誤りや読み取り専用の値への代入に気付ける。",
-    "stuck": "動くように見えるコードで、なぜ型を直すのか分からない。",
-    "points": [
-      "any を具体的な型に直すと、値の操作の間違いが見つかる。",
-      "プロパティへの代入と読み取りを区別し、Number で文字列を数値に変える。",
-      "number[] は数値の配列の型で、length は要素の数を表す。"
-    ],
-    "leaveOut": [
-      "問1〜20と総合問題の答えのコード",
-      "配列の詳しい操作",
-      "オブジェクトの設計",
-      "unknown と any の比較"
-    ]
+    "goal": "引数と戻り値の any を直し、型で見つかった名前の間違いを修正できる。",
+    "stuck": "動くように見えるコードで型を直す理由が分からず、型の確認が通れば正しいと思う。",
+    "points": ["any を具体的な型に直すと、名前の間違いを型の確認で見つけられます。"],
+    "leaveOut": ["unknown と any の比較", "Number()", "配列", "課題の答えのコード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "parcel": {
+      "prompt": "An ochre shipping parcel with a strip of tape, a blank postage label and a simple twine line, shown as one front-facing rectangle. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "check": {
+      "prompt": "A magnifying glass over a small brass measuring gauge. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "receipt": {
+      "prompt": "A blank cream shipping receipt emerging from a dark blue receipt printer, shown as two simple front-facing shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "sign": {
+      "prompt": "A wooden warehouse sign with a blank green face. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "exhibit": {
+      "prompt": "A small vase on a museum plinth with a blank caption plate built into its front, shown as two simple front-facing shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "送料",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "型の確認",
+          "art": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "表示",
+          "art": "receipt",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る数値",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "名前を確かめる",
+          "art": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "返す文字列",
+          "art": "receipt",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "compare": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "間違った名前",
+          "art": "check",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "直した名前",
+          "art": "receipt",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "property": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "区画名",
+          "art": "sign",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "文字数",
+          "art": "check",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "展示名",
+          "art": "exhibit",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "型の確認",
+          "art": "check",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "実行した結果",
+          "art": "receipt",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "送料の表示",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "区画名の確認",
+          "art": "sign",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す値",
+          "art": "rule",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
   },
   "scenes": [
     {
-      "id": "hook",
-      "kind": "code",
-      "role": "hook",
-      "title": "金額の表示で止まりました",
-      "code": [
-        "// 表示したい送料",
-        "const fee = 500;",
-        "// 送料を表示する関数を呼ぶ",
-        "feeLabel(fee);"
-      ],
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "any-box",
       "beats": [
         {
-          "say": "送料を文字で表示したいです。",
-          "type": [0, 1]
+          "say": "この動画では、any を具体的な型に直す方法を学びます。",
+          "speech": "この動画では、エニーを具体的な型に直す方法を学びます。"
         },
         {
-          "say": "型の確認は通りましたが、実行すると止まります。",
-          "type": [2, 3]
+          "say": "「なんでも」と書いた箱は、どんな物でも入る入れ物です。"
         },
         {
-          "say": "間違いを早く見つけるには、どうすればよいでしょうか。",
-          "focus": [3]
+          "say": "入れる物の形を決めた箱なら、違う物は入り口で止まります。"
+        },
+        {
+          "say": "any は何でも受け付ける型なので、具体的な型に直しましょう。",
+          "speech": "エニーは何でも受け付ける型なので、具体的な型に直しましょう。",
+          "pause": 1
         }
       ]
     },
     {
-      "id": "any",
+      "id": "example",
+      "role": "example",
+      "title": "送料の表示を確かめたい",
+      "board": "example",
+      "beats": [
+        {
+          "say": "荷物の送料を、画面に表示したい場面です。",
+          "show": ["a"]
+        },
+        {
+          "say": "型の確認は通っているように見えました。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "ところが、表示しようとすると処理が止まります。",
+          "show": ["c", "bc"],
+          "mark": [
+            {
+              "on": "c",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "unchecked",
       "kind": "code",
-      "role": "point",
-      "title": "any を具体的な型にする",
+      "role": "syntax",
+      "title": "any のままでは見つからない",
       "code": [
-        "// 送料 fee を受け取り、表示用の文字列を返す",
-        "function feeLabel(fee: any): any {",
-        "  // メソッドの名前を間違えている",
+        "// 送料を表示する文字列にする",
+        "function shippingLabel(fee: any): any {",
+        "  // 小数点以下をなくして表示するつもりの行",
+        "  return fee.toFixd(0);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "example"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "送料を文字で表示する関数を用意しました。",
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "any は、どんな値でも受け付ける型です。",
+          "speech": "エニーは、どんな値でも受け付ける型です。",
+          "part": {
+            "line": 1,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "term": {
+            "text": "any",
+            "note": "どんな値でも受け付ける"
+          }
+        },
+        {
+          "say": "この名前のつづりでも、型の確認は通ってしまいます。",
+          "part": {
+            "line": 3,
+            "text": "toFixd"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "しかし、数値を渡して実行すると止まりました。",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "引数と戻り値の型を決める",
+      "code": [
+        "// 送料を表示する文字列にする",
+        "function shippingLabel(fee: number): string {",
+        "  // 小数点以下をなくして表示するつもりの行",
+        "  return fee.toFixd(0);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "送料は数値なので、引数を number に直します。",
+          "speech": "送料は数値なので、引数をナンバーに直します。",
+          "part": {
+            "line": 1,
+            "text": "number",
+            "note": "送料の数値"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "表示する文字列を返すので、戻り値は string です。",
+          "speech": "表示する文字列を返すので、戻り値はストリングです。",
+          "part": {
+            "line": 1,
+            "text": "string"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "型を付けると、間違った名前にエラーが出ました。",
+          "part": {
+            "line": 3,
+            "text": "toFixd"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["b"]
+          },
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "実行する前に、直す場所を確かめられます。",
+          "focus": [3],
+          "figure": {
+            "tag": {
+              "b": "名前が違う"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "repair",
+      "kind": "code",
+      "role": "syntax",
+      "title": "型のエラーと修正後を並べる",
+      "code": [
+        "// 型を付けると、名前の間違いが見つかる",
+        "function shippingLabel(fee: number): string {",
+        "  // 小数点以下をなくして表示するつもりの行",
         "  return fee.toFixd(0);",
         "}",
-        "// 数値を受け取り、文字列を返す型に直す",
-        "function feeLabel(fee: number): string {",
-        "  // つづりを直して返す",
+        "// 名前を直した関数",
+        "function fixedShippingLabel(fee: number): string {",
+        "  // 小数点以下をなくして表示する",
         "  return fee.toFixed(0);",
         "}"
       ],
-      "beats": [
-        {
-          "say": "any は、どんな値でもよいという型です。",
-          "speech": "エニーは、どんな値でもよいという型です。",
-          "type": [0, 1]
-        },
-        {
-          "say": "このつづりの間違いも、型の確認を通ってしまいます。",
-          "type": [2, 3, 4],
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "受け取る値と、返す値の型を具体的に決めます。",
-          "clear": [1, 2, 3, 4]
-        },
-        {
-          "say": "数値と決めると、間違った名前に気付けます。",
-          "type": [5, 6]
-        },
-        {
-          "say": "正しい名前に直すと、文字列が返ります。",
-          "type": [7, 8, 9],
-          "calc": {
-            "on": "label",
-            "expr": "feeLabel(500)",
-            "result": "\"500\""
-          }
-        }
-      ],
-      "point": 1,
+      "show": true,
       "panel": {
-        "kind": "values",
-        "items": ["label"]
-      }
-    },
-    {
-      "id": "property",
-      "kind": "code",
-      "role": "point",
-      "title": "プロパティは、読むか書くか",
-      "code": [
-        "// 商品コード code を作り、\"P-8\" を入れる",
-        "const code = \"P-8\";",
-        "// プロパティに値を入れようとしている",
-        "code.length = 8;",
-        "// 文字数 count を作り、length を読む",
-        "const count = code.length;"
-      ],
+        "kind": "figure",
+        "board": "compare"
+      },
+      "reset": true,
       "beats": [
         {
-          "say": "点の右側に書く名前を、プロパティと呼びます。",
-          "type": [0, 1]
-        },
-        {
-          "say": "イコールを書くと、そこへ値を入れる形になります。",
-          "type": [2, 3]
-        },
-        {
-          "say": "文字列の文字数には、値を入れられません。",
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "読むだけなら、文字数を取り出せます。",
-          "clear": [2, 3]
-        },
-        {
-          "say": "この商品コードの文字数は、三です。",
-          "type": [4, 5],
-          "set": {
-            "count": "3"
-          }
-        }
-      ],
-      "point": 2,
-      "panel": {
-        "kind": "values",
-        "items": ["count"]
-      }
-    },
-    {
-      "id": "number",
-      "kind": "code",
-      "role": "point",
-      "title": "文字列から数値へ",
-      "code": [
-        "// 入力 input を作り、\"120\" を入れる",
-        "const input = \"120\";",
-        "// 個数 quantity を作り、数値に直して入れる",
-        "const quantity = Number(input);"
-      ],
-      "beats": [
-        {
-          "say": "入力が文字列でも、計算では数値が必要です。",
-          "type": [0, 1],
-          "set": {
-            "input": "\"120\""
-          }
-        },
-        {
-          "say": "Number は、値を数値に変える書き方です。",
-          "speech": "ナンバーは、値を数値に変える書き方です。",
-          "type": [2, 3]
-        },
-        {
-          "say": "文字列ではなく、数値の百二十が入ります。",
-          "calc": {
-            "on": "quantity",
-            "expr": "Number(\"120\")",
-            "result": "120"
-          }
-        }
-      ],
-      "point": 2,
-      "panel": {
-        "kind": "values",
-        "items": ["input", "quantity"]
-      }
-    },
-    {
-      "id": "array",
-      "kind": "code",
-      "role": "point",
-      "title": "並んだ数の型と件数",
-      "code": [
-        "// 価格 prices を数値の配列として作る",
-        "const prices: number[] = [300, 500, 200];",
-        "// 件数 count を作り、要素の数を入れる",
-        "const count = prices.length;"
-      ],
-      "beats": [
-        {
-          "say": "配列は、値を順番に並べたものです。",
-          "type": [0, 1]
-        },
-        {
-          "say": "数値の配列の型は、number に角かっこを付けます。",
-          "speech": "数値の配列の型は、ナンバーに角かっこを付けます。",
+          "say": "上は型のエラーが出ている状態です。",
           "part": {
-            "line": 1,
-            "text": "number[]"
-          }
-        },
-        {
-          "say": "配列の length は、並んでいる値の数です。",
-          "speech": "配列のレングスは、並んでいる値の数です。",
-          "type": [2, 3]
-        },
-        {
-          "say": "価格の合計ではなく、件数の三が入ります。",
-          "set": {
-            "count": "3"
-          }
-        }
-      ],
-      "point": 3,
-      "panel": {
-        "kind": "values",
-        "items": ["count"]
-      }
-    },
-    {
-      "id": "recap",
-      "kind": "code",
-      "role": "recap",
-      "title": "別の業務例で、型を直す",
-      "code": [
-        "// 予約者の名前 guest の型が広すぎる",
-        "const guest: any = \"佐藤\";",
-        "// 受け取る値に合う型に直す",
-        "const guest: string = \"佐藤\";",
-        "// 文字数 size を作る",
-        "const size: number = guest.length;"
-      ],
-      "beats": [
-        {
-          "say": "問題では、any の型を直していきます。",
-          "speech": "問題では、エニーの型を直していきます。",
-          "type": [0, 1],
+            "line": 3,
+            "text": "toFixd"
+          },
+          "figure": {
+            "show": ["a", "b"],
+            "mark": [
+              {
+                "on": "a",
+                "kind": "cross"
+              }
+            ]
+          },
           "mark": [
             {
-              "line": 1,
+              "line": 3,
               "kind": "cross"
             }
           ]
         },
         {
-          "say": "この業務例なら、名前は文字列と決められます。",
-          "clear": [0, 1]
-        },
-        {
-          "say": "具体的な型に直し、残ったエラーも読みます。",
-          "type": [2, 3],
+          "say": "下では、名前を toFixed に直しました。",
+          "speech": "下では、名前をトゥーフィックスドに直しました。",
+          "part": {
+            "line": 8,
+            "text": "toFixed"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["b"]
+          },
           "mark": [
             {
-              "line": 3,
+              "line": 8,
               "kind": "check"
             }
           ]
         },
         {
-          "say": "any を具体的な型に変えて、書いてみましょう。",
-          "speech": "エニーを具体的な型に変えて、書いてみましょう。",
-          "type": [4, 5],
-          "set": {
-            "size": "2"
+          "say": "引数の型と、使えるメソッドの名前を合わせます。",
+          "part": {
+            "line": 6,
+            "text": "number"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        },
+        {
+          "say": "型の確認だけで、計算の内容まで正しいとは限りません。",
+          "focus": [8],
+          "figure": {
+            "tag": {
+              "b": "結果も確認"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "property",
+      "kind": "code",
+      "role": "note",
+      "title": "プロパティを読む、値を比べる",
+      "code": [
+        "// 荷物の区画名は文字列",
+        "const zoneName: string = \"南倉庫\";",
+        "// 間違い: 文字数に値を入れようとしている",
+        "zoneName.length = 3;",
+        "// 文字数が三かどうかを比べる",
+        "const isThree = zoneName.length === 3;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "property"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "点の右側に書く名前を、プロパティと呼びます。",
+          "part": {
+            "line": 3,
+            "text": "length"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"]
+          },
+          "term": {
+            "text": "プロパティ",
+            "note": "点の右側に書く名前"
+          }
+        },
+        {
+          "say": "文字列の length は、読み取るだけのプロパティです。",
+          "speech": "文字列のレングスは、読み取るだけのプロパティです。",
+          "part": {
+            "line": 3,
+            "text": "length"
+          },
+          "figure": {
+            "tag": {
+              "b": "3"
+            }
+          }
+        },
+        {
+          "say": "値を入れようとすると、型のエラーになりました。",
+          "part": {
+            "line": 3,
+            "text": " = "
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "cross"
+              }
+            ]
+          },
+          "mark": [
+            {
+              "line": 3,
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "等しいかを比べるときは、イコールを3つ並べます。",
+          "speech": "等しいかを比べるときは、イコールを三つ並べます。",
+          "part": {
+            "line": 5,
+            "text": "==="
+          },
+          "figure": {
+            "pulse": ["b"],
+            "unmark": ["b"]
+          }
+        },
+        {
+          "say": "入れる記号と、比べる記号の違いに注目しましょう。",
+          "part": {
+            "line": 5,
+            "text": "isThree"
+          },
+          "figure": {
+            "tag": {
+              "b": "true"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "修正した送料の表示を確かめる",
+      "code": [
+        "// 送料を表示する文字列にする",
+        "function shippingLabel(fee: number): string {",
+        "  // 小数点以下をなくして表示する",
+        "  return fee.toFixed(0);",
+        "}",
+        "// 送料六百五十円の表示を確かめる",
+        "console.log(shippingLabel(650));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "引数の fee には、送料の数値を渡します。",
+          "speech": "引数のフィーには、送料の数値を渡します。",
+          "part": {
+            "line": 1,
+            "text": "fee",
+            "note": "送料"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "650"
+            }
+          }
+        },
+        {
+          "say": "toFixed が返すのは、数字を並べた文字列です。",
+          "speech": "トゥーフィックスドが返すのは、数字を並べた文字列です。",
+          "part": {
+            "line": 3,
+            "text": "toFixed"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "返された文字列を表示すると、650と出ました。",
+          "speech": "返された文字列を表示すると、六百五十と出ました。",
+          "part": {
+            "line": 1,
+            "text": "shippingLabel",
+            "note": "送料の表示"
+          },
+          "figure": {
+            "tag": {
+              "c": "\"650\""
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "any のままだとどうなるか",
+      "code": [
+        "// 展示名の英字を小文字にするつもりの関数",
+        "function exhibitKey(label: any): any {",
+        "  // この名前には、つづりの間違いがある",
+        "  return label.toLowercase();",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "今度は、展示名を整える関数で考えましょう。",
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "引数と戻り値は、どちらも any です。",
+          "speech": "引数と戻り値は、どちらもエニーです。",
+          "part": {
+            "line": 1,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "文字列を渡すと、型の確認と実行はどうなるでしょうか？",
+          "part": {
+            "line": 3,
+            "text": "toLowercase"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
           }
         }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "確認を通っても実行は止まる",
+      "code": [
+        "// 展示名の英字を小文字にするつもりの関数",
+        "function exhibitKey(label: any): any {",
+        "  // この名前には、つづりの間違いがある",
+        "  return label.toLowercase();",
+        "}"
       ],
+      "show": true,
       "panel": {
-        "kind": "values",
-        "items": ["size"]
-      }
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "型の確認は通りますが、実行すると止まります。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "unmark": ["c"]
+          }
+        },
+        {
+          "say": "呼び出そうとした名前が、文字列にはないためです。",
+          "part": {
+            "line": 3,
+            "text": "toLowercase"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "名前を見落とす理由",
+      "code": [
+        "// 展示名の英字を小文字にするつもりの関数",
+        "function exhibitKey(label: any): any {",
+        "  // この名前には、つづりの間違いがある",
+        "  return label.toLowercase();",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "any は、使うメソッドの名前を確かめません。",
+          "speech": "エニーは、使うメソッドの名前を確かめません。",
+          "part": {
+            "line": 1,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "ここで必要な名前は、C が大文字の toLowerCase です。",
+          "speech": "ここで必要な名前は、シーが大文字のトゥーローワーケースです。",
+          "part": {
+            "line": 3,
+            "text": "toLowercase"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "文字列の型を付けて、実行前に間違いを見つけましょう。",
+          "focus": [1],
+          "figure": {
+            "tag": {
+              "a": "string"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "使う場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "送料の表示では、数値から文字列へ変わる型を確かめます。",
+          "show": ["a"]
+        },
+        {
+          "say": "区画名を比べる場面でも、型は書き間違いを見つける手がかりです。",
+          "show": ["b"]
+        },
+        {
+          "say": "型を直したあと、期待する結果になるかも確かめましょう。",
+          "pulse": ["a", "b"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1 の先頭を見る",
+      "code": [
+        "// 問1 2つの数を足す",
+        "//     例: add(2, 3) → 5",
+        "export function add(a: any, b: any): any {"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の問題では、2つの値を受け取って足します。",
+          "speech": "最初の問題では、二つの値を受け取って足します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "引数と戻り値に、any が書かれた状態です。",
+          "speech": "引数と戻り値に、エニーが書かれた状態です。",
+          "part": {
+            "line": 2,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "受け取る値と返す値を、それぞれ確かめましょう。",
+          "part": {
+            "line": 2,
+            "text": "add"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
     }
-  ]
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "d256c8a3a016641285daa5fc91467d1d5709ca8cdb855ec23f38587cdc8f93f6"
+  }
 }

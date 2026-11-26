@@ -1,174 +1,214 @@
-import { useCallback, useMemo, useRef } from "react";
+﻿import { useCallback, useMemo, useRef } from "react";
 import { beatClock } from "../lib/beat-clock";
-import {
-  BLUE,
-  Callout,
-  GRAY,
-  Head,
-  INK,
-  LINE,
-  Line,
-  PINK,
-  Stage,
-  stageMotion,
-  Text,
-  VIOLET,
-} from "../lib/kit";
+import { CodeCallout, BLUE, INK, LINE, Stage, stageMotion, Tag, Text } from "../lib/kit";
 import { useTimeline } from "../lib/use-timeline";
 import type { MotionProps } from "./index";
 import { MOTIONS } from "./manifest";
 
-export const umbrellaChoiceText = "傘帽子なしifelse ifelse";
+export const umbrellaChoiceText = "雨・晴れくもり傘帽子なしelse if / else";
 
-const CHOICES = [
-  {
-    weather: "rain",
-    item: "傘",
-    label: "if",
-    y: 220,
-    route: "M 750 505 H 860 Q 910 505 910 455 V 270 Q 910 220 960 220 H 1160",
-  },
-  { weather: "sun", item: "帽子", label: "else if", y: 505, route: "M 750 505 H 1160" },
-  {
-    weather: "cloud",
-    item: "なし",
-    label: "else",
-    y: 790,
-    route: "M 750 505 H 860 Q 910 505 910 555 V 740 Q 910 790 960 790 H 1160",
-  },
-] as const;
+function Weather({ kind }: { kind: "rain" | "sun" | "cloud" }) {
+  return kind === "sun" ? (
+    <g>
+      <path
+        d="M0-99 V-78 M0 78 V99 M-99 0 H-78 M78 0 H99 M-70-70 L-55-55 M55 55 L70 70 M-70 70 L-55 55 M55-55 L70-70"
+        stroke="#F2BE48"
+        strokeWidth={9}
+        strokeLinecap="round"
+      />
+      <circle r={57} fill="#F2BE48" />
+    </g>
+  ) : (
+    <g>
+      <path
+        d="M-92 26 C-136 17-127-37-86-39 C-83-88-20-100 7-63 C42-92 83-59 83-30 C133-28 132 28 94 32Z"
+        fill={kind === "rain" ? "#8D9BA8" : "#C7CDD3"}
+      />
+      {kind === "rain" ? (
+        <path
+          d="M-77 62 L-90 89 M-24 62 L-37 89 M29 62 L16 89 M82 62 L69 89"
+          stroke="#4089B4"
+          strokeWidth={9}
+          strokeLinecap="round"
+        />
+      ) : null}
+    </g>
+  );
+}
+
+/** 閉じた傘は赤い布と茶色の持ち手だけで表す。 */
+function Umbrella() {
+  return (
+    <g>
+      <path
+        d="M-8-150 V-189 C-8-232 55-232 55-191 V-181 H39 V-191 C39-211 8-211 8-189 V-150Z"
+        fill="#865837"
+      />
+      <rect x={-4} y={145} width={8} height={38} rx={4} fill={LINE} />
+      <path d="M-7-153 C-27-99-33 53-18 126 L0 162 L24 128 C37 40 23-105 7-153Z" fill="#D6604E" />
+      <rect x={-30} y={-10} width={61} height={18} rx={5} fill={INK} />
+    </g>
+  );
+}
+
+function Hat() {
+  return (
+    <g>
+      <ellipse cy={43} rx={139} ry={41} fill="#E7BF77" />
+      <path d="M-83 40 L-65-53 Q-59-84 0-81 Q59-84 65-53 L83 40Z" fill="#E7BF77" />
+      <path d="M-77 15 Q0 43 77 15 L83 40 Q0 71-83 40Z" fill={BLUE} />
+    </g>
+  );
+}
 
 export function UmbrellaChoice({ beats }: MotionProps) {
   const at = useMemo(() => beatClock(beats, MOTIONS["umbrella-choice"].seconds), [beats]);
   const root = useRef<SVGSVGElement>(null);
   const build = useCallback(
     (t: gsap.core.Timeline) => {
-      const { rise, show, draw } = stageMotion(t);
-      rise("#umbrella-scene", at(0));
-      const weatherBeats = [
-        [1, 0],
-        [2, 0],
-        [2, 2.1],
-      ] as const;
-      CHOICES.forEach(({ weather }, i) => {
-        const [beat, offset] = weatherBeats[i];
-        const start = at(beat, offset);
-        const nextBeat = weatherBeats[i + 1];
-        show(`#weather-${weather}`, start);
-        draw(`#weather-route-${i} .line`, start, at(beat, offset + 0.5) - start);
-        t.to(`#weather-head-${i}`, { opacity: 1, duration: 0.15 }, at(beat, offset + 0.43));
-        t.to(`#weather-item-${i}`, { opacity: 1, duration: 0.3 }, start);
-        t.to(`#weather-box-${i}`, { stroke: PINK, duration: 0.3 }, start);
-        if (nextBeat) {
-          const next = at(nextBeat[0], nextBeat[1]);
-          t.to(`#weather-${weather}`, { opacity: 0, duration: 0.2 }, next);
-          t.to(`#weather-item-${i}`, { opacity: 0.45, duration: 0.3 }, next);
-          t.to(`#weather-box-${i}`, { stroke: LINE, duration: 0.3 }, next);
-          t.to(`#weather-route-${i}, #weather-head-${i}`, { opacity: 0.28, duration: 0.3 }, next);
-        }
-        show(`#weather-code-${i}`, at(3));
+      const { rise, show, emphasize } = stageMotion(t);
+      rise("#entryway", at(0));
+      show("#outside-rain", at(1), { duration: at(1, 0.35) - at(1) });
+      t.to(
+        "#entry-umbrella",
+        { y: -210, duration: at(1, 0.8) - at(1, 0.3), ease: "power2.inOut" },
+        at(1, 0.3),
+      );
+      t.to(
+        "#entry-umbrella",
+        {
+          x: -220,
+          rotation: -18,
+          svgOrigin: "725 600",
+          duration: at(1, 1.45) - at(1, 0.8),
+          ease: "power2.inOut",
+        },
+        at(1, 0.8),
+      );
+      // 晴れでは傘を戻し、帽子だけを取り出す。くもりでは両方とも置いたまま。
+      t.to("#outside-rain", { opacity: 0, duration: at(2, 0.25) - at(2) }, at(2));
+      show("#outside-sun", at(2), { duration: at(2, 0.35) - at(2) });
+      t.to(
+        "#entry-umbrella",
+        { x: 0, rotation: 0, duration: at(2, 0.45) - at(2), ease: "power2.inOut" },
+        at(2),
+      );
+      t.to(
+        "#entry-umbrella",
+        { y: 0, duration: at(2, 0.8) - at(2, 0.45), ease: "power2.inOut" },
+        at(2, 0.45),
+      );
+      t.to(
+        "#entry-hat",
+        {
+          x: -450,
+          y: 245,
+          rotation: -12,
+          svgOrigin: "1570 340",
+          duration: at(2, 1.2) - at(2, 0.35),
+          ease: "power2.inOut",
+        },
+        at(2, 0.35),
+      );
+      t.to("#outside-sun", { opacity: 0, duration: at(2, 2.6) - at(2, 2.35) }, at(2, 2.35));
+      show("#outside-cloud", at(2, 2.35), { duration: at(2, 2.7) - at(2, 2.35) });
+      t.to(
+        "#entry-hat",
+        { x: 0, y: 0, rotation: 0, duration: at(2, 3.05) - at(2, 2.35), ease: "power2.inOut" },
+        at(2, 2.35),
+      );
+      ["rain", "sun", "cloud"].forEach((kind, i) => {
+        show(`#weather-pair-${kind}, #weather-label-${kind}`, at(3, i * 0.35));
       });
+      show("#weather-code", at(3, 1.4));
+      emphasize("weather-code", at(3, 1.9));
     },
     [at],
   );
   useTimeline(root, build);
-
   return (
     <Stage root={root}>
-      <g id="umbrella-scene">
-        <rect
-          x={278}
-          y={318}
-          width={443}
-          height={395}
-          rx={24}
-          fill="#EFF6FF"
-          stroke={INK}
-          strokeWidth={9}
+      <g id="entryway">
+        <rect x={200} y={140} width={450} height={716} rx={22} fill={BLUE} />
+        <rect x={542} y={470} width={64} height={15} rx={7} fill="#fff" />
+        {/* 窓の内側は白。空や庭の面は敷かず、天気だけを置く。 */}
+        <rect x={803} y={160} width={564} height={362} rx={18} fill={LINE} />
+        <rect x={823} y={180} width={524} height={322} rx={10} fill="#fff" />
+        <g id="outside-rain" opacity={0}>
+          <g transform="translate(1085 325) scale(1.25)">
+            <Weather kind="rain" />
+          </g>
+        </g>
+        <g id="outside-sun" opacity={0}>
+          <g transform="translate(1085 325) scale(1.25)">
+            <Weather kind="sun" />
+          </g>
+        </g>
+        <g id="outside-cloud" opacity={0}>
+          <g transform="translate(1085 325) scale(1.25)">
+            <Weather kind="cloud" />
+          </g>
+        </g>
+        <rect x={1445} y={251} width={252} height={38} rx={12} fill="#8330C7" />
+        <path
+          d="M1564 275 V325 Q1564 358 1598 336 L1590 326 Q1576 339 1576 325 V275Z"
+          fill={LINE}
         />
-        <path d="M 278 514 H 721 M 499 318 V 713" fill="none" stroke="#fff" strokeWidth={13} />
-        <path d="M 252 732 H 747" stroke={GRAY} strokeWidth={26} strokeLinecap="round" />
-        <g id="weather-rain" opacity={0}>
-          <path
-            d="M 384 483 Q 350 476 350 451 Q 350 418 391 418 Q 408 365 459 396 Q 506 370 528 425 Q 570 427 570 455 Q 570 483 536 483 Z"
-            fill="#64748B"
-          />
-          <path
-            d="M 405 525 L 385 573 M 471 525 L 451 573 M 537 525 L 517 573 M 451 601 L 431 649 M 517 601 L 497 649"
-            stroke={BLUE}
-            strokeWidth={10}
-            strokeLinecap="round"
-          />
+        {/* 靴箱も装飾のない箱と靴にする。 */}
+        <rect x={1435} y={618} width={290} height={228} rx={16} fill={LINE} />
+        <rect x={1569} y={634} width={16} height={196} rx={8} fill="#fff" />
+        <circle cx={1550} cy={710} r={8} fill={INK} />
+        <circle cx={1608} cy={710} r={8} fill={INK} />
+        <path
+          d="M1475 575 Q1450 573 1450 585 Q1450 598 1509 596 H1550 V580 L1522 560 Q1500 580 1475 575Z"
+          fill={BLUE}
+        />
+        <g id="entry-umbrella">
+          <g transform="translate(725 600)">
+            <Umbrella />
+          </g>
         </g>
-        <g id="weather-sun" opacity={0}>
-          <circle cx={499} cy={512} r={71} fill="#FBBF24" />
-          <path
-            d="M 499 388 V 412 M 499 612 V 636 M 375 512 H 399 M 599 512 H 623 M 413 426 L 430 443 M 568 581 L 585 598 M 413 598 L 430 581 M 568 443 L 585 426"
-            stroke="#D97706"
-            strokeWidth={9}
-            strokeLinecap="round"
-          />
+        <path d="M662 701 H788 L777 842 Q725 867 673 842Z" fill="#8330C7" />
+        <g id="entry-hat">
+          <g transform="translate(1570 340)">
+            <Hat />
+          </g>
         </g>
-        <g id="weather-cloud" opacity={0}>
-          <path
-            d="M 414 558 Q 375 558 375 523 Q 375 486 417 484 Q 427 424 488 432 Q 527 431 550 474 Q 616 473 616 518 Q 616 558 573 558 Z"
-            fill="#CBD5E1"
-            stroke="#64748B"
-            strokeWidth={7}
-          />
-        </g>
-        {CHOICES.map(({ y, item }, i) => (
-          <g key={item}>
-            <rect
-              id={`weather-box-${i}`}
-              x={1200}
-              y={y - 96}
-              width={412}
-              height={192}
-              rx={24}
-              fill="#fff"
-              stroke={LINE}
-              strokeWidth={8}
-            />
-            <g id={`weather-item-${i}`} opacity={0.45}>
-              <path
-                d={`M 1310 ${y - 76} h 50 q 15 0 15 15 v 12`}
-                fill="none"
-                stroke={GRAY}
-                strokeWidth={7}
-                strokeLinecap="round"
-              />
-              {i === 0 && (
-                <path
-                  d="M 1339 240 Q 1349 179 1398 179 Q 1447 179 1457 240 Q 1428 225 1398 240 Q 1368 225 1339 240 Z M 1398 185 V 268 Q 1398 289 1377 281"
-                  fill={VIOLET}
-                  stroke={VIOLET}
-                  strokeWidth={7}
-                  strokeLinecap="round"
-                />
-              )}
-              {i === 1 && (
-                <path
-                  d="M 1333 536 Q 1347 524 1369 523 L 1377 485 Q 1395 463 1421 485 L 1431 523 Q 1468 525 1473 537 Q 1456 558 1399 557 Q 1349 557 1333 536 Z"
-                  fill="#B88754"
-                  stroke="#865634"
-                  strokeWidth={6}
-                />
-              )}
-              <Text x={i === 2 ? 1406 : 1525} y={y + 17} size={44}>
-                {item}
-              </Text>
+        {(["rain", "sun", "cloud"] as const).map((kind, i) => (
+          <g key={kind} id={`weather-pair-${kind}`} opacity={0}>
+            <g transform={`translate(${868 + i * 216} 625) scale(.4)`}>
+              <Weather kind={kind} />
             </g>
+            <path
+              d={`M${868 + i * 216} 675v27m-8 -8l8 8 8 -8`}
+              fill="none"
+              stroke={LINE}
+              strokeWidth={4}
+              strokeLinecap="round"
+            />
+            {i === 0 ? (
+              <g transform="translate(868 758) scale(.24)">
+                <Umbrella />
+              </g>
+            ) : i === 1 ? (
+              <g transform="translate(1084 750) scale(.4)">
+                <Hat />
+              </g>
+            ) : (
+              <Text x={1300} y={771} size={34} fill={INK}>
+                なし
+              </Text>
+            )}
+            <Tag
+              id={`weather-label-${kind}`}
+              x={868 + i * 216}
+              y={825}
+              text={["雨・傘", "晴れ・帽子", "くもり"][i]}
+            />
           </g>
         ))}
       </g>
-      {CHOICES.map(({ label, y, route }, i) => (
-        <g key={label}>
-          <Line id={`weather-route-${i}`} d={route} />
-          <Head id={`weather-head-${i}`} x={1168} y={y} angle={0} />
-          <Callout id={`weather-code-${i}`} x={1406} y={y - 142} text={label} />
-        </g>
-      ))}
+      <CodeCallout id="weather-code" x={1084} y={910} text="else if / else" />
     </Stage>
   );
 }

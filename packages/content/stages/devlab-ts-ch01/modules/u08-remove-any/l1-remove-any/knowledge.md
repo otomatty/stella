@@ -5,58 +5,86 @@ sourceRefs: [SRC-typescriptbook-values-types-variables-any]
 
 理解の自己確認です。選考の判定には使いません。
 
-### Q1. `Number("120")` の結果はどれですか？
+### Q1. 引数が any のとき、存在しないメソッドの名前を型の確認で必ず見つけられますか？
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
-- A. 文字列の `"120"`
-- B. 数値の `120`
-- C. `true`
+- A. はい、必ず見つかる
+- B. いいえ、見落とすことがある
+- C. 名前は自動で直る
 
 <details>
 <summary>解答</summary>
 
-**B** — Number は値を数値に変えます。
+**B** — any はメソッドの名前を確かめません。具体的な型に直すと、存在しない名前を見つけられます。
 
 </details>
 
-### Q2. `[300, 500, 200].length` の結果はどれですか？
+### Q2. 文字列のプロパティ length について正しい説明はどれですか？
 <!-- kind: single; skills: devlab-ts-ch01 -->
 
-- A. `1000`
-- B. `3`
-- C. `200`
+- A. 値を入れて文字数を変えられる
+- B. 合計を表す
+- C. 読み取るだけで、値は入れられない
 
 <details>
 <summary>解答</summary>
 
-**B** — 配列の length は、要素の数を返します。
+**C** — 文字列の length は読み取り専用です。等しいかを調べるときは、代入の = でなく比較の === を使います。
 
 </details>
 
-### Q3. 文字列の length には、あとから好きな数を入れられます。
-<!-- kind: boolean; skills: devlab-ts-ch01 -->
+### Q3. `Number("28") + 4` の結果はどれですか？
+<!-- kind: single; skills: devlab-ts-ch01 -->
 
-- A. 正しい
-- B. 誤り
+- A. 数値の `32`
+- B. 文字列の `"284"`
+- C. 文字列の `"32"`
 
 <details>
 <summary>解答</summary>
 
-**B** — 文字列の length は読み取り専用です。
+**A** — 文字列を数値の 28 に変えてから 4 を足すので、数値の 32 になります。
 
 </details>
 
-### Q4. 正しい説明をすべて選んでください。
-<!-- kind: multiple; skills: devlab-ts-ch01 -->
+### Q4. `"28" + 4` の結果はどれですか？
+<!-- kind: single; skills: devlab-ts-ch01 -->
 
-- A. `number[]` は数値の配列の型
-- B. any を使えば名前の誤りも必ず見つかる
-- C. 引数と戻り値の型は異なっていてもよい
+- A. 数値の `32`
+- B. 文字列の `"284"`
+- C. 数値の `284`
 
 <details>
 <summary>解答</summary>
 
-**A, C** — any は操作の誤りを見逃します。受け取る値と返す値を別々に確かめて型を決めます。
+**B** — 文字列に + でつなぐと、数字の文字が後ろに付きます。足し算の前に Number で数値へ変えます。
 
 </details>
 
+### Q5. 数値の記録を順番に並べた配列の型はどれですか？
+<!-- kind: single; skills: devlab-ts-ch01 -->
+
+- A. `number`
+- B. `number[]`
+- C. `string`
+
+<details>
+<summary>解答</summary>
+
+**B** — number[] は数値の配列です。number は数値一つの型で、角かっこを付けると並びを表します。
+
+</details>
+
+### Q6. `[18, 21, 19].length` の結果はどれですか？
+<!-- kind: single; skills: devlab-ts-ch01 -->
+
+- A. `58`
+- B. `19`
+- C. `3`
+
+<details>
+<summary>解答</summary>
+
+**C** — length は並んでいる値の数です。中身を全部足した合計ではありません。
+
+</details>

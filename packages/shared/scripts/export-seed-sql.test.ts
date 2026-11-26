@@ -517,6 +517,67 @@ describe("export-seed-sql (sqlite)", () => {
     }
   });
 
+  it.each(["文面", "正誤", "削除", "追加"] as const)(
+    "選択肢の%sだけが変わった設問の更新日時を進め、同じ内容の再 seed では変更しない",
+    (change) => {
+      const sqlite = new DatabaseSync(":memory:");
+      try {
+        applyMigrations(sqlite);
+        sqlite.exec(sql);
+        const option = sqlite.prepare("select id, question_id from quiz_options limit 1").get() as {
+          id: string;
+          question_id: string;
+        };
+        const id = option.question_id;
+        const question = sqlite.prepare("select * from quiz_questions where id = ?");
+        const original = question.get(id);
+        const quizId = original?.quiz_id;
+        if (typeof quizId !== "string") throw new Error("設問のクイズがありません");
+        const quizSql = statements
+          .filter(
+            (stmt) =>
+              /^(delete from review_cards|update quiz_questions|insert into quiz_questions|insert into quiz_options|delete from quiz_options) /.test(
+                stmt,
+              ) &&
+              (stmt.includes(`'${id}'`) || stmt.includes(`quiz_id = '${quizId}'`)),
+          )
+          .join("\n");
+        sqlite.prepare("update quiz_questions set updated_at = 1 where id = ?").run(id);
+        if (change === "文面") {
+          sqlite
+            .prepare("update quiz_options set label = label || '変更' where id = ?")
+            .run(option.id);
+        } else if (change === "正誤") {
+          sqlite
+            .prepare("update quiz_options set is_correct = 1 - is_correct where id = ?")
+            .run(option.id);
+        } else if (change === "削除") {
+          sqlite.prepare("delete from quiz_options where id = ?").run(option.id);
+        } else {
+          sqlite
+            .prepare(
+              "insert into quiz_options (id, question_id, label) values ('extra-option', ?, '追加')",
+            )
+            .run(id);
+        }
+
+        sqlite.exec(quizSql);
+        const updated = question.get(id);
+        expect(Number(updated?.updated_at)).toBeGreaterThan(1);
+        expect(updated).toEqual({ ...original, updated_at: updated?.updated_at });
+
+        // 時計を待たず、再 seed が同じ秒でも不要な更新を検出する。
+        sqlite.prepare("update quiz_questions set updated_at = 2 where id = ?").run(id);
+        const changesBefore = sqlite.prepare("select total_changes() as n").get()?.n;
+        sqlite.exec(quizSql);
+        expect(question.get(id)?.updated_at).toBe(2);
+        expect(sqlite.prepare("select total_changes() as n").get()?.n).toBe(changesBefore);
+      } finally {
+        sqlite.close();
+      }
+    },
+  );
+
   it("既定では検証用 seed ユーザーを含む", () => {
     expect(sql).toContain("seed-admin");
     expect(sql).toContain("seed-submission-pending-1");

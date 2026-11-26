@@ -1,20 +1,19 @@
 ---
-sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
+sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values, SRC-typescriptbook-builtin-api-regexp]
 ---
-# レッスン6-1 q06 条件を組み合わせて返す
+
+# レッスン6-1 q06 boolean型
 
 ## このレッスンの目標
 
-- [ ] 条件を組み合わせて真偽値を返せる
-- [ ] よくある間違いを説明できる
-- [ ] ヒントを読んで、一問ずつ確認して提出できる
+- [ ] 比べた結果を組み合わせた式を、そのまま返せる
+- [ ] 正規表現の test で、合う文字が含まれるかを調べられる
 
-実装はこの単元の「01章 q06 boolean型」を VS Code で開き、各問題のファイルに書きます。
-知識問題は理解の自己確認です。選考の判定には使いません。
+動画を見たら、このまとめで書き方を振り返ります。この単元の「01章 q06 boolean型」を VS Code で開き、解放された問題を一問ずつ確認して提出します。
 
 ## 6-1-1 条件を組み合わせて返す
 
-> **比べた結果を組み合わせると、条件をそのまま返せます。**
+> **比べた結果を && や || で組み合わせた式は、そのまま return できます。**
 
 比べる式の結果は `true` か `false` です。
 戻り値の `: boolean` は、この二つのどちらかを返す約束です。
@@ -28,7 +27,7 @@ function isFreeShipping(subtotal: number): boolean {
 }
 // isFreeShipping に 6000 と 3000 を渡した結果を表示する
 console.log(isFreeShipping(6000), isFreeShipping(3000));
-// 結果: true false
+// => true false
 ```
 
 `&&` は「かつ」、`||` は「または」、`!` は「でない」です。
@@ -50,7 +49,7 @@ function canReserve(seats: number, isClosed: boolean): boolean {
 }
 // 空席がある営業日と休業日の結果を表示する
 console.log(canReserve(3, false), canReserve(3, true));
-// 結果: true false
+// => true false
 ```
 
 よくある間違いは、`: boolean` の関数で数値をそのまま返すことです。
@@ -61,36 +60,107 @@ console.log(canReserve(3, false), canReserve(3, true));
 `!isClosed` は `isClosed === false` と同じ判定を短く書けます。
 複数の条件をまとめるときは、かっこでまとまりを示せます。
 
+試合の例では、天気と人数を組み合わせて返します。
+ここでは天気を晴れか雨のどちらかとし、晴れでなければ雨とします。
+
+```ts
+function canStartGame(isSunny: boolean, players: number): boolean {
+  return isSunny && players >= 9;
+}
+console.log(canStartGame(true, 8), canStartGame(true, 9)); // => false true
+```
+
+雨か人数不足なら中止です。晴れでも8人なら、中止の判定になります。
+
+```ts
+function shouldCancelGame(isRainy: boolean, players: number): boolean {
+  return isRainy || players < 9;
+}
+console.log(shouldCancelGame(false, 8)); // => true
+console.log(shouldCancelGame(false, 9)); // => false
+console.log(shouldCancelGame(true, 9)); // => true
+```
+
+同じ中止の判定を、開始できるかの結果を `!` で反転させても書けます。
+次の例には、呼び出す `canStartGame` の定義も含めています。
+
+```ts
+function canStartGame(isSunny: boolean, players: number): boolean {
+  return isSunny && players >= 9;
+}
+function shouldCancelByStart(isSunny: boolean, players: number): boolean {
+  return !canStartGame(isSunny, players);
+}
+console.log(shouldCancelByStart(true, 8)); // => true
+console.log(shouldCancelByStart(true, 9)); // => false
+console.log(shouldCancelByStart(false, 9)); // => true
+```
+
+`shouldCancelGame` は雨かどうか、`shouldCancelByStart` は晴れかどうかを受け取ります。
+同じ天気と人数なら、どちらも同じ中止の判定を返します。
+
+真のときに `return true;`、偽のときに `return false;` と分けた形と、判定は同じです。
+`if` の中で `return` すると、関数はそこで終わります。
+
+会場の条件も組み合わせられます。屋外なら晴れとグラウンド、屋内なら屋根と照明が必要だとします。
+どちらか一組がそろえばよい条件は、次のようにまとめられます。
+
+```ts
+const isSunny = false;
+const hasField = true;
+const hasRoof = true;
+const hasLights = true;
+const canPlay = (isSunny && hasField) || (hasRoof && hasLights);
+console.log(canPlay); // => true
+```
+
+この例では屋外の条件は満たしませんが、屋内の条件を満たすので `true` です。
+
+## 6-1-2 合う文字が含まれるか調べる
+
+> **正規表現.test(文字列) は、合う部分があれば true を返します。**
+
 正規表現は、探す文字の形を表す書き方です。
-`/形/.test(文字列)` は、合う部分が含まれれば `true` を返します。
-文字列全体が合う必要はありません。
+その後ろに `.test(文字列)` を書くと、合う部分が含まれるかを調べられます。
+文字列全体が合う必要はありません。合う部分がなければ `false` です。
 
 | 形 | 探す文字 |
 | --- | --- |
-| `/\d/` | 数字一文字 |
+| `/\d/` | 半角数字一文字 |
 | `/[A-Z]/` | 英大文字一文字 |
-| `/[a-z]/` | 英小文字一文字 |
-| `/\s/` | 空白一文字 |
 
 ```ts
-// 予約番号 booking を作り、"R-24" を入れる
-const booking = "R-24";
-// 数字が含まれるかを hasNumber に入れる
-const hasNumber = /\d/.test(booking);
-// hasNumber を表示する
-console.log(hasNumber);
-// 結果: true
+// 部屋の札に半角数字が含まれるかを調べる
+const hasNumber = /\d/.test("B2倉庫");
+console.log(hasNumber); // => true
 ```
 
-よくある間違いは、`/\d/` を「全部が数字」と考えることです。
-`"R-24"` にも数字が含まれるので `true` です。
-正規表現は、ここでは表の形をまねて書ければ十分です。
+「B2倉庫」では、数字の2だけが合います。それでも結果は `true` です。
+「会議室」には数字が一文字もないので、`/\d/.test("会議室")` は `false` です。
 
-参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明・業務例・知識問題は教材用に構成しています。
+```ts
+// 部屋の札に英大文字が含まれるかを調べる
+const hasCapital = /[A-Z]/.test("B2倉庫");
+// 数字だけの札も調べる
+const numberOnly = /[A-Z]/.test("305");
+console.log(hasCapital, numberOnly); // => true false
+```
+
+`includes("2")` は、決まった文字の2を探します。
+`"305".includes("2")` は `false` でも、`/\d/.test("305")` は `true` です。
+数字のどれか一文字を探すときは、正規表現で形を指定します。
+
+参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)・[RegExp](https://typescriptbook.jp/reference/builtin-api/regexp)。説明とコード例は教材用に作成しています。
+
+## もっと知りたい人へ
+
+- [サバイバルTypeScriptの boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)で、true と false を表す型を確認できます。
+- [サバイバルTypeScriptの truthyな値、falsyな値](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)で、真偽値以外を条件に使ったときの扱いを確認できます。
+- [サバイバルTypeScriptの RegExp](https://typescriptbook.jp/reference/builtin-api/regexp)で、正規表現の test による文字列の判定を確認できます。
 
 ## 問題ごとのヒント
 
-### 問 1 0 より大きければ true を返す
+### 問1 0 より大きければ true を返す
 
 **テストで確かめる値**
 
@@ -109,7 +179,7 @@ export function isPositive(n: number): boolean {
 
 「より大きい」は `>` です。上のサンプル `isFreeShipping` と同じく、比べる式をそのまま `return` します。
 
-### 問 2 0 より小さければ true を返す
+### 問2 0 より小さければ true を返す
 
 **テストで確かめる値**
 
@@ -128,7 +198,7 @@ export function isNegative(n: number): boolean {
 
 「より小さい」は `<` です。問1 と同じ形です。
 
-### 問 3 奇数なら true を返す
+### 問3 奇数なら true を返す
 
 **テストで確かめる値**
 
@@ -148,7 +218,7 @@ export function isOdd(n: number): boolean {
 
 「等しくない」は `!==` です。`-3 % 2` は `-1` になります。だから「余りが 1 と等しい」で比べると、-3 で間違えます。
 
-### 問 4 13 歳以上 19 歳以下なら true を返す
+### 問4 13 歳以上 19 歳以下なら true を返す
 
 **テストで確かめる値**
 
@@ -169,7 +239,7 @@ export function isTeen(age: number): boolean {
 
 「以上」は `>=`、「以下」は `<=`、「かつ」は `&&` です。算数のように `13 <= age <= 19` とつなげると、型の確認でエラーになります。比べる式を 2 つ書いて、`&&` でつなぎます。
 
-### 問 5 土日なら true を返す
+### 問5 土日なら true を返す
 
 **テストで確かめる値**
 
@@ -189,7 +259,7 @@ export function isWeekend(day: number): boolean {
 
 「等しい」は `===`、「または」は `||` です。
 
-### 問 6 母音なら true を返す
+### 問6 母音なら true を返す
 
 **テストで確かめる値**
 
@@ -210,7 +280,7 @@ export function isVowel(char: string): boolean {
 
 文字数は `.length`、小文字にするのは `.toLowerCase()`、含まれるかは `.includes()` です。`"aeiou".includes("ae")` も `true` になるので、1 文字かどうかも確かめます。
 
-### 問 7 逆の真偽値を返す
+### 問7 逆の真偽値を返す
 
 **テストで確かめる値**
 
@@ -229,7 +299,7 @@ export function not(value: boolean): boolean {
 
 「でない」は `!` です。このまとめのサンプル `canReserve` の `!isClosed` と同じ書き方です。
 
-### 問 8 2 つとも true なら true を返す
+### 問8 2 つとも true なら true を返す
 
 **テストで確かめる値**
 
@@ -248,7 +318,7 @@ export function both(a: boolean, b: boolean): boolean {
 
 「かつ」は `&&` です。
 
-### 問 9 どちらか 1 つでも true なら true を返す
+### 問9 どちらか 1 つでも true なら true を返す
 
 **テストで確かめる値**
 
@@ -267,7 +337,7 @@ export function either(a: boolean, b: boolean): boolean {
 
 「または」は `||` です。
 
-### 問 10 どちらか片方だけが true なら true を返す
+### 問10 どちらか片方だけが true なら true を返す
 
 **テストで確かめる値**
 
@@ -288,7 +358,7 @@ export function onlyOne(a: boolean, b: boolean): boolean {
 
 片方だけが true のとき、a と b は違う値です。だから「等しくない」の `!==` で比べられます。`&&` と `||` と `!` を組み合わせて書いてもかまいません。
 
-### 問 11 空の文字列なら true を返す
+### 問11 空の文字列なら true を返す
 
 **テストで確かめる値**
 
@@ -307,7 +377,7 @@ export function isEmpty(text: string): boolean {
 
 文字数は `.length` です（q02 の問13）。
 
-### 問 12 空の文字列か、空白だけなら true を返す
+### 問12 空の文字列か、空白だけなら true を返す
 
 **テストで確かめる値**
 
@@ -327,7 +397,7 @@ export function isBlank(text: string): boolean {
 
 前後の空白を取り除くのは `.trim()` です（q05）。`.trim()` の結果に続けて `.length` と書けます。
 
-### 問 13 数字が含まれていれば true を返す
+### 問13 数字が含まれていれば true を返す
 
 **テストで確かめる値**
 
@@ -346,7 +416,7 @@ export function hasDigit(text: string): boolean {
 
 「数字が含まれる」は `/\d/` の `.test()` で調べます。このまとめの `hasNumber` の行と同じ形です。
 
-### 問 14 強いパスワードなら true を返す
+### 問14 強いパスワードなら true を返す
 
 **テストで確かめる値**
 
@@ -367,7 +437,7 @@ export function isStrongPassword(password: string): boolean {
 
 3 つの条件を `&&` でつなぎます。数字は `/\d/`、英大文字は `/[A-Z]/` で調べます（このまとめの表）。
 
-### 問 15 2 つの数が同じ符号なら true を返す
+### 問15 2 つの数が同じ符号なら true を返す
 
 **テストで確かめる値**
 
@@ -388,7 +458,7 @@ export function isSameSign(a: number, b: number): boolean {
 
 日本語のかっこで囲んだまとまりは、コードでも `( )` で囲みます。`&&` は `||` より先に計算されるので、かっこがなくても結果は同じです。かっこを付けると読みやすくなります。
 
-### 問 16 買えるなら true を返す
+### 問16 買えるなら true を返す
 
 **テストで確かめる値**
 
@@ -408,7 +478,7 @@ export function canBuy(money: number, price: number, inStock: boolean): boolean 
 
 「以上」は `>=`、「かつ」は `&&` です。「inStock が true」は `inStock` とだけ書きます（q01 の問15 の `isMember` と同じ）。
 
-### 問 17 3 の倍数か 5 の倍数なら true を返す
+### 問17 3 の倍数か 5 の倍数なら true を返す
 
 **テストで確かめる値**
 
@@ -428,7 +498,7 @@ export function isMultipleOf3Or5(n: number): boolean {
 
 「割り切れる」は、q01 の問12（FizzBuzz）と同じく `%` と `===` で書きます。2 つを `||` でつなぎます。
 
-### 問 18 範囲の外なら true を返す
+### 問18 範囲の外なら true を返す
 
 **テストで確かめる値**
 
@@ -448,7 +518,7 @@ export function isOutOfRange(value: number, min: number, max: number): boolean {
 
 「より小さい」は `<`、「より大きい」は `>`、「または」は `||` です。
 
-### 問 19 正しい名前なら true を返す
+### 問19 正しい名前なら true を返す
 
 **テストで確かめる値**
 
@@ -468,7 +538,7 @@ export function isValidName(name: string, max: number): boolean {
 
 「空ではない」は「文字数が 0 より大きい」と言い換えられます。文字数は `.length`、「以下」は `<=` です。
 
-### 問 20 店が開いていれば true を返す
+### 問20 店が開いていれば true を返す
 
 **テストで確かめる値**
 
@@ -491,7 +561,7 @@ export function isOpen(hour: number, isHoliday: boolean): boolean {
 
 「未満」は「より小さい」なので `<` です。「isHoliday が true」は `isHoliday` とだけ書きます。このまとめの説明のとおり、`if` の中で `return` すると関数はそこで終わるので、最後の行は平日のときだけ実行されます。
 
-### 応用（総合） うるう年・空白以外の文字・会場に入れるか
+### 応用 うるう年・空白以外の文字・会場に入れるか
 
 **テストで確かめる値**
 

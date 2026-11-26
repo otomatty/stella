@@ -1771,6 +1771,62 @@ it("part.note だけの変更も絵が変わる動きに数える", () => {
 });
 
 describe("motion の場面", () => {
+  const schema1 = () =>
+    JSON.parse(
+      readFileSync(
+        resolve(stages, "devlab-ts-ch00/modules/u00-setup/l1-how-to/t1-rules/video.json"),
+        "utf8",
+      ),
+    );
+
+  it("schema 1 の hook・point・recap に motion を使える", () => {
+    const json = schema1();
+    const result = parseStoryboard(json);
+    expect(result.issues.filter(({ level }) => level === "error")).toEqual([]);
+    expect(result.storyboard).toEqual(json);
+    expect(json.scenes.map((scene: { kind: string }) => scene.kind)).toEqual(
+      Array(6).fill("motion"),
+    );
+    if (!result.storyboard) throw new Error("絵コンテがありません");
+    expect(storyboardStates(result.storyboard)).toEqual(Array(6).fill({ kind: "motion" }));
+  });
+
+  it.each([undefined, 0, 4, 1.5, "1"])("schema 1 の要点番号 %s を拒む", (point) => {
+    const json = schema1();
+    json.scenes[1].point = point;
+    expect(parseStoryboard(json).issues).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        path: "scenes[1].point",
+      }),
+    );
+  });
+
+  it.each([0, 5])("schema 1 の要点以外の場面 %s に番号を付けさせない", (index) => {
+    const json = schema1();
+    json.scenes[index].point = 1;
+    expect(parseStoryboard(json).issues).toContainEqual(
+      expect.objectContaining({
+        level: "error",
+        path: `scenes[${index}].point`,
+      }),
+    );
+  });
+
+  it.each(["show", "mark", "travel", "term", "dialog"])(
+    "schema 1 の motion の文に %s を使わせない",
+    (key) => {
+      const json = schema1();
+      json.scenes[0].beats[0][key] = {};
+      expect(parseStoryboard(json).issues).toContainEqual(
+        expect.objectContaining({
+          level: "error",
+          path: `scenes[0].beats[0].${key}`,
+        }),
+      );
+    },
+  );
+
   const source = () =>
     JSON.parse(
       readFileSync(
@@ -1837,8 +1893,8 @@ describe("motion の場面", () => {
       },
     ],
     [
-      "scenes[0].kind",
-      "schema 2",
+      "scenes[0].role",
+      "hook・point・recap",
       (json) => {
         json.schema = 1;
       },

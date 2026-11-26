@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u08-remove-any@4",
-  "contentHash": "62cd756a67f5a411bac16254eff31b3ee8555ff469195f94d76ec7cd36f67a89",
+  "unitId": "devlab-ts-ch01/u08-remove-any@5",
+  "contentHash": "d0ddb8c43fdad45cb35b8b832351cdcffc4af14bf43854be27b24fa9c3c79a12",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-remove-any/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "any と具体的な型による確認の違いの背景。送料のつづりの修正、文字列のプロパティ、整理券の数値変換、歩数の件数と合計の独自例と問題別ヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -15,7 +15,7 @@
     {
       "contentId": "l1-remove-any/knowledge.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "型の確認、文字列から数値への変換、数値の配列を各二問で確かめる教材独自の知識問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-remove-any/t1-replace-any/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "any と具体的な型による確認の違い。送料の表示で toFixd と toFixed を対比し、名前の間違いを見つける教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -31,8 +31,24 @@
     {
       "contentId": "tasks/q08/README.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
+      "usedFor": "教材独自の課題。any を引数と戻り値に合う型へ直し、メソッド名・比較・数値変換・配列の扱いを修正する受入条件。",
       "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t2-to-number/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
+      "usedFor": "整理券の文字列を Number で数値に変えてから1を足す教材独自の例。文字列の連結と数値の加算の対比。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t3-number-array/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
+      "usedFor": "歩数の記録を number[] で受け取り、length で件数を返す教材独自の例。件数の3と合計の13100の区別。",
+      "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

@@ -1,4 +1,10 @@
 export const MOTIONS = {
+  "drill-folder": { title: "課題フォルダーの中身", beats: 3, seconds: [3.5, 3.0, 2.5] },
+  "drill-one-file": { title: "一問一枚のプリント", beats: 4, seconds: [3.0, 4.0, 2.8, 2.8] },
+  "drill-check-loop": { title: "書いて保存して確認", beats: 5, seconds: [2.5, 2.5, 3.5, 3.5, 4.5] },
+  "drill-submit": { title: "提出して次の問題へ", beats: 2, seconds: [4.5, 3.0] },
+  "drill-rules": { title: "紙のドリルのルール", beats: 5, seconds: [3.0, 3.0, 3.0, 2.8, 2.8] },
+  "drill-recap": { title: "書く・確認・提出", beats: 3, seconds: [2.5, 3.0, 4.5] },
   "vending-change": { title: "自動販売機のお釣り", beats: 5, seconds: [3.0, 3.0, 4.6, 2.3, 2.4] },
   "entry-form": { title: "申込用紙の記入欄", beats: 5, seconds: [2.5, 3.0, 4.0, 2.2, 1.8] },
   "call-staff": { title: "担当の人を名前で呼ぶ", beats: 5, seconds: [2.5, 3.0, 3.4, 3.4, 2.2] },
@@ -71,6 +77,13 @@ export const MOTIONS = {
   "calculator-infinity": { title: "電卓で0で割る", beats: 4, seconds: [2.5, 3.6, 5.3, 5.7] },
   "ladder-wall": { title: "はしごの長さ", beats: 4, seconds: [2.5, 3.0, 5.3, 6.2] },
   "egg-carton": { title: "卵を1個ずつ入れる", beats: 4, seconds: [2.5, 4.0, 4.3, 6.9] },
+  "game-cancel": { title: "試合を始められるか", beats: 4, seconds: [2.5, 4.5, 4.5, 4.0] },
+  "room-sign-digit": { title: "部屋の札の数字", beats: 4, seconds: [2.5, 4.5, 4.5, 4.0] },
+  "door-sign": { title: "店のドアの札", beats: 4, seconds: [2.5, 4.5, 4.5, 4.0] },
+  "kettle-temp": { title: "ポットの温度の表示", beats: 4, seconds: [2.5, 4.5, 4.5, 4.5] },
+  "any-box": { title: "なんでも入る箱", beats: 4, seconds: [2.5, 4.5, 4.5, 4.5] },
+  "number-ticket": { title: "整理券の数字", beats: 4, seconds: [2.5, 4.5, 4.5, 4.0] },
+  "step-log": { title: "歩数計の記録", beats: 4, seconds: [2.5, 4.5, 4.5, 4.5] },
 } as const;
 
 export type MotionId = keyof typeof MOTIONS;

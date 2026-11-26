@@ -1,142 +1,163 @@
-import { useCallback, useMemo, useRef } from "react";
+﻿import { useCallback, useMemo, useRef } from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
 import { beatClock } from "../lib/beat-clock";
-import { BLUE, Callout, GREEN, LINE, PINK, Stage, stageMotion, Text, VIOLET } from "../lib/kit";
+import { Callout, BLUE, INK, LINE, Stage, stageMotion, Tag, Text } from "../lib/kit";
 import { useTimeline } from "../lib/use-timeline";
 import type { MotionProps } from "./index";
 import { MOTIONS } from "./manifest";
 
-export const heightCompareText = "152cm168cm160cm今いちばん高い人max";
+const VIOLET = "#8330C7";
 
+export const heightCompareText = "0123456789cmいまいちばん高い人最大値168を残す";
 const PEOPLE = [
-  { x: 440, height: 152, body: 125, color: BLUE },
-  { x: 718, height: 168, body: 181, color: VIOLET },
-  { x: 996, height: 160, body: 153, color: GREEN },
+  { x: 790, height: 152, shirt: VIOLET, skin: "#EAC09C" },
+  { x: 550, height: 168, shirt: BLUE, skin: "#DCA980" },
+  { x: 310, height: 160, shirt: LINE, skin: "#F0C8A5" },
 ];
-const PODIUM_X = 1448;
-const PODIUM_OFFSET_Y = -45;
-const HEAD_CENTER_Y = 583;
-const HEAD_RADIUS = 44;
+const FLOOR = 814;
+const MEASURE_X = 1100;
+const PODIUM_X = 1570;
+const topOf = (height: number) => FLOOR - height * 3;
+
+/** 頭の頂点までを身長と同じ比率で描く。 */
+function Child({ index }: { index: number }) {
+  const person = PEOPLE[index];
+  return (
+    <g transform={`scale(${person.height / 160})`}>
+      <path
+        d="M-61 -29H-20L-14 -5Q-22 5 -87 -2V-13Q-85 -26 -61 -29Z M20 -29H61Q84 -26 87 -13V-2Q22 5 14 -5Z"
+        fill={INK}
+      />
+      <path d="M-65 -202H65L61 -29H20L0 -143L-20 -29H-61Z" fill={LINE} />
+      <rect x={-20} y={-353} width={40} height={42} rx={12} fill={person.skin} />
+      <path
+        d="M-22 -330L-68 -322Q-84 -316 -91 -281L-82 -218Q-79 -208 -66 -216L-61 -239L-65 -202Q0 -186 65 -202L61 -239L66 -216Q79 -208 82 -218L91 -281Q84 -316 68 -322L22 -330Q0 -312 -22 -330Z"
+        fill={person.shirt}
+      />
+      <ellipse cx={-60} cy={-393} rx={12} ry={20} fill={person.skin} />
+      <ellipse cx={60} cy={-393} rx={12} ry={20} fill={person.skin} />
+      <path
+        d="M-60 -429Q-62 -465 0 -465Q62 -465 60 -429V-389Q55 -343 0 -340Q-55 -343 -60 -389Z"
+        fill={person.skin}
+      />
+      <path
+        d="M-62 -400Q-74 -450 -46 -464Q-38 -480 0 -480Q75 -480 62 -399L44 -434Q8 -427 -24 -454L-43 -425Z"
+        fill={INK}
+      />
+      <ellipse cx={-23} cy={-397} rx={5} ry={7} fill={INK} />
+      <ellipse cx={23} cy={-397} rx={5} ry={7} fill={INK} />
+      <path d="M-17 -373Q0 -367 17 -373Q12 -355 0 -355Q-12 -355 -17 -373Z" fill="#fff" />
+    </g>
+  );
+}
 
 export function HeightCompare({ beats }: MotionProps) {
   const at = useMemo(() => beatClock(beats, MOTIONS["height-compare"].seconds), [beats]);
+  const time = useCurrentFrame() / useVideoConfig().fps;
+  const best = time >= at(2, 1.7) ? 168 : 152;
   const root = useRef<SVGSVGElement>(null);
   const build = useCallback(
     (t: gsap.core.Timeline) => {
       const { rise, show, emphasize } = stageMotion(t);
       rise("#height-scene", at(0));
-
-      // 台の上へ移すときは、ほかの人の上を通る高さまで先に上げる。
-      const move = (i: number, beat: number, offset: number, toPodium: boolean) => {
-        const id = `#height-person-${i}`;
-        const shift = PODIUM_X - PEOPLE[i].x;
-        const stops = [
-          at(beat, offset),
-          at(beat, offset + 0.45),
-          at(beat, offset + 1.05),
-          at(beat, offset + 1.5),
-        ];
-        t.to(id, { y: -276, duration: stops[1] - stops[0], ease: "power2.inOut" }, stops[0]);
+      const move = (i: number, x: number, y: number, beat: number, start: number, end: number) =>
         t.to(
-          id,
-          { x: toPodium ? shift : 0, duration: stops[2] - stops[1], ease: "power2.inOut" },
-          stops[1],
-        );
-        t.to(
-          id,
+          `#height-person-${i}`,
           {
-            y: toPodium ? PODIUM_OFFSET_Y : 0,
-            duration: stops[3] - stops[2],
+            x: x - PEOPLE[i].x,
+            y,
+            duration: at(beat, end) - at(beat, start),
             ease: "power2.inOut",
           },
-          stops[2],
+          at(beat, start),
         );
+      const measure = (i: number, beat: number, start: number) => {
+        move(i, MEASURE_X, 0, beat, start, start + 0.45);
+        t.to(
+          "#height-slider",
+          {
+            y: topOf(PEOPLE[i].height) - 204,
+            duration: at(beat, start + 0.85) - at(beat, start + 0.45),
+            ease: "power2.inOut",
+          },
+          at(beat, start + 0.45),
+        );
+        show(`#height-reading-${i}`, at(beat, start + 0.85), {
+          duration: at(beat, start + 1.05) - at(beat, start + 0.85),
+        });
       };
-
-      t.to("#height-card-0", { stroke: PINK, duration: 0.25 }, at(1));
-      move(0, 1, 0, true);
-      show("#height-reading-0", at(1, 1.5));
-      t.to("#height-card-0", { stroke: LINE, duration: 0.25 }, at(2));
-      t.to("#height-card-1", { stroke: PINK, duration: 0.25 }, at(2));
-      t.to("#height-reading-0", { opacity: 0, duration: 0.25 }, at(2));
-      move(0, 2, 0, false);
-      move(1, 2, 1.5, true);
-      show("#height-reading-1", at(2, 3));
-      t.to("#height-card-1", { stroke: VIOLET, duration: 0.25 }, at(2, 3));
-      t.to("#height-card-2", { stroke: PINK, duration: 0.25 }, at(2, 3.2));
-      t.to(
-        "#height-person-2",
-        { y: -44, duration: at(2, 3.65) - at(2, 3.2), ease: "power2.out" },
-        at(2, 3.2),
-      );
-      t.to(
-        "#height-person-2",
-        { y: 0, duration: at(2, 4.2) - at(2, 3.75), ease: "power2.inOut" },
-        at(2, 3.75),
-      );
-      t.to("#height-card-2", { stroke: LINE, duration: 0.25 }, at(2, 3.75));
-      show("#height-max", at(3));
-      emphasize("height-max", at(3, 0.45));
+      // 最初の人を測って台へ。次の文まで比較の結果を先に出さない。
+      measure(0, 1, 0);
+      move(0, PODIUM_X, -54, 1, 1.4, 2.15);
+      t.to("#height-reading-0", { opacity: 0, duration: at(1, 2.15) - at(1, 1.95) }, at(1, 1.95));
+      show("#height-best", at(1, 2.15));
+      t.to("#height-slider", { y: 0, duration: at(1, 2.6) - at(1, 2.2) }, at(1, 2.2));
+      measure(1, 2, 0);
+      // 高い人なら交代。元の人は手前を通って列へ戻る。
+      move(0, 1280, 80, 2, 1.05, 1.35);
+      move(0, PEOPLE[0].x, 0, 2, 1.35, 1.75);
+      show("#height-reading-0", at(2, 1.75));
+      move(1, PODIUM_X, -54, 2, 1.35, 1.95);
+      t.to("#height-reading-1", { opacity: 0, duration: at(2, 1.95) - at(2, 1.75) }, at(2, 1.75));
+      t.to("#height-slider", { y: 0, duration: at(2, 2.15) - at(2, 1.95) }, at(2, 1.95));
+      measure(2, 2, 2.2);
+      // 3 人めは低い。台の人を動かさず、測った人だけ列に戻す。
+      move(2, PEOPLE[2].x, 0, 2, 3.55, 4.25);
+      t.to("#height-slider", { y: 0, duration: at(2, 4.5) - at(2, 4.25) }, at(2, 4.25));
+      show("#height-crown", at(3));
+      show("#height-max", at(3, 0.7));
+      emphasize("height-max", at(3, 1.2));
     },
     [at],
   );
   useTimeline(root, build);
-
   return (
     <Stage root={root}>
       <g id="height-scene">
-        <rect
-          x={1198}
-          y={658}
-          width={500}
-          height={111}
-          rx={22}
-          fill="#EEF2FF"
-          stroke={VIOLET}
-          strokeWidth={8}
-        />
-        <Text x={PODIUM_X} y={728} size={42}>
-          今いちばん高い人
+        {/* 身長計と台は単色。目盛りだけを線で描く。 */}
+        <rect x={903} y={814} width={347} height={28} rx={10} fill={LINE} />
+        <rect x={963} y={142} width={77} height={684} rx={14} fill={LINE} />
+        {Array.from({ length: 108 }, (_, i) => i + 1).map((i) => (
+          <path
+            key={i}
+            d={`M${i % 5 === 0 ? 980 : 994} ${FLOOR - i * 6}H1024`}
+            stroke={INK}
+            strokeWidth={i % 5 === 0 ? 3 : 2}
+          />
+        ))}
+        {[100, 120, 140, 160, 180].map((n) => (
+          <Text key={n} x={947} y={topOf(n) + 8} size={24} anchor="end" fill={INK}>
+            {n}
+          </Text>
+        ))}
+        <g id="height-slider">
+          <path d="M970 168H1047V190H1191V204H1015V222H970Z" fill={BLUE} />
+        </g>
+        <rect x={1370} y={760} width={400} height={82} rx={12} fill={VIOLET} />
+        <Text x={1570} y={812} size={32} fill="#fff">
+          いまいちばん高い人
         </Text>
-        {PEOPLE.map(({ x, height, body, color }, i) => (
-          <g key={height}>
-            <g id={`height-person-${i}`}>
-              <circle cx={x} cy={HEAD_CENTER_Y - body} r={HEAD_RADIUS} fill={color} />
-              <path
-                d={`M ${x - 71} 699 V ${683 - body} Q ${x - 71} ${633 - body} ${x} ${643 - body} Q ${x + 71} ${633 - body} ${x + 71} ${683 - body} V 699 Z`}
-                fill={color}
-              />
+        {PEOPLE.map((p, i) => (
+          <g key={p.height} id={`height-person-${i}`}>
+            <g transform={`translate(${p.x} ${FLOOR})`}>
+              <Child index={i} />
             </g>
-            <rect
-              id={`height-card-${i}`}
-              x={x - 98}
-              y={735}
-              width={196}
-              height={70}
-              rx={16}
-              fill="#fff"
-              stroke={LINE}
-              strokeWidth={6}
+            <Tag
+              id={`height-reading-${i}`}
+              x={p.x + 15}
+              y={topOf(p.height) - 47}
+              text={`${p.height} cm`}
+              chars={3.5}
+              color={p.shirt === LINE ? BLUE : p.shirt}
             />
-            <Text x={x} y={783} size={42}>
-              {height} cm
-            </Text>
           </g>
         ))}
+        <Tag id="height-best" x={1570} y={161} text={`${best} cm`} />
+        <g id="height-crown" opacity={0} transform="translate(1570 225)">
+          <path d="M-45 -17L-24 0L0 -27L24 0L45 -17L35 25H-35Z" fill={VIOLET} />
+        </g>
       </g>
-      {PEOPLE.slice(0, 2).map(({ height, body, color }, i) => (
-        <Text
-          key={height}
-          id={`height-reading-${i}`}
-          x={PODIUM_X}
-          y={HEAD_CENTER_Y - body + PODIUM_OFFSET_Y - HEAD_RADIUS - 28}
-          size={67}
-          fill={color}
-          opacity={0}
-        >
-          {height} cm
-        </Text>
-      ))}
-      <Callout id="height-max" x={PODIUM_X} y={860} text="max" />
+      <Callout id="height-max" x={1480} y={908} text="最大値 168 を残す" />
     </Stage>
   );
 }

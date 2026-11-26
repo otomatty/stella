@@ -1,54 +1,92 @@
-import { useCallback, useMemo, useRef } from "react";
+﻿import { useCallback, useMemo, useRef } from "react";
 import { beatClock } from "../lib/beat-clock";
-import { BLUE, GREEN, LINE, RED, Stage, stageMotion, Text } from "../lib/kit";
+import { CodeCallout, BLUE, LINE, Stage, stageMotion, Tag, Text } from "../lib/kit";
 import { useTimeline } from "../lib/use-timeline";
 import type { MotionProps } from "./index";
 import { MOTIONS } from "./manifest";
 
-export const stackPlatesText = "上からabc";
-
+export const stackPlatesText = "abc上からresult = ch + result";
 const PLATES = [
-  { color: RED, letter: "a", x: 1250 },
-  { color: BLUE, letter: "b", x: 1430 },
-  { color: GREEN, letter: "c", x: 1610 },
+  { letter: "a", color: BLUE, edge: "#1D4ED8" },
+  { letter: "b", color: "#8330C7", edge: "#6B21A8" },
+  { letter: "c", color: "#E62F9A", edge: "#BE1879" },
 ];
+
+/** 単色の楕円と浅い底だけで、重なった皿を見せる。 */
+function Plate({ index }: { index: number }) {
+  const { letter, color, edge } = PLATES[index];
+  return (
+    <g>
+      <ellipse cy={14} rx={280} ry={123} fill={edge} />
+      <ellipse rx={280} ry={123} fill={edge} />
+      <ellipse rx={250} ry={99} fill={color} />
+      <Text x={0} y={35} size={110} fill="#fff">
+        {letter}
+      </Text>
+      <Text x={0} y={127} size={30} fill="#fff">
+        {letter}
+      </Text>
+    </g>
+  );
+}
 
 export function StackPlates({ beats }: MotionProps) {
   const at = useMemo(() => beatClock(beats, MOTIONS["stack-plates"].seconds), [beats]);
   const root = useRef<SVGSVGElement>(null);
   const build = useCallback(
     (t: gsap.core.Timeline) => {
-      const { rise, show } = stageMotion(t);
-      rise("#plate-table, #plate-0 .plate-face", at(0));
+      const { rise, show, emphasize } = stageMotion(t);
+      rise("#washing-station, #plate-0 .plate-face", at(0));
       PLATES.forEach((_, i) => {
+        const offset = i * 1.15;
         const id = `#plate-${i}`;
-        const offset = i * 1.08;
-        const start = at(1, offset);
-        const slide = at(1, offset + 0.24);
-        const lower = at(1, offset + 0.63);
-        const settle = at(1, offset + 0.98);
-        if (i > 0) {
-          show(`${id} .plate-face`, start, { duration: slide - start });
-        }
-        t.to(id, { x: 262, duration: lower - slide, ease: "power2.inOut" }, slide);
-        t.to(id, { y: 337 - i * 49, duration: settle - lower, ease: "power2.inOut" }, lower);
+        if (i > 0)
+          show(`${id} .plate-face`, at(1, offset), {
+            duration: at(1, offset + 0.2) - at(1, offset),
+          });
+        show(`#water-${i}`, at(1, offset), { duration: at(1, offset + 0.15) - at(1, offset) });
+        t.to(
+          `#water-${i}`,
+          {
+            y: 55,
+            opacity: 0,
+            duration: at(1, offset + 0.5) - at(1, offset + 0.15),
+            ease: "power1.in",
+          },
+          at(1, offset + 0.15),
+        );
+        t.to(
+          id,
+          {
+            x: 1100,
+            y: 380 - i * 50,
+            duration: at(1, offset + 0.65) - at(1, offset + 0.25),
+            ease: "power2.inOut",
+          },
+          at(1, offset + 0.25),
+        );
+        t.to(
+          id,
+          {
+            y: 650 - i * 50,
+            duration: at(1, offset + 1.05) - at(1, offset + 0.65),
+            ease: "power2.inOut",
+          },
+          at(1, offset + 0.65),
+        );
       });
-      show("#plates-from-top", at(2));
-      show("#plate-card-0-face, #plate-card-1-face, #plate-card-2-face", at(3));
-      // b と c を順に左端へ入れ、すでにあるカードを右にずらす。
-      [1, 2].forEach((i) => {
-        const id = `#plate-card-${i}`;
-        const offset = 0.5 + (i - 1) * 1.28;
-        const lift = at(3, offset);
-        const move = at(3, offset + 0.3);
-        const lower = at(3, offset + 0.93);
-        const end = at(3, offset + 1.23);
-        const earlier = i === 1 ? "#plate-card-0" : "#plate-card-0, #plate-card-1";
-        t.to(id, { y: -174, duration: move - lift }, lift);
-        t.to(id, { x: -180 * i, duration: lower - move, ease: "power2.inOut" }, move);
-        t.to(earlier, { x: "+=180", duration: lower - move, ease: "power2.inOut" }, move);
-        t.to(id, { y: 0, duration: end - lower }, lower);
+      // 少し上からの角度に変え、最後の c の面を広く見せる。
+      t.to(
+        "#plate-2 .ceramic",
+        { scaleY: 1.16, svgOrigin: "0 123", duration: at(2, 0.8) - at(2), ease: "power2.inOut" },
+        at(2),
+      );
+      show("#read-heading", at(3));
+      [2, 1, 0].forEach((i, order) => {
+        show(`#read-${i}, #read-tag-${i}`, at(3, 0.25 + order * 0.5));
       });
+      show("#prepend-code", at(3, 2.0));
+      emphasize("prepend-code", at(3, 2.5));
     },
     [at],
   );
@@ -56,79 +94,51 @@ export function StackPlates({ beats }: MotionProps) {
 
   return (
     <Stage root={root}>
-      <g id="plate-table">
-        <path d="M 380 714 H 876" stroke={LINE} strokeWidth={10} strokeLinecap="round" />
+      <g id="washing-station">
+        <rect x={170} y={805} width={1250} height={28} rx={14} fill={LINE} />
         <path
-          d="M 243 450 H 389 M 268 450 L 285 519 H 347 L 364 450"
-          fill="none"
-          stroke={LINE}
-          strokeWidth={8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          d="M240 594 V320 Q240 226 330 226 Q419 226 419 312 V351 H381 V312 Q381 264 330 264 Q278 264 278 320 V594Z"
+          fill={LINE}
         />
+        <rect x={250} y={542} width={75} height={18} rx={9} fill={LINE} />
       </g>
-      {PLATES.map(({ color }, i) => (
-        <g key={color} id={`plate-${i}`}>
-          <g className="plate-face" opacity={i === 0 ? undefined : 0}>
-            <path
-              d="M 166 328 Q 187 372 252 373 H 480 Q 545 372 566 328"
-              fill="#fff"
-              stroke={color}
-              strokeWidth={9}
-              strokeLinejoin="round"
-            />
-            <ellipse
-              cx={366}
-              cy={328}
-              rx={200}
-              ry={31}
-              fill="#fff"
-              stroke={color}
-              strokeWidth={9}
-            />
-            <ellipse
-              cx={366}
-              cy={328}
-              rx={143}
-              ry={16}
-              fill="none"
-              stroke={color}
-              strokeWidth={4}
-              strokeOpacity={0.5}
-            />
+      {PLATES.map(({ letter }, i) => (
+        <g key={letter} id={`plate-${i}`} transform="translate(495 440)">
+          <g className="plate-face" opacity={i === 0 ? 1 : 0}>
+            <g className="ceramic">
+              <Plate index={i} />
+            </g>
           </g>
         </g>
       ))}
-      <g id="plates-from-top" opacity={0}>
-        <Text x={1010} y={367} size={48}>
-          上から
-        </Text>
-        {PLATES.toReversed().map(({ color }, i) => (
-          <g key={color} transform={`translate(1010 ${442 + i * 109})`}>
-            <circle r={46} fill="#fff" stroke={color} strokeWidth={8} />
-            <circle r={32} fill="none" stroke={color} strokeWidth={3} />
-          </g>
-        ))}
-      </g>
-      {PLATES.map(({ color, letter, x }, i) => (
-        <g key={letter} id={`plate-card-${i}`}>
-          <g id={`plate-card-${i}-face`} opacity={0}>
-            <rect
-              x={x - 70}
-              y={489}
-              width={140}
-              height={147}
-              rx={20}
-              fill="#fff"
-              stroke={color}
-              strokeWidth={8}
-            />
-            <Text x={x} y={593} size={100}>
-              {letter}
-            </Text>
-          </g>
+      {PLATES.map(({ letter }, i) => (
+        <g key={letter} id={`water-${i}`} opacity={0} fill="#8DC8E8">
+          <path d="M 362 487 q -17 30 0 33 q 17 -3 0 -33 M 608 480 q -14 25 0 28 q 14 -3 0 -28" />
+          <circle cx={615} cy={383} r={14} fill="#fff" stroke={LINE} strokeWidth={3} />
+          <circle cx={639} cy={393} r={8} fill="#fff" stroke={LINE} strokeWidth={3} />
         </g>
       ))}
+      <Text id="read-heading" x={1690} y={235} size={37} opacity={0}>
+        上から
+      </Text>
+      {[2, 1, 0].map((i, order) => (
+        <g key={PLATES[i].letter} id={`read-${i}`} opacity={0}>
+          <path
+            d={`M 1390 ${450 + order * 50} L 1600 ${310 + order * 109} H 1630`}
+            fill="none"
+            stroke={PLATES[i].color}
+            strokeWidth={4}
+          />
+          <Tag
+            id={`read-tag-${i}`}
+            x={1690}
+            y={310 + order * 109}
+            text={PLATES[i].letter}
+            color={PLATES[i].color}
+          />
+        </g>
+      ))}
+      <CodeCallout id="prepend-code" x={1100} y={903} text="result = ch + result" />
     </Stage>
   );
 }

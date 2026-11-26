@@ -1,0 +1,793 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "条件を上からたどり、どの return で関数が終わるか説明できる。",
+    "stuck": "値を返したあとも後ろの行を実行すると思う。候補が増えると else を何重にも重ねてしまう。",
+    "points": ["if の中で return すると、関数はそこで終わります。"],
+    "leaveOut": ["switch", "型エイリアス", "課題の解答コード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "kettle": {
+      "prompt": "A teal electric hot water pot with a spout, lid and a blank temperature display, shown as a simple front-facing shape. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "hot": {
+      "prompt": "A ceramic cup of hot water with rising steam. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "warm": {
+      "prompt": "A green ceramic cup on a wooden saucer with a small wisp of steam. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "cool": {
+      "prompt": "A blue ceramic cup of still water on a saucer. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "parcel": {
+      "prompt": "A tan parcel on a weighing scale with a blank display, both shown as simple front-facing shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "receipt": {
+      "prompt": "A blank shipping receipt beside a sealed tan box, both shown as simple front-facing rectangles. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "お湯の温度",
+          "art": "kettle",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "上から確認",
+          "art": "rule",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "決まった表示",
+          "art": "warm",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "90度以上",
+          "art": "hot",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "60度以上",
+          "art": "warm",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "それ以外",
+          "art": "cool",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "12キロ以上",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "4キロ以上",
+          "art": "parcel",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "それ以外",
+          "art": "parcel",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "お湯の表示",
+          "art": "kettle",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "送料の区分",
+          "art": "receipt",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "今の信号",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "次の色",
+          "art": "rule",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "kettle-temp",
+      "beats": [
+        {
+          "say": "この動画では、条件に合ったらその場で値を返す書き方を学びます。"
+        },
+        {
+          "say": "ポットのお湯は、いま75度です。"
+        },
+        {
+          "say": "表示の決まりを上の行から確かめると、60度以上の行で「適温」に決まりました。"
+        },
+        {
+          "say": "条件に合ったところで return すると、関数はそこで終わります。",
+          "speech": "条件に合ったところでリターンすると、関数はそこで終わります。"
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "表示の決まりを上から読む",
+      "board": "example",
+      "beats": [
+        {
+          "say": "温度を受け取って、ポットの表示を決めましょう。",
+          "show": ["a"],
+          "tag": {
+            "a": "75度"
+          }
+        },
+        {
+          "say": "表示の決まりは、高い温度の条件から並んでいます。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "条件に合った時点で、表示が決まる仕組みです。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "if の中で値を返す",
+      "code": [
+        "// お湯の温度から表示を決める",
+        "function waterLabel(temp: number): \"熱い\" | \"適温\" | \"ぬるい\" {",
+        "  if (temp >= 90) {",
+        "    return \"熱い\";",
+        "  }",
+        "  if (temp >= 60) {",
+        "    return \"適温\";",
+        "  }",
+        "  return \"ぬるい\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "戻り値の型には、3つの表示を書きます。",
+          "speech": "戻り値の型には、三つの表示を書きます。",
+          "part": {
+            "line": 1,
+            "text": "\"熱い\" | \"適温\" | \"ぬるい\""
+          },
+          "figure": {
+            "show": ["a", "b", "c"]
+          }
+        },
+        {
+          "say": "最初に確かめるのは、90度以上かどうかです。",
+          "speech": "最初に確かめるのは、九十度以上かどうかです。",
+          "part": {
+            "line": 2,
+            "text": "temp >= 90"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "条件に合ったときは、熱いと返して関数を終えましょう。",
+          "part": {
+            "line": 3,
+            "text": "return \"熱い\";"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "合わなければ、次の条件へ進みます。",
+          "focus": [5],
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "どちらにも合わないときの値は、最後の行で返しましょう。",
+          "part": {
+            "line": 8,
+            "text": "return \"ぬるい\";"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "names",
+      "kind": "code",
+      "role": "note",
+      "title": "関数と引数の名前",
+      "code": [
+        "// お湯の温度から表示を決める",
+        "function waterLabel(temp: number): \"熱い\" | \"適温\" | \"ぬるい\" {",
+        "  if (temp >= 90) {",
+        "    return \"熱い\";",
+        "  }",
+        "  if (temp >= 60) {",
+        "    return \"適温\";",
+        "  }",
+        "  return \"ぬるい\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "関数の名前は、表示の内容が分かるように決めます。",
+          "part": {
+            "line": 1,
+            "text": "waterLabel",
+            "note": "お湯の表示"
+          },
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "この引数は、温度を表す英語を短くした名前です。",
+          "part": {
+            "line": 1,
+            "text": "temp",
+            "note": "温度"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "名前を変えても、値を返すときは return を使います。",
+          "speech": "名前を変えても、値を返すときはリターンを使います。",
+          "part": {
+            "line": 6,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "75度で止まる行をたどる",
+      "code": [
+        "// お湯の温度から表示を決める",
+        "function waterLabel(temp: number): \"熱い\" | \"適温\" | \"ぬるい\" {",
+        "  if (temp >= 90) {",
+        "    return \"熱い\";",
+        "  }",
+        "  if (temp >= 60) {",
+        "    return \"適温\";",
+        "  }",
+        "  return \"ぬるい\";",
+        "}",
+        "// 75度のお湯の表示を調べる",
+        "waterLabel(75);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "75度を渡して、上からたどりましょう。",
+          "speech": "七十五度を渡して、上からたどりましょう。",
+          "part": {
+            "line": 11,
+            "text": "75"
+          },
+          "figure": {
+            "show": ["a", "b", "c"],
+            "tag": {
+              "a": "75度"
+            }
+          }
+        },
+        {
+          "say": "90度以上ではないので、最初の条件には合いません。",
+          "speech": "九十度以上ではないので、最初の条件には合いません。",
+          "part": {
+            "line": 2,
+            "text": "temp >= 90"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "次の60度以上には合うので、適温を返します。",
+          "speech": "次の六十度以上には合うので、適温を返します。",
+          "focus": [5, 6],
+          "figure": {
+            "pulse": ["b"],
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "適温"
+            }
+          }
+        },
+        {
+          "say": "ここで関数は終わりです。",
+          "part": {
+            "line": 6,
+            "text": "return \"適温\";"
+          },
+          "figure": {
+            "focus": ["b"]
+          }
+        },
+        {
+          "say": "後ろにある、ぬるいを返す行は実行されません。",
+          "focus": [6],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "kind": "code",
+      "role": "note",
+      "title": "上から並べる理由",
+      "code": [
+        "// お湯の温度から表示を決める",
+        "function waterLabel(temp: number): \"熱い\" | \"適温\" | \"ぬるい\" {",
+        "  if (temp >= 90) {",
+        "    return \"熱い\";",
+        "  }",
+        "  if (temp >= 60) {",
+        "    return \"適温\";",
+        "  }",
+        "  return \"ぬるい\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "beats": [
+        {
+          "say": "95度なら、最初の条件で熱いと返します。",
+          "speech": "九十五度なら、最初の条件で熱いと返します。",
+          "focus": [2, 3],
+          "figure": {
+            "tag": {
+              "a": "95度"
+            },
+            "unmark": ["a", "b", "c"],
+            "mark": [
+              {
+                "on": "a",
+                "kind": "check"
+              }
+            ],
+            "focus": ["a"],
+            "untag": ["b"]
+          }
+        },
+        {
+          "say": "60度以上でもありますが、次の条件には進みません。",
+          "speech": "六十度以上でもありますが、次の条件には進みません。",
+          "part": {
+            "line": 3,
+            "text": "return \"熱い\";"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "広い条件を先に置くと、返す値が変わることがあります。",
+          "part": {
+            "line": 5,
+            "text": "temp >= 60"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "どの条件から確かめるかも、表示の決まりの一部です。",
+          "focus": [2, 5],
+          "figure": {
+            "pulse": ["a", "b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "7キロの荷物はどの区分？",
+      "code": [
+        "// 荷物の重さから送料の区分を返す",
+        "function parcelBand(weight: number): \"大型\" | \"通常\" | \"小型\" {",
+        "  if (weight >= 12) {",
+        "    return \"大型\";",
+        "  }",
+        "  if (weight >= 4) {",
+        "    return \"通常\";",
+        "  }",
+        "  return \"小型\";",
+        "}",
+        "// 7キロの荷物の区分を調べる",
+        "parcelBand(7);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "荷物の重さから、送料の区分を返す関数です。",
+          "figure": {
+            "show": ["a", "b", "c"]
+          },
+          "part": {
+            "line": 1,
+            "text": "parcelBand",
+            "note": "荷物の区分"
+          }
+        },
+        {
+          "say": "7キロを渡したときに返す値を考えましょう。",
+          "speech": "七キロを渡したときに返す値を考えましょう。",
+          "part": {
+            "line": 11,
+            "text": "7"
+          },
+          "figure": {
+            "tag": {
+              "a": "7キロ"
+            }
+          }
+        },
+        {
+          "say": "通常と小型の両方を返すのでしょうか。",
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              },
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "通常を返して終わる",
+      "code": [
+        "// 荷物の重さから送料の区分を返す",
+        "function parcelBand(weight: number): \"大型\" | \"通常\" | \"小型\" {",
+        "  if (weight >= 12) {",
+        "    return \"大型\";",
+        "  }",
+        "  if (weight >= 4) {",
+        "    return \"通常\";",
+        "  }",
+        "  return \"小型\";",
+        "}",
+        "// 7キロの荷物の区分を調べる",
+        "parcelBand(7);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "返すのは、通常だけです。",
+          "focus": [6],
+          "figure": {
+            "unmark": ["c"],
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "b": "通常"
+            },
+            "focus": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "code",
+      "role": "explain",
+      "title": "返した後ろへは進まない",
+      "code": [
+        "// 荷物の重さから送料の区分を返す",
+        "function parcelBand(weight: number): \"大型\" | \"通常\" | \"小型\" {",
+        "  if (weight >= 12) {",
+        "    return \"大型\";",
+        "  }",
+        "  if (weight >= 4) {",
+        "    return \"通常\";",
+        "  }",
+        "  return \"小型\";",
+        "}",
+        "// 7キロの荷物の区分を調べる",
+        "parcelBand(7);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "7キロは12キロ以上ではないので、次へ進みます。",
+          "speech": "七キロは十二キロ以上ではないので、次へ進みます。",
+          "focus": [2],
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "4キロ以上の条件に合うので、ここが返す行です。",
+          "speech": "四キロ以上の条件に合うので、ここが返す行です。",
+          "part": {
+            "line": 6,
+            "text": "return \"通常\";"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "値を返したので、小型を返す行へは進みません。",
+          "focus": [6],
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "cross"
+              }
+            ],
+            "focus": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "候補から一つを返す場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "温度から表示を決めるとき、合ったところで返せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "送料の区分も、上から条件を確かめる例です。",
+          "show": ["b"]
+        },
+        {
+          "say": "候補が増えても、else を何重にも重ねずに書けます。",
+          "speech": "候補が増えても、エルスを何重にも重ねずに書けます。",
+          "pulse": ["a", "b"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問5 で使う",
+      "code": [
+        "// 問5 信号の次の色を返す。\"green\" → \"yellow\" → \"red\" → \"green\"",
+        "//     例: nextLight(\"red\") → \"green\"",
+        "export function nextLight() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問5では、今の信号から次の色を返します。",
+          "speech": "問いごでは、今の信号から次の色を返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "色の進む順番は、コメントを見てください。",
+          "part": {
+            "line": 0,
+            "text": "信号の次の色を返す。"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "条件に合う色を見つけたら、その場で返しましょう。",
+          "part": {
+            "line": 2,
+            "text": "nextLight"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6174891971e8075830aebd3d1fa754f4450924d3ed1a56d463ae2dd28c85b885"
+  }
+}

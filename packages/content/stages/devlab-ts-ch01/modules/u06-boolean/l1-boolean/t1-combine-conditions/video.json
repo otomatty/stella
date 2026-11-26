@@ -1,257 +1,1104 @@
 {
-  "schema": 1,
+  "schema": 2,
   "brief": {
-    "goal": "比べる式を論理演算子で組み合わせ、boolean を返す関数を読める。",
-    "stuck": "true と false を返すために、すべて if で分けようとする。",
+    "goal": "条件を組み合わせた式を、そのまま返す関数を書ける。",
+    "stuck": "真偽値を返すために、すべて if で分けて return true と return false を書こうとする。",
     "points": [
-      "比較の結果は boolean なので、そのまま return できる。",
-      "かつ・または・でないを組み合わせて条件を書く。",
-      "正規表現の test は合う部分があれば true を返す。"
+      "比べた結果を「かつ」「または」「でない」で組み合わせた式は、if を使わずにそのまま return できる。"
     ],
-    "leaveOut": ["問1〜20と応用問題の答えのコード", "正規表現の詳しい文法", "短絡評価の仕組み"]
+    "leaveOut": ["短絡評価の仕組み", "正規表現", "課題の答えのコード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "sun": {
+      "prompt": "A golden sun above one white baseball home plate, shown as two simple shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No text, no letters, no digits, no symbols, no logos."
+    },
+    "team": {
+      "prompt": "Two blue baseball caps representing a team, shown side by side as simple front-facing shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No text, no letters, no digits, no symbols, no logos."
+    },
+    "sign": {
+      "prompt": "A green freestanding wooden sign next to a white baseball home plate Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    },
+    "rain": {
+      "prompt": "A dark rain cloud with blue raindrops over a baseball glove Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    },
+    "roof": {
+      "prompt": "A simple front facade of a baseball practice building with a curved roof and one ceiling light built into the entrance. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No text, no letters, no digits, no symbols, no logos."
+    },
+    "ride": {
+      "prompt": "A single yellow amusement park ride seat with a lap safety bar, shown as a simple front-facing shape. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No text, no letters, no digits, no symbols, no logos."
+    },
+    "height": {
+      "prompt": "A freestanding height measuring post with a blank scale Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    },
+    "seat": {
+      "prompt": "A blue ride seat with a fastened red safety belt Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    },
+    "form": {
+      "prompt": "A clipboard holding a blank registration form Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    },
+    "delivery": {
+      "prompt": "A cardboard parcel beside a small delivery cart Objects only. Drawn large and centered. No text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "game": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "晴れている",
+          "art": "sun",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "9人そろった",
+          "art": "team",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "試合を始める",
+          "art": "sign",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "cancel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "雨が降っている",
+          "art": "rain",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "9人未満",
+          "art": "team",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "試合を中止する",
+          "art": "sign",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "cancelByStart": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "開始できるか",
+          "art": "sign",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "結果を逆に",
+          "art": "rule",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "中止するか",
+          "art": "team",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "groups": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "屋外の条件",
+          "art": "sun",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "屋内の条件",
+          "art": "roof",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "どちらかで試合",
+          "art": "sign",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "身長の条件",
+          "art": "height",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "ベルトの条件",
+          "art": "seat",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "乗れるか",
+          "art": "ride",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "試合の開催",
+          "art": "sign",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "申込の確認",
+          "art": "form",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "配送の受付",
+          "art": "delivery",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る数",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "比べた結果",
+          "art": "rule",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
   },
   "scenes": [
     {
-      "id": "hook",
-      "kind": "code",
-      "role": "hook",
-      "title": "予約を受け付けますか？",
-      "code": ["// 空席の数", "const seats = 2;", "// 今日は休業日", "const isClosed = true;"],
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "game-cancel",
       "beats": [
         {
-          "say": "空席があれば、いつでも予約できるでしょうか。",
-          "type": [0, 1]
+          "say": "この動画では、条件を組み合わせた結果を返す書き方を学びます。"
         },
         {
-          "say": "休業日かどうかも、確かめたいですね。",
-          "type": [2, 3]
+          "say": "試合を始められるのは、晴れていて、選手が9人そろったときです。",
+          "speech": "試合を始められるのは、晴れていて、選手がきゅうにんそろったときです。"
         },
         {
-          "say": "二つの条件を、どうまとめればよいでしょうか。",
-          "focus": [1, 3]
+          "say": "雨が降るか、1人でも足りなければ、試合は中止になります。",
+          "speech": "雨が降るか、ひとりでも足りなければ、試合は中止になります。"
+        },
+        {
+          "say": "条件を組み合わせた結果を、そのまま返すのが今回の書き方です。",
+          "pause": 1
         }
       ]
     },
     {
-      "id": "compare",
+      "id": "example",
+      "role": "example",
+      "title": "天気と人数を確かめる",
+      "board": "game",
+      "beats": [
+        {
+          "say": "晴れているかと、選手の人数を確かめましょう。",
+          "show": ["a", "b"]
+        },
+        {
+          "say": "試合を始めるには、どちらの条件も必要です。",
+          "show": ["c", "ab", "bc"]
+        },
+        {
+          "say": "晴れていても、8人なら始められません。",
+          "speech": "晴れていても、八人なら始められません。",
+          "tag": {
+            "a": "true",
+            "b": "false",
+            "c": "false"
+          }
+        },
+        {
+          "say": "9人目がそろうと、両方の条件を満たしました。",
+          "speech": "九人目がそろうと、両方の条件を満たしました。",
+          "tag": {
+            "b": "true",
+            "c": "true"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
       "kind": "code",
-      "role": "point",
-      "title": "比べた結果を返す",
+      "role": "syntax",
+      "title": "組み合わせた結果を返す",
       "code": [
-        "// 予約できる席数かを調べる関数を作る",
-        "function hasSeats(seats: number): boolean {",
-        "  // seats が 0 より大きいかを返す",
-        "  return seats > 0;",
+        "// 晴れていて、選手が9人以上そろったかを返す",
+        "function canStartGame(isSunny: boolean, players: number): boolean {",
+        "  // 天気と人数の条件を組み合わせて返す",
+        "  return isSunny && players >= 9;",
         "}"
       ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "game"
+      },
+      "reset": true,
       "beats": [
         {
-          "say": "比べる式の結果は、真か偽の値になります。",
-          "type": [0, 1]
-        },
-        {
-          "say": "boolean は、真か偽を表す型です。",
-          "speech": "ブーリアンは、真か偽を表す型です。",
+          "say": "開始できるかを返す関数を見ましょう。",
           "part": {
             "line": 1,
-            "text": "boolean"
+            "text": "canStartGame",
+            "note": "試合を始める"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
           }
         },
         {
-          "say": "その式を、そのまま返せます。",
-          "type": [2, 3, 4]
-        },
-        {
-          "say": "席数が二なら、ゼロより大きいので真です。",
-          "plot": {
-            "at": 2,
-            "label": "空席 2"
-          }
-        },
-        {
-          "say": "ゼロなら偽になり、空席がないと分かります。",
-          "plot": {
-            "at": 0,
-            "label": "空席 0"
-          }
-        }
-      ],
-      "point": 1,
-      "panel": {
-        "kind": "numberLine",
-        "from": 0,
-        "to": 3
-      }
-    },
-    {
-      "id": "mistake",
-      "kind": "code",
-      "role": "point",
-      "title": "数値をそのまま返さない",
-      "code": [
-        "// 真か偽を返す関数を作る",
-        "function hasBoxes(boxes: number): boolean {",
-        "  // 数値をそのまま返そうとしている",
-        "  return boxes;",
-        "}"
-      ],
-      "beats": [
-        {
-          "say": "戻り値を真か偽に決めた場合を見ます。",
-          "type": [0, 1]
-        },
-        {
-          "say": "数値をそのまま返すと、型のエラーになります。",
-          "type": [2, 3, 4],
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "ゼロより大きいかなど、比べる式にします。",
-          "focus": [3]
-        }
-      ],
-      "point": 1
-    },
-    {
-      "id": "combine",
-      "kind": "code",
-      "role": "point",
-      "title": "かつ・または・でない",
-      "code": [
-        "// 空席があり、休業日でなければ予約できる",
-        "const canBook = 2 > 0 && !true;",
-        "// 会員か招待客なら割引を使える",
-        "const discount = false || true;"
-      ],
-      "beats": [
-        {
-          "say": "かつは、両方が真のときだけ真です。",
-          "type": [0, 1]
-        },
-        {
-          "say": "でないは、真と偽を入れ替えます。",
+          "say": "関数と引数の名前は、書く人が決めます。",
           "part": {
             "line": 1,
-            "text": "!"
+            "text": "isSunny",
+            "note": "晴れている"
+          },
+          "figure": {
+            "pulse": ["a"]
           }
         },
         {
-          "say": "休業日なので、予約できるかの答えは偽です。",
-          "calc": {
-            "on": "canBook",
-            "expr": "true && false",
-            "result": "false"
-          }
-        },
-        {
-          "say": "またはは、どちらかが真なら真です。",
-          "type": [2, 3]
-        },
-        {
-          "say": "会員でなくても、招待客なら割引を使えます。",
-          "calc": {
-            "on": "discount",
-            "expr": "false || true",
-            "result": "true"
-          }
-        }
-      ],
-      "point": 2,
-      "panel": {
-        "kind": "values",
-        "items": ["canBook", "discount"]
-      }
-    },
-    {
-      "id": "pattern",
-      "kind": "code",
-      "role": "point",
-      "title": "合う文字が含まれるか",
-      "code": [
-        "// 予約番号 booking を作り、\"R-24\" を入れる",
-        "const booking = \"R-24\";",
-        "// 数字を含むかを hasNumber に入れる",
-        "const hasNumber = /\\d/.test(booking);"
-      ],
-      "beats": [
-        {
-          "say": "正規表現は、探す文字の形を表す書き方です。",
-          "type": [0, 1]
-        },
-        {
-          "say": "この形は、数字を一文字探します。",
-          "type": [2, 3],
+          "say": "人数は、ここでは9人以上が条件です。",
+          "speech": "人数は、ここでは九人以上が条件です。",
           "part": {
             "line": 3,
-            "text": "/\\d/"
+            "text": "players >= 9"
+          },
+          "figure": {
+            "pulse": ["b"]
           }
         },
         {
-          "say": "test は、合う部分があれば真を返します。",
-          "speech": "テストは、合う部分があれば真を返します。",
-          "set": {
-            "hasNumber": "true"
+          "say": "2つを「かつ」でつなぎます。",
+          "speech": "二つを「かつ」でつなぎます。",
+          "part": {
+            "line": 3,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["ab", "bc"]
           }
         },
         {
-          "say": "文字列全体が数字でなくても、真になります。",
-          "focus": [3]
+          "say": "両方が真なら、式全体も真です。",
+          "part": {
+            "line": 3,
+            "text": "isSunny && players >= 9"
+          },
+          "figure": {
+            "tag": {
+              "a": "true",
+              "b": "true",
+              "c": "true"
+            }
+          }
+        },
+        {
+          "say": "この結果を、そのまま return で返しましょう。",
+          "speech": "この結果を、そのままリターンで返しましょう。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
         }
-      ],
-      "point": 3,
-      "panel": {
-        "kind": "values",
-        "items": ["hasNumber"]
-      }
+      ]
     },
     {
-      "id": "recap",
+      "id": "if-form",
       "kind": "code",
-      "role": "recap",
-      "title": "q06 の問1へ",
+      "role": "note",
+      "title": "if で返し分けた形と比べる",
       "code": [
-        "// 真か偽を返す関数の形",
-        "export function isPositive(n: number): boolean {",
-        "  // ここに書く",
+        "// 晴れていて9人以上なら開始する",
+        "function canStartGame(isSunny: boolean, players: number): boolean {",
+        "  // 二つの条件がそろったかを確かめる",
+        "  if (isSunny && players >= 9) {",
+        "    // そろっていれば真を返す",
+        "    return true;",
+        "  }",
+        "  // そろっていなければ偽を返す",
+        "  return false;",
         "}"
       ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "game"
+      },
+      "reset": true,
       "beats": [
         {
-          "say": "問題では、正の数かどうかを返します。",
-          "type": [0, 1, 2, 3]
+          "say": "同じ判定を、if で分けた形です。",
+          "speech": "同じ判定を、イフで分けた形です。",
+          "part": {
+            "line": 3,
+            "text": "if"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
         },
         {
-          "say": "三を渡すと、真が返ります。",
-          "row": [0]
+          "say": "条件が真のときは、真を返しています。",
+          "part": {
+            "line": 5,
+            "text": "return true"
+          },
+          "figure": {
+            "tag": {
+              "c": "true"
+            }
+          }
         },
         {
-          "say": "ゼロを渡すと、偽が返ります。",
-          "row": [1]
+          "say": "条件が偽のときに返すのは、偽です。",
+          "part": {
+            "line": 8,
+            "text": "return false"
+          },
+          "figure": {
+            "tag": {
+              "c": "false"
+            }
+          }
         },
         {
-          "say": "return と比べる式を使って、書いてみましょう。",
-          "speech": "リターンと比べる式を使って、書いてみましょう。",
-          "focus": [2]
+          "say": "どちらも、条件の結果と同じ値を返していました。",
+          "part": {
+            "line": 3,
+            "text": "isSunny && players >= 9"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "direct",
+      "kind": "code",
+      "role": "note",
+      "title": "条件をそのまま返した形",
+      "code": [
+        "// 晴れていて、選手が9人以上そろったかを返す",
+        "function canStartGame(isSunny: boolean, players: number): boolean {",
+        "  // 天気と人数の条件を組み合わせて返す",
+        "  return isSunny && players >= 9;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "game"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "返し分ける部分を、1つの式にまとめられます。",
+          "speech": "返し分ける部分を、一つの式にまとめられます。",
+          "part": {
+            "line": 3,
+            "text": "return isSunny && players >= 9;"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "この一行でも、判定の結果は同じです。",
+          "part": {
+            "line": 3,
+            "text": "&&"
+          },
+          "figure": {
+            "tag": {
+              "a": "true",
+              "b": "false",
+              "c": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "or",
+      "kind": "code",
+      "role": "note",
+      "title": "中止はどちらか一方でも",
+      "code": [
+        "// 雨か人数不足なら、試合を中止する",
+        "function shouldCancelGame(isRainy: boolean, players: number): boolean {",
+        "  // 片方でも当てはまれば中止にする",
+        "  return isRainy || players < 9;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "cancel"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "晴れでなければ雨として、中止の条件を考えましょう。",
+          "part": {
+            "line": 1,
+            "text": "shouldCancelGame",
+            "note": "試合を中止する"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "雨か人数不足のどちらかなら、中止です。",
+          "part": {
+            "line": 3,
+            "text": "||"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        },
+        {
+          "say": "雨なら、9人いても中止になります。",
+          "speech": "雨なら、九人いても中止になります。",
+          "part": {
+            "line": 3,
+            "text": "isRainy"
+          },
+          "figure": {
+            "tag": {
+              "a": "true",
+              "b": "false",
+              "c": "true"
+            }
+          }
+        },
+        {
+          "say": "晴れていても、8人なら中止という判定です。",
+          "speech": "晴れていても、八人なら中止という判定です。",
+          "part": {
+            "line": 3,
+            "text": "players < 9"
+          },
+          "figure": {
+            "tag": {
+              "a": "false",
+              "b": "true",
+              "c": "true"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "not",
+      "kind": "code",
+      "role": "note",
+      "title": "開始できるかの結果を逆にする",
+      "code": [
+        "// 開始できないなら、試合を中止する",
+        "function shouldCancelByStart(isSunny: boolean, players: number): boolean {",
+        "  // 開始できるかの結果を逆にする",
+        "  return !canStartGame(isSunny, players);",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "cancelByStart"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "開始できるかの結果から、中止かを調べましょう。",
+          "part": {
+            "line": 1,
+            "text": "shouldCancelByStart",
+            "note": "中止するか"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "びっくりマークは、真と偽を逆にする記号です。",
+          "part": {
+            "line": 3,
+            "text": "!"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "開始できるなら、中止かの結果は偽になります。",
+          "part": {
+            "line": 3,
+            "text": "!canStartGame(isSunny, players)"
+          },
+          "figure": {
+            "tag": {
+              "a": "true",
+              "c": "false"
+            }
+          }
+        },
+        {
+          "say": "開始できないなら、中止かの結果は真です。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "tag": {
+              "a": "false",
+              "c": "true"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "groups",
+      "kind": "code",
+      "role": "note",
+      "title": "かっこで条件をまとめる",
+      "code": [
+        "// 屋外か屋内のどちらかで試合ができるかを調べる",
+        "const canPlay = (isSunny && hasField) || (hasRoof && hasLights);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "groups"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "屋外か屋内で試合ができるかを考えましょう。",
+          "part": {
+            "line": 1,
+            "text": "canPlay",
+            "note": "試合ができる"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "屋外は、晴れでグラウンドがある場合です。",
+          "part": {
+            "line": 1,
+            "text": "(isSunny && hasField)"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "屋内は、屋根と照明がそろえば使えます。",
+          "part": {
+            "line": 1,
+            "text": "(hasRoof && hasLights)"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "かっこの中は、それぞれ一組の条件です。",
+          "part": {
+            "line": 1,
+            "text": "||"
+          },
+          "figure": {
+            "pulse": ["ab", "bc"]
+          }
+        },
+        {
+          "say": "どちらかの組が真なら、全体も真になります。",
+          "part": {
+            "line": 1,
+            "text": "canPlay"
+          },
+          "figure": {
+            "tag": {
+              "a": "false",
+              "b": "true",
+              "c": "true"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "晴れでも八人なら始められない",
+      "code": [
+        "// 晴れていて、選手が9人以上そろったかを返す",
+        "function canStartGame(isSunny: boolean, players: number): boolean {",
+        "  // 天気と人数の条件を組み合わせて返す",
+        "  return isSunny && players >= 9;",
+        "}",
+        "// 晴れていて選手が8人のときを確かめる",
+        "const ready = canStartGame(true, 8);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "game"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "晴れていて、選手が8人の例をたどります。",
+          "speech": "晴れていて、選手が八人の例をたどります。",
+          "part": {
+            "line": 6,
+            "text": "canStartGame(true, 8)"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "晴れているかの値は、真です。",
+          "part": {
+            "line": 3,
+            "text": "isSunny"
+          },
+          "figure": {
+            "tag": {
+              "a": "true"
+            }
+          }
+        },
+        {
+          "say": "8人は9人未満なので、人数の条件を満たしません。",
+          "speech": "八人は九人未満なので、人数の条件を満たしません。",
+          "part": {
+            "line": 3,
+            "text": "players >= 9"
+          },
+          "figure": {
+            "tag": {
+              "b": "false"
+            }
+          }
+        },
+        {
+          "say": "両方はそろわず、戻り値は偽になりました。",
+          "part": {
+            "line": 3,
+            "text": "return"
+          },
+          "figure": {
+            "tag": {
+              "c": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "乗り物に乗れる？",
+      "code": [
+        "// 身長が120cm以上で、ベルトを締めたら乗れる",
+        "function canRide(height: number, isBeltFastened: boolean): boolean {",
+        "  // 二つの条件を満たすかを返す",
+        "  return height >= 120 && isBeltFastened;",
+        "}",
+        "// 身長125cmで、ベルトを締めていない場合を確かめる",
+        "const allowed = canRide(125, false);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "遊園地の乗り物でも考えましょう。",
+          "part": {
+            "line": 1,
+            "text": "canRide",
+            "note": "乗れるか"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "身長の条件と、ベルトの条件がある問題です。",
+          "part": {
+            "line": 3,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        },
+        {
+          "say": "身長は125センチで、ベルトは締めていません。",
+          "speech": "身長は百二十五センチで、ベルトは締めていません。",
+          "part": {
+            "line": 6,
+            "text": "canRide(125, false)"
+          },
+          "figure": {
+            "tag": {
+              "a": "125cm",
+              "b": "false"
+            }
+          }
+        },
+        {
+          "say": "この呼び出しは、真と偽のどちらを返すでしょうか？",
+          "part": {
+            "line": 6,
+            "text": "allowed"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
         }
       ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "答えは false",
+      "code": [
+        "// 身長が120cm以上で、ベルトを締めたら乗れる",
+        "function canRide(height: number, isBeltFastened: boolean): boolean {",
+        "  // 二つの条件を満たすかを返す",
+        "  return height >= 120 && isBeltFastened;",
+        "}",
+        "// 身長125cmで、ベルトを締めていない場合を確かめる",
+        "const allowed = canRide(125, false);"
+      ],
+      "show": true,
       "panel": {
-        "kind": "calls",
-        "rows": [
-          {
-            "call": "isPositive(3)",
-            "result": "true"
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "答えは false です。",
+          "speech": "答えはフォルスです。",
+          "part": {
+            "line": 6,
+            "text": "allowed"
           },
-          {
-            "call": "isPositive(0)",
-            "result": "false"
+          "figure": {
+            "unmark": ["c"],
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ],
+            "tag": {
+              "c": "false"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "両方の条件が必要",
+      "code": [
+        "// 身長が120cm以上で、ベルトを締めたら乗れる",
+        "function canRide(height: number, isBeltFastened: boolean): boolean {",
+        "  // 二つの条件を満たすかを返す",
+        "  return height >= 120 && isBeltFastened;",
+        "}",
+        "// 身長125cmで、ベルトを締めていない場合を確かめる",
+        "const allowed = canRide(125, false);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "身長は120センチ以上なので、条件を満たします。",
+          "speech": "身長は百二十センチ以上なので、条件を満たします。",
+          "part": {
+            "line": 3,
+            "text": "height >= 120"
+          },
+          "figure": {
+            "tag": {
+              "a": "true"
+            },
+            "pulse": ["a"]
           }
-        ]
-      }
+        },
+        {
+          "say": "ベルトを締めたかの値は、偽です。",
+          "part": {
+            "line": 3,
+            "text": "isBeltFastened"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "片方が偽なので、組み合わせた式も偽になります。",
+          "part": {
+            "line": 3,
+            "text": "&&"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "role": "usage",
+      "title": "複数の条件で決める場面",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "試合を始められるかは、天気と人数で判定できます。",
+          "show": ["a"]
+        },
+        {
+          "say": "申込の確認も、必要な条件を確かめる場面です。",
+          "show": ["b"]
+        },
+        {
+          "say": "配送を受け付けるかも、条件を組み合わせて返しましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1 の最初に見るコード",
+      "code": [
+        "// 問1 0より大きければ true",
+        "//     例: isPositive(3) → true",
+        "// 戻り値には型注釈を付けてください。",
+        "// 判定式の結果を return の1行で返せます。",
+        "export function isPositive() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問1では、受け取った数が0より大きいかを調べます。",
+          "speech": "問いちでは、受け取った数がゼロより大きいかを調べます。",
+          "part": {
+            "line": 0,
+            "text": "0より大きければ"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "戻り値は、数ではなく真偽値です。",
+          "part": {
+            "line": 2,
+            "text": "戻り値"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "まずは、1つの比較の結果を返してみましょう。",
+          "speech": "まずは、一つの比較の結果を返してみましょう。",
+          "part": {
+            "line": 4,
+            "text": "isPositive"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
     }
-  ]
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "74d4d4949da21632ac237e1eeef6af978b75bc18bc17f61238e6a21e4ae60a83"
+  }
 }

@@ -155,7 +155,9 @@
 
 `video.json` の schema 2 で、場面に `kind: "motion"` と、使う動きの ID を `motion` に書きます。たとえば `"motion": "vending-change"` は自動販売機のお釣りを見せる動きです。この動きでは、`beats` に通常の読み上げを順に 5 文書きます。`term` や `dialog` を出す文は、この 5 文とは別に足せます。各文に書ける項目は `say`・`speech`・`pause`・`term`・`dialog` です。
 
-使える動きは次の 14 個です。
+schema 1 の `hook`・`point`・`recap` の場面にも使えます。`point` の場面には要点の番号を `point` に書き、文の間隔はほかの schema 1 の場面と同じ 1.2 秒にします。
+
+使える動きの例です。全件は `remotion/motions/manifest.ts` にあります。
 
 | ID | 題名 |
 | --- | --- |

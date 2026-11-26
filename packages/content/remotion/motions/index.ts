@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AgeFloor, ageFloorText } from "./age-floor";
 import { AllergyLabel, allergyLabelText } from "./allergy-label";
+import { AnyBox, anyBoxText } from "./any-box";
 import { BankInterest, bankInterestText } from "./bank-interest";
 import { BarMaxMin, barMaxMinText } from "./bar-max-min";
 import { Beads, beadsText } from "./beads";
@@ -15,8 +16,15 @@ import { DateReplace, dateReplaceText } from "./date-replace";
 import { DigitBlocks, digitBlocksText } from "./digit-blocks";
 import { DigitSieve, digitSieveText } from "./digit-sieve";
 import { DigitalClock, digitalClockText } from "./digital-clock";
+import { DoorSign, doorSignText } from "./door-sign";
 import { DotLast, dotLastText } from "./dot-last";
 import { DrinkWater, drinkWaterText } from "./drink-water";
+import { DrillCheckLoop, drillCheckLoopText } from "./drill-check-loop";
+import { DrillFolder, drillFolderText } from "./drill-folder";
+import { DrillOneFile, drillOneFileText } from "./drill-one-file";
+import { DrillRecap, drillRecapText } from "./drill-recap";
+import { DrillRules, drillRulesText } from "./drill-rules";
+import { DrillSubmit, drillSubmitText } from "./drill-submit";
 import { EggCarton, eggCartonText } from "./egg-carton";
 import { Elevator, elevatorText } from "./elevator";
 import { EmptyCard, emptyCardText } from "./empty-card";
@@ -28,10 +36,12 @@ import { ForkRoad, forkRoadText } from "./fork-road";
 import { FormParse, formParseText } from "./form-parse";
 import { FormTrim, formTrimText } from "./form-trim";
 import { FreeShipping, freeShippingText } from "./free-shipping";
+import { GameCancel, gameCancelText } from "./game-cancel";
 import { FruitCount, fruitCountText } from "./fruit-count";
 import { HeightCompare, heightCompareText } from "./height-compare";
 import { HeightGate, heightGateText } from "./height-gate";
 import { JumpRope, jumpRopeText } from "./jump-rope";
+import { KettleTemp, kettleTempText } from "./kettle-temp";
 import { LabelMaker, labelMakerText } from "./label-maker";
 import { LadderWall, ladderWallText } from "./ladder-wall";
 import { Laps, lapsText } from "./laps";
@@ -46,6 +56,7 @@ import type { MotionId } from "./manifest";
 import { MemberCard, memberCardText } from "./member-card";
 import { NameCase, nameCaseText } from "./name-case";
 import { NumberTag, numberTagText } from "./number-tag";
+import { NumberTicket, numberTicketText } from "./number-ticket";
 import { OnigiriTimes, onigiriTimesText } from "./onigiri-times";
 import { ParkingSlots, parkingSlotsText } from "./parking-slots";
 import { PasswordCount, passwordCountText } from "./password-count";
@@ -57,6 +68,7 @@ import { PriceTagRound, priceTagRoundText } from "./price-tag-round";
 import { QuoteMarks, quoteMarksText } from "./quote-marks";
 import { ReceiptPrinter, receiptPrinterText } from "./receipt-printer";
 import { RocketCountdown, rocketCountdownText } from "./rocket-countdown";
+import { RoomSignDigit, roomSignDigitText } from "./room-sign-digit";
 import { RouteSearch, routeSearchText } from "./route-search";
 import { Scoreboard, scoreboardText } from "./scoreboard";
 import { ShopSign, shopSignText } from "./shop-sign";
@@ -64,6 +76,7 @@ import { ShoppingOrder, shoppingOrderText } from "./shopping-order";
 import { StackPlates, stackPlatesText } from "./stack-plates";
 import { Stairs, stairsText } from "./stairs";
 import { StampRepeat, stampRepeatText } from "./stamp-repeat";
+import { StepLog, stepLogText } from "./step-log";
 import { TapeCut, tapeCutText } from "./tape-cut";
 import { TestTotal, testTotalText } from "./test-total";
 import { TileSquares, tileSquaresText } from "./tile-squares";
@@ -79,6 +92,12 @@ export type MotionProps = {
 };
 
 export const motionComponents = {
+  "drill-folder": { Component: DrillFolder, text: drillFolderText },
+  "drill-one-file": { Component: DrillOneFile, text: drillOneFileText },
+  "drill-check-loop": { Component: DrillCheckLoop, text: drillCheckLoopText },
+  "drill-submit": { Component: DrillSubmit, text: drillSubmitText },
+  "drill-rules": { Component: DrillRules, text: drillRulesText },
+  "drill-recap": { Component: DrillRecap, text: drillRecapText },
   "vending-change": { Component: VendingChange, text: vendingText },
   "entry-form": { Component: EntryForm, text: entryFormText },
   "call-staff": { Component: CallStaff, text: callStaffText },
@@ -151,4 +170,11 @@ export const motionComponents = {
   "calculator-infinity": { Component: CalculatorInfinity, text: calculatorInfinityText },
   "ladder-wall": { Component: LadderWall, text: ladderWallText },
   "egg-carton": { Component: EggCarton, text: eggCartonText },
+  "game-cancel": { Component: GameCancel, text: gameCancelText },
+  "room-sign-digit": { Component: RoomSignDigit, text: roomSignDigitText },
+  "door-sign": { Component: DoorSign, text: doorSignText },
+  "kettle-temp": { Component: KettleTemp, text: kettleTempText },
+  "any-box": { Component: AnyBox, text: anyBoxText },
+  "number-ticket": { Component: NumberTicket, text: numberTicketText },
+  "step-log": { Component: StepLog, text: stepLogText },
 } satisfies Record<MotionId, { Component: ComponentType<MotionProps>; text: string }>;
