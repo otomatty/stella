@@ -76,6 +76,14 @@
     "title": "同じ評価のセットで、変更の前後を比べる"
   },
   {
+    "id": "grounded-answer",
+    "title": "資料の引用が付いた回答だけを残す"
+  },
+  {
+    "id": "failure-triage",
+    "title": "失敗の記録を層と次の操作に分ける"
+  },
+  {
     "id": "tool-loop-structured-reply",
     "title": "ツールを使いながら、決まった形の答えを返すアシスタントを組み立てる"
   },

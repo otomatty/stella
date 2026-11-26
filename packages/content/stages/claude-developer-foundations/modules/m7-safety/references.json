@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m7-safety@6",
-  "contentHash": "4afc904bc8b31cc0da9ed9125d99ef09825066227a7d85b728a05c891fb8e5a4",
+  "unitId": "claude-developer-foundations/m7-safety@7",
+  "contentHash": "fbadedfbc16407d933314985dee466b3c135bff9da09f2fb1b5f7287e678bcfc",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -142,6 +142,14 @@
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "approved"
+    },
+    {
+      "contentId": "tasks/q03-grounded-answer/README.md",
+      "sourceRefs": ["SRC-claude-docs-citations-20261126"],
+      "usedFor": "教材独自の課題。引用を有効にした文書と質問からリクエストを作り、引用の付いたテキストだけを残す関数の受入条件",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
     },
     {
       "contentId": "l3-grounding/t1-citations/slides.md",

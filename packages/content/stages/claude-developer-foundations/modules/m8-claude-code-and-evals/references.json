@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@10",
-  "contentHash": "19a94577ad0f672c8f5b095c253b6c464b7550a39ce15a882049ccd1cfa453cb",
+  "unitId": "claude-developer-foundations/m8-claude-code-and-evals@11",
+  "contentHash": "097c9801c7e816df8ca75d2331bffcd9ad1c6289b6ffe0a2dba4bada2c286724",
   "environmentRef": "node-test-01@1",
   "uses": [
     {
@@ -578,6 +578,19 @@
         "SRC-claude-sdk-hook-failure-20261126"
       ],
       "usedFor": "権限の判定順、ルールの対象、フックの一致と例外時の扱いを簡略化した設定で確かめる自作課題",
+      "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "tasks/q04-triage-failures/README.md",
+      "sourceRefs": [
+        "SRC-claude-docs-errors-20261031",
+        "SRC-claude-docs-stop-vs-errors-20261031",
+        "SRC-claude-docs-stop-reasons-20261031",
+        "SRC-claude-docs-structured-outputs-20261031"
+      ],
+      "usedFor": "教材独自の課題。HTTP ステータス、停止理由、応答の中身の順に失敗の層と次の操作を返す関数の受入条件",
       "authorship": "original-exercise",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
