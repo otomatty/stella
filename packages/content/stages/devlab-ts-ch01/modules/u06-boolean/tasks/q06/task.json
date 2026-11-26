@@ -14,87 +14,108 @@
   "problems": [
     {
       "id": "q06-01-is-positive",
-      "title": "0より大きければ true"
+      "title": "0より大きければ true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-02-is-negative",
-      "title": "0より小さければ true"
+      "title": "0より小さければ true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-03-is-odd",
-      "title": "奇数なら true"
+      "title": "奇数なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-04-is-teen",
-      "title": "13歳以上19歳以下なら true"
+      "title": "13歳以上19歳以下なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-05-is-weekend",
-      "title": "曜日の番号が土日なら true"
+      "title": "曜日の番号が土日なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-06-is-vowel",
-      "title": "1文字の英字が母音なら true"
+      "title": "1文字の英字が母音なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-07-not",
-      "title": "逆の真偽値を返す"
+      "title": "逆の真偽値を返す",
+      "after": "6-1-1"
     },
     {
       "id": "q06-08-both",
-      "title": "2つとも true なら true"
+      "title": "2つとも true なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-09-either",
-      "title": "どちらか1つでも true なら true"
+      "title": "どちらか1つでも true なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-10-only-one",
-      "title": "どちらか片方だけが true なら true"
+      "title": "どちらか片方だけが true なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-11-is-empty",
-      "title": "空の文字列なら true"
+      "title": "空の文字列なら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-12-is-blank",
-      "title": "空の文字列か、空白だけなら true"
+      "title": "空の文字列か、空白だけなら true",
+      "after": "6-1-1"
     },
     {
       "id": "q06-13-has-digit",
-      "title": "数字が1文字でも含まれていれば true"
+      "title": "数字が1文字でも含まれていれば true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-14-is-strong-password",
-      "title": "8文字以上で、数字と英大文字を1文字ずつ以上含めば true"
+      "title": "8文字以上で、数字と英大文字を1文字ずつ以上含めば true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-15-is-same-sign",
-      "title": "2つの数がどちらも正、またはどちらも負なら true"
+      "title": "2つの数がどちらも正、またはどちらも負なら true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-16-can-buy",
-      "title": "所持金が価格以上で、在庫があれば true"
+      "title": "所持金が価格以上で、在庫があれば true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-17-is-multiple-of3-or5",
-      "title": "3の倍数か5の倍数なら true"
+      "title": "3の倍数か5の倍数なら true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-18-is-out-of-range",
-      "title": "value が min より小さいか、max より大きければ true"
+      "title": "value が min より小さいか、max より大きければ true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-19-is-valid-name",
-      "title": "空ではなく、max 文字以下なら true"
+      "title": "空ではなく、max 文字以下なら true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-20-is-open",
-      "title": "店が開いていれば true"
+      "title": "店が開いていれば true",
+      "after": "6-1-2"
     },
     {
       "id": "q06-boolean",
-      "title": "boolean型（応用問題）"
+      "title": "boolean型（応用問題）",
+      "after": "6-1-2"
     }
   ],
   "submit": {

@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u08-remove-any@4",
-  "contentHash": "62cd756a67f5a411bac16254eff31b3ee8555ff469195f94d76ec7cd36f67a89",
+  "unitId": "devlab-ts-ch01/u08-remove-any@5",
+  "contentHash": "1583bcff1e98e17caaeb563d87b6a13b27814dc46464d986d237342807dc272c",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
       "contentId": "l1-remove-any/doc.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "三つの動画に対応する教材独自の解説と、既存の問題別ヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -15,7 +15,7 @@
     {
       "contentId": "l1-remove-any/knowledge.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "型の確認、文字列から数値への変換、数値の配列を各二問で確かめる教材独自の知識問題。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -23,7 +23,7 @@
     {
       "contentId": "l1-remove-any/t1-replace-any/slides.md",
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "any と具体的な型の確認の違い。送料の表示とプロパティの比較を示す教材独自の例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -33,6 +33,22 @@
       "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
       "usedFor": "教材独自の課題。サバイバルTypeScript の値・型・変数の範囲の書き方を、ドリルと応用問題で書く受入条件",
       "authorship": "original-exercise",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t2-to-number/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
+      "usedFor": "文字列を数値へ変える教材独自の整理券の例。既存の型と値の扱いの参照を引き継ぐ。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-remove-any/t3-number-array/slides.md",
+      "sourceRefs": ["SRC-typescriptbook-values-types-variables-any"],
+      "usedFor": "数値の配列の型と件数を示す教材独自の歩数の例。既存の型と値の扱いの参照を引き継ぐ。",
+      "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
     }

@@ -1,0 +1,744 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数値の配列を number[] と書き、length が値の数を表すと説明できる。",
+    "stuck": "配列の型が分からず any のままにする。length を中身の合計と取り違える。",
+    "points": ["数値を並べた配列の型は、number に角かっこを付けて書きます。"],
+    "leaveOut": ["push や添字による配列の操作", "Array<number>", "総合問題の答えのコード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "pedometer": {
+      "prompt": "A teal pedometer with a blank LCD beside a coral running shoe with detailed laces. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "tray": {
+      "prompt": "A long plain brown tray with three compartments and one blank blue record card in a compartment, shown as two simple front-facing shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "counter": {
+      "prompt": "A mechanical tally counter with a blank ivory display and a chrome lever. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "total": {
+      "prompt": "A walking journal with a completely plain, unmarked cover beside a small teal calculator with unmarked keys, shown as two simple front-facing rectangles. No letter-like shapes. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "thermometer": {
+      "prompt": "A red liquid outdoor thermometer beside four pale blue blank observation cards. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "歩数計",
+          "art": "pedometer",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "並べた記録",
+          "art": "tray",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "記録の日数",
+          "art": "counter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "数値の並び",
+          "art": "tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "値の数",
+          "art": "counter",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "sum": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "歩数の記録",
+          "art": "tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "一日ぶん",
+          "art": "pedometer",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "合計の歩数",
+          "art": "total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "気温の記録",
+          "art": "thermometer",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "記録の件数",
+          "art": "counter",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "歩数の記録",
+          "art": "pedometer",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "気温の記録",
+          "art": "thermometer",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る記録",
+          "art": "tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "関数の型",
+          "art": "rule",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "step-log",
+      "beats": [
+        {
+          "say": "この動画では、数値を並べた配列の型を学びます。"
+        },
+        {
+          "say": "歩数計の記録を、1日ぶんずつ順番に並べました。",
+          "speech": "歩数計の記録を、一日ぶんずつ順番に並べました。"
+        },
+        {
+          "say": "並んでいるのは数だけで、3日ぶんの記録です。",
+          "speech": "並んでいるのは数だけで、三日ぶんの記録です。"
+        },
+        {
+          "say": "数値を並べた配列の型は、number に角かっこを付けて書きます。",
+          "speech": "数値を並べた配列の型は、ナンバーに角かっこを付けて書きます。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "一日ずつ並べた歩数",
+      "board": "example",
+      "beats": [
+        {
+          "say": "毎日の歩数を、一日ずつ記録しました。",
+          "show": ["a"]
+        },
+        {
+          "say": "値を順番に並べたものを、配列と呼びます。",
+          "show": ["b", "ab"],
+          "term": {
+            "text": "配列",
+            "ruby": "はいれつ",
+            "note": "値を順番に並べたもの"
+          }
+        },
+        {
+          "say": "この配列は、三日ぶんの数値を並べた記録です。",
+          "show": ["c", "bc"],
+          "tag": {
+            "c": "3日"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "配列の型を書く",
+      "code": [
+        "// 歩数の記録が何日ぶんあるか返す",
+        "function countDays(steps: number[]): number {",
+        "  // 並んでいる値の数を返す",
+        "  return steps.length;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "数値を並べた配列の型は、number に角かっこを付けて書きます。",
+          "speech": "数値を並べた配列の型は、ナンバーに角かっこを付けて書きます。",
+          "part": {
+            "line": 1,
+            "text": "number[]"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "角かっこが、値が並んでいることを表す印です。",
+          "part": {
+            "line": 1,
+            "text": "[]"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "引数では、数値一つでなく並び全体を受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "steps: number[]"
+          },
+          "figure": {
+            "tag": {
+              "a": "3日ぶん"
+            }
+          }
+        },
+        {
+          "say": "返す件数は数値一つなので、戻り値を number にしました。",
+          "speech": "返す件数は数値一つなので、戻り値をナンバーにしました。",
+          "part": {
+            "line": 1,
+            "text": "): number"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "型の名前と自分で付ける名前",
+      "code": [
+        "// 歩数の記録が何日ぶんあるか返す",
+        "function countDays(steps: number[]): number {",
+        "  // 並んでいる値の数を返す",
+        "  return steps.length;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "型の名前と、関数に付けた名前を見分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "number と角かっこは、決まった書き方です。",
+          "speech": "ナンバーと角かっこは、決まった書き方です。",
+          "part": {
+            "line": 1,
+            "text": "number[]"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "number[]"
+              }
+            ]
+          }
+        },
+        {
+          "say": "countDays は、日数を数えるという意味で付けました。",
+          "speech": "カウントデイズは、日数を数えるという意味で付けました。",
+          "part": {
+            "line": 1,
+            "text": "countDays",
+            "note": "日数を数える"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "引数の steps も、自分で決める名前です。",
+          "speech": "引数のステップスも、自分で決める名前です。",
+          "part": {
+            "line": 1,
+            "text": "steps",
+            "note": "歩数の記録"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "length は日数を返す",
+      "code": [
+        "// 歩数の記録が何日ぶんあるか返す",
+        "function countDays(steps: number[]): number {",
+        "  // 並んでいる値の数を返す",
+        "  return steps.length;",
+        "}",
+        "// 三日ぶんの記録の件数を表示する",
+        "console.log(countDays([3200, 5100, 4800]));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "歩数の記録を三つ、角かっこの中に並べました。",
+          "part": {
+            "line": 6,
+            "text": "[3200, 5100, 4800]"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "配列の length は、並んでいる値の数です。",
+          "speech": "配列のレングスは、並んでいる値の数です。",
+          "part": {
+            "line": 3,
+            "text": "length"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "この関数からは、日数の三が返ります。",
+          "figure": {
+            "tag": {
+              "b": "3"
+            }
+          }
+        },
+        {
+          "say": "歩数の合計を返しているわけではありません。",
+          "focus": [3],
+          "figure": {
+            "tag": {
+              "a": "歩数",
+              "b": "件数"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "sum",
+      "kind": "code",
+      "role": "note",
+      "title": "合計は一つずつ足して求める",
+      "code": [
+        "// 歩数の記録を順に並べる",
+        "const steps: number[] = [3200, 5100, 4800];",
+        "// 合計を入れる変数を用意する",
+        "let total = 0;",
+        "// 記録を先頭から一つずつ読む",
+        "for (const step of steps) {",
+        "  // その日の歩数を合計に足す",
+        "  total += step;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "sum"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "合計が必要なら、記録を一つずつ読みます。",
+          "part": {
+            "line": 5,
+            "text": "for"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          }
+        },
+        {
+          "say": "for-of で取り出す値は、一日ぶんの歩数です。",
+          "speech": "フォーオブで取り出す値は、一日ぶんの歩数です。",
+          "part": {
+            "line": 5,
+            "text": "step",
+            "note": "一日ぶんの歩数"
+          },
+          "figure": {
+            "tag": {
+              "b": "3200"
+            }
+          }
+        },
+        {
+          "say": "同じように三つとも足すと、一万三千百歩になりました。",
+          "part": {
+            "line": 7,
+            "text": "total += step"
+          },
+          "figure": {
+            "tag": {
+              "c": "13100"
+            }
+          }
+        },
+        {
+          "say": "件数の三と、合計の一万三千百を区別しましょう。",
+          "figure": {
+            "pulse": ["a", "c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "気温の記録を数える",
+      "code": [
+        "// 朝の気温を順に記録する",
+        "const morningTemps: number[] = [12, 15, 14, 13];",
+        "// 記録の件数を読む",
+        "const records = morningTemps.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "今度は、朝に測った気温の記録です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "四つの数値を、配列に並べました。",
+          "part": {
+            "line": 1,
+            "text": "[12, 15, 14, 13]"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "length を読むと、いくつになるでしょうか？",
+          "speech": "レングスを読むと、いくつになるでしょうか？",
+          "part": {
+            "line": 3,
+            "text": "length"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "b",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "記録の件数は四",
+      "code": [
+        "// 朝の気温を順に記録する",
+        "const morningTemps: number[] = [12, 15, 14, 13];",
+        "// 記録の件数を読む",
+        "const records = morningTemps.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は、記録の件数の四です。",
+          "figure": {
+            "tag": {
+              "b": "4"
+            },
+            "mark": [
+              {
+                "on": "b",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "気温の合計とは違う",
+      "code": [
+        "// 朝の気温を順に記録する",
+        "const morningTemps: number[] = [12, 15, 14, 13];",
+        "// 記録の件数を読む",
+        "const records = morningTemps.length;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "配列の中には、数値が四つ並んでいます。",
+          "part": {
+            "line": 1,
+            "text": "[12, 15, 14, 13]"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "length が数えるのは、値がいくつあるかです。",
+          "speech": "レングスが数えるのは、値がいくつあるかです。",
+          "part": {
+            "line": 3,
+            "text": "length"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "気温を全部足した五十四ではありません。",
+          "figure": {
+            "tag": {
+              "b": "4件"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "数値の記録をまとめて受け取る",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "歩数のような毎日の記録を、まとめて関数へ渡せます。",
+          "show": ["a"]
+        },
+        {
+          "say": "気温の記録にも、数値の配列を使う書き方です。",
+          "show": ["b"]
+        },
+        {
+          "say": "一つの数値か、数値の並びかを見て型を選びましょう。",
+          "pulse": ["a", "b"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "総合問題の先頭を見る",
+      "code": ["// 問題", "export function average(scores: any): any {"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "総合問題では、記録をまとめて関数に渡します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "先頭の関数には、any が残っている状態です。",
+          "part": {
+            "line": 1,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "speech": "先頭の関数には、エニーが残っている状態です。"
+        },
+        {
+          "say": "average の中身を読み、受け取る値から型を考えましょう。",
+          "speech": "アベレージの中身を読み、受け取る値から型を考えましょう。",
+          "part": {
+            "line": 1,
+            "text": "average"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2d8a9f5ec2503396254fe7dc6db73b93990b11a81260070f244b50402e88a03e"
+  }
+}

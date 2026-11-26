@@ -1,0 +1,746 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "数字の文字列を Number で数値に変え、足し算できる。",
+    "stuck": "文字列の \"42\" に 1 を足すと数値の 43 になると思ってしまう。",
+    "points": ["Number(文字列) で、数字の文字列を数値に変えられます。"],
+    "leaveOut": ["Number.parseInt との詳しい比較", "NaN の詳しい扱い", "課題の答えのコード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "ticket": {
+      "prompt": "A cream queue ticket with a blue band and perforated edges, shown as one simple front-facing rectangle. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "machine": {
+      "prompt": "A small teal conversion machine with a paper inlet and a plain brown block at its outlet, shown as two simple front-facing rectangles. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "display": {
+      "prompt": "A dark blue counter display with a blank amber screen on a plain grey stand, shown as one simple front-facing shape. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "pots": {
+      "prompt": "Terracotta flower pots with green seedlings next to a blank order slip. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "spares": {
+      "prompt": "Two empty terracotta flower pots beside a potting scoop. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "measure": {
+      "prompt": "A height measuring rod beside a blank entry form. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "整理券の印字",
+          "art": "ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数値に変える",
+          "art": "machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "次の番号",
+          "art": "display",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "文字列",
+          "art": "ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数値",
+          "art": "machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "次の番号",
+          "art": "display",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "joined": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "文字をつなぐ",
+          "art": "ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "数を足す",
+          "art": "display",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "入力した個数",
+          "art": "pots",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "予備を足す",
+          "art": "spares",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "用意する個数",
+          "art": "pots",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "注文の個数",
+          "art": "pots",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "身長の入力",
+          "art": "measure",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る文字列",
+          "art": "ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す数値",
+          "art": "machine",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "number-ticket",
+      "beats": [
+        {
+          "say": "この動画では、文字列を数値に変える方法を学びます。"
+        },
+        {
+          "say": "整理券に印刷された「42」は、数字の形をした文字です。",
+          "speech": "整理券に印刷された四十二は、数字の形をした文字です。"
+        },
+        {
+          "say": "文字のままでは足し算ができないので、数に変えてから1を足します。",
+          "speech": "文字のままでは足し算ができないので、数に変えてから一を足します。"
+        },
+        {
+          "say": "文字列を数値に変えるのが、Number です。",
+          "speech": "文字列を数値に変えるのが、ナンバーです。",
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "example",
+      "role": "example",
+      "title": "次に呼ぶ番号を計算する",
+      "board": "example",
+      "beats": [
+        {
+          "say": "窓口で、整理券に書かれた番号を読み取りました。",
+          "show": ["a"],
+          "tag": {
+            "a": "\"42\""
+          }
+        },
+        {
+          "say": "読み取ったものは、数字の形をした文字列です。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "次の番号を計算するには、数値に変えてから一を足します。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "Number に文字列を渡す",
+      "code": [
+        "// 整理券の印字を文字列で受け取る",
+        "const ticketText = \"42\";",
+        "// 数値に変えてから、次の番号を求める",
+        "const next = Number(ticketText) + 1;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "Number は、文字列を数値に変える書き方です。",
+          "speech": "ナンバーは、文字列を数値に変える書き方です。",
+          "part": {
+            "line": 3,
+            "text": "Number"
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"]
+          },
+          "term": {
+            "text": "Number",
+            "note": "文字列を数値に変える"
+          }
+        },
+        {
+          "say": "かっこの中に、変えたい文字列を渡します。",
+          "part": {
+            "line": 3,
+            "text": "ticketText"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "かっこを閉じたところまでで、数値になりました。",
+          "part": {
+            "line": 3,
+            "text": "Number(ticketText)"
+          },
+          "figure": {
+            "tag": {
+              "b": "42"
+            }
+          }
+        },
+        {
+          "say": "その数値に、一を足して次の番号を求めます。",
+          "part": {
+            "line": 3,
+            "text": "+ 1"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "kind": "code",
+      "role": "note",
+      "title": "名前と決まった書き方",
+      "code": [
+        "// 整理券の印字を文字列で受け取る",
+        "const ticketText = \"42\";",
+        "// 数値に変えてから、次の番号を求める",
+        "const next = Number(ticketText) + 1;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "決まった書き方と、自分で付ける名前を分けましょう。",
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "先頭が大文字の Number は、決まった名前です。",
+          "speech": "先頭が大文字のナンバーは、決まった名前です。",
+          "part": {
+            "line": 3,
+            "text": "Number"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "classify": {
+            "fixed": [
+              {
+                "line": 3,
+                "text": "Number"
+              }
+            ]
+          }
+        },
+        {
+          "say": "ticketText は、券の文字という意味で付けました。",
+          "speech": "チケットテキストは、券の文字という意味で付けました。",
+          "part": {
+            "line": 1,
+            "text": "ticketText",
+            "note": "券の文字"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "ticketText"
+              }
+            ]
+          }
+        },
+        {
+          "say": "結果の名前 next も、書く人が自分で決めます。",
+          "speech": "結果の名前ネクストも、書く人が自分で決めます。",
+          "part": {
+            "line": 3,
+            "text": "next",
+            "note": "次の番号"
+          },
+          "figure": {
+            "pulse": ["a", "b"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "joined",
+      "kind": "code",
+      "role": "note",
+      "title": "文字列のまま足すとつながる",
+      "code": [
+        "// 印字の文字列に、そのまま一を足す",
+        "const joined = \"42\" + 1;",
+        "// 数値に変えてから一を足す",
+        "const next = Number(\"42\") + 1;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "joined"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "上の式は、文字列のまま一を足しています。",
+          "part": {
+            "line": 1,
+            "text": "\"42\" + 1"
+          },
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "結果は四十三ではなく、文字をつないだ四二一です。",
+          "figure": {
+            "tag": {
+              "a": "\"421\""
+            }
+          }
+        },
+        {
+          "say": "下の式では、先に文字列を数値に変えました。",
+          "part": {
+            "line": 3,
+            "text": "Number(\"42\")"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "足し算の結果は、数値の四十三になります。",
+          "figure": {
+            "tag": {
+              "b": "43"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "整理券から次の番号を出す",
+      "code": [
+        "// 整理券の印字を文字列で受け取る",
+        "const ticketText = \"42\";",
+        "// 数値に変えてから、次の番号を求める",
+        "const next = Number(ticketText) + 1;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "読み取った券の文字は、四と二が並んだ文字列です。",
+          "part": {
+            "line": 1,
+            "text": "\"42\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"42\""
+            }
+          }
+        },
+        {
+          "say": "Number に渡して、数値の四十二に変えます。",
+          "speech": "ナンバーに渡して、数値の四十二に変えます。",
+          "part": {
+            "line": 3,
+            "text": "Number(ticketText)"
+          },
+          "figure": {
+            "tag": {
+              "b": "42"
+            }
+          }
+        },
+        {
+          "say": "一を足すと、表示する番号は四十三になりました。",
+          "part": {
+            "line": 3,
+            "text": "+ 1"
+          },
+          "figure": {
+            "tag": {
+              "c": "43"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "入力した鉢の数に予備を足す",
+      "code": [
+        "// 入力欄で受け取った鉢の個数",
+        "const potCountText = \"7\";",
+        "// 数値に変えて、予備の二鉢を足す",
+        "const withSpare = Number(potCountText) + 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "think": 8,
+      "beats": [
+        {
+          "say": "花の鉢を注文する入力欄に、七と入力しました。",
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "\"7\""
+            }
+          }
+        },
+        {
+          "say": "そこに、予備の二鉢を足す計算です。",
+          "part": {
+            "line": 3,
+            "text": "+ 2"
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "用意する個数は、どんな値になるでしょうか？",
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "code",
+      "role": "answer",
+      "title": "数値の九になる",
+      "code": [
+        "// 入力欄で受け取った鉢の個数",
+        "const potCountText = \"7\";",
+        "// 数値に変えて、予備の二鉢を足す",
+        "const withSpare = Number(potCountText) + 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "結果は、数値の九です。",
+          "figure": {
+            "tag": {
+              "c": "9"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "code",
+      "role": "explain",
+      "title": "数に変えてから足す",
+      "code": [
+        "// 入力欄で受け取った鉢の個数",
+        "const potCountText = \"7\";",
+        "// 数値に変えて、予備の二鉢を足す",
+        "const withSpare = Number(potCountText) + 2;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "beats": [
+        {
+          "say": "入力の七は、まだ文字列でした。",
+          "part": {
+            "line": 1,
+            "text": "\"7\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "Number が返した七は、計算に使える数値です。",
+          "speech": "ナンバーが返した七は、計算に使える数値です。",
+          "part": {
+            "line": 3,
+            "text": "Number(potCountText)"
+          },
+          "figure": {
+            "tag": {
+              "b": "7"
+            }
+          }
+        },
+        {
+          "say": "数値どうしを足すので、七十二にはなりません。",
+          "part": {
+            "line": 3,
+            "text": "+ 2"
+          },
+          "figure": {
+            "pulse": ["c"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "role": "usage",
+      "title": "入力を計算に使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "注文の個数が文字列で届いたら、計算の前に変換します。",
+          "show": ["a"]
+        },
+        {
+          "say": "身長を入力して、差を計算するときにも使う書き方です。",
+          "show": ["b"]
+        },
+        {
+          "say": "表示が数字でも、文字列か数値かを確かめましょう。",
+          "pulse": ["a", "b"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問16 の先頭を見る",
+      "code": [
+        "// 問16 文字列を数値に変える",
+        "//     例: toNumber(\"42\") → 42",
+        "export function toNumber(text: any): any {"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "次の問題は、文字列を数値に変える関数です。",
+          "figure": {
+            "show": ["a", "b", "ab"]
+          }
+        },
+        {
+          "say": "引数と戻り値に、any が残っています。",
+          "part": {
+            "line": 2,
+            "text": "any"
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "speech": "引数と戻り値に、エニーが残っています。"
+        },
+        {
+          "say": "受け取る型と返す型の違いに注目しましょう。",
+          "part": {
+            "line": 2,
+            "text": "toNumber"
+          },
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6fff629dde783a50ce3906d4d342a74c3a42b31b4c8e646ad84bd7edd6e63983"
+  }
+}

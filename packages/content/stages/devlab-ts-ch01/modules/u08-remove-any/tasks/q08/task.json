@@ -14,87 +14,108 @@
   "problems": [
     {
       "id": "q08-01-add",
-      "title": "2つの数を足す"
+      "title": "2つの数を足す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-02-greet",
-      "title": "「こんにちは、◯◯さん」を返す"
+      "title": "「こんにちは、◯◯さん」を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-03-length-of",
-      "title": "文字数を返す"
+      "title": "文字数を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-04-is-adult",
-      "title": "20歳以上なら true を返す"
+      "title": "20歳以上なら true を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-05-shout",
-      "title": "英字を大文字にする"
+      "title": "英字を大文字にする",
+      "after": "8-1-1"
     },
     {
       "id": "q08-06-half",
-      "title": "半分にした数を返す"
+      "title": "半分にした数を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-07-tidy",
-      "title": "前後の空白を取り除く"
+      "title": "前後の空白を取り除く",
+      "after": "8-1-1"
     },
     {
       "id": "q08-08-area",
-      "title": "長方形の面積を返す"
+      "title": "長方形の面積を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-09-price-text",
-      "title": "金額を3桁ごとのカンマ区切りにし、「円」を付ける"
+      "title": "金額を3桁ごとのカンマ区切りにし、「円」を付ける",
+      "after": "8-1-1"
     },
     {
       "id": "q08-10-is-empty",
-      "title": "空の文字列なら true を返す"
+      "title": "空の文字列なら true を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-11-first-char",
-      "title": "最初の1文字を返す"
+      "title": "最初の1文字を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-12-sum3",
-      "title": "3つの数を足す"
+      "title": "3つの数を足す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-13-repeat",
-      "title": "text を times 回つなげる"
+      "title": "text を times 回つなげる",
+      "after": "8-1-1"
     },
     {
       "id": "q08-14-larger",
-      "title": "2つの数のうち大きい方を返す"
+      "title": "2つの数のうち大きい方を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-15-contains",
-      "title": "text に word が含まれていれば true を返す"
+      "title": "text に word が含まれていれば true を返す",
+      "after": "8-1-1"
     },
     {
       "id": "q08-16-to-number",
-      "title": "文字列を数値に変える"
+      "title": "文字列を数値に変える",
+      "after": "8-1-2"
     },
     {
       "id": "q08-17-count-label",
-      "title": "件数の後ろに「件」を付ける"
+      "title": "件数の後ろに「件」を付ける",
+      "after": "8-1-2"
     },
     {
       "id": "q08-18-round-off",
-      "title": "小数点以下を四捨五入する"
+      "title": "小数点以下を四捨五入する",
+      "after": "8-1-2"
     },
     {
       "id": "q08-19-join-names",
-      "title": "2人の名前を「・」でつなぐ"
+      "title": "2人の名前を「・」でつなぐ",
+      "after": "8-1-2"
     },
     {
       "id": "q08-20-last-char",
-      "title": "最後の1文字を返す"
+      "title": "最後の1文字を返す",
+      "after": "8-1-2"
     },
     {
       "id": "q08-remove-any",
-      "title": "any をなくす（総合問題）"
+      "title": "any をなくす（総合問題）",
+      "after": "8-1-3"
     }
   ],
   "submit": {

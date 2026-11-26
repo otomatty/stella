@@ -174,6 +174,7 @@ export interface MotionScene {
   kind: "motion";
   id: string;
   role: SceneRole;
+  point?: number;
   title: string;
   motion: MotionId;
   beats: NarratedBeat[];
@@ -608,9 +609,11 @@ export function parseStoryboard(
       error(`${p}.kind`, "board・view・code・motionから選んでください");
     if (s.kind === "view") str(s.image, `${p}.image`);
     else if (s.kind === "motion") {
-      if (!lesson) error(`${p}.kind`, "motion は schema 2 の場面だけに指定できます");
       for (const key of Object.keys(s))
-        if (!["kind", "id", "role", "title", "motion", "beats"].includes(key))
+        if (
+          !["kind", "id", "role", "title", "motion", "beats"].includes(key) &&
+          !(!lesson && key === "point")
+        )
           error(`${p}.${key}`, "motion の場面では指定できない項目です");
       const motion =
         typeof s.motion === "string" && Object.hasOwn(MOTIONS, s.motion)
@@ -874,7 +877,7 @@ export function parseStoryboard(
     } else {
       const expected = i === 0 ? "hook" : i === sb.scenes.length - 1 ? "recap" : "point";
       if (s.role !== expected) error(`${p}.role`, `${expected}の場面にしてください`);
-      if (s.kind !== "motion" && s.point !== undefined) pointNumbers.push(s.point);
+      if (s.point !== undefined) pointNumbers.push(s.point);
     }
     if (s.kind === "view") {
       validateView(s, i, sb, context, issues);

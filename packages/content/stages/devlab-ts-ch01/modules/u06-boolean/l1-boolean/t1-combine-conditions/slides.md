@@ -2,59 +2,66 @@
 sourceRefs: [SRC-typescriptbook-values-types-variables-boolean, SRC-typescriptbook-values-types-variables-truthy-falsy-values]
 id: 6-1-1
 title: 条件を組み合わせて返す
-takeaway: "比べた結果を組み合わせると、条件をそのまま返せます。"
-introduces: ["test"]
-requires: ["return", "boolean", "&&", "||", "!", "正規表現", "const", "関数", "型注釈", "true", "false", ">=", ">"]
+progressRevision: 2
+takeaway: "比べた結果を && や || で組み合わせた式は、そのまま return できます。"
+introduces: []
+requires: ["return","boolean","&&","||","!","if","関数","型注釈","true","false",">=","<"]
 header: "開発ラボG 事前課題 第1部"
 ---
 
 <!-- _class: lead -->
 # 6-1-1 条件を組み合わせて返す
 
-<!-- ノート: 比較は真か偽を作ります。かつは両方、またははどちらかが真なら真です。でないは真偽を逆にします。正規表現の test は、合う部分が含まれるかを調べます。 -->
+<!-- ノート: この動画では、条件を組み合わせた結果を返す書き方を学びます。 -->
 
 ---
 
-# 仕事で確かめたいこと
+# 試合を始められる？
 
-空席があっても、休業日なら予約できるでしょうか。
+校庭は晴れています。選手はまだ8人です。天気だけで試合を始めてよいでしょうか。
 
-<!-- ノート: 身近な困りごとから考えます。答えはまだ示さず、書き方を使って確かめます。 -->
+<!-- ノート: 試合を始めるには、天気と選手の人数を確かめます。どちらか一方だけでは決まりません。 -->
 
 ---
 
 # 覚えること
 
-比べた結果を組み合わせると、条件をそのまま返せます。
+比べた結果を && や || で組み合わせた式は、そのまま return できます。
 
-<!-- ノート: 比較は真か偽を作ります。かつは両方、またははどちらかが真なら真です。でないは真偽を逆にします。正規表現の test は、合う部分が含まれるかを調べます。 -->
+<!-- ノート: 「かつ」「または」「でない」で組み合わせた式も、結果は真偽値です。true と false のためだけに if で分ける必要はありません。 -->
 
 ---
 
-# 書き方を見る
+# 晴れていて、9人そろったら始める
 
 ```ts
-// 予約を受け付けられるかを作る
-const canBook = 2 > 0 && !true;
+// 晴れていて、選手が9人以上そろったかを返す
+function canStartGame(isSunny: boolean, players: number): boolean {
+  // 天気と人数の条件を組み合わせて返す
+  return isSunny && players >= 9;
+}
 ```
 
-<!-- ノート: 比較は真か偽を作ります。かつは両方、またははどちらかが真なら真です。でないは真偽を逆にします。正規表現の test は、合う部分が含まれるかを調べます。 -->
+<!-- ノート: isSunny は晴れているかを表します。players が9以上かを比べ、両方が true のときだけ true を返す式です。 -->
 
 ---
 
-# よくある間違い
+# 中止の条件も、そのまま返す
 
-`: boolean` の関数で数値を返すとエラーです。比べる式にして返します。
+`isRainy || players < 9` は「雨、または9人未満」です。
+`!canStartGame(isSunny, players)` なら、開始できるかの結果を逆にします。
 
-参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明・業務例・知識問題は教材用に構成しています。
+複数のまとまりは `(isSunny && hasField) || (hasRoof && hasLights)` のようにかっこで示せます。
 
-<!-- ノート: 問題の答えを写すのではなく、使う値に合う書き方を選びます。 -->
+参考: サバイバルTypeScript [boolean](https://typescriptbook.jp/reference/values-types-variables/boolean)・[truthy-falsy-values](https://typescriptbook.jp/reference/values-types-variables/truthy-falsy-values)。説明とコード例は教材用に作成しています。
+
+<!-- ノート: またはは、片方でも true なら true です。でないは真偽を逆にします。かっこを使うと、屋外と屋内のような条件のまとまりを読み取れます。 -->
 
 ---
 
 <!-- _class: summary -->
 # まとめ
 
-比べた結果を組み合わせると、条件をそのまま返せます。
+比べた結果を && や || で組み合わせた式は、そのまま return できます。
 
-<!-- ノート: 比べた結果を組み合わせると、条件をそのまま返せます。 -->
+<!-- ノート: 比べた結果を && や || で組み合わせた式は、そのまま return できます。 -->

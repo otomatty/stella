@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "devlab-ts-ch01/u06-boolean@4",
-  "contentHash": "cc8e4b6c7305ca5df609e71e8e70206c84d75275f2606fb334670d3031f89b07",
+  "unitId": "devlab-ts-ch01/u06-boolean@5",
+  "contentHash": "691507d58d4e01939a1b3b906f95622f256bb64382ad305f1c4fb5a326dac13a",
   "environmentRef": "ts-test-01@1",
   "uses": [
     {
@@ -10,7 +10,7 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -21,7 +21,7 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"
@@ -32,7 +32,18 @@
         "SRC-typescriptbook-values-types-variables-boolean",
         "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
       ],
-      "usedFor": "型と値の扱いの背景。書き方ガイドを素材に説明・別の業務例・問題別ヒントを構成。動画はコードと値の動きで独自制作。",
+      "usedFor": "真偽値を返す書き方の背景。教材独自の試合と部屋の札の例、理解を確かめる問題、既存課題のヒント。",
+      "authorship": "original",
+      "reuse": "concept-reference",
+      "reviewStatus": "draft"
+    },
+    {
+      "contentId": "l1-boolean/t2-regex-test/slides.md",
+      "sourceRefs": [
+        "SRC-typescriptbook-values-types-variables-boolean",
+        "SRC-typescriptbook-values-types-variables-truthy-falsy-values"
+      ],
+      "usedFor": "真偽値の背景。正規表現の test で合う部分の有無を調べる、部屋の札の独自例。",
       "authorship": "original",
       "reuse": "concept-reference",
       "reviewStatus": "draft"

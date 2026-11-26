@@ -18,6 +18,32 @@ const scenes = [0, 1, 2].map(
     beats: [{ say: "文です。" }, { say: "次です。" }],
   }),
 );
+it.each([1, 2] as const)(
+  "schema %s の motion は図解と同じ場面時刻・タイトル・字幕になる",
+  (schema) => {
+    const motions: Scene[] = scenes.map(({ id, role, title, beats }) => ({
+      kind: "motion",
+      id,
+      role,
+      title,
+      motion: "drill-submit",
+      beats,
+    }));
+    const durations = scenes.map(() => [2, 3]);
+    const topic = { title: "進め方", takeaway: "一問ずつ進めます。" };
+    const board = sceneVideoSequence(scenes, durations, topic, {}, { title: 1 }, schema);
+    const motion = sceneVideoSequence(motions, durations, topic, {}, { title: 1 }, schema);
+    expect(motion[0]).toEqual(board[0]);
+    expect(motion.map(({ timing }) => timing)).toEqual(board.map(({ timing }) => timing));
+    const timing = motion[1].timing;
+    expect(timing.beats[1].start - timing.beats[0].end).toBeCloseTo(schema === 1 ? 1.2 : 1.6);
+    const captions = (entries: typeof board) =>
+      sceneCaptionsVtt(entries.slice(1).map(({ timing }) => ({ timing, onDark: [false, false] })));
+    expect(captions(motion)).toEqual(captions(board));
+    expect(sceneCaptionAt(timing, timing.beats[0].start)).toBe("文です。");
+    expect(sceneCaptionAt(timing, timing.beats[0].end + 0.1)).toBe("");
+  },
+);
 it("タイトルと絵コンテの文・場面を保ち、最後の余韻に0.8秒のフェードを足す", () => {
   const durations = [
     [1, 2],

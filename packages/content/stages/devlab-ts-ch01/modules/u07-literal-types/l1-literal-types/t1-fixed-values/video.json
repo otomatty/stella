@@ -1,274 +1,813 @@
 {
-  "schema": 1,
+  "schema": 2,
   "brief": {
-    "goal": "値の候補を型で限定し、if の中の return と const の型を説明できる。",
-    "stuck": "string と決まった文字列の型を同じものと考えてしまう。",
-    "points": [
-      "リテラル型を縦線一本でつなぐと、候補のどれかだけを受け付ける。",
-      "if の中で return すると、その場で関数が終わる。",
-      "const で作った文字列の型は、その値そのものになる。"
-    ],
-    "leaveOut": ["問1〜20と応用問題の答えのコード", "型エイリアス", "オブジェクトの型推論"]
+    "goal": "引数と戻り値の候補を型注釈に書き、候補外の値を見分けられる。",
+    "stuck": "string と候補を決めた型を同じものと思う。型の縦線一本と条件の縦線二本を取り違える。",
+    "points": ["リテラル型を | でつなぐと、決まった値のどれかだけを受け付ける型になります。"],
+    "leaveOut": ["型エイリアス", "オブジェクトの型", "const の型推論", "課題の解答コード"]
+  },
+  "art": {
+    "rule": {
+      "prompt": "A thick closed rule book standing upright with a ribbon bookmark, and a round rubber stamp with a wooden handle beside it. Objects only, drawn large and centered. No people, no letters, no digits, no symbols."
+    },
+    "name": {
+      "prompt": "A hand holding a pen, writing on a blank rounded name tag sticker; two more blank label stickers lie beside it. The stickers show only one or two short placeholder lines. Drawn large and centered. No face, no letters, no digits, no symbols."
+    },
+    "door": {
+      "prompt": "A small shop entrance with a teal wooden door, brass hook and striped awning. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "sign": {
+      "prompt": "Two plain brown hanging shop signs with rope loops and blank faces, shown as simple front-facing rectangles. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "lift": {
+      "prompt": "A plain grey elevator entrance with two blank round call buttons built into its frame, shown as simple front-facing rectangles and circles. Objects only. Drawn large and centered. Flat front view, no perspective, no isometric angle. Flat solid colours only: no gradients, no glossy highlights, no wood grain, no texture, no drop shadow. No people, no text, no letters, no digits, no symbols, no logos."
+    },
+    "dial": {
+      "prompt": "A rotary appliance selector with three distinct notches and no markings. Objects only. Drawn large and centered. No people, no text, no letters, no digits, no symbols, no logos."
+    }
+  },
+  "boards": {
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "店の状態",
+          "art": "door",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "受け付ける候補",
+          "art": "sign",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "ドアの札",
+          "art": "sign",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "引数の候補",
+          "art": "sign",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "状態を比べる",
+          "art": "door",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "戻り値の候補",
+          "art": "sign",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "決まった書き方",
+          "art": "rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "自分で決める",
+          "art": "name",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "numbers": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け付ける数",
+          "art": "dial",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "選んだ段階",
+          "art": "dial",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る値",
+          "art": "lift",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "引数の候補",
+          "art": "lift",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "型の確認",
+          "art": "rule",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "id": "bc",
+          "from": "b",
+          "to": "c"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "店の状態",
+          "art": "door",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "操作の向き",
+          "art": "lift",
+          "at": [3, 1]
+        },
+        {
+          "id": "c",
+          "label": "機器の段階",
+          "art": "dial",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "task": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "label": "受け取る状態",
+          "art": "name",
+          "at": [1, 1]
+        },
+        {
+          "id": "b",
+          "label": "返す状態",
+          "art": "rule",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ab",
+          "from": "a",
+          "to": "b"
+        }
+      ]
+    }
   },
   "scenes": [
     {
-      "id": "hook",
-      "kind": "code",
-      "role": "hook",
-      "title": "支払い方法の打ち間違い",
-      "code": [
-        "// 入力された支払い方法",
-        "const other = \"bank\";",
-        "// 使える支払い方法の例",
-        "const method = \"cash\";"
-      ],
+      "id": "goal",
+      "kind": "motion",
+      "role": "goal",
+      "title": "この動画で学ぶこと",
+      "motion": "door-sign",
       "beats": [
         {
-          "say": "注文に、知らない支払い方法が届きました。",
-          "type": [0, 1]
+          "say": "この動画では、決まった値だけを受け付ける型を学びます。"
         },
         {
-          "say": "使えるのは、カードと現金だけです。",
-          "type": [2, 3]
+          "say": "店のドアに掛ける札は、「営業中」と「準備中」の2枚だけです。"
         },
         {
-          "say": "実行する前に、間違いを見つけられるでしょうか。",
-          "focus": [1]
+          "say": "ほかの言葉を書いた札は、このドアには掛けられません。"
+        },
+        {
+          "say": "使える値を決めておく型が、リテラル型です。"
         }
       ]
     },
     {
-      "id": "choices",
-      "kind": "code",
-      "role": "point",
-      "title": "値を型に書く",
-      "code": [
-        "// 支払い方法 method に候補と値を書く",
-        "const method: \"card\" | \"cash\" = \"cash\";",
-        "// 候補にない支払い方法を書いている",
-        "const other: \"card\" | \"cash\" = \"bank\";"
-      ],
+      "id": "example",
+      "role": "example",
+      "title": "店の状態で札を選ぶ",
+      "board": "example",
       "beats": [
         {
-          "say": "リテラル型は、決まった値だけを受け付ける型です。",
-          "type": [0, 1]
+          "say": "店が開いているかどうかで、掛ける札を選びます。",
+          "show": ["a"]
         },
         {
-          "say": "値を縦線一本でつなぐと、候補を増やせます。",
+          "say": "使える札の文字は、二種類だけです。",
+          "show": ["b", "ab"]
+        },
+        {
+          "say": "状態を受け取って、札の文字を返す関数を作りましょう。",
+          "show": ["c", "bc"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "引数と戻り値の候補",
+      "code": [
+        "// 店の状態を受け取り、ドアの札の文字を返す",
+        "function signText(state: \"open\" | \"closed\"): \"営業中\" | \"準備中\" {",
+        "  // 開いていれば営業中、それ以外は準備中を返す",
+        "  return state === \"open\" ? \"営業中\" : \"準備中\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "引数の型に、受け付ける二つの値を書きます。",
+          "part": {
+            "line": 1,
+            "text": "\"open\" | \"closed\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "open"
+            }
+          }
+        },
+        {
+          "say": "値を引用符で囲んだ部分が、文字列のリテラル型です。",
+          "part": {
+            "line": 1,
+            "text": "\"open\""
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "型をつなぐ縦線は、一本だけ書いてください。",
           "part": {
             "line": 1,
             "text": "|"
+          },
+          "figure": {
+            "tag": {
+              "a": "closed"
+            }
           }
         },
         {
-          "say": "この値は候補にあるので、受け付けます。",
-          "set": {
-            "method": "\"cash\""
+          "say": "戻り値の候補も、閉じかっこの後ろに書きます。",
+          "part": {
+            "line": 1,
+            "text": "\"営業中\" | \"準備中\""
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "この関数が返せるのは、営業中か準備中です。",
+          "focus": [3],
+          "figure": {
+            "tag": {
+              "c": "営業中"
+            },
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "names",
+      "kind": "code",
+      "role": "note",
+      "title": "名前と記号を見分ける",
+      "code": [
+        "// 店の状態を受け取り、ドアの札の文字を返す",
+        "function signText(state: \"open\" | \"closed\"): \"営業中\" | \"準備中\" {",
+        "  // 開いていれば営業中、それ以外は準備中を返す",
+        "  return state === \"open\" ? \"営業中\" : \"準備中\";",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "parts"
+      },
+      "beats": [
+        {
+          "say": "関数や引数の名前は、自分で決めます。",
+          "part": {
+            "line": 1,
+            "text": "signText",
+            "note": "札の文字"
+          },
+          "figure": {
+            "show": ["a", "b"]
+          }
+        },
+        {
+          "say": "ここでの引数名は、店の状態を表す名前です。",
+          "part": {
+            "line": 1,
+            "text": "state",
+            "note": "状態"
+          },
+          "classify": {
+            "free": [
+              {
+                "line": 1,
+                "text": "signText"
+              },
+              {
+                "line": 1,
+                "text": "state"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "型をつなぐ縦線は一本、条件の「または」は二本と区別しましょう。",
+          "classify": {
+            "fixed": [
+              {
+                "line": 1,
+                "text": "|"
+              }
+            ]
+          },
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "numbers",
+      "kind": "code",
+      "role": "note",
+      "title": "数も候補を決められる",
+      "code": [
+        "// 受け取った風量の段階をそのまま返す",
+        "function fanStep(step: 1 | 2 | 3): 1 | 2 | 3 {",
+        "  // 指定された段階を返す",
+        "  return step;",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "numbers"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "数にも、値そのものを型として書けます。",
+          "part": {
+            "line": 1,
+            "text": "1 | 2 | 3"
+          },
+          "figure": {
+            "show": ["a", "b", "ab"],
+            "tag": {
+              "a": "1・2・3"
+            }
+          }
+        },
+        {
+          "say": "この風量の候補は、一、二、三の三つです。",
+          "part": {
+            "line": 1,
+            "text": "step",
+            "note": "段階"
+          },
+          "figure": {
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "四は候補にないので、渡せません。",
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "cross"
+              }
+            ],
+            "tag": {
+              "a": "4"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply",
+      "kind": "code",
+      "role": "apply",
+      "title": "開いている店の札",
+      "code": [
+        "// 店の状態を受け取り、ドアの札の文字を返す",
+        "function signText(state: \"open\" | \"closed\"): \"営業中\" | \"準備中\" {",
+        "  // 開いていれば営業中、それ以外は準備中を返す",
+        "  return state === \"open\" ? \"営業中\" : \"準備中\";",
+        "}",
+        "// 開いている状態を渡す",
+        "signText(\"open\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "開いている状態を渡して、結果をたどりましょう。",
+          "part": {
+            "line": 6,
+            "text": "\"open\""
+          },
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "a": "open"
+            }
+          }
+        },
+        {
+          "say": "この値は、引数に書いた候補にあります。",
+          "part": {
+            "line": 1,
+            "text": "\"open\""
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "条件が成り立つので、返す文字は営業中です。",
+          "part": {
+            "line": 3,
+            "text": "\"営業中\""
+          },
+          "figure": {
+            "tag": {
+              "c": "営業中"
+            },
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "戻り値の型にも、この文字が含まれています。",
+          "part": {
+            "line": 1,
+            "text": "\"営業中\""
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "c",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "outside",
+      "kind": "code",
+      "role": "note",
+      "title": "候補外は実行前に見つかる",
+      "code": [
+        "// 店の状態を受け取り、ドアの札の文字を返す",
+        "function signText(state: \"open\" | \"closed\"): \"営業中\" | \"準備中\" {",
+        "  // 開いていれば営業中、それ以外は準備中を返す",
+        "  return state === \"open\" ? \"営業中\" : \"準備中\";",
+        "}",
+        "// 候補にない状態を渡そうとする",
+        "signText(\"maybe\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "model"
+      },
+      "beats": [
+        {
+          "say": "候補にない値を、渡そうとしました。",
+          "part": {
+            "line": 6,
+            "text": "\"maybe\""
+          },
+          "figure": {
+            "tag": {
+              "a": "maybe"
+            },
+            "unmark": ["a", "c"],
+            "pulse": ["a"]
+          }
+        },
+        {
+          "say": "型の確認でエラーになり、実行前に気付けます。",
+          "mark": [
+            {
+              "line": 6,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "a",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "string なら、この値も受け付ける型です。",
+          "speech": "ストリングなら、この値も受け付ける型です。",
+          "part": {
+            "line": 1,
+            "text": "\"open\" | \"closed\""
+          },
+          "figure": {
+            "pulse": ["c"]
+          }
+        },
+        {
+          "say": "候補を決めた型では、ほかの文字列は渡せません。",
+          "figure": {
+            "pulse": ["a"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "code",
+      "role": "quiz",
+      "title": "エレベーターの向き",
+      "code": [
+        "// エレベーターを呼ぶ向きを受け取る",
+        "function callLift(direction: \"上\" | \"下\"): string {",
+        "  // 受け取った向きを返す",
+        "  return direction;",
+        "}",
+        "// この呼び出しを型の確認に通せるか考える",
+        "callLift(\"横\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "practice"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、エレベーターを呼ぶ向きを考えましょう。",
+          "figure": {
+            "show": ["a", "b", "c", "ab", "bc"],
+            "tag": {
+              "b": "上・下"
+            }
+          }
+        },
+        {
+          "say": "引数の候補は、上か下の二つです。",
+          "part": {
+            "line": 1,
+            "text": "\"上\" | \"下\""
+          },
+          "figure": {
+            "pulse": ["b"]
+          }
+        },
+        {
+          "say": "横を渡す呼び出しは、型の確認を通るでしょうか。",
+          "part": {
+            "line": 6,
+            "text": "\"横\""
+          },
+          "figure": {
+            "tag": {
+              "a": "横"
+            },
+            "mark": [
+              {
+                "on": "c",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "role": "answer",
+      "title": "型の確認でエラー",
+      "board": "practice",
+      "beats": [
+        {
+          "say": "横は候補にないので、型の確認でエラーになります。",
+          "mark": [
+            {
+              "on": "c",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "role": "explain",
+      "title": "戻り値の型と区別する",
+      "board": "practice",
+      "beats": [
+        {
+          "say": "関数に渡せる値は、引数の型で決まります。",
+          "pulse": ["b"]
+        },
+        {
+          "say": "戻り値が string でも、引数の候補は同じです。",
+          "speech": "戻り値がストリングでも、引数の候補は同じです。",
+          "pulse": ["c"]
+        },
+        {
+          "say": "上か下の、どちらかを渡しましょう。",
+          "tag": {
+            "a": "上"
           },
           "mark": [
             {
-              "line": 1,
+              "on": "c",
               "kind": "check"
             }
-          ]
-        },
-        {
-          "say": "候補にない値は、型の確認でエラーになります。",
-          "type": [2, 3],
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "型の縦線一本と、またはの二本は別のものです。",
-          "focus": [1]
+          ],
+          "pause": 1
         }
-      ],
-      "point": 1,
-      "panel": {
-        "kind": "values",
-        "items": ["method"]
-      }
+      ]
     },
     {
-      "id": "return",
-      "kind": "code",
-      "role": "point",
-      "title": "条件に合ったら、その場で返す",
-      "code": [
-        "// 在庫の状態を返す関数を作る",
-        "function stockLabel(stock: number): \"なし\" | \"あり\" {",
-        "  // もし stock が 0 と等しいなら",
-        "  if (stock === 0) {",
-        "    // \"なし\" を返す",
-        "    return \"なし\";",
-        "  }",
-        "  // \"あり\" を返す",
-        "  return \"あり\";",
-        "}"
-      ],
+      "id": "uses",
+      "role": "usage",
+      "title": "候補が決まる場面",
+      "board": "uses",
       "beats": [
         {
-          "say": "返す値も、候補を決めた型にできます。",
-          "type": [0, 1]
+          "say": "店の状態のように、使う言葉が決まる場面で使えます。",
+          "show": ["a"]
         },
         {
-          "say": "もし在庫がゼロなら、中の行に進みます。",
-          "type": [2, 3]
+          "say": "移動する向きも、決まった候補の一例です。",
+          "show": ["b"]
         },
         {
-          "say": "return で値を返すと、その場で関数が終わります。",
-          "speech": "リターンで値を返すと、その場で関数が終わります。",
-          "type": [4, 5, 6],
-          "set": {
-            "stock": "0",
-            "result": "\"なし\""
+          "say": "数の段階にも、同じ型の書き方を使いましょう。",
+          "show": ["c"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "kind": "code",
+      "role": "next",
+      "title": "問1 で使う",
+      "code": [
+        "// 問1 \"on\" なら \"off\"、\"off\" なら \"on\" を返す",
+        "//     例: toggle(\"on\") → \"off\"",
+        "export function toggle() {}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "task"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "問1では、受け取った状態と反対の状態を返します。",
+          "speech": "問いちでは、受け取った状態と反対の状態を返します。",
+          "figure": {
+            "show": ["a", "b", "ab"]
           }
         },
         {
-          "say": "条件に合わなければ、後ろの行まで進みます。",
-          "type": [7, 8, 9]
-        },
-        {
-          "say": "在庫が三なら、ありを返して終わります。",
-          "set": {
-            "stock": "3",
-            "result": "\"あり\""
+          "say": "引数と戻り値は、どちらも二つの候補です。",
+          "part": {
+            "line": 0,
+            "text": "\"on\""
           },
-          "focus": [8]
-        }
-      ],
-      "point": 2,
-      "panel": {
-        "kind": "values",
-        "items": ["stock", "result"]
-      }
-    },
-    {
-      "id": "mistake",
-      "kind": "code",
-      "role": "point",
-      "title": "広い型は狭い候補に入らない",
-      "code": [
-        "// 入れ直せる状態 label を作る",
-        "let label = \"あり\";",
-        "// 候補を限定した変数に入れようとしている",
-        "const result: \"なし\" | \"あり\" = label;"
-      ],
-      "beats": [
-        {
-          "say": "let の文字列を、狭い候補に入れてみます。",
-          "speech": "レットの文字列を、狭い候補に入れてみます。",
-          "type": [0, 1]
-        },
-        {
-          "say": "string は、ほかの文字列も含む型です。",
-          "speech": "ストリングは、ほかの文字列も含む型です。",
-          "type": [2, 3],
-          "mark": [
-            {
-              "line": 3,
-              "kind": "cross"
-            }
-          ]
-        },
-        {
-          "say": "最初から型を付けるか、候補の値を直接返します。",
-          "focus": [1]
-        }
-      ],
-      "point": 2
-    },
-    {
-      "id": "const",
-      "kind": "code",
-      "role": "point",
-      "title": "const の値の型",
-      "code": [
-        "// 標準サイズ SIZE を作り、\"M\" を入れる",
-        "const SIZE = \"M\";",
-        "// 入れ直せるサイズ size を作る",
-        "let size = \"M\";"
-      ],
-      "beats": [
-        {
-          "say": "const で文字列を作る場合を見ます。",
-          "speech": "コンストで文字列を作る場合を見ます。",
-          "type": [0, 1]
-        },
-        {
-          "say": "型注釈がなければ、その値そのものの型になります。",
-          "set": {
-            "SIZE": "型は \"M\""
+          "figure": {
+            "pulse": ["a"]
           }
         },
         {
-          "say": "let なら、別の文字列も入れ直せます。",
-          "speech": "レットなら、別の文字列も入れ直せます。",
-          "type": [2, 3]
-        },
-        {
-          "say": "この場合の型は、広い string になります。",
-          "speech": "この場合の型は、広いストリングになります。",
-          "set": {
-            "size": "型は string"
-          }
-        }
-      ],
-      "point": 3,
-      "panel": {
-        "kind": "values",
-        "items": ["SIZE", "size"]
-      }
-    },
-    {
-      "id": "recap",
-      "kind": "code",
-      "role": "recap",
-      "title": "q07 の問1へ",
-      "code": [
-        "// 状態の候補を決めて受け取り、返す",
-        "export function toggle(",
-        "  state: \"on\" | \"off\",",
-        "): \"on\" | \"off\" {",
-        "  // ここに書く",
-        "}"
-      ],
-      "beats": [
-        {
-          "say": "問題では、二つの状態を切り替えます。",
-          "type": [0, 1, 2, 3, 4, 5]
-        },
-        {
-          "say": "オンを渡すと、オフが返ります。",
-          "row": [0]
-        },
-        {
-          "say": "オフを渡すと、オンが返ります。",
-          "row": [1]
-        },
-        {
-          "say": "リテラル型と return を使って、書いてみましょう。",
-          "speech": "リテラル型とリターンを使って、書いてみましょう。",
-          "focus": [4]
-        }
-      ],
-      "panel": {
-        "kind": "calls",
-        "rows": [
-          {
-            "call": "toggle(\"on\")",
-            "result": "\"off\""
+          "say": "まず、候補を型注釈に書いてみましょう。",
+          "part": {
+            "line": 2,
+            "text": "toggle"
           },
-          {
-            "call": "toggle(\"off\")",
-            "result": "\"on\""
-          }
-        ]
-      }
+          "figure": {
+            "pulse": ["b"]
+          },
+          "pause": 1
+        }
+      ]
     }
-  ]
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "465d842a2010434ba3df6e52d43621c50194716f7fb06153732096fd081d0545"
+  }
 }
