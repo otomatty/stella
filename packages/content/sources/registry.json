@@ -5987,6 +5987,244 @@
       "review": {
         "status": "draft"
       }
+    },
+    {
+      "id": "SRC-claude-code-sdk-hosting-20261126",
+      "title": "Hosting the Agent SDK",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/agent-sdk/hosting",
+      "section": "The subprocess model / State that lives on local disk",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-environment-20261126",
+      "title": "Choosing an agent environment",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/choosing-an-environment",
+      "section": "Compare the options / When to choose a self-hosted sandbox / What a self-hosted sandbox doesn’t change",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-data-handling-20261126",
+      "title": "Claude Managed Agents overview",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/overview",
+      "section": "Data handling",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-permission-policies-20261126",
+      "title": "Permission policies",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/permission-policies",
+      "section": "Permission policy types / Custom tools",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-migration-20261126",
+      "title": "Migration",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/migration",
+      "section": "What changes / Features that move to your client",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-budgets-20261126",
+      "title": "Session budgets",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/budgets",
+      "section": "Set a budget at session creation / When a session reaches its budget",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-anthropic-multi-agent-research-20261126",
+      "title": "How we built our multi-agent research system",
+      "publisher": "Anthropic",
+      "url": "https://www.anthropic.com/engineering/multi-agent-research-system",
+      "section": "Benefits of a multi-agent system / Prompt engineering and evaluations for research agents",
+      "kind": "explanation",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-manage-tool-context-20261126",
+      "title": "Manage tool context",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/manage-tool-context",
+      "section": "The four approaches / Combining approaches",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-code-subagent-cost-20261126",
+      "title": "Best practices",
+      "publisher": "Anthropic",
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "section": "Know what subagents cost",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-memory-tool-20261126",
+      "title": "Memory tool",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+      "section": "How it works / Context editing integration / Multisession software development pattern",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-managed-agent-memory-20261126",
+      "title": "Using agent memory",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/managed-agents/memory",
+      "section": "Overview / Attach a memory store to a session",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-server-tools-20261126",
+      "title": "Server tools",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/server-tools",
+      "section": "The server-side loop and pause_turn",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-parallel-tool-use-20261126",
+      "title": "Parallel tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+      "section": "Execution semantics / Troubleshooting",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
+    },
+    {
+      "id": "SRC-claude-docs-tool-result-troubleshooting-20261126",
+      "title": "Troubleshooting tool use",
+      "publisher": "Anthropic",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use",
+      "section": "Parallel tool calls don’t work / Errors at request time",
+      "kind": "reference",
+      "language": "en",
+      "documentVersion": {
+        "kind": "rolling",
+        "revision": null
+      },
+      "checkedAt": "2026-11-26",
+      "review": {
+        "status": "draft"
+      }
     }
   ]
 }
