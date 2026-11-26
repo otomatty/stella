@@ -9,7 +9,12 @@ import { AuthExpiredError, initApi } from "./api.js";
 import { AuthStore } from "./auth.js";
 import { hashFile } from "./runner/files.js";
 import { buildTaskGuideHtml, type TaskGuideInput } from "./task-guide.js";
-import { onDidFinishTaskCheck, onDidStartTaskCheck } from "./task-run-events.js";
+import {
+  activeTaskCheck,
+  onDidFinishTaskCheck,
+  onDidProgressTaskCheck,
+  onDidStartTaskCheck,
+} from "./task-run-events.js";
 import { prepareLocalTaskSubmission } from "./task-submission.js";
 
 const state = vi.hoisted(() => ({
@@ -37,6 +42,8 @@ const vscodeMock = vi.hoisted(() => ({
   executeCommand: vi.fn(),
   showTaskPanel: vi.fn(),
   showTaskReadme: vi.fn(),
+  updateTaskPanelCheck: vi.fn(),
+  updateTaskReadmeCheck: vi.fn(),
   onTaskReadmeVisible: vi.fn(),
   refreshLearningSidebar: vi.fn(),
   getSecret: vi.fn(),
@@ -48,6 +55,7 @@ const vscodeMock = vi.hoisted(() => ({
   getCachedCatalog: vi.fn(),
   openExternal: vi.fn(),
   progress: vi.fn(),
+  reportProgress: vi.fn(),
 }));
 
 vi.mock("vscode", () => ({
@@ -104,7 +112,7 @@ vi.mock("vscode", () => ({
     withProgress: (options: unknown, task: (p: unknown, t: unknown) => Promise<unknown>) => {
       vscodeMock.progress(options);
       return task(
-        {},
+        { report: vscodeMock.reportProgress },
         {
           onCancellationRequested: (cancel: () => void) => {
             if (state.cancelProgress) cancel();
@@ -141,6 +149,8 @@ vi.mock("./task-panel.js", () => ({
   showTaskReadme: vscodeMock.showTaskReadme,
   onTaskReadmeVisible: vscodeMock.onTaskReadmeVisible,
   taskReadmeRoot: () => state.readmeRoot,
+  updateTaskPanelCheck: vscodeMock.updateTaskPanelCheck,
+  updateTaskReadmeCheck: vscodeMock.updateTaskReadmeCheck,
 }));
 vi.mock("./tree.js", () => ({ refreshLearningSidebar: vscodeMock.refreshLearningSidebar }));
 vi.mock("./task-status.js", () => ({ setCurrentTask: vscodeMock.setCurrentTask }));
@@ -1520,6 +1530,25 @@ describe("問題つきの課題", () => {
     expect(body.body.explanation).toBe("");
   });
 
+  it("問題の提出前の確認では問番号と題名、そのまま提出する案内を出す", async () => {
+    const root = await problemRoot();
+    vi.mocked(runTask).mockRejectedValueOnce(new Error("テストを開始できません"));
+    await run("stella.submitTask", root, "q02-sub");
+    expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenNthCalledWith(
+      1,
+      root,
+      {
+        progress: { steps: [] },
+        target: "問2 引く",
+        note: "すべて通ると、そのまま提出します。",
+      },
+      { rerender: true },
+    );
+    expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenLastCalledWith(root, undefined, {
+      rerender: true,
+    });
+  });
+
   it("ロック中の問題は確認でき、提出はその理由で止める", async () => {
     const root = await problemRoot(undefined, "passed", true);
     apiRequest.mockResolvedValue({
@@ -1890,7 +1919,11 @@ describe("問題つきの課題", () => {
     expect(started).toHaveBeenCalledExactlyOnceWith({
       root,
       taskId: passed.taskId,
+      title: problemTask.title,
       problemId: "q01-add",
+      forSubmission: true,
+      target: "問1 足す",
+      note: "すべて通ると、そのまま提出します。",
     });
     expect(finished).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
@@ -2142,7 +2175,29 @@ describe("確認の開始と終了のイベント", () => {
       await writeDistribution(root);
       const { start, finish } = observe(root);
       await run(command, root);
-      expect(start).toHaveBeenCalledExactlyOnceWith({ root, taskId: staticTask.id });
+      const note =
+        command === "stella.submitTask"
+          ? "すべて通ると、振り返りを書いて提出します。"
+          : "確認だけを行います。まだ何も送りません。";
+      expect(start).toHaveBeenCalledExactlyOnceWith({
+        root,
+        taskId: staticTask.id,
+        title: staticTask.title,
+        forSubmission: command === "stella.submitTask" ? true : undefined,
+        target: undefined,
+        note,
+      });
+      const check = { progress: { steps: [] }, target: undefined, note };
+      expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenNthCalledWith(1, root, check, {
+        rerender: true,
+      });
+      expect(vscodeMock.updateTaskPanelCheck).toHaveBeenNthCalledWith(1, root, {
+        ...check,
+        title: staticTask.title,
+      });
+      expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenCalledBefore(vi.mocked(runTask));
+      expect(vscodeMock.updateTaskPanelCheck).toHaveBeenCalledBefore(vi.mocked(runTask));
+      expectPanelsCleared(root);
       expect(start).toHaveBeenCalledBefore(vi.mocked(runTask));
       expect(finish).toHaveBeenCalledExactlyOnceWith({
         root,
@@ -2155,6 +2210,54 @@ describe("確認の開始と終了のイベント", () => {
       expect(vscodeMock.showErrorMessage).not.toHaveBeenCalled();
     },
   );
+
+  it("確認の手順を通知と実行中の状態に反映する", async () => {
+    const root = await taskRoot();
+    const progress = vi.fn();
+    context.subscriptions.push(onDidProgressTaskCheck(progress));
+    await run("stella.runTask", root);
+    expect(vscodeMock.progress).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "課題を確認しています: 見出しを変える" }),
+    );
+    expect(vscodeMock.reportProgress.mock.calls).toEqual([
+      [{ message: "1/2 HTML の確認" }],
+      [{ increment: 50 }],
+      [{ message: "2/2 提出するファイルの確認" }],
+      [{ increment: 50 }],
+    ]);
+    expect(progress).toHaveBeenCalledTimes(5);
+    expect(progress).toHaveBeenLastCalledWith({
+      root,
+      taskId: staticTask.id,
+      title: staticTask.title,
+      note: "確認だけを行います。まだ何も送りません。",
+      progress: {
+        steps: [
+          { label: "HTML の確認", status: "passed", durationMs: expect.any(Number) },
+          { label: "提出するファイルの確認", status: "passed", durationMs: expect.any(Number) },
+        ],
+      },
+    });
+    const check = expect.objectContaining({
+      progress: {
+        steps: [
+          { label: "HTML の確認", status: "running" },
+          { label: "提出するファイルの確認", status: "pending" },
+        ],
+      },
+    });
+    expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenNthCalledWith(3, root, check);
+    expect(vscodeMock.updateTaskPanelCheck).toHaveBeenNthCalledWith(3, root, check);
+    expectPanelsCleared(root);
+  });
+
+  function expectPanelsCleared(root: string) {
+    expect(vscodeMock.updateTaskReadmeCheck).toHaveBeenLastCalledWith(root, undefined, {
+      rerender: true,
+    });
+    expect(vscodeMock.updateTaskPanelCheck).toHaveBeenLastCalledWith(root, undefined);
+    expect(activeTaskCheck()).toBeUndefined();
+  }
 
   it("中断は保存せずに終了を知らせる", async () => {
     const root = await taskRoot();
@@ -2171,6 +2274,7 @@ describe("確認の開始と終了のイベント", () => {
       }),
     );
     expect(finish).toHaveBeenCalledBefore(vscodeMock.showInformationMessage);
+    expectPanelsCleared(root);
   });
 
   it("保存失敗でも通知より前に終了を知らせる", async () => {
@@ -2187,6 +2291,7 @@ describe("確認の開始と終了のイベント", () => {
     );
     expect(finish).toHaveReturnedWith({ panelOpened: false, savedOnDisk: false });
     expect(finish).toHaveBeenCalledBefore(vscodeMock.showWarningMessage);
+    expectPanelsCleared(root);
   });
 
   it("実行が予期せず失敗したときも終了を知らせる", async () => {
@@ -2202,16 +2307,21 @@ describe("確認の開始と終了のイベント", () => {
       }),
     );
     expect(finish).toHaveBeenCalledBefore(vscodeMock.showErrorMessage);
+    expectPanelsCleared(root);
   });
 
   it("環境診断では発火しない", async () => {
     const root = await taskRoot();
     const { start, finish } = observe(root);
+    const progress = vi.fn();
+    context.subscriptions.push(onDidProgressTaskCheck(progress));
     state.cancelProgress = true;
     await run("stella.diagnoseEnvironment");
     expect(runTask).toHaveBeenCalledOnce();
     expect(start).not.toHaveBeenCalled();
+    expect(progress).not.toHaveBeenCalled();
     expect(finish).not.toHaveBeenCalled();
+    expect(vscodeMock.reportProgress).toHaveBeenCalledExactlyOnceWith({ increment: 100 });
   });
 });
 

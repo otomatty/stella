@@ -1,13 +1,23 @@
 import path from "node:path";
 import * as vscode from "vscode";
 import { loadTask } from "./runner/run-task.js";
+import { checkProgressLabel } from "./task-check-progress.js";
 import { taskRootOf } from "./task-commands.js";
 import { problemForPath } from "./task-problems.js";
+import {
+  activeTaskCheck,
+  onDidFinishTaskCheck,
+  onDidProgressTaskCheck,
+  onDidStartTaskCheck,
+} from "./task-run-events.js";
 
 export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
   const changes = new vscode.EventEmitter<void>();
   context.subscriptions.push(
     changes,
+    onDidStartTaskCheck(() => changes.fire()),
+    onDidProgressTaskCheck(() => changes.fire()),
+    onDidFinishTaskCheck(() => changes.fire()),
     vscode.workspace.onDidGrantWorkspaceTrust(() => changes.fire()),
     vscode.languages.registerCodeLensProvider(
       { scheme: "file", pattern: "**/src/*.{ts,cs}" },
@@ -25,8 +35,19 @@ export function registerTaskCodeLens(context: vscode.ExtensionContext): void {
           const text = document.getText();
           const firstExport = /^[^\S\r\n]*export\b/m.exec(text);
           const line = firstExport ? document.positionAt(firstExport.index).line : 0;
+          const range = new vscode.Range(line, 0, line, 0);
+          const active = activeTaskCheck();
+          if (active?.root === root && active.problemId === problem.id) {
+            const label = checkProgressLabel(active.progress);
+            return [
+              new vscode.CodeLens(range, {
+                title: label ? `$(sync~spin) 確認中 ${label}` : "$(sync~spin) 確認中…",
+                command: "stella.showRunLog",
+              }),
+            ];
+          }
           return [
-            new vscode.CodeLens(new vscode.Range(line, 0, line, 0), {
+            new vscode.CodeLens(range, {
               title: "▷ 確認して提出",
               command: "stella.submitTask",
               arguments: [root, problem.id],

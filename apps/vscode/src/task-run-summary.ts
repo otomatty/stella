@@ -6,6 +6,8 @@ import {
 import { escapeHtml } from "./markdown-html.js";
 import { expectedActual } from "./task-test-message.js";
 
+export { shortStepLabel } from "./task-check-progress.js";
+
 export interface TestCounts {
   passed: number;
   total: number;
@@ -23,13 +25,6 @@ export const STEP_MARKS: Record<StepStatus, string> = {
   error: "!",
   skipped: "–",
 };
-
-export function shortStepLabel(label: string): string {
-  return label
-    .trimEnd()
-    .replace(/(?:\([^()]*\)|（[^（）]*）)$/, "")
-    .trimEnd();
-}
 
 export function countTests(tests: readonly TestCaseResult[] = []): TestCounts {
   const counts = { passed: 0, total: 0 };

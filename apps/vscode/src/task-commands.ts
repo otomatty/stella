@@ -18,6 +18,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { type CiRunClaim, deployUrlProblem, runUrlProblem } from "@stella/shared/tasks/ci-run";
 import type { TaskManifest } from "@stella/shared/tasks/manifest";
+import { problemStepLabel } from "@stella/shared/tasks/problem-steps";
 import {
   canSubmit,
   type RunOutcome,
@@ -38,6 +39,7 @@ import {
   findTaskRoot,
   type LoadedTask,
   loadTask,
+  type RunProgress,
   runTask,
   saveRunResult,
 } from "./runner/run-task.js";
@@ -52,6 +54,7 @@ import {
   sendTaskSubmission,
   SUBMIT_AGAIN,
 } from "./task-submission.js";
+import { applyRunProgress, checkProgressLabel, emptyCheckProgress } from "./task-check-progress.js";
 import { readTestSource, resolveDiagnosticFile } from "./task-diagnostics.js";
 import { readLastResult, resolveEditFiles } from "./task-guide.js";
 import {
@@ -59,6 +62,8 @@ import {
   showTaskPanel,
   showTaskReadme,
   taskReadmeRoot,
+  updateTaskPanelCheck,
+  updateTaskReadmeCheck,
 } from "./task-panel.js";
 import {
   chooseProblem,
@@ -77,7 +82,14 @@ import {
   type TaskProblems,
 } from "./task-problems.js";
 import { loadTaskProblems } from "./task-update-guard.js";
-import { finishTaskCheck, startTaskCheck } from "./task-run-events.js";
+import {
+  finishTaskCheck,
+  onDidFinishTaskCheck,
+  onDidProgressTaskCheck,
+  onDidStartTaskCheck,
+  progressTaskCheck,
+  startTaskCheck,
+} from "./task-run-events.js";
 import {
   getTaskState,
   notifyProblemTaskOpened,
@@ -256,17 +268,34 @@ async function confirmUnsaved(
 async function runWithProgress<T>(
   output: vscode.OutputChannel,
   title: string,
-  work: (signal: AbortSignal, log: (text: string) => void) => Promise<T>,
+  work: (
+    signal: AbortSignal,
+    log: (text: string) => void,
+    onProgress: (event: RunProgress) => void,
+  ) => Promise<T>,
 ): Promise<T | undefined> {
   output.clear();
   output.appendLine(`[${new Date().toLocaleString()}] ${title}`);
   try {
     return await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title, cancellable: true },
-      async (_progress, token) => {
+      async (progress, token) => {
         const controller = new AbortController();
         token.onCancellationRequested(() => controller.abort());
-        return work(controller.signal, (text) => output.append(text));
+        let check = emptyCheckProgress();
+        return work(
+          controller.signal,
+          (text) => output.append(text),
+          (event) => {
+            check = applyRunProgress(check, event);
+            if (event.type === "step-start") {
+              const message = checkProgressLabel(check);
+              if (message) progress.report({ message });
+            } else if (event.type === "step-finish" && check.steps.length > 0) {
+              progress.report({ increment: 100 / check.steps.length });
+            }
+          },
+        );
       },
     );
   } catch (error) {
@@ -450,7 +479,7 @@ async function checkTask(
     if (!ci) return;
   }
   const title = options.forSubmission ? "提出の前に確認しています" : "課題を確認しています";
-  return runWithProgress(output, `${title}: ${manifest.title}`, async (signal, log) => {
+  return runWithProgress(output, `${title}: ${manifest.title}`, async (signal, log, onProgress) => {
     // 配布記録が壊れていても手元の確認は続ける (提出時の prepareTaskSubmission で改めて検証する)。
     const receipt = await readDistribution(root).catch((error: unknown) => {
       output.appendLine(
@@ -466,14 +495,39 @@ async function checkTask(
       options.forSubmission,
     );
     const problem = selection?.id;
+    const problemIndex = manifest.problems?.findIndex(({ id }) => id === problem) ?? -1;
+    const problemTitle = manifest.problems?.[problemIndex]?.title;
+    const note = !options.forSubmission
+      ? "確認だけを行います。まだ何も送りません。"
+      : manifest.problems?.length
+        ? "すべて通ると、そのまま提出します。"
+        : "すべて通ると、振り返りを書いて提出します。";
     const startedAt = Date.now();
-    startTaskCheck({ root, taskId: manifest.id, ...(problem ? { problemId: problem } : {}) });
+    startTaskCheck({
+      root,
+      taskId: manifest.id,
+      title: manifest.title,
+      forSubmission: options.forSubmission,
+      target:
+        problemTitle === undefined
+          ? undefined
+          : `${problemStepLabel(problemTitle, problemIndex)} ${problemTitle}`,
+      note,
+      ...(problem ? { problemId: problem } : {}),
+    });
     const result = await runTask({
       root,
       manifest,
       manifestSha256,
       signal,
       log,
+      onProgress: (event) => {
+        try {
+          onProgress(event);
+        } finally {
+          progressTaskCheck(event);
+        }
+      },
       ci,
       ...(problem ? { problem } : {}),
     }).catch((error: unknown) => {
@@ -586,8 +640,16 @@ async function diagnoseCommand(output: vscode.OutputChannel): Promise<void> {
       ...(environment ? { environment } : {}),
     };
     const cwd = root ?? workspaceRoots()[0] ?? homedir();
-    await runWithProgress(output, RUNNERS["env-diagnose"].label, async (signal, log) => {
-      const result = await runTask({ root: cwd, manifest, manifestSha256: "", signal, log });
+    const title = RUNNERS["env-diagnose"].label;
+    await runWithProgress(output, title, async (signal, log, onProgress) => {
+      const result = await runTask({
+        root: cwd,
+        manifest,
+        manifestSha256: "",
+        signal,
+        log,
+        onProgress,
+      });
       showTaskPanel({ kind: "result", manifest, result, standalone: true });
       notify(result.outcome, output);
     });
@@ -1179,6 +1241,20 @@ export function registerTaskCommands(context: vscode.ExtensionContext, auth: Aut
   const output = vscode.window.createOutputChannel("STELLA 実行ログ");
   context.subscriptions.push(
     output,
+    onDidStartTaskCheck(({ root, title, target, note }) => {
+      const check = { progress: emptyCheckProgress(), target, note };
+      updateTaskReadmeCheck(root, check, { rerender: true });
+      if (title !== undefined) updateTaskPanelCheck(root, { ...check, title });
+    }),
+    onDidProgressTaskCheck(({ root, title, progress, target, note }) => {
+      const check = { progress, target, note };
+      updateTaskReadmeCheck(root, check);
+      if (title !== undefined) updateTaskPanelCheck(root, { ...check, title });
+    }),
+    onDidFinishTaskCheck(({ root }) => {
+      updateTaskReadmeCheck(root, undefined, { rerender: true });
+      updateTaskPanelCheck(root, undefined);
+    }),
     onDidChangeAuthSession(() => {
       const root = taskReadmeRoot();
       if (root)
