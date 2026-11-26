@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import type { LearnerQuizQuestion } from "@stella/shared/cms/types";
 import type { SrsAnswerResult, SrsTodaySummary } from "@stella/shared/srs/types";
 import { shuffleLearnerQuizQuestions } from "@stella/shared/quiz/shuffle";
+import { quizOptionOutcome } from "@/lib/quiz-option-outcome";
 import { getSrsToday, submitSrsAnswer } from "@/lib/srs-api";
 import { PageHeader } from "@/components/common/PageHeader";
 import { TodayVariantCard } from "./TodayVariantCard";
@@ -180,26 +181,45 @@ export const ReviewSession = ({ currentUserId, backendEnabled }: ReviewSessionPr
             <fieldset className="flex flex-col gap-2 border-0 p-0 m-0" aria-label="選択肢">
               {question.options.map((o) => {
                 const isSelected = selected.includes(o.id);
-                const isCorrectOption = feedback?.correct_option_ids.includes(o.id) ?? false;
+                const outcome = feedback
+                  ? quizOptionOutcome(isSelected, feedback.correct_option_ids.includes(o.id))
+                  : undefined;
                 return (
                   <button
                     key={o.id}
                     data-testid="review-option"
+                    data-outcome={outcome}
                     type="button"
                     disabled={feedback != null}
                     onClick={() => toggle(o.id, question.kind === "multiple")}
                     aria-pressed={isSelected}
                     className={cn(
-                      "text-left text-sm rounded-md border border-border px-3 py-2 transition-colors",
+                      "flex gap-3 text-left text-sm rounded-md border border-border px-3 py-2 transition-colors",
                       !feedback && isSelected && "border-primary bg-primary/10",
-                      feedback && isCorrectOption && "border-success bg-success/10",
-                      feedback &&
-                        isSelected &&
-                        !isCorrectOption &&
-                        "border-destructive bg-destructive/10",
+                      outcome === "hit" && "border-success bg-success/10",
+                      outcome === "missed" && "border-dashed border-success",
+                      outcome === "wrong" && "border-destructive bg-destructive/10",
                     )}
                   >
-                    <InlineMarkdown>{o.label}</InlineMarkdown>
+                    <span className="flex-1">
+                      <InlineMarkdown>{o.label}</InlineMarkdown>
+                    </span>
+                    {outcome && outcome !== "none" ? (
+                      <span
+                        className={cn(
+                          "shrink-0 self-center text-[11px]",
+                          outcome === "missed"
+                            ? "text-success font-semibold"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {outcome === "missed"
+                          ? question.kind === "multiple"
+                            ? "選び忘れ"
+                            : "正解"
+                          : "あなたの回答"}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
