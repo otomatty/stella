@@ -196,10 +196,10 @@ const AHEAD_FADE: CSSProperties = {
 };
 
 /**
- * 先に進んでいる人の「いま」にぼかして出す文字列。見えないステージの題名は API から来ないので、
- * 実際の題名ではなく固定の文字列を使う。
+ * 先に進んでいる人の「いま」。見えないステージの題名は API から来ないので、
+ * ステージ名と同じ見た目でこの言葉を出す。
  */
-const AHEAD_PLACEHOLDER = "00章 ステージの名前";
+const AHEAD_LABEL = "まだ開いていないステージ";
 
 const HATCH: CSSProperties = {
   backgroundColor: "var(--bg-muted)",
@@ -298,16 +298,7 @@ function NowLines({ now }: { now: PeerNow }) {
 
 function NowText({ now }: { now: PeerNow }) {
   if (now.kind === "stage") return <p className="truncate text-ink">{now.title}</p>;
-  if (now.kind === "ahead") {
-    return (
-      <p className="truncate">
-        <span className="sr-only">先に進んでいます</span>
-        <span aria-hidden="true" className="select-none text-ink blur-[5px]">
-          {AHEAD_PLACEHOLDER}
-        </span>
-      </p>
-    );
-  }
+  if (now.kind === "ahead") return <p className="truncate text-ink">{AHEAD_LABEL}</p>;
   if (now.kind === "done") return <p className="truncate text-success">{now.label}</p>;
   return null;
 }
