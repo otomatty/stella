@@ -954,14 +954,14 @@ async function openNextProblemAfterSubmission(
 
   try {
     const file = vscode.Uri.file(await resolveFileInRoot(root, next.source));
+    const document = await vscode.workspace.openTextDocument(file);
+    if (session !== apiSession()) return;
     const active = vscode.window.activeTextEditor?.document.uri;
     if (active) {
       const rel = isFileUri(active) ? relativeInRoot(root, active.fsPath) : undefined;
       const problem = rel && (problemForPath(manifest, rel) ?? problemForTestPath(manifest, rel));
       if (!problem || (problem.id !== problemId && problem.id !== next.id)) return;
     }
-    const document = await vscode.workspace.openTextDocument(file);
-    if (session !== apiSession()) return;
     await vscode.window.showTextDocument(document, {
       viewColumn: vscode.ViewColumn.One,
       preview: false,

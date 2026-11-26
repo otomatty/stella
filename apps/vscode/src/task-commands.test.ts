@@ -74,6 +74,7 @@ const vscodeMock = vi.hoisted(() => ({
   refreshLearningSidebar: vi.fn(),
   getSecret: vi.fn(),
   setCurrentTask: vi.fn(),
+  openTextDocument: vi.fn(async (uri: { fsPath: string }) => ({ uri })),
   showTextDocument: vi.fn(),
   closeTabs: vi.fn(async () => true),
   showInputBox: vi.fn(),
@@ -193,7 +194,7 @@ vi.mock("vscode", () => ({
     get textDocuments() {
       return state.dirtyDocs;
     },
-    openTextDocument: async (uri: { fsPath: string }) => ({ uri }),
+    openTextDocument: vscodeMock.openTextDocument,
     onDidSaveTextDocument: () => ({ dispose: () => undefined }),
     onDidChangeWorkspaceFolders: () => ({ dispose: () => undefined }),
     onDidGrantWorkspaceTrust: () => ({ dispose: () => undefined }),
@@ -2076,6 +2077,11 @@ describe("問題つきの課題", () => {
     { label: "次の動画が未視聴", nextState: "locked-video", opens: false },
     { label: "次に前の問題が必要", nextState: "locked-previous", opens: false },
     { label: "課題外のファイルに移った", activePath: "../src/q01-add.ts", opens: false },
+    {
+      label: "次のファイルの読み込み中に課題外のファイルに移った",
+      activePathOnOpen: "../src/q01-add.ts",
+      opens: false,
+    },
     { label: "同じ問題のテストに移った", activePath: "tests/q01-add.test.ts", opens: true },
     { label: "次の問題のファイルに移った", activePath: "src/q02-sub.ts", opens: true },
     { label: "エディターがない", activePath: null, opens: true },
@@ -2088,6 +2094,7 @@ describe("問題つきの課題", () => {
     const {
       nextState = "open",
       activePath = "src/q01-add.ts",
+      activePathOnOpen,
       resubmission = false,
       missing = false,
       refreshFailed = false,
@@ -2121,6 +2128,12 @@ describe("問題つきの課題", () => {
         ],
       },
     ];
+    if (activePathOnOpen) {
+      vscodeMock.openTextDocument.mockImplementationOnce(async (uri) => {
+        state.activeFile = path.join(root, activePathOnOpen);
+        return { uri };
+      });
+    }
     if (openFails) vscodeMock.showTextDocument.mockRejectedValueOnce(new Error("open failed"));
     if (closeFails) vscodeMock.closeTabs.mockRejectedValueOnce(new Error("close failed"));
     let submitted = false;
@@ -2149,6 +2162,8 @@ describe("問題つきの課題", () => {
 
     await run("stella.submitTask", root);
 
+    if (activePathOnOpen)
+      expect(vscodeMock.openTextDocument).toHaveBeenCalledExactlyOnceWith(Uri.file(nextFile));
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
       "提出しました (1/2 問)",
       "Web で開く",
