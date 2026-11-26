@@ -37,7 +37,7 @@ it("字幕の HTML を描き、cue の境界と空白をミリ秒単位で並べ
     );
     expect(html[0]).toContain('<div class="caption"></div>');
     expect(html[1]).toContain(
-      '<div class="caption"><span>&lt;script&gt;&amp;lt;&quot;一行目&quot;\n二行目</span></div>',
+      '<div class="caption">&lt;script&gt;&amp;lt;&quot;一行目&quot;\n二行目</div>',
     );
     expect(html[1]).toContain("font-weight: 700");
     expect(html[1]).toMatch(/url\(file:[^)]*-700-normal\.woff2\)/);
@@ -45,18 +45,14 @@ it("字幕の HTML を描き、cue の境界と空白をミリ秒単位で並べ
     expect(html[1]).toContain("inset: auto 6% 2.6%");
     expect(html[1]).toContain("-webkit-line-clamp: 2");
     expect(html[1]).toContain("white-space: pre-line");
-    const bandStyle = `.caption span {
-  color: #fff;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 0 0.4em;
-  border-radius: 0.2em;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  text-shadow: none;
-}`;
-    expect(html[1]).toContain(bandStyle);
-    expect(html[2]).toContain('<div class="caption"><span>暗い場面</span></div>');
-    expect(html[2]).toContain(bandStyle);
+    expect(html[1]).toContain("color: #0E0E10");
+    expect(html[1]).toContain(
+      "text-shadow: 0 0 .1em #FFFFFF, 0 0 .22em #FFFFFF, 0 0 .5em rgba(255,255,255,.9), 0 0 .9em rgba(255,255,255,.6)",
+    );
+    expect(html[2]).toContain('<div class="caption on-dark">暗い場面</div>');
+    expect(html[2]).toContain(
+      ".caption.on-dark {\n  color: #FFFFFF;\n  text-shadow: 0 .05em .1em rgba(0,0,0,.8), 0 0 .26em rgba(0,0,0,.65), 0 0 .6em rgba(0,0,0,.4)",
+    );
     expect(page.evaluate).toHaveBeenCalledTimes(4);
     expect(page.screenshot.mock.calls).toEqual(
       ["caption-blank.png", "caption-0.png", "caption-1.png", "caption-2.png"].map((file) => [
