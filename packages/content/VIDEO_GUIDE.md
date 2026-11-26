@@ -41,7 +41,7 @@
 
 動画は絵コンテの最後の場面で終わります。最後の文を読み終え、通常の余韻を置いたあと、0.8 秒で背景色 `#FFFFFF` へフェードアウトし、音声も同じ区間で 0 へ下げます。長さは 30fps のフレーム境界へ切り上げます。`takeaway` の文字だけの場面や読み上げは追加しません。ポスターには最後の場面のフェード開始直前のコマを使います。場面の id に `summary` は使いません。
 
-タイトルの長さも 30fps のフレーム境界へ切り上げます。読みは `speechOf` と `narration/readings.json` を通し、音声の合成・キャッシュ・無音の切り落とし・長さの検査・無音対策のノイズ・音量の正規化はほかの場面と共通です。Gemini の合成はタイトルぶんだけ動画 1 本につき 1 回増えます。`--refresh-audio title` でタイトルの音声を作り直せます。廃止した `summary` の指定はエラーになります。
+タイトルの長さも 30fps のフレーム境界へ切り上げます。読みは `speechOf` と `narration/readings.json` を通し、音声の合成・キャッシュ・無音の切り落とし・長さの検査・無音対策のノイズ・音量の正規化はほかの場面と共通です。Gemini はタイトルを含めて動画 1 本を 1 回で読みます。`--refresh-audio title` は Gemini では動画全体、それ以外ではタイトルの音声を作り直します。廃止した `summary` の指定はエラーになります。
 
 場面の `title` は執筆時のメモで、静止画の一覧や検査・推敲で使います。背景は白で、場面の見出しやコードを囲う外側のカードは表示しません。図のノードやコードの横の図のカードは表示します。
 
@@ -94,7 +94,7 @@
 - 以前の動画で説明した用語は、そのまま使えます。たとえ話で「係」と呼んだものも、用語を教えたあとは「関数」と呼べます。
 - イラストと図は、その動画の説明にいちばん合うものを用意します。同じイラストや図を使うのは、同じ関数・色分けの図・課題のコードなど、前の動画で出たものをもう一度説明するときだけです。
 - 新しい考え方は、名前とその意味を先に説明してから、書き方を見せます。たとえば、変数を説明してから `const` を見せます。
-- 音声と映像は場面ごとに再利用します。文を変えていない場面の音声や、絵を変えていない場面の映像は作り直す必要がないので、直すときは必要な場面だけを変えます。
+- Gemini の音声は動画ごと、映像は場面ごとに再利用します。Gemini の音声は無音の位置で文ごとに切ります。読み上げを 1 文でも直すと音声を作り直し、全場面を描き直します。
 
 ```json
 { "say": "受け取る値を、引数と呼びます。", "term": { "text": "引数", "ruby": "ひきすう", "note": "関数が受け取る値" }, "pause": 1 }
@@ -342,22 +342,25 @@ bun run --filter=@stella/content video:polish -- <トピックのパス> --apply
 bun run --filter=@stella/content video:check                                   # 絵コンテの検査
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --stills      # 文ごとの静止画 (API を呼ばない)
 bun run --filter=@stella/content video:scenes -- <トピックのパス>               # Open JTalk で動画まで
-bun run --filter=@stella/content video:scenes -- <トピックのパス> --burn-captions  # 字幕付きの確認用動画も作る
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts fake    # 仮の音で動画まで
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini  # 本番の音声
 bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --tts-model gemini-3.8-flash-lite-tts  # 別の音声モデル
-bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --refresh-audio hook,check  # 指定した場面の音声を作り直す
+bun run --filter=@stella/content video:scenes -- <トピックのパス> --tts gemini --refresh-audio hook,check  # 指定した場面を含む動画全体の音声を作り直す
 ```
 
 静止画の一覧で、囲みの位置・寄ったときに文字が読めるか・札のはみ出しを見てから音声を作ります。一覧の各コマの下には対応する文を載せます。
 
-`--burn-captions` を付けると、同じ出力先に `video.captions.mp4` を追加します。Web プレイヤーと同じ CSS と Noto Sans JP の太字で、Chromium が字幕を透明な PNG に描きます。ffmpeg が読み上げの時刻に合わせて重ね、音声はそのままコピーします。配信では `video.mp4` と `captions.vtt` を使います。
+`video:scenes` で動画を作ると、`<出力先>/scenes.html` に確認ページを書きます。`python3 -m http.server -d <出力先>` を実行し、`http://localhost:8000/scenes.html` で動画と字幕を確かめます。
+
+`--refresh-audio` に場面の ID をカンマ区切りで指定します。Gemini は指定した場面を含む動画全体の音声を作り直します。文ごとに合成する TTS は指定した場面の文だけを作り直します。
+
+公開前の確認には `video:sync --preview` で `dist/video/` に作ります。リポジトリのルートで `python3 -m http.server -d packages/content/dist/video` を実行し、`http://localhost:8000/` の確認ページで動画と字幕を見ます。同じステージと `--topics` の `video:sync --cached-only` で R2 に上げます。
 
 1 日の上限に達したら、`--tts-model` で別のモデルを指定して書き出せます。環境変数 `VIDEO_TTS_MODEL` でも指定でき、`--tts-model` が優先します。公開する版は、上書き指定を外して `narration/voice.json` のモデルで作り直してください。
 
 ## 公開のされ方
 
-デプロイ (main への push) では動画を作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を main で手動実行します。実行は `video:sync --remote --tts gemini` で、`video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。作る前に Gemini TTS の呼び出し回数を数え、`VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら 1 本も作りません。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。場面ごとの音声と映像は videos.yml のキャッシュで使い回します。
+デプロイ (main への push) では動画を作りません。GitHub Actions の Lesson videos (`.github/workflows/videos.yml`) を main で手動実行します。実行は `video:sync --remote --tts gemini` で、`video.json` のあるトピックを新方式で作り、R2 と seed を通して公開します。Gemini TTS の呼び出しは新方式・旧方式ともトピックごとに 1 回と見積もり、キャッシュにある音声は数えません。新方式で音声の検査に落ちたら 1 回作り直し、それでも落ちたら場面の切れ目で 2 つに分けます。追加の呼び出しは事前の回数に含めません。必要な回数が `VIDEO_TTS_DAILY_LIMIT` (既定 100) の残りを超えるなら 1 本も作りません。同じ内容ハッシュの動画・字幕・ポスターが台帳にあれば作らず、変わった動画だけを作ります。`brief`・`polish`・イラストの `prompt` だけの変更では作り直しません。使う素材 (ショット・クリップ・イラスト) の中身を変えると作り直します。Gemini の音声は動画ごと、映像は場面ごとに videos.yml のキャッシュで使い回します。
 
 手元で配信まで確かめる場合は、リポジトリのルートで次を実行します (ffmpeg・Playwright Chromium と local R2 が必要)。`video:sync --remote` の既定は Gemini です。公開用の音声モデルは `narration/voice.json` で決まり、`video:sync` では `--tts-model`・`VIDEO_TTS_MODEL` を使えません。
 

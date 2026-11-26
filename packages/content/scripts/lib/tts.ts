@@ -183,14 +183,19 @@ export function readGeminiTtsCalls(): number {
   return geminiCallCount;
 }
 
-async function checkedFetch(label: string, url: string, init: RequestInit): Promise<Response> {
+async function checkedFetch(
+  label: string,
+  url: string,
+  init: RequestInit,
+  timeoutMs = 60_000,
+): Promise<Response> {
   if (label === "gemini" && geminiCallCounting) {
     geminiCallCount += 1;
     onGeminiCall?.();
   }
   let res: Response;
   try {
-    res = await fetch(url, { ...init, signal: AbortSignal.timeout(60_000) });
+    res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
     throw new RetryableError(`${label}: 通信に失敗しました (${(e as Error).message})`);
   }
@@ -283,28 +288,34 @@ function geminiProvider(cfg: VoiceConfig): TtsProvider {
         "GEMINI_API_KEY",
         "鍵なしで試すときは --tts openjtalk か --tts fake を付けてください",
       );
+      // 4 分ぶんの動画の読み上げには 1 分近くかかる。
       const res = await withRetry("gemini", () =>
-        checkedFetch("gemini", "https://generativelanguage.googleapis.com/v1beta/interactions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body: JSON.stringify({
-            model,
-            input: [
-              {
-                type: "user_input",
-                content: [
-                  {
-                    type: "text",
-                    text: speech,
-                    ...(style ? { annotations: [{ type: "speech_metadata", style }] } : {}),
-                  },
-                ],
-              },
-            ],
-            response_format: { type: "audio" },
-            generation_config: { speech_config: [{ voice }] },
-          }),
-        }),
+        checkedFetch(
+          "gemini",
+          "https://generativelanguage.googleapis.com/v1beta/interactions",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+            body: JSON.stringify({
+              model,
+              input: [
+                {
+                  type: "user_input",
+                  content: [
+                    {
+                      type: "text",
+                      text: speech,
+                      ...(style ? { annotations: [{ type: "speech_metadata", style }] } : {}),
+                    },
+                  ],
+                },
+              ],
+              response_format: { type: "audio" },
+              generation_config: { speech_config: [{ voice }] },
+            }),
+          },
+          300_000,
+        ),
       ).catch((error: unknown) => {
         if (error instanceof QuotaExhaustedError) quotaExhausted = error;
         throw error;
@@ -559,7 +570,7 @@ export interface TtsCallTopic {
 
 /**
  * 実際に外部 TTS を呼ぶ回数。キャッシュにある音声と、同じ読み上げの 2 件目以降は数えない。
- * 新方式は場面ごと、旧方式で Gemini (unit が topic) のときはトピックごとに 1 件の speech を渡す。
+ * 新方式も旧方式も Gemini (unit が topic) はトピックごとに 1 件の speech を渡す。
  */
 export function countTtsCalls(
   topics: readonly TtsTopicPlan[],
@@ -598,6 +609,10 @@ let cachedTtsRequired = false;
 
 export function requireCachedTts(enabled: boolean): void {
   cachedTtsRequired = enabled;
+}
+
+export function isCachedTtsRequired(): boolean {
+  return cachedTtsRequired;
 }
 
 const CACHED_TTS_ONLY =
