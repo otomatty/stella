@@ -1,0 +1,872 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "取り消せない操作について、アプリが承認を待つ位置と、承認時と拒否時の処理を説明できる。",
+    "stuck": "Claude がツールを呼ぶとアプリもすぐ実行してよいと思い、人が止められる場所を設けない。",
+    "points": ["取り消せない操作のツールは、実行の前にアプリが人の承認を取ります。"],
+    "leaveOut": [
+      "ツールの結果に含める項目の絞り方",
+      "エラーの詳しい書き方",
+      "Agent SDK と Managed Agents の承認設定",
+      "MCP の注釈を信頼する条件",
+      "機能の提供手段の選び方",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "reservation-slip": {
+      "prompt": "A white reservation slip clipped to a small blue clipboard beside a small blue calendar with completely blank white pages. A violet paper tab distinguishes the reservation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding out one hand beside an empty speech bubble. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "approval-person": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater carefully examining a white paper slip held in both hands. Simple facial features and an attentive expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open blue laptop with a completely blank screen beside a white paper slip held by a blue clip. A conceptual object illustration with no interface controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cancelled-ticket": {
+      "prompt": "A white reservation ticket torn into two clearly separated pieces, each with one small violet corner tab. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "barber": {
+      "prompt": "A service attendant in a plain blue shirt holding closed hairdressing scissors safely at their side, with their other hand open as they wait for an answer. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "haircut": {
+      "prompt": "A pair of blue hairdressing scissors held open beside a short lock of dark hair, showing the hair that would be cut. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-note": {
+      "prompt": "A single white reply slip resting inside an open blue document folder, with a small violet paper clip. The slip is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recital-letter": {
+      "prompt": "A blue open envelope containing a white invitation sheet with a simple violet violin silhouette, accompanied by two smaller closed blue envelopes. No musical notation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reservation",
+          "label": "取り消し料",
+          "art": "reservation-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "呼び出す",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "cancel",
+          "label": "予約の取り消し",
+          "art": "cancelled-ticket",
+          "at": [5, 1]
+        },
+        {
+          "id": "person",
+          "label": "実行前の承認",
+          "art": "approval-person",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "reservation",
+          "to": "claude"
+        },
+        {
+          "id": "run",
+          "from": "claude",
+          "to": "cancel"
+        }
+      ]
+    },
+    "haircut": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "利用者",
+          "art": "approval-person",
+          "at": [1, 1]
+        },
+        {
+          "id": "barber",
+          "label": "理容師",
+          "art": "barber",
+          "at": [3, 1]
+        },
+        {
+          "id": "cut",
+          "label": "切る長さ",
+          "art": "haircut",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reply",
+          "from": "person",
+          "to": "barber",
+          "label": "承認"
+        },
+        {
+          "id": "cut-hair",
+          "from": "barber",
+          "to": "cut",
+          "label": "切る"
+        }
+      ]
+    },
+    "receive": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "person",
+          "label": "人の判断",
+          "art": "approval-person",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "claude",
+          "to": "app",
+          "label": "呼び出し"
+        },
+        {
+          "id": "ask",
+          "from": "app",
+          "to": "person",
+          "label": "確認"
+        }
+      ]
+    },
+    "branch": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "person",
+          "label": "承認の有無",
+          "art": "approval-person",
+          "at": [3, 1]
+        },
+        {
+          "id": "cancel",
+          "label": "取り消す",
+          "art": "cancelled-ticket",
+          "at": [5, 1]
+        },
+        {
+          "id": "stop",
+          "label": "実行しない",
+          "art": "result-note",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "app",
+          "to": "person",
+          "label": "確認"
+        },
+        {
+          "id": "yes",
+          "from": "person",
+          "to": "cancel",
+          "label": "承認"
+        },
+        {
+          "id": "no",
+          "from": "person",
+          "to": "stop",
+          "label": "拒否"
+        }
+      ]
+    },
+    "details": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "number",
+          "label": "予約番号",
+          "art": "reservation-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "date",
+          "label": "予約の日時",
+          "art": "reservation-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "fee",
+          "label": "取り消し料",
+          "art": "reservation-slip",
+          "at": [5, 1]
+        },
+        {
+          "id": "operation",
+          "label": "行う操作",
+          "art": "cancelled-ticket",
+          "at": [5, 2]
+        },
+        {
+          "id": "person",
+          "label": "人の判断",
+          "art": "approval-person",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "outcome": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "person",
+          "label": "人の判断",
+          "art": "approval-person",
+          "at": [3, 1]
+        },
+        {
+          "id": "cancel",
+          "label": "取り消す関数",
+          "art": "cancelled-ticket",
+          "at": [5, 1]
+        },
+        {
+          "id": "result",
+          "label": "ツール結果",
+          "art": "result-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "app",
+          "to": "person",
+          "label": "確認"
+        },
+        {
+          "id": "run",
+          "from": "person",
+          "to": "cancel",
+          "label": "承認"
+        },
+        {
+          "id": "done",
+          "from": "cancel",
+          "to": "result",
+          "label": "実行結果"
+        },
+        {
+          "id": "refused",
+          "from": "person",
+          "to": "result",
+          "label": "拒否"
+        },
+        {
+          "id": "return",
+          "from": "result",
+          "to": "claude",
+          "label": "返す"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mail",
+          "label": "演奏会の案内",
+          "art": "recital-letter",
+          "at": [1, 1]
+        },
+        {
+          "id": "before",
+          "label": "送信前に確認",
+          "art": "approval-person",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "送信後に確認",
+          "art": "approval-person",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "send": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "mail",
+          "label": "送信の呼び出し",
+          "art": "recital-letter",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "person",
+          "label": "宛先と本文",
+          "art": "approval-person",
+          "at": [5, 1]
+        },
+        {
+          "id": "send",
+          "label": "送信する関数",
+          "art": "recital-letter",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "mail",
+          "to": "app",
+          "label": "受け取る"
+        },
+        {
+          "id": "ask",
+          "from": "app",
+          "to": "person",
+          "label": "確認"
+        },
+        {
+          "id": "run",
+          "from": "person",
+          "to": "send",
+          "label": "承認"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reservation",
+          "label": "予約の取り消し",
+          "art": "reservation-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "mail",
+          "label": "案内の送信",
+          "art": "recital-letter",
+          "at": [3, 1]
+        },
+        {
+          "id": "person",
+          "label": "実行前の承認",
+          "art": "approval-person",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べるだけのはずが",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "利用者は、予約の取り消し料を尋ねました。",
+          "show": ["reservation"]
+        },
+        {
+          "say": "Claude が選んだのは、取り消すツールです。",
+          "speech": "クロードが選んだのは、取り消すツールです。",
+          "show": ["claude", "request"]
+        },
+        {
+          "say": "空いた枠をほかの人が予約すると、元には戻せません。",
+          "show": ["cancel", "run"],
+          "mark": [
+            {
+              "on": "cancel",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "取り消せない操作のツールは、実行の前にアプリが人の承認を取ります。",
+          "show": ["person"],
+          "pulse": ["person"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "haircut",
+      "kind": "board",
+      "role": "example",
+      "title": "はさみを動かす前に",
+      "board": "haircut",
+      "beats": [
+        {
+          "say": "理容店で、髪を切ってもらう場面を考えましょう。",
+          "show": ["person", "barber"]
+        },
+        {
+          "say": "切る長さを見せて、本人の返事を待ちます。",
+          "show": ["cut"],
+          "pulse": ["cut"]
+        },
+        {
+          "say": "料金を尋ねただけなら、切ってよいという返事ではありません。",
+          "pulse": ["person"],
+          "tag": {
+            "person": "料金を質問"
+          }
+        },
+        {
+          "say": "切ってよいと本人が答えてから、はさみを動かす順番です。",
+          "show": ["reply", "cut-hair"],
+          "tag": {
+            "person": "承認"
+          },
+          "travel": {
+            "along": ["reply", "cut-hair"],
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "id": "receive-call",
+      "kind": "board",
+      "role": "syntax",
+      "title": "呼び出しを受けて止める",
+      "board": "receive",
+      "beats": [
+        {
+          "say": "アプリは、Claude からツールの呼び出しを受け取ります。",
+          "speech": "アプリは、クロードからツールの呼び出しを受け取ります。",
+          "show": ["claude", "app", "call"],
+          "travel": {
+            "along": ["call"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "受け取っただけでは、予約はまだ変更されていません。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "未実行"
+          }
+        },
+        {
+          "say": "操作の前に人の許可を得るのが、実行前の承認です。",
+          "term": {
+            "text": "実行前の承認",
+            "ruby": "じっこうまえのしょうにん",
+            "note": "対象と操作を見せて許可を得る"
+          },
+          "show": ["person"]
+        },
+        {
+          "say": "アプリから人へ、実行してよいか確認しましょう。",
+          "show": ["ask"],
+          "pulse": ["person"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "アプリは取り消す関数の手前で、承認を待ちます。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "承認待ち"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "approval-branch",
+      "kind": "board",
+      "role": "syntax",
+      "title": "承認で処理を分ける",
+      "board": "branch",
+      "beats": [
+        {
+          "say": "条件によって処理を分けることを、分岐と呼びます。",
+          "term": {
+            "text": "分岐",
+            "ruby": "ぶんき",
+            "note": "条件によって処理を分ける"
+          },
+          "show": ["app", "person", "ask"]
+        },
+        {
+          "say": "承認があるときだけ、取り消しへ進む分岐です。",
+          "show": ["cancel", "yes"],
+          "travel": {
+            "along": ["yes"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "拒否された場合は、取り消す関数を呼びません。",
+          "show": ["stop", "no"],
+          "travel": {
+            "along": ["no"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この条件を、アプリの中に置きましょう。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "承認を確認"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "show-target",
+      "kind": "board",
+      "role": "apply",
+      "title": "対象と操作を見せる",
+      "board": "details",
+      "beats": [
+        {
+          "say": "ここでは、予約番号を画面で確かめます。",
+          "show": ["number"],
+          "tag": {
+            "number": "R-208"
+          }
+        },
+        {
+          "say": "次に見るのは、取り消す予約の日時です。",
+          "show": ["date"],
+          "tag": {
+            "date": "明日14時"
+          }
+        },
+        {
+          "say": "取り消し料も、判断の前に見せましょう。",
+          "show": ["fee"],
+          "tag": {
+            "fee": "千円"
+          }
+        },
+        {
+          "say": "この予約を取り消す操作だと、はっきり示します。",
+          "show": ["operation"],
+          "tag": {
+            "operation": "取り消す"
+          }
+        },
+        {
+          "say": "対象と操作がそろってから、人の承認を待つ形です。",
+          "show": ["person"],
+          "pulse": ["number", "date", "fee", "operation", "person"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "approved",
+      "kind": "board",
+      "role": "apply",
+      "title": "承認した場合の結果",
+      "board": "outcome",
+      "reset": true,
+      "beats": [
+        {
+          "say": "本人が、この予約の取り消しを承認したとします。",
+          "show": ["app", "person", "ask"],
+          "tag": {
+            "person": "承認"
+          }
+        },
+        {
+          "say": "そこで初めて、アプリが取り消す関数を呼ぶ順番です。",
+          "show": ["cancel", "run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "実行した結果は、ツール結果として返します。",
+          "term": {
+            "text": "ツール結果",
+            "ruby": "つーるけっか",
+            "note": "呼び出しに対応して返す情報"
+          },
+          "show": ["result", "done"]
+        },
+        {
+          "say": "元の呼び出しに対応させて、Claude に返しましょう。",
+          "speech": "元の呼び出しに対応させて、クロードに返しましょう。",
+          "show": ["claude", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "declined",
+      "kind": "board",
+      "role": "apply",
+      "title": "拒否した場合の結果",
+      "board": "outcome",
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ予約でも、本人が拒否した場合を見てみましょう。",
+          "show": ["app", "person", "ask"],
+          "tag": {
+            "person": "拒否"
+          }
+        },
+        {
+          "say": "アプリは取り消す関数を呼びません。",
+          "show": ["cancel"],
+          "mark": [
+            {
+              "on": "cancel",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "cancel": "未実行"
+          }
+        },
+        {
+          "say": "返すのは、取り消しを実行しなかったという結果です。",
+          "show": ["result", "refused"],
+          "tag": {
+            "result": "実行なし"
+          },
+          "travel": {
+            "along": ["refused"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この結果も、元の呼び出しに対応させて返します。",
+          "show": ["claude", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "演奏会の案内を送る",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "演奏会の案内を、参加者全員へメールで送る場面です。",
+          "show": ["mail"]
+        },
+        {
+          "say": "送ると、相手に届いた案内は取り戻せません。",
+          "tag": {
+            "mail": "取り戻せない"
+          }
+        },
+        {
+          "say": "一つ目は、送信前に宛先と本文を見せて承認を待つ案です。",
+          "show": ["before"],
+          "tag": {
+            "before": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、送信したあとで本人に確認します。",
+          "show": ["after"],
+          "tag": {
+            "after": "二つ目"
+          }
+        },
+        {
+          "say": "送信を止められるのは、どちらの確認でしょうか。",
+          "pulse": ["before", "after"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "送信する前に待つ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、送信前に承認を待つ一つ目の案です。",
+          "mark": [
+            {
+              "on": "before",
+              "kind": "check"
+            },
+            {
+              "on": "after",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["before"]
+        },
+        {
+          "say": "人が拒否したら、送信する関数を呼ばずに止めます。",
+          "tag": {
+            "before": "拒否なら停止"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-before",
+      "kind": "board",
+      "role": "explain",
+      "title": "アプリが止める位置",
+      "board": "send",
+      "beats": [
+        {
+          "say": "呼び出しを受けた時点では、まだ送信していません。",
+          "show": ["mail", "app", "call"],
+          "tag": {
+            "app": "未送信"
+          }
+        },
+        {
+          "say": "ここで宛先と本文を見せれば、人が判断できます。",
+          "show": ["person", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "承認があった呼び出しだけ、送信へ進む設計です。",
+          "show": ["send", "run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "拒否されたときは、アプリで送信を止めましょう。",
+          "hide": ["run"],
+          "pulse": ["app"],
+          "tag": {
+            "app": "拒否なら停止"
+          },
+          "mark": [
+            {
+              "on": "send",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "確認を促す指示だけに頼らず、アプリに実行の条件を置きます。",
+          "pulse": ["app", "send"],
+          "tag": {
+            "app": "実行前の条件"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "取り消せない操作の前に",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "予約の取り消しでは、対象の予約を先に見せます。",
+          "show": ["reservation"]
+        },
+        {
+          "say": "案内のメールも、宛先と本文を見て判断する場面です。",
+          "show": ["mail"]
+        },
+        {
+          "say": "取り消せない操作の手前で、人の承認を待ちましょう。",
+          "show": ["person"],
+          "pulse": ["person"]
+        },
+        {
+          "say": "承認した呼び出しだけを、アプリが実行します。",
+          "pulse": ["reservation", "mail", "person"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bca42400e28f68cfe1092d976083a4b9fc301701b1359ad537144e6fd0955050"
+  }
+}

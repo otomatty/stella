@@ -1,0 +1,713 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールの説明に、働き、使う条件、入力の意味、返す情報と返さない情報を書ける。",
+    "stuck": "「在庫を取得する」のように働きだけを書き、使う場面や結果の範囲を伝えない。",
+    "points": ["ツールの説明には、何をし、いつ使い、何を返すかを詳しく書きます。"],
+    "leaveOut": [
+      "tool_choice と system による呼び出しの調整",
+      "strict と入力スキーマの仕様",
+      "input_examples の書き方",
+      "入力に理由を求めるときの注意",
+      "ツールの数と名前空間の設計",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-boxes": {
+      "prompt": "Three light grey cardboard parcels with blue tape, arranged as a small warehouse stock collection. The cardboard is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "guide-booklet": {
+      "prompt": "An open white instruction booklet with a blue cover and a violet pencil beside it. The pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stock-report": {
+      "prompt": "A white clipboard holding a blank white stock count sheet, with three small light grey parcels beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shoe-repair": {
+      "prompt": "A repair attendant in a plain blue shirt holding a blue shoe and a small shoe brush, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "product-tag": {
+      "prompt": "A large blank white merchandise tag attached by a blue loop to a single light grey cardboard parcel. The cardboard is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "calendar": {
+      "prompt": "An upright white tear-off calendar with blue binding rings and one blank violet tab, with no grid or writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-car": {
+      "prompt": "A compact blue rental car shown from a clear three-quarter angle, with simple light grey wheels and no brand features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "car-key": {
+      "prompt": "A single silver car key with a blue oval key fob beside a blank white rental form. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫照会",
+          "art": "stock-boxes",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "倉庫別の数",
+          "art": "stock-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "ツールの説明",
+          "art": "guide-booklet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shoe",
+          "label": "靴の修理",
+          "art": "shoe-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "受付の案内",
+          "art": "guide-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "date",
+          "label": "仕上がり日",
+          "art": "calendar",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "description": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "ツールの説明",
+          "art": "guide-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "stock",
+          "label": "何をするか",
+          "art": "stock-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "何を返すか",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "conditions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "use",
+          "label": "使う場面",
+          "art": "guide-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "入力の意味",
+          "art": "product-tag",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果への効き方",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "inventory": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "商品コード",
+          "art": "product-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫を調べる",
+          "art": "stock-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "倉庫別の数",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "lookup",
+          "from": "code",
+          "to": "stock",
+          "label": "指定"
+        },
+        {
+          "id": "return",
+          "from": "stock",
+          "to": "count",
+          "label": "返す"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "注文前の確認",
+          "art": "stock-boxes",
+          "at": [1, 1]
+        },
+        {
+          "id": "arrival",
+          "label": "入荷予定日",
+          "art": "calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "説明に明記",
+          "art": "guide-booklet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "car",
+          "label": "空車の照会",
+          "art": "rental-car",
+          "at": [1, 1]
+        },
+        {
+          "id": "weak",
+          "label": "短い説明",
+          "art": "guide-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "detail",
+          "label": "詳しい説明",
+          "art": "car-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "店舗と日付",
+          "art": "calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "car",
+          "label": "空車を調べる",
+          "art": "rental-car",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "借りられる車",
+          "art": "car-key",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "input",
+          "to": "car",
+          "label": "絞る"
+        },
+        {
+          "id": "return",
+          "from": "car",
+          "to": "result",
+          "label": "一覧"
+        }
+      ]
+    },
+    "rentalLimits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "use",
+          "label": "借りる前",
+          "art": "rental-car",
+          "at": [1, 1]
+        },
+        {
+          "id": "fees",
+          "label": "料金の照会",
+          "art": "car-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "使わない場面",
+          "art": "guide-booklet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の説明",
+          "art": "guide-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "入力の不足",
+          "art": "product-tag",
+          "at": [3, 1]
+        },
+        {
+          "id": "arrival",
+          "label": "関係ない質問",
+          "art": "calendar",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "説明に必要な情報",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫を調べるツールの説明を考えます。",
+          "show": ["stock"]
+        },
+        {
+          "say": "知りたいのは、倉庫ごとの在庫数です。",
+          "show": ["result"]
+        },
+        {
+          "say": "その働きが伝わる説明を書けるようにしましょう。",
+          "show": ["guide"]
+        },
+        {
+          "say": "何をし、いつ使い、何を返すかを詳しく書きます。",
+          "pulse": ["guide", "stock", "result"]
+        }
+      ]
+    },
+    {
+      "id": "repair-counter",
+      "kind": "board",
+      "role": "example",
+      "title": "靴修理の受付なら",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "靴修理の受付に、案内を置く場面です。",
+          "show": ["shoe", "guide"]
+        },
+        {
+          "say": "案内には「靴を扱います」とだけ書いてありました。",
+          "tag": {
+            "guide": "靴を扱う"
+          }
+        },
+        {
+          "say": "これでは、どんな用事で来ればよいか分かりません。",
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "修理を頼む場所で、仕上がり日を知らせると書きます。",
+          "show": ["date"],
+          "tag": {
+            "guide": "修理の依頼"
+          },
+          "unmark": ["guide"]
+        }
+      ]
+    },
+    {
+      "id": "describe-work",
+      "kind": "board",
+      "role": "syntax",
+      "title": "働きと結果を書く",
+      "board": "description",
+      "beats": [
+        {
+          "say": "使い方を伝える文章が、ツールの説明です。",
+          "term": {
+            "text": "ツールの説明",
+            "ruby": "ツールのせつめい",
+            "note": "働きと使い方を伝える文章"
+          }
+        },
+        {
+          "say": "この説明を、Claude が使う手がかりにします。",
+          "speech": "この説明を、クロードが使う手がかりにします。",
+          "show": ["guide"]
+        },
+        {
+          "say": "最初に確かめたいのは、何をするツールかです。",
+          "show": ["stock"]
+        },
+        {
+          "say": "何を返すかも、具体的に書きましょう。",
+          "show": ["result"]
+        }
+      ]
+    },
+    {
+      "id": "describe-conditions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "使う条件と入力",
+      "board": "conditions",
+      "beats": [
+        {
+          "say": "利用条件は、いつ使い、いつ使わないかを示します。",
+          "term": {
+            "text": "利用条件",
+            "ruby": "りようじょうけん",
+            "note": "使う場面と使わない場面"
+          }
+        },
+        {
+          "say": "在庫の例では、注文前に確かめる場面です。",
+          "show": ["use"],
+          "tag": {
+            "use": "注文前"
+          }
+        },
+        {
+          "say": "ツールに渡す値を、入力と呼びます。",
+          "term": {
+            "text": "入力",
+            "ruby": "にゅうりょく",
+            "note": "ツールに渡す値"
+          }
+        },
+        {
+          "say": "この例の入力は、商品を選ぶためのコードです。",
+          "show": ["input"]
+        },
+        {
+          "say": "各項目の意味と、結果への効き方も説明しましょう。",
+          "show": ["result"]
+        }
+      ]
+    },
+    {
+      "id": "inventory-description",
+      "kind": "board",
+      "role": "apply",
+      "title": "在庫の説明を具体化する",
+      "board": "inventory",
+      "beats": [
+        {
+          "say": "「在庫を取得する」という説明を直します。",
+          "show": ["stock"]
+        },
+        {
+          "say": "入力で渡すのは、調べたい商品のコードです。",
+          "show": ["code", "lookup"]
+        },
+        {
+          "say": "商品コードから、倉庫ごとの在庫数を返すと書きましょう。",
+          "show": ["count", "return"],
+          "travel": {
+            "along": ["lookup", "return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "入力の形は、A-100 のように例も添えます。",
+          "speech": "入力の形は、エー、ハイフン、いちゼロゼロのように例も添えます。",
+          "tag": {
+            "code": "A-100"
+          },
+          "pulse": ["code"]
+        },
+        {
+          "say": "英字とハイフンと数字を使う形です。",
+          "mark": [
+            {
+              "on": "code",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inventory-boundaries",
+      "kind": "board",
+      "role": "apply",
+      "title": "返さない情報も書く",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "使うのは、注文前に在庫を確かめるときです。",
+          "show": ["order"]
+        },
+        {
+          "say": "入荷の予定日は返さない、と説明に加えます。",
+          "show": ["arrival"],
+          "mark": [
+            {
+              "on": "arrival",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "入荷日だけの質問には、使う必要がありません。",
+          "tag": {
+            "arrival": "対象外"
+          }
+        },
+        {
+          "say": "一つのツールに、三文から四文以上を目安に書きましょう。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "具体的に書く"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "空車照会の説明を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "レンタカーの空車を調べるツールを考えます。",
+          "show": ["car"]
+        },
+        {
+          "say": "一つ目は「車の情報を調べる」だけの説明です。",
+          "show": ["weak"],
+          "tag": {
+            "weak": "車の情報"
+          }
+        },
+        {
+          "say": "二つ目には、店舗と日付で空車一覧を返すと書きました。",
+          "show": ["detail"],
+          "tag": {
+            "detail": "空車一覧"
+          }
+        },
+        {
+          "say": "借りる前に使い、料金は返さないとも説明しています。",
+          "tag": {
+            "detail": "料金は対象外"
+          },
+          "pulse": ["detail"]
+        },
+        {
+          "say": "使う場面と返す情報が伝わるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "weak",
+              "kind": "question"
+            },
+            {
+              "on": "detail",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "rental-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "詳しい説明を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、空車一覧を返すと書いた二つ目の説明です。",
+          "mark": [
+            {
+              "on": "weak",
+              "kind": "cross"
+            },
+            {
+              "on": "detail",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["detail"]
+        },
+        {
+          "say": "働きに加えて、使う場面と返さない情報も伝えています。",
+          "tag": {
+            "detail": "使い方が明確"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "入力と結果をたどる",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "店舗は、どこで借りたいかを指定する入力です。",
+          "show": ["input"],
+          "tag": {
+            "input": "借りる店舗"
+          }
+        },
+        {
+          "say": "日付では、いつの空車を調べるかを決めます。",
+          "tag": {
+            "input": "借りる日付"
+          }
+        },
+        {
+          "say": "その条件で、借りられる車を調べる仕組みです。",
+          "show": ["car", "select"],
+          "travel": {
+            "along": ["select"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "返すのが空車の一覧だと、結果の中身まで分かります。",
+          "show": ["result", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "result"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-boundaries",
+      "kind": "board",
+      "role": "explain",
+      "title": "使わない場面が分かる",
+      "board": "rentalLimits",
+      "beats": [
+        {
+          "say": "借りる前に空車を確かめるときに使います。",
+          "show": ["use"]
+        },
+        {
+          "say": "料金だけを知りたい質問は、対象外です。",
+          "show": ["fees"],
+          "mark": [
+            {
+              "on": "fees",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "返さない情報を書くと、使わない場面も伝わります。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "料金は対象外"
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-description",
+      "kind": "board",
+      "role": "usage",
+      "title": "説明を見直す場面",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "在庫ツールを作るときは、まず説明を読み直します。",
+          "show": ["stock"]
+        },
+        {
+          "say": "入力が足りないまま呼ばれたら、説明不足の合図です。",
+          "show": ["input"],
+          "mark": [
+            {
+              "on": "input",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "関係のない質問で呼ばれたら、使う条件を確かめましょう。",
+          "show": ["arrival"],
+          "mark": [
+            {
+              "on": "arrival",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "何をし、いつ使い、何を返すかを詳しく書きます。",
+          "pulse": ["stock"],
+          "tag": {
+            "stock": "説明を補う"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "0427eba9b1af4e823fc087a0a598dd0ca532e3802de641d931c1a47bcab11276"
+  }
+}

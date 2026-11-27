@@ -1,0 +1,774 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールの失敗した箇所を見分け、違っていた値と原因に合う直し方をエラーの文に書ける。",
+    "stuck": "検索前に入力の形式検査で止まったのに、検索失敗という結果だけで該当する荷物がないと判断してしまう。",
+    "points": ["ツールのエラーには、何が違い、どう直せばよいかを書きます。"],
+    "leaveOut": [
+      "ツールの結果を返すコードと履歴への追加方法",
+      "検索結果の項目を絞る方法",
+      "実行前の承認と機能の提供手段",
+      "自動再試行の実装や回数の決め方"
+    ]
+  },
+  "art": {
+    "parcel": {
+      "prompt": "A closed light grey cardboard delivery parcel sealed with blue tape, with a blank white shipping label attached. The parcel is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "name-slip": {
+      "prompt": "A white paper recipient slip with a simple violet silhouette of a person near its top and a blue paper clip. The rest of the paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tracking-slip": {
+      "prompt": "A hand holding a white delivery receipt with a small blue parcel pictogram in one corner, the rest of the receipt completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clerk": {
+      "prompt": "A service clerk in a plain blue shirt, with simple facial features, holding out an open hand to request a delivery receipt. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-note": {
+      "prompt": "A white paper note held by a violet clip with a blue pencil beside it, representing a written explanation returned after a failed lookup. The paper is entirely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white note and looking toward an empty speech bubble. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "retry-clock": {
+      "prompt": "A blue kitchen timer with a plain white circular dial and a single violet hand, with a small blue button on top. No scale marks on the dial. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "class-schedule": {
+      "prompt": "An open violet school workbook beside a white timetable sheet with a few solid blue rectangular blocks and a violet pencil. The sheet contains only pictorial blocks without writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "配送状況",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "検索失敗",
+          "art": "error-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "repair",
+          "label": "直し方を返す",
+          "art": "tracking-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reception": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "name",
+          "label": "受取人の名前",
+          "art": "name-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "宅配の受付",
+          "art": "clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "receipt",
+          "label": "番号のある控え",
+          "art": "tracking-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "hand-name",
+          "from": "name",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "ask-receipt",
+          "from": "clerk",
+          "to": "receipt",
+          "label": "尋ねる"
+        }
+      ]
+    },
+    "input-check": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "number",
+          "label": "追跡番号",
+          "art": "tracking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "形式検査",
+          "art": "clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "search",
+          "label": "配送の検索",
+          "art": "parcel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "number",
+          "to": "check",
+          "label": "確かめる"
+        },
+        {
+          "id": "proceed",
+          "from": "check",
+          "to": "search",
+          "label": "形式が合う"
+        }
+      ]
+    },
+    "failure-message": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "flag",
+          "label": "失敗の印",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "名前が入った",
+          "art": "name-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "action",
+          "label": "番号を尋ねる",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair-message": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "received",
+          "label": "受取人名",
+          "art": "name-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "expected",
+          "label": "追跡番号",
+          "art": "tracking-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "ask",
+          "label": "利用者に聞く",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "no-match": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "number",
+          "label": "検索した番号",
+          "art": "tracking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "該当なし",
+          "art": "parcel",
+          "at": [3, 1]
+        },
+        {
+          "id": "confirm",
+          "label": "番号の確認",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "lookup",
+          "from": "number",
+          "to": "result",
+          "label": "検索済み"
+        },
+        {
+          "id": "ask-again",
+          "from": "result",
+          "to": "confirm",
+          "label": "確認を頼む"
+        }
+      ]
+    },
+    "retry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "retry",
+          "label": "再試行",
+          "art": "retry-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "wrong",
+          "label": "形式違い",
+          "art": "name-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "回数の上限",
+          "art": "error-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "schedule",
+          "label": "塾の時間割",
+          "art": "class-schedule",
+          "at": [1, 1]
+        },
+        {
+          "id": "wrong",
+          "label": "教科名を入力",
+          "art": "error-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "expected",
+          "label": "曜日が必要",
+          "art": "class-schedule",
+          "at": [5, 1]
+        },
+        {
+          "id": "ask",
+          "label": "曜日を尋ねる",
+          "art": "claude-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "wait",
+          "label": "時間を置く",
+          "art": "retry-clock",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "quiz-reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "wrong",
+          "label": "入力は数学",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "expected",
+          "label": "必要なのは曜日",
+          "art": "class-schedule",
+          "at": [3, 1]
+        },
+        {
+          "id": "ask",
+          "label": "利用者に聞く",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "wrong",
+          "to": "expected",
+          "label": "違いを見る"
+        },
+        {
+          "id": "repair",
+          "from": "expected",
+          "to": "ask",
+          "label": "不足を補う"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "description",
+          "label": "呼ぶ前の説明",
+          "art": "tracking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "実行時の検査",
+          "art": "clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "返すエラー",
+          "art": "error-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "失敗から次の一手へ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "宅配の問い合わせで、配送状況を調べる場面です。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "ツールは失敗し、検索失敗という文だけを返しました。",
+          "show": ["failure"]
+        },
+        {
+          "say": "呼び直すために、どんな情報が必要でしょうか。",
+          "show": ["repair"]
+        },
+        {
+          "say": "エラーには、何が違い、どう直せばよいかを書きます。",
+          "pulse": ["failure", "repair"]
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "kind": "board",
+      "role": "example",
+      "title": "宅配の受付で聞くなら",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "宅配の受付で、荷物について尋ねる場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "利用者は、受取人の名前を書いた紙を渡しました。",
+          "show": ["name", "hand-name"],
+          "travel": {
+            "along": ["hand-name"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "係員に番号が必要だと言われても、紙からは分かりません。",
+          "mark": [
+            {
+              "on": "name",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "番号のある控えを見せてほしいと、尋ね方まで伝えます。",
+          "show": ["receipt", "ask-receipt"],
+          "pulse": ["receipt"]
+        }
+      ]
+    },
+    {
+      "id": "input-format",
+      "kind": "board",
+      "role": "syntax",
+      "title": "検索前に形式を確かめる",
+      "board": "input-check",
+      "beats": [
+        {
+          "say": "荷物を調べるための番号を、追跡番号と呼びます。",
+          "term": {
+            "text": "追跡番号",
+            "ruby": "ついせきばんごう",
+            "note": "荷物を調べるための番号"
+          }
+        },
+        {
+          "say": "この例では、P と数字六桁の組み合わせです。",
+          "speech": "この例では、ピーと数字ろっけたの組み合わせです。",
+          "show": ["number"],
+          "tag": {
+            "number": "P482631"
+          }
+        },
+        {
+          "say": "入力が決めた形か確かめることを、形式検査と呼びます。",
+          "term": {
+            "text": "形式検査",
+            "ruby": "けいしきけんさ",
+            "note": "入力が決めた形か確かめる"
+          }
+        },
+        {
+          "say": "番号の欄に名前が入ったら、ここで止まる仕組みです。",
+          "show": ["check", "inspect"],
+          "tag": {
+            "check": "名前は不可"
+          },
+          "mark": [
+            {
+              "on": "check",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "検索する前に止まったので、荷物がないとは判断できません。",
+          "show": ["search", "proceed"],
+          "tag": {
+            "search": "まだ未検索"
+          },
+          "pulse": ["search"]
+        }
+      ]
+    },
+    {
+      "id": "error-text",
+      "kind": "board",
+      "role": "syntax",
+      "title": "失敗の印に説明を添える",
+      "board": "failure-message",
+      "beats": [
+        {
+          "say": "失敗の印を付けたうえで、結果の文も変えます。",
+          "show": ["flag"],
+          "tag": {
+            "flag": "is_error"
+          }
+        },
+        {
+          "say": "名前が入ったという理由は、印だけでは伝わりません。",
+          "show": ["reason"],
+          "mark": [
+            {
+              "on": "reason",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、何が違っていたかを結果の文に書きます。",
+          "unmark": ["reason"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "番号を誰に尋ねるかも、次の行動に必要な情報です。",
+          "show": ["action"],
+          "tag": {
+            "action": "利用者へ"
+          },
+          "pulse": ["action"]
+        }
+      ]
+    },
+    {
+      "id": "write-repair",
+      "kind": "board",
+      "role": "apply",
+      "title": "結果の文を組み立てる",
+      "board": "repair-message",
+      "beats": [
+        {
+          "say": "追跡番号の欄に、受取人名が入力された場面です。",
+          "show": ["received"]
+        },
+        {
+          "say": "結果には、受取人名が入力されたと書きます。",
+          "tag": {
+            "received": "入った値"
+          },
+          "pulse": ["received"]
+        },
+        {
+          "say": "必要な形式は、P と数字六桁でした。",
+          "speech": "必要な形式は、ピーと数字ろっけたでした。",
+          "show": ["expected"],
+          "tag": {
+            "expected": "Pと六桁"
+          },
+          "pulse": ["expected"]
+        },
+        {
+          "say": "続けて、利用者に追跡番号を尋ねるよう伝えます。",
+          "show": ["ask"],
+          "pulse": ["ask"]
+        },
+        {
+          "say": "同じ名前を送り直しても、必要な番号にはなりません。",
+          "pulse": ["received"],
+          "mark": [
+            {
+              "on": "received",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "after-search",
+      "kind": "board",
+      "role": "apply",
+      "title": "検索済みの該当なし",
+      "board": "no-match",
+      "beats": [
+        {
+          "say": "今度は、形式の合う番号で検索した場合です。",
+          "show": ["number"],
+          "tag": {
+            "number": "P482631"
+          }
+        },
+        {
+          "say": "検索したものの、その番号に該当する荷物はありません。",
+          "show": ["result", "lookup"],
+          "travel": {
+            "along": ["lookup"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "結果には、実際に検索した番号を残します。",
+          "pulse": ["number"]
+        },
+        {
+          "say": "利用者に、その番号が合っているか確認を頼みましょう。",
+          "show": ["confirm", "ask-again"],
+          "pulse": ["confirm"]
+        }
+      ]
+    },
+    {
+      "id": "retry-cause",
+      "kind": "board",
+      "role": "apply",
+      "title": "待てばよい失敗か",
+      "board": "retry",
+      "beats": [
+        {
+          "say": "失敗したあとにもう一度試すことを、再試行と呼びます。",
+          "term": {
+            "text": "再試行",
+            "ruby": "さいしこう",
+            "note": "失敗したあとにもう一度試す"
+          }
+        },
+        {
+          "say": "再試行する前に、原因に合う行動を選びましょう。",
+          "show": ["retry"]
+        },
+        {
+          "say": "形式違いなら、待つだけで入力の形は変わりません。",
+          "show": ["wrong"],
+          "tag": {
+            "wrong": "入力を直す"
+          }
+        },
+        {
+          "say": "回数の上限なら、再試行できる時刻が必要な情報です。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "時刻を伝える"
+          }
+        },
+        {
+          "say": "例えば、六十秒後に試せるなら、その待ち時間を返します。",
+          "tag": {
+            "retry": "六十秒後"
+          },
+          "pulse": ["retry", "limit"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時間割のエラーを直す",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学習塾で、曜日ごとの時間割を調べるツールを考えます。",
+          "show": ["schedule"]
+        },
+        {
+          "say": "曜日の欄に入っていたのは、教科名の数学でした。",
+          "show": ["wrong"],
+          "tag": {
+            "wrong": "数学"
+          }
+        },
+        {
+          "say": "月曜などの曜日が必要で、検索前の検査で止まっています。",
+          "show": ["expected"],
+          "tag": {
+            "expected": "月曜など"
+          }
+        },
+        {
+          "say": "直し方の候補は、時間を置くか、利用者に曜日を尋ねるかです。",
+          "show": ["wait", "ask"]
+        },
+        {
+          "say": "今回のエラーに添えるなら、どちらがよいでしょうか。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "question"
+            },
+            {
+              "on": "ask",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "曜日を尋ねる",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、利用者に曜日を尋ねるほうです。",
+          "mark": [
+            {
+              "on": "ask",
+              "kind": "check"
+            },
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["ask"]
+        },
+        {
+          "say": "教科名が入り、曜日が必要だったことも合わせて返します。",
+          "pulse": ["wrong", "expected"]
+        }
+      ]
+    },
+    {
+      "id": "why-ask",
+      "kind": "board",
+      "role": "explain",
+      "title": "不足している値を補う",
+      "board": "quiz-reasons",
+      "beats": [
+        {
+          "say": "時間を置いても、数学という教科名は曜日に変わりません。",
+          "show": ["wrong"],
+          "mark": [
+            {
+              "on": "wrong",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "必要な値は、月曜などの曜日です。",
+          "show": ["expected", "compare"],
+          "tag": {
+            "expected": "月曜など"
+          }
+        },
+        {
+          "say": "利用者に曜日を尋ねれば、足りない値を補えます。",
+          "show": ["ask", "repair"],
+          "travel": {
+            "along": ["repair"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "まだ検索していないので、授業がないとは言わないでください。",
+          "pulse": ["expected"],
+          "tag": {
+            "expected": "まだ未検索"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "説明とエラーを見直す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "配送ツールの説明には、番号の形式や例も書きます。",
+          "show": ["description"],
+          "tag": {
+            "description": "P482631"
+          }
+        },
+        {
+          "say": "番号がなければ尋ねることも、説明に足す内容です。",
+          "pulse": ["description"],
+          "tag": {
+            "description": "なければ聞く"
+          }
+        },
+        {
+          "say": "実行時にも形式を確かめ、取り違えを見つけます。",
+          "show": ["check"],
+          "pulse": ["check"]
+        },
+        {
+          "say": "失敗したら、何が違い、どう直せばよいかを返しましょう。",
+          "show": ["error"],
+          "pulse": ["error"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "74dae6f3bbbf34da02e9e889f5aad6f2e9ec40a656ea9408987ac25ec6fbdfd1"
+  }
+}

@@ -1,0 +1,726 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "接続先の設定とツールの許可を区別し、仕事に必要な MCP ツールだけを allowedTools に指定できる。",
+    "stuck": "MCP サーバーをつなげばツールも使えると思い、許可の指定を忘れたり、星印で不要なツールまで許可したりする。",
+    "points": [
+      "Agent SDK では、MCP サーバーを設定に足し、使うツールを allowedTools で許可します。"
+    ],
+    "leaveOut": [
+      "stdio・HTTP・SSE の設定の詳細",
+      "アプリ内で MCP サーバーを作る方法",
+      "秘密を環境変数から渡す実装",
+      "Messages API の MCP コネクター",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "issue-list": {
+      "prompt": "An upright light grey clipboard holding a white sheet with three large blank blue task tabs clipped along its edge, representing a list of development issues. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "agent-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, looking toward a blank white task slip held in one hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "server-plug": {
+      "prompt": "A compact blue server appliance with rounded corners and a cable plugged into its side, with a plain white connector at the free end. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-permission": {
+      "prompt": "A blue-shirted staff member's hand placing one blue approval seal onto a blank white permission slip. The seal has no symbol or lettering. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-kit": {
+      "prompt": "An open light grey sewing case holding blue and violet thread spools and a folded piece of violet cloth, all clearly visible. No needles or scissors. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-scissors": {
+      "prompt": "A large pair of closed sewing scissors with blue handles beside a neatly folded piece of violet cloth. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "aquarium-ticket": {
+      "prompt": "A white admission ticket with rounded notches beside a blue admission wristband, with a small simple blue fish pictogram on the otherwise blank ticket. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ticket-stamp": {
+      "prompt": "A blue reservation stamp standing beside two blank white admission tickets with rounded notches, representing booking tickets. The stamp has no lettering or symbols. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "issues",
+          "label": "課題の一覧",
+          "art": "issue-list",
+          "at": [1, 1]
+        },
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "agent-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "permission",
+          "label": "使う許可",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "sewing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "裁縫の道具",
+          "art": "sewing-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "scissors",
+          "label": "はさみ",
+          "art": "sewing-scissors",
+          "at": [3, 1]
+        },
+        {
+          "id": "permission",
+          "label": "使う許可",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "setup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "agent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "接続先",
+          "art": "server-plug",
+          "at": [3, 1]
+        },
+        {
+          "id": "permission",
+          "label": "ツールの許可",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "connect",
+          "from": "agent",
+          "to": "server",
+          "label": "設定"
+        },
+        {
+          "id": "permit",
+          "from": "server",
+          "to": "permission",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "namedTool": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "server",
+          "label": "github",
+          "art": "server-plug",
+          "at": [1, 1]
+        },
+        {
+          "id": "issues",
+          "label": "課題一覧取得",
+          "art": "issue-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "permission",
+          "label": "個別に許可",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "provided",
+          "from": "server",
+          "to": "issues",
+          "label": "提供"
+        },
+        {
+          "id": "selected",
+          "from": "issues",
+          "to": "permission",
+          "label": "指定"
+        }
+      ]
+    },
+    "wildcard": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "server",
+          "label": "tickets",
+          "art": "server-plug",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "全ツール",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "all",
+          "from": "server",
+          "to": "tools",
+          "label": "まとめて"
+        }
+      ]
+    },
+    "aquarium": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ticket",
+          "label": "水族館の券",
+          "art": "aquarium-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "lookup",
+          "label": "空きを照会",
+          "art": "aquarium-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "reserve",
+          "label": "券を予約",
+          "art": "ticket-stamp",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "issues",
+          "label": "課題の一覧",
+          "art": "issue-list",
+          "at": [1, 1]
+        },
+        {
+          "id": "lookup",
+          "label": "水族館の空き",
+          "art": "aquarium-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "permission",
+          "label": "必要な許可",
+          "art": "tool-permission",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "つなぐだけでは使えない",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "開発中のアプリの課題を、一覧で調べたい場面です。",
+          "show": ["issues"]
+        },
+        {
+          "say": "その仕事を、SDK のエージェントに任せます。",
+          "speech": "その仕事を、エスディーケーのエージェントに任せます。",
+          "show": ["agent"]
+        },
+        {
+          "say": "サーバーをつないでも、ツールの許可はまだありません。",
+          "show": ["permission"],
+          "mark": [
+            {
+              "on": "permission",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "サーバーを設定に足し、使うツールを許可しましょう。",
+          "pulse": ["agent", "permission"],
+          "mark": [
+            {
+              "on": "permission",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sewing-example",
+      "kind": "board",
+      "role": "example",
+      "title": "道具と使う許可",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "裁縫教室で、道具を用意した場面を考えましょう。",
+          "show": ["kit"]
+        },
+        {
+          "say": "箱にはさみがあっても、使う許可は別です。",
+          "show": ["scissors"]
+        },
+        {
+          "say": "先生は、今日使うはさみを選んで許可します。",
+          "show": ["permission"],
+          "pulse": ["scissors"]
+        },
+        {
+          "say": "サーバーの接続とツールの許可も、分けて考えてください。",
+          "pulse": ["kit", "permission"]
+        }
+      ]
+    },
+    {
+      "id": "server-setting",
+      "kind": "board",
+      "role": "syntax",
+      "title": "接続先を書く場所",
+      "board": "setup",
+      "beats": [
+        {
+          "say": "サーバーを書く設定が、mcpServers です。",
+          "speech": "サーバーを書く設定が、エムシーピーサーバーズです。",
+          "term": {
+            "text": "mcpServers",
+            "note": "つなぐサーバーの設定"
+          },
+          "show": ["agent"]
+        },
+        {
+          "say": "query の設定に、つなぐサーバーを足します。",
+          "speech": "クエリーの設定に、つなぐサーバーを足します。",
+          "show": ["server", "connect"],
+          "travel": {
+            "along": ["connect"],
+            "icon": "extension"
+          }
+        },
+        {
+          "say": "接続先は、プロジェクトの設定ファイルにも書ける仕組みです。",
+          "tag": {
+            "server": "設定ファイル"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "接続先を書いたら、許可するツールを選びましょう。",
+          "show": ["permission", "permit"],
+          "pulse": ["permission"]
+        }
+      ]
+    },
+    {
+      "id": "tool-name",
+      "kind": "code",
+      "role": "syntax",
+      "title": "許可するツールの名前",
+      "code": [
+        "// 確認なしで使うツールを指定する",
+        "allowedTools: [",
+        "  // 課題一覧を取得するツールを許可する",
+        "  \"mcp__github__list_issues\",",
+        "  // このサーバーのツールをまとめて許可する",
+        "  \"mcp__tickets__*\",",
+        "// 許可する一覧を閉じる",
+        "],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "namedTool"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ツールの許可は、allowedTools に書きます。",
+          "speech": "ツールの許可は、アラウドツールズに書きます。",
+          "term": {
+            "text": "ツールの許可",
+            "ruby": "つーるのきょか",
+            "note": "確認なしで使うツールを選ぶ"
+          },
+          "part": {
+            "line": 1,
+            "text": "allowedTools",
+            "note": "許可するツール"
+          }
+        },
+        {
+          "say": "この配列は、確認なしで使うツールの一覧です。",
+          "focus": [1, 3, 5, 7],
+          "figure": {
+            "show": ["server", "issues", "permission", "provided", "selected"]
+          }
+        },
+        {
+          "say": "一つ目の名前を、三つの部分に分けて読みましょう。",
+          "part": {
+            "line": 3,
+            "text": "mcp__github__list_issues"
+          },
+          "figure": {
+            "pulse": ["issues"]
+          }
+        },
+        {
+          "say": "先頭の mcp は、共通の書き出しです。",
+          "speech": "先頭のエムシーピーは、共通の書き出しです。",
+          "part": {
+            "line": 3,
+            "text": "mcp",
+            "note": "共通の接頭辞"
+          }
+        },
+        {
+          "say": "中央には、設定で付けたサーバー名を書きます。",
+          "part": {
+            "line": 3,
+            "text": "github",
+            "note": "サーバー名"
+          },
+          "figure": {
+            "pulse": ["server"]
+          }
+        },
+        {
+          "say": "末尾は、課題の一覧を取得するツールの名前です。",
+          "part": {
+            "line": 3,
+            "text": "list_issues",
+            "note": "課題の一覧取得"
+          },
+          "figure": {
+            "pulse": ["issues"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "wildcard",
+      "kind": "code",
+      "role": "syntax",
+      "title": "まとめて許可する範囲",
+      "code": [
+        "// 確認なしで使うツールを指定する",
+        "allowedTools: [",
+        "  // 課題一覧を取得するツールを許可する",
+        "  \"mcp__github__list_issues\",",
+        "  // このサーバーのツールをまとめて許可する",
+        "  \"mcp__tickets__*\",",
+        "// 許可する一覧を閉じる",
+        "],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "wildcard"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "次の名前は、末尾がワイルドカードです。",
+          "term": {
+            "text": "ワイルドカード",
+            "note": "まとめて指定する星印"
+          },
+          "part": {
+            "line": 5,
+            "text": "*",
+            "note": "まとめて指定"
+          }
+        },
+        {
+          "say": "星印で、そのサーバーのツールをまとめて許可します。",
+          "figure": {
+            "show": ["server", "tools", "all"],
+            "travel": {
+              "along": ["all"],
+              "icon": "check"
+            }
+          }
+        },
+        {
+          "say": "この行でまとめる対象は、tickets のサーバーです。",
+          "speech": "この行でまとめる対象は、チケッツのサーバーです。",
+          "part": {
+            "line": 5,
+            "text": "tickets",
+            "note": "サーバー名"
+          },
+          "figure": {
+            "pulse": ["server"]
+          }
+        },
+        {
+          "say": "一つだけ使うなら、ツール名まで書いて絞りましょう。",
+          "part": {
+            "line": 3,
+            "text": "list_issues",
+            "note": "一つのツール"
+          },
+          "figure": {
+            "pulse": [],
+            "mark": [
+              {
+                "on": "tools",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "allow-issues",
+      "kind": "code",
+      "role": "apply",
+      "title": "課題一覧の取得だけ許可",
+      "code": [
+        "// 課題一覧を取得するツールだけを許可する",
+        "allowedTools: [\"mcp__github__list_issues\"],"
+      ],
+      "show": [0],
+      "panel": {
+        "kind": "figure",
+        "board": "namedTool"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の目的は、開発中の課題を一覧で調べることでした。",
+          "figure": {
+            "show": ["server", "issues", "provided"],
+            "pulse": ["issues"]
+          }
+        },
+        {
+          "say": "使うサーバーの設定名は、github です。",
+          "speech": "使うサーバーの設定名は、ギットハブです。",
+          "figure": {
+            "pulse": ["server"],
+            "tag": {
+              "server": "設定と一致"
+            }
+          }
+        },
+        {
+          "say": "課題一覧を取得するツールの名前を、許可の配列に入れます。",
+          "type": [1],
+          "figure": {
+            "show": ["permission", "selected"]
+          }
+        },
+        {
+          "say": "この指定で、一覧の取得は確認なしで呼べる状態です。",
+          "part": {
+            "line": 1,
+            "text": "mcp__github__list_issues"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "permission",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "ほかのツールまで、まとめて許可する必要はありません。",
+          "focus": [1],
+          "figure": {
+            "pulse": ["permission"],
+            "tag": {
+              "permission": "この一つだけ"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "aquarium-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "水族館で許可する範囲",
+      "board": "aquarium",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水族館のチケットの空きを案内するアプリです。",
+          "show": ["ticket"]
+        },
+        {
+          "say": "サーバーには、空きを照会するツールがあります。",
+          "show": ["lookup"]
+        },
+        {
+          "say": "同じサーバーには、チケットを予約するツールもありました。",
+          "show": ["reserve"]
+        },
+        {
+          "say": "今回の仕事では、空きの照会だけが必要です。",
+          "pulse": ["lookup"],
+          "tag": {
+            "lookup": "今回の仕事"
+          }
+        },
+        {
+          "say": "両方をまとめて許可するか、照会だけか、どちらでしょうか。",
+          "pulse": ["lookup", "reserve"],
+          "mark": [
+            {
+              "on": "lookup",
+              "kind": "question"
+            },
+            {
+              "on": "reserve",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aquarium-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "照会だけを許可する",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "答えは、空きを照会するツールだけを許可する設定です。",
+          "mark": [
+            {
+              "on": "lookup",
+              "kind": "check"
+            },
+            {
+              "on": "reserve",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["lookup"]
+        },
+        {
+          "say": "予約するツールは、今回の許可に加えません。",
+          "pulse": ["reserve"],
+          "tag": {
+            "reserve": "許可に加えず"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-one-tool",
+      "kind": "board",
+      "role": "explain",
+      "title": "仕事に合う範囲を選ぶ",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "サーバーの設定で決まるのは、つなぐ先です。",
+          "pulse": ["ticket"],
+          "tag": {
+            "ticket": "接続先は同じ"
+          }
+        },
+        {
+          "say": "許可する名前は、ツールごとに指定できます。",
+          "pulse": ["lookup"],
+          "tag": {
+            "lookup": "照会を指定"
+          }
+        },
+        {
+          "say": "星印でまとめると、予約のツールも許可の対象です。",
+          "pulse": ["lookup", "reserve"],
+          "tag": {
+            "reserve": "星印なら対象"
+          },
+          "pause": 1
+        },
+        {
+          "say": "空きを調べる仕事には、照会の許可だけを選びましょう。",
+          "pulse": ["lookup"],
+          "tag": {
+            "reserve": "今回は不要"
+          },
+          "mark": [
+            {
+              "on": "lookup",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "使いたい仕事から選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "開発中の課題を調べるなら、一覧の取得を許可します。",
+          "show": ["issues"]
+        },
+        {
+          "say": "水族館の空きの案内なら、照会だけが必要です。",
+          "show": ["lookup"]
+        },
+        {
+          "say": "ツールを使うために、確認をすべて飛ばす設定にはしません。",
+          "show": ["permission"],
+          "tag": {
+            "permission": "必要な分だけ"
+          }
+        },
+        {
+          "say": "サーバーを足したら、仕事に要るツールだけを許可しましょう。",
+          "pulse": ["issues", "lookup", "permission"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "747e5b94a441b6fb2ee41b648fb794a6da17643ba0134945c14dd4594db382f9"
+  }
+}

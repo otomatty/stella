@@ -1,0 +1,810 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールを実行する側を見分け、サーバーツールでアプリが結果を返す処理が要らない理由を説明できる。",
+    "stuck": "すべてのツールでアプリが結果を返すと思い、ツールの形を決めた側と実行する側も混同する。",
+    "points": ["サーバーツールは Anthropic の側で実行され、アプリが結果を返す処理は要りません。"],
+    "leaveOut": [
+      "ツールの定義や結果を返すコードの書き方",
+      "サーバーツールのエラーの扱い",
+      "二種類の呼び出しが一つの応答に混ざる場合",
+      "各ツールの細かい仕様や設定"
+    ]
+  },
+  "art": {
+    "web-search": {
+      "prompt": "A large blue magnifying glass beside a small physical blue and white globe on a simple stand. Objects only, representing a search for current information. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a blue touchpad. Objects only, representing the calling application without any real interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. One arm is extended toward a small blue gear held in its hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-envelope": {
+      "prompt": "An open blue envelope containing a large blank white sheet and a smaller light grey slip tucked together inside. Objects only, representing a response that already contains a result. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-film": {
+      "prompt": "A large light grey photographic film canister with a short curled strip of dark film emerging from it. No markings, objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-clerk": {
+      "prompt": "A friendly photo shop attendant in a plain blue shirt with simple facial features, holding a light grey film canister in one hand and a small fan of white photographic prints in the other. Upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-prints": {
+      "prompt": "Three white photographic prints fanned out, each showing a simple blue sea and a violet sailboat within the photograph itself. The paper borders are white. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-tray": {
+      "prompt": "A school lunch tray with a bowl of white rice, a bowl of brown soup with green vegetables, and a small white milk carton, beside a blank white duty roster sheet with a blue clip. Food in natural colours, objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-kit": {
+      "prompt": "An open light grey toolbox containing a large blue screwdriver and a violet wrench, each clearly separated and easy to recognize. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "最新情報を検索",
+          "art": "web-search",
+          "at": [1, 1]
+        },
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "response",
+          "label": "結果入りの応答",
+          "art": "response-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "photos": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "film",
+          "label": "現像を頼む",
+          "art": "photo-film",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "写真店の担当者",
+          "art": "photo-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "prints",
+          "label": "受け取る写真",
+          "art": "photo-prints",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "film",
+          "to": "clerk",
+          "label": "依頼"
+        },
+        {
+          "id": "receive",
+          "from": "clerk",
+          "to": "prints",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "server": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "search",
+          "label": "ウェブ検索",
+          "art": "web-search",
+          "at": [3, 1]
+        },
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "runs",
+          "from": "provider",
+          "to": "search",
+          "label": "実行"
+        }
+      ]
+    },
+    "client": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tool",
+          "label": "自作ツール",
+          "art": "tool-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "返す結果",
+          "art": "response-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "run",
+          "from": "tool",
+          "to": "app",
+          "label": "実行担当"
+        },
+        {
+          "id": "return",
+          "from": "app",
+          "to": "result",
+          "label": "結果を返す"
+        }
+      ]
+    },
+    "response": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "結果入りの応答",
+          "art": "response-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "include",
+          "from": "provider",
+          "to": "response",
+          "label": "結果を含む"
+        },
+        {
+          "id": "receive",
+          "from": "response",
+          "to": "app",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "analogy": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "film",
+          "label": "現像の依頼",
+          "art": "photo-film",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "写真店",
+          "art": "photo-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "prints",
+          "label": "仕上がった写真",
+          "art": "photo-prints",
+          "at": [5, 1]
+        },
+        {
+          "id": "search",
+          "label": "検索の依頼",
+          "art": "web-search",
+          "at": [5, 2]
+        },
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [3, 2]
+        },
+        {
+          "id": "response",
+          "label": "結果入りの応答",
+          "art": "response-envelope",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask-photo",
+          "from": "film",
+          "to": "clerk",
+          "label": "依頼"
+        },
+        {
+          "id": "get-photo",
+          "from": "clerk",
+          "to": "prints",
+          "label": "受け取る"
+        },
+        {
+          "id": "ask-search",
+          "from": "search",
+          "to": "provider",
+          "label": "依頼"
+        },
+        {
+          "id": "get-result",
+          "from": "provider",
+          "to": "response",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "shape": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "実行する道具",
+          "art": "tool-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "define",
+          "from": "provider",
+          "to": "tool",
+          "label": "形を決める"
+        },
+        {
+          "id": "execute",
+          "from": "tool",
+          "to": "app",
+          "label": "実行担当"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "lunch",
+          "label": "給食の当番表",
+          "art": "lunch-tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "edit",
+          "label": "文書の編集",
+          "art": "tool-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "provider",
+          "label": "提供元側",
+          "art": "claude-robot",
+          "at": [1, 2]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "server",
+          "label": "ウェブ検索",
+          "art": "web-search",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "結果入りの応答",
+          "art": "response-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        },
+        {
+          "id": "client",
+          "label": "自作ツール",
+          "art": "tool-kit",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "in-response",
+          "from": "server",
+          "to": "response",
+          "label": "結果を含む"
+        },
+        {
+          "id": "to-app",
+          "from": "response",
+          "to": "app",
+          "label": "受け取る"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "検索を動かすのは誰か",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "最新の情報を調べるため、ウェブ検索を使います。",
+          "show": ["search"]
+        },
+        {
+          "say": "サーバーツールなら、実行するのは Anthropic 側です。",
+          "speech": "サーバーツールなら、実行するのはアンソロピック側です。",
+          "show": ["provider"]
+        },
+        {
+          "say": "検索結果は、応答の中に入って返ります。",
+          "show": ["response"]
+        },
+        {
+          "say": "サーバーツールでは、アプリが結果を返す処理は要りません。",
+          "pulse": ["provider", "response"]
+        }
+      ]
+    },
+    {
+      "id": "photo-shop",
+      "kind": "board",
+      "role": "example",
+      "title": "写真の現像を店に頼む",
+      "board": "photos",
+      "beats": [
+        {
+          "say": "写真店に、フィルムの現像を頼む場面です。",
+          "show": ["film"]
+        },
+        {
+          "say": "店の担当者に、フィルムを渡しました。",
+          "show": ["clerk", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "写真を仕上げる作業は、店の担当者が進めます。",
+          "pulse": ["clerk"]
+        },
+        {
+          "say": "頼んだ人は、仕上がった写真を受け取る側です。",
+          "show": ["prints", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          },
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "server-tools",
+      "kind": "board",
+      "role": "syntax",
+      "title": "提供元で実行する道具",
+      "board": "server",
+      "beats": [
+        {
+          "say": "Anthropic が実行するのが、サーバーツールです。",
+          "speech": "アンソロピックが実行するのが、サーバーツールです。",
+          "term": {
+            "text": "サーバーツール",
+            "note": "Anthropic側で実行"
+          }
+        },
+        {
+          "say": "ウェブ検索は、この種類に入ります。",
+          "show": ["search", "provider", "runs"]
+        },
+        {
+          "say": "図の右側が、検索を実行する場所です。",
+          "pulse": ["provider"],
+          "travel": {
+            "along": ["runs"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "アプリで検索を実行する処理は要りません。",
+          "show": ["app"],
+          "tag": {
+            "app": "実行不要"
+          },
+          "pulse": ["app"]
+        }
+      ]
+    },
+    {
+      "id": "client-tools",
+      "kind": "board",
+      "role": "syntax",
+      "title": "アプリで実行する道具",
+      "board": "client",
+      "beats": [
+        {
+          "say": "アプリが実行するのが、クライアントツールです。",
+          "term": {
+            "text": "クライアントツール",
+            "note": "アプリ側で実行"
+          }
+        },
+        {
+          "say": "自分で定義したツールは、アプリが実行します。",
+          "show": ["tool", "app", "run"]
+        },
+        {
+          "say": "実行した結果を返すのも、アプリの担当です。",
+          "show": ["result", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "実行する場所で、二つの種類を見分けましょう。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "実行して返す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "included-result",
+      "kind": "board",
+      "role": "syntax",
+      "title": "結果は応答の中にある",
+      "board": "response",
+      "beats": [
+        {
+          "say": "呼び出したあとに返ってくるものを、応答と呼びます。",
+          "term": {
+            "text": "応答",
+            "ruby": "おうとう",
+            "note": "呼び出したあとに返るもの"
+          }
+        },
+        {
+          "say": "サーバーツールの結果は、応答の中に入る仕組みです。",
+          "show": ["provider", "response", "include"],
+          "travel": {
+            "along": ["include"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "アプリは、結果を含んだ応答を受け取ります。",
+          "show": ["app", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "結果を別に作って返す処理は、アプリには要りません。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "返送不要"
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-flow",
+      "kind": "board",
+      "role": "apply",
+      "title": "現像と検索の流れを結ぶ",
+      "board": "analogy",
+      "beats": [
+        {
+          "say": "写真の現像では、店が作業して写真を返しました。",
+          "show": ["film", "clerk", "prints", "ask-photo", "get-photo"]
+        },
+        {
+          "say": "検索も、実行する側と受け取る側を見ましょう。",
+          "show": ["search"]
+        },
+        {
+          "say": "検索のサーバーツールを実行するのは、Anthropic です。",
+          "speech": "検索のサーバーツールを実行するのは、アンソロピックです。",
+          "show": ["provider", "ask-search"],
+          "travel": {
+            "along": ["ask-search"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "検索結果は、応答に入ってアプリへ戻ります。",
+          "show": ["response", "get-result"],
+          "travel": {
+            "along": ["get-result"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "写真の例と同じで、頼んだ側が結果を受け取る流れです。",
+          "pulse": ["prints", "response"]
+        }
+      ]
+    },
+    {
+      "id": "shape-and-execution",
+      "kind": "board",
+      "role": "apply",
+      "title": "形と実行の担当を分ける",
+      "board": "shape",
+      "beats": [
+        {
+          "say": "ただし、形を決めた側だけでは種類を分けられません。",
+          "show": ["tool"],
+          "mark": [
+            {
+              "on": "tool",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "bash の形は、Anthropic が決めています。",
+          "speech": "バッシュの形は、アンソロピックが決めています。",
+          "show": ["provider", "define"],
+          "tag": {
+            "tool": "bash"
+          }
+        },
+        {
+          "say": "それでも、実行する担当はアプリです。",
+          "show": ["app", "execute"],
+          "unmark": ["tool"],
+          "pulse": ["app"]
+        },
+        {
+          "say": "テキストエディターも、同じ分け方で考えましょう。",
+          "tag": {
+            "tool": "文書の編集"
+          },
+          "mark": [
+            {
+              "on": "app",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lunch-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "当番表を編集する担当",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "給食の当番表を扱うアプリを考えます。",
+          "show": ["lunch"]
+        },
+        {
+          "say": "当番表の修正に、テキストエディターを使う設定です。",
+          "show": ["edit"]
+        },
+        {
+          "say": "道具の形は、Anthropic が決めました。",
+          "speech": "道具の形は、アンソロピックが決めました。",
+          "tag": {
+            "edit": "形は提供元"
+          }
+        },
+        {
+          "say": "実行して結果を返す担当を選びましょう。",
+          "show": ["provider", "app"]
+        },
+        {
+          "say": "アプリと Anthropic の、どちらでしょうか。",
+          "speech": "アプリとアンソロピックの、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "provider",
+              "kind": "question"
+            },
+            {
+              "on": "app",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lunch-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実行するのはアプリ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えはアプリで、クライアントツールに当たります。",
+          "mark": [
+            {
+              "on": "app",
+              "kind": "check"
+            },
+            {
+              "on": "provider",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["app"]
+        },
+        {
+          "say": "当番表を編集し、結果を返す担当です。",
+          "pulse": ["edit", "app"]
+        }
+      ]
+    },
+    {
+      "id": "why-app",
+      "kind": "board",
+      "role": "explain",
+      "title": "形だけで判断しない",
+      "board": "shape",
+      "reset": true,
+      "beats": [
+        {
+          "say": "当番表の編集でも、形と実行の担当を分けましょう。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "当番表の編集"
+          }
+        },
+        {
+          "say": "形を決めたのは、Anthropic でした。",
+          "speech": "形を決めたのは、アンソロピックでした。",
+          "show": ["provider", "define"]
+        },
+        {
+          "say": "ツールを動かして結果を返すのは、アプリです。",
+          "show": ["app", "execute"],
+          "pulse": ["app"]
+        },
+        {
+          "say": "だから、提供元の名前だけでは判断できません。",
+          "tag": {
+            "app": "実行で判断"
+          },
+          "mark": [
+            {
+              "on": "app",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choose-work",
+      "kind": "board",
+      "role": "usage",
+      "title": "組み込む前に担当を見る",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "ツールを組み込む前に、実行する側を確かめましょう。",
+          "show": ["server", "client"]
+        },
+        {
+          "say": "ウェブ検索は、Anthropic が実行する側の例です。",
+          "speech": "ウェブ検索は、アンソロピックが実行する側の例です。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "提供元が実行"
+          }
+        },
+        {
+          "say": "サーバーツールの結果は、応答に入って返ります。",
+          "show": ["response", "in-response"]
+        },
+        {
+          "say": "アプリが結果を返す処理は、こちらでは要りません。",
+          "show": ["app", "to-app"],
+          "travel": {
+            "along": ["to-app"],
+            "icon": "result"
+          },
+          "tag": {
+            "app": "返送不要"
+          },
+          "pulse": ["app"]
+        },
+        {
+          "say": "自作ツールでは、アプリが実行して結果を返します。",
+          "pulse": ["client", "app"],
+          "tag": {
+            "client": "実行して返す"
+          },
+          "untag": ["app"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "8dc55991f3c6b3e92bbf79897611398fb202b050f822839dab9aeffda4e13921"
+  }
+}

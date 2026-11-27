@@ -1,0 +1,663 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "報告の仕事を手順と外部データの取得に分け、Skill と MCP のどちらを使うか説明できる。",
+    "stuck": "毎回使う手順と、そのつど外のシステムから取得するデータを、同じ仕組みで用意しようとする。",
+    "points": ["手順や知識を足すなら Skill、外のシステムにつなぐなら MCP を選びます。"],
+    "leaveOut": [
+      "ツールの結果やエラーの返し方",
+      "実行前の承認",
+      "ほかのツール提供手段との比較",
+      "Skill の利用先ごとの配置と更新",
+      "認証情報の設定方法",
+      "ツール検索とコンテキストの使用量"
+    ]
+  },
+  "art": {
+    "school-report": {
+      "prompt": "A white weekly school lending report held by a blue clip, beside a blue school satchel and a closed violet book. The sheet is blank except for a small pictorial book symbol. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "procedure-sheet": {
+      "prompt": "An open white instruction booklet with violet binding and a blue pencil, showing three blank light grey horizontal areas for a reusable reporting procedure. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "skill-folder": {
+      "prompt": "An open light grey file folder containing a white instruction booklet and a separate white sample sheet, with violet tabs. The two documents are clearly visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sample-form": {
+      "prompt": "A single white sample report form with a blue clip and a few empty light grey rectangular fields, representing the reusable layout of a school lending report. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ledger-system": {
+      "prompt": "A blue laptop next to an open white lending ledger and a violet book. The laptop screen is completely blank, without any interface controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bike-parking": {
+      "prompt": "Two blue and violet bicycles neatly parked in a small light grey bicycle rack. Show the wheels and rack clearly as isolated objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bike-guide": {
+      "prompt": "A white instruction booklet beside a white sample report sheet with a small blue bicycle pictogram, held together by a violet clip. All other areas of the paper are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bike-system": {
+      "prompt": "A blue laptop beside a small violet bicycle and a white record booklet. The laptop screen is completely blank without any interface controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "貸出の週報",
+          "art": "school-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "steps",
+          "label": "いつもの手順",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "今週の台帳",
+          "art": "ledger-system",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "office": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "steps",
+          "label": "集計の順番",
+          "art": "procedure-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "書式の見本",
+          "art": "sample-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "貸出の台帳",
+          "art": "ledger-system",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "skill": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "folder",
+          "label": "Skill",
+          "art": "skill-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "main",
+          "label": "手順書",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "sample",
+          "label": "補助ファイル",
+          "art": "sample-form",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "contains",
+          "from": "folder",
+          "to": "main",
+          "label": "手順"
+        },
+        {
+          "id": "adds",
+          "from": "main",
+          "to": "sample",
+          "label": "見本"
+        }
+      ]
+    },
+    "connection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "貸出の台帳",
+          "art": "ledger-system",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fetch",
+          "from": "claude",
+          "to": "ledger",
+          "label": "MCP"
+        },
+        {
+          "id": "return",
+          "from": "ledger",
+          "to": "claude",
+          "label": "件数",
+          "route": "under"
+        }
+      ]
+    },
+    "prepare": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "main",
+          "label": "手順書",
+          "art": "procedure-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "description",
+          "label": "使う場面",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "本文",
+          "art": "procedure-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "sample",
+          "label": "書式の見本",
+          "art": "sample-form",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "purpose",
+          "from": "main",
+          "to": "description",
+          "label": "使う場面"
+        },
+        {
+          "id": "steps",
+          "from": "description",
+          "to": "body",
+          "label": "集計の順番"
+        },
+        {
+          "id": "sample-link",
+          "from": "body",
+          "to": "sample",
+          "label": "添える"
+        }
+      ]
+    },
+    "combine": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "skill",
+          "label": "報告の手順",
+          "art": "skill-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "貸出の台帳",
+          "art": "ledger-system",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "skill",
+          "to": "claude",
+          "label": "参照"
+        },
+        {
+          "id": "get",
+          "from": "ledger",
+          "to": "claude",
+          "label": "取得"
+        }
+      ]
+    },
+    "parking": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bikes",
+          "label": "駐輪場",
+          "art": "bike-parking",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "集計と書式",
+          "art": "bike-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "system",
+          "label": "利用記録",
+          "art": "bike-system",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "skill",
+          "label": "手順や知識",
+          "art": "skill-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "外のシステム",
+          "art": "ledger-system",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "貸出の週報",
+          "art": "school-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "週報に必要な二つのもの",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "学校の事務室で、貸出状況を毎週報告します。",
+          "show": ["report"]
+        },
+        {
+          "say": "集計の順番と書式は、毎回同じものです。",
+          "show": ["steps"]
+        },
+        {
+          "say": "今週の貸出件数は、台帳を見て調べましょう。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "手順は Skill、外への接続は MCP と分けます。",
+          "speech": "手順はスキル、外への接続はエムシーピーと分けます。",
+          "pulse": ["steps", "ledger"]
+        }
+      ]
+    },
+    {
+      "id": "office-example",
+      "kind": "board",
+      "role": "example",
+      "title": "見本と今週の台帳",
+      "board": "office",
+      "beats": [
+        {
+          "say": "報告を任された人が、集計の手順を受け取りました。",
+          "show": ["steps"]
+        },
+        {
+          "say": "書式の見本もあれば、同じ形で報告できます。",
+          "show": ["form"]
+        },
+        {
+          "say": "ただし、見本だけでは今週の件数は分かりません。",
+          "mark": [
+            {
+              "on": "form",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "今週の数を調べる先は、貸出を記録した台帳です。",
+          "show": ["ledger"],
+          "pulse": ["ledger"]
+        }
+      ]
+    },
+    {
+      "id": "skill-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手順をまとめた Skill",
+      "board": "skill",
+      "beats": [
+        {
+          "say": "再利用する手順や知識をまとめるのが Skill です。",
+          "speech": "再利用する手順や知識をまとめるのがスキルです。",
+          "term": {
+            "text": "Skill",
+            "ruby": "スキル",
+            "note": "再利用する手順や知識"
+          }
+        },
+        {
+          "say": "手順のファイルなどを、フォルダーにまとめます。",
+          "show": ["folder"]
+        },
+        {
+          "say": "中心になるファイルの名前は、SKILL.md です。",
+          "speech": "中心になるファイルの名前は、スキルエムディーです。",
+          "show": ["main", "contains"]
+        },
+        {
+          "say": "手順に添える見本などを、補助ファイルと呼びます。",
+          "term": {
+            "text": "補助ファイル",
+            "ruby": "ほじょファイル",
+            "note": "手順に添える見本など"
+          }
+        },
+        {
+          "say": "報告書の書式は、こちらに置ける見本の一つです。",
+          "show": ["sample", "adds"],
+          "pulse": ["sample"]
+        }
+      ]
+    },
+    {
+      "id": "mcp-connection",
+      "kind": "board",
+      "role": "syntax",
+      "title": "台帳から件数を取る",
+      "board": "connection",
+      "beats": [
+        {
+          "say": "外のシステムとの接続には、MCP を使います。",
+          "speech": "外のシステムとの接続には、エムシーピーを使います。",
+          "term": {
+            "text": "MCP",
+            "ruby": "エムシーピー",
+            "note": "外のシステムとの接続"
+          }
+        },
+        {
+          "say": "この例で接続する先は、貸出を管理する台帳です。",
+          "show": ["claude", "ledger"]
+        },
+        {
+          "say": "MCP のツールで、今週の貸出件数を取得します。",
+          "speech": "エムシーピーのツールで、今週の貸出件数を取得します。",
+          "show": ["fetch"],
+          "travel": {
+            "along": ["fetch"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "返ってくる件数が、今回の報告に使うデータです。",
+          "show": ["return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "手順を読むことと、台帳から数を取ることを分けましょう。",
+          "tag": {
+            "ledger": "数を取得"
+          },
+          "pulse": ["ledger"]
+        }
+      ]
+    },
+    {
+      "id": "prepare-skill",
+      "kind": "board",
+      "role": "apply",
+      "title": "報告の手順を用意する",
+      "board": "prepare",
+      "beats": [
+        {
+          "say": "学校の報告用に、SKILL.md を用意します。",
+          "speech": "学校の報告用に、スキルエムディーを用意します。",
+          "show": ["main"]
+        },
+        {
+          "say": "冒頭の description は、使う場面を書くところです。",
+          "speech": "冒頭のディスクリプションは、使う場面を書くところです。",
+          "show": ["description", "purpose"]
+        },
+        {
+          "say": "ここには、貸出報告をまとめる場面だと書きましょう。",
+          "tag": {
+            "description": "貸出報告"
+          },
+          "pulse": ["description"]
+        },
+        {
+          "say": "本文には、貸出件数を集計する順番を書きます。",
+          "show": ["body", "steps"]
+        },
+        {
+          "say": "別の補助ファイルに置くのは、報告書の書式の見本です。",
+          "show": ["sample", "sample-link"]
+        }
+      ]
+    },
+    {
+      "id": "combine-work",
+      "kind": "board",
+      "role": "apply",
+      "title": "手順と取得を組み合わせる",
+      "board": "combine",
+      "beats": [
+        {
+          "say": "Claude は、報告を作るときに手順を読みます。",
+          "speech": "クロードは、報告を作るときに手順を読みます。",
+          "show": ["skill", "claude", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "今週の数値を取るのは、MCP のツールです。",
+          "speech": "今週の数値を取るのは、エムシーピーのツールです。",
+          "show": ["ledger", "get"],
+          "travel": {
+            "along": ["get"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "取得した数値を使い、決めた書式で報告をまとめます。",
+          "tag": {
+            "claude": "報告を作成"
+          },
+          "pulse": ["claude"]
+        },
+        {
+          "say": "同じ仕事の中で、手順と外への接続を組み合わせる形です。",
+          "pulse": ["skill", "ledger"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "parking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "駐輪場の報告なら",
+      "board": "parking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駐輪場の担当者が、毎週の利用を報告する場面です。",
+          "show": ["bikes"]
+        },
+        {
+          "say": "担当者は、集計の順番と書式を毎回そろえたいと考えます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "今週の利用台数を調べる先は、外の管理システムです。",
+          "show": ["system"]
+        },
+        {
+          "say": "手順と台数の取得を、それぞれ分けて考えましょう。",
+          "pulse": ["guide", "system"]
+        },
+        {
+          "say": "Skill と MCP を、どちらに使えばよいでしょうか。",
+          "speech": "スキルとエムシーピーを、どちらに使えばよいでしょうか。",
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "question"
+            },
+            {
+              "on": "system",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "手順と接続の担当",
+      "board": "parking",
+      "beats": [
+        {
+          "say": "集計の順番と書式には、Skill を使います。",
+          "speech": "集計の順番と書式には、スキルを使います。",
+          "tag": {
+            "guide": "Skill"
+          },
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["guide"]
+        },
+        {
+          "say": "利用台数を取る接続は、MCP の担当です。",
+          "speech": "利用台数を取る接続は、エムシーピーの担当です。",
+          "tag": {
+            "system": "MCP"
+          },
+          "mark": [
+            {
+              "on": "system",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["system"]
+        }
+      ]
+    },
+    {
+      "id": "parking-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "必要なものから分ける",
+      "board": "parking",
+      "beats": [
+        {
+          "say": "集計の順番は、報告のたびに使う手順です。",
+          "pulse": ["guide"]
+        },
+        {
+          "say": "書式の見本も添えれば、同じ形でまとめるときに使えます。",
+          "tag": {
+            "guide": "繰り返し使う"
+          }
+        },
+        {
+          "say": "今週の台数が入っているのは、外の管理システムです。",
+          "pulse": ["system"]
+        },
+        {
+          "say": "そこから値を取るために、MCP のツールを使います。",
+          "speech": "そこから値を取るために、エムシーピーのツールを使います。",
+          "tag": {
+            "system": "今週の台数"
+          }
+        },
+        {
+          "say": "報告には手順も台数も要るので、両方を組み合わせましょう。",
+          "pulse": ["guide", "system"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "choose-by-need",
+      "kind": "board",
+      "role": "usage",
+      "title": "仕事を見て使い分ける",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "同じ手順や知識を繰り返し使う仕事には、Skill を選びます。",
+          "speech": "同じ手順や知識を繰り返し使う仕事には、スキルを選びます。",
+          "show": ["skill"]
+        },
+        {
+          "say": "外のシステムからデータを取るなら、MCP の出番です。",
+          "speech": "外のシステムからデータを取るなら、エムシーピーの出番です。",
+          "show": ["system"]
+        },
+        {
+          "say": "学校の貸出報告は、両方を使う仕事でした。",
+          "show": ["report"]
+        },
+        {
+          "say": "機能を足す前に、手順が要るのか接続が要るのかを分けましょう。",
+          "pulse": ["skill", "system"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "54ccd47a010415d960cd81616c285992bd455fab2dc759ddafec0d838569bda0"
+  }
+}

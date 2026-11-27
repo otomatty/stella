@@ -1,0 +1,737 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "細かな機能を並べた案と仕事をまとめた案を比べ、目的ごとに少数のツールへまとめる設計を選べる。",
+    "stuck": "API の機能を一つずつツールにすれば便利だと思い、似たツールの選び分けが難しくなることに気付かない。",
+    "points": ["似たツールを並べず、目的ごとに少数のツールにまとめます。"],
+    "leaveOut": [
+      "ツールの説明に書く項目の詳細",
+      "tool_choice と strict の設定",
+      "API を呼び出す実装コード",
+      "ツールの入力スキーマ",
+      "MCP の接続方法"
+    ]
+  },
+  "art": {
+    "laundry-customer": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a crumpled white shirt to be cleaned, with a simple attentive face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-steps": {
+      "prompt": "Three separate white garment care tickets, one showing a small blue wash basin, one a blue clothes hanger, and one a folded white shirt. Only pictorial objects on the tickets, no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clean-shirt": {
+      "prompt": "A human attendant in a plain blue shirt holding out a clean white shirt on a violet hanger, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-cards": {
+      "prompt": "A thick fan of blank white instruction cards held by a blue binder clip. Each card has a small blue wrench pictogram and no writing. The cards look very similar. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "calendar": {
+      "prompt": "A blue ring-bound calendar with white pages and empty square date cells, beside a violet pencil and one small blue clock with a blank face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-folders": {
+      "prompt": "Two upright light grey file folders with blue and violet tabs, each containing a blank white card with a small wrench pictogram. No writing on the folders. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-note": {
+      "prompt": "A short white result slip clipped to a blue clipboard, with a violet pencil and a small round blue check stamp beside it. The slip is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bread-reservation": {
+      "prompt": "Two golden bread rolls beside a small white paper reservation bag with a blue clip and a blank white order slip. The bread has natural golden colours. The bag is white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "服をきれいに",
+          "art": "laundry-customer",
+          "at": [1, 1]
+        },
+        {
+          "id": "steps",
+          "label": "細かな受付",
+          "art": "laundry-steps",
+          "at": [3, 1]
+        },
+        {
+          "id": "purpose",
+          "label": "洗濯を頼む",
+          "art": "clean-shirt",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "頼む人",
+          "art": "laundry-customer",
+          "at": [1, 1]
+        },
+        {
+          "id": "steps",
+          "label": "洗う干す渡す",
+          "art": "laundry-steps",
+          "at": [3, 1]
+        },
+        {
+          "id": "purpose",
+          "label": "洗濯の受付",
+          "art": "clean-shirt",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "customer",
+          "to": "purpose"
+        }
+      ]
+    },
+    "tooMany": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "似たツール",
+          "art": "tool-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "choice",
+          "label": "どれを使う",
+          "art": "service-folders",
+          "at": [3, 1]
+        },
+        {
+          "id": "context",
+          "label": "説明の量",
+          "art": "tool-cards",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "workUnit": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "people",
+          "label": "参加者の一覧",
+          "art": "result-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "events",
+          "label": "予定の一覧",
+          "art": "calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "create",
+          "label": "予定の作成",
+          "art": "calendar",
+          "at": [5, 1]
+        },
+        {
+          "id": "schedule",
+          "label": "予定を入れる",
+          "art": "calendar",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "laundryTool": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "steps",
+          "label": "細かな機能",
+          "art": "laundry-steps",
+          "at": [1, 1]
+        },
+        {
+          "id": "purpose",
+          "label": "洗濯を頼む",
+          "art": "clean-shirt",
+          "at": [3, 1]
+        },
+        {
+          "id": "chosen",
+          "label": "使うツール",
+          "art": "tool-cards",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "group",
+          "from": "steps",
+          "to": "purpose",
+          "label": "まとめる"
+        },
+        {
+          "id": "select",
+          "from": "purpose",
+          "to": "chosen",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "names": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "service",
+          "label": "サービス名",
+          "art": "service-folders",
+          "at": [1, 1]
+        },
+        {
+          "id": "operation",
+          "label": "操作の名前",
+          "art": "tool-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "named",
+          "label": "名前で区別",
+          "art": "service-folders",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "prefix",
+          "from": "service",
+          "to": "operation",
+          "label": "頭に付ける"
+        },
+        {
+          "id": "distinguish",
+          "from": "operation",
+          "to": "named",
+          "label": "選び分ける"
+        }
+      ]
+    },
+    "returns": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "すべての記録",
+          "art": "tool-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "needed",
+          "label": "必要な結果",
+          "art": "result-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の判断",
+          "art": "calendar",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "trim",
+          "from": "all",
+          "to": "needed",
+          "label": "絞る"
+        },
+        {
+          "id": "judge",
+          "from": "needed",
+          "to": "next",
+          "label": "使う"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "separate",
+          "label": "一つ目の案",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        },
+        {
+          "id": "combined",
+          "label": "二つ目の案",
+          "tone": "violet",
+          "cells": [1, 2, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "list",
+          "label": "パン一覧",
+          "art": "bread-reservation",
+          "at": [1, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫の取得",
+          "art": "result-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reserve",
+          "label": "予約の作成",
+          "art": "bread-reservation",
+          "at": [5, 1]
+        },
+        {
+          "id": "book",
+          "label": "パンを予約",
+          "art": "bread-reservation",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "purpose",
+          "label": "パンの予約",
+          "art": "bread-reservation",
+          "at": [1, 1]
+        },
+        {
+          "id": "small",
+          "label": "細かな機能",
+          "art": "tool-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "whole",
+          "label": "予約する道具",
+          "art": "bread-reservation",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "purpose",
+          "to": "whole",
+          "label": "目的が合う"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "増えたツール",
+          "art": "tool-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "work",
+          "label": "仕事の目的",
+          "art": "calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "返す情報",
+          "art": "result-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "洗濯を頼む窓口を選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "服をきれいにしたい人が、受付を選ぶ場面です。",
+          "show": ["customer"]
+        },
+        {
+          "say": "洗う係と干す係が別だと、頼む先に迷います。",
+          "show": ["steps"]
+        },
+        {
+          "say": "欲しいのは、洗濯をまとめて頼める窓口です。",
+          "show": ["purpose"]
+        },
+        {
+          "say": "似たツールを並べず、目的ごとに少数のツールにまとめます。",
+          "pulse": ["purpose"]
+        }
+      ]
+    },
+    {
+      "id": "laundry-example",
+      "kind": "board",
+      "role": "example",
+      "title": "受付を仕事でまとめる",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "クリーニング店に、シャツの洗濯を頼みます。",
+          "show": ["customer"]
+        },
+        {
+          "say": "洗うことも干すことも、服をきれいにする途中の作業です。",
+          "show": ["steps"]
+        },
+        {
+          "say": "利用者が細かな作業の窓口を選ぶ必要はありません。",
+          "mark": [
+            {
+              "on": "steps",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "洗濯を頼む受付なら、用事に合う場所を選べます。",
+          "show": ["purpose", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "too-many",
+      "kind": "board",
+      "role": "syntax",
+      "title": "似たツールが増えると",
+      "board": "tooMany",
+      "beats": [
+        {
+          "say": "API の機能ごとに分けると、似たツールが増えます。",
+          "show": ["tools"],
+          "speech": "エーピーアイの機能ごとに分けると、似たツールが増えます。"
+        },
+        {
+          "say": "教材の例は、四十個の中で取り違えた場面です。",
+          "show": ["choice"],
+          "mark": [
+            {
+              "on": "choice",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "人が選べない分け方では、Claude も選べません。",
+          "pulse": ["choice"],
+          "speech": "人が選べない分け方では、クロードも選べません。"
+        },
+        {
+          "say": "数が増えると、説明だけでコンテキストを使います。",
+          "show": ["context"]
+        }
+      ]
+    },
+    {
+      "id": "work-unit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "目的を一つの仕事にする",
+      "board": "workUnit",
+      "beats": [
+        {
+          "say": "まとめる基準は、利用者が済ませたい仕事の単位です。",
+          "term": {
+            "text": "仕事の単位",
+            "ruby": "しごとのたんい",
+            "note": "済ませたい目的で分ける"
+          }
+        },
+        {
+          "say": "たとえば、空きを探して予定を入れる仕事を考えます。",
+          "show": ["schedule"]
+        },
+        {
+          "say": "参加者一覧や予定一覧は、そのために調べる情報です。",
+          "show": ["people", "events"]
+        },
+        {
+          "say": "予定の作成までを、予定を入れるツールにまとめましょう。",
+          "show": ["create"],
+          "pulse": ["schedule"]
+        }
+      ]
+    },
+    {
+      "id": "laundry-tool",
+      "kind": "board",
+      "role": "apply",
+      "title": "洗濯の例に当てはめる",
+      "board": "laundryTool",
+      "beats": [
+        {
+          "say": "洗濯の例でも、細かな機能をそのまま並べると迷います。",
+          "show": ["steps"]
+        },
+        {
+          "say": "利用者の目的は、服をきれいにして受け取ることです。",
+          "show": ["purpose"]
+        },
+        {
+          "say": "その目的を一つの仕事として、ツールにまとめましょう。",
+          "show": ["group"],
+          "travel": {
+            "along": ["group"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "頼まれた仕事とツールの目的を照らして選べます。",
+          "show": ["chosen", "select"],
+          "travel": {
+            "along": ["select"],
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tool-names",
+      "kind": "board",
+      "role": "apply",
+      "title": "名前の頭で区別する",
+      "board": "names",
+      "beats": [
+        {
+          "say": "サービス名などを頭に付ける決め方が、ツールの名前空間です。",
+          "term": {
+            "text": "ツールの名前空間",
+            "ruby": "ツールのなまえくうかん",
+            "note": "サービス名や対象で区別"
+          }
+        },
+        {
+          "say": "名前の頭に置く部分を、まず確かめましょう。",
+          "show": ["service"],
+          "tag": {
+            "service": "github"
+          }
+        },
+        {
+          "say": "この例では、操作を表す名前の前にサービス名を付けます。",
+          "show": ["operation", "prefix"],
+          "tag": {
+            "operation": "list_prs"
+          },
+          "travel": {
+            "along": ["prefix"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ほかの人のツールと並んでも、選び分けやすい形です。",
+          "show": ["named", "distinguish"],
+          "travel": {
+            "along": ["distinguish"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tool-results",
+      "kind": "board",
+      "role": "apply",
+      "title": "次の判断に要る値を返す",
+      "board": "returns",
+      "beats": [
+        {
+          "say": "ツールが処理の結果として渡す情報を、返す値と呼びます。",
+          "term": {
+            "text": "返す値",
+            "ruby": "かえすあたい",
+            "note": "処理の結果として渡す情報"
+          }
+        },
+        {
+          "say": "記録を全部返すと、次の判断に不要な情報も混じる形です。",
+          "show": ["all"]
+        },
+        {
+          "say": "関係する行とその前後など、必要な範囲に絞りましょう。",
+          "show": ["needed", "trim"],
+          "travel": {
+            "along": ["trim"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "名前や意味の分かる ID を返すと、扱いやすくなります。",
+          "show": ["next", "judge"],
+          "tag": {
+            "needed": "名前や番号"
+          },
+          "travel": {
+            "along": ["judge"],
+            "icon": "check"
+          },
+          "speech": "名前や意味の分かるアイディーを返すと、扱いやすくなります。"
+        }
+      ]
+    },
+    {
+      "id": "bakery-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "パンを予約する道具を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "パン屋で、取り置きを予約するツールを考えます。",
+          "show": ["separate", "list"]
+        },
+        {
+          "say": "一つ目は、一覧と在庫の取得と予約の作成を分けた案です。",
+          "show": ["stock", "reserve"]
+        },
+        {
+          "say": "使う側は、目的に合う細かな機能を順に選びます。",
+          "pulse": ["list", "stock", "reserve"]
+        },
+        {
+          "say": "二つ目は、在庫を調べて予約する仕事をまとめた案です。",
+          "show": ["combined", "book"],
+          "pulse": []
+        },
+        {
+          "say": "仕事の目的ごとにまとめているのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "separate",
+              "kind": "question"
+            },
+            {
+              "on": "combined",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bakery-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "予約をまとめた案を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、在庫を調べて予約する二つ目の案です。",
+          "mark": [
+            {
+              "on": "combined",
+              "kind": "check"
+            },
+            {
+              "on": "separate",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["combined"]
+        },
+        {
+          "say": "パンを予約したいという目的で、ツールを選べます。",
+          "pulse": ["book"]
+        }
+      ]
+    },
+    {
+      "id": "bakery-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "目的から選べる理由",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "利用者が済ませたいのは、パンの予約です。",
+          "show": ["purpose"]
+        },
+        {
+          "say": "一覧や在庫の取得は、予約のための作業に当たります。",
+          "show": ["small"]
+        },
+        {
+          "say": "一つ目では、細かな機能を選ぶ判断が欠かせません。",
+          "mark": [
+            {
+              "on": "small",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "二つ目なら、目的に合う予約のツールを選べます。",
+          "show": ["whole", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "ツールが増えたときに見直す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "似たツールが増えたら、使い分けを見直しましょう。",
+          "show": ["tools"]
+        },
+        {
+          "say": "基準は、利用者が済ませたい仕事の目的です。",
+          "show": ["work"]
+        },
+        {
+          "say": "返す情報も、次の判断に要るものだけに絞ります。",
+          "show": ["results"]
+        },
+        {
+          "say": "新しく足す前に、同じ目的のツールをまとめられるか考えましょう。",
+          "pulse": ["tools", "work"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "54c50bb82baf448114af166f0b91ef2084f6f53b7809338e895e3961ff64c7f4"
+  }
+}

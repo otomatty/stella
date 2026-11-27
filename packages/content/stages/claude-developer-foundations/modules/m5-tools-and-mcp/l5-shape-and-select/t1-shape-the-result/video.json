@@ -1,0 +1,714 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "次に行う判断に合わせて、ツール結果に残す項目と件数を絞り、打ち切りと続きを調べる方法を説明できる。",
+    "stuck": "検索できた情報をすべて返せばよいと考え、次の判断に必要な候補を大量の記録に埋もれさせてしまう。",
+    "points": ["ツールの結果は、次の判断に要る項目だけに絞って返します。"],
+    "leaveOut": [
+      "エラーの返し方と実行前の承認",
+      "機能を提供する手段の選び方",
+      "response_format による詳細情報の切り替え",
+      "ページ分割を実装する細かな仕様",
+      "system に置くアプリ全体の指示",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "library-book": {
+      "prompt": "One closed blue library book with a simple violet coastline motif on its cover and a white bookmark protruding from the top. No lettering on the cover or spine. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-building": {
+      "prompt": "A small freestanding blue library building seen from the front, with a wide entrance and a simple open-book pictogram above it. No surrounding scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "book-stock": {
+      "prompt": "Exactly two identical closed blue library books placed side by side, each with a simple violet coastline motif on its cover and a white bookmark. Both books are fully visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-records": {
+      "prompt": "A thick stack of white library catalog cards with light grey edges, blue divider tabs and tiny blue book pictograms, slightly fanned to show that there are many records. The cards have no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-bouquet": {
+      "prompt": "A small bouquet of red tulips with natural green leaves wrapped in white paper and tied with a violet ribbon, ready to be selected at a flower shop. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-ledger": {
+      "prompt": "A thick light grey flower shop purchasing ledger, open with blank white pages and blue divider tabs, beside a small red tulip with a natural green stem. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-note": {
+      "prompt": "A small white flower selection slip held by a blue clip, with a red tulip pictogram and a blank light grey price tag attached. No writing or marks resembling writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-washer": {
+      "prompt": "A white front-loading washing machine with a blue circular door and a violet repair wrench leaning beside it. The controls are simple blank shapes. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-slip": {
+      "prompt": "A white appliance repair receipt on a small blue clipboard, with a tiny washing-machine pictogram and a violet calendar tab containing no marks. No writing on the receipt. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "今日借りる本",
+          "art": "library-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "records",
+          "label": "大量の記録",
+          "art": "library-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "branch",
+          "label": "受取館",
+          "art": "library-building",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "flower-shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "flowers",
+          "label": "今日買う花",
+          "art": "flower-bouquet",
+          "at": [1, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "仕入れの履歴",
+          "art": "flower-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "花の候補",
+          "art": "flower-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "title",
+          "label": "書名",
+          "art": "library-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "branch",
+          "label": "受取館",
+          "art": "library-building",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "貸出可能数",
+          "art": "book-stock",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "trim": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "更新履歴",
+          "art": "library-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "internal",
+          "label": "館の内部ID",
+          "art": "library-building",
+          "at": [3, 1]
+        },
+        {
+          "id": "book-id",
+          "label": "資料番号",
+          "art": "library-book",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "limit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "candidates",
+          "label": "返した候補",
+          "art": "library-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "rest",
+          "label": "残りの候補",
+          "art": "library-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "filter",
+          "label": "受取館で絞る",
+          "art": "library-building",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pages": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "最初の候補",
+          "art": "library-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "second",
+          "label": "次の候補",
+          "art": "library-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "rest",
+          "label": "さらに続き",
+          "art": "library-records",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "next-page",
+          "from": "first",
+          "to": "second",
+          "label": "続きを取る"
+        },
+        {
+          "id": "more-pages",
+          "from": "second",
+          "to": "rest",
+          "label": "続きを取る"
+        }
+      ]
+    },
+    "repair-quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "washer",
+          "label": "修理中の家電",
+          "art": "repair-washer",
+          "at": [1, 1]
+        },
+        {
+          "id": "all",
+          "label": "全作業の記録",
+          "art": "repair-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "selected",
+          "label": "状況と完了日",
+          "art": "repair-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair-reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "status",
+          "label": "いまの状況",
+          "art": "repair-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "date",
+          "label": "完了予定日",
+          "art": "repair-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "過去の作業",
+          "art": "repair-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "本の候補案内",
+          "art": "library-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "repair",
+          "label": "修理の案内",
+          "art": "repair-washer",
+          "at": [3, 1]
+        },
+        {
+          "id": "all-books",
+          "label": "候補を全件確認",
+          "art": "library-records",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "今日受け取れる本を探す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "図書館で、今日受け取れる本を案内する場面です。",
+          "show": ["book"]
+        },
+        {
+          "say": "検索すると、全館の本の情報と更新履歴まで返ってきました。",
+          "show": ["records"]
+        },
+        {
+          "say": "利用者が知りたいのは、借りられる本と受取館です。",
+          "show": ["branch"]
+        },
+        {
+          "say": "ツールの結果は、次の判断に要る項目だけに絞って返します。",
+          "pulse": ["book", "branch"]
+        }
+      ]
+    },
+    {
+      "id": "flower-shop",
+      "kind": "board",
+      "role": "example",
+      "title": "花屋で選ぶなら",
+      "board": "flower-shop",
+      "beats": [
+        {
+          "say": "花屋で、今日買う花束を選ぶ場面を考えましょう。",
+          "show": ["flowers"]
+        },
+        {
+          "say": "店員が渡したのは、過去の仕入れも載った台帳です。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "それでは、いま買える花を探す手間が増えます。",
+          "mark": [
+            {
+              "on": "ledger",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "今日の候補の名前と値段を、選ぶためのメモにしましょう。",
+          "show": ["note"],
+          "tag": {
+            "note": "名前と値段"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-fields",
+      "kind": "board",
+      "role": "syntax",
+      "title": "判断から項目を選ぶ",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "結果に含める情報の一つ一つを、項目と呼びます。",
+          "term": {
+            "text": "項目",
+            "ruby": "こうもく",
+            "note": "結果に含める情報の種類"
+          }
+        },
+        {
+          "say": "本の候補を案内するなら、最初の項目は書名です。",
+          "show": ["title"]
+        },
+        {
+          "say": "どこへ行けばよいか分かるよう、受取館も残します。",
+          "show": ["branch"]
+        },
+        {
+          "say": "貸し出せる冊数も、候補を案内するための情報です。",
+          "show": ["stock"]
+        }
+      ]
+    },
+    {
+      "id": "result-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "結果の値と図を結ぶ",
+      "code": [
+        "// 本一冊の検索結果をまとめる",
+        "{",
+        "  // 書名を返す",
+        "  title: \"港の地図\",",
+        "  // 受け取れる館を返す",
+        "  pickupBranch: \"中央館\",",
+        "  // 貸し出せる冊数を返す",
+        "  available: 2",
+        "// 検索結果を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "title は、このツールが返す書名の項目です。",
+          "speech": "タイトルは、このツールが返す書名の項目です。",
+          "part": {
+            "line": 3,
+            "text": "title",
+            "note": "書名"
+          },
+          "figure": {
+            "pulse": ["title"]
+          }
+        },
+        {
+          "say": "値を見ると、候補の書名は「港の地図」だと分かります。",
+          "part": {
+            "line": 3,
+            "text": "\"港の地図\""
+          },
+          "figure": {
+            "tag": {
+              "title": "港の地図"
+            }
+          }
+        },
+        {
+          "say": "pickupBranch は受取館で、値は中央館です。",
+          "speech": "ピックアップブランチは受取館で、値は中央館です。",
+          "part": {
+            "line": 5,
+            "text": "pickupBranch",
+            "note": "受取館"
+          },
+          "figure": {
+            "pulse": ["branch"],
+            "tag": {
+              "branch": "中央館"
+            }
+          }
+        },
+        {
+          "say": "available から、二冊借りられると読み取れます。",
+          "speech": "アベイラブルから、二冊借りられると読み取れます。",
+          "part": {
+            "line": 7,
+            "text": "available: 2",
+            "note": "貸出可能数"
+          },
+          "figure": {
+            "pulse": ["stock"],
+            "tag": {
+              "stock": "二冊"
+            }
+          }
+        },
+        {
+          "say": "この結果で、どの本をどこで借りられるか案内できるわけです。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "pulse": ["title", "branch", "stock"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "trim-history",
+      "kind": "board",
+      "role": "apply",
+      "title": "使わない情報を外す",
+      "board": "trim",
+      "beats": [
+        {
+          "say": "候補の案内には、過去の更新履歴を含めません。",
+          "show": ["history"],
+          "mark": [
+            {
+              "on": "history",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "館の内部 ID も、この判断では使わない情報です。",
+          "speech": "館の内部アイディーも、この判断では使わない情報です。",
+          "show": ["internal"],
+          "mark": [
+            {
+              "on": "internal",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "ただし、予約に資料番号が要るなら、その番号は残します。",
+          "show": ["book-id"],
+          "tag": {
+            "book-id": "予約で使う"
+          }
+        },
+        {
+          "say": "次のツールに渡すために必要かどうかで選びましょう。",
+          "pulse": ["book-id"],
+          "mark": [
+            {
+              "on": "book-id",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "limited-result",
+      "kind": "board",
+      "role": "apply",
+      "title": "打ち切ったことを伝える",
+      "board": "limit",
+      "beats": [
+        {
+          "say": "一度に返す候補の最大数が、件数の上限です。",
+          "term": {
+            "text": "件数の上限",
+            "ruby": "けんすうのじょうげん",
+            "note": "一度に返す候補の最大数"
+          }
+        },
+        {
+          "say": "この図書館の例では、まず十件まで返します。",
+          "show": ["candidates"],
+          "tag": {
+            "candidates": "十件まで"
+          }
+        },
+        {
+          "say": "上限で打ち切ると、まだ返していない候補がある状態です。",
+          "show": ["rest"],
+          "tag": {
+            "rest": "続きあり"
+          }
+        },
+        {
+          "say": "結果には、先頭の十件を返したことを添えます。",
+          "pulse": ["candidates"],
+          "tag": {
+            "candidates": "先頭の十件"
+          }
+        },
+        {
+          "say": "受取館や著者で絞れることも、合わせて伝えましょう。",
+          "show": ["filter"],
+          "tag": {
+            "filter": "中央館だけ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-pages",
+      "kind": "board",
+      "role": "apply",
+      "title": "全件を見るなら分ける",
+      "board": "pages",
+      "beats": [
+        {
+          "say": "全件を確認する仕事では、先頭の候補だけでは足りません。",
+          "show": ["first"]
+        },
+        {
+          "say": "まとまりに分けて続きを取る方法が、ページ分割です。",
+          "term": {
+            "text": "ページ分割",
+            "ruby": "ページぶんかつ",
+            "note": "次のまとまりを取り出す"
+          }
+        },
+        {
+          "say": "最初のまとまりのあとで、次の候補を取り出します。",
+          "show": ["second", "next-page"],
+          "travel": {
+            "along": ["next-page"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その先も確認できるよう、続きを取る方法を用意しましょう。",
+          "show": ["rest", "more-pages"],
+          "travel": {
+            "along": ["more-pages"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "修理受付で残す項目",
+      "board": "repair-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "家電の修理受付で、洗濯機を預かっている場面です。",
+          "show": ["washer"]
+        },
+        {
+          "say": "利用者は、修理の状況と完了予定日を尋ねました。",
+          "tag": {
+            "washer": "状況と予定日"
+          }
+        },
+        {
+          "say": "一つ目の結果では、過去の作業記録もすべて返します。",
+          "show": ["all"],
+          "tag": {
+            "all": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目は、いまの状況と完了予定日だけを返す案です。",
+          "show": ["selected"],
+          "tag": {
+            "selected": "二つ目"
+          }
+        },
+        {
+          "say": "今回の案内に要る項目を絞っているのは、どちらでしょうか。",
+          "pulse": ["all", "selected"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "状況と予定日を返す",
+      "board": "repair-quiz",
+      "beats": [
+        {
+          "say": "答えは、状況と完了予定日を返す二つ目の案です。",
+          "mark": [
+            {
+              "on": "selected",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["selected"]
+        },
+        {
+          "say": "利用者が尋ねた内容に答えるための項目を残しています。",
+          "pulse": ["washer", "selected"]
+        }
+      ]
+    },
+    {
+      "id": "why-selected",
+      "kind": "board",
+      "role": "explain",
+      "title": "質問と項目を照らす",
+      "board": "repair-reasons",
+      "beats": [
+        {
+          "say": "いまの状況があれば、修理がどこまで進んだか伝えられます。",
+          "show": ["status"],
+          "mark": [
+            {
+              "on": "status",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "完了予定日は、いつ終わるかという質問に答える情報です。",
+          "show": ["date"],
+          "mark": [
+            {
+              "on": "date",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "過去の作業を全部返す必要は、この案内にはありません。",
+          "show": ["history"],
+          "mark": [
+            {
+              "on": "history",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "情報を減らす前に、何を案内する結果なのかを決めます。",
+          "pulse": ["status", "date"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "次の仕事から結果を決める",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "本を数件案内する検索では、候補の項目と件数を絞ります。",
+          "show": ["books"]
+        },
+        {
+          "say": "修理の問い合わせでも、残すのは質問に答えるための項目です。",
+          "show": ["repair"]
+        },
+        {
+          "say": "候補を全件確認する仕事なら、続きを取れる形にします。",
+          "show": ["all-books"]
+        },
+        {
+          "say": "結果を設計するときは、次の判断に何が要るか確かめましょう。",
+          "pulse": ["books", "repair", "all-books"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9eb834c2b1a7728e83219e988c24b7f8f9ded8094430e0e5d2ac3d18035e5e0a"
+  }
+}

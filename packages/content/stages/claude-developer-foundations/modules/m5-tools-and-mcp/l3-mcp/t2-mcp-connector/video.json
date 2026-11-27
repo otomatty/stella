@@ -1,0 +1,770 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "MCP コネクターで使う接続先とツールセットの書く場所を示し、同じサーバー名で結ぶ理由を説明できる。",
+    "stuck": "MCP サーバーの接続先だけを書けばツールも使えると思い、tools 側の指定や名前の対応を見落とす。",
+    "points": [
+      "MCP コネクターを使うと、Messages API からリモートの MCP サーバーのツールを使えます。"
+    ],
+    "leaveOut": [
+      "Agent SDK での接続設定とツールの許可",
+      "認証トークンの渡し方",
+      "ベータのヘッダーの具体的な値",
+      "ツールごとの許可と除外の設定",
+      "応答ブロックの詳しい構造",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "hotel-guest": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding the handle of a small blue travel suitcase, looking toward an empty speech bubble. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hotel-attendant": {
+      "prompt": "A hotel attendant in a plain blue shirt holding a telephone receiver in one hand and a blank white request slip in the other. Simple facial features, upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "taxi-car": {
+      "prompt": "A compact blue taxi car in three-quarter view with a blank white roof light and dark wheels. No driver or passengers. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-sheet": {
+      "prompt": "One white request sheet held by a violet paper clip, with two large blank light grey entry areas and a blue pen beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "api-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white request slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "remote-server": {
+      "prompt": "A compact blue server cabinet with three light grey drive slots and a blue network cable plugged into its side. Large simple physical equipment, no symbols floating around it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-kit": {
+      "prompt": "An open light grey tool case holding a blue wrench and a violet magnifying glass, each clearly separated and easy to recognize. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "postal-parcel": {
+      "prompt": "A light grey cardboard postal parcel sealed with blue tape beside a plain white envelope and a violet magnifying glass. The parcel is light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "local-laptop": {
+      "prompt": "A small open violet laptop with a plain dark screen and a single blue cable coiled beside it. No interface elements on the screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "hotel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guest",
+          "label": "宿泊客",
+          "art": "hotel-guest",
+          "at": [1, 1]
+        },
+        {
+          "id": "attendant",
+          "label": "ホテルの係",
+          "art": "hotel-attendant",
+          "at": [3, 1]
+        },
+        {
+          "id": "taxi",
+          "label": "タクシー会社",
+          "art": "taxi-car",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "guest",
+          "to": "attendant",
+          "label": "頼む"
+        },
+        {
+          "id": "arrange",
+          "from": "attendant",
+          "to": "taxi",
+          "label": "手配"
+        }
+      ]
+    },
+    "connection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "api",
+          "label": "API側",
+          "art": "api-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "外のサーバー",
+          "art": "remote-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "api",
+          "label": "送る"
+        },
+        {
+          "id": "connect",
+          "from": "api",
+          "to": "server",
+          "label": "接続"
+        }
+      ]
+    },
+    "settings": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "destination",
+          "label": "接続先",
+          "art": "remote-server",
+          "at": [1, 1]
+        },
+        {
+          "id": "toolset",
+          "label": "ツールセット",
+          "art": "tool-kit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "destination",
+          "to": "toolset",
+          "label": "同じ名前"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "remote",
+          "label": "公開HTTP",
+          "art": "remote-server",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元の実行",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "tools",
+          "label": "ツール呼出し",
+          "art": "tool-kit",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "postal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "配送状況",
+          "art": "postal-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "destination",
+          "label": "接続先",
+          "art": "remote-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "toolset",
+          "label": "ツールセット",
+          "art": "tool-kit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "needs",
+          "from": "parcel",
+          "to": "destination",
+          "label": "調べる"
+        },
+        {
+          "id": "match",
+          "from": "destination",
+          "to": "toolset",
+          "label": "同じ名前"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "問い合わせ",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "remote",
+          "label": "公開サーバー",
+          "art": "remote-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "tools",
+          "label": "使うツール",
+          "art": "tool-kit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "connect",
+          "from": "app",
+          "to": "remote",
+          "label": "つなぐ"
+        },
+        {
+          "id": "enable",
+          "from": "remote",
+          "to": "tools",
+          "label": "指定"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "外の仕事を取り次ぐ",
+      "board": "hotel",
+      "beats": [
+        {
+          "say": "ホテルの宿泊客が、タクシーを頼みたい場面です。",
+          "show": ["guest"]
+        },
+        {
+          "say": "ホテルの係に、車の手配をお願いします。",
+          "show": ["attendant"]
+        },
+        {
+          "say": "実際に車を出すのは、外のタクシー会社です。",
+          "show": ["taxi"]
+        },
+        {
+          "say": "MCP コネクターで、API から外のツールを使えます。",
+          "speech": "エムシーピーコネクターで、エーピーアイから外のツールを使えます。",
+          "pulse": ["attendant", "taxi"]
+        }
+      ]
+    },
+    {
+      "id": "hotel-example",
+      "kind": "board",
+      "role": "example",
+      "title": "連絡先と頼む仕事",
+      "board": "hotel",
+      "beats": [
+        {
+          "say": "係に取り次いでもらうなら、頼む先を決めましょう。",
+          "pulse": ["taxi"]
+        },
+        {
+          "say": "今回は、連絡先が分かっているタクシー会社です。",
+          "tag": {
+            "taxi": "連絡先"
+          }
+        },
+        {
+          "say": "宿泊客は、その会社に車の手配を頼みました。",
+          "show": ["ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "係が連絡するので、宿泊客が直接電話せずに済みます。",
+          "show": ["arrange"],
+          "travel": {
+            "along": ["arrange"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "connector",
+      "kind": "board",
+      "role": "syntax",
+      "title": "接続を引き受ける機能",
+      "board": "connection",
+      "beats": [
+        {
+          "say": "API でこの接続を担うのが、MCP コネクターです。",
+          "speech": "エーピーアイでこの接続を担うのが、エムシーピーコネクターです。",
+          "term": {
+            "text": "MCPコネクター",
+            "note": "APIから外のツールへ"
+          }
+        },
+        {
+          "say": "Messages API のリクエストに、サーバーを書きます。",
+          "speech": "メッセージズエーピーアイのリクエストに、サーバーを書きます。",
+          "show": ["request", "api", "send"]
+        },
+        {
+          "say": "つながる先は、リモートの MCP サーバーです。",
+          "speech": "つながる先は、リモートのエムシーピーサーバーです。",
+          "show": ["server", "connect"],
+          "travel": {
+            "along": ["connect"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "自分で MCP クライアントを作らずに済みます。",
+          "speech": "自分でエムシーピークライアントを作らずに済みます。",
+          "pulse": ["api"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "server-setting",
+      "kind": "code",
+      "role": "syntax",
+      "title": "接続先を指定する",
+      "code": [
+        "// つなぐサーバーを配列に書く",
+        "mcp_servers: [{",
+        "  // 接続の種類と公開された接続先",
+        "  type: \"url\", url: \"https://mcp.example.com/sse\",",
+        "  // このサーバーを区別する名前",
+        "  name: \"tickets\" }],",
+        "// サーバーのツールを使えるようにする",
+        "tools: [{ type: \"mcp_toolset\",",
+        "  // 接続先に付けた名前を指す",
+        "  mcp_server_name: \"tickets\" }],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "settings"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、どのサーバーにつなぐかを示す接続先です。",
+          "term": {
+            "text": "接続先",
+            "ruby": "せつぞくさき",
+            "note": "mcp_servers"
+          },
+          "part": {
+            "line": 1,
+            "text": "mcp_servers"
+          }
+        },
+        {
+          "say": "この配列に、接続先の情報をまとめて書きます。",
+          "focus": [1, 3, 5],
+          "figure": {
+            "show": ["destination"]
+          }
+        },
+        {
+          "say": "接続の種類に書く値は、url です。",
+          "speech": "接続の種類に書く値は、ユーアールエルです。",
+          "part": {
+            "line": 3,
+            "text": "type: \"url\"",
+            "note": "接続の種類"
+          }
+        },
+        {
+          "say": "その隣に、公開されたサーバーの URL を書きます。",
+          "speech": "その隣に、公開されたサーバーのユーアールエルを書きます。",
+          "part": {
+            "line": 3,
+            "text": "\"https://mcp.example.com/sse\"",
+            "note": "公開された宛先"
+          },
+          "figure": {
+            "pulse": ["destination"]
+          }
+        },
+        {
+          "say": "name は、サーバーを区別するために付ける名前です。",
+          "speech": "ネームは、サーバーを区別するために付ける名前です。",
+          "part": {
+            "line": 5,
+            "text": "name: \"tickets\"",
+            "note": "チケットの複数形"
+          },
+          "figure": {
+            "tag": {
+              "destination": "tickets"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "toolset-setting",
+      "kind": "code",
+      "role": "syntax",
+      "title": "使うツールを指定する",
+      "code": [
+        "// つなぐサーバーを配列に書く",
+        "mcp_servers: [{",
+        "  // 接続の種類と公開された接続先",
+        "  type: \"url\", url: \"https://mcp.example.com/sse\",",
+        "  // このサーバーを区別する名前",
+        "  name: \"tickets\" }],",
+        "// サーバーのツールを使えるようにする",
+        "tools: [{ type: \"mcp_toolset\",",
+        "  // 接続先に付けた名前を指す",
+        "  mcp_server_name: \"tickets\" }],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "settings"
+      },
+      "beats": [
+        {
+          "say": "サーバーのツールを使う指定が、ツールセットです。",
+          "term": {
+            "text": "ツールセット",
+            "note": "mcp_toolset"
+          },
+          "part": {
+            "line": 7,
+            "text": "mcp_toolset"
+          }
+        },
+        {
+          "say": "tools の配列に、この種類の指定を書きます。",
+          "speech": "ツールズの配列に、この種類の指定を書きます。",
+          "part": {
+            "line": 7,
+            "text": "tools"
+          },
+          "figure": {
+            "show": ["toolset"]
+          }
+        },
+        {
+          "say": "次の項目は、どのサーバーのツールを使うかの指定です。",
+          "part": {
+            "line": 9,
+            "text": "mcp_server_name",
+            "note": "使うサーバー名"
+          },
+          "figure": {
+            "pulse": ["toolset"]
+          }
+        },
+        {
+          "say": "ここには、接続先に付けた tickets を書きます。",
+          "speech": "ここには、接続先に付けたチケッツを書きます。",
+          "part": {
+            "line": 9,
+            "text": "\"tickets\""
+          },
+          "figure": {
+            "tag": {
+              "toolset": "tickets"
+            }
+          }
+        },
+        {
+          "say": "二か所の名前が、同じサーバーを指す仕組みです。",
+          "focus": [5, 9],
+          "figure": {
+            "show": ["match"],
+            "travel": {
+              "along": ["match"]
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply-settings",
+      "kind": "code",
+      "role": "apply",
+      "title": "連絡先と仕事を結ぶ",
+      "code": [
+        "// つなぐサーバーを配列に書く",
+        "mcp_servers: [{",
+        "  // 接続の種類と公開された接続先",
+        "  type: \"url\", url: \"https://mcp.example.com/sse\",",
+        "  // このサーバーを区別する名前",
+        "  name: \"tickets\" }],",
+        "// サーバーのツールを使えるようにする",
+        "tools: [{ type: \"mcp_toolset\",",
+        "  // 接続先に付けた名前を指す",
+        "  mcp_server_name: \"tickets\" }],"
+      ],
+      "show": false,
+      "panel": {
+        "kind": "figure",
+        "board": "settings"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ホテルの例で、連絡する会社を決めた部分を思い出します。",
+          "type": [0, 1, 2, 3, 4, 5],
+          "figure": {
+            "show": ["destination"]
+          }
+        },
+        {
+          "say": "コードでは、こちらの配列が接続先の指定です。",
+          "part": {
+            "line": 1,
+            "text": "mcp_servers"
+          },
+          "figure": {
+            "tag": {
+              "destination": "tickets"
+            }
+          }
+        },
+        {
+          "say": "頼む仕事に当たるツールは、もう一方の配列で指定します。",
+          "type": [6, 7, 8, 9],
+          "figure": {
+            "show": ["toolset"]
+          }
+        },
+        {
+          "say": "同じ tickets を書くのは、その接続先のツールを指すためです。",
+          "speech": "同じチケッツを書くのは、その接続先のツールを指すためです。",
+          "part": {
+            "line": 9,
+            "text": "\"tickets\""
+          },
+          "figure": {
+            "show": ["match"],
+            "tag": {
+              "toolset": "tickets"
+            },
+            "travel": {
+              "along": ["match"]
+            }
+          }
+        },
+        {
+          "say": "リクエストでは、この二か所をセットで確かめましょう。",
+          "focus": [1, 7],
+          "figure": {
+            "pulse": ["destination", "toolset"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "limits",
+      "kind": "board",
+      "role": "note",
+      "title": "接続できる範囲",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "つなぐ相手は、HTTP で公開されたサーバーです。",
+          "speech": "つなぐ相手は、エイチティーティーピーで公開されたサーバーです。",
+          "show": ["remote"],
+          "mark": [
+            {
+              "on": "remote",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "手元のパソコンで動くサーバーには、直接つなげません。",
+          "show": ["local"],
+          "mark": [
+            {
+              "on": "local",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "使える機能は、MCP のツールの呼び出しです。",
+          "speech": "使える機能は、エムシーピーのツールの呼び出しです。",
+          "show": ["tools"],
+          "mark": [
+            {
+              "on": "tools",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "現在はベータなので、ベータのヘッダーも付けます。",
+          "pulse": ["remote"],
+          "tag": {
+            "remote": "ベータ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "郵便局のツールを使う",
+      "board": "postal",
+      "think": 8,
+      "beats": [
+        {
+          "say": "郵便局の配送状況を調べるアプリを考えます。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "配送状況を調べるツールは、すでに公開サーバーにある状態です。",
+          "show": ["destination", "needs"]
+        },
+        {
+          "say": "接続先の配列には、post という名前で登録しました。",
+          "speech": "接続先の配列には、ポストという名前で登録しました。",
+          "tag": {
+            "destination": "post"
+          }
+        },
+        {
+          "say": "まだ、ツールセットの指定は書いていません。",
+          "show": ["toolset"],
+          "mark": [
+            {
+              "on": "toolset",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "どの配列にツールセットを置き、どの名前を指すのでしょうか。",
+          "pulse": ["toolset", "destination"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "同じ接続先を指す",
+      "board": "postal",
+      "beats": [
+        {
+          "say": "tools にツールセットを置き、名前は post を指します。",
+          "speech": "ツールズにツールセットを置き、名前はポストを指します。",
+          "tag": {
+            "toolset": "post"
+          },
+          "mark": [
+            {
+              "on": "toolset",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "接続先とツールを結ぶのは、同じサーバー名です。",
+          "show": ["match"],
+          "travel": {
+            "along": ["match"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-name",
+      "kind": "board",
+      "role": "explain",
+      "title": "名前で対応をたどる",
+      "board": "postal",
+      "beats": [
+        {
+          "say": "接続先の配列が伝えるのは、どこにつなぐかです。",
+          "pulse": ["destination"]
+        },
+        {
+          "say": "ツールセットは、そのサーバーのツールを使えるようにします。",
+          "pulse": ["toolset"]
+        },
+        {
+          "say": "post という名前が、二つの指定を結ぶ目印です。",
+          "speech": "ポストという名前が、二つの指定を結ぶ目印です。",
+          "travel": {
+            "along": ["match"]
+          },
+          "pulse": []
+        },
+        {
+          "say": "接続先だけで終わらず、ツール側の名前まで確かめましょう。",
+          "pulse": ["destination", "toolset"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "外のツールを使うとき",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "問い合わせのアプリで、外のツールを使いたいとします。",
+          "show": ["app"]
+        },
+        {
+          "say": "つなぎたい MCP サーバーが公開されている場面です。",
+          "speech": "つなぎたいエムシーピーサーバーが公開されている場面です。",
+          "show": ["remote", "connect"]
+        },
+        {
+          "say": "コネクターなら、API 側が実行と結果の受け渡しを担います。",
+          "speech": "コネクターなら、エーピーアイ側が実行と結果の受け渡しを担います。",
+          "show": ["tools", "enable"]
+        },
+        {
+          "say": "接続先と使うツールを、同じ名前で結びましょう。",
+          "pulse": ["remote", "tools"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "98a39b3a61af5abf942463032f46987c290e764901a6e92c59797445c6564d7b"
+  }
+}

@@ -1,0 +1,851 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "実行結果を呼び出しの id に結び、応答の直後の user 発言で返す順番を説明できる。",
+    "stuck": "ツールで在庫数を調べたあと、その数をどの発言に入れ、どの呼び出しと結ぶのか分からない。",
+    "points": ["ツールの結果は tool_result にして、次のリクエストの user の発言で返します。"],
+    "leaveOut": [
+      "ツールの定義と入力スキーマ",
+      "失敗時の is_error の指定",
+      "サーバーツールの処理",
+      "結果の画像や文書の形式",
+      "外から来た文章の安全な扱い",
+      "SDK のツールランナーと課題の解答コード"
+    ]
+  },
+  "art": {
+    "stock-count": {
+      "prompt": "A neat cluster of light grey cardboard parcels with blue sealing tape beside a blue handheld stock scanner, representing a completed inventory count. The parcels are light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-slip": {
+      "prompt": "A single white inventory result slip held by a blue clip, with a blue pencil beside it. The paper is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding out one small rounded hand to receive a report. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-clerk": {
+      "prompt": "A shop assistant in a plain blue shirt holding a blank white stock inquiry ticket, with short dark hair and simple facial features. Show the upper body and both hands clearly. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-ticket": {
+      "prompt": "A white stock inquiry ticket with a large blue circular tab attached to its upper corner, beside a small light grey parcel. The ticket has no markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-stack": {
+      "prompt": "A short fanned stack of blank white conversation sheets with alternating blue and violet corner tabs held together by a blue binder clip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open blue laptop with a completely blank screen and a small violet gear beside it, representing the application that executes a tool. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "camp-tent": {
+      "prompt": "A single blue camping tent with an open entrance and a rolled violet sleeping bag beside it, representing campsite availability. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "camp-fee": {
+      "prompt": "A blue camping lantern beside a small violet coin purse and a blank white receipt, representing the fee for a campsite reservation. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の確認",
+          "art": "stock-count",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "実行結果",
+          "art": "result-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "user",
+          "label": "userの発言",
+          "art": "history-stack",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ticket",
+          "label": "確認の依頼",
+          "art": "request-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "店の担当者",
+          "art": "shop-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "slip",
+          "label": "確認の返事",
+          "art": "result-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "ticket",
+          "to": "clerk",
+          "label": "調べる"
+        },
+        {
+          "id": "report",
+          "from": "clerk",
+          "to": "slip",
+          "label": "結果を記す"
+        }
+      ]
+    },
+    "pair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "call",
+          "label": "ツール呼出し",
+          "art": "request-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "ツール結果",
+          "art": "result-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "call",
+          "to": "result",
+          "label": "同じID"
+        },
+        {
+          "id": "return",
+          "from": "result",
+          "to": "claude",
+          "label": "結果を返す"
+        }
+      ]
+    },
+    "history": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "assistant",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "user",
+          "art": "result-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "次の送信",
+          "art": "history-stack",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "adjacent",
+          "from": "response",
+          "to": "result",
+          "label": "すぐあと"
+        },
+        {
+          "id": "send",
+          "from": "result",
+          "to": "history",
+          "label": "履歴に追加"
+        }
+      ]
+    },
+    "batch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "calls",
+          "label": "複数の呼出し",
+          "art": "request-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "results",
+          "label": "結果をまとめる",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "text",
+          "label": "添える文",
+          "art": "result-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "collect",
+          "from": "calls",
+          "to": "results",
+          "label": "全件を返す"
+        },
+        {
+          "id": "after",
+          "from": "results",
+          "to": "text",
+          "label": "結果のあと"
+        }
+      ]
+    },
+    "loop": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "call",
+          "label": "ツール呼出し",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "execute",
+          "label": "実行",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果を返す",
+          "art": "result-slip",
+          "at": [5, 1]
+        },
+        {
+          "id": "response",
+          "label": "次の応答",
+          "art": "claude-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "answer",
+          "label": "応答終了",
+          "art": "history-stack",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "run",
+          "from": "call",
+          "to": "execute"
+        },
+        {
+          "id": "report",
+          "from": "execute",
+          "to": "result"
+        },
+        {
+          "id": "receive",
+          "from": "result",
+          "to": "response"
+        },
+        {
+          "id": "finish",
+          "from": "response",
+          "to": "answer",
+          "label": "答え"
+        }
+      ]
+    },
+    "camp": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "vacancy",
+          "label": "空きの確認",
+          "art": "camp-tent",
+          "at": [1, 1]
+        },
+        {
+          "id": "fee",
+          "label": "料金の確認",
+          "art": "camp-fee",
+          "at": [3, 1]
+        },
+        {
+          "id": "response",
+          "label": "呼出しの応答",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "results",
+          "label": "結果二つ",
+          "art": "history-stack",
+          "at": [5, 2]
+        },
+        {
+          "id": "extra",
+          "label": "別の発言",
+          "art": "result-slip",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "adjacent",
+          "from": "response",
+          "to": "results",
+          "label": "すぐあと"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の案内",
+          "art": "stock-count",
+          "at": [1, 1]
+        },
+        {
+          "id": "camp",
+          "label": "予約の案内",
+          "art": "camp-tent",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "結果を含む履歴",
+          "art": "history-stack",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べた結果を返す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "商品の在庫を、ツールで調べた場面です。",
+          "show": ["stock"]
+        },
+        {
+          "say": "アプリは、十二個という結果を受け取りました。",
+          "show": ["result"],
+          "tag": {
+            "result": "十二個"
+          }
+        },
+        {
+          "say": "その数を、Claude に渡す必要があります。",
+          "speech": "その数を、クロードに渡す必要があります。",
+          "show": ["claude"]
+        },
+        {
+          "say": "結果はツールリザルトにして、次のユーザー発言で返しましょう。",
+          "show": ["user"],
+          "tag": {
+            "user": "結果ブロック"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shop-report",
+      "kind": "board",
+      "role": "example",
+      "title": "店で確認の返事を渡す",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "店の担当者に、番号付きの在庫確認票を渡します。",
+          "show": ["ticket", "clerk", "ask"]
+        },
+        {
+          "say": "担当者が確認したところ、在庫は十二個でした。",
+          "show": ["slip", "report"],
+          "tag": {
+            "slip": "十二個"
+          }
+        },
+        {
+          "say": "返事にも同じ番号を書くと、どの依頼の結果か分かります。",
+          "tag": {
+            "ticket": "受付七番",
+            "slip": "受付七番"
+          }
+        },
+        {
+          "say": "ツールの結果も、元の呼び出しと結んで返す形です。",
+          "pulse": ["ticket", "slip"]
+        }
+      ]
+    },
+    {
+      "id": "result-block",
+      "kind": "board",
+      "role": "syntax",
+      "title": "結果と呼び出しを結ぶ",
+      "board": "pair",
+      "beats": [
+        {
+          "say": "ツールの結果は、ツールリザルトというブロックに入れます。",
+          "term": {
+            "text": "ツール結果",
+            "ruby": "ツールけっか",
+            "note": "tool_result"
+          }
+        },
+        {
+          "say": "図の中央が、結果を入れて返すブロックです。",
+          "show": ["result"]
+        },
+        {
+          "say": "元の呼び出しの ID を使い、結果と結びましょう。",
+          "speech": "元の呼び出しのアイディーを使い、結果と結びましょう。",
+          "show": ["call", "match"]
+        },
+        {
+          "say": "この結果を、次のリクエストで Claude に返します。",
+          "speech": "この結果を、次のリクエストでクロードに返します。",
+          "show": ["claude", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "result-fields",
+      "kind": "code",
+      "role": "syntax",
+      "title": "結果の項目を読む",
+      "code": [
+        "// 受け取った応答をそのまま履歴に足す",
+        "messages.push({ role: \"assistant\", content: message.content });",
+        "// 結果を入れるユーザー発言を続ける",
+        "messages.push({ role: \"user\", content: [",
+        "  // 呼び出しの番号と在庫数を返す",
+        "  { type: \"tool_result\", tool_use_id: block.id, content: \"12\" },",
+        "// 結果を入れた発言を閉じる",
+        "] });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "pair"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "type の値で、結果のブロックだと示します。",
+          "speech": "タイプの値で、結果のブロックだと示します。",
+          "part": {
+            "line": 5,
+            "text": "\"tool_result\"",
+            "note": "ツールの結果"
+          },
+          "figure": {
+            "show": ["result"]
+          }
+        },
+        {
+          "say": "結び付けに使うのは、元の呼び出しの ID です。",
+          "speech": "結び付けに使うのは、元の呼び出しのアイディーです。",
+          "term": {
+            "text": "呼び出しID",
+            "ruby": "よびだしアイディー",
+            "note": "tool_use_idの値"
+          },
+          "part": {
+            "line": 5,
+            "text": "tool_use_id"
+          }
+        },
+        {
+          "say": "ここに、呼び出しのブロックの id を入れましょう。",
+          "speech": "ここに、呼び出しのブロックのアイディーを入れましょう。",
+          "part": {
+            "line": 5,
+            "text": "block.id",
+            "note": "呼び出しの番号"
+          },
+          "figure": {
+            "show": ["call", "match"],
+            "travel": {
+              "along": ["match"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "content に、調べた在庫数の十二を入れます。",
+          "speech": "コンテントに、調べた在庫数の十二を入れます。",
+          "part": {
+            "line": 5,
+            "text": "\"12\"",
+            "note": "在庫数"
+          },
+          "figure": {
+            "tag": {
+              "result": "十二個"
+            }
+          }
+        },
+        {
+          "say": "この例で結果を入れる発言の role は、user です。",
+          "speech": "この例で結果を入れる発言のロールは、ユーザーです。",
+          "part": {
+            "line": 3,
+            "text": "\"user\"",
+            "note": "結果を返す側"
+          },
+          "figure": {
+            "show": ["claude", "return"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-history",
+      "kind": "code",
+      "role": "apply",
+      "title": "応答のすぐあとに置く",
+      "code": [
+        "// 受け取った応答をそのまま履歴に足す",
+        "messages.push({ role: \"assistant\", content: message.content });",
+        "// 結果を入れるユーザー発言を続ける",
+        "messages.push({ role: \"user\", content: [",
+        "  // 呼び出しの番号と在庫数を返す",
+        "  { type: \"tool_result\", tool_use_id: block.id, content: \"12\" },",
+        "// 結果を入れた発言を閉じる",
+        "] });"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "history"
+      },
+      "beats": [
+        {
+          "say": "まず、受け取った応答を履歴に足します。",
+          "type": [0, 1],
+          "figure": {
+            "show": ["response"]
+          }
+        },
+        {
+          "say": "この行は、応答の content をそのまま残すためのものです。",
+          "speech": "この行は、応答のコンテントをそのまま残すためのものです。",
+          "part": {
+            "line": 1,
+            "text": "message.content",
+            "note": "応答の中身"
+          },
+          "figure": {
+            "pulse": ["response"]
+          }
+        },
+        {
+          "say": "続けて、結果を持つ user の発言を足しましょう。",
+          "speech": "続けて、結果を持つユーザーの発言を足しましょう。",
+          "type": [2, 3, 4, 5, 6, 7],
+          "figure": {
+            "show": ["result", "adjacent"]
+          }
+        },
+        {
+          "say": "呼び出しの発言と結果の間に、別の発言は入れられません。",
+          "focus": [1, 3, 5],
+          "figure": {
+            "pulse": ["adjacent"]
+          }
+        },
+        {
+          "say": "結果を足した履歴を、次のリクエストで送ります。",
+          "part": {
+            "line": 3,
+            "text": "messages",
+            "note": "会話の履歴"
+          },
+          "figure": {
+            "show": ["history", "send"],
+            "travel": {
+              "along": ["adjacent", "send"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "collect-results",
+      "kind": "board",
+      "role": "apply",
+      "title": "結果が複数ある場合",
+      "board": "batch",
+      "beats": [
+        {
+          "say": "一つの応答に、呼び出しが複数入る場合もあります。",
+          "show": ["calls"]
+        },
+        {
+          "say": "その場合は、すべての結果を一つのユーザー発言にまとめる決まりです。",
+          "show": ["results", "collect"],
+          "tag": {
+            "results": "一つの発言"
+          }
+        },
+        {
+          "say": "発言の content では、結果のブロックを先頭に並べます。",
+          "speech": "発言のコンテントでは、結果のブロックを先頭に並べます。",
+          "pulse": ["results"],
+          "tag": {
+            "results": "先頭に全件"
+          }
+        },
+        {
+          "say": "説明の文も添えるなら、すべての結果のあとに置きましょう。",
+          "show": ["text", "after"],
+          "pulse": ["text"]
+        }
+      ]
+    },
+    {
+      "id": "repeat-loop",
+      "kind": "board",
+      "role": "apply",
+      "title": "答えになるまで返す",
+      "board": "loop",
+      "beats": [
+        {
+          "say": "実行して結果を返す繰り返しを、ツール使用のループと呼びます。",
+          "term": {
+            "text": "ツール使用ループ",
+            "ruby": "ツールしようループ",
+            "note": "実行と結果の返送を繰り返す"
+          }
+        },
+        {
+          "say": "停止理由がツールユースなら、実行して返す段階です。",
+          "show": ["call", "execute", "result", "run", "report"],
+          "travel": {
+            "along": ["run", "report"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "結果を返したあと、次の応答の停止理由を確かめましょう。",
+          "show": ["response", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "再びツールユースなら、実行して結果を返す流れを繰り返します。",
+          "pulse": ["execute", "result"],
+          "tag": {
+            "response": "呼出し"
+          }
+        },
+        {
+          "say": "エンドターンになったら、それが答えです。",
+          "show": ["answer", "finish"],
+          "tag": {
+            "response": "応答終了"
+          },
+          "pulse": ["answer"]
+        }
+      ]
+    },
+    {
+      "id": "camp-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予約の結果をどう返すか",
+      "board": "camp",
+      "think": 8,
+      "beats": [
+        {
+          "say": "キャンプ場の予約で、空きと料金を調べる場面です。",
+          "show": ["vacancy", "fee"]
+        },
+        {
+          "say": "Claude が、一つの応答で二つの呼び出しを求めました。",
+          "speech": "クロードが、一つの応答で二つの呼び出しを求めました。",
+          "show": ["response"]
+        },
+        {
+          "say": "実行すると、空き一区画と料金三千円という結果が出ます。",
+          "tag": {
+            "vacancy": "一区画",
+            "fee": "三千円"
+          }
+        },
+        {
+          "say": "その応答は、すでに履歴に追加済みです。",
+          "pulse": ["response"],
+          "tag": {
+            "response": "履歴に追加済"
+          }
+        },
+        {
+          "say": "二つの結果は、だれの発言にまとめ、どこに置くのでしょうか。",
+          "show": ["results"],
+          "mark": [
+            {
+              "on": "results",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "camp-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "一つの発言で直後に返す",
+      "board": "camp",
+      "beats": [
+        {
+          "say": "一つの user の発言に、二つの結果をまとめます。",
+          "speech": "一つのユーザーの発言に、二つの結果をまとめます。",
+          "tag": {
+            "results": "user"
+          },
+          "mark": [
+            {
+              "on": "results",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "置く場所は、呼び出しを含む応答のすぐあとです。",
+          "show": ["adjacent"],
+          "travel": {
+            "along": ["adjacent"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "camp-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "対応と順番を確かめる",
+      "board": "camp",
+      "beats": [
+        {
+          "say": "空きの結果には、空きを調べた呼び出しの ID を使います。",
+          "speech": "空きの結果には、空きを調べた呼び出しのアイディーを使います。",
+          "pulse": ["vacancy"],
+          "tag": {
+            "vacancy": "空きのID"
+          }
+        },
+        {
+          "say": "料金の結果に必要なのは、料金を調べた呼び出しの ID です。",
+          "speech": "料金の結果に必要なのは、料金を調べた呼び出しのアイディーです。",
+          "pulse": ["fee"],
+          "tag": {
+            "fee": "料金のID"
+          }
+        },
+        {
+          "say": "二つの結果のブロックを、ユーザー発言の先頭に並べましょう。",
+          "pulse": ["results"],
+          "tag": {
+            "results": "先頭に二つ"
+          }
+        },
+        {
+          "say": "応答と結果の間には、別の発言を挟めません。",
+          "show": ["extra"],
+          "mark": [
+            {
+              "on": "extra",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["adjacent"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "調べた情報で案内する",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "在庫の案内では、調べた数を結果として返します。",
+          "show": ["stock"]
+        },
+        {
+          "say": "予約の案内でも、調べた空きや料金を返す流れは同じです。",
+          "show": ["camp"]
+        },
+        {
+          "say": "送る前に、呼び出しと結果の対応を確かめましょう。",
+          "show": ["history"],
+          "tag": {
+            "history": "IDを照合"
+          }
+        },
+        {
+          "say": "結果をユーザー発言にまとめ、応答のすぐあとに置いて送ります。",
+          "pulse": ["history"],
+          "tag": {
+            "history": "応答の直後"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "0ee4c0f9426daeb9023c01814a452bd0ac86c4d2283fcf09a4e6fa6e0ca9e738"
+  }
+}

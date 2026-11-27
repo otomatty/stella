@@ -1,0 +1,819 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールの入力の型や必須項目を守らせるために、ツールの定義へ strict: true を加える場所と理由を説明できる。",
+    "stuck": "input_schema を書くだけで、入力の型と必須項目が必ず守られると思ってしまう。",
+    "points": ["ツールの入力をスキーマどおりにさせるには、strict: true を指定します。"],
+    "leaveOut": [
+      "tool_choice によるツールの選択",
+      "ツールの説明文の設計",
+      "スキーマの数値範囲や文字数の制約とツール数の上限",
+      "構造化出力の設定コード",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "room-chairs": {
+      "prompt": "Two blue meeting chairs beside a white reservation slip with a small blue chair pictogram, representing a room booking. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "number-slip": {
+      "prompt": "A white input slip beside two blue counting pegs, representing a numeric quantity. The slip is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "text-slip": {
+      "prompt": "A white input slip beside a violet fountain pen, representing a quantity written as words. The slip is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sports-balls": {
+      "prompt": "Two blue sports balls in an open light grey mesh equipment bag, with a blank white borrowing slip beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "borrowing-form": {
+      "prompt": "A white sports equipment borrowing slip held by a blue clip, with a small blue ball pictogram and two empty light grey entry fields. A violet pencil rests beside the slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "schema-form": {
+      "prompt": "An upright light grey clipboard holding a white form with two empty blue outlined entry fields and a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-folder": {
+      "prompt": "An open blue document folder holding white sheets, with a small violet wrench beside it, representing a tool definition. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-food": {
+      "prompt": "A white paper tray holding golden grilled corn cobs on skewers, beside a blank white order slip with a blue clip, representing a school festival food order. Food has natural colors. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-letter": {
+      "prompt": "An open violet envelope containing a white reply sheet with a small blue speech bubble pictogram, representing the final answer. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "room",
+          "label": "会議室の予約",
+          "art": "room-chairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "人数の入力",
+          "art": "text-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "tool",
+          "label": "予約の処理",
+          "art": "tool-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "rule",
+          "label": "入力の決まり",
+          "art": "schema-form",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "input",
+          "to": "tool"
+        },
+        {
+          "id": "guard",
+          "from": "tool",
+          "to": "rule"
+        }
+      ]
+    },
+    "equipment": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "balls",
+          "label": "借りる用具",
+          "art": "sports-balls",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "借用票",
+          "art": "borrowing-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "words",
+          "label": "個数の書き方",
+          "art": "text-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fill",
+          "from": "balls",
+          "to": "form"
+        },
+        {
+          "id": "entry",
+          "from": "form",
+          "to": "words"
+        }
+      ]
+    },
+    "types": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "number",
+          "label": "数の人数",
+          "art": "number-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "text",
+          "label": "文字の人数",
+          "art": "text-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "required",
+          "label": "必須の欄",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "definition": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tool",
+          "label": "ツールの定義",
+          "art": "tool-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "入力の決まり",
+          "art": "schema-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "input",
+          "label": "渡される入力",
+          "art": "number-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "defines",
+          "from": "tool",
+          "to": "rule"
+        },
+        {
+          "id": "conforms",
+          "from": "rule",
+          "to": "input"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "room",
+          "label": "部屋",
+          "art": "room-chairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "people",
+          "label": "人数",
+          "art": "number-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "tool",
+          "label": "予約ツール",
+          "art": "tool-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "include-room",
+          "from": "room",
+          "to": "people"
+        },
+        {
+          "id": "call",
+          "from": "people",
+          "to": "tool"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "food",
+          "label": "屋台の注文",
+          "art": "festival-food",
+          "at": [1, 1]
+        },
+        {
+          "id": "amount",
+          "label": "個数は数",
+          "art": "number-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "item",
+          "label": "商品名も必須",
+          "art": "schema-form",
+          "at": [5, 1]
+        },
+        {
+          "id": "strict",
+          "label": "厳密指定追加",
+          "art": "tool-folder",
+          "at": [5, 2]
+        },
+        {
+          "id": "schema",
+          "label": "スキーマのみ",
+          "art": "schema-form",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "入力の定義",
+          "art": "schema-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "注文の入力",
+          "art": "festival-food",
+          "at": [3, 1]
+        },
+        {
+          "id": "tool",
+          "label": "注文ツール",
+          "art": "tool-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "matches",
+          "from": "rule",
+          "to": "input",
+          "label": "従う"
+        },
+        {
+          "id": "calls",
+          "from": "input",
+          "to": "tool",
+          "label": "渡す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "ツールの入力",
+          "art": "number-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "処理する道具",
+          "art": "tool-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "最後の答え",
+          "art": "answer-letter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "input",
+          "to": "tool",
+          "label": "渡す"
+        },
+        {
+          "id": "reply",
+          "from": "tool",
+          "to": "answer",
+          "label": "答える"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "人数を数で受け取る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "会議室を二人で使う予約を考えます。",
+          "show": ["room"]
+        },
+        {
+          "say": "人数の欄に届いたのは、数ではなく文字の二でした。",
+          "show": ["input"],
+          "tag": {
+            "input": "\"2\""
+          }
+        },
+        {
+          "say": "数を受け取る処理が、型の違いで止まった場面です。",
+          "show": ["tool", "pass"],
+          "mark": [
+            {
+              "on": "tool",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "入力をスキーマどおりにする指定を学びましょう。",
+          "show": ["rule", "guard"],
+          "pulse": ["rule"]
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "kind": "board",
+      "role": "example",
+      "title": "用具の借用票を書く",
+      "board": "equipment",
+      "beats": [
+        {
+          "say": "体育倉庫から、ボールを借りる場面です。",
+          "show": ["balls"]
+        },
+        {
+          "say": "借用票には、用具名と個数の欄を用意しました。",
+          "show": ["form", "fill"]
+        },
+        {
+          "say": "個数を数で書く決まりでも、言葉で書く人がいます。",
+          "show": ["words", "entry"],
+          "tag": {
+            "words": "二つ"
+          }
+        },
+        {
+          "say": "欄の用意と、書き方を守らせることを分けて考えましょう。",
+          "pulse": ["form", "words"]
+        }
+      ]
+    },
+    {
+      "id": "input-shape",
+      "kind": "board",
+      "role": "syntax",
+      "title": "型と必須項目を確かめる",
+      "board": "types",
+      "beats": [
+        {
+          "say": "数や文字など、値の種類を型と呼びます。",
+          "term": {
+            "text": "型",
+            "ruby": "かた",
+            "note": "数や文字などの値の種類"
+          }
+        },
+        {
+          "say": "予約の人数は、数で受け取る決まりです。",
+          "show": ["number"],
+          "tag": {
+            "number": "2"
+          }
+        },
+        {
+          "say": "文字で書かれた二は、数の二とは型が違います。",
+          "show": ["text"],
+          "tag": {
+            "text": "\"2\""
+          },
+          "mark": [
+            {
+              "on": "text",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "必ず含める項目が、必須項目です。",
+          "term": {
+            "text": "必須項目",
+            "ruby": "ひっすこうもく",
+            "note": "必ず含める項目"
+          }
+        },
+        {
+          "say": "この予約では、部屋と人数の両方を必須にします。",
+          "show": ["required"],
+          "tag": {
+            "required": "部屋と人数"
+          }
+        }
+      ]
+    },
+    {
+      "id": "strict-setting",
+      "kind": "code",
+      "role": "syntax",
+      "title": "ツールの定義に指定する",
+      "code": [
+        "// 会議室を予約するツールの定義",
+        "{ name: \"book_room\", description,",
+        "  // 入力をスキーマどおりにする",
+        "  strict: true,",
+        "  // 用意した入力の決まりを使う",
+        "  input_schema: { ...schema,",
+        "    // 定義にない項目を許可しない",
+        "    additionalProperties: false",
+        "  // 入力の決まりとツールの定義を閉じる",
+        "  } }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "definition"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "これは、会議室を予約するツールの定義です。",
+          "focus": [1],
+          "figure": {
+            "show": ["tool"]
+          }
+        },
+        {
+          "say": "ツール名は、自分で決めた名前を使います。",
+          "part": {
+            "line": 1,
+            "text": "book_room",
+            "note": "部屋を予約"
+          }
+        },
+        {
+          "say": "入力の形を守らせる指定が strict です。",
+          "speech": "入力の形を守らせる指定がストリクトです。",
+          "term": {
+            "text": "strict",
+            "note": "ツールの入力の形を守る"
+          }
+        },
+        {
+          "say": "ツールの定義に、strict を true として足します。",
+          "speech": "ツールの定義に、ストリクトをトゥルーとして足します。",
+          "part": {
+            "line": 3,
+            "text": "strict: true",
+            "note": "入力の形を守る"
+          },
+          "figure": {
+            "pulse": ["tool"]
+          }
+        },
+        {
+          "say": "従わせる決まりは、用意したスキーマです。",
+          "part": {
+            "line": 5,
+            "text": "...schema",
+            "note": "用意した決まり"
+          },
+          "figure": {
+            "show": ["rule", "defines"]
+          }
+        },
+        {
+          "say": "入力の決まりを置く場所も、図と合わせて確かめましょう。",
+          "part": {
+            "line": 5,
+            "text": "input_schema",
+            "note": "入力の決まり"
+          },
+          "figure": {
+            "pulse": ["rule"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-setting",
+      "kind": "code",
+      "role": "apply",
+      "title": "予約の入力に適用する",
+      "code": [
+        "// 会議室を予約するツールの定義",
+        "{ name: \"book_room\", description,",
+        "  // 入力をスキーマどおりにする",
+        "  strict: true,",
+        "  // 用意した入力の決まりを使う",
+        "  input_schema: { ...schema,",
+        "    // 定義にない項目を許可しない",
+        "    additionalProperties: false",
+        "  // 入力の決まりとツールの定義を閉じる",
+        "  } }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "definition"
+      },
+      "beats": [
+        {
+          "say": "予約の定義に、入力の形を守る指定が入りました。",
+          "part": {
+            "line": 3,
+            "text": "strict: true"
+          }
+        },
+        {
+          "say": "これで、渡される入力はスキーマどおりになります。",
+          "part": {
+            "line": 5,
+            "text": "input_schema"
+          },
+          "figure": {
+            "show": ["input", "conforms"],
+            "travel": {
+              "along": ["conforms"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "人数が数なら、文字の二が渡る形は認められません。",
+          "figure": {
+            "pulse": ["input"],
+            "tag": {
+              "input": "人数は数"
+            }
+          }
+        },
+        {
+          "say": "必須にした部屋と人数も、欠けずに渡ります。",
+          "figure": {
+            "pulse": ["rule"],
+            "tag": {
+              "rule": "必須を含む"
+            }
+          }
+        },
+        {
+          "say": "オブジェクトには、この false の指定も必要です。",
+          "speech": "オブジェクトには、このフォルスの指定も必要です。",
+          "part": {
+            "line": 7,
+            "text": "additionalProperties: false",
+            "note": "余分な項目なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "complete-fields",
+      "kind": "board",
+      "role": "apply",
+      "title": "部屋と人数をそろえる",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "部屋と人数を必須にした入力を、図でたどります。",
+          "show": ["room"],
+          "tag": {
+            "room": "会議室"
+          }
+        },
+        {
+          "say": "人数は、文字ではなく数の二です。",
+          "show": ["people", "include-room"],
+          "tag": {
+            "people": "2"
+          }
+        },
+        {
+          "say": "両方の項目がそろって、予約ツールへ渡ります。",
+          "show": ["tool", "call"],
+          "travel": {
+            "along": ["include-room", "call"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "スキーマだけで安心せず、strict の指定も確かめましょう。",
+          "speech": "スキーマだけで安心せず、ストリクトの指定も確かめましょう。",
+          "pulse": ["tool"],
+          "tag": {
+            "tool": "strict有効"
+          }
+        }
+      ]
+    },
+    {
+      "id": "festival-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "屋台の入力を守るには",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学園祭の屋台で、注文を受けるツールを作りました。",
+          "show": ["food"]
+        },
+        {
+          "say": "個数は数にして、商品名も必須にする決まりです。",
+          "show": ["amount", "item"]
+        },
+        {
+          "say": "一つ目では、入力のスキーマだけを書きます。",
+          "show": ["schema"]
+        },
+        {
+          "say": "二つ目は、さらに strict を true にした定義です。",
+          "speech": "二つ目は、さらにストリクトをトゥルーにした定義です。",
+          "show": ["strict"],
+          "tag": {
+            "strict": "true"
+          }
+        },
+        {
+          "say": "型と必須項目を必ず守らせるには、どちらを選ぶでしょうか。",
+          "pulse": ["schema", "strict"],
+          "mark": [
+            {
+              "on": "schema",
+              "kind": "question"
+            },
+            {
+              "on": "strict",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "festival-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "指定を加えた定義を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、strict を true にした二つ目の定義です。",
+          "speech": "答えは、ストリクトをトゥルーにした二つ目の定義です。",
+          "mark": [
+            {
+              "on": "strict",
+              "kind": "check"
+            },
+            {
+              "on": "schema",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["strict"]
+        },
+        {
+          "say": "個数の型と、必須の商品名を守らせます。",
+          "pulse": ["amount", "item"]
+        }
+      ]
+    },
+    {
+      "id": "why-strict",
+      "kind": "board",
+      "role": "explain",
+      "title": "定義した形で入力を渡す",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "スキーマだけでは、必ず従うとは限りません。",
+          "show": ["rule"],
+          "mark": [
+            {
+              "on": "rule",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "数の代わりに文字が来ると、処理が止まる原因になります。",
+          "show": ["input"],
+          "tag": {
+            "input": "文字の個数"
+          },
+          "mark": [
+            {
+              "on": "input",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "strict が有効なら、入力は定義した形どおりです。",
+          "speech": "ストリクトが有効なら、入力は定義した形どおりです。",
+          "show": ["matches"],
+          "unmark": ["rule", "input"],
+          "tag": {
+            "input": "数の個数"
+          },
+          "travel": {
+            "along": ["matches"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "必須の商品名も含めて、注文ツールへ渡します。",
+          "show": ["tool", "calls"],
+          "tag": {
+            "input": "商品名あり"
+          },
+          "travel": {
+            "along": ["calls"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "入力と答えの形を分ける",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "数の型や必須項目を守りたいときに、この指定を使います。",
+          "show": ["input"],
+          "tag": {
+            "input": "strict"
+          }
+        },
+        {
+          "say": "守らせる対象は、ツールに渡る入力の形です。",
+          "show": ["tool", "call"],
+          "travel": {
+            "along": ["call"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "最後の答えの形を決めるなら、構造化出力を使います。",
+          "show": ["answer", "reply"],
+          "tag": {
+            "answer": "構造化出力"
+          }
+        },
+        {
+          "say": "この二つは、一緒に使える指定です。",
+          "pulse": ["input", "answer"]
+        },
+        {
+          "say": "ツールの入力には、strict を true で指定しましょう。",
+          "speech": "ツールの入力には、ストリクトをトゥルーで指定しましょう。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "33cc00e654f64817e204646c04493385dd880a49ebe8d9a7f96a0fe18558722d"
+  }
+}
