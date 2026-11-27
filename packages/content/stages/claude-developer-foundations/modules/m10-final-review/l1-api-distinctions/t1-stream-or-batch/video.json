@@ -1,0 +1,775 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答を待つ人と結果を使う時期を確かめ、ストリーミングかバッチを理由付きで選べる。",
+    "stuck": "どちらも時間のかかる処理に使えるため、回答の長さや料金だけで選んでしまう。",
+    "points": ["人が応答を待つならストリーミング、急がない大量の処理ならバッチで送ります。"],
+    "leaveOut": [
+      "キャッシュとバッチの割引の組み合わせ",
+      "構造化出力とツール入力の形",
+      "停止理由とHTTPエラーの区別",
+      "イベント名やバッチの作成と結果取得のコード",
+      "バッチに指定できるほかの機能"
+    ]
+  },
+  "art": {
+    "shop-customer": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white appliance instruction leaflet beside a small blue electric kettle, listening attentively. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "guide-clerk": {
+      "prompt": "A service clerk in a plain blue shirt explaining a small blue electric kettle, with one open hand and two empty speech bubbles. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "feedback-stack": {
+      "prompt": "A large stack of blank white customer feedback sheets held together by a blue binder clip, with a violet pencil beside the stack. All paper is white or light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "chat-window": {
+      "prompt": "A conceptual blue chat window containing several empty rounded speech bubbles in a vertical sequence, with the lowest bubble smaller and unfinished. No controls and no imitation of a real application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "batch-folder": {
+      "prompt": "An open blue document folder holding many separate blank white request sheets, neatly collected together. The paper is white or light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-file": {
+      "prompt": "A single white results document held upright by a large violet paper clip, with a folded corner and no marks on the paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "vet-owner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blue pet carrier with a small light grey cat visible inside, and a smartphone with a completely blank blue screen. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "vet-forms": {
+      "prompt": "A thick bundle of blank white veterinary reception inquiry forms clipped together, with a small blue pet carrier beside them. All paper is white or light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "説明を待つ客",
+          "art": "shop-customer",
+          "at": [1, 1]
+        },
+        {
+          "id": "feedback",
+          "label": "大量の感想",
+          "art": "feedback-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "受け取り方",
+          "art": "guide-clerk",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "目の前の客",
+          "art": "shop-customer",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "店の担当者",
+          "art": "guide-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "feedback",
+          "label": "閉店後の感想",
+          "art": "feedback-stack",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "stream": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "ストリーミング",
+          "art": "chat-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "待っている人",
+          "art": "shop-customer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "deliver",
+          "from": "chat",
+          "to": "reader",
+          "label": "少しずつ"
+        }
+      ]
+    },
+    "batch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "requests",
+          "label": "大量の依頼",
+          "art": "batch-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "processing",
+          "label": "バッチ",
+          "art": "batch-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果ファイル",
+          "art": "result-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "submit",
+          "from": "requests",
+          "to": "processing",
+          "label": "まとめて"
+        },
+        {
+          "id": "receive",
+          "from": "processing",
+          "to": "result",
+          "label": "あとで"
+        }
+      ]
+    },
+    "now": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "customer",
+          "label": "説明を待つ客",
+          "art": "shop-customer",
+          "at": [1, 1]
+        },
+        {
+          "id": "chat",
+          "label": "ストリーミング",
+          "art": "chat-window",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "途中から読む",
+          "art": "shop-customer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "customer",
+          "to": "chat",
+          "label": "選ぶ"
+        },
+        {
+          "id": "read",
+          "from": "chat",
+          "to": "reader",
+          "label": "順に表示"
+        }
+      ]
+    },
+    "later": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "feedback",
+          "label": "大量の感想",
+          "art": "feedback-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "batch",
+          "label": "バッチ",
+          "art": "batch-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "後日の集計",
+          "art": "result-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "feedback",
+          "to": "batch",
+          "label": "急がない"
+        },
+        {
+          "id": "collect",
+          "from": "batch",
+          "to": "result",
+          "label": "回収"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "batch",
+          "label": "バッチ",
+          "art": "batch-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果ファイル",
+          "art": "result-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "chat",
+          "label": "途中表示",
+          "art": "chat-window",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "file",
+          "from": "batch",
+          "to": "result",
+          "label": "まとめて"
+        }
+      ]
+    },
+    "vet": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "owner",
+          "label": "来院前の質問",
+          "art": "vet-owner",
+          "at": [1, 1]
+        },
+        {
+          "id": "chat",
+          "label": "ストリーミング",
+          "art": "chat-window",
+          "at": [3, 1]
+        },
+        {
+          "id": "forms",
+          "label": "過去の問合せ",
+          "art": "vet-forms",
+          "at": [5, 1]
+        },
+        {
+          "id": "batch",
+          "label": "バッチ",
+          "art": "batch-folder",
+          "at": [5, 2]
+        },
+        {
+          "id": "result",
+          "label": "後日の分類",
+          "art": "result-file",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "live",
+          "from": "owner",
+          "to": "chat",
+          "label": "待つ人"
+        },
+        {
+          "id": "offline",
+          "from": "forms",
+          "to": "batch",
+          "label": "急がない"
+        },
+        {
+          "id": "review",
+          "from": "batch",
+          "to": "result",
+          "label": "まとめて"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "画面で待つ人",
+          "art": "chat-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "batch",
+          "label": "急がない大量",
+          "art": "batch-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果の回収",
+          "art": "result-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "recover",
+          "from": "batch",
+          "to": "result",
+          "label": "あとで"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "待つ人を見て選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "家電店の案内を、画面で読もうとしている人がいます。",
+          "show": ["customer"]
+        },
+        {
+          "say": "一方、店には後日まとめたい大量の感想も集まりました。",
+          "show": ["feedback"]
+        },
+        {
+          "say": "どちらも時間がかかるので、受け取り方を考えましょう。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "待つ人にはストリーミング、急がない大量の処理にはバッチです。",
+          "pulse": ["customer", "feedback"]
+        }
+      ]
+    },
+    {
+      "id": "shop-example",
+      "kind": "board",
+      "role": "example",
+      "title": "店での説明と感想整理",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "店の担当者が、お客さんに使い方を説明する場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "お客さんは、その場で説明を聞こうとしています。",
+          "show": ["customer"]
+        },
+        {
+          "say": "感想用紙の整理なら、閉店後にまとめてもよいでしょう。",
+          "show": ["feedback"]
+        },
+        {
+          "say": "その場で聞く説明と、あとで読む集計を分けて考えます。",
+          "pulse": ["customer", "feedback"]
+        }
+      ]
+    },
+    {
+      "id": "stream-arrival",
+      "kind": "board",
+      "role": "syntax",
+      "title": "届いた部分から見せる",
+      "board": "stream",
+      "beats": [
+        {
+          "say": "届いた部分から順に見せる方法が、ストリーミングです。",
+          "term": {
+            "text": "ストリーミング",
+            "note": "届いた部分から表示"
+          }
+        },
+        {
+          "say": "本文を少しずつ受け取り、画面に表示していきます。",
+          "show": ["chat", "reader", "deliver"],
+          "travel": {
+            "along": ["deliver"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "待っている人は、回答の書き出しから読めるわけです。",
+          "pulse": ["reader"]
+        },
+        {
+          "say": "全部が届く前から読めるので、待ち時間を短く感じます。",
+          "tag": {
+            "reader": "途中から読む"
+          },
+          "pulse": ["chat"]
+        },
+        {
+          "say": "この受け取り方の料金は、通常どおりです。",
+          "tag": {
+            "chat": "通常料金"
+          },
+          "pulse": ["chat", "reader"]
+        }
+      ]
+    },
+    {
+      "id": "batch-arrival",
+      "kind": "board",
+      "role": "syntax",
+      "title": "急がない依頼をまとめる",
+      "board": "batch",
+      "beats": [
+        {
+          "say": "急がない大量の依頼をまとめて送る方法が、バッチです。",
+          "term": {
+            "text": "バッチ",
+            "note": "急がない大量の依頼"
+          }
+        },
+        {
+          "say": "複数の依頼をまとめて送り、結果をあとで受け取ります。",
+          "show": ["requests", "processing", "submit"],
+          "travel": {
+            "along": ["submit"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "結果が届くのは、すべて終わるか二十四時間たったときです。",
+          "show": ["result", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "バッチの多くは一時間以内に終わります。",
+          "tag": {
+            "processing": "多くは1時間"
+          },
+          "pulse": ["processing"]
+        },
+        {
+          "say": "ただし、すぐに結果が返るとは限りません。",
+          "tag": {
+            "processing": "すぐではない"
+          },
+          "mark": [
+            {
+              "on": "processing",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choose-live",
+      "kind": "board",
+      "role": "apply",
+      "title": "画面で説明を待つ人",
+      "board": "now",
+      "beats": [
+        {
+          "say": "店の案内を画面に移して、長い使い方の説明を返します。",
+          "show": ["customer"]
+        },
+        {
+          "say": "お客さんが画面で待っているなら、途中表示が必要です。",
+          "tag": {
+            "customer": "今読みたい"
+          }
+        },
+        {
+          "say": "そこでストリーミングを選び、届いた順に表示します。",
+          "show": ["chat", "choose", "reader", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "長い回答でも、書き出しから読める受け取り方です。",
+          "pulse": ["reader"],
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choose-later",
+      "kind": "board",
+      "role": "apply",
+      "title": "感想を後日まとめる",
+      "board": "later",
+      "beats": [
+        {
+          "say": "店に届いた大量の感想を、後日まとめて分類します。",
+          "show": ["feedback"]
+        },
+        {
+          "say": "画面の前で、結果を待ち続ける人はいません。",
+          "tag": {
+            "feedback": "急がない"
+          }
+        },
+        {
+          "say": "この条件なら、バッチを選んでまとめて送りましょう。",
+          "show": ["batch", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "通常の半額で処理し、結果はあとで回収します。",
+          "show": ["result", "collect"],
+          "tag": {
+            "batch": "通常の半額"
+          },
+          "travel": {
+            "along": ["collect"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-limits",
+      "kind": "board",
+      "role": "note",
+      "title": "途中表示とは組み合わせない",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "バッチの結果は、一つのファイルとして返ります。",
+          "show": ["batch", "result", "file"],
+          "travel": {
+            "along": ["file"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "バッチの中でストリーミングは指定できません。",
+          "show": ["chat"],
+          "mark": [
+            {
+              "on": "chat",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "指定すると、エラーになります。",
+          "tag": {
+            "chat": "指定不可"
+          },
+          "pulse": ["chat"]
+        },
+        {
+          "say": "割引と途中表示は、同時には使えません。",
+          "pulse": ["batch", "result"],
+          "tag": {
+            "batch": "あとで受取"
+          }
+        }
+      ]
+    },
+    {
+      "id": "vet-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "動物病院の受付なら",
+      "board": "vet",
+      "think": 8,
+      "beats": [
+        {
+          "say": "動物病院で、飼い主が来院時の持ち物を尋ねています。",
+          "show": ["owner"]
+        },
+        {
+          "say": "飼い主は、画面で案内を待っているところです。",
+          "tag": {
+            "owner": "今読みたい"
+          }
+        },
+        {
+          "say": "別の処理では、過去の大量の問い合わせを分類します。",
+          "show": ["forms"],
+          "tag": {
+            "forms": "後日使う"
+          }
+        },
+        {
+          "say": "分類の遅れをあとで回収できるなら、それぞれどちらでしょうか。",
+          "mark": [
+            {
+              "on": "owner",
+              "kind": "question"
+            },
+            {
+              "on": "forms",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["owner", "forms"]
+        }
+      ]
+    },
+    {
+      "id": "vet-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つの処理を分ける",
+      "board": "vet",
+      "beats": [
+        {
+          "say": "飼い主への案内は、ストリーミングです。",
+          "show": ["chat", "live"],
+          "mark": [
+            {
+              "on": "owner",
+              "kind": "check"
+            }
+          ],
+          "travel": {
+            "along": ["live"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "過去の問い合わせの分類には、バッチを使います。",
+          "show": ["batch", "offline"],
+          "mark": [
+            {
+              "on": "forms",
+              "kind": "check"
+            }
+          ],
+          "travel": {
+            "along": ["offline"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "vet-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "待つ人と回収の手順",
+      "board": "vet",
+      "beats": [
+        {
+          "say": "案内を待つ飼い主には、届いた部分から見せます。",
+          "pulse": ["owner", "chat"]
+        },
+        {
+          "say": "過去の問い合わせの分類は、すぐには結果が要らない処理です。",
+          "pulse": ["forms", "batch"]
+        },
+        {
+          "say": "ただし、バッチには期限切れになる分もあります。",
+          "term": {
+            "text": "期限切れ",
+            "ruby": "きげんぎれ",
+            "note": "期限までに終わらなかった件"
+          }
+        },
+        {
+          "say": "最長の二十四時間でも、すべて終わるとは限りません。",
+          "tag": {
+            "batch": "未完了もある"
+          },
+          "mark": [
+            {
+              "on": "batch",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "未完了の件もあとで回収する手順を用意しましょう。",
+          "show": ["result", "review"],
+          "travel": {
+            "along": ["review"],
+            "icon": "file"
+          },
+          "tag": {
+            "result": "未完了も回収"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "選ぶ前に条件を読む",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "長い回答を見せるときは、画面で待つ人を確かめます。",
+          "show": ["chat"]
+        },
+        {
+          "say": "届いた部分から読めるストリーミングが便利です。",
+          "tag": {
+            "chat": "途中から表示"
+          },
+          "pulse": ["chat"]
+        },
+        {
+          "say": "急がない大量の分類や要約なら、バッチを選びましょう。",
+          "show": ["batch"],
+          "pulse": ["batch"]
+        },
+        {
+          "say": "その際は、遅れた処理をあとで回収できるかも確かめます。",
+          "show": ["result", "recover"],
+          "travel": {
+            "along": ["recover"],
+            "icon": "file"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e7a9e7e20e465ea09a5aecaa281582c44458afe60fa0eaa8ba1f83fb548b0b86"
+  }
+}

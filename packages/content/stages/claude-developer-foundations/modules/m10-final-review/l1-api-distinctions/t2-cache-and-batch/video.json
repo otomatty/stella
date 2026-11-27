@@ -1,0 +1,700 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "共通の手引きを使う夜間の分類で、キャッシュとバッチを併用できる理由と、キャッシュが当たらない場合も見積もる理由を説明できる。",
+    "stuck": "割引はどちらか一方だけだと思ったり、併用すればすべてのリクエストでキャッシュが当たると思ったりする。",
+    "points": [
+      "キャッシュとバッチの割引は重ねられますが、バッチの中のキャッシュは当たるとは限りません。"
+    ],
+    "leaveOut": [
+      "ストリーミングとの使い分け",
+      "キャッシュの細かな料金と最低トークン数",
+      "キャッシュが当たる割合の具体的な数値",
+      "バッチの送信や結果の取得のコード",
+      "構造化出力とツールの設定"
+    ]
+  },
+  "art": {
+    "classification-guide": {
+      "prompt": "An open white handbook with blue binding and a violet ribbon bookmark, its blank pages held open by a small blue clip. This is the shared classification guide reused across requests. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-bundle": {
+      "prompt": "A thick bundle of white paper request sheets gathered with a wide blue paper band, with two loose white sheets beside it and small violet corner tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "night-clock": {
+      "prompt": "A large blue alarm clock with a blank white dial and two simple hands, beside a small violet crescent moon, representing work scheduled overnight. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-shirt": {
+      "prompt": "A neatly folded blue shirt resting directly beside a second matching blue shirt, with a white fabric care swatch between them containing only a simple blue water droplet pictogram. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-basket": {
+      "prompt": "A violet laundry basket filled with a small bundle of blue and white folded clothing, with one plain blue hanger beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parallel-workers": {
+      "prompt": "Two staff members in plain blue shirts with simple faces, each holding and studying a separate blank white request sheet at the same time. Their bodies are clearly separated, with no furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "campsite": {
+      "prompt": "A compact blue camping tent with a violet rolled sleeping bag and a stack of white reservation slips held by a blue clip. Objects only, no landscape. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "estimate-sheet": {
+      "prompt": "A blue handheld calculator with blank square buttons and a blank display, next to two white estimate sheets clipped together with a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "night-classification": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "同じ手引き",
+          "art": "classification-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "requests",
+          "label": "大量の分類",
+          "art": "request-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間に処理",
+          "art": "night-clock",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shirts",
+          "label": "同じ洗い方",
+          "art": "laundry-shirt",
+          "at": [1, 1]
+        },
+        {
+          "id": "basket",
+          "label": "まとめて洗う",
+          "art": "laundry-basket",
+          "at": [3, 1]
+        },
+        {
+          "id": "later",
+          "label": "あとで洗う",
+          "art": "night-clock",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "discount-reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "prefix",
+          "label": "同じ前半",
+          "art": "classification-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "batch",
+          "label": "急がない処理",
+          "art": "request-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "割引を併用",
+          "art": "estimate-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "combine",
+          "from": "batch",
+          "to": "cost",
+          "label": "重ねる"
+        }
+      ]
+    },
+    "shared-blocks": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "依頼その一",
+          "art": "request-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "block-one",
+          "label": "共通ブロック",
+          "art": "classification-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "block-two",
+          "label": "共通ブロック",
+          "art": "classification-guide",
+          "at": [3, 2]
+        },
+        {
+          "id": "second",
+          "label": "依頼その二",
+          "art": "request-bundle",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "include-one",
+          "from": "first",
+          "to": "block-one",
+          "label": "含める"
+        },
+        {
+          "id": "match",
+          "from": "block-one",
+          "to": "block-two",
+          "label": "同じ内容"
+        },
+        {
+          "id": "include-two",
+          "from": "block-two",
+          "to": "second",
+          "label": "こちらにも"
+        }
+      ]
+    },
+    "cache-time": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "processing",
+          "label": "バッチの処理",
+          "art": "request-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "time",
+          "label": "処理の時間",
+          "art": "night-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "cache",
+          "label": "キャッシュ",
+          "art": "classification-guide",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "takes-time",
+          "from": "processing",
+          "to": "time",
+          "label": "時間が必要"
+        },
+        {
+          "id": "consider",
+          "from": "time",
+          "to": "cache",
+          "label": "期間を検討"
+        }
+      ]
+    },
+    "camp-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "camp",
+          "label": "予約の要望",
+          "art": "campsite",
+          "at": [1, 1]
+        },
+        {
+          "id": "rules",
+          "label": "共通の利用規則",
+          "art": "classification-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間に分類",
+          "art": "night-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "both",
+          "label": "割引の併用",
+          "art": "estimate-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "every-hit",
+          "label": "全件で当たる",
+          "art": "request-bundle",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "parallel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "requests",
+          "label": "予約の分類",
+          "art": "campsite",
+          "at": [1, 1]
+        },
+        {
+          "id": "workers",
+          "label": "同時に処理",
+          "art": "parallel-workers",
+          "at": [3, 1]
+        },
+        {
+          "id": "hit",
+          "label": "キャッシュ",
+          "art": "classification-guide",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "run",
+          "from": "requests",
+          "to": "workers",
+          "label": "非同期"
+        },
+        {
+          "id": "uncertain",
+          "from": "workers",
+          "to": "hit",
+          "label": "当たるか"
+        }
+      ]
+    },
+    "budget": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "camp",
+          "label": "予約の分類",
+          "art": "campsite",
+          "at": [1, 1]
+        },
+        {
+          "id": "hit",
+          "label": "当たる場合",
+          "art": "estimate-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "miss",
+          "label": "当たらない場合",
+          "art": "estimate-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "night-goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "夜間の分類を安くする",
+      "board": "night-classification",
+      "beats": [
+        {
+          "say": "同じ手引きで、大量の文章を分類します。",
+          "show": ["guide"]
+        },
+        {
+          "say": "結果を使うのは、翌朝の集計です。",
+          "show": ["requests"]
+        },
+        {
+          "say": "夜間に処理して、費用を下げる方法を考えましょう。",
+          "show": ["night"]
+        },
+        {
+          "say": "割引は重ねられますが、キャッシュは必ず当たるとは限りません。",
+          "pulse": ["guide", "requests"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "laundry-example",
+      "kind": "board",
+      "role": "example",
+      "title": "洗い方と洗うタイミング",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "同じ種類のシャツを洗う場面で考えましょう。",
+          "show": ["shirts"]
+        },
+        {
+          "say": "一度調べた洗い方を、ほかのシャツにも使います。",
+          "tag": {
+            "shirts": "使い回す"
+          }
+        },
+        {
+          "say": "急がない洗濯物は、あとでまとめて洗っても大丈夫です。",
+          "show": ["basket", "later"]
+        },
+        {
+          "say": "洗い方を使い回す工夫と、まとめる工夫は一緒に使えます。",
+          "pulse": ["shirts", "basket"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "cache-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ前半を使い回す",
+      "board": "discount-reasons",
+      "beats": [
+        {
+          "say": "プロンプトキャッシュは、同じ前半を使い回す仕組みです。",
+          "term": {
+            "text": "プロンプトキャッシュ",
+            "note": "同じ前半を使い回す"
+          }
+        },
+        {
+          "say": "分類の依頼なら、共通の手引きが前半に当たります。",
+          "show": ["prefix"]
+        },
+        {
+          "say": "依頼ごとに変わる文章と、共通の手引きを分けてみましょう。",
+          "tag": {
+            "prefix": "共通部分"
+          }
+        },
+        {
+          "say": "この共通部分を使い回すことが、キャッシュの割引の理由です。",
+          "pulse": ["prefix"]
+        }
+      ]
+    },
+    {
+      "id": "batch-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "急がない処理をまとめる",
+      "board": "discount-reasons",
+      "beats": [
+        {
+          "say": "急がない処理をまとめて送るのが、バッチです。",
+          "term": {
+            "text": "バッチ",
+            "note": "急がない処理をまとめて送る"
+          }
+        },
+        {
+          "say": "翌朝に使う分類なら、まとめて送る方法を選べます。",
+          "show": ["batch"]
+        },
+        {
+          "say": "同じ前半の使い回しとは、安くなる理由が別です。",
+          "pulse": ["prefix", "batch"]
+        },
+        {
+          "say": "そのため、キャッシュとバッチの割引を重ねられます。",
+          "show": ["cost", "combine"],
+          "travel": {
+            "along": ["combine"],
+            "icon": "check"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "share-blocks",
+      "kind": "board",
+      "role": "apply",
+      "title": "すべての依頼でそろえる",
+      "board": "shared-blocks",
+      "beats": [
+        {
+          "say": "分類のリクエストに、同じ手引きのブロックを入れます。",
+          "show": ["first", "block-one", "include-one"]
+        },
+        {
+          "say": "ここでそろえる設定名は、キャッシュコントロールです。",
+          "pulse": ["block-one"],
+          "tag": {
+            "block-one": "同じ設定"
+          }
+        },
+        {
+          "say": "同じ設定のブロックを、ほかのリクエストにも入れましょう。",
+          "show": ["block-two", "second", "match", "include-two"],
+          "travel": {
+            "along": ["match", "include-two"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "すべてのリクエストで、できるだけ多くの部分をそろえます。",
+          "pulse": ["block-one", "block-two"],
+          "tag": {
+            "block-two": "同じ設定"
+          }
+        },
+        {
+          "say": "これで当たりやすくなりますが、全件で当たる保証はありません。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "consider-duration",
+      "kind": "board",
+      "role": "apply",
+      "title": "処理にかかる時間も考える",
+      "board": "cache-time",
+      "beats": [
+        {
+          "say": "夜間の分類では、処理にかかる時間も考えます。",
+          "show": ["processing"]
+        },
+        {
+          "say": "バッチの処理は、五分を超えることがあるためです。",
+          "show": ["time", "takes-time"],
+          "tag": {
+            "time": "五分超も"
+          }
+        },
+        {
+          "say": "そこで、一時間のキャッシュを使うことも検討しましょう。",
+          "show": ["cache", "consider"],
+          "tag": {
+            "cache": "一時間"
+          }
+        },
+        {
+          "say": "時間を長くしても、必ず当たるとは限りません。",
+          "pulse": ["cache"],
+          "mark": [
+            {
+              "on": "cache",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "camp-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "キャンプ場の予約を分類",
+      "board": "camp-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "キャンプ場で、予約に添えられた大量の要望を分類します。",
+          "show": ["camp"]
+        },
+        {
+          "say": "どの依頼にも付けるのは、同じ利用規則です。",
+          "show": ["rules"]
+        },
+        {
+          "say": "翌日使うため、夜間のバッチ処理を選びました。",
+          "show": ["night"]
+        },
+        {
+          "say": "キャッシュの割引も、一緒に使えるでしょうか。",
+          "show": ["both"],
+          "mark": [
+            {
+              "on": "both",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "使えるなら全件で当たると考えてよいかも、答えてください。",
+          "show": ["every-hit"],
+          "mark": [
+            {
+              "on": "every-hit",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["both", "every-hit"]
+        }
+      ]
+    },
+    {
+      "id": "camp-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "併用できても保証はない",
+      "board": "camp-quiz",
+      "beats": [
+        {
+          "say": "キャッシュとバッチの割引は、一緒に使えます。",
+          "mark": [
+            {
+              "on": "both",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["both"]
+        },
+        {
+          "say": "ただし、すべての依頼でキャッシュが当たるとは限りません。",
+          "mark": [
+            {
+              "on": "every-hit",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["every-hit"]
+        },
+        {
+          "say": "割引の併用と、必ず当たるという判断を分けましょう。",
+          "pulse": ["both", "every-hit"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-not-every-hit",
+      "kind": "board",
+      "role": "explain",
+      "title": "順番待ちとは限らない",
+      "board": "parallel",
+      "beats": [
+        {
+          "say": "処理の完了を待たずに進めるのが、非同期です。",
+          "term": {
+            "text": "非同期",
+            "ruby": "ひどうき",
+            "note": "完了を待たずに進める"
+          }
+        },
+        {
+          "say": "バッチの中の依頼は、非同期で同時に処理されます。",
+          "show": ["requests", "workers", "run"]
+        },
+        {
+          "say": "前の依頼が終わってから次へ進む、と考えないでください。",
+          "pulse": ["workers"]
+        },
+        {
+          "say": "そのため、同じ規則を付けてもキャッシュは当たるとは限りません。",
+          "show": ["hit", "uncertain"],
+          "mark": [
+            {
+              "on": "hit",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "budget-for-misses",
+      "kind": "board",
+      "role": "explain",
+      "title": "当たらない場合の見積もり",
+      "board": "budget",
+      "beats": [
+        {
+          "say": "キャンプ場の分類に必要な費用も、見積もってみましょう。",
+          "show": ["camp"]
+        },
+        {
+          "say": "キャッシュが当たると考えた計算だけでは、不十分です。",
+          "show": ["hit"],
+          "mark": [
+            {
+              "on": "hit",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "当たらない場合の費用も出しておきます。",
+          "show": ["miss"],
+          "mark": [
+            {
+              "on": "miss",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "設定をそろえる工夫と、費用の見積もりを分けて考えてください。",
+          "pulse": ["hit", "miss"]
+        }
+      ]
+    },
+    {
+      "id": "use-both-discounts",
+      "kind": "board",
+      "role": "usage",
+      "title": "共通の手引きで夜間に分類",
+      "board": "night-classification",
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ手引きを付ける大量の分類で、この組み合わせを使います。",
+          "show": ["guide", "requests"]
+        },
+        {
+          "say": "結果を急がず、夜間にまとめて送れる場面が対象です。",
+          "show": ["night"]
+        },
+        {
+          "say": "共通部分と設定をそろえ、キャッシュの時間も検討しましょう。",
+          "pulse": ["guide", "night"]
+        },
+        {
+          "say": "割引を重ねつつ、キャッシュが当たらない場合も見積もります。",
+          "pulse": ["requests"],
+          "tag": {
+            "requests": "外れも想定"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "49f4716c9457c2ac8ebdef3f3aa36f34c15f26ae0dcd4cf7d290e9b7665b01b3"
+  }
+}
