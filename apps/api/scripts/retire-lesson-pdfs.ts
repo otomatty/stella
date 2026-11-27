@@ -6,7 +6,7 @@ import { retireLessonPdfs } from "./lib/lesson-pdf-retire.js";
 try {
   const config = readFileSync(join(import.meta.dirname, "../wrangler.toml"), "utf8");
   const { accountId, databaseId } = parseD1Config(config, "stella-db");
-  const configured = (config.split(/^[\[]/m)[0] ?? "").match(/^\s*account_id\s*=\s*"(.+?)"/m)?.[1];
+  const configured = (config.split(/^\[/m)[0] ?? "").match(/^\s*account_id\s*=\s*"(.+?)"/m)?.[1];
   if (accountId !== configured) throw new Error("wrangler.toml の account_id と一致しません");
   await retireLessonPdfs({
     accountId,

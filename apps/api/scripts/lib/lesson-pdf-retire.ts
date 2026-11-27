@@ -53,7 +53,10 @@ export async function retireLessonPdfs(input: {
   const d1Url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
 
   function redact(message: string): string {
-    return message.split(apiToken).join("[redacted]").replace(/[\r\n]/g, " ");
+    return message
+      .split(apiToken)
+      .join("[redacted]")
+      .replace(/[\r\n]/g, " ");
   }
 
   function errorText(response: Response, data: CfBody | null): string {
@@ -61,7 +64,8 @@ export async function retireLessonPdfs(input: {
       ? data.errors
           .map((error) => {
             const code = typeof error?.code === "number" ? String(error.code) : "unknown";
-            const message = typeof error?.message === "string" ? redact(error.message) : "不明なエラー";
+            const message =
+              typeof error?.message === "string" ? redact(error.message) : "不明なエラー";
             return `${code}: ${message}`;
           })
           .join("; ")
@@ -113,7 +117,8 @@ export async function retireLessonPdfs(input: {
     else throw new Error("オブジェクト一覧の形式が不正です");
     const objects: { key: string; size: number }[] = [];
     for (const row of data.result) {
-      if (typeof row !== "object" || row === null) throw new Error("オブジェクト一覧の形式が不正です");
+      if (typeof row !== "object" || row === null)
+        throw new Error("オブジェクト一覧の形式が不正です");
       const key = (row as { key?: unknown }).key;
       const size = (row as { size?: unknown }).size;
       if (typeof key !== "string" || !key.startsWith(LESSON_PDF_PREFIX)) {
@@ -215,7 +220,8 @@ export async function retireLessonPdfs(input: {
   }
 
   const existing = await call("GET", `${bucketBase}/lifecycle`);
-  if (!existing.response.ok || existing.data?.success !== true) failed(existing.response, existing.data);
+  if (!existing.response.ok || existing.data?.success !== true)
+    failed(existing.response, existing.data);
   const result = existing.data?.result;
   const rules =
     typeof result === "object" &&
@@ -239,12 +245,17 @@ export async function retireLessonPdfs(input: {
   }
   function ageOf(transition: unknown): number | undefined {
     if (typeof transition !== "object" || transition === null) return undefined;
-    const condition = (transition as { condition?: { type?: unknown; maxAge?: unknown } }).condition;
+    const condition = (transition as { condition?: { type?: unknown; maxAge?: unknown } })
+      .condition;
     if (condition?.type !== "Age" || typeof condition.maxAge !== "number") return undefined;
     return condition.maxAge;
   }
   function isOurRule(rule: unknown): boolean {
-    return typeof rule === "object" && rule !== null && (rule as { id?: unknown }).id === LESSON_PDF_RULE_ID;
+    return (
+      typeof rule === "object" &&
+      rule !== null &&
+      (rule as { id?: unknown }).id === LESSON_PDF_RULE_ID
+    );
   }
   function sameRule(rule: unknown): boolean {
     if (!isOurRule(rule) || typeof rule !== "object" || rule === null) return false;

@@ -105,7 +105,13 @@ describe("retire lesson PDF storage", () => {
     const fetcher = harness({
       db,
       pages: [
-        { objects: [{ key: "lesson-pdf/a.pdf", size: 100 }, { key: "lesson-pdf/b.pdf", size: 50 }], cursor: "next" },
+        {
+          objects: [
+            { key: "lesson-pdf/a.pdf", size: 100 },
+            { key: "lesson-pdf/b.pdf", size: 50 },
+          ],
+          cursor: "next",
+        },
         { objects: [{ key: "lesson-pdf/c.pdf", size: 25 }] },
       ],
     });
@@ -113,7 +119,9 @@ describe("retire lesson PDF storage", () => {
     try {
       await run(fetcher, logs);
       const first = new URL(String(fetcher.mock.calls[0]?.[0]));
-      expect(first.pathname).toBe(`/client/v4/accounts/${account}/r2/buckets/stella-materials-public/objects`);
+      expect(first.pathname).toBe(
+        `/client/v4/accounts/${account}/r2/buckets/stella-materials-public/objects`,
+      );
       expect(first.searchParams.get("prefix")).toBe("lesson-pdf/");
       expect(first.searchParams.get("per_page")).toBe("1000");
       expect(first.searchParams.get("delimiter")).toBeNull();
@@ -127,11 +135,12 @@ describe("retire lesson PDF storage", () => {
       expect(methods).not.toContain("DELETE");
       const put = fetcher.mock.calls.find((call) => (call[1] as RequestInit).method === "PUT");
       expect(String(put?.[0])).toBe(lifecycleUrl);
-      expect(JSON.parse(String((put?.[1] as RequestInit).body))).toEqual({
+      expect(JSON.parse(String((put?.[1] as RequestInit | undefined)?.body))).toEqual({
         rules: [defaultRule, ourRule],
       });
-      expect((fetcher.mock.calls[0]?.[1] as RequestInit).redirect).toBe("error");
-      expect((fetcher.mock.calls[0]?.[1] as RequestInit).headers).toEqual({
+      const firstInit = fetcher.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(firstInit?.redirect).toBe("error");
+      expect(firstInit?.headers).toEqual({
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       });
@@ -154,7 +163,9 @@ describe("retire lesson PDF storage", () => {
     expect(logs).toContain("配布資料の表はもう無い。");
     expect(logs).toContain("lesson-pdf/ の削除は予約済み。");
     expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain("PUT");
-    expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain("DELETE");
+    expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain(
+      "DELETE",
+    );
   });
 
   it("fails before writing lifecycle when a row is not auto or leaves the prefix", async () => {
@@ -181,14 +192,18 @@ describe("retire lesson PDF storage", () => {
       await expect(run(fetcher, logs)).rejects.toThrow(
         "配布資料に自動生成以外、または lesson-pdf/ 以外のパスがあるため、ライフサイクルを書きません",
       );
-      const paths = logs.filter((line) => line.startsWith("配布資料の対象外: ")).map((line) => line.slice("配布資料の対象外: ".length));
-      expect(paths).toEqual(expect.arrayContaining([
-        "lesson-pdf/uploaded.pdf",
-        "Lesson-pdf/case.pdf",
-        "tenant/ses/other.pdf",
-        "(null)",
-        "tenant/ses/version.pdf",
-      ]));
+      const paths = logs
+        .filter((line) => line.startsWith("配布資料の対象外: "))
+        .map((line) => line.slice("配布資料の対象外: ".length));
+      expect(paths).toEqual(
+        expect.arrayContaining([
+          "lesson-pdf/uploaded.pdf",
+          "Lesson-pdf/case.pdf",
+          "tenant/ses/other.pdf",
+          "(null)",
+          "tenant/ses/version.pdf",
+        ]),
+      );
       expect(paths).not.toContain("lesson-pdf/ok.pdf");
       expect(fetcher.mock.calls.some((call) => String(call[0]) === lifecycleUrl)).toBe(false);
     } finally {
@@ -198,7 +213,10 @@ describe("retire lesson PDF storage", () => {
 
   it("logs at most 20 paths", async () => {
     const db = new DatabaseSync(":memory:");
-    const values = Array.from({ length: 25 }, (_, i) => `('lesson-pdf/bad-${i}.pdf', 'upload')`).join(", ");
+    const values = Array.from(
+      { length: 25 },
+      (_, i) => `('lesson-pdf/bad-${i}.pdf', 'upload')`,
+    ).join(", ");
     db.exec(`
       create table lesson_materials (path text, source text);
       create table lesson_material_versions (path text);
@@ -259,7 +277,9 @@ describe("retire lesson PDF storage", () => {
       "lesson-pdf/ 以外を消すライフサイクルがあるため、ルールを書きません",
     );
     expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain("PUT");
-    expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain("DELETE");
+    expect(fetcher.mock.calls.map((call) => (call[1] as RequestInit).method)).not.toContain(
+      "DELETE",
+    );
   });
 
   it("does not PUT when the lesson-pdf rule itself would delete another prefix", async () => {
@@ -291,7 +311,9 @@ describe("retire lesson PDF storage", () => {
     "rejects an invalid database id before fetching: %s",
     async (id) => {
       const fetcher = harness({ pages: [] });
-      await expect(run(fetcher, [], { databaseId: id })).rejects.toThrow("D1 の database id が無効です");
+      await expect(run(fetcher, [], { databaseId: id })).rejects.toThrow(
+        "D1 の database id が無効です",
+      );
       expect(fetcher).not.toHaveBeenCalled();
     },
   );
@@ -307,7 +329,11 @@ describe("retire lesson PDF storage", () => {
   it("exposes only Cloudflare codes and messages", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json(
-        { success: false, errors: [{ code: 10000, message: `Authentication error ${token}` }], private: "do not log" },
+        {
+          success: false,
+          errors: [{ code: 10000, message: `Authentication error ${token}` }],
+          private: "do not log",
+        },
         { status: 403 },
       ),
     );
