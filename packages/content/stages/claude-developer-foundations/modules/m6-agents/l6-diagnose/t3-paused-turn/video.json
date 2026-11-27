@@ -1,0 +1,790 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "pause_turn の応答から続きを受け取るとき、元の会話に何を足し、何を変えずに送るかを説明できる。",
+    "stuck": "途中で返った応答を完了と扱ったり、内容をまとめ直して新しい利用者の発言と一緒に送ったりしてしまう。",
+    "points": ["stop_reason が pause_turn の応答は、内容を変えずに送り直して続きを受け取ります。"],
+    "leaveOut": [
+      "ほかの停止理由の分岐",
+      "クライアントツールの結果の返し方",
+      "サーバー側の繰り返し上限の具体的な回数",
+      "コンテナーの情報とファイルの引き継ぎ",
+      "続行処理の実装コード"
+    ]
+  },
+  "art": {
+    "reference-book": {
+      "prompt": "An open blue reference book with several blank white pages and a violet ribbon bookmark, representing a book being searched for information. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "librarian": {
+      "prompt": "A helpful staff member in a plain blue shirt holding an open blue reference book, with simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bookmark-notes": {
+      "prompt": "An open blue book with a violet bookmark inserted halfway through, beside a white note held by a light grey paper clip, representing the exact place where a search stopped. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "paused-bundle": {
+      "prompt": "A fan of intact white response sheets held together by a prominent blue binder clip, including one smaller white slip still firmly attached to the bundle. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-folder": {
+      "prompt": "An open violet folder holding a sequence of white conversation sheets with alternating blue and violet tabs, with room for another sheet at the end. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "search-tool": {
+      "prompt": "A large blue magnifying glass beside a closed violet reference book with plain white page edges, representing the same search tool used again. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "washer": {
+      "prompt": "A simple white front-loading washing machine with blue circular door trim, beside a small violet cleaning brush, with no controls or written markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "limit-log": {
+      "prompt": "A white record notebook held open beside a blue tally counter with a completely blank display, representing a record of continuation attempts. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rewritten-note": {
+      "prompt": "A violet pencil beside a small blank white note and a separate larger stack of light grey sheets, representing replacing a full response with a shortened note. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "規程の検索",
+          "art": "reference-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "途中の応答",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "next",
+          "label": "続きの依頼",
+          "art": "history-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "returned",
+          "from": "book",
+          "to": "reply",
+          "label": "途中で返る"
+        },
+        {
+          "id": "continue",
+          "from": "reply",
+          "to": "next",
+          "label": "そのまま"
+        }
+      ]
+    },
+    "library": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "調べる担当者",
+          "art": "librarian",
+          "at": [1, 1]
+        },
+        {
+          "id": "place",
+          "label": "途中のページ",
+          "art": "bookmark-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "resume",
+          "label": "調査の続き",
+          "art": "reference-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "staff",
+          "to": "place",
+          "label": "残す"
+        },
+        {
+          "id": "resume-search",
+          "from": "place",
+          "to": "resume",
+          "label": "続ける"
+        }
+      ]
+    },
+    "pause": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "サーバー処理",
+          "art": "search-tool",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "途中の応答",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "一時停止",
+          "art": "bookmark-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "return",
+          "from": "search",
+          "to": "reply",
+          "label": "上限で返る"
+        },
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "停止理由"
+        }
+      ]
+    },
+    "content": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "content",
+          "label": "content",
+          "art": "paused-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "会話履歴",
+          "art": "history-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "assistant",
+          "label": "アシスタント",
+          "art": "paused-bundle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "history",
+          "to": "assistant",
+          "label": "末尾に足す"
+        }
+      ]
+    },
+    "tools": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "definition",
+          "label": "tools",
+          "art": "search-tool",
+          "at": [1, 1]
+        },
+        {
+          "id": "call",
+          "label": "残る呼び出し",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "新しいuser",
+          "art": "history-folder",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "規程の検索",
+          "art": "reference-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "途中の応答",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "元の会話",
+          "art": "history-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "append",
+          "label": "アシスタント",
+          "art": "paused-bundle",
+          "at": [5, 2]
+        },
+        {
+          "id": "tools",
+          "label": "同じtools",
+          "art": "search-tool",
+          "at": [3, 2]
+        },
+        {
+          "id": "next",
+          "label": "続きの応答",
+          "art": "paused-bundle",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "request",
+          "to": "reply"
+        },
+        {
+          "id": "retain",
+          "from": "reply",
+          "to": "history"
+        },
+        {
+          "id": "append-to-history",
+          "from": "history",
+          "to": "append"
+        },
+        {
+          "id": "same-tools",
+          "from": "append",
+          "to": "tools"
+        },
+        {
+          "id": "continue",
+          "from": "tools",
+          "to": "next"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "washer",
+          "label": "手入れの調査",
+          "art": "washer",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "一時停止",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "rewrite",
+          "label": "まとめ直す",
+          "art": "rewritten-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "keep",
+          "label": "そのまま足す",
+          "art": "paused-bundle",
+          "at": [5, 2]
+        },
+        {
+          "id": "user",
+          "label": "新しいuser",
+          "art": "history-folder",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "元の会話",
+          "art": "history-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "アシスタント",
+          "art": "paused-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "tools",
+          "label": "同じtools",
+          "art": "search-tool",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "history",
+          "to": "reply",
+          "label": "末尾に足す"
+        },
+        {
+          "id": "send",
+          "from": "reply",
+          "to": "tools",
+          "label": "一緒に送る"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "再び一時停止",
+          "art": "paused-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "各回の応答",
+          "art": "history-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "続行の上限",
+          "art": "limit-log",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "reply",
+          "to": "history",
+          "label": "順に残す"
+        },
+        {
+          "id": "count",
+          "from": "history",
+          "to": "limit",
+          "label": "回数を確認"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "途中の応答から続ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "規程を検索するアプリに、途中の応答が返りました。",
+          "show": ["book"]
+        },
+        {
+          "say": "まだ結論がなくても、応答は返ってくるものです。",
+          "show": ["reply", "returned"]
+        },
+        {
+          "say": "一時停止した場合に、続きを受け取る方法を見ていきましょう。",
+          "show": ["next"]
+        },
+        {
+          "say": "途中の内容を変えずに送り直し、続きを受け取ります。",
+          "show": ["continue"],
+          "travel": {
+            "along": ["continue"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "library-example",
+      "kind": "board",
+      "role": "example",
+      "title": "調べた位置を残す",
+      "board": "library",
+      "beats": [
+        {
+          "say": "図書館の担当者が、本を調べている場面を考えます。",
+          "show": ["staff"]
+        },
+        {
+          "say": "途中で手を止めた担当者は、ページにしおりを挟みました。",
+          "show": ["place", "keep"]
+        },
+        {
+          "say": "そのしおりは、調べ終わったという印ではありません。",
+          "pulse": ["place"],
+          "mark": [
+            {
+              "on": "place",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "途中の位置を残して、調査の続きを進めましょう。",
+          "show": ["resume", "resume-search"],
+          "travel": {
+            "along": ["resume-search"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-pause",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一時停止の理由を読む",
+      "board": "pause",
+      "beats": [
+        {
+          "say": "サーバーツールには、繰り返しの上限があります。",
+          "show": ["search"]
+        },
+        {
+          "say": "その上限に達すると、途中の応答が返る仕組みです。",
+          "show": ["reply", "return"]
+        },
+        {
+          "say": "この停止理由を、ポーズターンと呼びます。",
+          "term": {
+            "text": "pause_turn",
+            "note": "サーバー処理の一時停止"
+          },
+          "pause": 1
+        },
+        {
+          "say": "これは、処理の途中で返ったことを表す値です。",
+          "show": ["reason", "read"]
+        },
+        {
+          "say": "この応答を受けただけで、完了と表示してはいけません。",
+          "pulse": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keep-content",
+      "kind": "board",
+      "role": "syntax",
+      "title": "内容をそのまま足す",
+      "board": "content",
+      "beats": [
+        {
+          "say": "応答の中身を持つ項目が、content です。",
+          "speech": "応答の中身を持つ項目が、コンテントです。",
+          "term": {
+            "text": "content",
+            "note": "返ってきた応答の中身"
+          }
+        },
+        {
+          "say": "続けるときは、この中身を変えずに使います。",
+          "show": ["content"],
+          "tag": {
+            "content": "そのまま"
+          }
+        },
+        {
+          "say": "元の会話を並べたものが、messages です。",
+          "speech": "元の会話を並べたものが、メッセージズです。",
+          "show": ["history"]
+        },
+        {
+          "say": "末尾に、assistant の発言として応答の中身を足します。",
+          "speech": "末尾に、アシスタントの発言として応答の中身を足します。",
+          "show": ["assistant", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "途中の内容を短くまとめ直す手順ではありません。",
+          "pulse": ["content", "assistant"],
+          "tag": {
+            "assistant": "内容を保つ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-tools",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一緒に保つもの",
+      "board": "tools",
+      "beats": [
+        {
+          "say": "ツールの定義を渡す項目が、tools です。",
+          "speech": "ツールの定義を渡す項目が、ツールズです。",
+          "term": {
+            "text": "tools",
+            "note": "使うツールの定義"
+          }
+        },
+        {
+          "say": "続きのリクエストでも、同じ定義を送ります。",
+          "show": ["definition"],
+          "tag": {
+            "definition": "同じ定義"
+          }
+        },
+        {
+          "say": "まだ結果のない呼び出しも、応答の中身の一部です。",
+          "show": ["call"],
+          "tag": {
+            "call": "削らず残す"
+          }
+        },
+        {
+          "say": "新しい user の発言は、ここでは加えません。",
+          "speech": "新しいユーザーの発言は、ここでは加えません。",
+          "show": ["user"],
+          "mark": [
+            {
+              "on": "user",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "continue-search",
+      "kind": "board",
+      "role": "apply",
+      "title": "規程の検索を続ける",
+      "board": "apply",
+      "beats": [
+        {
+          "say": "規程を調べる例で、続きの依頼を組み立てましょう。",
+          "show": ["request"]
+        },
+        {
+          "say": "検索の途中で届いた応答は、一時停止を示しています。",
+          "show": ["reply", "receive"],
+          "tag": {
+            "reply": "一時停止"
+          }
+        },
+        {
+          "say": "まず残すのは、検索を頼んだ元の会話です。",
+          "show": ["history", "retain"]
+        },
+        {
+          "say": "応答の中身を、末尾の assistant として足します。",
+          "speech": "応答の中身を、末尾のアシスタントとして足します。",
+          "show": ["append", "append-to-history"],
+          "pulse": ["append"]
+        },
+        {
+          "say": "同じツール定義も一緒に送り、続きを受け取りましょう。",
+          "show": ["tools", "next", "same-tools", "continue"],
+          "travel": {
+            "along": ["same-tools", "continue"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "手入れの調査を続ける",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "洗濯機の手入れを、検索で調べてもらいました。",
+          "show": ["washer"]
+        },
+        {
+          "say": "返った応答の停止理由は、ポーズターンです。",
+          "show": ["reply"]
+        },
+        {
+          "say": "一つ目の候補では、途中の内容をまとめ直して送ります。",
+          "show": ["rewrite"]
+        },
+        {
+          "say": "もう一つは、応答の中身をそのまま会話に足す方法です。",
+          "show": ["keep"]
+        },
+        {
+          "say": "どちらを選び、新しい user の発言は加えるでしょうか。",
+          "speech": "どちらを選び、新しいユーザーの発言は加えるでしょうか。",
+          "show": ["user"],
+          "mark": [
+            {
+              "on": "rewrite",
+              "kind": "question"
+            },
+            {
+              "on": "keep",
+              "kind": "question"
+            },
+            {
+              "on": "user",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "中身を保って続ける",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "選ぶのは、応答の中身をそのまま会話に足す方法です。",
+          "mark": [
+            {
+              "on": "keep",
+              "kind": "check"
+            },
+            {
+              "on": "rewrite",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["keep"]
+        },
+        {
+          "say": "新しい user の発言は加えずに、続きを受け取ります。",
+          "speech": "新しいユーザーの発言は加えずに、続きを受け取ります。",
+          "mark": [
+            {
+              "on": "user",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["user"]
+        }
+      ]
+    },
+    {
+      "id": "why-preserve",
+      "kind": "board",
+      "role": "explain",
+      "title": "何を残して送るか",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "手入れについて尋ねた元の会話を、まず残します。",
+          "show": ["history"]
+        },
+        {
+          "say": "末尾に足すのは、assistant としての応答です。",
+          "speech": "末尾に足すのは、アシスタントとしての応答です。",
+          "show": ["reply", "append"]
+        },
+        {
+          "say": "結果のない呼び出しも含め、中身を変えずに渡しましょう。",
+          "tag": {
+            "reply": "呼び出しも"
+          },
+          "pulse": ["reply"]
+        },
+        {
+          "say": "内容をまとめ直すと、そのまま渡すルールに合いません。",
+          "tag": {
+            "reply": "変更しない"
+          }
+        },
+        {
+          "say": "さらに同じ tools を送り、調査の続きを受け取ります。",
+          "speech": "さらに同じツールズを送り、調査の続きを受け取ります。",
+          "show": ["tools", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bounded-continuation",
+      "kind": "board",
+      "role": "usage",
+      "title": "続行の回数も決める",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "検索が続くと、再びポーズターンが返る場合もあります。",
+          "show": ["reply"]
+        },
+        {
+          "say": "その場合も、各回の応答を順に残す手順です。",
+          "show": ["history", "keep"]
+        },
+        {
+          "say": "続ける回数には、アプリ側でも上限を付けましょう。",
+          "show": ["limit", "count"]
+        },
+        {
+          "say": "上限に達したら、そのことを記録して続行を止めます。",
+          "tag": {
+            "limit": "上限で停止"
+          },
+          "mark": [
+            {
+              "on": "limit",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "続行するときは、途中の内容と同じツール定義を保つのが基本です。",
+          "pulse": ["history"],
+          "tag": {
+            "history": "内容を保つ"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bb6a7d0a5bf7073b7e4b41b94a1723677bf8eaac881fbb63b3beeabcd951283b"
+  }
+}

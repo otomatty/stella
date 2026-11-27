@@ -1,0 +1,732 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "調査を任せる依頼に必要な前提と返す形式を書き、親に残す報告を選べる。",
+    "stuck": "調査を子に任せても、最後の報告に表の全文を入れて親の会話を埋めてしまう。",
+    "points": ["文脈を埋める調べものはサブエージェントに任せ、親は要約だけを受け取ります。"],
+    "leaveOut": [
+      "古いツール結果を外す設定",
+      "会話の圧縮とセッションの切り替え",
+      "セッションをまたぐ記憶の保存",
+      "サブエージェントを定義するコード",
+      "具体的な料金やトークン数"
+    ]
+  },
+  "art": {
+    "sales-plan": {
+      "prompt": "An open white sales presentation booklet with a violet binder clip and a blue pencil, its pages mostly blank with a few simple blue rectangular layout blocks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "statistics": {
+      "prompt": "A thick stack of white statistical sheets with light grey grid lines and blue index tabs, the top sheet partly unfolded. No marks inside the grid cells. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "researcher": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a magnifying glass over a white statistical sheet with light grey grid lines. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "regional-report": {
+      "prompt": "One narrow white report slip held by a blue paper clip, with a small violet bookmark tucked behind it. The slip is otherwise blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sports-equipment": {
+      "prompt": "A blue mesh equipment bag holding a naturally orange basketball and a violet relay baton, beside an open white equipment catalogue with simple pictures of these same two objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "equipment-helper": {
+      "prompt": "A person in a plain blue shirt with simple facial features holding a violet relay baton and examining an orange basketball, with a small blank white note tucked under one arm. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "detail-folder": {
+      "prompt": "An open light grey document folder containing a thick stack of white statistical sheets, with a blue tab protruding from the folder. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-timetable": {
+      "prompt": "A large blue bus beside a tall white timetable sheet held by a violet clip. The timetable has light grey grid lines with empty cells. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-report": {
+      "prompt": "A narrow white paper slip attached to a small blue bus-shaped paper clip, with a tiny violet clock pictogram without digits. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "plan",
+          "label": "営業資料",
+          "art": "sales-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "tables",
+          "label": "地域の統計",
+          "art": "statistics",
+          "at": [3, 1]
+        },
+        {
+          "id": "child",
+          "label": "調査担当",
+          "art": "researcher",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "equipment": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "catalog",
+          "label": "道具の一覧",
+          "art": "sports-equipment",
+          "at": [1, 1]
+        },
+        {
+          "id": "helper",
+          "label": "調べる担当",
+          "art": "equipment-helper",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "context": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親の文脈",
+          "art": "sales-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "child",
+          "label": "子の文脈",
+          "art": "researcher",
+          "at": [3, 1]
+        },
+        {
+          "id": "tables",
+          "label": "調査の途中",
+          "art": "statistics",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "delegate",
+          "from": "parent",
+          "to": "child",
+          "label": "任せる"
+        },
+        {
+          "id": "investigate",
+          "from": "child",
+          "to": "tables",
+          "label": "調べる"
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親の依頼",
+          "art": "sales-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "conditions",
+          "label": "年と指標",
+          "art": "regional-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "child",
+          "label": "調査担当",
+          "art": "researcher",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "parent",
+          "to": "conditions",
+          "label": "明記"
+        },
+        {
+          "id": "send",
+          "from": "conditions",
+          "to": "child",
+          "label": "渡す"
+        }
+      ]
+    },
+    "report": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "child",
+          "label": "調査担当",
+          "art": "researcher",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "地域ごと一行",
+          "art": "regional-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "parent",
+          "label": "資料を作る親",
+          "art": "sales-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "summarize",
+          "from": "child",
+          "to": "report",
+          "label": "要約"
+        },
+        {
+          "id": "return",
+          "from": "report",
+          "to": "parent",
+          "label": "報告"
+        }
+      ]
+    },
+    "details": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "child",
+          "label": "調査担当",
+          "art": "researcher",
+          "at": [1, 1]
+        },
+        {
+          "id": "file",
+          "label": "合意した保存先",
+          "art": "detail-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "parent",
+          "label": "報告を読む親",
+          "art": "sales-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "child",
+          "to": "file",
+          "label": "保存"
+        },
+        {
+          "id": "location",
+          "from": "file",
+          "to": "parent",
+          "label": "場所を返す"
+        }
+      ]
+    },
+    "parallel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "one",
+          "label": "地域の調査一",
+          "art": "researcher",
+          "at": [1, 1]
+        },
+        {
+          "id": "two",
+          "label": "地域の調査二",
+          "art": "researcher",
+          "at": [3, 1]
+        },
+        {
+          "id": "three",
+          "label": "地域の調査三",
+          "art": "researcher",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bus-choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "timetable",
+          "label": "バスの時刻表",
+          "art": "bus-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "full",
+          "label": "全文を返す",
+          "art": "bus-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "short",
+          "label": "要点を返す",
+          "art": "bus-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bus-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "時刻表の全文",
+          "art": "bus-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "時刻と出典",
+          "art": "bus-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "parent",
+          "label": "案内を書く親",
+          "art": "bus-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "source",
+          "to": "report",
+          "label": "必要分"
+        },
+        {
+          "id": "deliver",
+          "from": "report",
+          "to": "parent",
+          "label": "報告"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "regions",
+          "label": "地域別の調査",
+          "art": "statistics",
+          "at": [1, 1]
+        },
+        {
+          "id": "chapters",
+          "label": "結論を待つ章",
+          "art": "sales-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "返す要約",
+          "art": "regional-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "資料の構成を見失わない",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "営業資料を作る途中で、地域の統計を調べます。",
+          "show": ["plan"]
+        },
+        {
+          "say": "表の全文で会話が埋まり、構成が追いにくい状態です。",
+          "show": ["tables"]
+        },
+        {
+          "say": "長い調べものは、サブエージェントに任せましょう。",
+          "show": ["child"]
+        },
+        {
+          "say": "親は要約だけを受け取り、資料作りを続けます。",
+          "pulse": ["plan", "child"]
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "kind": "board",
+      "role": "example",
+      "title": "道具を調べる人を分ける",
+      "board": "equipment",
+      "beats": [
+        {
+          "say": "運動会で使う道具を、係の人に調べてもらいます。",
+          "show": ["catalog"]
+        },
+        {
+          "say": "準備をまとめる人に必要なのは、道具の品名と数です。",
+          "show": ["helper"]
+        },
+        {
+          "say": "調べる途中で読んだ一覧を、全部渡す必要はありません。",
+          "pulse": ["catalog"],
+          "mark": [
+            {
+              "on": "catalog",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "担当は品名と数を短く伝え、準備へ戻ってもらいましょう。",
+          "pulse": ["helper"],
+          "tag": {
+            "helper": "品名と数"
+          }
+        }
+      ]
+    },
+    {
+      "id": "separate-context",
+      "kind": "board",
+      "role": "syntax",
+      "title": "調べる文脈を分ける",
+      "board": "context",
+      "beats": [
+        {
+          "say": "作業中に参照する情報を、コンテキストと呼びます。",
+          "term": {
+            "text": "コンテキスト",
+            "note": "作業中に参照する情報"
+          }
+        },
+        {
+          "say": "資料の構成を持っているのが、親の文脈です。",
+          "show": ["parent"]
+        },
+        {
+          "say": "調査を任せる相手が、サブエージェントになります。",
+          "term": {
+            "text": "サブエージェント",
+            "note": "調査を任せる子"
+          }
+        },
+        {
+          "say": "子は、自分の文脈で調べる担当です。",
+          "show": ["child", "delegate"]
+        },
+        {
+          "say": "検索や表の確認は、子の文脈で進めましょう。",
+          "show": ["tables", "investigate"],
+          "travel": {
+            "along": ["investigate"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-conditions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前提を依頼に書く",
+      "board": "request",
+      "beats": [
+        {
+          "say": "親の会話は、そのまま子へは渡りません。",
+          "show": ["parent", "child"],
+          "mark": [
+            {
+              "on": "child",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "調査に必要な前提は、親が依頼に書きます。",
+          "show": ["conditions", "write"]
+        },
+        {
+          "say": "この例で明記するのは、集計年と比較したい指標です。",
+          "pulse": ["conditions"],
+          "tag": {
+            "conditions": "年と指標"
+          }
+        },
+        {
+          "say": "調べる地域も添えて、子へ渡しましょう。",
+          "show": ["send"],
+          "tag": {
+            "conditions": "地域も明記"
+          },
+          "unmark": ["child"],
+          "travel": {
+            "along": ["send"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "return-one-line",
+      "kind": "board",
+      "role": "apply",
+      "title": "返す一行を決める",
+      "board": "report",
+      "beats": [
+        {
+          "say": "返す形式は、地域ごとに一行と指定します。",
+          "show": ["child", "report", "summarize"]
+        },
+        {
+          "say": "残すのは、地域と数値と集計年です。",
+          "tag": {
+            "report": "地域数値年"
+          }
+        },
+        {
+          "say": "数値の出どころを、出典と呼びます。",
+          "term": {
+            "text": "出典",
+            "ruby": "しゅってん",
+            "note": "数値の出どころ"
+          }
+        },
+        {
+          "say": "その一行には、出典も必要です。",
+          "tag": {
+            "report": "出典も添える"
+          },
+          "pulse": ["report"]
+        },
+        {
+          "say": "最後の報告だけを親に返し、資料作りへ戻りましょう。",
+          "show": ["parent", "return"],
+          "travel": {
+            "along": ["return"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-details",
+      "kind": "board",
+      "role": "apply",
+      "title": "明細は保存先を決める",
+      "board": "details",
+      "beats": [
+        {
+          "say": "読むだけの調査には、検索と読み取りだけを渡します。",
+          "show": ["child"],
+          "tag": {
+            "child": "検索と読取"
+          }
+        },
+        {
+          "say": "明細が必要な場合の置き場所は、合意したファイルです。",
+          "show": ["file", "save"]
+        },
+        {
+          "say": "その場合は、保存先への書き込みも認めましょう。",
+          "pulse": ["file"],
+          "tag": {
+            "file": "書込も必要"
+          }
+        },
+        {
+          "say": "報告には明細の全文を入れず、保存した場所を返します。",
+          "show": ["parent", "location"],
+          "travel": {
+            "along": ["location"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "independent-research",
+      "kind": "board",
+      "role": "apply",
+      "title": "独立した調査を分ける",
+      "board": "parallel",
+      "beats": [
+        {
+          "say": "地域別の調査は、相手の結論を待たずに進められます。",
+          "show": ["one"]
+        },
+        {
+          "say": "それぞれを同時に進める、並列化ができる仕事です。",
+          "show": ["two", "three"]
+        },
+        {
+          "say": "ただし、子もそれぞれリクエストを送ります。",
+          "pulse": ["one", "two", "three"]
+        },
+        {
+          "say": "仕事を分けると、トークンの消費が増える点に注意しましょう。",
+          "tag": {
+            "one": "トークン増",
+            "two": "トークン増",
+            "three": "トークン増"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時刻表から何を返すか",
+      "board": "bus-choice",
+      "think": 8,
+      "beats": [
+        {
+          "say": "親が書く案内には、平日の最終バスの時刻が必要です。",
+          "show": ["timetable"]
+        },
+        {
+          "say": "子には、路線と乗る停留所を指定して調査を頼みました。",
+          "tag": {
+            "timetable": "路線と停留所"
+          }
+        },
+        {
+          "say": "一つ目の報告では、読んだ時刻表を全文返します。",
+          "show": ["full"]
+        },
+        {
+          "say": "二つ目は、対象の路線と停留所、平日の最終時刻と出典です。",
+          "show": ["short"]
+        },
+        {
+          "say": "親の文脈を埋めずに案内を作るなら、どちらでしょうか。",
+          "pulse": ["full", "short"],
+          "mark": [
+            {
+              "on": "full",
+              "kind": "question"
+            },
+            {
+              "on": "short",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "対象と時刻と出典を返す",
+      "board": "bus-choice",
+      "beats": [
+        {
+          "say": "答えは、必要な時刻と出典を含む二つ目の報告です。",
+          "mark": [
+            {
+              "on": "full",
+              "kind": "cross"
+            },
+            {
+              "on": "short",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["short"]
+        },
+        {
+          "say": "路線と停留所、平日という条件も、報告に残します。",
+          "tag": {
+            "short": "条件も残す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-short-report",
+      "kind": "board",
+      "role": "explain",
+      "title": "全文を戻さない理由",
+      "board": "bus-reason",
+      "beats": [
+        {
+          "say": "時刻表を調べる途中経過は、子の文脈に置きます。",
+          "show": ["source"]
+        },
+        {
+          "say": "全文を報告に写すと、親の会話も膨らむためです。",
+          "pulse": ["source"],
+          "mark": [
+            {
+              "on": "source",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "必要な条件と時刻を取り出し、出典も添えましょう。",
+          "show": ["report", "extract"],
+          "travel": {
+            "along": ["extract"]
+          }
+        },
+        {
+          "say": "親はその短い報告を使い、案内を書く作業を続けます。",
+          "show": ["parent", "deliver"],
+          "travel": {
+            "along": ["deliver"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-when",
+      "kind": "board",
+      "role": "usage",
+      "title": "分ける効果を見て選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "地域別の調査なら、独立した仕事を同時に進められます。",
+          "show": ["regions"]
+        },
+        {
+          "say": "互いの結論を待って書く章は、受け渡しが増える例です。",
+          "show": ["chapters"]
+        },
+        {
+          "say": "分ける前に、長い途中経過を切り離せるか確かめましょう。",
+          "pulse": ["regions", "chapters"]
+        },
+        {
+          "say": "子へ渡す条件と、親に返す要約を先に決めます。",
+          "show": ["report"],
+          "pulse": ["report"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b94c37b7a5317157e5dbefe214f395ae317d5b2574a778f45483ac0ce0a446c8"
+  }
+}

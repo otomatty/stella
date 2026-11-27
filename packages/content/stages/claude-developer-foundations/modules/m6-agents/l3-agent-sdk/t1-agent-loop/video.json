@@ -1,0 +1,933 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "Agent SDK がツールの実行と結果の受け渡しを繰り返す流れをたどり、終了結果から答えを読める条件を説明できる。",
+    "stuck": "ツールが資料を読めたことと、エージェントが答えを出して正常に終わったことを同じだと思ってしまう。",
+    "points": ["Agent SDK は、ツールの実行と結果の受け渡しを繰り返すループを持っています。"],
+    "leaveOut": [
+      "サブエージェントへの仕事の分担",
+      "セッションの保存と再開",
+      "権限の確認とフックの実装",
+      "Client SDK のツールランナーとの詳しい比較",
+      "費用やトークンの集計方法",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "bicycle": {
+      "prompt": "A blue city bicycle with both wheels clearly visible and a small violet repair pump beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mechanic": {
+      "prompt": "A friendly mechanic in a plain blue shirt, with simple facial features, holding a small wrench and looking attentively at a bicycle wheel. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "maintenance-notes": {
+      "prompt": "An open light grey folder containing white maintenance sheets with a small blue bicycle pictogram and blank violet tabs. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "toolkit": {
+      "prompt": "An open light grey tool case with a blue wrench, violet screwdriver and small bicycle pump arranged inside. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-envelope": {
+      "prompt": "An open blue envelope containing a single white report sheet, secured by a violet clip, with a blank round seal. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-booklet": {
+      "prompt": "An open white travel booklet with a small blue train pictogram beside a violet suitcase, with all remaining paper areas blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "limit-counter": {
+      "prompt": "A compact blue mechanical tally counter with a completely blank display beside a small pile of light grey coins without markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bike",
+          "label": "自転車の点検",
+          "art": "bicycle",
+          "at": [1, 1]
+        },
+        {
+          "id": "notes",
+          "label": "点検記録",
+          "art": "maintenance-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "robot",
+          "label": "調査を任せる",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mechanic",
+          "label": "点検する人",
+          "art": "mechanic",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "使う道具",
+          "art": "toolkit",
+          "at": [3, 1]
+        },
+        {
+          "id": "bike",
+          "label": "点検した車輪",
+          "art": "bicycle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "mechanic",
+          "to": "tools",
+          "label": "選ぶ"
+        },
+        {
+          "id": "work",
+          "from": "tools",
+          "to": "bike",
+          "label": "作業"
+        },
+        {
+          "id": "look",
+          "from": "bike",
+          "to": "mechanic",
+          "label": "再確認",
+          "route": "under"
+        }
+      ]
+    },
+    "loop": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "依頼",
+          "art": "maintenance-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "tools",
+          "label": "SDKの実行",
+          "art": "toolkit",
+          "at": [5, 1]
+        },
+        {
+          "id": "result",
+          "label": "ツールの結果",
+          "art": "maintenance-notes",
+          "at": [5, 2]
+        },
+        {
+          "id": "again",
+          "label": "結果を読む",
+          "art": "claude-robot",
+          "at": [3, 2]
+        },
+        {
+          "id": "final",
+          "label": "最後の応答",
+          "art": "result-envelope",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "ask",
+          "from": "claude",
+          "to": "tools",
+          "label": "実行を要求"
+        },
+        {
+          "id": "run",
+          "from": "tools",
+          "to": "result"
+        },
+        {
+          "id": "return",
+          "from": "result",
+          "to": "again",
+          "label": "返す"
+        },
+        {
+          "id": "repeat",
+          "from": "again",
+          "to": "claude",
+          "label": "続ける"
+        },
+        {
+          "id": "finish",
+          "from": "again",
+          "to": "final",
+          "label": "呼び出しなし"
+        }
+      ]
+    },
+    "call": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "prompt",
+          "label": "点検の依頼",
+          "art": "maintenance-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "loop",
+          "label": "SDKのループ",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "message",
+          "label": "届くメッセージ",
+          "art": "result-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "prompt",
+          "to": "loop"
+        },
+        {
+          "id": "receive",
+          "from": "loop",
+          "to": "message"
+        }
+      ]
+    },
+    "result": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "final",
+          "label": "終了結果",
+          "art": "result-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "終了の状態",
+          "art": "limit-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答え",
+          "art": "maintenance-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "final",
+          "to": "status"
+        },
+        {
+          "id": "read",
+          "from": "status",
+          "to": "answer"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "turns",
+          "label": "回数の上限",
+          "art": "limit-counter",
+          "at": [1, 1]
+        },
+        {
+          "id": "budget",
+          "label": "費用の上限",
+          "art": "limit-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "上限で停止",
+          "art": "result-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "trip": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "trip",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "読めた資料",
+          "art": "maintenance-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "final",
+          "label": "終了結果",
+          "art": "result-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "資料を読む",
+          "art": "toolkit",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "結果を考える",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答えを返す",
+          "art": "travel-booklet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "back",
+          "from": "tools",
+          "to": "claude",
+          "label": "結果を返す"
+        },
+        {
+          "id": "finish",
+          "from": "claude",
+          "to": "answer",
+          "label": "正常に終了"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "点検記録を探す",
+          "art": "maintenance-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "ツールで読む",
+          "art": "toolkit",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "点検案を返す",
+          "art": "result-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "files",
+          "to": "tools"
+        },
+        {
+          "id": "to-report",
+          "from": "tools",
+          "to": "report"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "点検の依頼を進める",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "自転車の点検記録から、直す点を調べたいとします。",
+          "show": ["bike"]
+        },
+        {
+          "say": "読む資料は、手元にある点検記録です。",
+          "show": ["notes"]
+        },
+        {
+          "say": "Agent SDK に、この調査を任せましょう。",
+          "speech": "エージェントエスディーケーに、この調査を任せましょう。",
+          "show": ["robot"]
+        },
+        {
+          "say": "SDK は、ツールの実行と結果の受け渡しを繰り返します。",
+          "speech": "エスディーケーは、ツールの実行と結果の受け渡しを繰り返します。",
+          "pulse": ["robot"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "repair-example",
+      "kind": "board",
+      "role": "example",
+      "title": "点検して作業を繰り返す",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "自転車を点検する人は、まず車輪の様子を見ます。",
+          "show": ["mechanic", "bike"]
+        },
+        {
+          "say": "次に選ぶのは、その状態に合った道具です。",
+          "show": ["tools", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "idea"
+          }
+        },
+        {
+          "say": "道具で作業した後、車輪の状態を確かめましょう。",
+          "show": ["work", "look"],
+          "travel": {
+            "along": ["work", "look"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "まだ直す点があれば、次の作業を選びます。",
+          "pulse": ["mechanic"],
+          "mark": [
+            {
+              "on": "bike",
+              "kind": "redo"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "sdk-loop",
+      "kind": "board",
+      "role": "syntax",
+      "title": "結果を受け取って続ける",
+      "board": "loop",
+      "beats": [
+        {
+          "say": "このような繰り返しを、ループと呼びます。",
+          "term": {
+            "text": "ループ",
+            "note": "結果を見て処理を繰り返す"
+          }
+        },
+        {
+          "say": "依頼を受け、次の行動を選ぶのは Claude です。",
+          "speech": "依頼を受け、次の行動を選ぶのはクロードです。",
+          "show": ["request", "claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ツールの呼び出しを求めると、SDK が実行します。",
+          "speech": "ツールの呼び出しを求めると、エスディーケーが実行します。",
+          "show": ["tools", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "ツールの結果が返る先は、Claude です。",
+          "speech": "ツールの結果が返る先は、クロードです。",
+          "show": ["result", "again", "run", "return"],
+          "travel": {
+            "along": ["run", "return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ツールの呼び出しがない応答まで、繰り返します。",
+          "show": ["repeat", "final", "finish"],
+          "pulse": ["repeat", "finish"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "call-query",
+      "kind": "code",
+      "role": "syntax",
+      "title": "依頼して受け取る",
+      "code": [
+        "// 依頼を渡し、届くメッセージを順に受け取る",
+        "for await (const message of query({",
+        "  // 依頼と回数の上限を渡す",
+        "  prompt, options: { maxTurns: 20 }",
+        "// 呼び出しを閉じ、受け取ったものを調べる",
+        "})) {",
+        "  // 終了結果かどうかを確かめる",
+        "  if (message.type === \"result\" &&",
+        "      // 正常に終わった場合に限る",
+        "      message.subtype === \"success\")",
+        "    // 答えを表示する",
+        "    show(message.result);",
+        "// メッセージを受け取る処理を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "call"
+      },
+      "beats": [
+        {
+          "say": "ループを動かす呼び出しが、query です。",
+          "speech": "ループを動かす呼び出しが、クエリです。",
+          "term": {
+            "text": "query",
+            "ruby": "クエリ",
+            "note": "ループを動かす呼び出し"
+          },
+          "part": {
+            "line": 1,
+            "text": "query"
+          }
+        },
+        {
+          "say": "prompt に、点検記録を読んでほしい依頼を入れます。",
+          "speech": "プロンプトに、点検記録を読んでほしい依頼を入れます。",
+          "part": {
+            "line": 3,
+            "text": "prompt",
+            "note": "依頼の文"
+          },
+          "figure": {
+            "show": ["prompt"]
+          }
+        },
+        {
+          "say": "呼び出した後の実行と受け渡しは、SDK の役割です。",
+          "speech": "呼び出した後の実行と受け渡しは、エスディーケーの役割です。",
+          "part": {
+            "line": 1,
+            "text": "query"
+          },
+          "figure": {
+            "show": ["loop", "start"],
+            "travel": {
+              "along": ["start"],
+              "icon": "send"
+            }
+          }
+        },
+        {
+          "say": "届くメッセージは、この繰り返しで順に受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "for await",
+            "note": "順に受け取る"
+          },
+          "figure": {
+            "show": ["message", "receive"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "message は、受け取ったものに自分で付けた名前です。",
+          "speech": "メッセージは、受け取ったものに自分で付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "message",
+            "note": "メッセージ"
+          },
+          "figure": {
+            "pulse": ["message"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "final-message",
+      "kind": "board",
+      "role": "syntax",
+      "title": "最後に届く終了結果",
+      "board": "result",
+      "beats": [
+        {
+          "say": "最後には、ResultMessage が届きます。",
+          "speech": "最後には、リザルトメッセージが届きます。",
+          "term": {
+            "text": "終了結果",
+            "ruby": "しゅうりょうけっか",
+            "note": "ResultMessage"
+          }
+        },
+        {
+          "say": "これは、実行がどう終わったかを知らせる結果です。",
+          "show": ["final"]
+        },
+        {
+          "say": "終了の状態を確かめてから、答えを読みましょう。",
+          "show": ["status", "inspect"],
+          "pulse": ["status"]
+        },
+        {
+          "say": "正常に終わったときだけ、答えが入ります。",
+          "show": ["answer", "read"],
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "read-success",
+      "kind": "code",
+      "role": "apply",
+      "title": "答えを読む前の確認",
+      "code": [
+        "// 依頼を渡し、届くメッセージを順に受け取る",
+        "for await (const message of query({",
+        "  // 依頼と回数の上限を渡す",
+        "  prompt, options: { maxTurns: 20 }",
+        "// 呼び出しを閉じ、受け取ったものを調べる",
+        "})) {",
+        "  // 終了結果かどうかを確かめる",
+        "  if (message.type === \"result\" &&",
+        "      // 正常に終わった場合に限る",
+        "      message.subtype === \"success\")",
+        "    // 答えを表示する",
+        "    show(message.result);",
+        "// メッセージを受け取る処理を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "result"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "type が result のメッセージを選びます。",
+          "speech": "タイプがリザルトのメッセージを選びます。",
+          "part": {
+            "line": 7,
+            "text": "message.type === \"result\"",
+            "note": "終了結果を選ぶ"
+          },
+          "figure": {
+            "show": ["final"]
+          }
+        },
+        {
+          "say": "次に見るのは、終了の状態を表す subtype です。",
+          "speech": "次に見るのは、終了の状態を表すサブタイプです。",
+          "part": {
+            "line": 9,
+            "text": "message.subtype",
+            "note": "終了の状態"
+          },
+          "figure": {
+            "show": ["status", "inspect"]
+          }
+        },
+        {
+          "say": "success かどうかを、ここで確かめましょう。",
+          "speech": "サクセスかどうかを、ここで確かめましょう。",
+          "part": {
+            "line": 9,
+            "text": "\"success\"",
+            "note": "正常に終了"
+          },
+          "figure": {
+            "tag": {
+              "status": "正常に終了"
+            }
+          }
+        },
+        {
+          "say": "この条件を満たすときだけ、result の答えを読みます。",
+          "speech": "この条件を満たすときだけ、リザルトの答えを読みます。",
+          "part": {
+            "line": 11,
+            "text": "message.result",
+            "note": "答え"
+          },
+          "figure": {
+            "show": ["answer", "read"],
+            "mark": [
+              {
+                "on": "answer",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "show は、答えを表示する関数に付けた名前です。",
+          "speech": "ショーは、答えを表示する関数に付けた名前です。",
+          "part": {
+            "line": 11,
+            "text": "show",
+            "note": "表示する"
+          },
+          "figure": {
+            "pulse": ["answer"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "stop-limits",
+      "kind": "board",
+      "role": "note",
+      "title": "長く動かす前に上限を決める",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "maxTurns は、回数でループを止める設定です。",
+          "speech": "マックスターンズは、回数でループを止める設定です。",
+          "show": ["turns"],
+          "tag": {
+            "turns": "回数"
+          }
+        },
+        {
+          "say": "教材のコードでは、上限を二十回にしています。",
+          "tag": {
+            "turns": "二十回"
+          },
+          "pulse": ["turns"]
+        },
+        {
+          "say": "費用で止める設定は、maxBudgetUsd です。",
+          "speech": "費用で止める設定は、マックスバジェットユーエスディーです。",
+          "show": ["budget"],
+          "tag": {
+            "budget": "費用"
+          }
+        },
+        {
+          "say": "どちらも、初期設定では上限がありません。",
+          "pulse": ["turns", "budget"],
+          "pause": 1
+        },
+        {
+          "say": "長く動く仕事では、上限を決めて止められるようにします。",
+          "show": ["stop"],
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "travel-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "資料を読めたら成功か",
+      "board": "trip",
+      "think": 8,
+      "beats": [
+        {
+          "say": "旅行のしおりを作るため、資料の調査を頼みました。",
+          "show": ["trip"]
+        },
+        {
+          "say": "ツールは資料を読めましたが、途中で回数の上限に達します。",
+          "show": ["data"],
+          "tag": {
+            "data": "途中の結果"
+          }
+        },
+        {
+          "say": "届いたのは、回数の上限で止まったという終了結果です。",
+          "show": ["final"],
+          "tag": {
+            "final": "回数で停止"
+          }
+        },
+        {
+          "say": "この時点で、result を完成した答えとして読めるでしょうか。",
+          "speech": "この時点で、リザルトを完成した答えとして読めるでしょうか。",
+          "mark": [
+            {
+              "on": "final",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["data", "final"]
+        }
+      ]
+    },
+    {
+      "id": "travel-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "回数の上限で止まった",
+      "board": "trip",
+      "beats": [
+        {
+          "say": "この終了結果から、完成した答えは読めません。",
+          "mark": [
+            {
+              "on": "final",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["final"]
+        },
+        {
+          "say": "資料を読めたことは、途中のツールの結果です。",
+          "pulse": ["data"]
+        },
+        {
+          "say": "答えを読む前に、正常に終了したかを確かめます。",
+          "pulse": ["final"],
+          "tag": {
+            "final": "終了を確認"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-not-finished",
+      "kind": "board",
+      "role": "explain",
+      "title": "ツールの結果と答えを分ける",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "資料を読むツールが返した内容を、まず受け取ります。",
+          "show": ["tools"]
+        },
+        {
+          "say": "その内容を使って次を考えるのは、Claude です。",
+          "speech": "その内容を使って次を考えるのは、クロードです。",
+          "show": ["claude", "back"],
+          "travel": {
+            "along": ["back"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "回数の上限で止まれば、正常に終わったとは言えません。",
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "claude": "上限で停止"
+          }
+        },
+        {
+          "say": "result に答えが入るのは、success のときだけです。",
+          "speech": "リザルトに答えが入るのは、サクセスのときだけです。",
+          "show": ["answer", "finish"],
+          "tag": {
+            "answer": "成功時だけ"
+          },
+          "pulse": ["answer"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-for-investigation",
+      "kind": "board",
+      "role": "usage",
+      "title": "記録を読んで調べる仕事",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "点検記録を探して読む仕事に、このループを使えます。",
+          "show": ["files"]
+        },
+        {
+          "say": "ファイルを読む道具などは、SDK に入っているツールです。",
+          "speech": "ファイルを読む道具などは、エスディーケーに入っているツールです。",
+          "show": ["tools", "read"]
+        },
+        {
+          "say": "結果を受け渡す繰り返しは、SDK に任せましょう。",
+          "speech": "結果を受け渡す繰り返しは、エスディーケーに任せましょう。",
+          "pulse": ["tools"]
+        },
+        {
+          "say": "アプリでは終了の状態を確かめて、答えを受け取ります。",
+          "show": ["report", "to-report"],
+          "mark": [
+            {
+              "on": "report",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "fc8461fb600b4473c93f9465067484f0197aaa8e12387b8924e05acdc35ec947"
+  }
+}

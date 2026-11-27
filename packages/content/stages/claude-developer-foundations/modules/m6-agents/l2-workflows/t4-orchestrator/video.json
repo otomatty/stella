@@ -1,0 +1,762 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "依頼に応じて分け方が変わる仕事で、指揮役と作業役を選ぶ理由と結果をまとめるまでの流れを説明できる。",
+    "stuck": "複数の作業役がいる見た目だけで並列化と同じだと思い、仕事の分け方を誰がいつ決めるかを見落とす。",
+    "points": ["分け方が前もって決まらない仕事は、指揮役が分けて配ります。"],
+    "leaveOut": [
+      "モデルの選び方と料金の詳細",
+      "並列化の分割と投票の使い分け",
+      "入力の分類によるルーティング",
+      "評価役の指摘で修正を繰り返す形",
+      "呼び出しを実装するコード"
+    ]
+  },
+  "art": {
+    "exhibition-plan": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a large white exhibition planning sheet and a blue pencil, considering preparations for a small exhibition. The sheet is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "chair-stack": {
+      "prompt": "A small stack of blue folding chairs with one matching chair unfolded beside it, representing seating to arrange for an exhibition. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "paper-bunting": {
+      "prompt": "A loose curved string of white and light grey triangular paper bunting beside blue scissors and a violet spool of thread, representing exhibition decorations to prepare. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exhibition-lead": {
+      "prompt": "A human exhibition coordinator in a plain blue shirt holding two separate blank white task slips, with simple facial features and a thoughtful expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot-lead": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a large blank white request sheet and separating it into smaller blank white task slips. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot-worker": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, concentrating on one blank white task slip held in its hands with a violet pencil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "moving-load": {
+      "prompt": "Two closed light grey cardboard moving boxes sealed with blue tape, with a small violet suitcase beside them. The boxes are light grey, never brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "moving-piano": {
+      "prompt": "A compact near-black upright piano with a closed lid and simplified white keys, with a folded blue protective moving blanket resting over one corner. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "code-files": {
+      "prompt": "An open violet laptop with a completely blank dark screen and three white file sheets held by a blue binder clip beside it, representing files in a programming project. No interface elements. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "展示会の準備",
+          "art": "exhibition-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "chairs",
+          "label": "椅子を並べる",
+          "art": "chair-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "decor",
+          "label": "飾りを作る",
+          "art": "paper-bunting",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "event": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "今回の依頼",
+          "art": "exhibition-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "lead",
+          "label": "まとめ役",
+          "art": "exhibition-lead",
+          "at": [3, 1]
+        },
+        {
+          "id": "chairs",
+          "label": "椅子の準備",
+          "art": "chair-stack",
+          "at": [5, 1]
+        },
+        {
+          "id": "decor",
+          "label": "飾りの準備",
+          "art": "paper-bunting",
+          "at": [5, 2]
+        },
+        {
+          "id": "report",
+          "label": "準備の報告",
+          "art": "exhibition-lead",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "roles": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "lead",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [1, 1]
+        },
+        {
+          "id": "worker",
+          "label": "作業役",
+          "art": "robot-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "collect",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "assign",
+          "from": "lead",
+          "to": "worker",
+          "label": "仕事を配る"
+        },
+        {
+          "id": "return",
+          "from": "worker",
+          "to": "collect",
+          "label": "結果を返す"
+        }
+      ]
+    },
+    "division": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "fixed",
+          "label": "並列化",
+          "art": "code-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "dynamic",
+          "label": "指揮役と作業役",
+          "art": "robot-lead",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "assignment": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "lead-a",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [1, 1]
+        },
+        {
+          "id": "chairs",
+          "label": "椅子の準備",
+          "art": "chair-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "worker-a",
+          "label": "椅子の作業役",
+          "art": "robot-worker",
+          "at": [5, 1]
+        },
+        {
+          "id": "lead-b",
+          "label": "同じ指揮役",
+          "art": "robot-lead",
+          "at": [5, 2]
+        },
+        {
+          "id": "decor",
+          "label": "飾りの準備",
+          "art": "paper-bunting",
+          "at": [3, 2]
+        },
+        {
+          "id": "worker-b",
+          "label": "飾りの作業役",
+          "art": "robot-worker",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "split-a",
+          "from": "lead-a",
+          "to": "chairs",
+          "label": "切り出す"
+        },
+        {
+          "id": "assign-a",
+          "from": "chairs",
+          "to": "worker-a",
+          "label": "任せる"
+        },
+        {
+          "id": "split-b",
+          "from": "lead-b",
+          "to": "decor",
+          "label": "切り出す"
+        },
+        {
+          "id": "assign-b",
+          "from": "decor",
+          "to": "worker-b",
+          "label": "任せる"
+        }
+      ]
+    },
+    "collection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "worker-a",
+          "label": "椅子の作業役",
+          "art": "robot-worker",
+          "at": [1, 1]
+        },
+        {
+          "id": "lead",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [3, 1]
+        },
+        {
+          "id": "worker-b",
+          "label": "飾りの作業役",
+          "art": "robot-worker",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "chairs-back",
+          "from": "worker-a",
+          "to": "lead",
+          "label": "結果"
+        },
+        {
+          "id": "decor-back",
+          "from": "worker-b",
+          "to": "lead",
+          "label": "結果"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "boxes",
+          "label": "引っ越しの荷物",
+          "art": "moving-load",
+          "at": [1, 1]
+        },
+        {
+          "id": "piano",
+          "label": "ピアノも運ぶ",
+          "art": "moving-piano",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "固定の分け方",
+          "art": "code-files",
+          "at": [5, 2]
+        },
+        {
+          "id": "dynamic",
+          "label": "指揮役が分ける",
+          "art": "robot-lead",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "moving": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "piano",
+          "label": "今回の荷物",
+          "art": "moving-piano",
+          "at": [1, 1]
+        },
+        {
+          "id": "lead",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [3, 1]
+        },
+        {
+          "id": "worker",
+          "label": "運び方の調査",
+          "art": "robot-worker",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "piano",
+          "to": "lead",
+          "label": "依頼を読む"
+        },
+        {
+          "id": "assign",
+          "from": "lead",
+          "to": "worker",
+          "label": "調査を配る"
+        },
+        {
+          "id": "return",
+          "from": "worker",
+          "to": "lead",
+          "label": "結果を返す",
+          "route": "under"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "修正ファイル",
+          "art": "code-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "lead",
+          "label": "指揮役",
+          "art": "robot-lead",
+          "at": [3, 1]
+        },
+        {
+          "id": "worker",
+          "label": "作業役",
+          "art": "robot-worker",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "files",
+          "to": "lead",
+          "label": "依頼で判断"
+        },
+        {
+          "id": "assign",
+          "from": "lead",
+          "to": "worker",
+          "label": "分けて配る"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "依頼ごとに仕事を分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "展示会の準備を、何人かに分担してもらう場面です。",
+          "show": ["request"]
+        },
+        {
+          "say": "今回は、お客さんが座る椅子を並べます。",
+          "show": ["chairs"]
+        },
+        {
+          "say": "前回と違って、今回は会場を飾る仕事も頼まれました。",
+          "show": ["decor"]
+        },
+        {
+          "say": "分け方が前もって決まらない仕事は、指揮役が分けて配ります。",
+          "pulse": ["request", "chairs", "decor"]
+        }
+      ]
+    },
+    {
+      "id": "event-request",
+      "kind": "board",
+      "role": "example",
+      "title": "まとめ役が依頼を読む",
+      "board": "event",
+      "beats": [
+        {
+          "say": "主催者は、椅子と飾りを用意してほしいと頼みました。",
+          "show": ["request"]
+        },
+        {
+          "say": "まとめ役は、今回の依頼から必要な仕事を考えます。",
+          "show": ["lead"],
+          "tag": {
+            "lead": "今回の分担"
+          }
+        },
+        {
+          "say": "一人に任せたのは、椅子を並べる仕事です。",
+          "show": ["chairs"]
+        },
+        {
+          "say": "別の人には、飾りを作ってもらうことにしました。",
+          "show": ["decor"]
+        },
+        {
+          "say": "それぞれの報告を集め、まとめ役が準備の結果を伝えます。",
+          "show": ["report"],
+          "tag": {
+            "report": "結果を集約"
+          }
+        }
+      ]
+    },
+    {
+      "id": "roles",
+      "kind": "board",
+      "role": "syntax",
+      "title": "分ける役と受け持つ役",
+      "board": "roles",
+      "beats": [
+        {
+          "say": "仕事を分けて配る役が、指揮役です。",
+          "term": {
+            "text": "指揮役",
+            "ruby": "しきやく",
+            "note": "仕事を分けて結果をまとめる"
+          },
+          "show": ["lead"]
+        },
+        {
+          "say": "指揮役の Claude が、入力に応じて分け方を決めます。",
+          "speech": "指揮役のクロードが、入力に応じて分け方を決めます。",
+          "pulse": ["lead"],
+          "tag": {
+            "lead": "分け方を決定"
+          }
+        },
+        {
+          "say": "分けた仕事を受け持つ Claude が、作業役です。",
+          "speech": "分けた仕事を受け持つクロードが、作業役です。",
+          "term": {
+            "text": "作業役",
+            "ruby": "さぎょうやく",
+            "note": "分けた仕事を受け持つ役"
+          },
+          "show": ["worker"]
+        },
+        {
+          "say": "指揮役から、この作業役へ小さく分けた仕事を渡します。",
+          "show": ["assign"],
+          "pulse": ["worker"],
+          "travel": {
+            "along": ["assign"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "返ってきた結果をまとめるのも、同じ指揮役の仕事です。",
+          "show": ["collect", "return"],
+          "tag": {
+            "collect": "結果を集約"
+          },
+          "travel": {
+            "along": ["return"],
+            "icon": "result"
+          }
+        }
+      ]
+    },
+    {
+      "id": "division-choice",
+      "kind": "board",
+      "role": "syntax",
+      "title": "分け方をいつ決めるか",
+      "board": "division",
+      "beats": [
+        {
+          "say": "並列化では、仕事の分け方をコードで決めておきます。",
+          "term": {
+            "text": "並列化",
+            "ruby": "へいれつか",
+            "note": "分け方を前もって決める形"
+          }
+        },
+        {
+          "say": "図の左は、前もって分担を決めたコードです。",
+          "show": ["fixed"],
+          "tag": {
+            "fixed": "先にコードで"
+          }
+        },
+        {
+          "say": "指揮役と作業役では、入力を見てから分け方を決めます。",
+          "show": ["dynamic"],
+          "tag": {
+            "dynamic": "入力に応じて"
+          }
+        },
+        {
+          "say": "比べるときは、誰がいつ分け方を決めるかに注目しましょう。",
+          "pulse": ["fixed", "dynamic"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "assign-event",
+      "kind": "board",
+      "role": "apply",
+      "title": "展示会の仕事を配る",
+      "board": "assignment",
+      "beats": [
+        {
+          "say": "展示会の例を、指揮役と作業役の図に置き換えます。",
+          "show": ["lead-a", "chairs", "split-a"]
+        },
+        {
+          "say": "指揮役が切り出した一つ目は、椅子の準備です。",
+          "show": ["worker-a", "assign-a"],
+          "travel": {
+            "along": ["split-a", "assign-a"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "依頼には飾りも必要なので、もう一つの仕事を切り出します。",
+          "show": ["lead-b", "decor", "split-b"]
+        },
+        {
+          "say": "この仕事は、別の作業役が受け持つことにしました。",
+          "show": ["worker-b", "assign-b"],
+          "travel": {
+            "along": ["split-b", "assign-b"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "今回の二つの分担は、依頼を読んだ指揮役が決めています。",
+          "pulse": ["lead-a", "lead-b"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "collect-event",
+      "kind": "board",
+      "role": "apply",
+      "title": "結果を指揮役へ戻す",
+      "board": "collection",
+      "beats": [
+        {
+          "say": "仕事を配った後は、作業役から結果を受け取ります。",
+          "show": ["worker-a", "lead", "worker-b"]
+        },
+        {
+          "say": "左から戻るのは、椅子の準備についての結果です。",
+          "show": ["chairs-back"],
+          "travel": {
+            "along": ["chairs-back"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "右の作業役も、飾りについての結果を返しました。",
+          "show": ["decor-back"],
+          "travel": {
+            "along": ["decor-back"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "指揮役が両方をまとめ、展示会の準備の結果を伝えます。",
+          "pulse": ["lead"],
+          "tag": {
+            "lead": "準備の報告"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "引っ越しの見積もり",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "引っ越しの見積もりに必要な調査を、分担させます。",
+          "show": ["boxes"]
+        },
+        {
+          "say": "今回は、箱に入る荷物に加えてピアノも運ぶ依頼です。",
+          "show": ["piano"]
+        },
+        {
+          "say": "調べる内容と数は依頼ごとに変わり、先に固定できません。",
+          "pulse": ["boxes", "piano"]
+        },
+        {
+          "say": "候補には、固定の分け方と、指揮役が分ける形を用意しました。",
+          "show": ["fixed", "dynamic"],
+          "pulse": []
+        },
+        {
+          "say": "この条件なら、どちらを選ぶとよいでしょうか。",
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "question"
+            },
+            {
+              "on": "dynamic",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "指揮役が分ける形",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、依頼を見て指揮役が仕事を分ける形です。",
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "cross"
+            },
+            {
+              "on": "dynamic",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["dynamic"]
+        },
+        {
+          "say": "荷物の内容に応じて、必要な調査を作業役へ配ります。",
+          "pulse": ["boxes", "piano"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-moving",
+      "kind": "board",
+      "role": "explain",
+      "title": "依頼から調査を切り出す",
+      "board": "moving",
+      "beats": [
+        {
+          "say": "この例では、指揮役が荷物の内容を読んで仕事を考えます。",
+          "show": ["piano", "lead", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "今回の依頼で、特別に調べたいのはピアノの運び方です。",
+          "pulse": ["piano"],
+          "tag": {
+            "lead": "調査を分ける"
+          }
+        },
+        {
+          "say": "そこで指揮役は、運び方を調べる仕事を作業役へ渡しました。",
+          "show": ["worker", "assign"],
+          "travel": {
+            "along": ["assign"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "作業役の結果を受け取り、指揮役が見積もり用にまとめます。",
+          "show": ["return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "result"
+          },
+          "tag": {
+            "lead": "見積もり用"
+          }
+        },
+        {
+          "say": "選ぶ決め手は、調査の分け方が依頼によって変わる点です。",
+          "pulse": ["lead"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "修正箇所が依頼で変わる",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "コードの修正でも、依頼ごとに直すファイルが変わります。",
+          "show": ["files"]
+        },
+        {
+          "say": "ファイルの数や中身が変われば、必要な分担も別々です。",
+          "show": ["lead", "inspect"],
+          "tag": {
+            "lead": "今回の分担"
+          }
+        },
+        {
+          "say": "その分け方を、指揮役に決めさせる形が使えます。",
+          "show": ["worker", "assign"],
+          "travel": {
+            "along": ["assign"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "仕事の分け方を先に決められるか、依頼から確かめましょう。",
+          "pulse": ["files", "lead"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e47c6f1ecdc6bd4c2218aaa33b23f118fe9695ffd2fb88bcf2fe8641a635e95b"
+  }
+}

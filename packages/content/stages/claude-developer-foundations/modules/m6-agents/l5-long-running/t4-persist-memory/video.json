@@ -1,0 +1,828 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "新しいセッションで作業を続けるために、残す情報と読み直す手順を説明できる。",
+    "stuck": "前の会話で終えた作業が、新しい会話にもそのまま伝わると思い、進捗を記録しない。",
+    "points": ["セッションをまたいで要る情報は、ファイルやメモリーに書き出します。"],
+    "leaveOut": [
+      "コンテキストの編集の設定値",
+      "新しいセッションに切り替える判断基準",
+      "Agent SDK のセッション再開の手順",
+      "メモリーツールとメモリーストアの実装コード"
+    ]
+  },
+  "art": {
+    "checked-documents": {
+      "prompt": "A neat stack of white documents with blue binder clips, with one loose white sheet beside the stack, representing documents already checked. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "next-reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater reading an open white notebook, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "progress-note": {
+      "prompt": "A white spiral notebook opened beside a violet pencil, with three blank light grey tabs along its edge, representing a progress note. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evidence-file": {
+      "prompt": "An open light grey document folder holding white sheets fastened with a blue clip, representing detailed evidence records. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "memory-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a white file folder. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "memory-cabinet": {
+      "prompt": "A small blue filing cabinet with one open drawer containing light grey folders, representing a place to keep records between conversations. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "unfinished-puzzle": {
+      "prompt": "A partly assembled blue and violet jigsaw puzzle with a few loose pieces beside it, representing work paused midway. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "embroidery-hoop": {
+      "prompt": "A violet embroidery hoop holding white cloth with a partly stitched blue flower, with a violet spool and a blunt needle beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "done",
+          "label": "確認済み資料",
+          "art": "checked-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "翌朝の会話",
+          "art": "next-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "残す記録",
+          "art": "progress-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "puzzle": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "work",
+          "label": "途中のパズル",
+          "art": "unfinished-puzzle",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "引き継ぎメモ",
+          "art": "progress-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "次の担当",
+          "art": "next-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "work",
+          "to": "memo",
+          "label": "書き残す"
+        },
+        {
+          "id": "read",
+          "from": "memo",
+          "to": "reader",
+          "label": "読み直す"
+        }
+      ]
+    },
+    "memo-parts": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "進捗メモ",
+          "art": "progress-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "done",
+          "label": "範囲と条件",
+          "art": "checked-documents",
+          "at": [3, 1]
+        },
+        {
+          "id": "evidence",
+          "label": "根拠の場所",
+          "art": "evidence-file",
+          "at": [5, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の作業",
+          "art": "progress-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "pending",
+          "label": "確認中の点",
+          "art": "checked-documents",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "memory-tool": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "robot",
+          "label": "Claude",
+          "art": "memory-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "files",
+          "label": "メモリーズ",
+          "art": "evidence-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "saved",
+          "label": "保存した要点",
+          "art": "progress-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "access",
+          "from": "robot",
+          "to": "files",
+          "label": "読み書き"
+        },
+        {
+          "id": "save",
+          "from": "files",
+          "to": "saved",
+          "label": "残す"
+        }
+      ]
+    },
+    "memory-store": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "前の会話",
+          "art": "memory-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "store",
+          "label": "メモリーストア",
+          "art": "memory-cabinet",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい会話",
+          "art": "next-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "first",
+          "to": "store",
+          "label": "保存"
+        },
+        {
+          "id": "connect",
+          "from": "store",
+          "to": "new",
+          "label": "つなぐ"
+        }
+      ]
+    },
+    "record": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "done",
+          "label": "資料1〜20",
+          "art": "checked-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "規程v3",
+          "art": "evidence-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "evidence",
+          "label": "照合結果",
+          "art": "evidence-file",
+          "at": [5, 1]
+        },
+        {
+          "id": "next",
+          "label": "資料21から",
+          "art": "checked-documents",
+          "at": [5, 2]
+        },
+        {
+          "id": "pending",
+          "label": "資料18の版",
+          "art": "progress-note",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "restart": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "進捗メモ",
+          "art": "progress-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "新しい会話",
+          "art": "next-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "work",
+          "label": "資料21から",
+          "art": "checked-documents",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "memo",
+          "to": "reader",
+          "label": "先に読む"
+        },
+        {
+          "id": "continue",
+          "from": "reader",
+          "to": "work",
+          "label": "続ける"
+        }
+      ]
+    },
+    "embroidery": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "work",
+          "label": "刺しゅう",
+          "art": "embroidery-hoop",
+          "at": [1, 1]
+        },
+        {
+          "id": "done",
+          "label": "花びら二枚済",
+          "art": "progress-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "evidence",
+          "label": "作業記録",
+          "art": "evidence-file",
+          "at": [5, 1]
+        },
+        {
+          "id": "next",
+          "label": "残る花びら",
+          "art": "embroidery-hoop",
+          "at": [5, 2]
+        },
+        {
+          "id": "memo",
+          "label": "引き継ぎメモ",
+          "art": "progress-note",
+          "at": [3, 2]
+        },
+        {
+          "id": "reader",
+          "label": "新しい会話",
+          "art": "next-reader",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "embroidery-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "done",
+          "label": "済んだ範囲",
+          "art": "embroidery-hoop",
+          "at": [1, 1]
+        },
+        {
+          "id": "evidence",
+          "label": "作業記録",
+          "art": "evidence-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の作業",
+          "art": "progress-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "done",
+          "to": "evidence",
+          "label": "確かめる"
+        },
+        {
+          "id": "continue",
+          "from": "evidence",
+          "to": "next",
+          "label": "続ける"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "work",
+          "label": "日ごとの照合",
+          "art": "checked-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "更新する記録",
+          "art": "progress-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "次の会話",
+          "art": "next-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "update",
+          "from": "work",
+          "to": "memo",
+          "label": "節目で更新"
+        },
+        {
+          "id": "read",
+          "from": "memo",
+          "to": "reader",
+          "label": "冒頭で読む"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "翌朝に続きが分かる記録",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "前日に、資料二十件の照合を終えました。",
+          "show": ["done"]
+        },
+        {
+          "say": "翌朝の新しい会話では、どこまで済んだか分かりません。",
+          "show": ["reader"]
+        },
+        {
+          "say": "翌朝に読み直すメモが、引き継ぎの手がかりです。",
+          "show": ["memo"]
+        },
+        {
+          "say": "セッションをまたいで要る情報は、ファイルやメモリーに書き出します。",
+          "pulse": ["memo"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "puzzle-handoff",
+      "kind": "board",
+      "role": "example",
+      "title": "途中のパズルを渡す",
+      "board": "puzzle",
+      "beats": [
+        {
+          "say": "途中のパズルを、翌日の担当へ引き継ぐ場面です。",
+          "show": ["work"]
+        },
+        {
+          "say": "縁は完成し、次は中央を組むとメモに残します。",
+          "show": ["memo", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "次の担当が最初に見るのは、そのメモです。",
+          "show": ["reader", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "済んだ部分と次の作業を、記録から読み取れます。",
+          "pulse": ["memo"],
+          "tag": {
+            "memo": "縁から中央へ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "memo-contents",
+      "kind": "board",
+      "role": "syntax",
+      "title": "進捗メモに残す内容",
+      "board": "memo-parts",
+      "beats": [
+        {
+          "say": "作業の状態を読み直す記録を、進捗メモと呼びます。",
+          "term": {
+            "text": "進捗メモ",
+            "ruby": "しんちょくめも",
+            "note": "次の会話で読み直す記録"
+          },
+          "show": ["memo"]
+        },
+        {
+          "say": "このメモに書くのは、確認済みの範囲と条件です。",
+          "show": ["done"],
+          "pulse": ["done"]
+        },
+        {
+          "say": "結果を確かめられるように、根拠の場所も書きましょう。",
+          "show": ["evidence"],
+          "pulse": ["evidence"]
+        },
+        {
+          "say": "続いて取り組む範囲を、次の作業として残します。",
+          "show": ["next"],
+          "pulse": ["next"]
+        },
+        {
+          "say": "まだ確認中の点も、引き継ぐ情報です。",
+          "show": ["pending"],
+          "pulse": ["pending"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "memory-tool",
+      "kind": "board",
+      "role": "syntax",
+      "title": "メモリーツールで残す",
+      "board": "memory-tool",
+      "beats": [
+        {
+          "say": "Messages API には、メモリーツールがあります。",
+          "speech": "メッセージズエーピーアイには、メモリーツールがあります。",
+          "term": {
+            "text": "メモリーツール",
+            "note": "ファイルを読み書きする道具"
+          },
+          "show": ["robot"]
+        },
+        {
+          "say": "読み書きの対象は、アプリ側のメモリーズ以下のファイルです。",
+          "speech": "読み書きの対象は、アプリ側のメモリーズ以下のファイルです。",
+          "show": ["files", "access"],
+          "travel": {
+            "along": ["access"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ファイルを読み書きする処理は、アプリ側で実装します。",
+          "pulse": ["files"],
+          "tag": {
+            "files": "アプリ側"
+          }
+        },
+        {
+          "say": "コンテキストの編集と組み合わせる場合を見ましょう。",
+          "pulse": ["robot"]
+        },
+        {
+          "say": "結果を外す前に、必要な情報を保存するよう通知されます。",
+          "show": ["saved", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "save"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "memory-store",
+      "kind": "board",
+      "role": "syntax",
+      "title": "保存先を次にもつなぐ",
+      "board": "memory-store",
+      "beats": [
+        {
+          "say": "Managed Agents では、メモリーストアを使います。",
+          "speech": "マネージドエージェンツでは、メモリーストアを使います。",
+          "term": {
+            "text": "メモリーストア",
+            "note": "複数の会話で使う保存先"
+          },
+          "show": ["store"]
+        },
+        {
+          "say": "複数のセッションから使う、記憶の保存先です。",
+          "show": ["first", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "save"
+          }
+        },
+        {
+          "say": "その保存先を、新しいセッションにもつなぎます。",
+          "show": ["new", "connect"],
+          "travel": {
+            "along": ["connect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "記憶を残す場所と、次につなぐ先を確かめましょう。",
+          "pulse": ["store", "new"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write-record",
+      "kind": "board",
+      "role": "apply",
+      "title": "資料の照合を記録する",
+      "board": "record",
+      "beats": [
+        {
+          "say": "資料の照合なら、一番から二十番まで確認したと書きます。",
+          "show": ["done"],
+          "tag": {
+            "done": "確認済み"
+          }
+        },
+        {
+          "say": "使った条件は、第三版の規程です。",
+          "show": ["rule"],
+          "tag": {
+            "rule": "適用した条件"
+          }
+        },
+        {
+          "say": "根拠の場所には、照合結果を記録したファイルを示します。",
+          "show": ["evidence"],
+          "tag": {
+            "evidence": "結果の場所"
+          }
+        },
+        {
+          "say": "次に確認する範囲は、二十一番の資料からです。",
+          "show": ["next"],
+          "tag": {
+            "next": "ここから再開"
+          }
+        },
+        {
+          "say": "十八番の版を担当者に確認中だという点も、書き残します。",
+          "show": ["pending"],
+          "tag": {
+            "pending": "担当者に確認"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "read-record",
+      "kind": "board",
+      "role": "apply",
+      "title": "新しい会話で読み直す",
+      "board": "restart",
+      "beats": [
+        {
+          "say": "新しい会話を始めるときは、進捗メモを指定します。",
+          "show": ["memo"]
+        },
+        {
+          "say": "冒頭の依頼には、まずメモを読むように書くのが手順です。",
+          "show": ["reader", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "読んでから、二十一番の資料へ進むよう頼みましょう。",
+          "show": ["work", "continue"],
+          "travel": {
+            "along": ["continue"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "アプリが持つ状態を読み取り、新しい依頼に含める方法もあります。",
+          "pulse": ["reader"],
+          "tag": {
+            "reader": "状態を渡す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "刺しゅうの続きへ渡す情報",
+      "board": "embroidery",
+      "think": 8,
+      "beats": [
+        {
+          "say": "刺しゅうの進み具合を、日ごとの新しい会話で管理します。",
+          "show": ["work"]
+        },
+        {
+          "say": "青い糸で花びら二枚を縫い終え、作業記録にも残しました。",
+          "show": ["done", "evidence"],
+          "tag": {
+            "done": "青い糸"
+          }
+        },
+        {
+          "say": "翌日に縫うのは、残っている花びらです。",
+          "show": ["next"]
+        },
+        {
+          "say": "引き継ぎメモに何を残すか、考えてみましょう。",
+          "show": ["memo"],
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "新しい会話の冒頭では、何を頼むとよいでしょうか。",
+          "show": ["reader"],
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "記録を残して先に読む",
+      "board": "embroidery",
+      "beats": [
+        {
+          "say": "済んだ花びらと糸の色、作業記録の場所、次の作業を残します。",
+          "pulse": ["done", "evidence", "next"],
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "冒頭で頼むのは、メモを読んでから続きを進めることです。",
+          "pulse": ["reader"],
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-record",
+      "kind": "board",
+      "role": "explain",
+      "title": "再開に要る情報をたどる",
+      "board": "embroidery-reason",
+      "beats": [
+        {
+          "say": "花びら二枚と青い糸が、終わった範囲と条件に当たります。",
+          "show": ["done"],
+          "tag": {
+            "done": "範囲と条件"
+          }
+        },
+        {
+          "say": "作業記録の場所は、前の結果を確かめる手がかりです。",
+          "show": ["evidence", "check"],
+          "travel": {
+            "along": ["check"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "残る花びらを縫うと書けば、次に進める範囲も伝わります。",
+          "show": ["next", "continue"],
+          "travel": {
+            "along": ["continue"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "記録を読ませる依頼まで含めて、引き継ぎを考えましょう。",
+          "pulse": ["done", "evidence", "next"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "節目に残し冒頭で読む",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "日ごとに会話を分ける資料の照合で、この方法を使います。",
+          "show": ["work"]
+        },
+        {
+          "say": "作業の節目が、終わったことと次の作業を更新するタイミングです。",
+          "show": ["memo", "update"],
+          "travel": {
+            "along": ["update"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "次の会話では、その記録を読むところから始めましょう。",
+          "show": ["reader", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "セッションをまたいで要る情報は、ファイルやメモリーに書き出します。",
+          "pulse": ["memo"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "56b0ef3cc24eb489a8ac752fc2a448714be04d92456d1093b9adb706f34b1638"
+  }
+}

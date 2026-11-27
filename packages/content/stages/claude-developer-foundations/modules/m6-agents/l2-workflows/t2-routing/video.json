@@ -1,0 +1,750 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "入力の種類に合う指示やモデルへの行き先と、分類結果が想定外の場合の行き先を説明できる。",
+    "stuck": "種類の違う依頼を一つの指示で扱い、ある種類に合わせた修正がほかの種類に影響する。",
+    "points": ["入力の種類で、扱う指示やモデルを振り分けます。"],
+    "leaveOut": [
+      "分類を実装するコードと課題の解答",
+      "具体的なモデル名と料金",
+      "ほかのワークフローの形",
+      "分類の精度を測る詳しい方法"
+    ]
+  },
+  "art": {
+    "trousers": {
+      "prompt": "A pair of neatly folded blue trousers with one leg extended to show its hem, beside a plain white shopping bag. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-staff": {
+      "prompt": "A clothing shop attendant in a plain blue shirt with simple facial features, listening with one open hand raised, holding a blank white request slip in the other hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-kit": {
+      "prompt": "A blue sewing machine with a short length of blue trouser fabric beneath its needle and a violet spool beside it, representing a clothing alteration service. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sorting-slips": {
+      "prompt": "Two hands sorting blank white request slips into two separate light grey document trays, one with a blue tab and one with a violet tab. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "procedure-sheet": {
+      "prompt": "An upright white instruction sheet on a light grey clipboard, with a blue clip and a violet pencil beside it. The paper is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white request slip. No other characters. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dental-calendar": {
+      "prompt": "A white appointment calendar with blue binding, empty date cells and one violet movable tab, beside a small white tooth model. Objects only, representing a dental appointment change. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dental-hours": {
+      "prompt": "A blue round clock with simple hands and no numerals, beside a small white tooth model and a blank white opening-hours leaflet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "shop-goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clothes",
+          "label": "洋服の用件",
+          "art": "trousers",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "受付",
+          "art": "shop-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "alter",
+          "label": "裾直し担当",
+          "art": "sewing-kit",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shop-route": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "洋服の用件",
+          "art": "trousers",
+          "at": [1, 2]
+        },
+        {
+          "id": "staff",
+          "label": "受付",
+          "art": "shop-staff",
+          "at": [3, 2]
+        },
+        {
+          "id": "buy",
+          "label": "購入担当",
+          "art": "procedure-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "alter",
+          "label": "裾直し担当",
+          "art": "sewing-kit",
+          "at": [5, 3]
+        }
+      ],
+      "links": [
+        {
+          "id": "listen",
+          "from": "request",
+          "to": "staff",
+          "label": "用件を聞く"
+        },
+        {
+          "id": "to-buy",
+          "from": "staff",
+          "to": "buy",
+          "label": "購入"
+        },
+        {
+          "id": "to-alter",
+          "from": "staff",
+          "to": "alter",
+          "label": "裾直し"
+        }
+      ]
+    },
+    "separate-instructions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shared",
+          "label": "共通の指示",
+          "art": "procedure-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "technical",
+          "label": "技術の指示",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "billing",
+          "label": "請求の指示",
+          "art": "procedure-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "instruction-route": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "問い合わせ",
+          "art": "procedure-sheet",
+          "at": [1, 2]
+        },
+        {
+          "id": "sort",
+          "label": "種類を分類",
+          "art": "sorting-slips",
+          "at": [3, 2]
+        },
+        {
+          "id": "billing",
+          "label": "請求の指示",
+          "art": "procedure-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "technical",
+          "label": "技術の指示",
+          "art": "procedure-sheet",
+          "at": [5, 3]
+        }
+      ],
+      "links": [
+        {
+          "id": "classify",
+          "from": "input",
+          "to": "sort",
+          "label": "分類する"
+        },
+        {
+          "id": "to-billing",
+          "from": "sort",
+          "to": "billing",
+          "label": "請求"
+        },
+        {
+          "id": "to-technical",
+          "from": "sort",
+          "to": "technical",
+          "label": "技術"
+        }
+      ]
+    },
+    "model-route": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "質問",
+          "art": "procedure-sheet",
+          "at": [1, 2]
+        },
+        {
+          "id": "sort",
+          "label": "種類を分類",
+          "art": "sorting-slips",
+          "at": [3, 2]
+        },
+        {
+          "id": "small",
+          "label": "小さく安い",
+          "art": "model-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "strong",
+          "label": "強いモデル",
+          "art": "model-robot",
+          "at": [5, 3]
+        }
+      ],
+      "links": [
+        {
+          "id": "classify",
+          "from": "input",
+          "to": "sort",
+          "label": "分類する"
+        },
+        {
+          "id": "to-small",
+          "from": "sort",
+          "to": "small",
+          "label": "簡単"
+        },
+        {
+          "id": "to-strong",
+          "from": "sort",
+          "to": "strong",
+          "label": "難しい"
+        }
+      ]
+    },
+    "fallback-route": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sort",
+          "label": "分類の結果",
+          "art": "sorting-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "unknown",
+          "label": "想定外の値",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "fallback",
+          "label": "確認の窓口",
+          "art": "shop-staff",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "unexpected",
+          "from": "sort",
+          "to": "unknown",
+          "label": "該当なし"
+        },
+        {
+          "id": "to-fallback",
+          "from": "unknown",
+          "to": "fallback",
+          "label": "決めた先へ"
+        }
+      ]
+    },
+    "dental-route": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "予約日を変更",
+          "art": "dental-calendar",
+          "at": [1, 2]
+        },
+        {
+          "id": "sort",
+          "label": "種類を分類",
+          "art": "sorting-slips",
+          "at": [3, 2]
+        },
+        {
+          "id": "change",
+          "label": "予約変更手順",
+          "art": "dental-calendar",
+          "at": [5, 1]
+        },
+        {
+          "id": "hours",
+          "label": "診療時間案内",
+          "art": "dental-hours",
+          "at": [5, 3]
+        }
+      ],
+      "links": [
+        {
+          "id": "classify",
+          "from": "request",
+          "to": "sort",
+          "label": "分類する"
+        },
+        {
+          "id": "to-change",
+          "from": "sort",
+          "to": "change",
+          "label": "予約変更"
+        },
+        {
+          "id": "to-hours",
+          "from": "sort",
+          "to": "hours",
+          "label": "時間の質問"
+        }
+      ]
+    },
+    "conditions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kinds",
+          "label": "種類が明確",
+          "art": "sorting-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "instructions",
+          "label": "種類別の指示",
+          "art": "procedure-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "models",
+          "label": "モデルの選択",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "用件に合う担当へ",
+      "board": "shop-goal",
+      "beats": [
+        {
+          "say": "洋服店には、買い物や裾直しの用件が届きます。",
+          "show": ["clothes"]
+        },
+        {
+          "say": "受付が最初に確かめるのは、お客さんの用件です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "裾直しなら、その担当へ案内しましょう。",
+          "show": ["alter"]
+        },
+        {
+          "say": "入力の種類で、扱う指示やモデルを振り分けます。",
+          "pulse": ["clothes", "staff", "alter"]
+        }
+      ]
+    },
+    {
+      "id": "shop-example",
+      "kind": "board",
+      "role": "example",
+      "title": "買う用件と直す用件",
+      "board": "shop-route",
+      "beats": [
+        {
+          "say": "お客さんが、ズボンの裾を短くしたいと伝えました。",
+          "show": ["request"],
+          "tag": {
+            "request": "裾を短く"
+          }
+        },
+        {
+          "say": "受付は、まず何をしてほしいのかを確かめます。",
+          "show": ["staff", "listen"],
+          "travel": {
+            "along": ["listen"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この用件の行き先は、裾直しの担当です。",
+          "show": ["alter", "to-alter"],
+          "travel": {
+            "along": ["to-alter"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "買いたい人には、購入の担当を案内します。",
+          "show": ["buy", "to-buy"],
+          "pulse": ["buy"]
+        },
+        {
+          "say": "用件を聞く場所と、実際に扱う場所を見てください。",
+          "pulse": ["staff", "buy", "alter"]
+        }
+      ]
+    },
+    {
+      "id": "routing-shape",
+      "kind": "board",
+      "role": "syntax",
+      "title": "分類して処理へ回す",
+      "board": "shop-route",
+      "beats": [
+        {
+          "say": "種類ごとの処理へ回す形を、ルーティングと呼びます。",
+          "term": {
+            "text": "ルーティング",
+            "note": "種類に合う処理へ回す形"
+          }
+        },
+        {
+          "say": "受付から用件に合う担当へ進む、この形です。",
+          "pulse": ["staff", "to-buy", "to-alter"]
+        },
+        {
+          "say": "入力がどの種類かを決めることを、分類と呼びます。",
+          "term": {
+            "text": "分類",
+            "ruby": "ぶんるい",
+            "note": "入力がどの種類かを決める"
+          }
+        },
+        {
+          "say": "この例では、受付で購入か裾直しかを決めました。",
+          "pulse": ["staff"],
+          "tag": {
+            "staff": "種類を決める"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dedicated-instructions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "指示を種類ごとに用意",
+      "board": "separate-instructions",
+      "beats": [
+        {
+          "say": "何をどう扱うかを伝える文が、指示です。",
+          "term": {
+            "text": "指示",
+            "ruby": "しじ",
+            "note": "何をどう扱うかを伝える文"
+          },
+          "show": ["shared"]
+        },
+        {
+          "say": "教材では、一つの指示で請求も技術も扱っていました。",
+          "pulse": ["shared"],
+          "tag": {
+            "shared": "全部を扱う"
+          }
+        },
+        {
+          "say": "技術向けに直すと、請求の答えが崩れる場合があります。",
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "question"
+            }
+          ],
+          "tag": {
+            "shared": "ほかに影響"
+          }
+        },
+        {
+          "say": "種類ごとに分け、それぞれの指示を作り込みましょう。",
+          "show": ["technical", "billing"],
+          "pulse": ["technical", "billing"]
+        }
+      ]
+    },
+    {
+      "id": "route-to-instructions",
+      "kind": "board",
+      "role": "apply",
+      "title": "請求と技術を分ける",
+      "board": "instruction-route",
+      "beats": [
+        {
+          "say": "問い合わせの入力でも、最初に種類を分類します。",
+          "show": ["input", "sort", "classify"]
+        },
+        {
+          "say": "請求と分類したときの行き先は、請求専用の指示です。",
+          "show": ["billing", "to-billing"],
+          "travel": {
+            "along": ["classify", "to-billing"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "技術の相談なら、技術専用の指示へ回しましょう。",
+          "show": ["technical", "to-technical"],
+          "travel": {
+            "along": ["to-technical"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "行き先ごとに、使うツールを変えることもできます。",
+          "tag": {
+            "technical": "使うツール"
+          },
+          "pulse": ["technical"]
+        },
+        {
+          "say": "この形を使う条件は、分類が正確にできることです。",
+          "pulse": ["sort"],
+          "mark": [
+            {
+              "on": "sort",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "route-to-models",
+      "kind": "board",
+      "role": "apply",
+      "title": "質問に合うモデルへ",
+      "board": "model-route",
+      "beats": [
+        {
+          "say": "使うモデルも、入力の種類で振り分けましょう。",
+          "show": ["input", "sort", "classify"]
+        },
+        {
+          "say": "よくある簡単な質問は、小さく安いモデルへ回します。",
+          "show": ["small", "to-small"],
+          "travel": {
+            "along": ["to-small"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "難しい質問や珍しい質問は、強いモデルの出番です。",
+          "show": ["strong", "to-strong"],
+          "travel": {
+            "along": ["to-strong"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "質問の種類と、用意した行き先を対応させましょう。",
+          "pulse": ["sort", "small", "strong"]
+        }
+      ]
+    },
+    {
+      "id": "unexpected-result",
+      "kind": "board",
+      "role": "apply",
+      "title": "想定外の行き先も決める",
+      "board": "fallback-route",
+      "beats": [
+        {
+          "say": "分類の結果が、想定外の値になる場合もあります。",
+          "show": ["sort", "unknown", "unexpected"]
+        },
+        {
+          "say": "用意した種類に当てはまらず、行き先がない状態です。",
+          "mark": [
+            {
+              "on": "unknown",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "たとえば、その場合は確認の窓口へ回すと決めておきます。",
+          "show": ["fallback", "to-fallback"],
+          "travel": {
+            "along": ["to-fallback"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "分類結果が想定外でも止まらないよう、備えましょう。",
+          "pulse": ["fallback"],
+          "mark": [
+            {
+              "on": "fallback",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "歯科への予約変更の依頼",
+      "board": "dental-route",
+      "think": 8,
+      "beats": [
+        {
+          "say": "歯科の利用者が、予約日を変更したいと伝えました。",
+          "show": ["request"]
+        },
+        {
+          "say": "ここでは、予約変更と診療時間の質問を分けます。",
+          "show": ["sort", "classify"]
+        },
+        {
+          "say": "用意した行き先は、予約変更の手順と診療時間の案内です。",
+          "show": ["change", "hours"]
+        },
+        {
+          "say": "この依頼を、内容に合う行き先へ振り分けましょう。",
+          "pulse": ["request"],
+          "tag": {
+            "request": "日を変えたい"
+          }
+        },
+        {
+          "say": "最初に何と分類し、どちらへ回すとよいでしょうか。",
+          "pulse": ["sort", "change", "hours"],
+          "mark": [
+            {
+              "on": "sort",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "予約変更の手順へ",
+      "board": "dental-route",
+      "beats": [
+        {
+          "say": "予約変更と分類し、予約変更の手順へ回します。",
+          "tag": {
+            "sort": "予約変更"
+          },
+          "show": ["to-change"],
+          "travel": {
+            "along": ["classify", "to-change"],
+            "icon": "file"
+          },
+          "unmark": ["sort"]
+        },
+        {
+          "say": "この依頼に合うのは、日程を変えるための手順です。",
+          "pulse": ["change"],
+          "mark": [
+            {
+              "on": "change",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why-this-route",
+      "kind": "board",
+      "role": "explain",
+      "title": "依頼の中身で選ぶ理由",
+      "board": "dental-route",
+      "beats": [
+        {
+          "say": "利用者が求めているのは、予約日を変えることです。",
+          "pulse": ["request"]
+        },
+        {
+          "say": "その内容を読んで、予約変更という種類に分けます。",
+          "pulse": ["sort"]
+        },
+        {
+          "say": "診療時間の案内では、予約日を変える用件を扱えません。",
+          "pulse": ["hours"],
+          "mark": [
+            {
+              "on": "hours",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "分類に合う専用の手順へ進む流れを、もう一度たどりましょう。",
+          "pulse": ["change"],
+          "travel": {
+            "along": ["classify", "to-change"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "種類を分けられる仕事に",
+      "board": "conditions",
+      "beats": [
+        {
+          "say": "ルーティングは、種類が明確で正確に分類できる仕事にぴったりです。",
+          "show": ["kinds"]
+        },
+        {
+          "say": "請求と技術の問い合わせなら、専用の指示を用意します。",
+          "show": ["instructions"]
+        },
+        {
+          "say": "質問の難しさで、使うモデルを分ける形も考えてみましょう。",
+          "show": ["models"]
+        },
+        {
+          "say": "入力の種類で、扱う指示やモデルを振り分けます。",
+          "pulse": ["kinds", "instructions", "models"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "50938d425e34be689da270ff510e8703216c5ca21ea499245fae447c08936f7b"
+  }
+}

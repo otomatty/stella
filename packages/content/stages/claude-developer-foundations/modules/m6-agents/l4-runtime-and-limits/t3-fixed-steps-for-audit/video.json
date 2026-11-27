@@ -1,0 +1,756 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "監査が必要な業務でワークフローを選ぶ理由と、各段に残す入力・結果の記録を説明できる。",
+    "stuck": "最終結果を残せば、決められた順で処理したことまで説明できると思ってしまう。",
+    "points": ["監査や誤りの許容度が厳しい業務は、手順を固定したワークフローにします。"],
+    "leaveOut": [
+      "実行環境の選び方",
+      "回数と費用の上限の設定",
+      "複数のエージェントを使う条件",
+      "記録を保存する具体的な実装"
+    ]
+  },
+  "art": {
+    "receipt-pair": {
+      "prompt": "Two white paper expense receipts beside one light grey itemized claim sheet, with a blue magnifying glass above the pair. All sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "expense-total": {
+      "prompt": "A blue calculator with a blank display and unmarked buttons beside a neat fan of white expense slips held with a violet clip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-folder": {
+      "prompt": "An open blue report folder holding one white report sheet, with a small violet paper clip. All paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rulebook": {
+      "prompt": "A closed violet rulebook with two blue bookmark tabs, beside an older light grey copy with one tab. Both covers and page edges are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "audit-record": {
+      "prompt": "An open white record ledger with three blue divider tabs and a violet pen, beside a small bundle of white evidence slips. All pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-handouts": {
+      "prompt": "A tidy stack of white school handouts held with a blue clip beside a second shorter stack ready to be distributed. All sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-log": {
+      "prompt": "A blue school attendance binder open to blank white pages, with a violet pencil and one white handout tucked into its pocket. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-roll": {
+      "prompt": "A blue photographic film canister with a short curling near-black film strip beside a closed violet developing tank. The strip has blank frames and small perforations. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-prints": {
+      "prompt": "Three photographic prints of the same simple blue sailboat with violet sails, beside an open light grey paper delivery envelope. The prints show only the boat and white space. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "expense-overview": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "receipt",
+          "label": "領収書の照合",
+          "art": "receipt-pair",
+          "at": [1, 1]
+        },
+        {
+          "id": "total",
+          "label": "金額の集計",
+          "art": "expense-total",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "担当者へ報告",
+          "art": "report-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "checked",
+          "from": "receipt",
+          "to": "total",
+          "label": "照合後"
+        },
+        {
+          "id": "reported",
+          "from": "total",
+          "to": "report",
+          "label": "集計後"
+        }
+      ]
+    },
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sheets",
+          "label": "配布物の確認",
+          "art": "school-handouts",
+          "at": [1, 1]
+        },
+        {
+          "id": "log",
+          "label": "配布の記録",
+          "art": "school-log",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record",
+          "from": "sheets",
+          "to": "log",
+          "label": "残す"
+        }
+      ]
+    },
+    "audit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "業務の決まり",
+          "art": "rulebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "実行の記録",
+          "art": "audit-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "rule",
+          "to": "record",
+          "label": "照合"
+        }
+      ]
+    },
+    "expense-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "receipt",
+          "label": "領収書の照合",
+          "art": "receipt-pair",
+          "at": [1, 1]
+        },
+        {
+          "id": "total",
+          "label": "金額の集計",
+          "art": "expense-total",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "担当者へ報告",
+          "art": "report-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "checked",
+          "from": "receipt",
+          "to": "total",
+          "label": "照合後"
+        },
+        {
+          "id": "reported",
+          "from": "total",
+          "to": "report",
+          "label": "集計後"
+        }
+      ]
+    },
+    "check-record": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "証票と明細",
+          "art": "receipt-pair",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "照合の記録",
+          "art": "audit-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "total",
+          "label": "集計の記録",
+          "art": "expense-total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "input",
+          "to": "record",
+          "label": "照合"
+        },
+        {
+          "id": "sum",
+          "from": "record",
+          "to": "total",
+          "label": "集計"
+        }
+      ]
+    },
+    "report-record": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "規程の版",
+          "art": "rulebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "報告した結果",
+          "art": "report-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "実行の記録",
+          "art": "audit-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "rule",
+          "to": "report",
+          "label": "参照"
+        },
+        {
+          "id": "keep",
+          "from": "report",
+          "to": "record",
+          "label": "残す"
+        }
+      ]
+    },
+    "photo-choice": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "film",
+          "label": "写真の現像",
+          "art": "photo-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "prints",
+          "label": "写真の引渡し",
+          "art": "photo-prints",
+          "at": [5, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "手順を固定",
+          "art": "rulebook",
+          "at": [5, 2]
+        },
+        {
+          "id": "changing",
+          "label": "毎回選び直す",
+          "art": "photo-roll",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "photo-trace": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "film",
+          "label": "預かった原版",
+          "art": "photo-roll",
+          "at": [1, 1]
+        },
+        {
+          "id": "prints",
+          "label": "現像した写真",
+          "art": "photo-prints",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "各段の記録",
+          "art": "audit-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "develop",
+          "from": "film",
+          "to": "prints",
+          "label": "現像"
+        },
+        {
+          "id": "keep",
+          "from": "prints",
+          "to": "record",
+          "label": "記録"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "expense",
+          "label": "経費申請",
+          "art": "receipt-pair",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "決まった順序",
+          "art": "rulebook",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "入力と結果",
+          "art": "audit-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "follow",
+          "from": "expense",
+          "to": "rule",
+          "label": "固定"
+        },
+        {
+          "id": "keep",
+          "from": "rule",
+          "to": "record",
+          "label": "照合"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "確認した順を説明する",
+      "board": "expense-overview",
+      "beats": [
+        {
+          "say": "経費申請で、領収書を先に確かめる決まりです。",
+          "show": ["receipt"]
+        },
+        {
+          "say": "ところが、別の日には金額の集計から始めました。",
+          "show": ["total"],
+          "mark": [
+            {
+              "on": "total",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "担当者は、決まりどおり進んだか説明できません。",
+          "show": ["report"],
+          "mark": [
+            {
+              "on": "report",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "監査や誤りに厳しい業務では、手順を固定します。",
+          "show": ["checked", "reported"],
+          "pulse": ["receipt", "total", "report"]
+        }
+      ]
+    },
+    {
+      "id": "school-example",
+      "kind": "board",
+      "role": "example",
+      "title": "配った結果だけでは足りない",
+      "board": "school",
+      "beats": [
+        {
+          "say": "学校で、配布物の枚数を確かめてから配る決まりです。",
+          "show": ["sheets"]
+        },
+        {
+          "say": "担当者は、配り終えたことだけを書きました。",
+          "show": ["log"],
+          "tag": {
+            "log": "配布済み"
+          }
+        },
+        {
+          "say": "その記録では、先に枚数を確かめたか分かりません。",
+          "mark": [
+            {
+              "on": "log",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "枚数の確認と配布を、順に記録しておきましょう。",
+          "show": ["record"],
+          "tag": {
+            "log": "確認と配布"
+          },
+          "unmark": ["log"]
+        }
+      ]
+    },
+    {
+      "id": "audit-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "監査で確かめること",
+      "board": "audit",
+      "beats": [
+        {
+          "say": "決まりどおり進んだかを記録で確かめるのが、監査です。",
+          "term": {
+            "text": "監査",
+            "ruby": "かんさ",
+            "note": "決まりと実行の記録を照合"
+          }
+        },
+        {
+          "say": "確かめるときは、この実行の記録を読みます。",
+          "show": ["record"]
+        },
+        {
+          "say": "業務で守る決まりを書いたものが、規程です。",
+          "term": {
+            "text": "規程",
+            "ruby": "きてい",
+            "note": "業務で守る決まり"
+          },
+          "show": ["rule"]
+        },
+        {
+          "say": "規程の順序と、実際に進めた順序を照らし合わせましょう。",
+          "show": ["compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixed-workflow",
+      "kind": "board",
+      "role": "syntax",
+      "title": "コードで順序を決める",
+      "board": "expense-flow",
+      "beats": [
+        {
+          "say": "手順をコードで決める形を、ワークフローと呼びます。",
+          "term": {
+            "text": "ワークフロー",
+            "note": "コードで決めた手順"
+          }
+        },
+        {
+          "say": "この例では、領収書の照合が最初の段です。",
+          "show": ["receipt"]
+        },
+        {
+          "say": "照合から集計へ進む順序を、コードで固定します。",
+          "show": ["total", "checked"],
+          "travel": {
+            "along": ["checked"]
+          }
+        },
+        {
+          "say": "集計の次は報告と決まり、進む順を予測できる形です。",
+          "show": ["report", "reported"],
+          "travel": {
+            "along": ["reported"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-order",
+      "kind": "board",
+      "role": "apply",
+      "title": "経費申請を順に進める",
+      "board": "expense-flow",
+      "beats": [
+        {
+          "say": "まず、領収書と申請の明細を照合します。",
+          "pulse": ["receipt"]
+        },
+        {
+          "say": "集計に使うのは、照合済みの明細です。",
+          "pulse": ["total"],
+          "tag": {
+            "total": "照合済み"
+          }
+        },
+        {
+          "say": "その合計を、担当者へ報告しましょう。",
+          "pulse": ["report"],
+          "travel": {
+            "along": ["reported"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この順序を固定し、実行した記録も残します。",
+          "pulse": ["receipt", "total", "report"],
+          "tag": {
+            "report": "結果を残す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-inputs",
+      "kind": "board",
+      "role": "apply",
+      "title": "照合と集計の記録",
+      "board": "check-record",
+      "beats": [
+        {
+          "say": "照合では、使った証票と明細を記録します。",
+          "show": ["input"]
+        },
+        {
+          "say": "どの組み合わせを確かめたかが、後で追える形です。",
+          "show": ["record", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "照合した結果も、一緒に残しておきましょう。",
+          "tag": {
+            "record": "照合の結果"
+          },
+          "pulse": ["record"]
+        },
+        {
+          "say": "集計では、合計に含めた明細と合計額を残します。",
+          "show": ["total", "sum"],
+          "tag": {
+            "total": "明細と合計"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "報告と規程の版を残す",
+      "board": "report-record",
+      "beats": [
+        {
+          "say": "報告では、担当者に伝えた結果を残します。",
+          "show": ["report"]
+        },
+        {
+          "say": "そのときに参照した規程の版も、記録する対象です。",
+          "show": ["rule", "use"]
+        },
+        {
+          "say": "使った版と報告を、実行の記録に残しましょう。",
+          "show": ["record", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "各段の入力と結果が、処理をたどる手がかりになります。",
+          "pulse": ["record"],
+          "tag": {
+            "record": "入力と結果"
+          }
+        }
+      ]
+    },
+    {
+      "id": "photo-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "写真店の手順を選ぶ",
+      "board": "photo-choice",
+      "think": 8,
+      "beats": [
+        {
+          "say": "写真店で、現像の受付を処理する仕組みを考えます。",
+          "show": ["film"]
+        },
+        {
+          "say": "この店では、原版の照合後に現像して渡す決まりです。",
+          "show": ["prints"]
+        },
+        {
+          "say": "後から、決まった順で進めたか記録で確かめます。",
+          "tag": {
+            "prints": "順序も確認"
+          },
+          "pulse": ["prints"]
+        },
+        {
+          "say": "候補は、手順を固定する形と、毎回選び直す形です。",
+          "show": ["fixed", "changing"],
+          "pulse": []
+        },
+        {
+          "say": "この店には、どちらの形が合うでしょうか。",
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "question"
+            },
+            {
+              "on": "changing",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "photo-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "固定したワークフロー",
+      "board": "photo-choice",
+      "beats": [
+        {
+          "say": "答えは、手順を固定したワークフローです。",
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "check"
+            },
+            {
+              "on": "changing",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["fixed"]
+        },
+        {
+          "say": "原版の照合から現像、引き渡しへ進む順を固定します。",
+          "pulse": ["film", "prints"]
+        }
+      ]
+    },
+    {
+      "id": "photo-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "現像の記録をたどる",
+      "board": "photo-trace",
+      "beats": [
+        {
+          "say": "店の決まりでは、最初に原版を照合します。",
+          "show": ["film"]
+        },
+        {
+          "say": "どの原版を確かめ、どんな結果だったかが記録の対象です。",
+          "tag": {
+            "film": "照合の結果"
+          }
+        },
+        {
+          "say": "その原版から現像した写真も、記録に結び付けましょう。",
+          "show": ["prints", "develop"],
+          "travel": {
+            "along": ["develop"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "引き渡した結果と、参照した規程の版も残します。",
+          "show": ["record", "keep"],
+          "tag": {
+            "record": "結果と版"
+          }
+        },
+        {
+          "say": "固定した順序と各段の記録を、後から照合できる形です。",
+          "pulse": ["film", "prints", "record"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-fixed-steps",
+      "kind": "board",
+      "role": "usage",
+      "title": "業務の条件から選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "経費申請のように、決まった順で確認する業務に使います。",
+          "show": ["expense"]
+        },
+        {
+          "say": "選ぶ目安は、監査や誤りの許容度が厳しいことです。",
+          "show": ["rule", "follow"]
+        },
+        {
+          "say": "その条件なら、ワークフローで手順を固定しましょう。",
+          "pulse": ["rule"],
+          "tag": {
+            "rule": "順序を固定"
+          }
+        },
+        {
+          "say": "各段の入力と結果も残し、規程と記録を照らし合わせます。",
+          "show": ["record", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "search"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "03aa3f32fb491ac956294912b2f1b94636ae4b346a5d03c3c44b7afce76460ef"
+  }
+}

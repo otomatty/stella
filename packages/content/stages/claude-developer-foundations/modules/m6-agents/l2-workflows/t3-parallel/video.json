@@ -1,0 +1,660 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "独立した仕事を同時に進める場面で、分割と投票のどちらを使うか理由とともに説明できる。",
+    "stuck": "複数の呼び出しを使うだけで分割も投票も同じ形だと思い、別々の仕事と同じ仕事の繰り返しを区別できない。",
+    "points": ["互いに独立した部分は、並べて同時に処理します。"],
+    "leaveOut": [
+      "プロンプトの連鎖とルーティングの詳しい手順",
+      "入力に応じて指揮役が仕事を分ける方法",
+      "評価役による修正の繰り返し",
+      "並列呼び出しを実装するコードや細かな仕様",
+      "投票の集計方法の網羅や多数決の実装"
+    ]
+  },
+  "art": {
+    "picnic-basket": {
+      "prompt": "An open light grey picnic basket containing a white wrapped sandwich and a clear bottle of amber tea, ready for an outing. The basket is light grey, not brown. Food and drink have natural colours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sandwich": {
+      "prompt": "A blue-shirted helper's hands wrapping a sandwich in white paper. The sandwich has golden bread, green lettuce and red tomato. Only the hands, sandwich and paper are visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tea": {
+      "prompt": "A blue-shirted helper's hands pouring amber tea from a small blue jug into a clear bottle. Only the hands, jug and bottle are visible. The tea has a natural amber colour. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-worker": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a single blank white sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "collected-results": {
+      "prompt": "A violet laptop with a completely blank dark screen beside two white result sheets held together with a blue clip. No interface elements. This represents code gathering results. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding out a blank white request sheet, with one empty blue speech bubble near their face. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-calendar": {
+      "prompt": "An upright white calendar with a blue binding and blank light grey date cells, beside a blue basketball. No dates or writing. This represents the availability schedule of a sports gym. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-rules": {
+      "prompt": "An open white booklet with a blue cover beside a pair of blue indoor sports shoes. All pages are blank. This represents the use rules of a sports gym. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "code-review": {
+      "prompt": "A violet laptop with a completely blank dark screen and a large blue magnifying glass angled toward it. No interface elements. This represents looking for vulnerabilities in code. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "picnic": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "food",
+          "label": "軽食を用意",
+          "art": "sandwich",
+          "at": [1, 1]
+        },
+        {
+          "id": "drink",
+          "label": "お茶を用意",
+          "art": "tea",
+          "at": [3, 1]
+        },
+        {
+          "id": "basket",
+          "label": "持ち物を集める",
+          "art": "picnic-basket",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "divided": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "利用者の依頼",
+          "art": "request-note",
+          "at": [1, 2]
+        },
+        {
+          "id": "write",
+          "label": "答えを作る",
+          "art": "claude-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "check",
+          "label": "依頼を確認",
+          "art": "claude-worker",
+          "at": [3, 3]
+        },
+        {
+          "id": "collect",
+          "label": "結果を集める",
+          "art": "collected-results",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-write",
+          "from": "request",
+          "to": "write"
+        },
+        {
+          "id": "to-check",
+          "from": "request",
+          "to": "check"
+        },
+        {
+          "id": "from-write",
+          "from": "write",
+          "to": "collect"
+        },
+        {
+          "id": "from-check",
+          "from": "check",
+          "to": "collect"
+        }
+      ]
+    },
+    "voting": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "同じコード",
+          "art": "code-review",
+          "at": [1, 2]
+        },
+        {
+          "id": "first",
+          "label": "一つ目の確認",
+          "art": "claude-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "二つ目の確認",
+          "art": "claude-worker",
+          "at": [3, 3]
+        },
+        {
+          "id": "compare",
+          "label": "結果を比べる",
+          "art": "collected-results",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-first",
+          "from": "source",
+          "to": "first"
+        },
+        {
+          "id": "to-second",
+          "from": "source",
+          "to": "second"
+        },
+        {
+          "id": "from-first",
+          "from": "first",
+          "to": "compare"
+        },
+        {
+          "id": "from-second",
+          "from": "second",
+          "to": "compare"
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "calendar",
+          "label": "空き日程の資料",
+          "art": "gym-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "rules",
+          "label": "利用規則の資料",
+          "art": "gym-rules",
+          "at": [1, 3]
+        },
+        {
+          "id": "dates",
+          "label": "日程を要約",
+          "art": "claude-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "conditions",
+          "label": "規則を要約",
+          "art": "claude-worker",
+          "at": [3, 3]
+        },
+        {
+          "id": "collect",
+          "label": "要約を集める",
+          "art": "collected-results",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-dates",
+          "from": "calendar",
+          "to": "dates"
+        },
+        {
+          "id": "read-rules",
+          "from": "rules",
+          "to": "conditions"
+        },
+        {
+          "id": "gather-dates",
+          "from": "dates",
+          "to": "collect"
+        },
+        {
+          "id": "gather-rules",
+          "from": "conditions",
+          "to": "collect"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "答えと依頼確認",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "review",
+          "label": "弱点の確認",
+          "art": "code-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "collect",
+          "label": "結果を集める",
+          "art": "collected-results",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同時にできる準備",
+      "board": "picnic",
+      "beats": [
+        {
+          "say": "遠足の軽食とお茶を、二人で用意するとします。",
+          "show": ["food"]
+        },
+        {
+          "say": "お茶の準備は、軽食の完成を待たずにできる仕事です。",
+          "show": ["drink"]
+        },
+        {
+          "say": "それぞれができたら、持ち物をそろえましょう。",
+          "show": ["basket"]
+        },
+        {
+          "say": "互いに独立した部分は、並べて同時に処理します。",
+          "pulse": ["food", "drink"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "picnic-preparation",
+      "kind": "board",
+      "role": "example",
+      "title": "軽食とお茶を分担",
+      "board": "picnic",
+      "reset": true,
+      "beats": [
+        {
+          "say": "一人は軽食を包み、もう一人はお茶を用意します。",
+          "show": ["food", "drink"]
+        },
+        {
+          "say": "どちらも、相手が作ったものを使わない仕事です。",
+          "tag": {
+            "food": "別々に進む",
+            "drink": "別々に進む"
+          }
+        },
+        {
+          "say": "片方を先に終わらせる必要はありません。",
+          "pulse": ["food", "drink"]
+        },
+        {
+          "say": "同時に進めた後で、用意できたものを集めましょう。",
+          "show": ["basket"],
+          "pulse": ["basket"]
+        }
+      ]
+    },
+    {
+      "id": "parallel-calls",
+      "kind": "board",
+      "role": "syntax",
+      "title": "呼び出しを並べる",
+      "board": "divided",
+      "beats": [
+        {
+          "say": "複数の呼び出しを同時に走らせる形を、並列化と呼びます。",
+          "term": {
+            "text": "並列化",
+            "ruby": "へいれつか",
+            "note": "呼び出しを同時に走らせる"
+          }
+        },
+        {
+          "say": "図の二つの呼び出しが、同時に進む部分です。",
+          "show": ["write", "check"],
+          "tag": {
+            "write": "同時に開始",
+            "check": "同時に開始"
+          }
+        },
+        {
+          "say": "ここでは、同じ依頼をそれぞれに渡しています。",
+          "show": ["request", "to-write", "to-check"]
+        },
+        {
+          "say": "結果を集めるのは、呼び出す側のコードです。",
+          "show": ["collect", "from-write", "from-check"]
+        },
+        {
+          "say": "軽食とお茶を集めたように、別々の結果を集めましょう。",
+          "pulse": ["collect"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "sectioning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "別々の仕事に分割",
+      "board": "divided",
+      "beats": [
+        {
+          "say": "独立した部分を別々に呼び出す使い方を、分割と呼びます。",
+          "term": {
+            "text": "分割",
+            "ruby": "ぶんかつ",
+            "note": "別々の仕事を同時に進める"
+          }
+        },
+        {
+          "say": "上の呼び出しの仕事は、依頼への答えを作ることです。",
+          "pulse": ["write"]
+        },
+        {
+          "say": "下の呼び出しは、依頼が不適切でないかを確かめます。",
+          "pulse": ["check"],
+          "tag": {
+            "check": "不適切か確認"
+          }
+        },
+        {
+          "say": "分割は、速さと注意の集中のために使う形です。",
+          "pulse": ["write", "check"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "voting",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ仕事を繰り返す",
+      "board": "voting",
+      "beats": [
+        {
+          "say": "同じ仕事を何回かして、結果を比べる使い方を投票と呼びます。",
+          "term": {
+            "text": "投票",
+            "ruby": "とうひょう",
+            "note": "同じ仕事の結果を比べる"
+          }
+        },
+        {
+          "say": "この図では、どちらも同じコードの弱点を探す仕事です。",
+          "show": ["source", "first", "second", "to-first", "to-second"]
+        },
+        {
+          "say": "別の部分を担当する分割との違いに注目しましょう。",
+          "pulse": ["first", "second"],
+          "tag": {
+            "first": "同じ仕事",
+            "second": "同じ仕事"
+          }
+        },
+        {
+          "say": "繰り返した結果を比べて、答えの確かさを上げます。",
+          "show": ["compare", "from-first", "from-second"]
+        },
+        {
+          "say": "比べるのは、この二つの呼び出しが返した結果です。",
+          "pulse": ["compare"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "separate-attention",
+      "kind": "board",
+      "role": "apply",
+      "title": "答えと確認を分ける",
+      "board": "divided",
+      "reset": true,
+      "beats": [
+        {
+          "say": "利用者の依頼に、答えと確認の両方が必要な例です。",
+          "show": ["request"]
+        },
+        {
+          "say": "一回に詰め込むと、見る点が多くなります。",
+          "show": ["write"],
+          "tag": {
+            "write": "答えと確認"
+          }
+        },
+        {
+          "say": "その結果、それぞれに集中できません。",
+          "mark": [
+            {
+              "on": "write",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、答えを作る仕事と依頼を確かめる仕事を分けます。",
+          "show": ["check", "to-write", "to-check"],
+          "unmark": ["write"],
+          "tag": {
+            "write": "答えを作る",
+            "check": "不適切か確認"
+          }
+        },
+        {
+          "say": "別々に同時に進め、コードで結果を集めるのが分割です。",
+          "show": ["collect", "from-write", "from-check"],
+          "pulse": ["collect"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "compare-checks",
+      "kind": "board",
+      "role": "apply",
+      "title": "弱点の確認を繰り返す",
+      "board": "voting",
+      "reset": true,
+      "beats": [
+        {
+          "say": "コードに弱点がないか、違うプロンプトで何回か確かめます。",
+          "show": ["source", "first", "second", "to-first", "to-second"]
+        },
+        {
+          "say": "どちらの呼び出しにも、弱点を探す同じ仕事を任せる形です。",
+          "tag": {
+            "first": "弱点を探す",
+            "second": "弱点を探す"
+          }
+        },
+        {
+          "say": "結果を集め、どれかが弱点を見つけたら知らせます。",
+          "show": ["compare", "from-first", "from-second"],
+          "tag": {
+            "compare": "発見を通知"
+          }
+        },
+        {
+          "say": "同じ仕事の結果を比べる、この使い方が投票です。",
+          "pulse": ["first", "second", "compare"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "体育館の貸し出し案内",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "体育館の貸し出し案内に使う、二つの要約を作ります。",
+          "show": ["calendar", "rules"]
+        },
+        {
+          "say": "一つ目は空き日程、二つ目は利用規則の要約です。",
+          "show": ["dates", "conditions"]
+        },
+        {
+          "say": "どちらも、それぞれの資料だけを使うことにしました。",
+          "show": ["read-dates", "read-rules"]
+        },
+        {
+          "say": "相手の要約を待たずに、同時に作れます。",
+          "pulse": ["dates", "conditions"]
+        },
+        {
+          "say": "この二つの仕事を分ける形は、分割と投票のどちらでしょうか。",
+          "mark": [
+            {
+              "on": "dates",
+              "kind": "question"
+            },
+            {
+              "on": "conditions",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "答えは分割",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "答えは、日程と規則の要約を別々に任せる分割です。",
+          "mark": [
+            {
+              "on": "dates",
+              "kind": "check"
+            },
+            {
+              "on": "conditions",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "dates": "分割",
+            "conditions": "分割"
+          }
+        },
+        {
+          "say": "独立した二つの仕事を、同時に進めています。",
+          "pulse": ["dates", "conditions"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-sectioning",
+      "kind": "board",
+      "role": "explain",
+      "title": "必要な資料をたどる",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "日程の要約に必要なのは、空き日程の資料です。",
+          "pulse": ["calendar"],
+          "travel": {
+            "along": ["read-dates"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "規則の要約は、利用規則の資料だけで作れます。",
+          "pulse": ["rules"],
+          "travel": {
+            "along": ["read-rules"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "二つは、同じ要約を繰り返す仕事ではありません。",
+          "pulse": ["dates", "conditions"],
+          "tag": {
+            "dates": "日程を要約",
+            "conditions": "規則を要約"
+          }
+        },
+        {
+          "say": "担当する仕事が違い、互いの結果を待たずに進みます。",
+          "mark": [
+            {
+              "on": "calendar",
+              "kind": "check"
+            },
+            {
+              "on": "rules",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "最後はコードで結果を集めるので、この例も並列化です。",
+          "show": ["collect", "gather-dates", "gather-rules"],
+          "pulse": ["collect"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "仕事の違いから選ぶ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "答え作りと依頼の確認を分けるなら、分割を使います。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "分割"
+          }
+        },
+        {
+          "say": "弱点の確認を繰り返して比べる例は、投票です。",
+          "show": ["review"],
+          "tag": {
+            "review": "投票"
+          }
+        },
+        {
+          "say": "どちらも、同時に走らせた呼び出しの結果をコードで集めます。",
+          "show": ["collect"]
+        },
+        {
+          "say": "まずは、互いの結果を待たずに進められるか確かめましょう。",
+          "pulse": ["reply", "review"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ff1ae40cb0ab011e15a397d72d764ffaabc7b2cc3c653c18f5a22d76d4f4015e"
+  }
+}

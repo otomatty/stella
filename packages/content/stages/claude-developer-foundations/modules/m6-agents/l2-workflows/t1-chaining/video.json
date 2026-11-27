@@ -1,0 +1,633 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "処理を決まった段に分け、条件を満たさない結果をゲートで止める流れを説明できる。",
+    "stuck": "一度にすべてを頼み、途中の結果を確かめずに次の仕事へ進めてしまう。",
+    "points": ["大きな処理は、確かめやすい段に分けて順につなぎ、段の間で結果を確かめます。"],
+    "leaveOut": [
+      "入力の種類による振り分け",
+      "並列化と指揮役による仕事の分配",
+      "評価役による修正の繰り返し",
+      "ゲートで止まった後の再試行の実装",
+      "API の呼び出しコードと課題の解答"
+    ]
+  },
+  "art": {
+    "cookie-dough": {
+      "prompt": "A blue mixing bowl containing pale golden cookie dough, with a violet spatula leaning inside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cookie-portions": {
+      "prompt": "A light grey baking tray holding exactly six separate small round portions of pale golden unbaked cookie dough, arranged in two rows of three. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "baked-cookies": {
+      "prompt": "A white plate holding six golden baked cookies, with a blue oven mitt beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "outline-sheet": {
+      "prompt": "A white document outline sheet with three blank violet index tabs clipped along its side, and a blue pencil beside it. The paper has no marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "draft-pages": {
+      "prompt": "Two white manuscript pages held by a blue binder clip, with a violet fountain pen beside them. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "condition-check": {
+      "prompt": "An open violet laptop with a completely blank dark screen, beside a white checklist card with empty blue square boxes and a magnifying glass. A conceptual illustration of a programmed check, with no real application interface. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "writing-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a white outline sheet and a violet pen. The paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "redelivery-slip": {
+      "prompt": "A light grey delivery parcel sealed with blue tape, with a white request slip attached by a violet clip. A small blue calendar tab and a small blue clock with no numbers sit beside the parcel. The slip is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "receipt-letter": {
+      "prompt": "An open blue envelope holding a blank white confirmation letter, with a small violet paper clip at the top. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "dough",
+          "label": "生地を作る",
+          "art": "cookie-dough",
+          "at": [1, 1]
+        },
+        {
+          "id": "portions",
+          "label": "数を確かめる",
+          "art": "cookie-portions",
+          "at": [3, 1]
+        },
+        {
+          "id": "baked",
+          "label": "焼く",
+          "art": "baked-cookies",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "divide",
+          "from": "dough",
+          "to": "portions",
+          "label": "分ける"
+        },
+        {
+          "id": "bake",
+          "from": "portions",
+          "to": "baked",
+          "label": "そろったら"
+        }
+      ]
+    },
+    "chain": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "outline",
+          "label": "作った構成",
+          "art": "outline-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "writer",
+          "label": "次の呼び出し",
+          "art": "writing-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "draft",
+          "label": "書いた本文",
+          "art": "draft-pages",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "input",
+          "from": "outline",
+          "to": "writer",
+          "label": "入力にする"
+        },
+        {
+          "id": "output",
+          "from": "writer",
+          "to": "draft",
+          "label": "書く"
+        }
+      ]
+    },
+    "gate": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "outline",
+          "label": "構成を作る",
+          "art": "outline-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "gate",
+          "label": "コードで確認",
+          "art": "condition-check",
+          "at": [3, 1]
+        },
+        {
+          "id": "write",
+          "label": "本文を書く",
+          "art": "draft-pages",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "outline",
+          "to": "gate",
+          "label": "構成を渡す"
+        },
+        {
+          "id": "proceed",
+          "from": "gate",
+          "to": "write",
+          "label": "条件を満たす"
+        }
+      ]
+    },
+    "delivery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "details",
+          "label": "希望を取り出す",
+          "art": "redelivery-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "gate",
+          "label": "コードで確認",
+          "art": "condition-check",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "確認文を書く",
+          "art": "receipt-letter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "details",
+          "to": "gate",
+          "label": "結果を渡す"
+        },
+        {
+          "id": "proceed",
+          "from": "gate",
+          "to": "reply",
+          "label": "条件を満たす"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "段の間で確かめる",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "クッキーを作る手順を、思い浮かべてみましょう。",
+          "show": ["dough"]
+        },
+        {
+          "say": "焼く前には、生地の数を確かめる場面があります。",
+          "show": ["portions"]
+        },
+        {
+          "say": "確かめた生地を焼くのが、その次の段です。",
+          "show": ["baked"]
+        },
+        {
+          "say": "大きな処理は段に分け、段の間で確かめてからつなぎます。",
+          "show": ["divide", "bake"],
+          "pulse": ["portions"]
+        }
+      ]
+    },
+    {
+      "id": "cookie-example",
+      "kind": "board",
+      "role": "example",
+      "title": "生地を確かめて焼く",
+      "board": "kitchen",
+      "reset": true,
+      "beats": [
+        {
+          "say": "クッキー作りを、生地作りと焼く段に分けた例です。",
+          "show": ["dough", "baked"]
+        },
+        {
+          "say": "できた生地を、六個の小さなかたまりに分けます。",
+          "show": ["portions", "divide"],
+          "travel": {
+            "along": ["divide"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "焼く前に確かめるのは、生地が六個そろっているかです。",
+          "pulse": ["portions"],
+          "tag": {
+            "portions": "六個そろう"
+          }
+        },
+        {
+          "say": "数を確かめずに、焼く段へ進めてはいけません。",
+          "mark": [
+            {
+              "on": "portions",
+              "kind": "question"
+            }
+          ],
+          "tag": {
+            "portions": "確認してから"
+          }
+        },
+        {
+          "say": "そろったことを確かめてから、焼く段へ渡しましょう。",
+          "show": ["bake"],
+          "mark": [
+            {
+              "on": "portions",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "portions": "六個そろう"
+          },
+          "pulse": ["baked"],
+          "travel": {
+            "along": ["bake"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "chain",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前の結果を次へ渡す",
+      "board": "chain",
+      "beats": [
+        {
+          "say": "前の結果を次へ渡す形を、プロンプトの連鎖と呼びます。",
+          "term": {
+            "text": "プロンプトの連鎖",
+            "ruby": "プロンプトのれんさ",
+            "note": "前の結果を次の入力にする"
+          },
+          "pause": 1
+        },
+        {
+          "say": "最初の仕事は、文書の構成を作ることです。",
+          "show": ["outline"]
+        },
+        {
+          "say": "呼び出しが返した結果を、出力と呼びます。",
+          "term": {
+            "text": "出力",
+            "ruby": "しゅつりょく",
+            "note": "呼び出しが返した結果"
+          }
+        },
+        {
+          "say": "この構成が、最初の呼び出しの出力です。",
+          "pulse": ["outline"],
+          "tag": {
+            "outline": "出力"
+          }
+        },
+        {
+          "say": "次の呼び出しに渡し、構成に沿った本文を書かせます。",
+          "show": ["writer", "draft", "input", "output"],
+          "pulse": ["writer"],
+          "travel": {
+            "along": ["input", "output"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "kind": "board",
+      "role": "syntax",
+      "title": "条件を確かめる場所",
+      "board": "gate",
+      "beats": [
+        {
+          "say": "段の間で条件をコードで確かめる場所を、ゲートと呼びます。",
+          "term": {
+            "text": "ゲート",
+            "note": "条件をコードで確かめる場所"
+          },
+          "pause": 1
+        },
+        {
+          "say": "この例で確かめるのは、本文を書く前の構成です。",
+          "show": ["outline", "gate", "inspect"],
+          "pulse": ["gate"]
+        },
+        {
+          "say": "条件を満たした構成だけを、次の呼び出しへ渡しましょう。",
+          "show": ["write", "proceed"],
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "check"
+            }
+          ],
+          "travel": {
+            "along": ["proceed"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "満たさなければ、本文を書く段へは進みません。",
+          "hide": ["proceed"],
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "write": "まだ呼ばない"
+          },
+          "pulse": ["gate"]
+        }
+      ]
+    },
+    {
+      "id": "outline-pass",
+      "kind": "board",
+      "role": "apply",
+      "title": "構成の条件を満たす",
+      "board": "gate",
+      "reset": true,
+      "beats": [
+        {
+          "say": "構成を作り、本文を書く二段に分けてみましょう。",
+          "show": ["outline", "write"]
+        },
+        {
+          "say": "最初の呼び出しに頼むのは、構成を作ることだけです。",
+          "pulse": ["outline"]
+        },
+        {
+          "say": "次に、見出しの数と必要な項目をコードで確かめます。",
+          "show": ["gate", "inspect"],
+          "pulse": ["gate"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この構成は、決めた条件を満たしていました。",
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "outline": "条件を満たす"
+          }
+        },
+        {
+          "say": "確かめた構成を渡し、それに沿って本文を書かせます。",
+          "show": ["proceed"],
+          "pulse": ["write"],
+          "travel": {
+            "along": ["proceed"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "outline-stop",
+      "kind": "board",
+      "role": "apply",
+      "title": "項目が足りない構成",
+      "board": "gate",
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、構成に必要な項目が抜けた場合です。",
+          "show": ["outline"],
+          "tag": {
+            "outline": "項目が不足"
+          }
+        },
+        {
+          "say": "ゲートは、この構成が条件を満たさないと判断します。",
+          "show": ["gate", "inspect"],
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "構成が返ってきただけでは、次の段へは進めません。",
+          "show": ["write"],
+          "tag": {
+            "write": "まだ呼ばない"
+          }
+        },
+        {
+          "say": "止まった段の結果から、足りない項目を確かめましょう。",
+          "pulse": ["outline"],
+          "tag": {
+            "outline": "確認する場所"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "redelivery-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "再配達の情報は十分か",
+      "board": "delivery",
+      "think": 8,
+      "beats": [
+        {
+          "say": "再配達の依頼から、希望日と時間帯を取り出します。",
+          "show": ["details"]
+        },
+        {
+          "say": "その情報を使い、受付の確認文を書く二段の処理です。",
+          "show": ["reply"]
+        },
+        {
+          "say": "この例では、希望日と時間帯がそろうことを条件にしました。",
+          "show": ["gate"],
+          "tag": {
+            "gate": "日付と時間帯"
+          }
+        },
+        {
+          "say": "最初の段の結果には、希望日だけが入っています。",
+          "tag": {
+            "details": "希望日のみ"
+          },
+          "pulse": ["details"]
+        },
+        {
+          "say": "この結果を、確認文を書く段へ渡してよいでしょうか。",
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["gate", "reply"]
+        }
+      ]
+    },
+    {
+      "id": "redelivery-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "次の段へは渡さない",
+      "board": "delivery",
+      "beats": [
+        {
+          "say": "答えは、渡さずに次の段を止めることです。",
+          "show": ["inspect"],
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "cross"
+            }
+          ],
+          "unmark": ["reply"],
+          "tag": {
+            "reply": "実行しない"
+          },
+          "pulse": ["gate"]
+        },
+        {
+          "say": "時間帯がないため、決めた条件を満たしません。",
+          "pulse": ["details"],
+          "tag": {
+            "details": "時間帯なし"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "redelivery-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "不足した結果を止める",
+      "board": "delivery",
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の段が返した情報を、順にたどりましょう。",
+          "show": ["details"],
+          "tag": {
+            "details": "希望日のみ"
+          }
+        },
+        {
+          "say": "この情報が、確認文を作る段で使う材料です。",
+          "show": ["reply"],
+          "pulse": ["details", "reply"]
+        },
+        {
+          "say": "その間に置いたゲートが、日付と時間帯を確かめます。",
+          "show": ["gate", "inspect"],
+          "pulse": ["gate"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "希望日だけでは、決めた条件を満たしません。",
+          "mark": [
+            {
+              "on": "gate",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "details": "時間帯なし"
+          }
+        },
+        {
+          "say": "ゲートで止めると、不足した情報を次へ渡さずに済みます。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "実行しない"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "段に分けられる仕事で",
+      "board": "gate",
+      "reset": true,
+      "beats": [
+        {
+          "say": "文書の構成作りと執筆など、段に分けられる仕事に向きます。",
+          "show": ["outline", "write"]
+        },
+        {
+          "say": "一回ずつの仕事が易しくなり、正確な答えにつながりやすい形です。",
+          "pulse": ["outline", "write"]
+        },
+        {
+          "say": "ただし、順に呼び出すため全体の時間は長くなります。",
+          "tag": {
+            "write": "待ち時間増"
+          },
+          "pulse": ["write"]
+        },
+        {
+          "say": "段をつなぐ前に、結果を確かめる場所を決めましょう。",
+          "show": ["gate", "inspect", "proceed"],
+          "pulse": ["gate"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "16a4e0aea4433641050f35831ba90330ab059fd0e574d68e106fc7dedf78de18"
+  }
+}

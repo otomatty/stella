@@ -1,0 +1,724 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "再開したい作業のセッション ID を控え、最新のセッションと区別して resume に渡せる。",
+    "stuck": "新しい依頼だけで前の会話が続くと思い、別件が最新でも continue を選んでしまう。",
+    "points": ["続きの作業は、セッションの ID を控えておき、resume で再開します。"],
+    "leaveOut": [
+      "サブエージェントへの情報の渡し方",
+      "フックで実行を制御する方法",
+      "別のマシンへのセッションの移し方",
+      "回数や予算の上限の具体的な設定値",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "shoe-repair": {
+      "prompt": "A single violet shoe with a slightly detached sole and a small blue repair tool beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claim-ticket": {
+      "prompt": "A hand holding a white shoe repair claim ticket with a small blue shoe pictogram and a round punched hole. The ticket is blank apart from the pictogram. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-record": {
+      "prompt": "An open light grey folder containing white repair notes and a small violet shoe pictogram, with a blue paper clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "session-history": {
+      "prompt": "A thick stack of white conversation sheets with blue and violet tabs, held together with one large blue binder clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-record": {
+      "prompt": "A white report sheet on a light grey clipboard with a small detachable white identification slip attached by a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "id-note": {
+      "prompt": "A hand copying a small blue pictorial stamp from a white identification slip onto a white notebook using a violet pen. No writing marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "code-files": {
+      "prompt": "Two upright light grey file folders with white sheets inside and one violet pencil beside them, representing files to inspect and edit. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-seats": {
+      "prompt": "Three empty blue cinema seats in a short row with one violet seat cushion indicating the seat under investigation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-snack": {
+      "prompt": "A white popcorn carton with a broad blue band, filled with naturally pale golden popcorn. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shoe",
+          "label": "靴の修理",
+          "art": "shoe-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "ticket",
+          "label": "預かり票",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "前回の相談",
+          "art": "repair-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "ticket",
+          "to": "record",
+          "label": "探す"
+        }
+      ]
+    },
+    "history": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "依頼",
+          "art": "repair-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "呼び出しと結果",
+          "art": "code-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "応答",
+          "art": "result-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "request",
+          "to": "tools"
+        },
+        {
+          "id": "respond",
+          "from": "tools",
+          "to": "reply"
+        }
+      ]
+    },
+    "capture": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "終了結果",
+          "art": "result-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "field",
+          "label": "会話の識別子",
+          "art": "id-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "saved",
+          "label": "控えたID",
+          "art": "id-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "result",
+          "to": "field",
+          "label": "読む"
+        },
+        {
+          "id": "save",
+          "from": "field",
+          "to": "saved",
+          "label": "控える"
+        }
+      ]
+    },
+    "resume": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "saved",
+          "label": "控えたID",
+          "art": "id-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "前の会話",
+          "art": "session-history",
+          "at": [3, 1]
+        },
+        {
+          "id": "work",
+          "label": "修正の続き",
+          "art": "code-files",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "saved",
+          "to": "history",
+          "label": "指定"
+        },
+        {
+          "id": "restart",
+          "from": "history",
+          "to": "work",
+          "label": "再開"
+        }
+      ]
+    },
+    "modes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "latest",
+          "label": "最新を再開",
+          "art": "session-history",
+          "at": [1, 1]
+        },
+        {
+          "id": "chosen",
+          "label": "resume",
+          "art": "id-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "copy",
+          "label": "fork",
+          "art": "session-history",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cinema": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "seats",
+          "label": "座席の調査",
+          "art": "cinema-seats",
+          "at": [1, 1]
+        },
+        {
+          "id": "snack",
+          "label": "売店の調査",
+          "art": "cinema-snack",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "座席の続き",
+          "art": "cinema-seats",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "分析後の修正",
+          "art": "code-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "stopped",
+          "label": "中断した作業",
+          "art": "result-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "控えたID",
+          "art": "id-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "前回の続きから頼む",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "靴の修理で、前回の相談の続きから頼みたいとします。",
+          "show": ["shoe"]
+        },
+        {
+          "say": "手元にあるのは、その相談を探すための預かり票です。",
+          "show": ["ticket"]
+        },
+        {
+          "say": "エージェントでも、前の会話を選んで戻りましょう。",
+          "show": ["record", "find"]
+        },
+        {
+          "say": "IDを控え、resumeで作業を再開します。",
+          "speech": "アイディーを控え、レジュームで作業を再開します。",
+          "pulse": ["ticket", "record"]
+        }
+      ]
+    },
+    {
+      "id": "claim-ticket",
+      "kind": "board",
+      "role": "example",
+      "title": "預かり票で相談を探す",
+      "board": "repair",
+      "reset": true,
+      "beats": [
+        {
+          "say": "修理店で、靴底の修理について相談しました。",
+          "show": ["shoe"]
+        },
+        {
+          "say": "店では、相談した内容を記録しておきます。",
+          "show": ["record"]
+        },
+        {
+          "say": "手元に残すのは、相談を見つけるための預かり票です。",
+          "show": ["ticket"]
+        },
+        {
+          "say": "再び頼むときは、預かり票で前の記録を探しましょう。",
+          "show": ["find"],
+          "travel": {
+            "along": ["find"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "前に決めた修理の内容を、続きの相談に使います。",
+          "pulse": ["record"],
+          "tag": {
+            "record": "靴底の修理"
+          }
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "kind": "board",
+      "role": "syntax",
+      "title": "セッションに残るもの",
+      "board": "history",
+      "beats": [
+        {
+          "say": "作業中に積み重ねる会話の履歴を、セッションと呼びます。",
+          "term": {
+            "text": "セッション",
+            "note": "作業中の会話の履歴"
+          }
+        },
+        {
+          "say": "最初に送った依頼も、その履歴の一部です。",
+          "show": ["request"]
+        },
+        {
+          "say": "ツールの呼び出しと結果も、履歴に入ります。",
+          "show": ["tools", "call"]
+        },
+        {
+          "say": "応答まで含めて、続きの作業に使う会話です。",
+          "show": ["reply", "respond"],
+          "travel": {
+            "along": ["call", "respond"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "capture-id",
+      "kind": "board",
+      "role": "syntax",
+      "title": "再開に使うIDを控える",
+      "board": "capture",
+      "beats": [
+        {
+          "say": "セッションIDは、戻る会話を指すための識別子です。",
+          "speech": "セッションアイディーは、戻る会話を指すための識別子です。",
+          "term": {
+            "text": "セッションID",
+            "ruby": "セッションアイディー",
+            "note": "戻る会話を指す識別子"
+          }
+        },
+        {
+          "say": "終了時のResultMessageから、その値を控えます。",
+          "speech": "終了時のリザルトメッセージから、その値を控えます。",
+          "show": ["result"]
+        },
+        {
+          "say": "読む項目は、図の中央に示したものです。",
+          "show": ["field", "read"],
+          "pulse": ["field"]
+        },
+        {
+          "say": "失敗で終わった場合にも、同じ項目が入っています。",
+          "tag": {
+            "result": "失敗でも入る"
+          },
+          "pulse": ["result"]
+        },
+        {
+          "say": "続けたい作業と対応づけて、IDを控えましょう。",
+          "speech": "続けたい作業と対応づけて、アイディーを控えましょう。",
+          "show": ["saved", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "save"
+          }
+        }
+      ]
+    },
+    {
+      "id": "resume-code",
+      "kind": "code",
+      "role": "apply",
+      "title": "控えたIDを渡す",
+      "code": [
+        "// 戻ってきたメッセージを順に受け取る",
+        "for await (const message of query({",
+        "  // 前に提案した修正を依頼する",
+        "  prompt: \"提案した修正を入れて\",",
+        "  // 控えたセッションの識別子を渡す",
+        "  options: { resume: sessionId },",
+        "// 受け取ったメッセージの処理は省略する",
+        "})) { /* … */ }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "resume"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "控えたIDで再開する指定が、resumeです。",
+          "speech": "控えたアイディーで再開する指定が、レジュームです。",
+          "term": {
+            "text": "resume",
+            "ruby": "レジューム",
+            "note": "IDで指定した会話を再開"
+          }
+        },
+        {
+          "say": "この指定は、optionsの中に書きます。",
+          "speech": "この指定は、オプションズの中に書きます。",
+          "part": {
+            "line": 5,
+            "text": "resume",
+            "note": "再開"
+          },
+          "figure": {
+            "show": ["saved", "history", "select"]
+          }
+        },
+        {
+          "say": "sessionIdは、控えたIDを入れた変数です。",
+          "speech": "セッションアイディーは、控えたアイディーを入れた変数です。",
+          "part": {
+            "line": 5,
+            "text": "sessionId",
+            "note": "セッションのID"
+          },
+          "figure": {
+            "pulse": ["saved"]
+          }
+        },
+        {
+          "say": "この変数の名前は、自分で決められます。",
+          "part": {
+            "line": 5,
+            "text": "sessionId",
+            "note": "自分で付ける名"
+          },
+          "figure": {
+            "tag": {
+              "saved": "前回のID"
+            }
+          }
+        },
+        {
+          "say": "新しく頼む内容は、提案した修正を入れることです。",
+          "part": {
+            "line": 3,
+            "text": "提案した修正を入れて"
+          },
+          "figure": {
+            "show": ["work"]
+          }
+        },
+        {
+          "say": "この指定を付けてqueryを呼び、続きを始めます。",
+          "speech": "この指定を付けてクエリーを呼び、続きを始めます。",
+          "part": {
+            "line": 1,
+            "text": "query"
+          },
+          "figure": {
+            "show": ["restart"],
+            "travel": {
+              "along": ["select", "restart"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "resume-flow",
+      "kind": "board",
+      "role": "apply",
+      "title": "前の会話から修正する",
+      "board": "resume",
+      "beats": [
+        {
+          "say": "戻る先は、修正案を出したときの会話です。",
+          "pulse": ["history"]
+        },
+        {
+          "say": "前に読んだファイルや決めたことを使って、修正を進めます。",
+          "pulse": ["work"],
+          "tag": {
+            "work": "修正案を使う"
+          }
+        },
+        {
+          "say": "新しいqueryだけでは、前の会話を持って始めません。",
+          "speech": "新しいクエリーだけでは、前の会話を持って始めません。",
+          "mark": [
+            {
+              "on": "history",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["saved"]
+        },
+        {
+          "say": "続けたい会話を、控えたIDで指定しましょう。",
+          "speech": "続けたい会話を、控えたアイディーで指定しましょう。",
+          "unmark": ["history"],
+          "travel": {
+            "along": ["select"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "return-modes",
+      "kind": "board",
+      "role": "note",
+      "title": "戻る先の選び方",
+      "board": "modes",
+      "beats": [
+        {
+          "say": "continueは、そのフォルダーの最新の会話に戻ります。",
+          "speech": "コンティニューは、そのフォルダーの最新の会話に戻ります。",
+          "show": ["latest"],
+          "tag": {
+            "latest": "最新"
+          }
+        },
+        {
+          "say": "resumeで戻るのは、IDで指した会話です。",
+          "speech": "レジュームで戻るのは、アイディーで指した会話です。",
+          "show": ["chosen"],
+          "tag": {
+            "chosen": "IDで指定"
+          }
+        },
+        {
+          "say": "forkなら、写しを作って別のやり方を試せます。",
+          "speech": "フォークなら、写しを作って別のやり方を試せます。",
+          "show": ["copy"],
+          "tag": {
+            "copy": "写し"
+          }
+        },
+        {
+          "say": "決まった作業の続きでは、IDで戻る先を選びましょう。",
+          "speech": "決まった作業の続きでは、アイディーで戻る先を選びましょう。",
+          "pulse": ["chosen"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "座席の調査を再開する",
+      "board": "cinema",
+      "think": 8,
+      "beats": [
+        {
+          "say": "同じフォルダーで、映画館について二件の調査をしました。",
+          "show": ["seats", "snack"]
+        },
+        {
+          "say": "先に行った座席の調査は、IDがseatです。",
+          "speech": "先に行った座席の調査は、アイディーがシートです。",
+          "tag": {
+            "seats": "seat"
+          },
+          "pulse": ["seats"]
+        },
+        {
+          "say": "その後、IDがsnackの売店調査を終えています。",
+          "speech": "その後、アイディーがスナックの売店調査を終えています。",
+          "tag": {
+            "snack": "snack"
+          },
+          "pulse": ["snack"]
+        },
+        {
+          "say": "今頼まれたのは、座席の調査の続きです。",
+          "show": ["request"],
+          "pulse": ["request"]
+        },
+        {
+          "say": "戻り方と、指定するIDをどう選ぶとよいでしょうか。",
+          "speech": "戻り方と、指定するアイディーをどう選ぶとよいでしょうか。",
+          "mark": [
+            {
+              "on": "request",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "座席のIDを選ぶ",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "resumeを選び、seatというIDを渡します。",
+          "speech": "レジュームを選び、シートというアイディーを渡します。",
+          "mark": [
+            {
+              "on": "seats",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "request": "resume"
+          },
+          "pulse": ["seats"]
+        },
+        {
+          "say": "戻る先は、座席の調査をしたセッションです。",
+          "unmark": ["request"],
+          "pulse": ["seats", "request"]
+        }
+      ]
+    },
+    {
+      "id": "why-id",
+      "kind": "board",
+      "role": "explain",
+      "title": "最新と目的を区別する",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "最後に行ったのは、売店の調査です。",
+          "tag": {
+            "snack": "最新"
+          },
+          "pulse": ["snack"]
+        },
+        {
+          "say": "continueを選ぶと、売店の調査に戻ってしまいます。",
+          "speech": "コンティニューを選ぶと、売店の調査に戻ってしまいます。",
+          "mark": [
+            {
+              "on": "snack",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "頼まれた座席の調査は、最新のセッションではありません。",
+          "pulse": ["request"],
+          "tag": {
+            "seats": "seat"
+          }
+        },
+        {
+          "say": "控えたIDを指定すると、座席の調査を選べます。",
+          "speech": "控えたアイディーを指定すると、座席の調査を選べます。",
+          "pulse": ["seats"],
+          "tag": {
+            "request": "seat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "続きの作業に備える",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "分析の後で修正を頼むときは、分析した会話を使います。",
+          "show": ["files"]
+        },
+        {
+          "say": "回数の上限で止まった作業も、再開できる対象です。",
+          "show": ["stopped"]
+        },
+        {
+          "say": "その場合は、回数の上限を上げてから再開しましょう。",
+          "tag": {
+            "stopped": "上限を上げる"
+          },
+          "pulse": ["stopped"]
+        },
+        {
+          "say": "続けたい作業のIDを控え、resumeで再開します。",
+          "speech": "続けたい作業のアイディーを控え、レジュームで再開します。",
+          "show": ["id"],
+          "pulse": ["id"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e529b5477fdfd8f1add449e7f35ecbd46a54fba07c175278096d0064a0e3fd38"
+  }
+}

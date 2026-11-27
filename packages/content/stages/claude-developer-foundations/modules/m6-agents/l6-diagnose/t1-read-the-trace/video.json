@@ -1,0 +1,810 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "短いトレースで実行結果と送信内容を照合し、欠けた結果の受け渡しと直し方を説明できる。",
+    "stuck": "ツールが成功した記録だけを見て、次のリクエストにも全結果が入っていると思ってしまう。",
+    "points": ["エージェントの不具合は、実行の記録を順に読み、どの設計が欠けているかで分けます。"],
+    "leaveOut": [
+      "終わらないループの停止条件と上限の実装",
+      "一時停止したサーバーツールの続行方法",
+      "文脈の圧縮やサブエージェントへの分離の詳しい手順",
+      "セッションの再開とメモリーの実装",
+      "ツール検索の仕組み",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-box": {
+      "prompt": "Three small light grey cardboard cartons with blue tape, one open to reveal neatly arranged plain blue mugs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "price-list": {
+      "prompt": "A white paper price list held with a violet clip beside a plain blue mug and a small blank white price tag. The paper and tag have no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trace-notebook": {
+      "prompt": "An open white notebook with three small blue page tabs in a clear sequence, with a violet magnifying glass resting over one blank page. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-staff": {
+      "prompt": "A staff member in a plain blue shirt holding two separate white paper slips, looking carefully at them. Simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-pair": {
+      "prompt": "Two separate white paper reports laid side by side, one with a blue clip and one with a violet clip, with both sheets fully visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "outgoing-envelope": {
+      "prompt": "An open blue envelope with one blank white paper report partly inserted and one blank white paper report still outside beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding its empty hands open. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-props": {
+      "prompt": "A pair of white theatrical masks beside a rolled violet fabric costume sash, representing props for a school festival play. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-cost": {
+      "prompt": "A small blue calculator with blank unmarked keys beside a blank white expense sheet and a violet pencil, representing the cost of a school festival play. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫を照会",
+          "art": "stock-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "price",
+          "label": "価格を照会",
+          "art": "price-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "次の送信",
+          "art": "outgoing-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "trace",
+          "label": "順に読む記録",
+          "art": "trace-notebook",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "handoff": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "調べた担当者",
+          "art": "shop-staff",
+          "at": [1, 1]
+        },
+        {
+          "id": "reports",
+          "label": "二枚の報告",
+          "art": "report-pair",
+          "at": [3, 1]
+        },
+        {
+          "id": "envelope",
+          "label": "渡した封筒",
+          "art": "outgoing-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "collect",
+          "from": "staff",
+          "to": "reports",
+          "label": "調べる"
+        },
+        {
+          "id": "pass",
+          "from": "reports",
+          "to": "envelope",
+          "label": "渡す"
+        }
+      ]
+    },
+    "trace-keys": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "処理の記録",
+          "art": "trace-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫の呼び出し",
+          "art": "stock-box",
+          "at": [3, 1]
+        },
+        {
+          "id": "price",
+          "label": "価格の呼び出し",
+          "art": "price-list",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "comparison": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "results",
+          "label": "できた結果",
+          "art": "report-pair",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "送った内容",
+          "art": "outgoing-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "target",
+          "label": "受け取る側",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pack",
+          "from": "results",
+          "to": "request",
+          "label": "詰める"
+        },
+        {
+          "id": "send",
+          "from": "request",
+          "to": "target",
+          "label": "送る"
+        }
+      ]
+    },
+    "trace": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "calls",
+          "label": "アシスタント",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "results",
+          "label": "実行結果",
+          "art": "report-pair",
+          "at": [3, 1]
+        },
+        {
+          "id": "sent",
+          "label": "user",
+          "art": "outgoing-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "error",
+          "label": "APIの応答",
+          "art": "trace-notebook",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "execute",
+          "from": "calls",
+          "to": "results",
+          "label": "実行"
+        },
+        {
+          "id": "submit",
+          "from": "results",
+          "to": "sent",
+          "label": "送信"
+        },
+        {
+          "id": "respond",
+          "from": "sent",
+          "to": "error",
+          "label": "応答"
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "aの結果",
+          "art": "stock-box",
+          "at": [1, 1]
+        },
+        {
+          "id": "price",
+          "label": "bの結果",
+          "art": "price-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "直後のuser",
+          "art": "report-pair",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "festival": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "props",
+          "label": "道具の照会",
+          "art": "festival-props",
+          "at": [1, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用の照会",
+          "art": "festival-cost",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "実行結果",
+          "art": "report-pair",
+          "at": [5, 1]
+        },
+        {
+          "id": "sent",
+          "label": "user",
+          "art": "outgoing-envelope",
+          "at": [5, 2]
+        },
+        {
+          "id": "error",
+          "label": "APIの応答",
+          "art": "trace-notebook",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "submit",
+          "from": "results",
+          "to": "sent",
+          "label": "送信"
+        },
+        {
+          "id": "respond",
+          "from": "sent",
+          "to": "error",
+          "label": "応答"
+        }
+      ]
+    },
+    "festival-repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "props",
+          "label": "pの結果",
+          "art": "festival-props",
+          "at": [1, 1]
+        },
+        {
+          "id": "cost",
+          "label": "qの結果",
+          "art": "festival-cost",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "直後のuser",
+          "art": "report-pair",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "trace",
+          "label": "処理の記録",
+          "art": "trace-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "sent",
+          "label": "結果の受け渡し",
+          "art": "outgoing-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "context",
+          "label": "枠に残す情報",
+          "art": "report-pair",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "成功したのに次で失敗",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫を調べるツールは、正常に結果を返しました。",
+          "show": ["stock"],
+          "mark": [
+            {
+              "on": "stock",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "価格の照会も、成功した記録があります。",
+          "show": ["price"],
+          "mark": [
+            {
+              "on": "price",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "それでも、次のリクエストはエラーです。",
+          "show": ["request"],
+          "mark": [
+            {
+              "on": "request",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "記録を順に読み、欠けている設計を見つけます。",
+          "show": ["trace"],
+          "pulse": ["trace"]
+        }
+      ]
+    },
+    {
+      "id": "paper-handoff",
+      "kind": "board",
+      "role": "example",
+      "title": "調べた後に何を渡したか",
+      "board": "handoff",
+      "beats": [
+        {
+          "say": "店の担当者が、品物の数と値段を調べた場面です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "調べた内容は、それぞれ別の紙に書きました。",
+          "show": ["reports", "collect"]
+        },
+        {
+          "say": "ところが、渡した封筒には数の報告しかありません。",
+          "show": ["envelope", "pass"],
+          "tag": {
+            "envelope": "数だけ"
+          },
+          "mark": [
+            {
+              "on": "envelope",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "調べたことと渡したことを、分けて確かめましょう。",
+          "pulse": ["reports", "envelope"]
+        }
+      ]
+    },
+    {
+      "id": "trace-keys",
+      "kind": "board",
+      "role": "syntax",
+      "title": "順番と対応を読む",
+      "board": "trace-keys",
+      "beats": [
+        {
+          "say": "処理を起きた順に残した記録を、トレースと呼びます。",
+          "term": {
+            "text": "トレース",
+            "note": "処理を起きた順に残した記録"
+          },
+          "pause": 1
+        },
+        {
+          "say": "この記録で、呼び出しや応答の順番を追いましょう。",
+          "show": ["record"]
+        },
+        {
+          "say": "どの呼び出しかを区別するのが、呼び出しIDです。",
+          "speech": "どの呼び出しかを区別するのが、呼び出しアイディーです。",
+          "term": {
+            "text": "呼び出しID",
+            "ruby": "よびだしアイディー",
+            "note": "どの呼び出しかを区別"
+          },
+          "pause": 1
+        },
+        {
+          "say": "今回は、在庫を a、価格を b として読みます。",
+          "speech": "今回は、在庫をエー、価格をビーとして読みます。",
+          "show": ["stock", "price"],
+          "tag": {
+            "stock": "a",
+            "price": "b"
+          }
+        },
+        {
+          "say": "この二つに、どの結果が対応するかを見てください。",
+          "pulse": ["stock", "price"]
+        }
+      ]
+    },
+    {
+      "id": "separate-records",
+      "kind": "board",
+      "role": "syntax",
+      "title": "実行と送信を分ける",
+      "board": "comparison",
+      "beats": [
+        {
+          "say": "できた結果を次へ渡す処理が、ここでの受け渡しです。",
+          "term": {
+            "text": "受け渡し",
+            "ruby": "うけわたし",
+            "note": "できた結果を次へ渡す処理"
+          },
+          "pause": 1
+        },
+        {
+          "say": "まず、ツールが返した結果を確かめます。",
+          "show": ["results"],
+          "tag": {
+            "results": "aとb"
+          }
+        },
+        {
+          "say": "次に見るのは、アプリが実際に送った内容です。",
+          "show": ["request", "pack", "target", "send"],
+          "tag": {
+            "request": "aだけ"
+          }
+        },
+        {
+          "say": "結果ができたことと、送れたことを分けて読みましょう。",
+          "pulse": ["results", "request"]
+        }
+      ]
+    },
+    {
+      "id": "find-gap",
+      "kind": "board",
+      "role": "apply",
+      "title": "教材の記録をたどる",
+      "board": "trace",
+      "beats": [
+        {
+          "say": "assistant には、二つの呼び出しがありました。",
+          "speech": "アシスタントには、二つの呼び出しがありました。",
+          "show": ["calls"],
+          "tag": {
+            "calls": "aとb"
+          }
+        },
+        {
+          "say": "実行したツールは、どちらも結果を返しています。",
+          "show": ["results", "execute"],
+          "tag": {
+            "results": "aとb"
+          },
+          "mark": [
+            {
+              "on": "results",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "直後の user に入ったのは、a の結果だけです。",
+          "speech": "直後のユーザーに入ったのは、エーの結果だけです。",
+          "show": ["sent", "submit"],
+          "tag": {
+            "sent": "aだけ"
+          }
+        },
+        {
+          "say": "API は、b の結果がないとして 400 を返しました。",
+          "speech": "エーピーアイは、ビーの結果がないとして、よんひゃくを返しました。",
+          "show": ["error", "respond"],
+          "tag": {
+            "error": "400"
+          },
+          "mark": [
+            {
+              "on": "error",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "最初の食い違いは、結果を返すところにあります。",
+          "pulse": ["results", "sent"],
+          "mark": [
+            {
+              "on": "sent",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "return-together",
+      "kind": "board",
+      "role": "apply",
+      "title": "全結果を一つの発言へ",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "在庫の結果は、呼び出し a に対応するものです。",
+          "speech": "在庫の結果は、呼び出しエーに対応するものです。",
+          "show": ["stock"],
+          "tag": {
+            "stock": "a"
+          }
+        },
+        {
+          "say": "価格の結果も、呼び出し b と対応させます。",
+          "speech": "価格の結果も、呼び出しビーと対応させます。",
+          "show": ["price"],
+          "tag": {
+            "price": "b"
+          }
+        },
+        {
+          "say": "返す先は、呼び出しの直後に置く一つの user です。",
+          "speech": "返す先は、呼び出しの直後に置く一つのユーザーです。",
+          "show": ["user"],
+          "tag": {
+            "user": "aとb"
+          }
+        },
+        {
+          "say": "全結果をテキストより前に並べて返しましょう。",
+          "pulse": ["user"],
+          "tag": {
+            "user": "結果が先"
+          },
+          "mark": [
+            {
+              "on": "user",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "festival-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "文化祭の照会で欠けた段",
+      "board": "festival",
+      "think": 8,
+      "beats": [
+        {
+          "say": "文化祭の劇で、道具を p、費用を q で照会しました。",
+          "speech": "文化祭の劇で、道具をピー、費用をキューで照会しました。",
+          "show": ["props", "cost"],
+          "tag": {
+            "props": "p",
+            "cost": "q"
+          }
+        },
+        {
+          "say": "二つの呼び出しは、同じ assistant にあります。",
+          "speech": "二つの呼び出しは、同じアシスタントにあります。",
+          "pulse": ["props", "cost"]
+        },
+        {
+          "say": "実行の記録では、道具も費用も結果がある状態です。",
+          "show": ["results"],
+          "tag": {
+            "results": "pとq"
+          },
+          "mark": [
+            {
+              "on": "results",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "直後の user には、q の結果だけを入れました。",
+          "speech": "直後のユーザーには、キューの結果だけを入れました。",
+          "show": ["sent", "submit"],
+          "tag": {
+            "sent": "qだけ"
+          }
+        },
+        {
+          "say": "p の結果がないという 400 なら、どの段を直しますか。",
+          "speech": "ピーの結果がないという、よんひゃくなら、どの段を直しますか。",
+          "show": ["error", "respond"],
+          "tag": {
+            "error": "400"
+          },
+          "mark": [
+            {
+              "on": "sent",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "festival-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "直すのは結果の受け渡し",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "直すのは、結果を返すときの受け渡しです。",
+          "mark": [
+            {
+              "on": "sent",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["sent"]
+        },
+        {
+          "say": "道具の結果ができていても、送信内容から抜けています。",
+          "pulse": ["props", "results"],
+          "tag": {
+            "props": "送信で欠落"
+          }
+        },
+        {
+          "say": "直後の一つの user に、両方の結果を入れましょう。",
+          "speech": "直後の一つのユーザーに、両方の結果を入れましょう。",
+          "pulse": ["sent"],
+          "tag": {
+            "sent": "pとq"
+          },
+          "mark": [
+            {
+              "on": "sent",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "festival-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "結果と呼び出しを照合",
+      "board": "festival-repair",
+      "beats": [
+        {
+          "say": "道具の照会には、p に対応する結果が必要です。",
+          "speech": "道具の照会には、ピーに対応する結果が必要です。",
+          "show": ["props"],
+          "tag": {
+            "props": "p"
+          }
+        },
+        {
+          "say": "費用の結果は q に対応し、道具の結果の代わりにはなりません。",
+          "speech": "費用の結果はキューに対応し、道具の結果の代わりにはなりません。",
+          "show": ["cost"],
+          "tag": {
+            "cost": "q"
+          }
+        },
+        {
+          "say": "この記録では、二つとも実行した結果がありました。",
+          "mark": [
+            {
+              "on": "props",
+              "kind": "check"
+            },
+            {
+              "on": "cost",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "両方を、呼び出し直後の一つの発言にまとめます。",
+          "show": ["user"],
+          "tag": {
+            "user": "pとq"
+          }
+        },
+        {
+          "say": "欠けていたのは、呼び出しと結果を対応させる設計です。",
+          "pulse": ["props", "cost", "user"],
+          "mark": [
+            {
+              "on": "user",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-trace",
+      "kind": "board",
+      "role": "usage",
+      "title": "症状から記録へ戻る",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "エージェントの不具合を調べるときは、記録を順に読みます。",
+          "show": ["trace"]
+        },
+        {
+          "say": "結果がないというエラーなら、まず受け渡しの照合です。",
+          "show": ["sent"],
+          "tag": {
+            "sent": "対応を照合"
+          }
+        },
+        {
+          "say": "指示を見落とすなら、何が増えた時点かを確かめましょう。",
+          "show": ["context"],
+          "tag": {
+            "context": "増えた情報"
+          }
+        },
+        {
+          "say": "最初に崩れた箇所から、欠けている設計を分けます。",
+          "pulse": ["trace", "sent", "context"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a177e32a23f03db5c95edb9ee4c902318ec4102f3a81508e0c53bfa9ffb5abbb"
+  }
+}
