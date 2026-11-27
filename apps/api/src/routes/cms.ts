@@ -23,7 +23,6 @@ import {
   assignments,
   stages,
   enrollments,
-  lessonMaterials,
   lessons,
   quizOptions,
   quizQuestions,
@@ -224,33 +223,6 @@ async function requireQuestion(db: Db, questionId: string): Promise<void> {
     .where(eq(quizQuestions.id, questionId))
     .limit(1);
   if (!rows[0]) throw new ApiError("対象が見つかりません", 404);
-}
-
-/**
- * ステージ削除による cascade 前に、 紐づく配布資料の
- * R2 オブジェクトをベストエフォートで削除する (Issue #72)。
- * DB 行は FK cascade で消えるため、 ここでは R2 実体のみ扱う。
- * R2 未設定・削除失敗でもコンテンツ削除は妨げない (孤児はログに残す)。
- */
-async function deleteMaterialObjects(db: Db, env: Env, lessonIds: string[]): Promise<void> {
-  if (lessonIds.length === 0) return;
-  const bucket = env.MATERIALS_BUCKET;
-  if (!bucket) return;
-  try {
-    // 自動生成 PDF (source=auto) の実体は消さない — R2 の版オブジェクトは全版保持が
-    // 仕様で (2026-08-26 spec)、教材が正本なので次の seed が行を作り直す。
-    const rows = await db
-      .select({ path: lessonMaterials.path })
-      .from(lessonMaterials)
-      .where(
-        and(inArray(lessonMaterials.lessonId, lessonIds), eq(lessonMaterials.source, "upload")),
-      );
-    if (rows.length > 0) {
-      await bucket.delete(rows.map((r) => r.path));
-    }
-  } catch (e) {
-    console.error("[cms] 配布資料の R2 削除に失敗 (孤児オブジェクト)", lessonIds, e);
-  }
 }
 
 // =================================================================
@@ -495,17 +467,12 @@ cmsRoute.delete("/api/cms/stages/:id", async (c) => {
     // 前提に挙げられている教材を消すと、 依存側は「誰も開けない星」になる。 消す前に止める
     // (削除は取り消せないので、 非公開より強く守る)。
     assertNoPublishedDependents(await publishedDependents(db, info.slug, id), "削除");
-    // cascade で消えるレッスン配下の配布資料 R2 実体を先に掃除する。
+    // 監査の lesson_count に使う。
     const lessonRows = await db
       .select({ id: lessons.id })
       .from(lessons)
       .innerJoin(sections, eq(sections.id, lessons.sectionId))
       .where(eq(sections.stageId, id));
-    await deleteMaterialObjects(
-      db,
-      c.env,
-      lessonRows.map((l) => l.id),
-    );
     // 教材が消えると割当プリセットの項目も cascade で消える。 最後の 1 件だった場合は
     // 「適用すれば必ず失敗する空のプリセット」 が残るため、 同じトランザクションで退役させる。
     // 別々に流すと、 教材の削除だけ確定して退役が失敗したとき、 再実行しても教材はもう無い

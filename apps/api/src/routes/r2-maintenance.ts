@@ -6,15 +6,14 @@
  *
  * 孤児が生まれる経路:
  *   - 教材の差し替え (`lessons.video_path` / `pdf_path` を上書きすると旧オブジェクトが残る)
- *   - 配布資料 / ステージ削除時の R2 削除失敗 (best-effort のためログだけ残して続行する)
  *   - アップロード成功後に DB insert が落ちたケースの補償削除漏れ
  *
  * 安全側の設計:
  *   - 管理者のみ。 走査も削除も格納プレフィックス配下に限定する。
- *   - 参照は「配布資料 (lesson_materials.path)」だけでなく
- *     「レッスンの動画 / スライド (lessons.video_path / pdf_path)」「レッスン本文
- *     (lessons.markdown) が埋め込む画像」「ステージサムネイル (stages.thumbnail_path)」も数える。
- *     ここを漏らすと配信中の教材を消してしまう (教材の図解 SVG は本文からしか参照されない)。
+ *   - 参照はレッスンの動画 / スライド (lessons.video_path / pdf_path)、レッスン本文
+ *     (lessons.markdown) が埋め込む画像、ステージサムネイル (stages.thumbnail_path) と
+ *     アイコン (stages.icon_path) を数える。ここを漏らすと配信中の教材を消してしまう
+ *     (教材の図解 SVG は本文からしか参照されない)。
  *   - 削除は棚卸しで返ったパスを呼び出し側が明示的に渡した場合のみ。 削除直前に
  *     参照有無を取り直し、 その間に参照が復活したパスはスキップする。
  */
@@ -23,7 +22,7 @@ import { LEGACY_TENANT_ID } from "@stella/shared/legacy-tenant";
 import { Hono } from "hono";
 import { and, eq, gt, isNotNull, like, or } from "drizzle-orm";
 
-import { stages, lessonMaterials, lessons, sections } from "../db/schema.js";
+import { stages, lessons, sections } from "../db/schema.js";
 import { errorResponse, getCaller, requireAdmin, ApiError } from "../lib/authz.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import type { Db } from "../db/client.js";
@@ -57,7 +56,7 @@ function escapeRegExp(value: string): string {
 /**
  * レッスン本文 (`lessons.markdown`) から R2 パスを拾う。
  *
- * 教材の図解 SVG は lesson_materials でも video_path / pdf_path でもなく、
+ * 教材の図解 SVG は video_path / pdf_path でもなく、
  * 本文の画像 URL (`tenant/` で始まるパス) としてだけ参照される。 ここを見ないと
  * 配信中の図解が丸ごと孤児判定になり、 掃除で消えてしまう。
  */
@@ -94,17 +93,9 @@ async function markdownReferencedPaths(db: Db, into: Set<string>): Promise<void>
 
 /**
  * 「参照されている」R2 パスを集める。
- * 配布資料 + レッスンの動画 / スライド + 本文中の画像 + ステージのサムネイルを対象にする。
+ * レッスンの動画 / スライド + 本文中の画像 + ステージのサムネイルとアイコンを対象にする。
  */
 async function referencedPaths(db: Db): Promise<Set<string>> {
-  // 配布資料の機能は廃止したが、行と R2 の実体を残しているので参照として数える。
-  const materialRows = await db
-    .select({ path: lessonMaterials.path })
-    .from(lessonMaterials)
-    .innerJoin(lessons, eq(lessons.id, lessonMaterials.lessonId))
-    .innerJoin(sections, eq(sections.id, lessons.sectionId))
-    .innerJoin(stages, eq(stages.id, sections.stageId));
-
   const lessonRows = await db
     .select({ videoPath: lessons.videoPath, pdfPath: lessons.pdfPath })
     .from(lessons)
@@ -121,7 +112,6 @@ async function referencedPaths(db: Db): Promise<Set<string>> {
     .where(or(isNotNull(stages.thumbnailPath), isNotNull(stages.iconPath)));
 
   const set = new Set<string>();
-  for (const r of materialRows) set.add(r.path);
   for (const r of thumbnailRows) {
     if (r.path) set.add(r.path);
     if (r.iconPath) set.add(r.iconPath);

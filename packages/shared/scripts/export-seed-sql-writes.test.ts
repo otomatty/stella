@@ -718,36 +718,13 @@ describe("seed の書き込み行数", () => {
   );
 
   it(
-    "同じ seed を 2 回流すと、廃止した配布資料と版履歴を保持し、2 回目は 1 行も書かない",
+    "同じ seed を 2 回流すと、2 回目は 1 行も書かない",
     () => {
       const db = migratedDb();
       try {
         expect(total(apply(db, sql))).toBeGreaterThan(4000);
         expect(readUnitReferences(db)).toBe(references);
-        db.prepare(
-          "insert into lesson_materials (id, lesson_id, path, file_name, source, created_at) values ('retained-material', ?, 'lesson-pdf/current.pdf', 'current.pdf', 'auto', 1)",
-        ).run(lessonId);
-        db.exec(
-          "insert into lesson_material_versions (material_id, version, path, source_hash, created_at) values ('retained-material', 1, 'lesson-pdf/original.pdf', 'original-hash', 1), ('retained-material', 2, 'lesson-pdf/current.pdf', 'current-hash', 1)",
-        );
         expect(apply(db, sql)).toEqual({});
-        expect(
-          db
-            .prepare(
-              "select path, archived_at from lesson_materials where id = 'retained-material'",
-            )
-            .get(),
-        ).toEqual({ path: "lesson-pdf/current.pdf", archived_at: null });
-        expect(
-          db
-            .prepare(
-              "select version, path from lesson_material_versions where material_id = 'retained-material' order by version",
-            )
-            .all(),
-        ).toEqual([
-          { version: 1, path: "lesson-pdf/original.pdf" },
-          { version: 2, path: "lesson-pdf/current.pdf" },
-        ]);
       } finally {
         db.close();
       }

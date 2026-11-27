@@ -318,8 +318,7 @@ API の保守エンドポイント（`GET /api/admin/r2/orphans` / `POST /api/ad
 `next_cursor` を返す（CLI はカーソルを辿って全件走査する）。分割走査になったときは
 「DB 行に対する実体なし判定」だけスキップする（そのページに出なかっただけの参照と区別できないため）。
 走査・削除とも保存済みの `tenant/ses/` 配下に限定し、
-参照判定には廃止後も保管している配布資料（`lesson_materials.path`）に加えてレッスンの動画・スライド
-（`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
+参照判定にはレッスンの動画・スライド（`lessons.video_path` / `pdf_path`）も含める。DB に行があるのに実体が無いパスも併せて報告する。
 削除は監査ログ（`r2_orphan_cleanup`）に残る。
 
 本番に対して実行する場合は `API_BASE_URL` と、admin の JWT を `ADMIN_TOKEN` に渡す

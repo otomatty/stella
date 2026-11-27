@@ -610,8 +610,6 @@ describe("export-seed-sql (sqlite)", () => {
         values ('old-lesson', 'old-section', '旧課題', 'quiz', 0, 1, 1);
       insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
         values ('old-progress', 'ses', 'upgrade-learner', 'old-lesson', 1, 1);
-      insert into lesson_materials (id, lesson_id, path, file_name, created_at)
-        values ('old-material', 'old-lesson', 'old.pdf', 'old.pdf', 1);
       insert into lesson_revisions (lesson_id, revision, source_hash, markdown, source, created_at)
         values ('old-lesson', 1, 'old-hash', '旧本文', 'seed', 1);
       insert into submissions (id, tenant_id, student_id, lesson_id, stage_title, assignment_title, code, submitted_at)
@@ -701,7 +699,6 @@ describe("export-seed-sql (sqlite)", () => {
         ["submissions", "id", "reused-old-submission"],
         ["lessons", "id", "old-lesson"],
         ["lesson_progress", "id", "old-progress"],
-        ["lesson_materials", "id", "old-material"],
         ["lesson_revisions", "lesson_id", "old-lesson"],
         ["submissions", "id", "old-submission"],
         ["quizzes", "id", "old-quiz"],
