@@ -18,7 +18,6 @@ function setupProgress() {
     );
     create unique index lesson_progress_user_lesson_uq on lesson_progress (user_id, lesson_id);
     create table submissions (id text primary key, lesson_id text);
-    create table lesson_materials (id text primary key, lesson_id text);
     create table quizzes (id text primary key, lesson_id text);
   `);
   return db;

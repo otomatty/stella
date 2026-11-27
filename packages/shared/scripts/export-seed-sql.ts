@@ -312,7 +312,6 @@ function emitRetiredStages() {
       `delete from ${tbl("quiz_attempts")} where quiz_id in (${quizzesInStage});`,
       `delete from ${tbl("quiz_questions")} where quiz_id in (${quizzesInStage});`,
       `delete from ${tbl("quizzes")} where lesson_id in (${lessonsInStage});`,
-      `delete from ${tbl("lesson_materials")} where lesson_id in (${lessonsInStage});`,
       `delete from ${tbl("lesson_progress")} where lesson_id in (${lessonsInStage});`,
       `delete from ${tbl("submissions")} where lesson_id in (${lessonsInStage});`,
       `delete from ${tbl("lessons")} where section_id in (select id from ${tbl("sections")} where stage_id = '${stageUuid}');`,

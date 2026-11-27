@@ -99,7 +99,7 @@ bunx wrangler d1 execute <new-database-uuid> --remote --file <backup.sql>
 欠けていたら migration を実行せず、旧 DB の記録を復元する。既存スキーマへ初期 migration を再適用しない。
 `sqlite_master` のテーブル・索引、および各テーブルの件数を旧新で照合し、`PRAGMA foreign_key_check` が空であることを確認する。
 特に profiles、auth_users、enrollments、進捗、submissions、専用教材の割当、面談データ、
-lesson_materials / lesson_material_versions / lesson_revisions が残っていることを確認する。
+lesson_materials / lesson_material_versions / lesson_revisions が残っていることを確認する。`lesson_materials` と `lesson_material_versions` は migration 0098 で落とす。
 [D1 import/export](https://developers.cloudflare.com/d1/best-practices/import-export-data/)
 
 3. 両 R2 バケットの全キーをコピーする。教材正本からの再アップロードだけでは CMS 添付、
@@ -107,6 +107,7 @@ lesson_materials / lesson_material_versions / lesson_revisions が残ってい�
    `tenant/.../courses/...`、`lesson-pdf/...` とその台帳、`deploy/content-state.json`、
    `interview-tts/...` も含め、HTTP metadata と custom metadata を保存する。
    特に音声の `textHash` が失われると古い音声と判定される。
+   `lesson-pdf/` は消す対象で、図解や動画としてコピーし直さない。
 
 Cloudflare が案内する S3 対応ツールの例。`r2` remote を同一アカウントへ設定し、
 認証情報は rclone の保護された設定に保存する。

@@ -13,7 +13,7 @@
  *   - 本番など: `ADMIN_TOKEN` に admin の JWT を渡す。 `API_BASE_URL` で向き先を変える。
  *
  * 走査も削除も保存済みキーの接頭辞 (`tenant/ses/`) に閉じる。
- * 参照判定には配布資料だけでなくレッスンの動画 / スライドのパスも含まれる。
+ * 参照判定にはレッスンの動画 / スライドのパスも含まれる。
  */
 
 import { readFileSync } from "node:fs";

@@ -33,7 +33,6 @@ const REPO_ROOT = join(HERE, "../../../..");
 const FK_INDEXES = [
   "sections_stage_id_idx",
   "lessons_section_id_idx",
-  "lesson_materials_lesson_id_idx",
   "quizzes_lesson_id_idx",
   "quiz_questions_quiz_id_idx",
   "quiz_options_question_id_idx",
@@ -171,7 +170,6 @@ describe("外部キーの子側に索引がある", () => {
       ["sections_stage_id_idx", "delete from sections where stage_id = 'x'"],
       ["review_cards_question_id_idx", "delete from review_cards where question_id = 'x'"],
       ["review_logs_card_id_idx", "delete from review_logs where card_id = 'x'"],
-      ["lesson_materials_lesson_id_idx", "delete from lesson_materials where lesson_id = 'x'"],
     ] as const;
     for (const [indexName, sql] of plans) {
       expect(planOf(db, sql)).toContain(indexName);

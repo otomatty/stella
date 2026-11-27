@@ -666,6 +666,13 @@
       "when": 1795046400013,
       "tag": "0097_lesson_problem_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "6",
+      "when": 1795046400014,
+      "tag": "0098_drop_lesson_materials",
+      "breakpoints": true
     }
   ]
 }

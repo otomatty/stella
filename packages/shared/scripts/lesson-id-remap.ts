@@ -43,7 +43,6 @@ export function lessonIdRemapStatements(
     ].join(" "),
     retarget("lesson_progress", "lesson_id"),
     retarget("submissions", "lesson_id"),
-    retarget("lesson_materials", "lesson_id"),
     retarget("quizzes", "lesson_id"),
   ];
 }

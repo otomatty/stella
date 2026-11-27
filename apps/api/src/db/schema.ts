@@ -904,72 +904,6 @@ export const lessonCommentMentions = sqliteTable(
   }),
 );
 
-// ---------------------------------------------------------------
-// レッスン配布資料 (Issue #72)
-// ---------------------------------------------------------------
-
-/**
- * レッスンに紐づく配布資料。 実体は R2 (`MATERIALS_BUCKET`) 上のオブジェクトで、
- * `path` は保存済みの `tenant/ses/lessons/{lessonId}/...` (この接頭辞の値は変えない)。
- * 認可はアプリ層。
- */
-export const lessonMaterials = sqliteTable(
-  "lesson_materials",
-  {
-    id: uuid(),
-    lessonId: text("lesson_id")
-      .notNull()
-      .references(() => lessons.id, { onDelete: "cascade" }),
-    path: text("path").notNull(),
-    fileName: text("file_name").notNull(),
-    sizeBytes: integer("size_bytes").notNull().default(0),
-    mimeType: text("mime_type").notNull().default("application/octet-stream"),
-    /** upload = 手動アップロード / auto = CI が教材から生成した PDF。auto 行はレッスンに
-     *  つき最新版 1 行で、履歴は lesson_material_versions が持つ。 */
-    source: text("source", { enum: ["upload", "auto"] })
-      .notNull()
-      .default("upload"),
-    createdBy: text("created_by"),
-    createdAt: tsNow("created_at"),
-    /**
-     * 教材から作らなくなった auto 資料 (OS ごとに分ける・分けないを切り替えたレッスンの旧資料)。
-     * 行と版履歴は残して staff が旧版を取れるようにし、受講者の一覧とダウンロードからは外す。
-     * 同じ資料をまた作るようになったら seed が null に戻す。
-     */
-    archivedAt: ts("archived_at"),
-  },
-  (t) => ({
-    lessonIdx: index("lesson_materials_lesson_id_idx").on(t.lessonId),
-  }),
-);
-
-/**
- * 配布資料の版履歴 (教材 PDF 自動生成)。
- * R2 のオブジェクトは版ごとに不変キー (`lesson-pdf/.../<sourceHash>.pdf`) で全版残し、
- * この表が「何版がどのキーか」を持つ。受講者へは lesson_materials の最新 path のみ、
- * staff は任意の版をダウンロードできる。
- */
-export const lessonMaterialVersions = sqliteTable(
-  "lesson_material_versions",
-  {
-    materialId: text("material_id")
-      .notNull()
-      .references(() => lessonMaterials.id, { onDelete: "cascade" }),
-    /** 資料内の連番 (1..)。内容ハッシュが変わったときだけ増える。 */
-    version: integer("version").notNull(),
-    path: text("path").notNull(),
-    /** 生成元 (本文 + 参照アセット + ジェネレータ版) の内容ハッシュ。 */
-    sourceHash: text("source_hash").notNull(),
-    /** 生成元となった lesson_revisions.revision (同一レッスン内)。 */
-    lessonRevision: integer("lesson_revision"),
-    sizeBytes: integer("size_bytes").notNull().default(0),
-    createdAt: tsNow("created_at"),
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.materialId, t.version] }),
-  }),
-);
-
 /**
  * 教材本文のリビジョン履歴 (バージョン管理の新仕様)。
  * seed (GitHub 正本) と CMS 編集の両方が、本文が変わったときだけ 1 行積む。
@@ -2131,8 +2065,6 @@ export const APP_TABLES = [
   "stages",
   "sections",
   "lessons",
-  "lesson_materials",
-  "lesson_material_versions",
   "lesson_revisions",
   "assignments",
   "lesson_progress",
