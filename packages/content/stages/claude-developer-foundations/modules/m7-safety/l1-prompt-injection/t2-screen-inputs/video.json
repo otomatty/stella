@@ -1,0 +1,680 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "小さいモデルによるふるい分けを本処理の前に置き、問題ありの判定と refusal のどちらでも入力を止める流れを説明できる。",
+    "stuck": "問題ありという答えが返った場合だけ止め、ふるい分け自体が refusal で止まった場合は本処理へ進めてしまう。",
+    "points": ["危ない入力は、本処理の前に小さいモデルでふるい分けます。"],
+    "leaveOut": [
+      "外の文章を tool_result に包む具体的な書き方",
+      "ツールと権限を絞る設定",
+      "構造化出力の定義や呼び出しのコード",
+      "モデルの性能比較と料金",
+      "繰り返す利用者への制限の実装"
+    ]
+  },
+  "art": {
+    "workshop-request": {
+      "prompt": "A blank white paper application slip clipped beside a spool of blue thread and a pair of violet craft scissors, representing a request to join a craft workshop. The paper is white and the clip is light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reception-clerk": {
+      "prompt": "A friendly reception clerk in a plain blue shirt holding a blank white application sheet and inspecting it closely, with simple facial features and short dark hair. Only one person, shown from the waist up. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "workshop-kit": {
+      "prompt": "An open light grey craft supply container holding blue thread, violet scissors and neatly folded white fabric, representing the preparation of a workshop kit after accepting an application. The container is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "screening-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a magnifying glass over one blank white application slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "decision-card": {
+      "prompt": "A small white clipboard holding a blank white result card with two empty round selection holes and a blue pencil beside it. A physical paper object representing a choice between two results, not a software interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "held-request": {
+      "prompt": "A closed light grey document tray holding one blank white application sheet, with a blue sleeve and an open hand held upright beside the tray to indicate stopping the document from going farther. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "vet-request": {
+      "prompt": "A blue pet carrier with a simple light grey cat peeking out, beside a blank white appointment request card held by a small light grey clip. Objects and cat only, representing an animal hospital reception request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "external-document": {
+      "prompt": "An open blue envelope containing a folded blank white sheet, with a violet magnifying glass beside the sheet, representing outside text returned by a tool for inspection. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "workshop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "教室の申込み",
+          "art": "workshop-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "受付で確認",
+          "art": "reception-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "kit",
+          "label": "材料を用意",
+          "art": "workshop-kit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-clerk",
+          "from": "request",
+          "to": "clerk",
+          "label": "先に確認"
+        },
+        {
+          "id": "to-kit",
+          "from": "clerk",
+          "to": "kit",
+          "label": "確認後"
+        }
+      ]
+    },
+    "attack": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "利用者の入力",
+          "art": "workshop-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "screen",
+          "label": "事前の検査",
+          "art": "screening-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "hold",
+          "label": "入力を止める",
+          "art": "held-request",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "request",
+          "to": "screen",
+          "label": "確かめる"
+        },
+        {
+          "id": "block",
+          "from": "screen",
+          "to": "hold",
+          "label": "問題あり"
+        }
+      ]
+    },
+    "screening": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "利用者の入力",
+          "art": "workshop-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "小さいモデル",
+          "art": "screening-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "判定結果",
+          "art": "decision-card",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "request",
+          "to": "model",
+          "label": "先に渡す"
+        },
+        {
+          "id": "judge",
+          "from": "model",
+          "to": "result",
+          "label": "判定する"
+        }
+      ]
+    },
+    "accepted": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "判定結果",
+          "art": "decision-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "main",
+          "label": "本処理",
+          "art": "workshop-kit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "proceed",
+          "from": "result",
+          "to": "main",
+          "label": "問題なし"
+        }
+      ]
+    },
+    "clinic": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "動物病院の受付",
+          "art": "vet-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "ふるい分け",
+          "art": "screening-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "停止理由",
+          "art": "decision-card",
+          "at": [5, 1]
+        },
+        {
+          "id": "stop",
+          "label": "本処理へ渡さず",
+          "art": "held-request",
+          "at": [5, 2]
+        },
+        {
+          "id": "pass",
+          "label": "本処理へ渡す",
+          "art": "vet-request",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "request",
+          "to": "model",
+          "label": "先に検査"
+        },
+        {
+          "id": "return",
+          "from": "model",
+          "to": "result",
+          "label": "停止"
+        }
+      ]
+    },
+    "external": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "text",
+          "label": "ツールの結果",
+          "art": "external-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "小さいモデル",
+          "art": "screening-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "hold",
+          "label": "元の文を止める",
+          "art": "held-request",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "text",
+          "to": "model",
+          "label": "先に検査"
+        },
+        {
+          "id": "block",
+          "from": "model",
+          "to": "hold",
+          "label": "疑いあり"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "申込みを先に確かめる",
+      "board": "workshop",
+      "beats": [
+        {
+          "say": "工作教室に、決まりを無視してほしいという申込みが届きます。",
+          "show": ["request"]
+        },
+        {
+          "say": "材料を用意する前に、受付で確かめる場面です。",
+          "show": ["clerk", "to-clerk"]
+        },
+        {
+          "say": "アプリでも、本処理の前に確かめる流れを作りましょう。",
+          "show": ["kit", "to-kit"]
+        },
+        {
+          "say": "危ない入力は、本処理の前に小さいモデルでふるい分けます。",
+          "pulse": ["clerk"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "kind": "board",
+      "role": "example",
+      "title": "受付と準備を分ける",
+      "board": "workshop",
+      "beats": [
+        {
+          "say": "受付係の仕事は、申込みの内容を確かめることです。",
+          "pulse": ["clerk"]
+        },
+        {
+          "say": "ここでは、教室の材料を用意する仕事と分けています。",
+          "pulse": ["kit"]
+        },
+        {
+          "say": "決まりを無視する依頼は、そのまま準備係に渡しません。",
+          "hide": ["to-kit"],
+          "tag": {
+            "request": "決まりを無視"
+          }
+        },
+        {
+          "say": "準備を始める前に、入口で止めるのが役目です。",
+          "mark": [
+            {
+              "on": "request",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["clerk"]
+        }
+      ]
+    },
+    {
+      "id": "jailbreak",
+      "kind": "board",
+      "role": "syntax",
+      "title": "利用者が決まりを外させる",
+      "board": "attack",
+      "beats": [
+        {
+          "say": "利用者自身が、決まりを外させる入力を送る場合があります。",
+          "show": ["request"]
+        },
+        {
+          "say": "こうした攻撃が、ジェイルブレイクです。",
+          "term": {
+            "text": "ジェイルブレイク",
+            "note": "利用者が決まりを外させる"
+          }
+        },
+        {
+          "say": "例では、決まりを無視するよう申込みに書いていました。",
+          "tag": {
+            "request": "決まりを無視"
+          },
+          "pulse": ["request"]
+        },
+        {
+          "say": "その入力を、処理の前に確かめます。",
+          "show": ["screen", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "small-model",
+      "kind": "board",
+      "role": "syntax",
+      "title": "小さいモデルに判定を任せる",
+      "board": "screening",
+      "beats": [
+        {
+          "say": "入力に問題があるか、先に分けるのがふるい分けです。",
+          "term": {
+            "text": "ふるい分け",
+            "ruby": "ふるいわけ",
+            "note": "入力を本処理の前で確かめる"
+          }
+        },
+        {
+          "say": "アプリは、小さいモデルに入力を渡します。",
+          "show": ["request", "model", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "このモデルに任せる仕事は、問題があるかの判定です。",
+          "show": ["result", "judge"],
+          "pulse": ["result"]
+        },
+        {
+          "say": "答えの形は、構造化出力で決めておきます。",
+          "term": {
+            "text": "構造化出力",
+            "ruby": "こうぞうかしゅつりょく",
+            "note": "答えを決めた形で受け取る"
+          }
+        },
+        {
+          "say": "判定は「問題あり」か「問題なし」に絞りましょう。",
+          "tag": {
+            "result": "あり・なし"
+          },
+          "pulse": ["model", "result"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "read-result",
+      "kind": "board",
+      "role": "syntax",
+      "title": "判定を本処理の前で読む",
+      "board": "accepted",
+      "beats": [
+        {
+          "say": "本処理へ進む前に、ふるい分けの判定を読みます。",
+          "show": ["result"]
+        },
+        {
+          "say": "ここで返った値は、「問題なし」です。",
+          "tag": {
+            "result": "問題なし"
+          }
+        },
+        {
+          "say": "この判定なら、入力を本処理へ渡します。",
+          "show": ["main", "proceed"],
+          "travel": {
+            "along": ["proceed"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "工作教室の例なら、申込みを扱う処理です。",
+          "pulse": ["main"],
+          "tag": {
+            "main": "申込み処理"
+          }
+        }
+      ]
+    },
+    {
+      "id": "block-unsafe",
+      "kind": "board",
+      "role": "apply",
+      "title": "問題ありなら渡さない",
+      "board": "attack",
+      "reset": true,
+      "beats": [
+        {
+          "say": "工作教室への、決まりを無視する申込みに戻りましょう。",
+          "show": ["request"],
+          "tag": {
+            "request": "決まりを無視"
+          }
+        },
+        {
+          "say": "小さいモデルが先に読み、「問題あり」と答えました。",
+          "show": ["screen", "inspect"],
+          "tag": {
+            "screen": "問題あり"
+          }
+        },
+        {
+          "say": "この入力は、本処理に渡しません。",
+          "show": ["hold", "block"],
+          "travel": {
+            "along": ["block"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "判定の値を使って、処理を始める前に止めます。",
+          "mark": [
+            {
+              "on": "hold",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["hold"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "block-refusal",
+      "kind": "board",
+      "role": "apply",
+      "title": "判定自体が拒否で止まる",
+      "board": "attack",
+      "reset": true,
+      "beats": [
+        {
+          "say": "ふるい分け自体が、拒否で止まる場合もあります。",
+          "show": ["request", "screen", "inspect"]
+        },
+        {
+          "say": "その停止理由が、refusal です。",
+          "speech": "その停止理由が、リフューザルです。",
+          "term": {
+            "text": "refusal",
+            "ruby": "リフューザル",
+            "note": "拒否による停止理由"
+          }
+        },
+        {
+          "say": "この場合も、問題ありとして扱います。",
+          "tag": {
+            "screen": "refusal"
+          },
+          "pulse": ["screen"]
+        },
+        {
+          "say": "判定の値が返らなくても、本処理には渡しません。",
+          "show": ["hold", "block"],
+          "mark": [
+            {
+              "on": "hold",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "動物病院の受付で考える",
+      "board": "clinic",
+      "think": 8,
+      "beats": [
+        {
+          "say": "動物病院の受付アプリに、予約の問い合わせが届きました。",
+          "show": ["request"]
+        },
+        {
+          "say": "先に小さいモデルで、入力に問題があるかを確かめます。",
+          "show": ["model", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "判定は返らず、停止理由は refusal でした。",
+          "speech": "判定は返らず、停止理由はリフューザルでした。",
+          "show": ["result", "return"],
+          "tag": {
+            "result": "refusal"
+          }
+        },
+        {
+          "say": "この入力を、本処理へ渡してよいでしょうか。",
+          "show": ["stop", "pass"],
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "question"
+            },
+            {
+              "on": "pass",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "本処理には渡さない",
+      "board": "clinic",
+      "beats": [
+        {
+          "say": "答えは、本処理へ渡さないことです。",
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "check"
+            },
+            {
+              "on": "pass",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["stop"]
+        },
+        {
+          "say": "refusal も、問題ありとして扱います。",
+          "speech": "リフューザルも、問題ありとして扱います。",
+          "pulse": ["result"],
+          "tag": {
+            "model": "問題あり扱い"
+          }
+        },
+        {
+          "say": "予約の問い合わせでも、この扱いは同じです。",
+          "pulse": ["request", "stop"]
+        }
+      ]
+    },
+    {
+      "id": "why-stop",
+      "kind": "board",
+      "role": "explain",
+      "title": "止まった場所をたどる",
+      "board": "clinic",
+      "beats": [
+        {
+          "say": "今回止まったのは、本処理より前のふるい分けです。",
+          "pulse": ["model"]
+        },
+        {
+          "say": "「問題なし」という判定を受け取ったわけではありません。",
+          "pulse": ["result"],
+          "tag": {
+            "result": "拒否で停止"
+          }
+        },
+        {
+          "say": "そこで、問題ありのときと同じ側に分けます。",
+          "pulse": ["stop"],
+          "tag": {
+            "stop": "入力を止める"
+          }
+        },
+        {
+          "say": "判定が返らないことを、通してよい理由にしないでください。",
+          "pulse": ["pass"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "外の文章にも使う",
+      "board": "external",
+      "beats": [
+        {
+          "say": "ツールが返した外の文章も、ふるい分けの対象です。",
+          "show": ["text"]
+        },
+        {
+          "say": "結果をそのまま返す前に、小さいモデルで確かめます。",
+          "show": ["model", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "疑いがあれば、元の文の代わりにエラーか要点を返しましょう。",
+          "show": ["hold", "block"],
+          "tag": {
+            "hold": "エラーか要点"
+          }
+        },
+        {
+          "say": "危ない入力は、本処理の前に小さいモデルでふるい分けます。",
+          "pulse": ["model"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "78fc46696b783cd1f822bcb6d02b5573b089860cfcd208d2ee940f2bdac93f1b"
+  }
+}

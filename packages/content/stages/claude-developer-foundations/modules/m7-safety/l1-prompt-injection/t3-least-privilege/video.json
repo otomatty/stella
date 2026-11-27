@@ -1,0 +1,747 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "読むだけのエージェントについて、許可リストだけでは不十分な理由と、確認が要る呼び出しを断る設定を説明できる。",
+    "stuck": "allowedTools に書いたツール以外は消えると思い、書き込みやコマンド実行の権限を残してしまう。",
+    "points": ["エージェントが使えるツールと権限は、作業に要るものだけに絞ります。"],
+    "leaveOut": [
+      "外から来た文章の渡し方と入力のふるい分け",
+      "フックから canUseTool までの判定順序",
+      "呼び出しの一部だけに当てはまる禁止ルール",
+      "サブエージェントの設定方法",
+      "隔離環境の構築手順",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "library-catalog": {
+      "prompt": "An open white library catalog with blue index tabs beside two upright violet library books. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-helper": {
+      "prompt": "A library helper in a plain blue shirt holding one blank white catalog card, with simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "writing-pencil": {
+      "prompt": "A violet pencil poised beside a white sheet of paper, representing the ability to rewrite a document. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "store-keys": {
+      "prompt": "A small light grey metal keyring holding two large blue keys for a library storage cupboard. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reading-agent": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a violet laptop with a completely blank dark screen. No imitation of a real application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "read-files": {
+      "prompt": "A magnifying glass with a blue handle over several blank white files with violet tabs, representing reading and finding files. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "permission-gate": {
+      "prompt": "A small blue access gate with two light grey posts and a violet hinged barrier arm, shown as an isolated physical object. No signs or display screens. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "camp-bookings": {
+      "prompt": "A large blue camping tent beside a white booking clipboard with a blank sheet, representing a campsite reservation desk. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "library": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "helper",
+          "label": "調べる係",
+          "art": "library-helper",
+          "at": [1, 1]
+        },
+        {
+          "id": "catalog",
+          "label": "目録を読む",
+          "art": "library-catalog",
+          "at": [3, 1]
+        },
+        {
+          "id": "pencil",
+          "label": "書き直す",
+          "art": "writing-pencil",
+          "at": [5, 1]
+        },
+        {
+          "id": "keys",
+          "label": "倉庫を開ける",
+          "art": "store-keys",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "読む係",
+          "art": "reading-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "read",
+          "label": "読む道具",
+          "art": "read-files",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "permissions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読む道具",
+          "art": "read-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "gate",
+          "label": "確認の扱い",
+          "art": "permission-gate",
+          "at": [3, 1]
+        },
+        {
+          "id": "other",
+          "label": "ほかの道具",
+          "icon": "terminal",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "removed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "reading-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "bash",
+          "label": "Bash",
+          "icon": "terminal",
+          "at": [3, 1]
+        },
+        {
+          "id": "gate",
+          "label": "確認の扱い",
+          "art": "permission-gate",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "camp": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "camp",
+          "label": "空きを案内",
+          "art": "camp-bookings",
+          "at": [1, 1]
+        },
+        {
+          "id": "read",
+          "label": "予約表を読む",
+          "art": "read-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "list",
+          "label": "許可リスト",
+          "art": "permission-gate",
+          "at": [5, 1]
+        },
+        {
+          "id": "first",
+          "label": "一つ目",
+          "art": "permission-gate",
+          "at": [5, 2]
+        },
+        {
+          "id": "second",
+          "label": "二つ目",
+          "art": "permission-gate",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "campReason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "予約表を読む",
+          "art": "read-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "gate",
+          "label": "確認の扱い",
+          "art": "permission-gate",
+          "at": [3, 1]
+        },
+        {
+          "id": "write",
+          "label": "予約表を変更",
+          "art": "writing-pencil",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "コードの調査",
+          "art": "reading-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "camp",
+          "label": "空きの案内",
+          "art": "camp-bookings",
+          "at": [3, 1]
+        },
+        {
+          "id": "gate",
+          "label": "権限を絞る",
+          "art": "permission-gate",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べる係に渡す道具",
+      "board": "library",
+      "beats": [
+        {
+          "say": "図書室の係に、本の場所を調べてもらいます。",
+          "show": ["helper"]
+        },
+        {
+          "say": "必要なのは、目録を読むことです。",
+          "show": ["catalog"]
+        },
+        {
+          "say": "書き直す鉛筆や、倉庫の鍵まで渡していました。",
+          "show": ["pencil", "keys"]
+        },
+        {
+          "say": "エージェントが使えるツールと権限は、作業に要るものだけに絞ります。",
+          "pulse": ["helper", "catalog"]
+        }
+      ]
+    },
+    {
+      "id": "library-tools",
+      "kind": "board",
+      "role": "example",
+      "title": "調べる仕事に絞る",
+      "board": "library",
+      "beats": [
+        {
+          "say": "係には、目録を読めるようにしておきます。",
+          "pulse": ["catalog"],
+          "mark": [
+            {
+              "on": "catalog",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "本の場所を調べるのに、書き直す権限はいりません。",
+          "pulse": ["pencil"],
+          "mark": [
+            {
+              "on": "pencil",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "倉庫を開ける鍵も、渡さないようにしましょう。",
+          "pulse": ["keys"],
+          "mark": [
+            {
+              "on": "keys",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "間違いが起きても、できることを絞って被害を抑えます。",
+          "hide": ["pencil", "keys"],
+          "pulse": ["helper", "catalog"]
+        }
+      ]
+    },
+    {
+      "id": "least-privilege",
+      "kind": "board",
+      "role": "syntax",
+      "title": "最小権限の考え方",
+      "board": "scope",
+      "beats": [
+        {
+          "say": "作業に要る権限だけを与える考え方を、最小権限と呼びます。",
+          "term": {
+            "text": "最小権限",
+            "ruby": "さいしょうけんげん",
+            "note": "作業に要る権限だけ"
+          }
+        },
+        {
+          "say": "今回は、コードを読んで答えるエージェントです。",
+          "show": ["agent"]
+        },
+        {
+          "say": "読むための道具だけを渡します。",
+          "show": ["read"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "allow-list",
+      "kind": "code",
+      "role": "syntax",
+      "title": "許可リストの働き",
+      "code": [
+        "// エージェントの設定をまとめる",
+        "options: {",
+        "  // 確認なしで使えるツールを指定する",
+        "  allowedTools: [\"Read\", \"Grep\", \"Glob\"],",
+        "  // 確認が要る呼び出しは断る",
+        "  permissionMode: \"dontAsk\"",
+        "// 設定を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "permissions"
+      },
+      "beats": [
+        {
+          "say": "allowedTools には、確認なしで使えるツールを書きます。",
+          "speech": "アラウドツールズには、確認なしで使えるツールを書きます。",
+          "part": {
+            "line": 3,
+            "text": "allowedTools",
+            "note": "確認なしの許可"
+          },
+          "figure": {
+            "show": ["read"]
+          }
+        },
+        {
+          "say": "この例で許可するのは、並べた三つのツールです。",
+          "part": {
+            "line": 3,
+            "text": "[\"Read\", \"Grep\", \"Glob\"]"
+          },
+          "figure": {
+            "tag": {
+              "read": "確認不要"
+            }
+          }
+        },
+        {
+          "say": "ただし、書いていないツールの定義も残っています。",
+          "figure": {
+            "show": ["other"],
+            "tag": {
+              "other": "定義は残る"
+            }
+          }
+        },
+        {
+          "say": "許可リストだけでは、ほかのツールを消せません。",
+          "figure": {
+            "pulse": ["other"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "permission-mode",
+      "kind": "code",
+      "role": "syntax",
+      "title": "確認が要る呼び出しを断る",
+      "code": [
+        "// エージェントの設定をまとめる",
+        "options: {",
+        "  // 確認なしで使えるツールを指定する",
+        "  allowedTools: [\"Read\", \"Grep\", \"Glob\"],",
+        "  // 確認が要る呼び出しは断る",
+        "  permissionMode: \"dontAsk\"",
+        "// 設定を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "permissions"
+      },
+      "beats": [
+        {
+          "say": "確認の扱いを決めるのが、権限モードです。",
+          "term": {
+            "text": "権限モード",
+            "ruby": "けんげんもーど",
+            "note": "permissionMode"
+          },
+          "part": {
+            "line": 5,
+            "text": "permissionMode"
+          }
+        },
+        {
+          "say": "確認が要る呼び出しをどうするかを、ここで指定します。",
+          "part": {
+            "line": 5,
+            "text": "permissionMode",
+            "note": "確認の扱い"
+          },
+          "figure": {
+            "show": ["gate"]
+          }
+        },
+        {
+          "say": "dontAsk は、確認せずに断る設定です。",
+          "speech": "ドントアスクは、確認せずに断る設定です。",
+          "part": {
+            "line": 5,
+            "text": "\"dontAsk\""
+          },
+          "figure": {
+            "tag": {
+              "gate": "確認せず拒否"
+            }
+          }
+        },
+        {
+          "say": "確認が要る呼び出しは、この設定で止めます。",
+          "figure": {
+            "pulse": ["other"],
+            "mark": [
+              {
+                "on": "other",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "無人のエージェントで、使えるツールを決める設定です。",
+          "focus": [3, 5],
+          "figure": {
+            "pulse": ["read", "gate"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "read-only",
+      "kind": "code",
+      "role": "apply",
+      "title": "読むだけの仕事に使う",
+      "code": [
+        "// エージェントの設定をまとめる",
+        "options: {",
+        "  // 確認なしで使えるツールを指定する",
+        "  allowedTools: [\"Read\", \"Grep\", \"Glob\"],",
+        "  // 確認が要る呼び出しは断る",
+        "  permissionMode: \"dontAsk\"",
+        "// 設定を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "permissions"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "読むだけの作業に、この設定を当てはめます。",
+          "focus": [3, 5],
+          "figure": {
+            "show": ["read", "gate", "other"]
+          }
+        },
+        {
+          "say": "確認なしで使えるのは、ここに並べたツールです。",
+          "part": {
+            "line": 3,
+            "text": "[\"Read\", \"Grep\", \"Glob\"]"
+          },
+          "figure": {
+            "tag": {
+              "read": "確認不要"
+            },
+            "mark": [
+              {
+                "on": "read",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "ほかのツールの呼び出しに、確認が要るとしましょう。",
+          "figure": {
+            "pulse": ["other"],
+            "tag": {
+              "other": "確認が必要"
+            }
+          }
+        },
+        {
+          "say": "その呼び出しは、dontAsk が断ります。",
+          "speech": "その呼び出しは、ドントアスクが断ります。",
+          "part": {
+            "line": 5,
+            "text": "\"dontAsk\""
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "other",
+                "kind": "cross"
+              }
+            ],
+            "pulse": ["gate"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "remove-tools",
+      "kind": "board",
+      "role": "note",
+      "title": "消す設定と確認を外す設定",
+      "board": "removed",
+      "beats": [
+        {
+          "say": "disallowedTools は、禁止するツールの指定です。",
+          "speech": "ディスアラウドツールズは、禁止するツールの指定です。",
+          "term": {
+            "text": "禁止ツール",
+            "ruby": "きんしつーる",
+            "note": "disallowedTools"
+          },
+          "show": ["agent", "bash"]
+        },
+        {
+          "say": "Bash を指定すると、そのツールの定義ごと消します。",
+          "speech": "バッシュを指定すると、そのツールの定義ごと消します。",
+          "hide": ["bash"],
+          "tag": {
+            "agent": "Bashなし"
+          }
+        },
+        {
+          "say": "一方、bypassPermissions は確認を外す設定です。",
+          "speech": "一方、バイパスパーミッションズは確認を外す設定です。",
+          "show": ["gate"],
+          "tag": {
+            "gate": "確認を外す"
+          }
+        },
+        {
+          "say": "禁止の指定がなければ、許可リスト外のツールも使えます。",
+          "show": ["bash"],
+          "tag": {
+            "bash": "禁止なし"
+          },
+          "pulse": ["bash"],
+          "untag": ["agent"]
+        },
+        {
+          "say": "使うのは、信頼できる隔離した環境だけにしましょう。",
+          "pulse": ["gate"],
+          "tag": {
+            "gate": "隔離環境だけ"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "キャンプ場の予約案内",
+      "board": "camp",
+      "think": 8,
+      "beats": [
+        {
+          "say": "キャンプ場の空きを調べる、無人の案内係を考えます。",
+          "show": ["camp"]
+        },
+        {
+          "say": "必要なのは、予約表を読むことだけです。",
+          "show": ["read", "list"]
+        },
+        {
+          "say": "一つ目では、読むツールだけを許可リストに書きました。",
+          "show": ["first"],
+          "tag": {
+            "first": "許可だけ"
+          }
+        },
+        {
+          "say": "二つ目では、同じリストに dontAsk を組み合わせます。",
+          "speech": "二つ目では、同じリストにドントアスクを組み合わせます。",
+          "show": ["second"],
+          "tag": {
+            "second": "dontAsk"
+          }
+        },
+        {
+          "say": "確認が要る書き換えを断るのは、どちらでしょうか。",
+          "pulse": ["first", "second"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "確認せずに断る案",
+      "board": "camp",
+      "beats": [
+        {
+          "say": "答えは、dontAsk も指定した二つ目です。",
+          "speech": "答えは、ドントアスクも指定した二つ目です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "予約表の書き換えに確認が要るなら、その呼び出しを断ります。",
+          "tag": {
+            "second": "書き換え拒否"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-refuse",
+      "kind": "board",
+      "role": "explain",
+      "title": "読む許可と変更の拒否",
+      "board": "campReason",
+      "beats": [
+        {
+          "say": "許可リストは、予約表を読むツールを確認なしで使えるようにします。",
+          "show": ["read"],
+          "tag": {
+            "read": "確認不要"
+          }
+        },
+        {
+          "say": "書き換えるツールは、リストの外にも残る点が落とし穴です。",
+          "show": ["write"],
+          "tag": {
+            "write": "定義は残る"
+          }
+        },
+        {
+          "say": "そこで、確認が要る呼び出しを断る設定も加えましょう。",
+          "show": ["gate"],
+          "tag": {
+            "gate": "dontAsk"
+          }
+        },
+        {
+          "say": "この組み合わせで、確認が要る書き換えを止めます。",
+          "pulse": ["gate", "write"],
+          "mark": [
+            {
+              "on": "write",
+              "kind": "cross"
+            },
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "作業から権限を決める",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "コードを調べて答える仕事では、読むためのツールに絞ります。",
+          "show": ["code"]
+        },
+        {
+          "say": "予約の空きを案内するだけなら、予約表の変更はいりません。",
+          "show": ["camp"]
+        },
+        {
+          "say": "無人で動かす前に、確認が要る呼び出しの扱いも決めましょう。",
+          "show": ["gate"]
+        },
+        {
+          "say": "作業に要るツールと権限だけを渡し、被害を小さく抑えます。",
+          "pulse": ["code", "camp", "gate"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4158bb9b85555dc3c027050e2f624f6c6106cda14c6e1137925cc360d1297151"
+  }
+}

@@ -1,0 +1,660 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "秘密をエージェントに渡さず、外側のプロキシで付け足して転送する流れを説明できる。",
+    "stuck": "外のサービスの鍵は、それを使うエージェントにも渡す必要があると思ってしまう。",
+    "points": ["API キーなどの秘密はエージェントに渡さず、外側のプロキシで付け足します。"],
+    "leaveOut": [
+      "ハルシネーションを減らす指示と根拠の引用",
+      "プロキシを設定する具体的なコード",
+      "ファイルの権限設定と多層防御の詳細",
+      "露出した鍵の失効と検証環境の分離"
+    ]
+  },
+  "art": {
+    "music-borrower": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white borrowing slip and gesturing toward a small blue tambourine. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instrument-cabinet": {
+      "prompt": "A small freestanding light grey instrument storage cabinet with an open door, containing a blue tambourine and a violet hand drum. A visible keyhole on the door. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "key-custodian": {
+      "prompt": "A staff member in a plain blue shirt holding a single violet metal key in one hand and a blue tambourine in the other. Short dark hair and simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "agent-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white envelope. No keys. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "secret-key": {
+      "prompt": "One large violet metal key with a blue oval bow, resting beside a closed light grey key pouch. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "proxy-relay": {
+      "prompt": "A small blue mail sorting device with a white envelope at its input slot and another white envelope at its output slot, with one violet metal key attached to the device itself. A conceptual physical object representing a relay that adds a secret, not an application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-server": {
+      "prompt": "One compact upright blue server appliance with a light grey front, two rounded ventilation slots and a simple cable connector. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-car": {
+      "prompt": "One compact blue rental car in a clear three-quarter view, with a blank white rental slip beside it. No registration digits or brand markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-ledger": {
+      "prompt": "An open white record book with blank pages, blue page tabs and a violet pencil beside it. No writing or marks on the pages. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "instruments": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "borrower",
+          "label": "楽器を借りる人",
+          "art": "music-borrower",
+          "at": [1, 1]
+        },
+        {
+          "id": "custodian",
+          "label": "鍵を持つ担当者",
+          "art": "key-custodian",
+          "at": [3, 1]
+        },
+        {
+          "id": "cabinet",
+          "label": "楽器の保管庫",
+          "art": "instrument-cabinet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "borrower",
+          "to": "custodian",
+          "label": "借りたい"
+        },
+        {
+          "id": "unlock",
+          "from": "custodian",
+          "to": "cabinet",
+          "label": "鍵を使う"
+        }
+      ]
+    },
+    "risk": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "key",
+          "label": "社内APIの鍵",
+          "art": "secret-key",
+          "at": [1, 1]
+        },
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "agent-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "outside",
+          "label": "意図しない先",
+          "art": "service-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-key",
+          "from": "key",
+          "to": "agent",
+          "label": "見える"
+        },
+        {
+          "id": "leak",
+          "from": "agent",
+          "to": "outside",
+          "label": "鍵も送る"
+        }
+      ]
+    },
+    "route": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "agent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "proxy",
+          "label": "プロキシ",
+          "art": "proxy-relay",
+          "at": [3, 1]
+        },
+        {
+          "id": "target",
+          "label": "社内API",
+          "art": "service-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "agent",
+          "to": "proxy",
+          "label": "秘密なし"
+        },
+        {
+          "id": "forward",
+          "from": "proxy",
+          "to": "target",
+          "label": "秘密を追加"
+        }
+      ]
+    },
+    "controls": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "proxy",
+          "label": "プロキシ",
+          "art": "proxy-relay",
+          "at": [1, 1]
+        },
+        {
+          "id": "allowed",
+          "label": "許可した宛先",
+          "art": "service-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "blocked",
+          "label": "許可しない先",
+          "art": "service-server",
+          "at": [5, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "依頼の記録",
+          "art": "request-ledger",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "agent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "proxy",
+          "label": "プロキシ",
+          "art": "proxy-relay",
+          "at": [3, 1]
+        },
+        {
+          "id": "car",
+          "label": "貸出処理",
+          "art": "rental-car",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "agent",
+          "to": "proxy",
+          "label": "秘密なし"
+        },
+        {
+          "id": "forward",
+          "from": "proxy",
+          "to": "car",
+          "label": "秘密を追加"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "鍵を渡さずに頼む",
+      "board": "instruments",
+      "beats": [
+        {
+          "say": "楽器を借りたい人が、担当者に頼む場面です。",
+          "show": ["borrower"]
+        },
+        {
+          "say": "鍵を持つ担当者が、楽器の保管庫を開けます。",
+          "show": ["custodian"]
+        },
+        {
+          "say": "借りる人に、保管庫の鍵を渡す必要はありません。",
+          "show": ["cabinet"]
+        },
+        {
+          "say": "秘密を渡さず、外側で付け足す作りを学びましょう。",
+          "pulse": ["borrower", "custodian"]
+        }
+      ]
+    },
+    {
+      "id": "borrow-instrument",
+      "kind": "board",
+      "role": "example",
+      "title": "鍵は担当者が使う",
+      "board": "instruments",
+      "beats": [
+        {
+          "say": "借りる人は、使いたい楽器を伝えます。",
+          "show": ["ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "保管庫の鍵を管理するのは、担当者です。",
+          "pulse": ["custodian"]
+        },
+        {
+          "say": "この例では、担当者が楽器を取り出しました。",
+          "show": ["unlock"],
+          "travel": {
+            "along": ["unlock"]
+          }
+        },
+        {
+          "say": "頼む人と、鍵を使う人の役割を分けています。",
+          "tag": {
+            "borrower": "依頼だけ",
+            "custodian": "鍵を管理"
+          }
+        }
+      ]
+    },
+    {
+      "id": "visible-secret",
+      "kind": "board",
+      "role": "syntax",
+      "title": "見える鍵は送れてしまう",
+      "board": "risk",
+      "beats": [
+        {
+          "say": "API キーなど、外へ漏らさない情報が秘密です。",
+          "speech": "エーピーアイキーなど、外へ漏らさない情報が秘密です。",
+          "term": {
+            "text": "秘密",
+            "ruby": "ひみつ",
+            "note": "外へ漏らさない情報"
+          }
+        },
+        {
+          "say": "社内の API を使う鍵を、例に考えます。",
+          "speech": "社内のエーピーアイを使う鍵を、例に考えます。",
+          "show": ["key"]
+        },
+        {
+          "say": "エージェントが読める場所に、鍵を置いていました。",
+          "show": ["agent", "read-key"],
+          "travel": {
+            "along": ["read-key"]
+          }
+        },
+        {
+          "say": "紛れ込んだ指示で、鍵ごと送るおそれがあります。",
+          "show": ["outside", "leak"],
+          "travel": {
+            "along": ["leak"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "見える秘密は、外へ送れてしまうので注意しましょう。",
+          "pulse": ["key", "agent"],
+          "mark": [
+            {
+              "on": "agent",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "meet-proxy",
+      "kind": "board",
+      "role": "syntax",
+      "title": "外側で依頼を中継する",
+      "board": "route",
+      "beats": [
+        {
+          "say": "外側で依頼を中継する仕組みが、プロキシです。",
+          "term": {
+            "text": "プロキシ",
+            "note": "依頼を中継する仕組み"
+          }
+        },
+        {
+          "say": "ここでは、エージェントの外に置きました。",
+          "show": ["agent", "proxy", "target"],
+          "pulse": ["proxy"]
+        },
+        {
+          "say": "送る依頼を、リクエストと呼びます。",
+          "term": {
+            "text": "リクエスト",
+            "note": "宛先に送る依頼"
+          }
+        },
+        {
+          "say": "最初に送るのは、秘密を含まない依頼です。",
+          "show": ["send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "鍵を足す場所を、プロキシ側にそろえます。",
+          "tag": {
+            "proxy": "秘密を管理"
+          },
+          "pulse": ["proxy"]
+        }
+      ]
+    },
+    {
+      "id": "forward-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "秘密なしで送り始める",
+      "board": "route",
+      "beats": [
+        {
+          "say": "社内の API に送るまでの流れをたどりましょう。",
+          "speech": "社内のエーピーアイに送るまでの流れをたどりましょう。",
+          "pulse": ["agent"]
+        },
+        {
+          "say": "エージェントは、鍵なしでリクエストを送ります。",
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "鍵を付け足すのは、外側のプロキシです。",
+          "pulse": ["proxy"],
+          "tag": {
+            "proxy": "鍵を追加"
+          }
+        },
+        {
+          "say": "そこから、鍵を付けた依頼を宛先へ転送します。",
+          "show": ["forward"],
+          "travel": {
+            "along": ["forward"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "エージェントに、鍵を配る必要はありません。",
+          "tag": {
+            "agent": "鍵を持たない"
+          },
+          "mark": [
+            {
+              "on": "agent",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "control-requests",
+      "kind": "board",
+      "role": "apply",
+      "title": "宛先と記録も管理する",
+      "board": "controls",
+      "beats": [
+        {
+          "say": "プロキシでは、送ってよい宛先だけを通せます。",
+          "show": ["proxy", "allowed"],
+          "mark": [
+            {
+              "on": "allowed",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "許可していない宛先は、通さない設定です。",
+          "show": ["blocked"],
+          "mark": [
+            {
+              "on": "blocked",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "すべてのリクエストを、記録に残しましょう。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "あとから確かめるための記録にも使えます。",
+          "pulse": ["ledger"],
+          "tag": {
+            "ledger": "あとで確認"
+          }
+        },
+        {
+          "say": "鍵の管理を、一か所にまとめられるのも利点です。",
+          "pulse": ["proxy"],
+          "tag": {
+            "proxy": "一か所で管理"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "レンタカーの鍵の置き場",
+      "board": "rental",
+      "think": 8,
+      "beats": [
+        {
+          "say": "レンタカーの貸し出しを手伝う仕組みを考えます。",
+          "show": ["car"]
+        },
+        {
+          "say": "貸出処理の API を使うために、鍵が必要です。",
+          "speech": "貸出処理のエーピーアイを使うために、鍵が必要です。",
+          "tag": {
+            "car": "鍵が必要"
+          }
+        },
+        {
+          "say": "一つ目では、エージェントが鍵を持ちました。",
+          "show": ["agent"],
+          "tag": {
+            "agent": "鍵を持つ"
+          }
+        },
+        {
+          "say": "二つ目では、外側のプロキシに鍵を置きます。",
+          "show": ["proxy"],
+          "tag": {
+            "proxy": "鍵を持つ"
+          }
+        },
+        {
+          "say": "エージェントに秘密を見せないのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "agent",
+              "kind": "question"
+            },
+            {
+              "on": "proxy",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["agent", "proxy"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "外側のプロキシに置く",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "答えは、プロキシに鍵を置く二つ目の作りです。",
+          "mark": [
+            {
+              "on": "agent",
+              "kind": "cross"
+            },
+            {
+              "on": "proxy",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["proxy"]
+        },
+        {
+          "say": "エージェントは、鍵を持たずに依頼を送ります。",
+          "tag": {
+            "agent": "鍵を持たない"
+          },
+          "unmark": ["agent"],
+          "pulse": ["agent"]
+        },
+        {
+          "say": "鍵を付け足す役割は、プロキシに任せましょう。",
+          "pulse": ["proxy"],
+          "tag": {
+            "proxy": "鍵を追加"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-rental",
+      "kind": "board",
+      "role": "explain",
+      "title": "鍵を扱う場所を分ける",
+      "board": "rental",
+      "reset": true,
+      "beats": [
+        {
+          "say": "一つ目では、エージェントから鍵が見えていました。",
+          "show": ["agent"],
+          "tag": {
+            "agent": "鍵が見える"
+          }
+        },
+        {
+          "say": "この配置では、鍵を外へ送るおそれがあります。",
+          "mark": [
+            {
+              "on": "agent",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "二つ目の流れを、鍵なしの依頼からたどりましょう。",
+          "show": ["proxy", "send"],
+          "tag": {
+            "agent": "鍵を持たない"
+          },
+          "unmark": ["agent"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "プロキシが鍵を足し、貸出処理へ転送します。",
+          "show": ["car", "forward"],
+          "tag": {
+            "proxy": "鍵を追加"
+          },
+          "travel": {
+            "along": ["forward"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "依頼を出す場所と、秘密を扱う場所を分けた作りです。",
+          "pulse": ["agent", "proxy"]
+        }
+      ]
+    },
+    {
+      "id": "use-proxy",
+      "kind": "board",
+      "role": "usage",
+      "title": "外のサービスを使うとき",
+      "board": "route",
+      "reset": true,
+      "beats": [
+        {
+          "say": "社内 API を使うエージェントで、この作りを使えます。",
+          "speech": "社内エーピーアイを使うエージェントで、この作りを使えます。",
+          "show": ["agent", "target"]
+        },
+        {
+          "say": "先に確かめるのは、鍵を読める場所です。",
+          "tag": {
+            "agent": "鍵は見えるか"
+          },
+          "pulse": ["agent"]
+        },
+        {
+          "say": "鍵は外側のプロキシに置き、そこで付け足しましょう。",
+          "show": ["proxy"],
+          "tag": {
+            "proxy": "鍵を追加"
+          },
+          "untag": ["agent"]
+        },
+        {
+          "say": "エージェントには、秘密なしで依頼を送らせます。",
+          "show": ["send", "forward"],
+          "travel": {
+            "along": ["send", "forward"],
+            "icon": "send"
+          },
+          "tag": {
+            "agent": "秘密なし"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "765a7cf8bd690dcedcc67f97346fda2d91631ddbbc143605becbf783a2221868"
+  }
+}

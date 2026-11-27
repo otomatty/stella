@@ -1,0 +1,732 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "キーを使う全処理の移行を確認してから古いキーを無効化し、その後も使用量を見張る手順を説明できる。",
+    "stuck": "受付の処理だけを切り替えて安心し、古いキーを使い続ける夜間の処理や、予定と違う使用を見落とす。",
+    "points": ["キーには期限を付けて定期的に入れ替え、使用量をキーごとに見張ります。"],
+    "leaveOut": [
+      "キーを保管する場所と接続元の制限",
+      "ワークスペースとキーの種類の選び方",
+      "管理用のキーと管理機能の詳細",
+      "期限前の無効化の取り消しと削除の違い",
+      "管理画面の操作や監視の実装"
+    ]
+  },
+  "art": {
+    "inspection-memos": {
+      "prompt": "A blue laptop with a completely blank screen beside a light grey clipboard holding white inspection memo sheets and a violet pen. A conceptual illustration of receiving inspection notes, not an application screenshot. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "night-ledger": {
+      "prompt": "A closed violet ledger with white pages beside a blue clock with a blank face and a small crescent moon. These concrete objects represent a scheduled overnight tally. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "key-deadline": {
+      "prompt": "A large blue key beside a small white tear-off calendar with a blank page and a violet binding. The key and calendar are separate concrete objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "old-key": {
+      "prompt": "A single large light grey key with a violet round head and a distinctive square tooth, lying diagonally. A concrete physical key used as a metaphor for an older service credential. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "usage-ledger": {
+      "prompt": "An open white ledger with blue binding, with two separate clusters of small blue and violet tally counters placed beside its pages. No written marks on the paper. These objects represent comparing use of two keys. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "day-pass": {
+      "prompt": "An attendant in a plain blue shirt with simple facial features, holding up a new blue entry pass with no markings and carrying an older light grey pass in the other hand. The torso and both passes are fully visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "night-pass": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater, simple facial features, holding only an old light grey entry pass with no markings, with a small crescent moon beside their shoulder. The torso and pass are fully visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bookmobile": {
+      "prompt": "A blue mobile library van with an open side hatch showing several white and violet books on a small built-in shelf. No people, no road, no scenery. The entire vehicle is visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "run-log": {
+      "prompt": "A blue magnifying glass above a white paper record sheet with a small blank-faced violet clock beside it. The paper has no markings. Concrete objects for examining when a job ran. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "intake",
+          "label": "点検メモの受付",
+          "art": "inspection-memos",
+          "at": [1, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間の集計",
+          "art": "night-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "key",
+          "label": "期限の近いキー",
+          "art": "key-deadline",
+          "at": [5, 1]
+        },
+        {
+          "id": "usage",
+          "label": "キー別の使用量",
+          "art": "usage-ledger",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "passes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "day",
+          "label": "朝の担当者",
+          "art": "day-pass",
+          "at": [1, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜の担当者",
+          "art": "night-pass",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "expiry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "new",
+          "label": "作成時の期限",
+          "art": "key-deadline",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "期限切れのキー",
+          "art": "old-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "list",
+          "label": "期限と状態",
+          "art": "run-log",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "rotation": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "new",
+          "label": "新しいキー",
+          "art": "key-deadline",
+          "at": [1, 1]
+        },
+        {
+          "id": "switch",
+          "label": "全処理の切替",
+          "art": "inspection-memos",
+          "at": [3, 1]
+        },
+        {
+          "id": "usage",
+          "label": "動作と使用量",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "old",
+          "label": "旧キーの無効化",
+          "art": "old-key",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "distribute",
+          "from": "new",
+          "to": "switch",
+          "label": "配る"
+        },
+        {
+          "id": "confirm",
+          "from": "switch",
+          "to": "usage",
+          "label": "確認"
+        },
+        {
+          "id": "disable",
+          "from": "usage",
+          "to": "old",
+          "label": "移行後"
+        }
+      ]
+    },
+    "switching": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "new",
+          "label": "新しいキー",
+          "art": "key-deadline",
+          "at": [1, 1]
+        },
+        {
+          "id": "intake",
+          "label": "点検メモの受付",
+          "art": "inspection-memos",
+          "at": [3, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間の集計",
+          "art": "night-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "usage",
+          "label": "キー別の使用量",
+          "art": "usage-ledger",
+          "at": [5, 2]
+        },
+        {
+          "id": "old",
+          "label": "古いキー",
+          "art": "old-key",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "monitor": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "usage",
+          "label": "キー別の使用量",
+          "art": "usage-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "log",
+          "label": "処理の実行記録",
+          "art": "run-log",
+          "at": [3, 1]
+        },
+        {
+          "id": "key",
+          "label": "監視するキー",
+          "art": "key-deadline",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "bus",
+          "label": "移動図書館",
+          "art": "bookmobile",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "受付の新キー",
+          "art": "key-deadline",
+          "at": [3, 1]
+        },
+        {
+          "id": "night",
+          "label": "巡回の夜間集計",
+          "art": "night-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "old",
+          "label": "古いキー",
+          "art": "old-key",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "intake",
+          "label": "巡回記録の受付",
+          "art": "bookmobile",
+          "at": [1, 1]
+        },
+        {
+          "id": "night",
+          "label": "巡回の夜間集計",
+          "art": "night-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "usage",
+          "label": "キー別の使用量",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "routine": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "期限を決める",
+          "art": "key-deadline",
+          "at": [1, 1]
+        },
+        {
+          "id": "rotate",
+          "label": "定期的な入替",
+          "art": "old-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "watch",
+          "label": "使用量の監視",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "昼と夜の処理を止めない",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "点検メモの受付で使うキーを、入れ替えます。",
+          "show": ["intake"]
+        },
+        {
+          "say": "夜間の集計にも、同じキーを使う仕組みです。",
+          "show": ["night"]
+        },
+        {
+          "say": "期限が近いので、両方の使い手を確かめましょう。",
+          "show": ["key"]
+        },
+        {
+          "say": "キーには期限を付けて定期的に入れ替え、使用量をキーごとに見張ります。",
+          "show": ["usage"],
+          "pulse": ["key", "usage"]
+        }
+      ]
+    },
+    {
+      "id": "entry-passes",
+      "kind": "board",
+      "role": "example",
+      "title": "夜の担当にも新しい入館証",
+      "board": "passes",
+      "beats": [
+        {
+          "say": "体育館の入館証を入れ替える場面を考えましょう。",
+          "show": ["day"]
+        },
+        {
+          "say": "朝の担当者だけが、新しい入館証を受け取りました。",
+          "tag": {
+            "day": "新しい入館証"
+          }
+        },
+        {
+          "say": "夜の担当者は、まだ古い入館証を持っています。",
+          "show": ["night"],
+          "tag": {
+            "night": "古い入館証"
+          }
+        },
+        {
+          "say": "古い入館証を止める前に、夜の担当にも渡しましょう。",
+          "mark": [
+            {
+              "on": "night",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["night"]
+        }
+      ]
+    },
+    {
+      "id": "expiry",
+      "kind": "board",
+      "role": "syntax",
+      "title": "期限は作成時に決める",
+      "board": "expiry",
+      "beats": [
+        {
+          "say": "キーを使える期限を、有効期限と呼びます。",
+          "term": {
+            "text": "有効期限",
+            "ruby": "ゆうこうきげん",
+            "note": "キーを使える期限"
+          }
+        },
+        {
+          "say": "期限を決めるのは、キーを作るときです。",
+          "show": ["new"],
+          "tag": {
+            "new": "作成時に決定"
+          }
+        },
+        {
+          "say": "期限を過ぎたキーでの呼び出しは失敗します。",
+          "show": ["old"],
+          "mark": [
+            {
+              "on": "old",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "同じキーで送り直しても直らないので、期限と状態を見ましょう。",
+          "show": ["list"],
+          "pulse": ["list"]
+        }
+      ]
+    },
+    {
+      "id": "rotation-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入れ替えの順番",
+      "board": "rotation",
+      "beats": [
+        {
+          "say": "使うキーを新しくする手順が、キーの入れ替えです。",
+          "term": {
+            "text": "キーの入れ替え",
+            "ruby": "キーのいれかえ",
+            "note": "新しいキーへ使い手を移す"
+          }
+        },
+        {
+          "say": "まず、新しいキーを作って対象の環境に配ります。",
+          "show": ["new"]
+        },
+        {
+          "say": "切り替える対象は、受付と夜間の処理の両方です。",
+          "show": ["switch", "distribute"],
+          "travel": {
+            "along": ["distribute"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "動作とキー別の使用量で、移行を確かめましょう。",
+          "show": ["usage", "confirm"],
+          "travel": {
+            "along": ["confirm"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "確認できたら、古いキーを無効化して使えなくします。",
+          "show": ["old", "disable"],
+          "tag": {
+            "old": "移行確認後"
+          }
+        }
+      ]
+    },
+    {
+      "id": "switch-both",
+      "kind": "board",
+      "role": "apply",
+      "title": "受付の切替だけで終えない",
+      "board": "switching",
+      "beats": [
+        {
+          "say": "点検メモの本番環境へ、新しいキーを配ります。",
+          "show": ["new"]
+        },
+        {
+          "say": "受付の処理は、新しいキーで動く状態です。",
+          "show": ["intake"],
+          "tag": {
+            "intake": "切替済み"
+          }
+        },
+        {
+          "say": "ただし、夜間の集計はまだ切り替えていません。",
+          "show": ["night"],
+          "tag": {
+            "night": "旧キー"
+          }
+        },
+        {
+          "say": "夜間の集計も切り替え、動作を確かめましょう。",
+          "tag": {
+            "night": "新キー"
+          },
+          "mark": [
+            {
+              "on": "night",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "使用量でも両方の移行を確かめてから、古いキーを無効化します。",
+          "show": ["usage", "old"],
+          "tag": {
+            "old": "無効化"
+          }
+        }
+      ]
+    },
+    {
+      "id": "watch-usage",
+      "kind": "board",
+      "role": "apply",
+      "title": "使われ方をキー別に追う",
+      "board": "monitor",
+      "beats": [
+        {
+          "say": "どれだけ使われたかを表すのが、使用量です。",
+          "term": {
+            "text": "使用量",
+            "ruby": "しようりょう",
+            "note": "どれだけ使われたか"
+          }
+        },
+        {
+          "say": "ここでは、新旧のキーに分けて使用量を見ます。",
+          "show": ["usage", "key"],
+          "tag": {
+            "usage": "新旧を比較"
+          }
+        },
+        {
+          "say": "いつどの処理が動いたかも確認しましょう。",
+          "show": ["log"],
+          "pulse": ["log"]
+        },
+        {
+          "say": "切り替えたあとも、予定した使い方と照らし合わせます。",
+          "pulse": ["usage", "key"],
+          "tag": {
+            "usage": "継続して確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "巡回の集計を残したら",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "架空の移動図書館で、巡回の記録を集計します。",
+          "show": ["bus"]
+        },
+        {
+          "say": "受付処理は、新しいキーに切り替えたところです。",
+          "show": ["new"],
+          "tag": {
+            "new": "受付切替済み"
+          }
+        },
+        {
+          "say": "夜間の集計は、まだ古いキーを使っていました。",
+          "show": ["night"],
+          "tag": {
+            "night": "旧キー"
+          }
+        },
+        {
+          "say": "漏れの心配はなく、期限前の計画的な入れ替えです。",
+          "show": ["old"],
+          "tag": {
+            "old": "期限前"
+          }
+        },
+        {
+          "say": "古いキーを無効化する前に、何を確かめるべきでしょうか。",
+          "pulse": ["night", "old"],
+          "mark": [
+            {
+              "on": "old",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "夜間の集計の移行も確認",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "夜間の集計も切り替え、動作とキー別の使用量を確かめます。",
+          "tag": {
+            "night": "新キー"
+          },
+          "mark": [
+            {
+              "on": "night",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "古いキーを止めるのは、両方の移行を確かめたあとです。",
+          "tag": {
+            "old": "無効化"
+          },
+          "mark": [
+            {
+              "on": "old",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["old"]
+        }
+      ]
+    },
+    {
+      "id": "why-both",
+      "kind": "board",
+      "role": "explain",
+      "title": "見落とした使い手をたどる",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "受付だけで安心すると、夜間の使い手を見落とします。",
+          "show": ["intake"],
+          "tag": {
+            "intake": "切替済み"
+          }
+        },
+        {
+          "say": "夜間の集計が古いキーを使っている間は、切替途中です。",
+          "show": ["night"],
+          "tag": {
+            "night": "旧キー"
+          }
+        },
+        {
+          "say": "先に無効化すると、夜間の呼び出しは成功しません。",
+          "mark": [
+            {
+              "on": "night",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["night"]
+        },
+        {
+          "say": "両方の動作とキー別の使用量を見て、移行を確かめましょう。",
+          "show": ["usage"],
+          "tag": {
+            "night": "新キー"
+          },
+          "mark": [
+            {
+              "on": "night",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["usage"]
+        }
+      ]
+    },
+    {
+      "id": "unexpected-use",
+      "kind": "board",
+      "role": "usage",
+      "title": "昼に増えた使用を調べる",
+      "board": "monitor",
+      "reset": true,
+      "beats": [
+        {
+          "say": "普段は夜だけ動くキーが、昼に急に使われ始めました。",
+          "show": ["usage", "key"],
+          "tag": {
+            "usage": "昼に増加"
+          }
+        },
+        {
+          "say": "調べるのは、そのキーの使い手と実行記録です。",
+          "show": ["log"],
+          "pulse": ["log"]
+        },
+        {
+          "say": "予定した処理の記録と、使用量を照らし合わせます。",
+          "pulse": ["log", "usage"]
+        },
+        {
+          "say": "漏れが疑われるキーは、すぐに無効化してください。",
+          "tag": {
+            "key": "すぐ無効化"
+          },
+          "mark": [
+            {
+              "on": "key",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["key"]
+        }
+      ]
+    },
+    {
+      "id": "routine",
+      "kind": "board",
+      "role": "usage",
+      "title": "期限と使用量を見続ける",
+      "board": "routine",
+      "beats": [
+        {
+          "say": "キーを作るときに、使える期限を決めます。",
+          "show": ["limit"]
+        },
+        {
+          "say": "期限を迎える前に、定期的に入れ替えましょう。",
+          "show": ["rotate"]
+        },
+        {
+          "say": "入れ替えの確認に使うのが、キーごとの使用量です。",
+          "show": ["watch"]
+        },
+        {
+          "say": "切り替えたあとも、予定と違う使われ方がないか見張ります。",
+          "pulse": ["watch"],
+          "tag": {
+            "watch": "継続して確認"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7c5015a7a29f31e35d57131ee304453a39c86b298f010a130bbfcc5b3d2e0f03"
+  }
+}

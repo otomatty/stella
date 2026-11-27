@@ -1,0 +1,724 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "画面とサーバーの役割を分け、API キーをサーバーだけに置く構成と配布前の確認を説明できる。",
+    "stuck": "環境変数に入れれば安全だと思い、利用者に配る画面のファイルへキーを埋め込んでしまう。",
+    "points": ["API キーは画面のコードに入れず、自分のサーバーから Claude を呼びます。"],
+    "leaveOut": [
+      "環境ごとのワークスペースとキーの分離",
+      "管理用キーの種類と発行手順",
+      "キーの期限、入れ替え、使用量の監視",
+      "SDK の設定名と実装コード",
+      "エージェントの外側のプロキシの構成"
+    ]
+  },
+  "art": {
+    "inspection-note": {
+      "prompt": "A white inspection clipboard beside two small light grey cardboard warehouse parcels with blue tape. The clipboard has blank paper and no marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mobile-user": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blue smartphone with a completely blank screen. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "server-key": {
+      "prompt": "A compact blue server tower with a violet physical key resting beside its base. A concrete conceptual illustration of a server keeping a secret key, with no interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "archive-clerk": {
+      "prompt": "A clerk in a plain blue shirt holding a violet key beside a small closed light grey archive cabinet. Simple facial features. No other people. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "archive-request": {
+      "prompt": "A white paper request slip held by a hand beside a closed light grey document folder with a blue tab. The paper and folder are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "copy-sheet": {
+      "prompt": "A single white sheet emerging from a compact blue printer, representing a requested document copy. The paper is entirely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "umbrella-notice": {
+      "prompt": "Two closed blue and violet umbrellas beside a white paper leaflet held by a light grey clip. The leaflet is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "web-package": {
+      "prompt": "An open blue laptop beside a smartphone and a small stack of blank white files held by a blue binder clip. Both screens are completely blank. A conceptual illustration of files delivered to devices, not a real app interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "点検メモ",
+          "art": "inspection-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "screen",
+          "label": "担当者の画面",
+          "art": "mobile-user",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "キーの置き場",
+          "art": "server-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "archive": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "写しの依頼",
+          "art": "archive-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "書庫の担当者",
+          "art": "archive-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "copy",
+          "label": "渡す写し",
+          "art": "copy-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "request",
+          "to": "clerk",
+          "label": "依頼"
+        },
+        {
+          "id": "give",
+          "from": "clerk",
+          "to": "copy",
+          "label": "渡す"
+        }
+      ]
+    },
+    "key-place": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "screen",
+          "label": "利用者の画面",
+          "art": "mobile-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "server",
+          "to": "claude",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "distribution": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "画面の配布物",
+          "art": "web-package",
+          "at": [1, 1]
+        },
+        {
+          "id": "user",
+          "label": "受け取る人",
+          "art": "mobile-user",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "deliver",
+          "from": "files",
+          "to": "user",
+          "label": "配る"
+        }
+      ]
+    },
+    "flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "screen",
+          "label": "点検の画面",
+          "art": "mobile-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send-memo",
+          "from": "screen",
+          "to": "server",
+          "label": "点検メモ"
+        },
+        {
+          "id": "request",
+          "from": "server",
+          "to": "claude",
+          "label": "要約を頼む"
+        },
+        {
+          "id": "reply",
+          "from": "claude",
+          "to": "server",
+          "label": "要約",
+          "route": "under"
+        },
+        {
+          "id": "display",
+          "from": "server",
+          "to": "screen",
+          "label": "要約",
+          "route": "over"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "傘の貸出案内",
+          "art": "umbrella-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "files",
+          "label": "画面の配布物",
+          "art": "web-package",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "screen",
+          "label": "貸出案内の画面",
+          "art": "umbrella-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "screen",
+          "to": "server",
+          "label": "案内"
+        },
+        {
+          "id": "call",
+          "from": "server",
+          "to": "claude",
+          "label": "要約を頼む"
+        }
+      ]
+    },
+    "release": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "公開する配布物",
+          "art": "web-package",
+          "at": [1, 1]
+        },
+        {
+          "id": "screen",
+          "label": "点検の画面",
+          "art": "mobile-user",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "自分のサーバー",
+          "art": "server-key",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "キーをどこに置くか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "倉庫の担当者が、点検メモを要約したいと考えました。",
+          "show": ["memo"]
+        },
+        {
+          "say": "使うのは、担当者のモバイルアプリです。",
+          "show": ["screen"]
+        },
+        {
+          "say": "利用者に配る前に、キーの置き場所を決めましょう。",
+          "show": ["server"]
+        },
+        {
+          "say": "キーは画面に入れず、サーバーから Claude を呼びます。",
+          "speech": "キーは画面に入れず、サーバーからクロードを呼びます。",
+          "pulse": ["server"]
+        }
+      ]
+    },
+    {
+      "id": "archive",
+      "kind": "board",
+      "role": "example",
+      "title": "写しを頼む窓口",
+      "board": "archive",
+      "beats": [
+        {
+          "say": "書庫にある書類の写しを、窓口で頼む場面です。",
+          "show": ["request"]
+        },
+        {
+          "say": "頼まれた担当者が、持っている鍵で書庫を開けます。",
+          "show": ["clerk", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "依頼した人に渡すのは、書類の写しだけです。",
+          "show": ["copy", "give"],
+          "travel": {
+            "along": ["give"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "鍵を預かる役と、結果を受け取る役を分けましょう。",
+          "pulse": ["clerk", "copy"]
+        }
+      ]
+    },
+    {
+      "id": "key-place",
+      "kind": "board",
+      "role": "syntax",
+      "title": "認証はサーバーで扱う",
+      "board": "key-place",
+      "beats": [
+        {
+          "say": "API キーは、Claude を呼ぶときの認証に使います。",
+          "speech": "エーピーアイキーは、クロードを呼ぶときの認証に使います。",
+          "term": {
+            "text": "APIキー",
+            "note": "呼び出しの認証に使う値"
+          }
+        },
+        {
+          "say": "この例でキーを扱うのは、自分のサーバーです。",
+          "show": ["server"]
+        },
+        {
+          "say": "画面からの依頼を受ける側を、サーバーと呼びます。",
+          "term": {
+            "text": "サーバー",
+            "note": "画面からの依頼を受ける側"
+          }
+        },
+        {
+          "say": "ここで利用者と入力を確かめてから呼び出しましょう。",
+          "show": ["claude", "call"],
+          "pulse": ["server"]
+        },
+        {
+          "say": "画面のコードには、キーを入れません。",
+          "show": ["screen"],
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "screen": "キーは置かず"
+          }
+        }
+      ]
+    },
+    {
+      "id": "distribution",
+      "kind": "board",
+      "role": "syntax",
+      "title": "変数の渡し先を確かめる",
+      "board": "distribution",
+      "beats": [
+        {
+          "say": "利用者へ配るファイルを、ここでは配布物と呼びます。",
+          "term": {
+            "text": "配布物",
+            "ruby": "はいふぶつ",
+            "note": "利用者へ配るファイル"
+          }
+        },
+        {
+          "say": "この図では、画面を動かすファイルが配布物です。",
+          "show": ["files"]
+        },
+        {
+          "say": "そこにキーを埋め込むと、利用者も値を読めます。",
+          "show": ["user", "deliver"],
+          "travel": {
+            "along": ["deliver"],
+            "icon": "file"
+          },
+          "tag": {
+            "files": "キー入り"
+          }
+        },
+        {
+          "say": "画面の配布物に埋め込まれる変数でも、解決しません。",
+          "pulse": ["files"],
+          "mark": [
+            {
+              "on": "files",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "キーを渡す先は、自分のサーバーにしましょう。",
+          "show": ["server"],
+          "pulse": ["server"],
+          "mark": [
+            {
+              "on": "server",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "send-memo",
+      "kind": "board",
+      "role": "apply",
+      "title": "点検メモを送る順番",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "点検アプリでは、画面からメモを送ります。",
+          "show": ["screen"]
+        },
+        {
+          "say": "送り先は、アプリを作る側が用意したサーバーです。",
+          "show": ["server", "send-memo"],
+          "travel": {
+            "along": ["send-memo"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "サーバーは、この利用者が操作できるかを確かめます。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "利用者を確認"
+          }
+        },
+        {
+          "say": "送られたメモの内容も、確認する対象です。",
+          "tag": {
+            "server": "入力を確認"
+          }
+        },
+        {
+          "say": "確認後、保管しているキーで Claude に要約を頼みます。",
+          "speech": "確認後、保管しているキーでクロードに要約を頼みます。",
+          "show": ["claude", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "return-summary",
+      "kind": "board",
+      "role": "apply",
+      "title": "画面には要約を返す",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "Claude から返った要約は、サーバーが受け取ります。",
+          "speech": "クロードから返った要約は、サーバーが受け取ります。",
+          "hide": ["request", "send-memo"],
+          "show": ["reply"],
+          "travel": {
+            "along": ["reply"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "次に画面へ返すのは、その要約です。",
+          "show": ["display"],
+          "travel": {
+            "along": ["display"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "画面では、担当者が点検メモの要約を読みます。",
+          "pulse": ["screen"],
+          "tag": {
+            "screen": "要約を読む"
+          }
+        },
+        {
+          "say": "呼び出しに使うキーを、画面へ返す必要はありません。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "キーを扱う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "傘の案内で置き場を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "傘の貸し出し案内を要約するアプリを考えましょう。",
+          "show": ["notice"]
+        },
+        {
+          "say": "開発者は、キーをどこへ渡すか迷っています。",
+          "show": ["files", "server"]
+        },
+        {
+          "say": "一つ目の案は、画面に埋め込む変数へ入れる方法です。",
+          "tag": {
+            "files": "一つ目"
+          },
+          "pulse": ["files"]
+        },
+        {
+          "say": "二つ目の案は、サーバーだけにキーを渡します。",
+          "tag": {
+            "server": "二つ目"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "利用者へキーを配らずに要約を返せるのは、どちらでしょうか。",
+          "pulse": [],
+          "mark": [
+            {
+              "on": "files",
+              "kind": "question"
+            },
+            {
+              "on": "server",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "サーバーだけに渡す",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、サーバーだけにキーを渡す二つ目の案です。",
+          "mark": [
+            {
+              "on": "server",
+              "kind": "check"
+            },
+            {
+              "on": "files",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["server"]
+        },
+        {
+          "say": "画面からは、自分のサーバーに要約を頼みます。",
+          "pulse": ["notice", "server"]
+        }
+      ]
+    },
+    {
+      "id": "why-server",
+      "kind": "board",
+      "role": "explain",
+      "title": "案内とキーの扱いを分ける",
+      "board": "quiz-flow",
+      "beats": [
+        {
+          "say": "貸し出し案内は、画面からサーバーへ送ります。",
+          "show": ["screen", "server", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "利用者と入力を確かめるのは、サーバーの役目です。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "確認する"
+          }
+        },
+        {
+          "say": "そのサーバーが、キーを使って Claude を呼びます。",
+          "speech": "そのサーバーが、キーを使ってクロードを呼びます。",
+          "show": ["claude", "call"],
+          "travel": {
+            "along": ["call"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "画面のファイルにキーを埋め込む必要はありません。",
+          "pulse": ["screen"],
+          "tag": {
+            "screen": "キーなし"
+          }
+        },
+        {
+          "say": "変数の名前より、キーが配布物に入るかを確かめましょう。",
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "release",
+      "kind": "board",
+      "role": "usage",
+      "title": "公開する前に確かめる",
+      "board": "release",
+      "beats": [
+        {
+          "say": "点検アプリを公開するときは、実際の配布物を調べます。",
+          "show": ["files"]
+        },
+        {
+          "say": "確認するのは、サーバー用のキーが含まれていないかです。",
+          "pulse": ["files"],
+          "tag": {
+            "files": "キーなし"
+          }
+        },
+        {
+          "say": "モバイルでも、配るアプリにキーがないか確かめましょう。",
+          "show": ["screen"],
+          "pulse": ["screen"]
+        },
+        {
+          "say": "画面が扱うのは、点検メモと返ってきた要約です。",
+          "tag": {
+            "screen": "メモと要約"
+          }
+        },
+        {
+          "say": "キーはサーバーに置き、そこから Claude を呼びます。",
+          "speech": "キーはサーバーに置き、そこからクロードを呼びます。",
+          "show": ["server"],
+          "pulse": ["server"],
+          "mark": [
+            {
+              "on": "server",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e86288f972fc103f5cafb3e62beef2ff5f59a4a87e225071e8a379d92a2ff4ee"
+  }
+}

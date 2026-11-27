@@ -1,0 +1,746 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "資料の量と更新頻度を見て、全文を渡すか、質問に合う最新版の箇所を探して渡すかを理由付きで選べる。",
+    "stuck": "短い資料なら更新が多くても全文を使い回してよいと思い、量だけで取り込み方を決めてしまう。",
+    "points": [
+      "資料が小さく変わらないなら全文を入れ、大きいか変わりやすいなら要る部分だけを探して入れます。"
+    ],
+    "leaveOut": [
+      "資料の量の具体的な目安とトークン数",
+      "プロンプトキャッシュの設定方法",
+      "埋め込みモデルの選定と検索の実装",
+      "引用の設定や引用のない主張の扱い",
+      "検索結果が見つからなかった場合の処理"
+    ]
+  },
+  "art": {
+    "workshop-manual": {
+      "prompt": "A thin open white booklet with a small blue wrench pictogram on its cover, representing the stable rules of a school workshop. Blank white pages and a blue binding. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "equipment-records": {
+      "prompt": "Several thick light grey binders with blue tabs and loose white inspection sheets, representing frequently updated records for many school workshop tools. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "workshop-learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a small blue hand tool, looking toward an empty speech bubble. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding its hands open to receive a document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "drill-label": {
+      "prompt": "One blue electric drill with a large blank white identification plate on its side, with a magnifying glass positioned beside the plate. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "selected-record": {
+      "prompt": "A single white inspection sheet with a blue binder clip and a small blue wrench pictogram, lifted from a light grey folder by a hand wearing a blue sleeve. The rest of the sheet is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bread-request": {
+      "prompt": "Two golden bread rolls beside a white paper reservation slip and an empty violet speech bubble, representing a request to reserve bread. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bakery-ledger": {
+      "prompt": "A small open white reservation ledger beside one golden bread roll, with a violet pencil poised over a blank page to show that reservations are changing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "短い手引き",
+          "art": "workshop-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "records",
+          "label": "日々の記録",
+          "art": "equipment-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "取り込み方",
+          "art": "selected-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "workshop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "工作室の質問",
+          "art": "workshop-learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "利用の手引き",
+          "art": "workshop-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "records",
+          "label": "道具の記録",
+          "art": "equipment-records",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "full": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "全文",
+          "art": "workshop-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reuse",
+          "label": "同じ手引き",
+          "art": "workshop-manual",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "manual",
+          "to": "claude",
+          "label": "まとめて"
+        },
+        {
+          "id": "reuse-send",
+          "from": "reuse",
+          "to": "claude",
+          "label": "使い回す"
+        }
+      ]
+    },
+    "retrieve": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "records",
+          "label": "多数の記録",
+          "art": "equipment-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "selected",
+          "label": "必要な箇所",
+          "art": "selected-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "records",
+          "to": "selected",
+          "label": "探す"
+        },
+        {
+          "id": "send",
+          "from": "selected",
+          "to": "claude",
+          "label": "渡す"
+        }
+      ]
+    },
+    "latest": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "question",
+          "label": "いまの状態",
+          "art": "workshop-learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "records",
+          "label": "最新の記録",
+          "art": "equipment-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "selected",
+          "label": "該当箇所",
+          "art": "selected-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fetch",
+          "from": "question",
+          "to": "records",
+          "label": "取得"
+        },
+        {
+          "id": "select",
+          "from": "records",
+          "to": "selected",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "matching": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "drill",
+          "label": "道具の型番",
+          "art": "drill-label",
+          "at": [1, 1]
+        },
+        {
+          "id": "meaning",
+          "label": "意味で探す",
+          "art": "equipment-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "words",
+          "label": "語で探す",
+          "art": "equipment-records",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "meaning-search",
+          "from": "drill",
+          "to": "meaning",
+          "label": "意味"
+        },
+        {
+          "id": "word-search",
+          "from": "meaning",
+          "to": "words",
+          "label": "組み合わせ"
+        }
+      ]
+    },
+    "results": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "candidates",
+          "label": "候補の記録",
+          "art": "equipment-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "chosen",
+          "label": "選んだ箇所",
+          "art": "selected-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "rank",
+          "from": "candidates",
+          "to": "chosen",
+          "label": "並べ直す"
+        },
+        {
+          "id": "send",
+          "from": "chosen",
+          "to": "claude",
+          "label": "渡す"
+        }
+      ]
+    },
+    "bakery": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "パンの予約",
+          "art": "bread-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "短い予約表",
+          "art": "bakery-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "whole",
+          "label": "全文を再利用",
+          "art": "bakery-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "最新版を探す",
+          "art": "bakery-ledger",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "工作室の規則",
+          "art": "workshop-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "records",
+          "label": "道具の記録",
+          "art": "equipment-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "パンの予約表",
+          "art": "bakery-ledger",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "choose-input",
+      "kind": "board",
+      "role": "goal",
+      "title": "資料の取り込み方を選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "工作室の案内には、短い手引きを使っています。",
+          "show": ["manual"]
+        },
+        {
+          "say": "もう一つの資料は、毎日変わる道具の記録です。",
+          "show": ["records"]
+        },
+        {
+          "say": "同じ入れ方でよいか、資料を見比べましょう。",
+          "show": ["choice"]
+        },
+        {
+          "say": "量と変わりやすさで、全文か検索かを選びます。",
+          "pulse": ["manual", "records"],
+          "tag": {
+            "choice": "量と更新"
+          }
+        }
+      ]
+    },
+    {
+      "id": "workshop-question",
+      "kind": "board",
+      "role": "example",
+      "title": "紙の資料で考える",
+      "board": "workshop",
+      "beats": [
+        {
+          "say": "工作室で、道具について係に尋ねる場面です。",
+          "show": ["learner"]
+        },
+        {
+          "say": "係はまず、短い利用の手引きを開きました。",
+          "show": ["manual"]
+        },
+        {
+          "say": "変わらない決まりなら、その一冊で確かめられます。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "年一回更新"
+          }
+        },
+        {
+          "say": "今日の道具の状態は、新しい記録で確かめましょう。",
+          "show": ["records"],
+          "tag": {
+            "records": "毎日更新"
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-full",
+      "kind": "board",
+      "role": "syntax",
+      "title": "小さく安定した資料",
+      "board": "full",
+      "beats": [
+        {
+          "say": "資料の文章を全部まとめたものを、全文と呼びます。",
+          "show": ["manual"],
+          "term": {
+            "text": "全文",
+            "ruby": "ぜんぶん",
+            "note": "資料の文章を全部まとめたもの"
+          }
+        },
+        {
+          "say": "ここでは、短い手引きの最初から最後までです。",
+          "pulse": ["manual"]
+        },
+        {
+          "say": "小さく変わらない資料なら、全文を渡して試しましょう。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "検索の仕組みを作らず、全体から根拠を示せます。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "同じ前半を使い回すには、プロンプトキャッシュです。",
+          "show": ["reuse", "reuse-send"],
+          "tag": {
+            "reuse": "費用を抑える"
+          }
+        }
+      ]
+    },
+    {
+      "id": "select-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "大きい資料は絞る",
+      "board": "retrieve",
+      "beats": [
+        {
+          "say": "道具の記録が増えると、毎回全部渡す費用も増えます。",
+          "show": ["records"]
+        },
+        {
+          "say": "関係する条件も、見落としやすくなる点に注意しましょう。",
+          "mark": [
+            {
+              "on": "records",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、質問に関係する箇所を探す方法です。",
+          "show": ["selected", "select"],
+          "travel": {
+            "along": ["select"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "関係の薄い資料を減らし、精度と費用を確かめます。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fetch-latest",
+      "kind": "board",
+      "role": "apply",
+      "title": "変わる資料は質問のあとで",
+      "board": "latest",
+      "beats": [
+        {
+          "say": "利用者が、道具を今日使えるか尋ねました。",
+          "show": ["question"]
+        },
+        {
+          "say": "記録が毎日変わるなら、質問のあとで最新版を取ります。",
+          "show": ["records", "fetch"],
+          "travel": {
+            "along": ["fetch"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "古いデータのままでは、変更前の条件で答える場合があるためです。",
+          "pulse": ["records"],
+          "tag": {
+            "records": "鮮度を確認"
+          }
+        },
+        {
+          "say": "最新版から、その道具に関係する箇所を選びましょう。",
+          "show": ["selected", "select"],
+          "travel": {
+            "along": ["select"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "match-model",
+      "kind": "board",
+      "role": "apply",
+      "title": "型番を検索で拾う",
+      "board": "matching",
+      "beats": [
+        {
+          "say": "道具の型番は、意味の近さだけでは見つけにくい場合があります。",
+          "show": ["drill", "meaning", "meaning-search"]
+        },
+        {
+          "say": "語の一致で探す方法が、BM25です。",
+          "show": ["words", "word-search"],
+          "speech": "語の一致で探す方法が、ビーエムにじゅうごです。",
+          "term": {
+            "text": "BM25",
+            "note": "型番などの語の一致で探す"
+          }
+        },
+        {
+          "say": "道具の型番も、語の一致で探します。",
+          "pulse": ["drill", "words"],
+          "tag": {
+            "words": "型番の一致"
+          }
+        },
+        {
+          "say": "意味で探す方法と組み合わせ、候補を集めましょう。",
+          "pulse": ["meaning", "words"]
+        }
+      ]
+    },
+    {
+      "id": "pass-results",
+      "kind": "board",
+      "role": "apply",
+      "title": "候補から必要な箇所へ",
+      "board": "results",
+      "beats": [
+        {
+          "say": "候補は、質問との関係で順位を付け直します。",
+          "show": ["candidates", "chosen", "rank"],
+          "travel": {
+            "along": ["rank"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "検索結果を渡すのが、サーチリザルトです。",
+          "pulse": ["chosen"],
+          "term": {
+            "text": "検索結果ブロック",
+            "ruby": "けんさくけっかブロック",
+            "note": "search_result"
+          }
+        },
+        {
+          "say": "選んだ箇所には、出どころと題名と本文を入れます。",
+          "tag": {
+            "chosen": "出典と本文"
+          }
+        },
+        {
+          "say": "図の矢印は、選んだ箇所を渡す流れです。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bakery-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "短くても変わる予約表",
+      "board": "bakery",
+      "think": 8,
+      "beats": [
+        {
+          "say": "パン屋に、明日のパンを予約したいと相談がありました。",
+          "show": ["request"]
+        },
+        {
+          "say": "予約表は短いですが、予約のたびに内容が変わります。",
+          "show": ["ledger"],
+          "tag": {
+            "ledger": "随時更新"
+          }
+        },
+        {
+          "say": "一つ目は、朝に取った全文を使い回す方法です。",
+          "show": ["whole"],
+          "tag": {
+            "whole": "朝の表"
+          }
+        },
+        {
+          "say": "二つ目では、質問のあとで最新版の該当箇所を探します。",
+          "show": ["fresh"],
+          "tag": {
+            "fresh": "質問のあと"
+          }
+        },
+        {
+          "say": "いまの予約状況に合うのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "whole",
+              "kind": "question"
+            },
+            {
+              "on": "fresh",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bakery-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "最新版から該当箇所を探す",
+      "board": "bakery",
+      "beats": [
+        {
+          "say": "答えは、最新版から該当箇所を探す二つ目です。",
+          "mark": [
+            {
+              "on": "fresh",
+              "kind": "check"
+            },
+            {
+              "on": "whole",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "短さだけで決めず、予約表の変わりやすさも見ます。",
+          "pulse": ["ledger"]
+        }
+      ]
+    },
+    {
+      "id": "bakery-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "量だけでは決められない",
+      "board": "bakery",
+      "beats": [
+        {
+          "say": "この予約表は、全部渡せるほど短い資料です。",
+          "pulse": ["ledger"],
+          "tag": {
+            "ledger": "量は少ない"
+          }
+        },
+        {
+          "say": "ただし、予約が入るたびに中身が変わります。",
+          "tag": {
+            "ledger": "随時更新"
+          }
+        },
+        {
+          "say": "朝の表には、そのあとの変更が入っていません。",
+          "pulse": ["whole"],
+          "tag": {
+            "whole": "変更前"
+          }
+        },
+        {
+          "say": "質問を受けてから、最新版の予約表を取りましょう。",
+          "pulse": ["fresh"],
+          "tag": {
+            "fresh": "最新版"
+          }
+        },
+        {
+          "say": "そこから、明日の予約に関係する箇所を選びます。",
+          "pulse": ["request", "fresh"],
+          "tag": {
+            "fresh": "明日の予約"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-in-practice",
+      "kind": "board",
+      "role": "usage",
+      "title": "資料に合わせて選ぶ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "工作室の短く安定した手引きなら、全文を渡して試します。",
+          "show": ["manual"],
+          "tag": {
+            "manual": "全文"
+          }
+        },
+        {
+          "say": "大量にある道具の記録は、関係する箇所に絞る対象です。",
+          "show": ["records"],
+          "tag": {
+            "records": "必要な箇所"
+          }
+        },
+        {
+          "say": "パンの予約表は、質問のあとに最新版を取りましょう。",
+          "show": ["ledger"],
+          "tag": {
+            "ledger": "最新版"
+          }
+        },
+        {
+          "say": "量と費用と鮮度を見て、資料の取り込み方を選びます。",
+          "pulse": ["manual", "records", "ledger"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b0e4260396b073a0ea3ad69a5e60b3a43aa4ebdda2dd76c17a19629fba0729d0"
+  }
+}

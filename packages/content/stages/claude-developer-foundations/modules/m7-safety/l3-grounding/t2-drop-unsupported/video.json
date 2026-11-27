@@ -1,0 +1,663 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答のブロックごとに引用を確かめ、表示する説明と資料にないと返す説明を選べる。",
+    "stuck": "答えの一部に引用があるだけで、別のブロックの説明も根拠付きだと思ってしまう。",
+    "points": ["資料の引用が付かない主張は、答えから外すか「資料にない」と返します。"],
+    "leaveOut": [
+      "引用を有効にする設定と文書ごとの位置の形式",
+      "全文を渡すか検索するかの選択",
+      "項目ごとの値と引用の保存方法",
+      "構造化出力と引用を組み合わせる制約"
+    ]
+  },
+  "art": {
+    "shelf-load": {
+      "prompt": "A compact blue metal storage shelf holding two light grey cardboard cartons sealed with violet tape, showing the shelf and its load as one clear object. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "inspection-manual": {
+      "prompt": "An open white inspection handbook with a blue binding and one violet page tab, with a tiny pictorial blue shelf on the page and no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "outdoor-shelf": {
+      "prompt": "A blue metal storage shelf beside a small potted green plant, with several blue raindrops falling beside the shelf to suggest the question of outdoor use. No landscape. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claim-slip": {
+      "prompt": "A single white horizontal paper slip held by a blue paper clip, with a small blue shelf pictogram and otherwise blank space, representing one part of an answer. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "missing-reply": {
+      "prompt": "A hand holding out a white reply slip with a violet paper clip and an empty blue speech bubble above it, representing a prepared reply about missing information. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-stall": {
+      "prompt": "A small freestanding school festival food stall with a blue and white striped canopy and a violet apron hanging from its side, with golden bread on a white tray. No people or surrounding scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-guide": {
+      "prompt": "An open white school festival leaflet with a small blue and white striped canopy pictogram and a violet bookmark, with all remaining space blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reservation-note": {
+      "prompt": "A white paper reservation slip held by a violet clip beside a small white tray of golden festival bread, with one empty blue speech bubble above the slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-tally": {
+      "prompt": "A white clipboard beside a small pile of white question slips and a blue pencil, with several plain violet circular counters arranged beside the clipboard. No marks or writing on the paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "shelf",
+          "label": "棚の耐荷重",
+          "art": "shelf-load",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "点検手引き",
+          "art": "inspection-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外で使える",
+          "art": "outdoor-shelf",
+          "at": [5, 1]
+        },
+        {
+          "id": "reply",
+          "label": "資料にない",
+          "art": "missing-reply",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shelf": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "load",
+          "label": "耐荷重",
+          "art": "shelf-load",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "点検手引き",
+          "art": "inspection-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外で使える",
+          "art": "outdoor-shelf",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "blocks": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "load",
+          "label": "耐荷重の説明",
+          "art": "claim-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "引用元",
+          "art": "inspection-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "outdoor",
+          "label": "屋外の説明",
+          "art": "outdoor-shelf",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "citation",
+          "from": "load",
+          "to": "manual",
+          "label": "引用"
+        }
+      ]
+    },
+    "remove": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "outdoor",
+          "label": "屋外で使える",
+          "art": "outdoor-shelf",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "資料にない",
+          "art": "missing-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "load",
+          "label": "耐荷重と引用",
+          "art": "shelf-load",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "empty": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claims",
+          "label": "根拠なし",
+          "art": "claim-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "決まった返事",
+          "art": "missing-reply",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "return",
+          "from": "claims",
+          "to": "reply",
+          "label": "返す"
+        }
+      ]
+    },
+    "festival": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stall",
+          "label": "学園祭の屋台",
+          "art": "festival-stall",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "屋台の案内",
+          "art": "festival-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "opening",
+          "label": "十一時に開店",
+          "art": "festival-stall",
+          "at": [5, 1]
+        },
+        {
+          "id": "reserve",
+          "label": "予約できる",
+          "art": "reservation-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "missing",
+          "label": "資料にない",
+          "art": "missing-reply",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "source",
+          "from": "guide",
+          "to": "opening",
+          "label": "開店の記載"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "案内の確認",
+          "art": "inspection-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答不能",
+          "art": "missing-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "評価のセット",
+          "art": "evaluation-tally",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "count-replies",
+          "from": "reply",
+          "to": "count",
+          "label": "件数を数える"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "根拠のある説明を残す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "棚の耐荷重を、手引きに基づいて案内します。",
+          "show": ["shelf"]
+        },
+        {
+          "say": "答えの根拠として使うのは、点検手引きです。",
+          "show": ["manual"]
+        },
+        {
+          "say": "屋外でも使えるか、合わせて尋ねられました。",
+          "show": ["outdoor"]
+        },
+        {
+          "say": "引用のない主張は、外すか「資料にない」と返します。",
+          "show": ["reply"],
+          "pulse": ["reply"]
+        }
+      ]
+    },
+    {
+      "id": "shelf-example",
+      "kind": "board",
+      "role": "example",
+      "title": "手引きにある説明はどれか",
+      "board": "shelf",
+      "beats": [
+        {
+          "say": "手引きには、棚の耐荷重だけが載っています。",
+          "show": ["manual"]
+        },
+        {
+          "say": "書かれている耐荷重は、八十キログラムです。",
+          "show": ["load"],
+          "tag": {
+            "load": "80kg"
+          }
+        },
+        {
+          "say": "ところが、屋外でも使えるという説明が返ってきました。",
+          "show": ["outdoor"]
+        },
+        {
+          "say": "その説明の出典は、手引きにはありません。",
+          "mark": [
+            {
+              "on": "outdoor",
+              "kind": "question"
+            }
+          ],
+          "tag": {
+            "outdoor": "出典なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "text-blocks",
+      "kind": "board",
+      "role": "syntax",
+      "title": "確認する単位を知る",
+      "board": "blocks",
+      "beats": [
+        {
+          "say": "応答の文章のまとまりを、テキストブロックと呼びます。",
+          "term": {
+            "text": "テキストブロック",
+            "note": "応答の文章のまとまり"
+          }
+        },
+        {
+          "say": "この例で一つ目にあるのは、耐荷重の説明です。",
+          "show": ["load"]
+        },
+        {
+          "say": "屋外の説明は、別のブロックとして返りました。",
+          "show": ["outdoor"]
+        },
+        {
+          "say": "主張の出典を示すものが、引用です。",
+          "term": {
+            "text": "引用",
+            "ruby": "いんよう",
+            "note": "主張の出典を示すもの"
+          }
+        },
+        {
+          "say": "耐荷重のブロックには、手引きの引用が付いています。",
+          "show": ["manual", "citation"],
+          "travel": {
+            "along": ["citation"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-each",
+      "kind": "board",
+      "role": "syntax",
+      "title": "引用はブロックごとに見る",
+      "board": "blocks",
+      "beats": [
+        {
+          "say": "アプリは、ブロックごとに引用があるかを確かめます。",
+          "pulse": ["load"]
+        },
+        {
+          "say": "この例で引用が付いているのは、耐荷重の説明だけです。",
+          "pulse": ["citation"]
+        },
+        {
+          "say": "別のブロックの引用で、屋外の説明は裏付けられません。",
+          "pulse": ["outdoor"],
+          "tag": {
+            "outdoor": "引用なし"
+          }
+        },
+        {
+          "say": "引用が付かない説明は、表示する答えから外しましょう。",
+          "mark": [
+            {
+              "on": "outdoor",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "keep-supported",
+      "kind": "board",
+      "role": "apply",
+      "title": "耐荷重を引用と一緒に出す",
+      "board": "blocks",
+      "beats": [
+        {
+          "say": "耐荷重の説明から、引用元の箇所を開きます。",
+          "pulse": ["load", "citation"],
+          "travel": {
+            "along": ["citation"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "この例の出典は、手引きの十二ページです。",
+          "tag": {
+            "manual": "12ページ"
+          },
+          "pulse": ["manual"]
+        },
+        {
+          "say": "重要な主張は、元の資料に書いてあるか確かめましょう。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "確かめた耐荷重は、引用へのリンクと一緒に表示します。",
+          "tag": {
+            "load": "80kg"
+          },
+          "mark": [
+            {
+              "on": "load",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["load"]
+        }
+      ]
+    },
+    {
+      "id": "drop-unsupported",
+      "kind": "board",
+      "role": "apply",
+      "title": "屋外の説明を置き換える",
+      "board": "remove",
+      "beats": [
+        {
+          "say": "次に、屋外で使えるという説明を見てみましょう。",
+          "show": ["outdoor"],
+          "tag": {
+            "outdoor": "引用なし"
+          }
+        },
+        {
+          "say": "手引きには、屋外で使えるかどうかの記載がありません。",
+          "mark": [
+            {
+              "on": "outdoor",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "アプリは「資料に該当する記載がありません」と返します。",
+          "hide": ["outdoor"],
+          "show": ["reply"]
+        },
+        {
+          "say": "耐荷重の説明と引用は、そのまま残してよい部分です。",
+          "show": ["load"],
+          "mark": [
+            {
+              "on": "load",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no-evidence",
+      "kind": "board",
+      "role": "apply",
+      "title": "根拠が一つもない場合",
+      "board": "empty",
+      "beats": [
+        {
+          "say": "資料で答えを裏付けられない場合は、回答不能とします。",
+          "term": {
+            "text": "回答不能",
+            "ruby": "かいとうふのう",
+            "note": "資料の根拠で答えられない"
+          }
+        },
+        {
+          "say": "今度は、根拠を示せるブロックが一つもない場合です。",
+          "show": ["claims"],
+          "mark": [
+            {
+              "on": "claims",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この場合は、決まった返事だけを表示しましょう。",
+          "show": ["reply", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "返事は「資料に該当する記載がありません」にそろえます。",
+          "hide": ["claims", "return"],
+          "pulse": ["reply"]
+        }
+      ]
+    },
+    {
+      "id": "festival-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "屋台の案内に何を残すか",
+      "board": "festival",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学園祭の屋台を案内する、架空の例で考えましょう。",
+          "show": ["stall"]
+        },
+        {
+          "say": "資料にあるのは、十一時に開店するという記載だけです。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "開店十一時"
+          }
+        },
+        {
+          "say": "開店時刻のブロックには、この資料の引用が付きました。",
+          "show": ["opening", "source"]
+        },
+        {
+          "say": "別のブロックは、引用なしで予約できると説明しています。",
+          "show": ["reserve"],
+          "tag": {
+            "reserve": "引用なし"
+          }
+        },
+        {
+          "say": "画面に残す説明と、資料にないと返す説明はどれでしょうか。",
+          "pulse": ["opening", "reserve"],
+          "mark": [
+            {
+              "on": "opening",
+              "kind": "question"
+            },
+            {
+              "on": "reserve",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "festival-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "開店時刻を残す",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "残すのは、資料の引用が付いた開店時刻の説明です。",
+          "mark": [
+            {
+              "on": "opening",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["opening"]
+        },
+        {
+          "say": "予約については「資料に該当する記載がありません」と返します。",
+          "hide": ["reserve"],
+          "show": ["missing"]
+        },
+        {
+          "say": "予約できるという説明は、表示する答えから外しましょう。",
+          "pulse": ["opening", "missing"]
+        }
+      ]
+    },
+    {
+      "id": "festival-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの主張を別々にたどる",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "開店時刻は、資料の記載と説明が対応しています。",
+          "pulse": ["guide", "opening", "source"]
+        },
+        {
+          "say": "開店の引用が示すのは、予約についての根拠ではありません。",
+          "show": ["reserve"],
+          "tag": {
+            "reserve": "根拠なし"
+          },
+          "pulse": ["reserve"]
+        },
+        {
+          "say": "資料にない部分は、分からないままにするのが適切です。",
+          "hide": ["reserve"],
+          "pulse": ["missing"]
+        },
+        {
+          "say": "答え全体を捨てず、根拠を示せる部分を残しましょう。",
+          "pulse": ["opening"],
+          "mark": [
+            {
+              "on": "missing",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "案内と評価で使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "資料に基づく案内では、表示前に引用を確かめます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "根拠がない問いには、回答不能の返事をそろえましょう。",
+          "show": ["reply"]
+        },
+        {
+          "say": "評価のセットで、答えを控えた件数を数えられます。",
+          "show": ["count", "count-replies"],
+          "travel": {
+            "along": ["count-replies"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "表示するのは、根拠付きの説明か資料にないという返事です。",
+          "pulse": ["manual", "reply"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2443ffeb2e43e3b32bd61dc90c3d5665e4f8c4086b922dd8ecbb39236169051e"
+  }
+}
