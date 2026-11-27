@@ -1,0 +1,700 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "依頼に必要な情報を選び、先に渡す内容と必要なときに読む資料を分けられる。",
+    "stuck": "枠に入るなら資料を全部渡したほうが、必要な情報を確実に拾ってもらえると思ってしまう。",
+    "points": ["コンテキストには、結果に効く情報だけを、できるだけ少なく入れます。"],
+    "leaveOut": [
+      "コンテキストウィンドウの大きさと上限を超えたときの動き",
+      "長い会話の圧縮とコンテキストの編集",
+      "system やツール定義の細かな設計",
+      "ツールを呼び出すコードや API の仕様"
+    ]
+  },
+  "art": {
+    "suitcase": {
+      "prompt": "An open blue travel suitcase containing a neatly folded violet sweater and a pair of light grey gloves. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-stack": {
+      "prompt": "A tall untidy stack of white and light grey travel guidebooks, with blank covers and several blue page tabs. One folded map peeks out with only broad abstract land shapes and no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-note": {
+      "prompt": "A single white travel note held by a blue clip, bearing only a simple pictorial vignette of a violet sweater and light grey gloves. The rest of the note is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "packing-person": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white travel note and examining a pair of light grey gloves. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding an open blank white booklet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "file-location": {
+      "prompt": "A closed light grey file folder with a blue bookmark tab, beside a small magnifying glass. The folder remains closed to indicate a known location rather than already read contents. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-examples": {
+      "prompt": "Two white packing example cards side by side, one bearing a simple drawing of a blue sun hat and the other a violet sweater with light grey gloves. Both cards are otherwise blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "washing-machine": {
+      "prompt": "A compact blue and white front loading washing machine beside its detached light grey lint filter. Simplified conceptual object illustration with no control labels. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "washer-manual": {
+      "prompt": "An open white appliance instruction booklet with a simple pictorial vignette of a blue washing machine and a light grey lint filter on one page. A blue bookmark marks that page. All other areas are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "packing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "case",
+          "label": "旅行の荷造り",
+          "art": "suitcase",
+          "at": [1, 1]
+        },
+        {
+          "id": "books",
+          "label": "旅の資料全部",
+          "art": "travel-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "今回の条件",
+          "art": "travel-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "person": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "荷造りする人",
+          "art": "packing-person",
+          "at": [1, 1]
+        },
+        {
+          "id": "books",
+          "label": "旅の資料全部",
+          "art": "travel-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "今回の条件",
+          "art": "travel-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "context": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "渡した資料",
+          "art": "travel-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "robot",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "必要な情報",
+          "art": "travel-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "books",
+          "to": "robot",
+          "label": "読む"
+        },
+        {
+          "id": "pick",
+          "from": "robot",
+          "to": "note",
+          "label": "拾う"
+        }
+      ]
+    },
+    "examples": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "細かな規則",
+          "art": "travel-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "examples",
+          "label": "代表的な例",
+          "art": "travel-examples",
+          "at": [3, 1]
+        },
+        {
+          "id": "robot",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "examples",
+          "to": "robot",
+          "label": "渡す"
+        }
+      ]
+    },
+    "selection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "旅の資料全部",
+          "art": "travel-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "今回の条件",
+          "art": "travel-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "robot",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "books",
+          "to": "note",
+          "label": "選ぶ"
+        },
+        {
+          "id": "send",
+          "from": "note",
+          "to": "robot",
+          "label": "渡す"
+        }
+      ]
+    },
+    "fetch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "location",
+          "label": "資料の場所",
+          "art": "file-location",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "必要な本文",
+          "art": "travel-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "robot",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "location",
+          "to": "note",
+          "label": "ツールで読む"
+        },
+        {
+          "id": "use",
+          "from": "note",
+          "to": "robot",
+          "label": "使う"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "washer",
+          "label": "掃除を尋ねる",
+          "art": "washing-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "all",
+          "label": "説明書を全部",
+          "art": "washer-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "part",
+          "label": "該当章を読む",
+          "art": "washer-manual",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "why": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "washer",
+          "label": "使う機種",
+          "art": "washing-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "掃除の章",
+          "art": "washer-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "location",
+          "label": "説明書の場所",
+          "art": "file-location",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "washer",
+          "to": "manual",
+          "label": "機種で選ぶ"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "travel",
+          "label": "荷造りの相談",
+          "art": "suitcase",
+          "at": [1, 1]
+        },
+        {
+          "id": "washer",
+          "label": "掃除の質問",
+          "art": "washing-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "location",
+          "label": "必要な資料",
+          "art": "file-location",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "渡す情報を選ぶ",
+      "board": "packing",
+      "beats": [
+        {
+          "say": "旅行の荷造りについて、相談する場面を考えます。",
+          "show": ["case"]
+        },
+        {
+          "say": "手元にあるのは、旅先も季節も違う大量の資料です。",
+          "show": ["books"]
+        },
+        {
+          "say": "今回の条件が分かるメモに、注目しましょう。",
+          "show": ["note"]
+        },
+        {
+          "say": "コンテキストには、結果に効く情報だけを少なく入れます。",
+          "pulse": ["note"]
+        }
+      ]
+    },
+    {
+      "id": "packing-person",
+      "kind": "board",
+      "role": "example",
+      "title": "荷造りに要る情報",
+      "board": "person",
+      "beats": [
+        {
+          "say": "友人に、荷造りを手伝ってもらう場面です。",
+          "show": ["person"]
+        },
+        {
+          "say": "関係のない旅先の資料まで、全部渡しました。",
+          "show": ["books"]
+        },
+        {
+          "say": "資料の山から、今回の条件を探す手間がかかります。",
+          "pulse": ["books"],
+          "mark": [
+            {
+              "on": "person",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "行き先や季節が分かるメモを、先に渡しましょう。",
+          "show": ["note"],
+          "unmark": ["person"]
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答を作る材料",
+      "board": "context",
+      "beats": [
+        {
+          "say": "コンテキストは、応答を作るときに使うトークンの集まりです。",
+          "term": {
+            "text": "コンテキスト",
+            "note": "応答を作るときに使う材料"
+          }
+        },
+        {
+          "say": "相談のために渡した資料も、ここに入ります。",
+          "show": ["books"]
+        },
+        {
+          "say": "Claude が答えるときに使う材料ということです。",
+          "speech": "クロードが答えるときに使う材料ということです。",
+          "show": ["robot", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "大きな枠でも、入れる情報は選びましょう。",
+          "show": ["note"],
+          "pulse": ["note"]
+        }
+      ]
+    },
+    {
+      "id": "context-rot",
+      "kind": "board",
+      "role": "syntax",
+      "title": "情報が増えたとき",
+      "board": "context",
+      "beats": [
+        {
+          "say": "トークンが増えるほど、情報を正しく思い出す力が落ちます。",
+          "pulse": ["books"],
+          "tag": {
+            "books": "情報が増える"
+          }
+        },
+        {
+          "say": "この現象が、コンテキストの劣化です。",
+          "term": {
+            "text": "コンテキストの劣化",
+            "ruby": "こんてきすとのれっか",
+            "note": "情報を正しく思い出す力が落ちる"
+          }
+        },
+        {
+          "say": "この図では、必要な条件を拾いにくくなりました。",
+          "show": ["pick"],
+          "mark": [
+            {
+              "on": "note",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["note"]
+        },
+        {
+          "say": "人と同じように、注意を向けられる量には限りがあります。",
+          "pulse": ["robot"]
+        }
+      ]
+    },
+    {
+      "id": "representative-examples",
+      "kind": "board",
+      "role": "syntax",
+      "title": "例を選んで伝える",
+      "board": "examples",
+      "beats": [
+        {
+          "say": "細かな例外の規則を、次々に並べる方法を考えます。",
+          "show": ["books"]
+        },
+        {
+          "say": "代わりに選びたいのが、種類の違う代表例です。",
+          "term": {
+            "text": "代表例",
+            "ruby": "だいひょうれい",
+            "note": "種類の違いが分かる例"
+          }
+        },
+        {
+          "say": "旅行なら、暑い場所と寒い場所の荷造りの例を選びましょう。",
+          "show": ["examples"]
+        },
+        {
+          "say": "代表的な例に絞って、伝える情報を少なくします。",
+          "show": ["robot", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "select-material",
+      "kind": "board",
+      "role": "apply",
+      "title": "今回の相談に絞る",
+      "board": "selection",
+      "beats": [
+        {
+          "say": "荷造りの相談に戻り、資料を選び直しましょう。",
+          "show": ["books"]
+        },
+        {
+          "say": "知りたいのは、今回の旅行で持っていく物です。",
+          "show": ["note"],
+          "tag": {
+            "note": "持ち物を相談"
+          }
+        },
+        {
+          "say": "行き先や季節など、持ち物の判断に要る条件を残します。",
+          "show": ["choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          },
+          "tag": {
+            "note": "行き先と季節"
+          }
+        },
+        {
+          "say": "別の旅先の資料まで、一緒に渡す必要はありません。",
+          "show": ["robot", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          },
+          "pulse": ["note"]
+        }
+      ]
+    },
+    {
+      "id": "read-when-needed",
+      "kind": "board",
+      "role": "apply",
+      "title": "要るときに読む",
+      "board": "fetch",
+      "beats": [
+        {
+          "say": "資料が多いときは、ファイルの場所やリンクを持たせます。",
+          "show": ["location"]
+        },
+        {
+          "say": "これは、本文を全部渡す代わりに置く目印です。",
+          "tag": {
+            "location": "本文はまだ"
+          }
+        },
+        {
+          "say": "必要になったら、ツールで必要な本文を読みましょう。",
+          "show": ["note", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "要るときに読む方法は、先に全部入れるより時間がかかります。",
+          "show": ["robot", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "掃除に使う資料を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "洗濯機のフィルター掃除について、質問する場面です。",
+          "show": ["washer"]
+        },
+        {
+          "say": "使う機種は、依頼の中ですでに伝えました。",
+          "tag": {
+            "washer": "機種は指定済"
+          }
+        },
+        {
+          "say": "一つ目は、家中の家電の説明書を全部渡す方法です。",
+          "show": ["all"],
+          "tag": {
+            "all": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、その機種の掃除の章をツールで読ませます。",
+          "show": ["part"],
+          "tag": {
+            "part": "二つ目"
+          }
+        },
+        {
+          "say": "結果に効く情報を少なく入れるなら、どちらを選ぶでしょうか。",
+          "mark": [
+            {
+              "on": "all",
+              "kind": "question"
+            },
+            {
+              "on": "part",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "掃除の章を読む",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、その機種の掃除の章を読ませる二つ目の方法です。",
+          "mark": [
+            {
+              "on": "all",
+              "kind": "cross"
+            },
+            {
+              "on": "part",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["part"]
+        },
+        {
+          "say": "質問に合う本文を、必要なときに取りに行かせます。",
+          "pulse": ["washer", "part"]
+        }
+      ]
+    },
+    {
+      "id": "why-this-section",
+      "kind": "board",
+      "role": "explain",
+      "title": "残す内容を確かめる",
+      "board": "why",
+      "beats": [
+        {
+          "say": "まず、使う洗濯機に合った説明書を選びます。",
+          "show": ["washer", "manual", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "掃除の手順や注意が分かる章が、今回の材料です。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "手順と注意"
+          }
+        },
+        {
+          "say": "短くするために、必要な注意まで落としてはいけません。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "残りは場所を持たせて、必要なときに読みましょう。",
+          "show": ["location"],
+          "pulse": ["location"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "送る前に選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "相談に資料を添えるときは、答えに必要な条件を残します。",
+          "show": ["travel"]
+        },
+        {
+          "say": "説明書から答えるときも、質問に関係する章が材料です。",
+          "show": ["washer"]
+        },
+        {
+          "say": "まだ要らない本文は、場所を持たせて必要なときに読みましょう。",
+          "show": ["location"]
+        },
+        {
+          "say": "コンテキストには、結果に効く情報だけを少なく入れます。",
+          "pulse": ["travel", "washer", "location"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "51321f671a30b7d773647b03d295b48353049745021f38b44549347ec864c9ec"
+  }
+}

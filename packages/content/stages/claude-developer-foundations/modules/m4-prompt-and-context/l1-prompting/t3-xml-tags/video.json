@@ -1,0 +1,709 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "指示・資料・例の役割を見分け、それぞれを XML のタグで区切る位置を説明できる。",
+    "stuck": "資料に書かれた命令の形の文を、Claude への指示と同じ扱いにしてしまう。",
+    "points": ["指示・資料・例は、それぞれ XML のタグで包んで区切ります。"],
+    "leaveOut": [
+      "具体的な指示の作り方",
+      "例を選ぶ数と種類",
+      "長い資料を並べる順番",
+      "出力のタグから答えを取り出す方法",
+      "JavaScript の文字列の詳しい構文",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "application-manual": {
+      "prompt": "An open white application handbook with a blue binding and a small blank white application slip tucked between the pages. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-memo": {
+      "prompt": "A hand holding a violet pencil above a small white memo secured by a blue clip. The memo is blank and represents a request being written. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sample-answer": {
+      "prompt": "A short blank white answer card held upright by a violet clip, with a small blank blue speech bubble beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-staff": {
+      "prompt": "A service worker in a plain blue shirt holding an open white booklet and listening attentively, with simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "document-folder": {
+      "prompt": "An open light grey document folder containing two distinct white booklets with blue and violet binding, separated by white divider tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-notice": {
+      "prompt": "A white dry-cleaning collection leaflet with a small pictorial coat on a hanger, beside a separate blank white claim ticket with a blue clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clean-coat": {
+      "prompt": "A neatly cleaned violet coat on a blue hanger inside a white garment cover, with the front of the coat visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-request": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white request memo beside a violet coat on a blue hanger, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-answer": {
+      "prompt": "A blank white answer card beside a single white dry-cleaning claim ticket with a violet clip, accompanied by a small blank blue speech bubble. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "purpose": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "申請の手引き",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "答える依頼",
+          "art": "request-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "sample",
+          "label": "回答の見本",
+          "art": "sample-answer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "counter": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "申請の手引き",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "窓口の担当者",
+          "art": "service-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "答える依頼",
+          "art": "request-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "boundaries": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "資料の中身",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "指示の中身",
+          "art": "request-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "wrapping": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "手引きの本文",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "答える指示",
+          "art": "request-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "examples": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "資料",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "指示",
+          "art": "request-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "sample",
+          "label": "例",
+          "art": "sample-answer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "nested": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "collection",
+          "label": "documents",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "folder",
+          "label": "資料のまとまり",
+          "art": "document-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "資料",
+          "art": "application-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "資料",
+          "art": "application-manual",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "collectionQuiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "衣類の受取",
+          "art": "clean-coat",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "受取票を持参",
+          "art": "cleaning-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "持ち物を答える",
+          "art": "cleaning-request",
+          "at": [5, 1]
+        },
+        {
+          "id": "sample",
+          "label": "持ち物は受取票",
+          "art": "cleaning-answer",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "手引きで回答",
+          "art": "application-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "受取方法の案内",
+          "art": "cleaning-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "sample",
+          "label": "回答の見本",
+          "art": "cleaning-answer",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "役割ごとに区切る",
+      "board": "purpose",
+      "beats": [
+        {
+          "say": "手引きを読んで、質問に答えてもらいます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "添えるのは、答え方を伝える依頼です。",
+          "show": ["request"]
+        },
+        {
+          "say": "回答の見本も、一緒に渡すとしましょう。",
+          "show": ["sample"]
+        },
+        {
+          "say": "指示と資料と例を、それぞれタグで包んで区切ります。",
+          "pulse": ["manual", "request", "sample"]
+        }
+      ]
+    },
+    {
+      "id": "counter-example",
+      "kind": "board",
+      "role": "example",
+      "title": "窓口で手引きを渡す",
+      "board": "counter",
+      "beats": [
+        {
+          "say": "窓口の担当者に、手引きをもとに答えてもらいます。",
+          "show": ["staff", "manual"]
+        },
+        {
+          "say": "手引きには、申請の手順に従うよう書いてありました。",
+          "tag": {
+            "manual": "申請の手順"
+          },
+          "pulse": ["manual"]
+        },
+        {
+          "say": "これは、申請する人に向けた説明です。",
+          "tag": {
+            "manual": "申請する人へ"
+          }
+        },
+        {
+          "say": "担当者への依頼は、別のメモに分けて渡しましょう。",
+          "show": ["request"],
+          "pulse": ["request"]
+        }
+      ]
+    },
+    {
+      "id": "tag-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "タグと名前の役割",
+      "board": "boundaries",
+      "beats": [
+        {
+          "say": "中身の範囲を示す目印が、XML タグです。",
+          "speech": "中身の範囲を示す目印が、エックスエムエルタグです。",
+          "term": {
+            "text": "XML タグ",
+            "note": "中身の範囲を示す目印"
+          }
+        },
+        {
+          "say": "資料と指示を、それぞれ目印で包みます。",
+          "show": ["manual", "request"]
+        },
+        {
+          "say": "タグ名は、包んだ中身を示す名前です。",
+          "term": {
+            "text": "タグ名",
+            "ruby": "タグめい",
+            "note": "中身が分かる名前"
+          }
+        },
+        {
+          "say": "資料なら、中身が分かる名前を選びましょう。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "document"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrap-document",
+      "kind": "code",
+      "role": "syntax",
+      "title": "資料の範囲を示す",
+      "code": [
+        "// 資料の始まりを示す",
+        "const prompt = `<document>\\n` +",
+        "// 手引きの本文を入れる",
+        "  `${manual}\\n` +",
+        "// 資料の終わりを示す",
+        "  `</document>\\n` +",
+        "// 指示の範囲を開く",
+        "  `<instructions>` +",
+        "// 資料を根拠に答えるよう頼む",
+        "  `手引きだけを根拠に答えてください` +",
+        "// 指示の範囲を閉じる",
+        "  `</instructions>`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "wrapping"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "手引きは、資料として一つのタグで包みます。",
+          "focus": [1, 3, 5],
+          "figure": {
+            "show": ["manual"]
+          }
+        },
+        {
+          "say": "document は、資料を表す名前です。",
+          "speech": "ドキュメントは、資料を表す名前です。",
+          "part": {
+            "line": 1,
+            "text": "document",
+            "note": "資料"
+          },
+          "figure": {
+            "pulse": ["manual"]
+          }
+        },
+        {
+          "say": "この中に、手引きの本文を入れましょう。",
+          "part": {
+            "line": 3,
+            "text": "manual",
+            "note": "手引き"
+          },
+          "figure": {
+            "tag": {
+              "manual": "本文"
+            }
+          }
+        },
+        {
+          "say": "閉じるタグまでが、資料の範囲になります。",
+          "part": {
+            "line": 5,
+            "text": "</document>",
+            "note": "資料の終わり"
+          },
+          "figure": {
+            "tag": {
+              "manual": "ここまで資料"
+            }
+          }
+        },
+        {
+          "say": "依頼する文は、この範囲の外です。",
+          "focus": [7, 9, 11],
+          "figure": {
+            "show": ["request"],
+            "pulse": ["request"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "separate-instructions",
+      "kind": "code",
+      "role": "apply",
+      "title": "指示の範囲を分ける",
+      "code": [
+        "// 資料の始まりを示す",
+        "const prompt = `<document>\\n` +",
+        "// 手引きの本文を入れる",
+        "  `${manual}\\n` +",
+        "// 資料の終わりを示す",
+        "  `</document>\\n` +",
+        "// 指示の範囲を開く",
+        "  `<instructions>` +",
+        "// 資料を根拠に答えるよう頼む",
+        "  `手引きだけを根拠に答えてください` +",
+        "// 指示の範囲を閉じる",
+        "  `</instructions>`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "wrapping"
+      },
+      "beats": [
+        {
+          "say": "依頼は、instructions というタグで包みます。",
+          "speech": "依頼は、インストラクションズというタグで包みます。",
+          "part": {
+            "line": 7,
+            "text": "instructions",
+            "note": "指示"
+          },
+          "figure": {
+            "pulse": ["request"]
+          }
+        },
+        {
+          "say": "中身は、手引きだけを根拠に答えるという指示です。",
+          "focus": [9],
+          "figure": {
+            "tag": {
+              "request": "手引きが根拠"
+            }
+          }
+        },
+        {
+          "say": "指示の終わりも、同じ名前のタグで閉じましょう。",
+          "part": {
+            "line": 11,
+            "text": "</instructions>",
+            "note": "指示の終わり"
+          },
+          "figure": {
+            "tag": {
+              "request": "ここまで指示"
+            }
+          }
+        },
+        {
+          "say": "手引きの申請手順は、資料の中に残っています。",
+          "focus": [3],
+          "figure": {
+            "pulse": ["manual"]
+          }
+        },
+        {
+          "say": "区切りは、資料と指示の取り違えを減らす工夫です。",
+          "focus": [1, 5, 7, 11],
+          "figure": {
+            "pulse": ["manual", "request"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "separate-example",
+      "kind": "board",
+      "role": "apply",
+      "title": "例も別の範囲にする",
+      "board": "examples",
+      "beats": [
+        {
+          "say": "手引きと依頼に、回答の見本も添えてみましょう。",
+          "show": ["manual", "request", "sample"]
+        },
+        {
+          "say": "見本は、答えの形を伝えるための例です。",
+          "pulse": ["sample"],
+          "tag": {
+            "sample": "答えの形"
+          }
+        },
+        {
+          "say": "例もタグで包み、指示や資料から区切ります。",
+          "tag": {
+            "sample": "タグで包む"
+          }
+        },
+        {
+          "say": "同じ役割のタグ名は、別の依頼でもそろえましょう。",
+          "pulse": ["manual", "request", "sample"]
+        }
+      ]
+    },
+    {
+      "id": "nested-documents",
+      "kind": "board",
+      "role": "note",
+      "title": "資料が複数あるとき",
+      "board": "nested",
+      "beats": [
+        {
+          "say": "資料が複数あるときは、まとまりも示します。",
+          "show": ["folder"]
+        },
+        {
+          "say": "外側のタグの中にタグを置く形が、入れ子です。",
+          "term": {
+            "text": "入れ子",
+            "ruby": "いれこ",
+            "note": "外側のタグの中にタグを置く"
+          }
+        },
+        {
+          "say": "documents を外側に置きましょう。",
+          "speech": "ドキュメンツを外側に置きましょう。",
+          "show": ["collection"]
+        },
+        {
+          "say": "その中に、資料ごとの document を並べます。",
+          "speech": "その中に、資料ごとのドキュメントを並べます。",
+          "show": ["first", "second"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受け取りの案内を分ける",
+      "board": "collectionQuiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニングの受け取りについて、答えてもらいます。",
+          "show": ["coat"]
+        },
+        {
+          "say": "店の案内には、受取票を持参してくださいとありました。",
+          "show": ["notice"]
+        },
+        {
+          "say": "利用者の依頼は、案内をもとに持ち物を答えることです。",
+          "show": ["request"]
+        },
+        {
+          "say": "見本には、持ち物は受取票ですという文を添えています。",
+          "show": ["sample"]
+        },
+        {
+          "say": "案内と依頼と見本は、何のタグで区切るとよいでしょうか。",
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "question"
+            },
+            {
+              "on": "request",
+              "kind": "question"
+            },
+            {
+              "on": "sample",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["notice", "request", "sample"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "資料と指示と例",
+      "board": "collectionQuiz",
+      "beats": [
+        {
+          "say": "店の案内は、資料のタグで包みます。",
+          "tag": {
+            "notice": "資料"
+          },
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["notice"]
+        },
+        {
+          "say": "持ち物を答える依頼は、指示のタグの中です。",
+          "tag": {
+            "request": "指示"
+          },
+          "mark": [
+            {
+              "on": "request",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["request"]
+        },
+        {
+          "say": "見本は、例を表すタグで包みましょう。",
+          "tag": {
+            "sample": "例"
+          },
+          "mark": [
+            {
+              "on": "sample",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["sample"]
+        }
+      ]
+    },
+    {
+      "id": "why-separate",
+      "kind": "board",
+      "role": "explain",
+      "title": "文の役割で見分ける",
+      "board": "collectionQuiz",
+      "beats": [
+        {
+          "say": "店の案内は、服を受け取るお客さんに向けた文です。",
+          "pulse": ["notice"],
+          "tag": {
+            "notice": "お客さん向け"
+          }
+        },
+        {
+          "say": "持参を頼む文でも、資料の本文として扱います。",
+          "tag": {
+            "notice": "資料の本文"
+          }
+        },
+        {
+          "say": "答える側にしてほしいのは、持ち物を伝えることです。",
+          "pulse": ["request"],
+          "tag": {
+            "request": "答える側へ"
+          }
+        },
+        {
+          "say": "見本は例として区切り、それぞれの役割を示しましょう。",
+          "pulse": ["sample"],
+          "tag": {
+            "sample": "回答の見本"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "渡す前に区切りを確認",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "手引きを使う回答では、本文と依頼を分けます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "店の受取案内も、資料として包む対象です。",
+          "show": ["notice"]
+        },
+        {
+          "say": "見本を添えるなら、その範囲も分けましょう。",
+          "show": ["sample"]
+        },
+        {
+          "say": "送る前に、指示と資料と例の区切りを確かめます。",
+          "pulse": ["manual", "notice", "sample"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e1654ccb11882640a3ac6b72b3a596edd5b7a39e377137343e56e0a3ded50dd6"
+  }
+}

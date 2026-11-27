@@ -1,0 +1,691 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "入力と出力を同じ枠に数え、入力だけで超える場合と出力中に届く場合の違いを説明できる。",
+    "stuck": "送る文章だけが枠を使うと思い、作る出力やキャッシュした資料を数え忘れる。",
+    "points": ["入力と出力は、合わせてコンテキストウィンドウに収めます。"],
+    "leaveOut": [
+      "結果に効く情報の選び方とコンテキストの劣化",
+      "会話の圧縮とコンテキストの編集",
+      "モデルごとの上限値と出力上限の設定",
+      "停止理由の識別子の綴り",
+      "トークン数を数えるAPIの呼び出し方"
+    ]
+  },
+  "art": {
+    "conversation-notes": {
+      "prompt": "A thick stack of white conversation notes held by a blue binder clip, with alternating violet and blue tabs and two empty speech bubbles above the stack. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "document-case": {
+      "prompt": "An open light grey expanding document case with a blue clasp, shown from the front so its limited interior space and a few white sheets inside are clearly visible. The case is a physical stationery object. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-draft": {
+      "prompt": "A white reply sheet with a violet fountain pen and a small rolled white draft beside it, representing a response still being written. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rule-book": {
+      "prompt": "An open blue handbook with completely blank white pages and a violet ribbon bookmark, representing instructions used for the current request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "attached-materials": {
+      "prompt": "A white document folder containing a white photograph of a blue bicycle and several blank white sheets with blue tabs, representing images and documents supplied with a conversation. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-manual": {
+      "prompt": "A small blue wrench beside a white folded instruction leaflet and one blank white result slip, representing tool definitions and their returned results. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "used-books": {
+      "prompt": "Three worn books with blue, violet and light grey covers and white pages, beside a blank white appraisal slip and a magnifying glass, representing a secondhand book purchase inquiry. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "counting-beads": {
+      "prompt": "A small blue counting abacus with violet and light grey beads arranged on horizontal rods, representing counting the amount of material before sending it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "opening": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "window",
+          "label": "入力と出力の枠",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "history",
+          "label": "長い会話",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "material",
+          "label": "追加する資料",
+          "art": "attached-materials",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "これからの出力",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "case": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "case",
+          "label": "書類ケース",
+          "art": "document-case",
+          "at": [1, 1]
+        },
+        {
+          "id": "material",
+          "label": "読む資料",
+          "art": "attached-materials",
+          "at": [3, 1]
+        },
+        {
+          "id": "draft",
+          "label": "書く返事",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shared-window": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "window",
+          "label": "共通の枠",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "input",
+          "label": "入力",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "input-parts": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "system",
+          "label": "system",
+          "art": "rule-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "messages",
+          "label": "全発言",
+          "art": "conversation-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "materials",
+          "label": "画像と文書",
+          "art": "attached-materials",
+          "at": [5, 1]
+        },
+        {
+          "id": "results",
+          "label": "ツールの結果",
+          "art": "tool-manual",
+          "at": [5, 2]
+        },
+        {
+          "id": "definitions",
+          "label": "ツールの定義",
+          "art": "tool-manual",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "output-parts": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "window",
+          "label": "すべて枠に数える",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "thinking",
+          "label": "考える過程",
+          "art": "reply-draft",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "回答",
+          "art": "reply-draft",
+          "at": [3, 1]
+        },
+        {
+          "id": "cached",
+          "label": "キャッシュ",
+          "art": "rule-book",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "input-overflow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "会話の履歴",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "materials",
+          "label": "追加の資料",
+          "art": "attached-materials",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "入力の超過",
+          "art": "document-case",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "output-overflow": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "window",
+          "label": "入力と出力の枠",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "input",
+          "label": "受け取った入力",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "作成中の出力",
+          "art": "reply-draft",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "枠に届いて停止",
+          "art": "document-case",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "book-quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "買い取りの相談",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "cached",
+          "label": "保存済みの基準",
+          "art": "rule-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "作る返事",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "book-reason": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "window",
+          "label": "合わせて同じ枠",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "cached",
+          "label": "保存済みの基準",
+          "art": "rule-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "本の状態と質問",
+          "art": "used-books",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "作る返事",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "before-send": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "長い会話",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "counter",
+          "label": "送る前に数える",
+          "art": "counting-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力の余地",
+          "art": "reply-draft",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "資料を足す前に",
+      "board": "opening",
+      "beats": [
+        {
+          "say": "長く続いた会話に、資料を足して送る場面です。",
+          "show": ["history"]
+        },
+        {
+          "say": "これまでのやり取りに、新しい資料が加わります。",
+          "show": ["material"]
+        },
+        {
+          "say": "このあと作る回答の量も、忘れずに考えましょう。",
+          "show": ["reply"]
+        },
+        {
+          "say": "入力と出力は、合わせてコンテキストウィンドウに収めます。",
+          "show": ["window"],
+          "pulse": ["window"]
+        }
+      ]
+    },
+    {
+      "id": "case-example",
+      "kind": "board",
+      "role": "example",
+      "title": "ケースの空きを考える",
+      "board": "case",
+      "beats": [
+        {
+          "say": "書類ケースに、作業中の紙をまとめるとしましょう。",
+          "show": ["case"]
+        },
+        {
+          "say": "まず入れるのは、返事を書くために読む資料です。",
+          "show": ["material"]
+        },
+        {
+          "say": "書きかけの返事も、同じケースに入れます。",
+          "show": ["draft"]
+        },
+        {
+          "say": "資料でいっぱいなら、返事の紙を足す余地がありません。",
+          "pulse": ["case"],
+          "mark": [
+            {
+              "on": "draft",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shared-window",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力と出力の共通の枠",
+      "board": "shared-window",
+      "beats": [
+        {
+          "say": "送る側が渡す情報を、ここでは入力と呼びます。",
+          "term": {
+            "text": "入力",
+            "ruby": "にゅうりょく",
+            "note": "今回のリクエストで渡す情報"
+          }
+        },
+        {
+          "say": "会話の履歴や資料は、入力の側です。",
+          "show": ["input"]
+        },
+        {
+          "say": "その回に作るものを、出力と呼びます。",
+          "term": {
+            "text": "出力",
+            "ruby": "しゅつりょく",
+            "note": "その回に作るもの"
+          },
+          "show": ["output"]
+        },
+        {
+          "say": "入力と出力を数える枠が、コンテキストウィンドウです。",
+          "term": {
+            "text": "共通の枠",
+            "ruby": "きょうつうのわく",
+            "note": "コンテキストウィンドウ"
+          },
+          "show": ["window"]
+        },
+        {
+          "say": "この囲み全体で、扱うトークンの量を考えましょう。",
+          "pulse": ["window"]
+        }
+      ]
+    },
+    {
+      "id": "count-input",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力に数えるもの",
+      "board": "input-parts",
+      "beats": [
+        {
+          "say": "system の指示も、入力の量に数えます。",
+          "speech": "システムの指示も、入力の量に数えます。",
+          "show": ["system"]
+        },
+        {
+          "say": "messages のすべての発言も対象です。",
+          "speech": "メッセージズのすべての発言も対象です。",
+          "show": ["messages"]
+        },
+        {
+          "say": "発言に含めた画像や文書も、枠を使います。",
+          "show": ["materials"]
+        },
+        {
+          "say": "ツールから返った結果も、枠から外れません。",
+          "show": ["results"]
+        },
+        {
+          "say": "ツールの定義も、忘れずに数えましょう。",
+          "show": ["definitions"]
+        }
+      ]
+    },
+    {
+      "id": "count-output",
+      "kind": "board",
+      "role": "syntax",
+      "title": "出力とキャッシュも数える",
+      "board": "output-parts",
+      "beats": [
+        {
+          "say": "その回の出力には、考える過程も含みます。",
+          "show": ["thinking", "window"]
+        },
+        {
+          "say": "利用者が読む回答も、もちろん同じ枠の中です。",
+          "show": ["response"]
+        },
+        {
+          "say": "キャッシュで読み込んだ前半も、枠を使います。",
+          "show": ["cached"]
+        },
+        {
+          "say": "料金が変わっても、枠からは外れません。",
+          "pulse": ["cached"],
+          "mark": [
+            {
+              "on": "cached",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "input-too-long",
+      "kind": "board",
+      "role": "apply",
+      "title": "入力だけで超えた場合",
+      "board": "input-overflow",
+      "beats": [
+        {
+          "say": "最初の例では、会話の履歴が積み重なっていました。",
+          "show": ["history"]
+        },
+        {
+          "say": "そこへ資料を加えると、入力だけで枠を超えます。",
+          "show": ["materials"]
+        },
+        {
+          "say": "この場合、返るのは400のエラーです。",
+          "speech": "この場合、返るのは四百のエラーです。",
+          "show": ["error"],
+          "tag": {
+            "error": "400エラー"
+          }
+        },
+        {
+          "say": "エラーの文を見ると、入力が長すぎると分かります。",
+          "pulse": ["error"],
+          "mark": [
+            {
+              "on": "error",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "output-reaches-limit",
+      "kind": "board",
+      "role": "apply",
+      "title": "出力の途中で届いた場合",
+      "board": "output-overflow",
+      "beats": [
+        {
+          "say": "今度は、入力が枠の中に収まった場合です。",
+          "show": ["window", "input"]
+        },
+        {
+          "say": "回答を作るにつれて、出力も同じ枠を使います。",
+          "show": ["reply"]
+        },
+        {
+          "say": "出力の途中で枠に届くと、それ以上は続きません。",
+          "show": ["stop"],
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "この場合の停止理由は、枠を超えたことを示す値です。",
+          "pulse": ["stop"]
+        }
+      ]
+    },
+    {
+      "id": "book-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "何を枠に数えるか",
+      "board": "book-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "古本の買い取りについて、返事を作る場面です。",
+          "show": ["books"]
+        },
+        {
+          "say": "店の買い取り基準は、キャッシュから読み込みます。",
+          "show": ["cached"]
+        },
+        {
+          "say": "利用者は、本の状態と質問を新しく送りました。",
+          "tag": {
+            "books": "状態と質問"
+          },
+          "pulse": ["books"]
+        },
+        {
+          "say": "これから作る返事も、長くなりそうです。",
+          "show": ["reply"],
+          "pulse": []
+        },
+        {
+          "say": "枠に数えるのは、新しい質問だけでよいでしょうか。",
+          "mark": [
+            {
+              "on": "books",
+              "kind": "question"
+            },
+            {
+              "on": "cached",
+              "kind": "question"
+            },
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "book-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "質問だけでは足りない",
+      "board": "book-quiz",
+      "beats": [
+        {
+          "say": "いいえ、基準や本の状態と質問、作る返事を数えます。",
+          "mark": [
+            {
+              "on": "books",
+              "kind": "check"
+            },
+            {
+              "on": "cached",
+              "kind": "check"
+            },
+            {
+              "on": "reply",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "この図の三つとも、同じ枠に入るものです。",
+          "pulse": ["books", "cached", "reply"]
+        }
+      ]
+    },
+    {
+      "id": "book-explain",
+      "kind": "board",
+      "role": "explain",
+      "title": "保存済みでも枠を使う",
+      "board": "book-reason",
+      "beats": [
+        {
+          "say": "キャッシュした基準も、今回読む資料です。",
+          "show": ["cached", "window"]
+        },
+        {
+          "say": "新しく送る本の状態と質問も、入力として数えます。",
+          "show": ["question"]
+        },
+        {
+          "say": "返事を書くための出力も、枠の外ではありません。",
+          "show": ["reply"]
+        },
+        {
+          "say": "どれかを数え忘れると、必要な量を少なく見積もってしまいます。",
+          "pulse": ["window"]
+        }
+      ]
+    },
+    {
+      "id": "before-send",
+      "kind": "board",
+      "role": "usage",
+      "title": "送る前に量を確かめる",
+      "board": "before-send",
+      "beats": [
+        {
+          "say": "会話を続けて資料を足すときに、この考え方を使います。",
+          "show": ["history"]
+        },
+        {
+          "say": "送る前に、トークン数を数えるAPIで調べましょう。",
+          "speech": "送る前に、トークン数を数えるエーピーアイで調べましょう。",
+          "show": ["counter"]
+        },
+        {
+          "say": "確かめたいのは、入力と出力が合わせて収まるかです。",
+          "show": ["output"]
+        },
+        {
+          "say": "入力の量を確かめ、出力に使う余地も見ておきましょう。",
+          "pulse": ["counter", "output"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6293e482e509128c94134fe78eb9618bffe09545a54ec6cfbde1b5953949ed45"
+  }
+}

@@ -1,0 +1,892 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "決まった形の JSON を受け取るために、必要な項目と型を決めたスキーマを渡す場所を説明できる。",
+    "stuck": "JSON で答えるよう指示するだけで、必要な項目と型が必ずそろうと思ってしまう。",
+    "points": ["決まった形の JSON が要るときは、構造化出力でスキーマを渡します。"],
+    "leaveOut": [
+      "停止理由の確認と JSON を読む手順",
+      "文章の書き方を指示する方法",
+      "使える型やスキーマの機能の全一覧",
+      "分からない値や項目の並び順の扱い",
+      "SDK の補助と以前の書き出し指定",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "rental-bicycle": {
+      "prompt": "A blue rental bicycle with a small blank white rental ticket attached to the handlebar. The entire bicycle is visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "loose-note": {
+      "prompt": "A hand holding a violet pencil beside a loose white rental note, with a small blue bicycle pictogram and an empty speech bubble. No writing or simulated handwriting. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-form": {
+      "prompt": "A white bicycle rental form held by a light grey clip, with two clearly separated empty entry areas and a small blue bicycle pictogram. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "schema-clipboard": {
+      "prompt": "A light grey clipboard holding a white template sheet with two empty entry areas, a violet pencil and two small blue tabs attached beside the entry areas. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white sheet in both hands. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-sheet": {
+      "prompt": "A neatly arranged white bicycle rental record with a small blue bicycle pictogram and two violet tabs beside blank entry areas. A light grey paper clip holds the sheet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-check": {
+      "prompt": "A blue laptop with a completely blank screen, a magnifying glass and a small white record sheet with two violet tabs. A conceptual illustration of an application checking a record, not an application interface. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-apron": {
+      "prompt": "A blue cooking apron with a violet neck strap, a folded white hand towel and a light grey mixing bowl. The apron is the largest object. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-request": {
+      "prompt": "A hand holding a violet pencil beside a blank white request note, with a small pictorial cooking apron and an empty blue speech bubble. No writing or simulated handwriting. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "bicycle",
+          "label": "自転車の貸出",
+          "art": "rental-bicycle",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "自由なメモ",
+          "art": "loose-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "必要な記録",
+          "art": "rental-form",
+          "at": [5, 1]
+        },
+        {
+          "id": "schema",
+          "label": "形を決める",
+          "art": "schema-clipboard",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "note",
+          "label": "貸出のメモ",
+          "art": "loose-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "決まった用紙",
+          "art": "rental-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "名前と日数",
+          "art": "result-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fill",
+          "from": "form",
+          "to": "record",
+          "label": "記入"
+        }
+      ]
+    },
+    "schema": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "スキーマ",
+          "art": "schema-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "fields",
+          "label": "名前と日数",
+          "art": "rental-form",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "rules",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "shape",
+          "from": "claude",
+          "to": "fields",
+          "label": "形を絞る"
+        }
+      ]
+    },
+    "format": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schema",
+          "label": "スキーマ",
+          "art": "schema-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "JSON",
+          "art": "result-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "schema",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "return",
+          "from": "claude",
+          "to": "result",
+          "label": "応答"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "name",
+          "label": "名前",
+          "art": "rental-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "days",
+          "label": "日数",
+          "art": "rental-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "schema",
+          "label": "貸出の決まり",
+          "art": "schema-clipboard",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "response": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schema",
+          "label": "貸出スキーマ",
+          "art": "schema-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "本文ブロック",
+          "art": "result-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "schema",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "return",
+          "from": "claude",
+          "to": "result",
+          "label": "JSON"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schema",
+          "label": "スキーマ",
+          "art": "schema-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "受け取る値",
+          "art": "result-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリで確認",
+          "art": "app-check",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "schema",
+          "to": "record",
+          "label": "応答"
+        },
+        {
+          "id": "check",
+          "from": "record",
+          "to": "app",
+          "label": "確認"
+        }
+      ]
+    },
+    "cooking": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "apron",
+          "label": "料理教室",
+          "art": "cooking-apron",
+          "at": [1, 1]
+        },
+        {
+          "id": "item",
+          "label": "持ち物名",
+          "art": "cooking-apron",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "個数",
+          "art": "cooking-apron",
+          "at": [5, 1]
+        },
+        {
+          "id": "schema",
+          "label": "スキーマ",
+          "art": "schema-clipboard",
+          "at": [5, 2]
+        },
+        {
+          "id": "request",
+          "label": "指示だけ",
+          "art": "cooking-request",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "fields",
+          "label": "持ち物と個数",
+          "art": "cooking-apron",
+          "at": [1, 1]
+        },
+        {
+          "id": "schema",
+          "label": "スキーマ",
+          "art": "schema-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "define",
+          "from": "fields",
+          "to": "schema",
+          "label": "形を決める"
+        },
+        {
+          "id": "send",
+          "from": "schema",
+          "to": "claude",
+          "label": "渡す"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rental",
+          "label": "貸出の記録",
+          "art": "rental-bicycle",
+          "at": [1, 1]
+        },
+        {
+          "id": "cooking",
+          "label": "持ち物の記録",
+          "art": "cooking-apron",
+          "at": [3, 1]
+        },
+        {
+          "id": "schema",
+          "label": "決まった形",
+          "art": "schema-clipboard",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "貸出の記録をそろえる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "自転車の貸出メモを、アプリに取り込みたいとします。",
+          "show": ["bicycle"]
+        },
+        {
+          "say": "自由なメモでは、日数が抜けてしまいました。",
+          "show": ["note"],
+          "mark": [
+            {
+              "on": "note",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "ほしいのは、名前と日数がそろった記録です。",
+          "show": ["record"]
+        },
+        {
+          "say": "決まった形の JSON が要るときは、構造化出力でスキーマを渡します。",
+          "speech": "決まった形のジェイソンが要るときは、構造化出力でスキーマを渡します。",
+          "show": ["schema"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "rental-form",
+      "kind": "board",
+      "role": "example",
+      "title": "記入する欄を先に決める",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "自転車を貸す店で、担当者に記録を頼む場面です。",
+          "show": ["note"]
+        },
+        {
+          "say": "好きに書いてもらうと、日数が抜けてしまいました。",
+          "tag": {
+            "note": "日数がない"
+          },
+          "mark": [
+            {
+              "on": "note",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、名前と日数の欄がある用紙を渡します。",
+          "show": ["form"]
+        },
+        {
+          "say": "記入する項目を、先に決めておくわけです。",
+          "show": ["record", "fill"],
+          "travel": {
+            "along": ["fill"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "schema-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "形を決めるスキーマ",
+      "board": "schema",
+      "beats": [
+        {
+          "say": "構造化出力は、応答の形を決める機能です。",
+          "term": {
+            "text": "構造化出力",
+            "ruby": "こうぞうかしゅつりょく",
+            "note": "応答を決めた形に絞る"
+          },
+          "show": ["claude"]
+        },
+        {
+          "say": "渡す決まりを、JSON スキーマと呼びます。",
+          "speech": "渡す決まりを、ジェイソンスキーマと呼びます。",
+          "term": {
+            "text": "JSONスキーマ",
+            "note": "項目と型と必須の項目"
+          },
+          "show": ["rules", "send"]
+        },
+        {
+          "say": "この用紙のように、項目と必須の項目を決める書き方です。",
+          "show": ["fields", "shape"],
+          "travel": {
+            "along": ["send", "shape"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "文字列や数などの値の種類を、型と呼びます。",
+          "term": {
+            "text": "型",
+            "ruby": "かた",
+            "note": "文字列や数などの種類"
+          },
+          "pulse": ["fields"]
+        },
+        {
+          "say": "名前を文字列にする指定も、スキーマの一部です。",
+          "tag": {
+            "fields": "名前は文字列"
+          },
+          "pulse": ["rules"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "format-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "スキーマを渡す場所",
+      "code": [
+        "// リクエストの出力設定を開く",
+        "output_config: {",
+        "  // 出力の方式とスキーマを指定する",
+        "  format: { type: \"json_schema\", schema },",
+        "// 出力設定を閉じる",
+        "},"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "format"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "リクエストに、この出力設定を加えます。",
+          "part": {
+            "line": 1,
+            "text": "output_config",
+            "note": "出力設定"
+          },
+          "figure": {
+            "show": ["schema"]
+          }
+        },
+        {
+          "say": "その中の format が、出力の形を書く場所です。",
+          "speech": "その中のフォーマットが、出力の形を書く場所です。",
+          "part": {
+            "line": 3,
+            "text": "format",
+            "note": "出力の形"
+          },
+          "figure": {
+            "pulse": ["schema"]
+          }
+        },
+        {
+          "say": "方式には、この文字列を指定します。",
+          "part": {
+            "line": 3,
+            "text": "\"json_schema\"",
+            "note": "スキーマで指定"
+          },
+          "figure": {
+            "tag": {
+              "schema": "方式の指定"
+            }
+          }
+        },
+        {
+          "say": "schema は、用意した決まりに付けた名前です。",
+          "speech": "スキーマは、用意した決まりに付けた名前です。",
+          "part": {
+            "line": 3,
+            "text": "schema }",
+            "note": "スキーマの名前"
+          },
+          "figure": {
+            "show": ["claude", "send"],
+            "travel": {
+              "along": ["send"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "その決まりを渡して、応答を指定した形に絞ります。",
+          "focus": [1, 3, 5],
+          "figure": {
+            "show": ["result", "return"],
+            "travel": {
+              "along": ["return"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-fields",
+      "kind": "board",
+      "role": "apply",
+      "title": "貸出に必要な項目を決める",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "貸出メモでは、名前を文字列として受け取ります。",
+          "show": ["name"],
+          "tag": {
+            "name": "文字列"
+          }
+        },
+        {
+          "say": "日数は、整数として受け取る項目です。",
+          "show": ["days"],
+          "tag": {
+            "days": "整数"
+          }
+        },
+        {
+          "say": "両方を必須にすると、必要な項目を指定できます。",
+          "pulse": ["name", "days"],
+          "mark": [
+            {
+              "on": "name",
+              "kind": "check"
+            },
+            {
+              "on": "days",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "項目と型と必須の指定を、スキーマにまとめましょう。",
+          "show": ["schema"],
+          "pulse": ["schema"]
+        }
+      ]
+    },
+    {
+      "id": "rental-response",
+      "kind": "board",
+      "role": "apply",
+      "title": "指定から応答までをたどる",
+      "board": "response",
+      "beats": [
+        {
+          "say": "用意した貸出用のスキーマを、出力設定に入れます。",
+          "show": ["schema"]
+        },
+        {
+          "say": "この設定を付けたものが、送るリクエストです。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "JSON は、応答の text ブロックに入って返ります。",
+          "speech": "ジェイソンは、応答のテキストブロックに入って返ります。",
+          "show": ["result", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この例で指定した形は、名前と日数のある記録です。",
+          "pulse": ["result"],
+          "tag": {
+            "result": "名前と日数"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "schema-limits",
+      "kind": "code",
+      "role": "note",
+      "title": "書ける決まりを確かめる",
+      "code": ["// オブジェクトに書く指定", "additionalProperties: false"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "limits"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "オブジェクトには、この指定を書きます。",
+          "part": {
+            "line": 1,
+            "text": "additionalProperties: false",
+            "note": "追加の項目を禁止"
+          },
+          "figure": {
+            "show": ["schema"]
+          }
+        },
+        {
+          "say": "数の範囲や文字数の制限は、スキーマに書けません。",
+          "figure": {
+            "tag": {
+              "schema": "数や字数制限"
+            }
+          }
+        },
+        {
+          "say": "そうした制限を書くと、400 エラーになります。",
+          "speech": "そうした制限を書くと、よんひゃくエラーになります。",
+          "figure": {
+            "mark": [
+              {
+                "on": "schema",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "書けない制限は、受け取ったあとアプリで確かめましょう。",
+          "figure": {
+            "show": ["record", "app", "receive", "check"],
+            "unmark": ["schema"],
+            "travel": {
+              "along": ["check"],
+              "icon": "search"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cooking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "持ち物の形をそろえる",
+      "board": "cooking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "料理教室の持ち物を、アプリ用の記録にする場面です。",
+          "show": ["apron"]
+        },
+        {
+          "say": "持ち物名は文字列、個数は整数として受け取ります。",
+          "show": ["item", "count"],
+          "tag": {
+            "item": "文字列",
+            "count": "整数"
+          }
+        },
+        {
+          "say": "毎回、両方の項目がそろう形にしたいと考えました。",
+          "pulse": ["item", "count"],
+          "tag": {
+            "item": "必須の項目",
+            "count": "必須の項目"
+          }
+        },
+        {
+          "say": "一つ目は、JSON で答えるよう指示するだけの方法です。",
+          "speech": "一つ目は、ジェイソンで答えるよう指示するだけの方法です。",
+          "show": ["request"],
+          "tag": {
+            "request": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目のスキーマを渡す方法と、どちらを選ぶべきでしょうか。",
+          "show": ["schema"],
+          "tag": {
+            "schema": "二つ目"
+          },
+          "mark": [
+            {
+              "on": "request",
+              "kind": "question"
+            },
+            {
+              "on": "schema",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "cooking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "スキーマを渡す",
+      "board": "cooking",
+      "beats": [
+        {
+          "say": "答えは、スキーマを渡す二つ目の方法です。",
+          "mark": [
+            {
+              "on": "schema",
+              "kind": "check"
+            },
+            {
+              "on": "request",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["schema"]
+        },
+        {
+          "say": "持ち物名と個数の型を決め、両方を必須にします。",
+          "pulse": ["item", "count"],
+          "tag": {
+            "item": "文字列で必須",
+            "count": "整数で必須"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-schema",
+      "kind": "board",
+      "role": "explain",
+      "title": "指示だけでは足りない理由",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "指示だけでは、項目や型は保証されません。",
+          "show": ["fields"],
+          "mark": [
+            {
+              "on": "fields",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "JSON として読めない文字が混ざることもあります。",
+          "speech": "ジェイソンとして読めない文字が混ざることもあります。",
+          "tag": {
+            "fields": "形が不安定"
+          }
+        },
+        {
+          "say": "必要なのは、項目と型と必須の指定をまとめたスキーマです。",
+          "show": ["schema", "define"],
+          "travel": {
+            "along": ["define"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "構造化出力で渡すと、応答をその形に絞れます。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          },
+          "unmark": ["fields"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "アプリが読む記録を作る",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "自転車の貸出では、名前と日数を決まった項目で受け取ります。",
+          "show": ["rental"]
+        },
+        {
+          "say": "料理教室なら、持ち物名と個数をそろえる場面です。",
+          "show": ["cooking"]
+        },
+        {
+          "say": "アプリが読む形を先に決め、スキーマとして渡しましょう。",
+          "show": ["schema"]
+        },
+        {
+          "say": "決まった形の JSON が要るときに、構造化出力を使います。",
+          "speech": "決まった形のジェイソンが要るときに、構造化出力を使います。",
+          "pulse": ["schema"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "5e6422d429d3c9a18cbe84b04ea75244fc14df3cf61e9dcc030ca9bb347b45fd"
+  }
+}

@@ -1,0 +1,694 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "あいまいな依頼に、出力の具体的な条件とその理由を添えて書き直せる。",
+    "stuck": "「分かりやすく」と頼めば、必要な内容や詳しさまで察してもらえると思ってしまう。",
+    "points": ["やってほしいことは、理由を添えて具体的に書きます。"],
+    "leaveOut": [
+      "例で出力の形を伝える方法",
+      "XML のタグによる区切り",
+      "長い資料の並べ方",
+      "API の呼び出し方",
+      "モデルごとの仕様"
+    ]
+  },
+  "art": {
+    "shop-notice": {
+      "prompt": "A white shop announcement leaflet with a small blue shopping bag pictogram, beside a violet pencil. The paper is white, with no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "microphone": {
+      "prompt": "A large blue handheld microphone beside a small blue loudspeaker, representing a shop announcement read aloud. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "colleague": {
+      "prompt": "A helpful staff member in a plain blue shirt holding a white announcement leaflet, with simple facial features and an attentive expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a violet pen above a large white request sheet with three blank light grey paper tabs. No writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white request sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "piano-lesson": {
+      "prompt": "A compact blue electronic piano keyboard beside a young adult with short dark hair and a plain violet sweater, hands poised to try the keys. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lesson-leaflet": {
+      "prompt": "An open white music lesson information leaflet beside a small closed blue instrument case and a violet pencil. The pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "店の案内",
+          "art": "shop-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "voice",
+          "label": "店内放送",
+          "art": "microphone",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "条件と理由",
+          "art": "request-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "colleague": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "新しい同僚",
+          "art": "colleague",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "作る案内",
+          "art": "shop-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "voice",
+          "label": "放送で使う",
+          "art": "microphone",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "prompt": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "指示と情報",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "notice",
+          "label": "作る案内",
+          "art": "shop-notice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "make",
+          "from": "claude",
+          "to": "notice",
+          "label": "作る"
+        }
+      ]
+    },
+    "conditions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "length",
+          "label": "長さ",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "include",
+          "label": "含めるもの",
+          "art": "shop-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "exclude",
+          "label": "含めないもの",
+          "art": "microphone",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "write": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "店の案内",
+          "art": "shop-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "content",
+          "label": "時刻と場所",
+          "art": "request-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "voice",
+          "label": "読み上げ用",
+          "art": "microphone",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "specify",
+          "from": "notice",
+          "to": "content",
+          "label": "具体的に"
+        },
+        {
+          "id": "reason",
+          "from": "content",
+          "to": "voice",
+          "label": "理由"
+        }
+      ]
+    },
+    "review": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "書いた依頼",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "事情を知らない",
+          "art": "colleague",
+          "at": [3, 1]
+        },
+        {
+          "id": "notice",
+          "label": "作る案内",
+          "art": "shop-notice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "request",
+          "to": "staff",
+          "label": "見せる"
+        },
+        {
+          "id": "work",
+          "from": "staff",
+          "to": "notice",
+          "label": "作れるか"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "lesson",
+          "label": "楽器教室",
+          "art": "piano-lesson",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "初めて習う人",
+          "art": "lesson-leaflet",
+          "at": [3, 1]
+        },
+        {
+          "id": "vague",
+          "label": "分かりやすく",
+          "art": "request-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "reason",
+          "label": "理由",
+          "art": "lesson-leaflet",
+          "at": [5, 2]
+        },
+        {
+          "id": "condition",
+          "label": "具体的な条件",
+          "art": "request-note",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "why": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "初参加の準備",
+          "art": "lesson-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "content",
+          "label": "持ち物と流れ",
+          "art": "lesson-leaflet",
+          "at": [3, 1]
+        },
+        {
+          "id": "format",
+          "label": "箇条書き",
+          "art": "request-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "reason",
+          "to": "content",
+          "label": "必要な内容"
+        },
+        {
+          "id": "shape",
+          "from": "content",
+          "to": "format",
+          "label": "出す形"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "店の案内",
+          "art": "shop-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "lesson",
+          "label": "楽器教室",
+          "art": "piano-lesson",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "条件と理由",
+          "art": "request-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "案内の使い道まで伝える",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "店の案内を、放送で読み上げたいとします。",
+          "show": ["notice"]
+        },
+        {
+          "say": "必要なのは、耳で聞いて伝わる文章です。",
+          "show": ["voice"]
+        },
+        {
+          "say": "書いてほしい内容と、使い道を依頼に添えましょう。",
+          "show": ["request"]
+        },
+        {
+          "say": "やってほしいことは、理由を添えて具体的に書きます。",
+          "pulse": ["request"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "new-colleague",
+      "kind": "board",
+      "role": "example",
+      "title": "事情を知らない同僚",
+      "board": "colleague",
+      "beats": [
+        {
+          "say": "店に来たばかりの同僚に、案内作りを頼みました。",
+          "show": ["staff"]
+        },
+        {
+          "say": "「案内を書いて」だけでは、使い道が分かりません。",
+          "show": ["notice"],
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "同僚が知りたいのは、掲示用か放送用かです。",
+          "show": ["voice"]
+        },
+        {
+          "say": "放送で使うと伝えてから、必要な内容を説明します。",
+          "pulse": ["voice", "notice"],
+          "unmark": ["staff"]
+        }
+      ]
+    },
+    {
+      "id": "prompt-and-instruction",
+      "kind": "board",
+      "role": "syntax",
+      "title": "渡す全体と指示",
+      "board": "prompt",
+      "beats": [
+        {
+          "say": "Claude に渡す指示と情報の全体が、プロンプトです。",
+          "speech": "クロードに渡す指示と情報の全体が、プロンプトです。",
+          "term": {
+            "text": "プロンプト",
+            "note": "渡す指示と情報の全体"
+          },
+          "show": ["request", "claude"]
+        },
+        {
+          "say": "案内作りの依頼も、使い道もまとめて渡します。",
+          "show": ["send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その中で、やってほしいことを伝える部分が指示です。",
+          "term": {
+            "text": "指示",
+            "ruby": "しじ",
+            "note": "やってほしいこと"
+          }
+        },
+        {
+          "say": "この例では、店の案内文を書くように頼みました。",
+          "show": ["notice", "make"],
+          "tag": {
+            "request": "案内を書く"
+          }
+        },
+        {
+          "say": "何を作るかは、この指示に書いて伝えます。",
+          "pulse": ["request", "notice"]
+        }
+      ]
+    },
+    {
+      "id": "output-conditions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "形や内容を決める",
+      "board": "conditions",
+      "beats": [
+        {
+          "say": "返してほしい文章の形や内容を、出力の条件と呼びます。",
+          "term": {
+            "text": "出力の条件",
+            "ruby": "しゅつりょくのじょうけん",
+            "note": "長さや含める内容"
+          }
+        },
+        {
+          "say": "例えば、文章を二文にするという長さの指定です。",
+          "show": ["length"],
+          "tag": {
+            "length": "二文"
+          }
+        },
+        {
+          "say": "案内に入れる内容も、具体的に書きましょう。",
+          "show": ["include"],
+          "tag": {
+            "include": "時刻と場所"
+          }
+        },
+        {
+          "say": "使ってほしくない記号があれば、それも伝えます。",
+          "show": ["exclude"],
+          "tag": {
+            "exclude": "読めない記号"
+          }
+        },
+        {
+          "say": "「分かりやすく」だけでは、こうした条件は伝わりません。",
+          "pulse": ["length", "include", "exclude"]
+        }
+      ]
+    },
+    {
+      "id": "add-reason",
+      "kind": "board",
+      "role": "apply",
+      "title": "条件に理由を添える",
+      "board": "write",
+      "beats": [
+        {
+          "say": "店の案内を頼む文に、条件と理由を足してみましょう。",
+          "show": ["notice"]
+        },
+        {
+          "say": "開店時刻と場所を二文で伝えるよう、具体的に頼みます。",
+          "show": ["content", "specify"],
+          "tag": {
+            "content": "二文で伝える"
+          }
+        },
+        {
+          "say": "添える理由は、店内放送で読み上げるためです。",
+          "show": ["voice", "reason"],
+          "tag": {
+            "voice": "読み上げる"
+          }
+        },
+        {
+          "say": "そのため、読めない記号は使わないように頼みました。",
+          "pulse": ["voice"],
+          "tag": {
+            "voice": "記号を避ける"
+          }
+        },
+        {
+          "say": "理由が分かると、書いていない場面にも当てはめてもらえます。",
+          "pulse": ["content", "voice"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "colleague-check",
+      "kind": "board",
+      "role": "apply",
+      "title": "迷うところを確かめる",
+      "board": "review",
+      "beats": [
+        {
+          "say": "書いた依頼は、事情を知らない同僚に見せます。",
+          "show": ["request", "staff", "pass"],
+          "travel": {
+            "along": ["pass"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "確かめたいのは、そのとおりに案内を作れるかです。",
+          "show": ["notice", "work"]
+        },
+        {
+          "say": "同僚が迷うなら、Claude も迷うと考えましょう。",
+          "speech": "同僚が迷うなら、クロードも迷うと考えましょう。",
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "必要な内容や理由が抜けていたら、依頼に書き足します。",
+          "pulse": ["request"],
+          "tag": {
+            "request": "抜けを補う"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "楽器教室ならどう頼む",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "楽器教室の案内を書く依頼を考えます。",
+          "show": ["lesson"]
+        },
+        {
+          "say": "読むのは、楽器を習ったことがない人です。",
+          "show": ["reader"]
+        },
+        {
+          "say": "担当者は「分かりやすく書いて」と頼みました。",
+          "show": ["vague"]
+        },
+        {
+          "say": "この依頼では、説明の詳しさが決まっていません。",
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "理由と具体的な条件を、どう足せばよいでしょうか。",
+          "show": ["reason", "condition"],
+          "mark": [
+            {
+              "on": "reason",
+              "kind": "question"
+            },
+            {
+              "on": "condition",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "準備できる案内を頼む",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "例えば、初めての人が準備できるように、と添えます。",
+          "tag": {
+            "reason": "初参加の準備"
+          },
+          "mark": [
+            {
+              "on": "reason",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "持ち物と当日の流れを、箇条書きにする指定です。",
+          "tag": {
+            "condition": "箇条書き"
+          },
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["condition"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-specific",
+      "kind": "board",
+      "role": "explain",
+      "title": "理由から内容をたどる",
+      "board": "why",
+      "beats": [
+        {
+          "say": "この依頼の理由は、初めての人が準備できるようにすることです。",
+          "show": ["reason"]
+        },
+        {
+          "say": "持ち物と当日の流れを指定すると、必要な内容が伝わります。",
+          "show": ["content", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "箇条書きという指定は、返す文章の形です。",
+          "show": ["format", "shape"]
+        },
+        {
+          "say": "「分かりやすく」だけの依頼には、この指定がありません。",
+          "pulse": ["content", "format"]
+        },
+        {
+          "say": "理由も添えると、何のための案内かを伝えられます。",
+          "pulse": ["reason"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "依頼を書くときに使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "店の案内では、放送で使う理由と文章の条件を伝えました。",
+          "show": ["notice"]
+        },
+        {
+          "say": "楽器教室では、初参加の準備に役立つ案内を頼みます。",
+          "show": ["lesson"]
+        },
+        {
+          "say": "どちらも、必要な内容を具体的に書いた依頼です。",
+          "show": ["request"]
+        },
+        {
+          "say": "頼む前に、やってほしいことと理由を書けたか確かめましょう。",
+          "pulse": ["request"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "440dd8066e531cde71b014d162c189d0089bf429dc6c7f0c8676521a2824d651"
+  }
+}
