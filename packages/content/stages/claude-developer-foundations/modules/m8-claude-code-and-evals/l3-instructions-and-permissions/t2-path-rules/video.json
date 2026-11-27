@@ -1,0 +1,710 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "専用の約束をルールファイルのパス指定で対象のファイルに絞り、いつ読み込まれるかを説明できる。",
+    "stuck": "一部のテストだけに必要な約束を常に読み込ませ、ルールの置き場所と対象の指定を区別できない。",
+    "points": ["特定のファイルにだけ効かせたい約束は、パスを指定したルールファイルに書きます。"],
+    "leaveOut": [
+      "CLAUDE.md を重ねて読む順序",
+      "ユーザーのルールとプロジェクトのルールを読む順序",
+      "ルールのサブディレクトリへの分割",
+      "glob の記号ごとの細かい意味",
+      "権限の拒否・確認・許可と権限モード",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "inventory-test": {
+      "prompt": "An empty open light grey storage bin beside a white clipboard and a blue pencil, representing a test of zero stock. The bin is empty and clearly visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "product-leaflet": {
+      "prompt": "A white folded product leaflet beside a simple blue ceramic mug, with a small pictorial mug silhouette on the leaflet and no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rule-note": {
+      "prompt": "A single white sheet held by a violet binder clip, with a blue pencil beside it, representing a written instruction. The sheet is otherwise blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rules-folder": {
+      "prompt": "An open light grey file folder containing two white sheets with blue and violet tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "wool-sweater": {
+      "prompt": "A violet wool sweater with rounded sleeves beside a blue wash basin, representing a garment that needs special washing care. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "towel-basket": {
+      "prompt": "A blue laundry basket holding two folded white towels, with the top towel clearly visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-ticket": {
+      "prompt": "Two white cinema admission tickets beside a blue ticket punch, with a small circular hole punched in one ticket and the other ticket intact. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-leaflet": {
+      "prompt": "A white folded cinema programme beside a violet film reel, with a simple blue film strip pictogram on the paper and no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "conversation-notes": {
+      "prompt": "A small fan of white conversation memo sheets next to one smaller white summary note held by a blue clip. The sheets have only blue and violet blank speech bubble shapes and no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inventory",
+          "label": "在庫テスト",
+          "art": "inventory-test",
+          "at": [1, 1]
+        },
+        {
+          "id": "product",
+          "label": "商品説明",
+          "art": "product-leaflet",
+          "at": [3, 1]
+        },
+        {
+          "id": "rule",
+          "label": "専用の約束",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sweater",
+          "label": "セーター",
+          "art": "wool-sweater",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "洗い方のメモ",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "towels",
+          "label": "タオル",
+          "art": "towel-basket",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "location": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": ".claude",
+          "art": "rules-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "rules",
+          "label": "rules",
+          "art": "rules-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "約束の本文",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inside",
+          "from": "claude",
+          "to": "rules",
+          "label": "その下"
+        },
+        {
+          "id": "place",
+          "from": "rules",
+          "to": "note",
+          "label": "置く"
+        }
+      ]
+    },
+    "match": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "商品説明",
+          "art": "product-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "inventory",
+          "label": "在庫テスト",
+          "art": "inventory-test",
+          "at": [3, 1]
+        },
+        {
+          "id": "rule",
+          "label": "専用の約束",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "load",
+          "from": "inventory",
+          "to": "rule",
+          "label": "読み込む"
+        }
+      ]
+    },
+    "timing": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "起動",
+          "art": "rules-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "general",
+          "label": "指定なし",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "target",
+          "label": "対象を扱う",
+          "art": "inventory-test",
+          "at": [3, 2]
+        },
+        {
+          "id": "scoped",
+          "label": "パス指定あり",
+          "art": "rule-note",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "startup",
+          "from": "start",
+          "to": "general",
+          "label": "読み込む"
+        },
+        {
+          "id": "on-target",
+          "from": "target",
+          "to": "scoped",
+          "label": "読み込む"
+        }
+      ]
+    },
+    "compact": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "summary",
+          "label": "会話の要約",
+          "art": "conversation-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "target",
+          "label": "対象ファイル",
+          "art": "inventory-test",
+          "at": [3, 1]
+        },
+        {
+          "id": "source",
+          "label": "ルールの原文",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "resume",
+          "from": "summary",
+          "to": "target",
+          "label": "再び扱う"
+        },
+        {
+          "id": "reload",
+          "from": "target",
+          "to": "source",
+          "label": "読み直す"
+        }
+      ]
+    },
+    "cinema": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "入場の約束",
+          "art": "rule-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "leaflet",
+          "label": "上映案内",
+          "art": "cinema-leaflet",
+          "at": [3, 1]
+        },
+        {
+          "id": "tests",
+          "label": "入場テスト",
+          "art": "cinema-ticket",
+          "at": [5, 1]
+        },
+        {
+          "id": "read",
+          "label": "テストを読む",
+          "art": "cinema-ticket",
+          "at": [5, 2]
+        },
+        {
+          "id": "start",
+          "label": "起動時",
+          "art": "rules-folder",
+          "at": [3, 2]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "必要なファイルだけに絞る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫テストには、在庫ゼロの例を入れたいとします。",
+          "show": ["inventory"]
+        },
+        {
+          "say": "商品説明を直す作業には、必要のない約束です。",
+          "show": ["product"]
+        },
+        {
+          "say": "この約束を、必要なファイルだけに絞りましょう。",
+          "show": ["rule"]
+        },
+        {
+          "say": "対象を絞る約束は、パスを指定したルールファイルに書きます。",
+          "pulse": ["inventory", "rule"]
+        }
+      ]
+    },
+    {
+      "id": "laundry-note",
+      "kind": "board",
+      "role": "example",
+      "title": "洗濯物ごとの注意書き",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "セーターを洗うときだけ、手洗いのメモを読むとします。",
+          "show": ["sweater", "note"],
+          "tag": {
+            "note": "手洗い"
+          }
+        },
+        {
+          "say": "このメモの対象は、セーターだけです。",
+          "pulse": ["sweater"]
+        },
+        {
+          "say": "タオルを洗う人には、そのメモを渡しません。",
+          "show": ["towels"],
+          "tag": {
+            "towels": "対象外"
+          }
+        },
+        {
+          "say": "約束を読む場面は、扱う物に合わせて絞れます。",
+          "pulse": ["sweater", "note"]
+        }
+      ]
+    },
+    {
+      "id": "rule-file",
+      "kind": "board",
+      "role": "syntax",
+      "title": "約束を書くファイル",
+      "board": "location",
+      "beats": [
+        {
+          "say": "約束を残す文書が、ルールファイルです。",
+          "term": {
+            "text": "ルールファイル",
+            "note": "約束を残す文書"
+          }
+        },
+        {
+          "say": "ドットクロードの下のルールズフォルダーに置きます。",
+          "show": ["claude", "rules", "inside"]
+        },
+        {
+          "say": "ここに置く文書の形式は Markdown です。",
+          "speech": "ここに置く文書の形式はマークダウンです。",
+          "show": ["note", "place"]
+        },
+        {
+          "say": "本文には、在庫がゼロ件の例を含めると書きましょう。",
+          "pulse": ["note"],
+          "tag": {
+            "note": "在庫ゼロの例"
+          }
+        }
+      ]
+    },
+    {
+      "id": "path-syntax",
+      "kind": "code",
+      "role": "syntax",
+      "title": "対象を書く設定欄",
+      "code": [
+        "# .claude/rules/inventory-tests.md の冒頭の設定欄",
+        "paths: [\"tests/inventory/**/*.test.ts\"]"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "match"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "対象のファイルを絞る指定を、パス指定と呼びます。",
+          "term": {
+            "text": "パス指定",
+            "ruby": "ぱすしてい",
+            "note": "約束を読む対象を絞る"
+          },
+          "figure": {
+            "show": ["inventory"]
+          }
+        },
+        {
+          "say": "冒頭の設定欄で使う項目が paths です。",
+          "speech": "冒頭の設定欄で使う項目がパスズです。",
+          "part": {
+            "line": 1,
+            "text": "paths",
+            "note": "対象の指定"
+          }
+        },
+        {
+          "say": "パスをまとめて表す書き方を、glob と呼びます。",
+          "speech": "パスをまとめて表す書き方を、グロブと呼びます。",
+          "term": {
+            "text": "glob",
+            "ruby": "グロブ",
+            "note": "複数のパスを表す書き方"
+          },
+          "part": {
+            "line": 1,
+            "text": "tests/inventory/**/*.test.ts"
+          }
+        },
+        {
+          "say": "この指定は、在庫のフォルダー以下のテストが対象です。",
+          "part": {
+            "line": 1,
+            "text": "tests/inventory/",
+            "note": "在庫の範囲"
+          },
+          "figure": {
+            "tag": {
+              "inventory": "対象"
+            }
+          }
+        },
+        {
+          "say": "対象を読むか編集すると、約束を読み込みます。",
+          "part": {
+            "line": 1,
+            "text": "tests/inventory/**/*.test.ts"
+          },
+          "figure": {
+            "show": ["rule", "load"],
+            "travel": {
+              "along": ["load"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "inventory-rule",
+      "kind": "code",
+      "role": "apply",
+      "title": "在庫テストに当てはめる",
+      "code": [
+        "# .claude/rules/inventory-tests.md の冒頭の設定欄",
+        "paths: [\"tests/inventory/**/*.test.ts\"]"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "match"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "商品説明だけを直すときには、この条件は一致しません。",
+          "focus": [1],
+          "figure": {
+            "show": ["product"],
+            "tag": {
+              "product": "対象外"
+            }
+          }
+        },
+        {
+          "say": "条件が指すのは、在庫テストのファイルです。",
+          "part": {
+            "line": 1,
+            "text": "tests/inventory/**/*.test.ts"
+          },
+          "figure": {
+            "show": ["inventory"]
+          }
+        },
+        {
+          "say": "そのテストを読むと、専用の約束を読み込みます。",
+          "figure": {
+            "show": ["rule", "load"],
+            "travel": {
+              "along": ["load"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "ここで加わるのは、在庫ゼロの例を含める指示でした。",
+          "figure": {
+            "pulse": ["rule"],
+            "tag": {
+              "rule": "在庫ゼロの例"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "load-timing",
+      "kind": "board",
+      "role": "apply",
+      "title": "指定の有無で時点が変わる",
+      "board": "timing",
+      "beats": [
+        {
+          "say": "パス指定のないルールは、起動時に読み込みます。",
+          "show": ["start", "general", "startup"],
+          "travel": {
+            "along": ["startup"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "指定したルールを読むのは、対象を扱うときです。",
+          "show": ["target", "scoped", "on-target"],
+          "travel": {
+            "along": ["on-target"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "在庫テストだけの約束には、パスを指定しましょう。",
+          "pulse": ["target", "scoped"]
+        },
+        {
+          "say": "置き場所が同じでも、指定があるかどうかで読むときが変わります。",
+          "pulse": ["general", "scoped"]
+        }
+      ]
+    },
+    {
+      "id": "after-compaction",
+      "kind": "board",
+      "role": "apply",
+      "title": "圧縮後にもう一度読む",
+      "board": "compact",
+      "beats": [
+        {
+          "say": "会話が長くなり、圧縮されたあとも見てみましょう。",
+          "show": ["summary"]
+        },
+        {
+          "say": "パス指定のあるルールも、この時点では要約の対象です。",
+          "tag": {
+            "summary": "指定も要約"
+          }
+        },
+        {
+          "say": "次に対象のファイルを扱うと、ルールを読み直します。",
+          "show": ["target", "source", "resume", "reload"],
+          "travel": {
+            "along": ["resume", "reload"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "そのとき再び読むのは、ファイルに残した約束です。",
+          "pulse": ["source"]
+        }
+      ]
+    },
+    {
+      "id": "cinema-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "入場の約束をいつ読むか",
+      "board": "cinema",
+      "think": 8,
+      "beats": [
+        {
+          "say": "映画館の入場テストで、使用済みの券の例を試します。",
+          "show": ["tests", "rule"],
+          "tag": {
+            "rule": "使用済みの券"
+          }
+        },
+        {
+          "say": "その約束に、入場テストだけのパス指定を付けました。",
+          "pulse": ["tests", "rule"],
+          "tag": {
+            "tests": "指定の対象"
+          }
+        },
+        {
+          "say": "いまは上映案内の文章だけを直す作業です。",
+          "show": ["leaflet"],
+          "pulse": ["leaflet"]
+        },
+        {
+          "say": "候補は、起動したときか、入場テストを読むときになります。",
+          "show": ["start", "read"],
+          "pulse": []
+        },
+        {
+          "say": "このルールを読み込むのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "start",
+              "kind": "question"
+            },
+            {
+              "on": "read",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinema-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "入場テストを読むとき",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "答えは、入場テストのファイルを読むときです。",
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            },
+            {
+              "on": "start",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["read"]
+        },
+        {
+          "say": "パス指定に一致するファイルを扱うときに読み込みます。",
+          "pulse": ["tests", "rule"]
+        }
+      ]
+    },
+    {
+      "id": "cinema-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "作業の対象を照らす",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "上映案内のファイルは、指定した対象に含まれません。",
+          "pulse": ["leaflet"],
+          "tag": {
+            "leaflet": "対象外"
+          }
+        },
+        {
+          "say": "指定した対象は、入場テストだけです。",
+          "pulse": ["tests"]
+        },
+        {
+          "say": "そのファイルを読むときに、約束を読み込みます。",
+          "pulse": ["read", "rule"]
+        },
+        {
+          "say": "判断する手がかりは、作業するファイルのパスです。",
+          "pulse": ["tests", "rule"],
+          "tag": {
+            "rule": "パスを照合"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-scoped-rules",
+      "kind": "board",
+      "role": "usage",
+      "title": "専用の約束を分ける",
+      "board": "goal",
+      "reset": true,
+      "beats": [
+        {
+          "say": "在庫テストの約束が、商品説明の作業でも読まれていました。",
+          "show": ["inventory", "product"]
+        },
+        {
+          "say": "その約束が要るファイルの範囲を、まず確かめます。",
+          "pulse": ["inventory"]
+        },
+        {
+          "say": "今回の範囲は、在庫テストのファイルだけです。",
+          "tag": {
+            "inventory": "指定の対象"
+          }
+        },
+        {
+          "say": "専用のルールファイルに、その範囲を指定しましょう。",
+          "show": ["rule"],
+          "pulse": ["inventory", "rule"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "134d87dcc64babe77b350aae49a23dbf46a2ad2b40f4e8063d1ec2216a594269"
+  }
+}

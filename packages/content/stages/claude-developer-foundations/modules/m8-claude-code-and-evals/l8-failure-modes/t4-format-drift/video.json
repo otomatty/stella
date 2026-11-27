@@ -1,0 +1,692 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "項目名や前置きの違いで集計できない応答に対して、構造化出力で指定する内容を説明できる。",
+    "stuck": "人が読めば意味が通る応答なら、プログラムでも同じように集計できると思ってしまう。",
+    "points": ["出力の形が崩れるなら、構造化出力で必要な形を指定します。"],
+    "leaveOut": [
+      "構造化出力の呼び出しコードとスキーマの細かい構文",
+      "停止理由ごとの再試行や例外処理",
+      "人が読む報告の見出しや書きぶりをそろえる手順",
+      "履歴の欠落や行動不足への対策",
+      "同じ入力への判断をそろえる方法"
+    ]
+  },
+  "art": {
+    "parcel-record": {
+      "prompt": "A small light grey delivery parcel sealed with blue tape beside a white shipping record held by a violet clip. The record has two blank recessed fields. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "loose-response": {
+      "prompt": "Two loose white reply sheets with differently arranged empty blue fields, one with a large empty speech bubble attached above it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reading-program": {
+      "prompt": "A blue laptop with a completely blank screen and a white record sheet being inserted into a small light grey document scanner beside it. A conceptual illustration of a program reading a record, not a real application screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cake-slip": {
+      "prompt": "A slice of strawberry cake in natural cream and red colours beside a white reservation slip with two empty pale grey fields and a violet pencil. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "schema-form": {
+      "prompt": "A rigid white reusable form template with two large empty recessed slots, beside a blue pen and a violet paper clip. A concrete paper form representing specified data fields. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "status-tags": {
+      "prompt": "Two white shipping tags beside a small light grey parcel, one tag attached to a blue delivery trolley and the other beside a violet clock. No marks on the tags. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stop-check": {
+      "prompt": "A hand holding a blue magnifying glass over the bottom edge of a white reply sheet held by a violet clip, examining whether the sheet is complete. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bike-repair": {
+      "prompt": "A blue bicycle with a violet repair wrench beside its rear wheel and a white repair receipt clipped to the handlebar. Show the whole bicycle. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "delivery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "配送記録",
+          "art": "parcel-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "返った応答",
+          "art": "loose-response",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "集計処理",
+          "art": "reading-program",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "record",
+          "to": "reply",
+          "label": "抜き出す"
+        },
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reader",
+          "label": "取り込む"
+        }
+      ]
+    },
+    "paper": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cake",
+          "label": "ケーキの予約",
+          "art": "cake-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "自由なメモ",
+          "art": "loose-response",
+          "at": [3, 1]
+        },
+        {
+          "id": "form",
+          "label": "決まった欄",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "drift": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "expected",
+          "label": "必要な項目",
+          "art": "schema-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "changed",
+          "label": "違う項目名",
+          "art": "loose-response",
+          "at": [3, 1]
+        },
+        {
+          "id": "preface",
+          "label": "前置き付き",
+          "art": "loose-response",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "schema": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "form",
+          "label": "形の指定",
+          "art": "schema-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "names",
+          "label": "項目名と型",
+          "art": "parcel-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "required",
+          "label": "必須項目",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "number",
+          "label": "配送番号",
+          "art": "parcel-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "status",
+          "art": "status-tags",
+          "at": [3, 1]
+        },
+        {
+          "id": "required",
+          "label": "両方が必須",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "completion": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "返った応答",
+          "art": "loose-response",
+          "at": [1, 1]
+        },
+        {
+          "id": "stop",
+          "label": "停止理由",
+          "art": "stop-check",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "中身を読む",
+          "art": "reading-program",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "reply",
+          "to": "stop",
+          "label": "先に確認"
+        },
+        {
+          "id": "then",
+          "from": "stop",
+          "to": "read",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bike",
+          "label": "自転車の修理",
+          "art": "bike-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "example",
+          "label": "完成例を添付",
+          "art": "loose-response",
+          "at": [3, 1]
+        },
+        {
+          "id": "schema",
+          "label": "構造化出力",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "receipt",
+          "label": "修理の記録",
+          "art": "bike-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "schema",
+          "label": "項目名と型",
+          "art": "schema-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "集計処理",
+          "art": "reading-program",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "specify",
+          "from": "receipt",
+          "to": "schema",
+          "label": "形を指定"
+        },
+        {
+          "id": "match",
+          "from": "schema",
+          "to": "reader",
+          "label": "読み方一致"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "delivery",
+          "label": "配送の集計",
+          "art": "parcel-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "repair",
+          "label": "修理の集計",
+          "art": "bike-repair",
+          "at": [3, 1]
+        },
+        {
+          "id": "schema",
+          "label": "構造化出力",
+          "art": "schema-form",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "読み取れる形を指定する",
+      "board": "delivery",
+      "beats": [
+        {
+          "say": "配送記録から、番号と状態を抜き出して集計します。",
+          "show": ["record"]
+        },
+        {
+          "say": "返答の一部だけ、集計に取り込めない場面です。",
+          "show": ["reply"]
+        },
+        {
+          "say": "読み取るプログラムが求める形を確かめましょう。",
+          "show": ["reader"]
+        },
+        {
+          "say": "出力の形が崩れるなら、構造化出力で必要な形を指定します。",
+          "pulse": ["reply", "reader"]
+        }
+      ]
+    },
+    {
+      "id": "reservation-slip",
+      "kind": "board",
+      "role": "example",
+      "title": "予約票の欄をそろえる",
+      "board": "paper",
+      "beats": [
+        {
+          "say": "ケーキの予約を、紙のメモで受け付けたとします。",
+          "show": ["cake"]
+        },
+        {
+          "say": "種類と受取日を、担当者が自由な順で書きました。",
+          "show": ["memo"]
+        },
+        {
+          "say": "書く場所が毎回違うと、探す手間がかかるでしょう。",
+          "pulse": ["memo"],
+          "tag": {
+            "memo": "場所が違う"
+          }
+        },
+        {
+          "say": "同じ欄のある予約票なら、見る場所をそろえられます。",
+          "show": ["form"],
+          "tag": {
+            "form": "種類と受取日"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recognize-drift",
+      "kind": "board",
+      "role": "syntax",
+      "title": "期待した形から外れる",
+      "board": "drift",
+      "beats": [
+        {
+          "say": "出力の形を、フォーマットと呼びます。",
+          "term": {
+            "text": "フォーマット",
+            "note": "期待する出力の形"
+          }
+        },
+        {
+          "say": "ここでは、読む側が決めた項目の形です。",
+          "show": ["expected"]
+        },
+        {
+          "say": "応答ごとに項目名が変わった例を見てみましょう。",
+          "show": ["changed"],
+          "mark": [
+            {
+              "on": "changed",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "前置きが付くことでも、読み取れなくなります。",
+          "show": ["preface"],
+          "mark": [
+            {
+              "on": "preface",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "こうした形のずれがあると、正しく読み取れません。",
+          "pulse": ["changed", "preface"]
+        }
+      ]
+    },
+    {
+      "id": "specify-schema",
+      "kind": "board",
+      "role": "syntax",
+      "title": "形を決める指定",
+      "board": "schema",
+      "beats": [
+        {
+          "say": "構造化出力では、必要な出力の形を指定します。",
+          "term": {
+            "text": "構造化出力",
+            "ruby": "こうぞうかしゅつりょく",
+            "note": "必要な形を指定する出力"
+          }
+        },
+        {
+          "say": "予約票の欄のように、形を先に決める方法です。",
+          "show": ["form"]
+        },
+        {
+          "say": "形の指定には、JSONスキーマを使います。",
+          "speech": "形の指定には、ジェイソンスキーマを使います。",
+          "term": {
+            "text": "JSONスキーマ",
+            "ruby": "ジェイソンスキーマ",
+            "note": "項目名や型を決める指定"
+          }
+        },
+        {
+          "say": "ここに書くのは、読む側と同じ項目名と型です。",
+          "show": ["names"],
+          "pulse": ["form"]
+        },
+        {
+          "say": "省いてほしくない項目は、必須として指定しましょう。",
+          "show": ["required"],
+          "tag": {
+            "required": "省略させない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "delivery-fields",
+      "kind": "board",
+      "role": "apply",
+      "title": "配送番号の項目を決める",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "配送の集計で、読む側が使う項目を見てみましょう。",
+          "show": ["number", "status"]
+        },
+        {
+          "say": "配送番号の項目名は、deliveryIdです。",
+          "speech": "配送番号の項目名は、デリバリーアイディーです。",
+          "pulse": ["number"]
+        },
+        {
+          "say": "この項目には、文字列という型を指定します。",
+          "tag": {
+            "number": "文字列"
+          }
+        },
+        {
+          "say": "配送番号と状態は、どちらも必須の項目です。",
+          "show": ["required"],
+          "mark": [
+            {
+              "on": "required",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "status-values",
+      "kind": "board",
+      "role": "apply",
+      "title": "状態の値をそろえる",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "状態を読む項目名は、statusです。",
+          "speech": "状態を読む項目名は、ステータスです。",
+          "pulse": ["status"]
+        },
+        {
+          "say": "値の候補には、shippedを指定します。",
+          "speech": "値の候補には、シップトを指定します。",
+          "tag": {
+            "status": "shipped"
+          }
+        },
+        {
+          "say": "もう一つの候補は、pendingです。",
+          "speech": "もう一つの候補は、ペンディングです。",
+          "tag": {
+            "status": "pending"
+          }
+        },
+        {
+          "say": "この二つのどちらかを返す形にしましょう。",
+          "pulse": ["number", "status"],
+          "tag": {
+            "required": "二項目を必須"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-completion",
+      "kind": "board",
+      "role": "apply",
+      "title": "読む前に完了を確かめる",
+      "board": "completion",
+      "beats": [
+        {
+          "say": "形を指定した応答も、読む前に確認が必要です。",
+          "show": ["reply"]
+        },
+        {
+          "say": "まず、停止理由で応答が完了したかを確かめます。",
+          "show": ["stop", "check"],
+          "travel": {
+            "along": ["check"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "確認する項目は、ストップリーズンです。",
+          "tag": {
+            "stop": "完了を確認"
+          },
+          "pulse": ["stop"]
+        },
+        {
+          "say": "停止理由を確かめてから、中身を読みましょう。",
+          "show": ["read", "then"],
+          "travel": {
+            "along": ["then"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "修理記録の形を直す",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "自転車の修理記録を、プログラムで集計します。",
+          "show": ["bike"]
+        },
+        {
+          "say": "受付番号や状態の項目名が、応答ごとに違う状況です。",
+          "tag": {
+            "bike": "項目名が違う"
+          }
+        },
+        {
+          "say": "一つ目の案では、報告文の完成例だけを添えました。",
+          "show": ["example"]
+        },
+        {
+          "say": "二つ目の案は、構造化出力で項目の形を指定します。",
+          "show": ["schema"]
+        },
+        {
+          "say": "集計用の形をそろえるなら、どちらを選ぶでしょうか。",
+          "mark": [
+            {
+              "on": "example",
+              "kind": "question"
+            },
+            {
+              "on": "schema",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["example", "schema"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "構造化出力を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、構造化出力を使う二つ目の案です。",
+          "mark": [
+            {
+              "on": "example",
+              "kind": "cross"
+            },
+            {
+              "on": "schema",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["schema"]
+        },
+        {
+          "say": "集計で読む項目名と型を、スキーマで指定します。",
+          "tag": {
+            "schema": "必須も指定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-schema",
+      "kind": "board",
+      "role": "explain",
+      "title": "読む側の指定に合わせる",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "修理記録の問題は、出力の項目名が変わることです。",
+          "show": ["receipt"],
+          "tag": {
+            "receipt": "項目名が変化"
+          }
+        },
+        {
+          "say": "必要な項目名を決め、型と必須項目も指定します。",
+          "show": ["schema", "specify"],
+          "travel": {
+            "along": ["specify"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "読む側と同じ形を指定するのが、対策の要点です。",
+          "show": ["reader", "match"],
+          "pulse": ["schema", "reader"]
+        },
+        {
+          "say": "これで、集計処理に合わせた出力の形を伝えられます。",
+          "travel": {
+            "along": ["match"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "集計に使うデータの形",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "配送記録のように、項目を抜き出す処理で使います。",
+          "show": ["delivery"]
+        },
+        {
+          "say": "修理記録でも、決まった項目を読む集計が対象です。",
+          "show": ["repair"]
+        },
+        {
+          "say": "まず、読む側の項目名と型をそろえましょう。",
+          "show": ["schema"],
+          "tag": {
+            "schema": "項目名と型"
+          }
+        },
+        {
+          "say": "出力の形が崩れるなら、構造化出力で必要な形を指定します。",
+          "pulse": ["schema"],
+          "tag": {
+            "schema": "必須も指定"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "317e01cf56119d50fdb169c7eb043ee364b76b1b2e167372c55ee79d23695716"
+  }
+}

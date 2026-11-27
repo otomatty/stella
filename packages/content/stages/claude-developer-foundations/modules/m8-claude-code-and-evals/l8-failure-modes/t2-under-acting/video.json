@@ -1,0 +1,633 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "提案で止まった編集の依頼を、対象と実行する操作が分かる文に書き換えられる。",
+    "stuck": "修正案を求める言葉で依頼し、ファイルの編集まで任せたつもりになってしまう。",
+    "points": ["実行してほしいときは、依頼に実行する操作を明記します。"],
+    "leaveOut": [
+      "通信エラーと停止理由の切り分け",
+      "会話の履歴が失われる原因",
+      "出力形式や判断の一貫性の改善",
+      "編集ツールや権限の具体的な設定方法"
+    ]
+  },
+  "art": {
+    "delivery-manual": {
+      "prompt": "An open white delivery procedure booklet beside a small light grey parcel sealed with blue tape. The booklet pages are blank, with a small blue tab marking the reception section. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-helper": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding out one empty hand as if replying to a request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "proposal-note": {
+      "prompt": "Two separate white paper notes clipped together with a violet paper clip, beside one empty blue speech bubble, representing suggested changes that have only been described. The papers have completely blank surfaces. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "room-chairs": {
+      "prompt": "Three blue chairs grouped loosely together, one facing a different direction, ready to be rearranged in a room. Only the chairs are visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-helper": {
+      "prompt": "A young adult helper in a plain blue shirt, with short dark hair and a simple face, holding a blank white sheet and gesturing toward it while explaining an arrangement plan. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "edit-pencil": {
+      "prompt": "A large violet pencil touching a white document sheet with a blue corner tab, representing editing the document itself. The sheet is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "diff-sheets": {
+      "prompt": "Two white document sheets side by side, each with a blue corner tab, and a magnifying glass examining the corresponding lower area of both sheets. Blank sheets without readable marks, representing a comparison before and after editing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-program": {
+      "prompt": "A blank white folded school festival program beside a blue handheld microphone and a violet tambourine, representing the schedule for a class performance. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "delivery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "配送の手順書",
+          "art": "delivery-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-helper",
+          "at": [3, 1]
+        },
+        {
+          "id": "proposal",
+          "label": "修正案",
+          "art": "proposal-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "manual",
+          "to": "claude",
+          "label": "依頼"
+        },
+        {
+          "id": "reply",
+          "from": "claude",
+          "to": "proposal",
+          "label": "返答"
+        }
+      ]
+    },
+    "chairs": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chairs",
+          "label": "部屋の椅子",
+          "art": "room-chairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "helper",
+          "label": "手伝う人",
+          "art": "human-helper",
+          "at": [3, 1]
+        },
+        {
+          "id": "plan",
+          "label": "並べ方の案",
+          "art": "proposal-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "chairs",
+          "to": "helper",
+          "label": "相談"
+        },
+        {
+          "id": "suggest",
+          "from": "helper",
+          "to": "plan",
+          "label": "提案"
+        }
+      ]
+    },
+    "request-parts": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "target",
+          "label": "配送の手順書",
+          "art": "delivery-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "operation",
+          "label": "受付時刻を変更",
+          "art": "edit-pencil",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "変更箇所の報告",
+          "art": "diff-sheets",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "edit",
+          "from": "target",
+          "to": "operation",
+          "label": "編集する"
+        },
+        {
+          "id": "report-after",
+          "from": "operation",
+          "to": "report",
+          "label": "編集後"
+        }
+      ]
+    },
+    "result": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "edited",
+          "label": "編集後の手順書",
+          "art": "delivery-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "difference",
+          "label": "ファイルの差分",
+          "art": "diff-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "tool",
+          "label": "編集ツール",
+          "art": "edit-pencil",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "festival": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "program",
+          "label": "出し物の予定表",
+          "art": "festival-program",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "案を出す",
+          "art": "proposal-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "時刻を変更する",
+          "art": "edit-pencil",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "festival-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "target",
+          "label": "出し物の予定表",
+          "art": "festival-program",
+          "at": [1, 1]
+        },
+        {
+          "id": "operation",
+          "label": "開始時刻を変更",
+          "art": "edit-pencil",
+          "at": [3, 1]
+        },
+        {
+          "id": "difference",
+          "label": "編集後の確認",
+          "art": "diff-sheets",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "edit",
+          "from": "target",
+          "to": "operation",
+          "label": "十三時に"
+        },
+        {
+          "id": "check",
+          "from": "operation",
+          "to": "difference",
+          "label": "確かめる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "案は来たのに変わらない",
+      "board": "delivery",
+      "beats": [
+        {
+          "say": "配送の手順書で、受付時刻を変えたいとします。",
+          "show": ["manual"]
+        },
+        {
+          "say": "担当者は、Claude に修正案を求めました。",
+          "speech": "担当者は、クロードに修正案を求めました。",
+          "show": ["claude", "request"]
+        },
+        {
+          "say": "返信に案はありますが、手順書は前のままです。",
+          "show": ["proposal", "reply"],
+          "tag": {
+            "manual": "変更なし"
+          }
+        },
+        {
+          "say": "実行してほしいときは、依頼に実行する操作を明記します。",
+          "pulse": ["request"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "chair-plan",
+      "kind": "board",
+      "role": "example",
+      "title": "椅子の並べ方を相談する",
+      "board": "chairs",
+      "beats": [
+        {
+          "say": "部屋の椅子を並べ直したい場面を考えましょう。",
+          "show": ["chairs"]
+        },
+        {
+          "say": "手伝う人には、並べ方の案を出してほしいと頼みました。",
+          "show": ["helper", "ask"]
+        },
+        {
+          "say": "返ってきた案が良くても、椅子は動いていません。",
+          "show": ["plan", "suggest"],
+          "tag": {
+            "chairs": "元の配置"
+          }
+        },
+        {
+          "say": "動かしてほしいなら、椅子を並べ直すよう頼みます。",
+          "pulse": ["chairs"],
+          "tag": {
+            "helper": "並べ直す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "under-acting",
+      "kind": "board",
+      "role": "syntax",
+      "title": "期待した編集が止まる",
+      "board": "delivery",
+      "reset": true,
+      "beats": [
+        {
+          "say": "ここでは、編集用のツールが使えるものとします。",
+          "show": ["claude"]
+        },
+        {
+          "say": "実行を期待したのに提案で止まるのが、行動不足です。",
+          "term": {
+            "text": "行動不足",
+            "ruby": "こうどうぶそく",
+            "note": "期待した実行が提案などで止まる"
+          }
+        },
+        {
+          "say": "この例では、返ってきた修正案で作業が止まりました。",
+          "show": ["proposal", "reply"],
+          "tag": {
+            "proposal": "ここで止まる"
+          }
+        },
+        {
+          "say": "案が書かれた返信だけでは、編集の完了は分かりません。",
+          "show": ["manual"],
+          "tag": {
+            "manual": "変更なし"
+          }
+        },
+        {
+          "say": "まずは、Claude に届いた依頼の言葉を読み直しましょう。",
+          "show": ["request"],
+          "pulse": ["request"]
+        }
+      ]
+    },
+    {
+      "id": "target-and-operation",
+      "kind": "board",
+      "role": "syntax",
+      "title": "何をどう変えるかを書く",
+      "board": "request-parts",
+      "beats": [
+        {
+          "say": "編集するファイルなど、作業を向ける先が対象です。",
+          "term": {
+            "text": "対象",
+            "ruby": "たいしょう",
+            "note": "編集するファイルなど"
+          }
+        },
+        {
+          "say": "この依頼では、配送の手順書を対象に指定します。",
+          "show": ["target"]
+        },
+        {
+          "say": "対象に対して実際に行うことが、操作です。",
+          "term": {
+            "text": "操作",
+            "ruby": "そうさ",
+            "note": "対象に対して実際に行うこと"
+          }
+        },
+        {
+          "say": "今回は、受付時刻を変更する操作を書きましょう。",
+          "show": ["operation", "edit"]
+        },
+        {
+          "say": "何時に変えるかも添えると、変更する値まで伝わります。",
+          "tag": {
+            "operation": "十六時に"
+          },
+          "pulse": ["operation"]
+        }
+      ]
+    },
+    {
+      "id": "rewrite-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "配送の依頼を書き換える",
+      "board": "request-parts",
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、delivery.md を編集する対象に指定します。",
+          "speech": "まず、デリバリードットエムディーを編集する対象に指定します。",
+          "show": ["target"]
+        },
+        {
+          "say": "書き換えるのは、その中の受付時刻です。",
+          "show": ["operation", "edit"],
+          "pulse": ["operation"]
+        },
+        {
+          "say": "担当者は、受付時刻を十六時に変更するよう頼みました。",
+          "tag": {
+            "operation": "十六時に"
+          }
+        },
+        {
+          "say": "続けて、編集後に変更箇所を知らせるよう依頼します。",
+          "show": ["report", "report-after"]
+        },
+        {
+          "say": "対象と値と操作が、依頼にそろった形です。",
+          "pulse": ["target", "operation"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "verify-edit",
+      "kind": "board",
+      "role": "apply",
+      "title": "編集の結果を確かめる",
+      "board": "result",
+      "beats": [
+        {
+          "say": "依頼のあとには、実際の手順書を確かめましょう。",
+          "show": ["edited"]
+        },
+        {
+          "say": "変更前と変更後の違いを、差分と呼びます。",
+          "term": {
+            "text": "差分",
+            "ruby": "さぶん",
+            "note": "変更前と変更後の違い"
+          }
+        },
+        {
+          "say": "見るのは、受付時刻が十六時になった箇所です。",
+          "show": ["difference"],
+          "tag": {
+            "difference": "受付十六時"
+          }
+        },
+        {
+          "say": "完了は、ファイルの差分やツールの結果で確かめます。",
+          "show": ["tool"],
+          "pulse": ["difference", "tool"]
+        }
+      ]
+    },
+    {
+      "id": "still-unchanged",
+      "kind": "board",
+      "role": "apply",
+      "title": "操作を指定しても変わらない",
+      "board": "result",
+      "reset": true,
+      "beats": [
+        {
+          "say": "操作を書いても、手順書が変わらない場合を考えます。",
+          "show": ["edited"],
+          "tag": {
+            "edited": "変更なし"
+          }
+        },
+        {
+          "say": "次に調べるのは、編集ツールが呼ばれたかどうかです。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "呼び出し"
+          }
+        },
+        {
+          "say": "編集を実行できる権限だったかも確認しましょう。",
+          "tag": {
+            "tool": "権限の判定"
+          },
+          "pulse": ["tool"]
+        },
+        {
+          "say": "依頼を直したあとも、実際の変更を確かめます。",
+          "show": ["difference"],
+          "pulse": ["difference"]
+        }
+      ]
+    },
+    {
+      "id": "festival-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予定表を編集する依頼",
+      "board": "festival",
+      "think": 8,
+      "beats": [
+        {
+          "say": "文化祭の出し物の予定表を編集したいとします。",
+          "show": ["program"]
+        },
+        {
+          "say": "開始時刻を十三時に変える依頼です。",
+          "tag": {
+            "program": "開始十三時"
+          }
+        },
+        {
+          "say": "一つ目では、予定表の時刻を変える案を求めました。",
+          "show": ["first"],
+          "tag": {
+            "first": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、予定表の開始時刻を十三時に変更するよう頼みます。",
+          "show": ["second"],
+          "tag": {
+            "second": "二つ目"
+          }
+        },
+        {
+          "say": "実際の編集を指定したのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ],
+          "pause": 0.5
+        }
+      ]
+    },
+    {
+      "id": "festival-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "時刻の変更を頼んだ方",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "答えは、時刻を変更するよう頼んだ二つ目の依頼です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "一つ目は、変更の案を出すよう頼んでいます。",
+          "pulse": ["first"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "festival-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "対象と操作をたどる",
+      "board": "festival-reason",
+      "beats": [
+        {
+          "say": "二つ目では、出し物の予定表を対象に指定しました。",
+          "show": ["target"]
+        },
+        {
+          "say": "操作は、その予定表の開始時刻を変更することです。",
+          "show": ["operation", "edit"],
+          "tag": {
+            "operation": "十三時に"
+          }
+        },
+        {
+          "say": "この書き方なら、実際の編集まで依頼できます。",
+          "travel": {
+            "along": ["edit"],
+            "icon": "write"
+          },
+          "pulse": ["operation"]
+        },
+        {
+          "say": "実行後は、予定表の開始時刻が変わったか確かめましょう。",
+          "show": ["difference", "check"],
+          "pulse": ["difference"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "実行を任せたいときに",
+      "board": "request-parts",
+      "reset": true,
+      "beats": [
+        {
+          "say": "手順書の時刻を実際に直してほしいときに使えます。",
+          "show": ["target"]
+        },
+        {
+          "say": "依頼に書くのは、変更する対象と行う操作です。",
+          "show": ["operation", "edit"],
+          "tag": {
+            "operation": "十六時に"
+          }
+        },
+        {
+          "say": "変更箇所の報告を求め、結果も確かめましょう。",
+          "show": ["report", "report-after"]
+        },
+        {
+          "say": "実行してほしいときは、依頼に実行する操作を明記します。",
+          "pulse": ["target", "operation"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "68a08dcf2a1b923a6ae10a5d068f804bf302c059b101718f79d1b914ddaea171"
+  }
+}

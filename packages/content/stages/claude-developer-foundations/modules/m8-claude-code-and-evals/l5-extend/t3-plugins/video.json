@@ -1,0 +1,764 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "複数のリポジトリに同じ設定を配るとき、プラグインの部品の配置と依存の版の範囲を説明できる。",
+    "stuck": "Skill とフックをコピーするだけで共有を済ませ、依存先の名前を書けば使う版も決まると思ってしまう。",
+    "points": [
+      "複数のリポジトリで使う設定は、プラグインにまとめ、依存の版の範囲を決めて配ります。"
+    ],
+    "leaveOut": [
+      "Skill とフック自体の書き方や使い分け",
+      "マーケットプレイスへの登録と導入のコマンド",
+      "導入の範囲と enabledPlugins",
+      "手元での読み込みと検証のコマンド",
+      "依存の要求が衝突した場合や導入済みの版が範囲外の場合",
+      "Git のタグによる依存の選択と更新時の版の決まり方"
+    ]
+  },
+  "art": {
+    "stock-report": {
+      "prompt": "A white clipboard with a small pictorial arrangement of light grey storage crates and a blue pencil, representing an inventory report. No writing on the clipboard. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repository": {
+      "prompt": "An open violet project binder holding several white file sheets with blue tabs, representing one repository receiving shared materials. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "plugin-kit": {
+      "prompt": "An open light grey cardboard kit box containing a rolled white instruction sheet and a blue inspection stamp, held together with a violet strap, representing a plugin bundling procedures and checks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "manifest-sheet": {
+      "prompt": "A single white specification sheet fastened with a blue binder clip, with a small violet kit box pictogram and a blank light grey tag attached, representing the manifest describing a plugin. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "warehouse": {
+      "prompt": "A compact blue warehouse shelving unit holding light grey crates with a large violet connector plug beside it, representing the separate warehouse data plugin. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-manual": {
+      "prompt": "An open white printing instruction booklet with a simple blue camera pictogram and a violet page tab, representing a copied procedure at a photo printing shop. Pages have no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-bundle": {
+      "prompt": "A white photo printing instruction booklet and a separate white print inspection checklist secured together by a large blue binder clip, with small camera and magnifying glass pictograms distinguishing the two documents. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-seats": {
+      "prompt": "Two short rows of plush violet cinema seats with one blue seat and a small white ticket beside them, representing cinema seat data. Isolated objects without a theater interior. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hook-check": {
+      "prompt": "A blue inspection stamp beside a white inventory sheet held by a violet clip, representing a hook that checks report formatting. No marks or writing on the sheet or stamp. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "在庫レポート",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "repos",
+          "label": "複数の配布先",
+          "art": "repository",
+          "at": [3, 1]
+        },
+        {
+          "id": "kit",
+          "label": "一式で配る",
+          "art": "plugin-kit",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "photo-shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "本店の手順",
+          "art": "photo-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "second",
+          "label": "支店の手順",
+          "art": "photo-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "手順と確認表",
+          "art": "photo-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bundle": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "skill",
+          "label": "集計スキル",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "hook",
+          "label": "書式のフック",
+          "art": "hook-check",
+          "at": [3, 1]
+        },
+        {
+          "id": "kit",
+          "label": "プラグイン",
+          "art": "plugin-kit",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "manifest": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sheet",
+          "label": "マニフェスト",
+          "art": "manifest-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "kit",
+          "label": "在庫の一式",
+          "art": "plugin-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "data",
+          "label": "倉庫の接続",
+          "art": "warehouse",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "describe",
+          "from": "sheet",
+          "to": "kit",
+          "label": "名前と版"
+        },
+        {
+          "id": "needs",
+          "from": "kit",
+          "to": "data",
+          "label": "必要"
+        }
+      ]
+    },
+    "layout": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "root",
+          "label": "プラグイン直下",
+          "tone": "violet",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "config",
+          "label": "設定用フォルダ",
+          "art": "manifest-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "skills",
+          "label": "skills/",
+          "art": "stock-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "hooks",
+          "label": "hooks/",
+          "art": "hook-check",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "versions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "range",
+          "label": "使える範囲",
+          "art": "manifest-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "patch",
+          "label": "2.1系修正版",
+          "art": "warehouse",
+          "at": [3, 1]
+        },
+        {
+          "id": "major",
+          "label": "3.0系",
+          "art": "warehouse",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cinema": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "seats",
+          "label": "座席の集計",
+          "art": "cinema-seats",
+          "at": [1, 1]
+        },
+        {
+          "id": "kit",
+          "label": "共有する一式",
+          "art": "plugin-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "data",
+          "label": "座席データ",
+          "art": "cinema-seats",
+          "at": [5, 1]
+        },
+        {
+          "id": "ranged",
+          "label": "名前と範囲",
+          "art": "manifest-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "name",
+          "label": "名前だけ",
+          "art": "manifest-sheet",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "needs",
+          "from": "kit",
+          "to": "data",
+          "label": "必要"
+        }
+      ]
+    },
+    "why": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "name",
+          "label": "名前だけ",
+          "art": "manifest-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "座席データ",
+          "art": "cinema-seats",
+          "at": [3, 1]
+        },
+        {
+          "id": "range",
+          "label": "名前と範囲",
+          "art": "manifest-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repo",
+          "label": "別の配布先",
+          "art": "repository",
+          "at": [1, 1]
+        },
+        {
+          "id": "kit",
+          "label": "在庫の一式",
+          "art": "plugin-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "manifest",
+          "label": "依存の範囲",
+          "art": "manifest-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じ仕組みを別の場所へ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫レポートの仕組みを、別のリポジトリでも使います。",
+          "show": ["report"]
+        },
+        {
+          "say": "コピー先の一方だけ、手順が直った状態です。",
+          "show": ["repos"],
+          "tag": {
+            "repos": "片方だけ更新"
+          }
+        },
+        {
+          "say": "同じ設定を一式で配る方法を考えましょう。",
+          "show": ["kit"]
+        },
+        {
+          "say": "プラグインにまとめ、依存の版の範囲を決めて配ります。",
+          "pulse": ["kit"],
+          "tag": {
+            "kit": "版の範囲も"
+          }
+        }
+      ]
+    },
+    {
+      "id": "photo-copies",
+      "kind": "board",
+      "role": "example",
+      "title": "店ごとに写した手順",
+      "board": "photo-shop",
+      "beats": [
+        {
+          "say": "写真店が、印刷の手順を支店にも渡しました。",
+          "show": ["first", "second"]
+        },
+        {
+          "say": "本店だけ書き直すと、支店は前の手順を使い続けます。",
+          "tag": {
+            "first": "更新済み",
+            "second": "前のまま"
+          }
+        },
+        {
+          "say": "手順と仕上がりの確認表を、一組にして配る案です。",
+          "show": ["bundle"]
+        },
+        {
+          "say": "使う資料を一式にすると、配る中身をそろえやすくなります。",
+          "pulse": ["bundle"],
+          "mark": [
+            {
+              "on": "bundle",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plugin-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "部品を一式にまとめる",
+      "board": "bundle",
+      "beats": [
+        {
+          "say": "在庫レポートでは、集計の Skill を使います。",
+          "speech": "在庫レポートでは、集計のスキルを使います。",
+          "show": ["skill"]
+        },
+        {
+          "say": "書式を確かめるフックも、同じ仕組みの部品です。",
+          "show": ["hook"]
+        },
+        {
+          "say": "部品をまとめて導入できる形を、プラグインと呼びます。",
+          "term": {
+            "text": "プラグイン",
+            "note": "部品をまとめて導入する形"
+          }
+        },
+        {
+          "say": "この一式が、複数のリポジトリへ配るプラグインです。",
+          "show": ["kit"],
+          "pulse": ["kit"]
+        }
+      ]
+    },
+    {
+      "id": "manifest-fields",
+      "kind": "code",
+      "role": "syntax",
+      "title": "中身と版を設定に書く",
+      "code": [
+        "// .claude-plugin/plugin.json の中身",
+        "{",
+        "  // 配るプラグインの名前",
+        "  \"name\": \"stock-report-kit\",",
+        "  // 配るプラグイン自身の版",
+        "  \"version\": \"1.0.0\",",
+        "  // 必要な別のプラグインと使える版の範囲",
+        "  \"dependencies\": [{ \"name\": \"warehouse-data\", \"version\": \"~2.1.0\" }]",
+        "// 設定の終わり",
+        "}"
+      ],
+      "show": [0, 1, 8, 9],
+      "panel": {
+        "kind": "figure",
+        "board": "manifest"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "中身と版を示す設定ファイルが、マニフェストです。",
+          "term": {
+            "text": "マニフェスト",
+            "note": "中身と版を示す設定ファイル"
+          }
+        },
+        {
+          "say": "置き場所は、冒頭のコメントで確認しましょう。",
+          "focus": [0],
+          "figure": {
+            "show": ["sheet"]
+          }
+        },
+        {
+          "say": "name には、配るプラグインの名前を書きます。",
+          "speech": "ネームには、配るプラグインの名前を書きます。",
+          "type": [2, 3],
+          "figure": {
+            "show": ["kit", "describe"]
+          }
+        },
+        {
+          "say": "この例の名前は、在庫レポートの一式という意味です。",
+          "part": {
+            "line": 3,
+            "text": "stock-report-kit",
+            "note": "在庫レポート一式"
+          },
+          "figure": {
+            "pulse": ["kit"]
+          }
+        },
+        {
+          "say": "version には、この一式自身の版を書きます。",
+          "speech": "バージョンには、この一式自身の版を書きます。",
+          "type": [4, 5],
+          "figure": {
+            "tag": {
+              "kit": "1.0.0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "dependency-range",
+      "kind": "code",
+      "role": "syntax",
+      "title": "必要な相手の版を決める",
+      "code": [
+        "// .claude-plugin/plugin.json の中身",
+        "{",
+        "  // 配るプラグインの名前",
+        "  \"name\": \"stock-report-kit\",",
+        "  // 配るプラグイン自身の版",
+        "  \"version\": \"1.0.0\",",
+        "  // 必要な別のプラグインと使える版の範囲",
+        "  \"dependencies\": [{ \"name\": \"warehouse-data\", \"version\": \"~2.1.0\" }]",
+        "// 設定の終わり",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "manifest"
+      },
+      "beats": [
+        {
+          "say": "動くために必要な別のプラグインを、依存と呼びます。",
+          "term": {
+            "text": "依存",
+            "ruby": "いぞん",
+            "note": "動くために必要な相手"
+          },
+          "part": {
+            "line": 7,
+            "text": "dependencies",
+            "note": "必要な相手"
+          }
+        },
+        {
+          "say": "この例の依存先は、倉庫のデータに接続するプラグインです。",
+          "part": {
+            "line": 7,
+            "text": "warehouse-data",
+            "note": "倉庫のデータ"
+          },
+          "figure": {
+            "show": ["data", "needs"],
+            "pulse": ["data"]
+          }
+        },
+        {
+          "say": "組み合わせて使える版を、依存の版の範囲として決めます。",
+          "term": {
+            "text": "依存の版の範囲",
+            "ruby": "いぞんのはんのはんい",
+            "note": "依存先で受け入れる版"
+          }
+        },
+        {
+          "say": "この指定は、2.1 系の修正版までを受け入れる意味です。",
+          "speech": "この指定は、にてんいち系の修正版までを受け入れる意味です。",
+          "part": {
+            "line": 7,
+            "text": "~2.1.0",
+            "note": "修正版まで"
+          },
+          "figure": {
+            "tag": {
+              "data": "~2.1.0"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "place-parts",
+      "kind": "board",
+      "role": "apply",
+      "title": "部品を置く階層",
+      "board": "layout",
+      "beats": [
+        {
+          "say": "配る一式は、プラグインのディレクトリにまとめます。",
+          "show": ["root"]
+        },
+        {
+          "say": "設定用フォルダーは、マニフェストの置き場です。",
+          "show": ["config"]
+        },
+        {
+          "say": "部品の skills は、そのフォルダーと同じ階層に置きます。",
+          "speech": "部品のスキルズは、そのフォルダーと同じ階層に置きます。",
+          "show": ["skills"]
+        },
+        {
+          "say": "hooks も、設定用フォルダーの中には入れません。",
+          "speech": "フックスも、設定用フォルダーの中には入れません。",
+          "show": ["hooks"],
+          "pulse": ["skills", "hooks"]
+        }
+      ]
+    },
+    {
+      "id": "read-range",
+      "kind": "board",
+      "role": "apply",
+      "title": "依存先の範囲を読む",
+      "board": "versions",
+      "beats": [
+        {
+          "say": "先ほど書いた依存先の範囲を、図で確かめましょう。",
+          "show": ["range"],
+          "tag": {
+            "range": "~2.1.0"
+          }
+        },
+        {
+          "say": "2.1 系の修正版は、この範囲に収まります。",
+          "speech": "にてんいち系の修正版は、この範囲に収まります。",
+          "show": ["patch"],
+          "mark": [
+            {
+              "on": "patch",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "3.0 系は、この指定で受け入れる範囲の外です。",
+          "speech": "さんてんぜろ系は、この指定で受け入れる範囲の外です。",
+          "show": ["major"],
+          "mark": [
+            {
+              "on": "major",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "一式自身の版と、依存先で使える版を分けて読みます。",
+          "pulse": ["range"],
+          "tag": {
+            "range": "依存先の範囲"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cinema-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "座席集計の一式を配る",
+      "board": "cinema",
+      "think": 8,
+      "beats": [
+        {
+          "say": "映画館の座席を集計する仕組みを、別のリポジトリへ配ります。",
+          "show": ["seats", "kit"]
+        },
+        {
+          "say": "座席データに接続する、別のプラグインが必要です。",
+          "show": ["data", "needs"]
+        },
+        {
+          "say": "担当者は、依存先を2.1系の修正版までに収めると決めました。",
+          "speech": "担当者は、依存先をにてんいち系の修正版までに収めると決めました。",
+          "tag": {
+            "data": "2.1系まで"
+          }
+        },
+        {
+          "say": "名前だけを書く案と、名前に版の範囲を添える案を比べます。",
+          "show": ["name", "ranged"]
+        },
+        {
+          "say": "決めた範囲に収めるには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "name",
+              "kind": "question"
+            },
+            {
+              "on": "ranged",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinema-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "依存先の範囲も添える",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "答えは、依存先の名前に版の範囲を添える案です。",
+          "mark": [
+            {
+              "on": "ranged",
+              "kind": "check"
+            },
+            {
+              "on": "name",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["ranged"]
+        },
+        {
+          "say": "受け入れる版も決めてから、一式を配りましょう。",
+          "pulse": ["kit", "data"]
+        }
+      ]
+    },
+    {
+      "id": "why-range",
+      "kind": "board",
+      "role": "explain",
+      "title": "名前だけでは範囲がない",
+      "board": "why",
+      "beats": [
+        {
+          "say": "名前だけの指定は、更新時に配布元の新しい版を追います。",
+          "show": ["name"],
+          "tag": {
+            "name": "新しい版へ"
+          }
+        },
+        {
+          "say": "新しい版が、決めた範囲に収まるとは限りません。",
+          "show": ["data"],
+          "mark": [
+            {
+              "on": "data",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "ツール名が変わると、古い名前を使う手順は動かなくなります。",
+          "tag": {
+            "data": "ツール名変更"
+          },
+          "mark": [
+            {
+              "on": "data",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "使える版を範囲で決めておくことが大切です。",
+          "show": ["range"],
+          "mark": [
+            {
+              "on": "range",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "share-kit",
+      "kind": "board",
+      "role": "usage",
+      "title": "二つ目にも同じ一式を",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "在庫レポートを二つ目のリポジトリでも使う場面です。",
+          "show": ["repo"]
+        },
+        {
+          "say": "集計の手順と書式のフックを、プラグインにまとめます。",
+          "show": ["kit"]
+        },
+        {
+          "say": "配る前に確かめたいのは、依存先で使える版の範囲です。",
+          "show": ["manifest"]
+        },
+        {
+          "say": "同じ設定を一式にし、依存の版の範囲も決めて配りましょう。",
+          "pulse": ["kit", "manifest"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b66d4807de551cf91c73f1de93f9dec8a1e7cb58851c052569716c857f151d8c"
+  }
+}

@@ -1,0 +1,829 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "承認確認のフックが例外を投げたときに編集を止める設定を選び、テストで確かめる内容を説明できる。",
+    "stuck": "フックが失敗すれば操作も自動で止まると思い、例外の記録だけで遮断できたと判断してしまう。",
+    "points": ["フックが失敗しても操作を止めるには、失敗時に遮断する設定を付けます。"],
+    "leaveOut": [
+      "権限判定の各段階とルールの優先順位",
+      "フックの返り値の全種類",
+      "非同期の通知や記録の実装",
+      "モデルが判断するフックの種類",
+      "承認記録を読む関数の実装と課題の解答コード"
+    ]
+  },
+  "art": {
+    "report-sheet": {
+      "prompt": "A white report sheet held by a blue clipboard clip, with a violet pencil beside it, representing a report awaiting an edit. The sheet is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "approval-record": {
+      "prompt": "An open light grey folder containing white approval record sheets, with a small blue rubber stamp beside the folder. The stamp and sheets have no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stopped-pencil": {
+      "prompt": "A hand holding a violet pencil paused well above an untouched white report sheet, with another hand held upright to stop the edit. The pencil tip does not touch the paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-bike": {
+      "prompt": "One compact blue rental bicycle with a light grey basket and both wheels fully visible, standing alone with no surroundings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "consent-sheet": {
+      "prompt": "A staff member in a plain blue shirt examining a crumpled white consent sheet, with a simple puzzled face and empty raised palm. The sheet has no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "approval-clerk": {
+      "prompt": "A staff member in a plain blue shirt using a blue magnifying glass to examine a blank white approval record held in the other hand. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "failure-log": {
+      "prompt": "An open white notebook with a violet binding and a blue pen, representing a record of a failed check. Both pages are completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-kit": {
+      "prompt": "A neatly folded violet apron beside a blue mixing bowl and a light grey whisk, representing items to bring to a cooking class. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-list": {
+      "prompt": "A white cooking class supply sheet held by a violet paper clip, with small simple pictorial drawings of an apron and a whisk on the otherwise blank paper. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "report-goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "帳票の編集",
+          "art": "report-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "承認記録",
+          "art": "approval-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "編集停止",
+          "art": "stopped-pencil",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "consent",
+          "label": "同意書の確認",
+          "art": "consent-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "bike",
+          "label": "貸す自転車",
+          "art": "rental-bike",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "default-route": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "承認記録",
+          "art": "approval-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "フックの例外",
+          "art": "failure-log",
+          "at": [3, 1]
+        },
+        {
+          "id": "permissions",
+          "label": "通常の権限判定",
+          "icon": "question",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-fails",
+          "from": "record",
+          "to": "failure",
+          "label": "読めない"
+        },
+        {
+          "id": "continue",
+          "from": "failure",
+          "to": "permissions",
+          "label": "既定の動き"
+        }
+      ]
+    },
+    "blocking": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "承認記録",
+          "art": "approval-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "フックの例外",
+          "art": "failure-log",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "編集停止",
+          "art": "stopped-pencil",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-fails",
+          "from": "record",
+          "to": "failure",
+          "label": "読めない"
+        },
+        {
+          "id": "block",
+          "from": "failure",
+          "to": "stop",
+          "label": "失敗時に遮断"
+        }
+      ]
+    },
+    "hook-config": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "edit",
+          "label": "編集の呼び出し",
+          "art": "report-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "承認を調べる",
+          "art": "approval-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "例外なら遮断",
+          "art": "stopped-pencil",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "before-edit",
+          "from": "edit",
+          "to": "check",
+          "label": "実行前"
+        },
+        {
+          "id": "on-failure",
+          "from": "check",
+          "to": "stop",
+          "label": "例外が出たら"
+        }
+      ]
+    },
+    "report-failure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "承認記録",
+          "art": "approval-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "承認の確認関数",
+          "art": "approval-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "編集停止",
+          "art": "stopped-pencil",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "record",
+          "to": "check",
+          "label": "読み取り"
+        },
+        {
+          "id": "block",
+          "from": "check",
+          "to": "stop",
+          "label": "例外を伝える"
+        }
+      ]
+    },
+    "failure-test": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "編集前の帳票",
+          "art": "report-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "例外の記録",
+          "art": "failure-log",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "テスト後の帳票",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "test",
+          "from": "before",
+          "to": "failure",
+          "label": "例外を起こす"
+        },
+        {
+          "id": "inspect",
+          "from": "failure",
+          "to": "after",
+          "label": "拒否を確認"
+        }
+      ]
+    },
+    "cooking-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "料理教室",
+          "art": "cooking-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "持ち物リスト",
+          "art": "cooking-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "failure",
+          "label": "承認確認で例外",
+          "icon": "question",
+          "at": [5, 1]
+        },
+        {
+          "id": "default",
+          "label": "一つ目は既定",
+          "icon": "repeat",
+          "at": [5, 2]
+        },
+        {
+          "id": "block",
+          "label": "二つ目は遮断",
+          "icon": "check",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "use-case": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "帳票の編集",
+          "art": "report-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "承認記録",
+          "art": "approval-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "失敗時に遮断",
+          "art": "stopped-pencil",
+          "at": [5, 1]
+        },
+        {
+          "id": "test",
+          "label": "例外のテスト",
+          "art": "failure-log",
+          "at": [5, 2]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "確認できない編集を止める",
+      "board": "report-goal",
+      "beats": [
+        {
+          "say": "帳票を編集する前に、承認を確かめたいとします。",
+          "show": ["report"]
+        },
+        {
+          "say": "ところが、確認に使う承認記録を読めない状態です。",
+          "show": ["record"],
+          "tag": {
+            "record": "読めない"
+          }
+        },
+        {
+          "say": "確認できないときも、編集を止める仕組みを考えましょう。",
+          "show": ["stop"]
+        },
+        {
+          "say": "フックが失敗しても止めるには、失敗時に遮断する設定を付けます。",
+          "pulse": ["record", "stop"]
+        }
+      ]
+    },
+    {
+      "id": "rental-consent",
+      "kind": "board",
+      "role": "example",
+      "title": "同意書を読めないとき",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "自転車を貸す前に、同意書を確認する店を考えます。",
+          "show": ["bike"]
+        },
+        {
+          "say": "同意書が傷んで、係は内容を読めない状態です。",
+          "show": ["consent"],
+          "tag": {
+            "consent": "読めない"
+          }
+        },
+        {
+          "say": "読めない状態は、同意を確かめた状態とは違います。",
+          "mark": [
+            {
+              "on": "consent",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "確認できないときは貸さない、と先に決めておきましょう。",
+          "pulse": ["bike"],
+          "tag": {
+            "bike": "貸出を待つ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "exception-route",
+      "kind": "board",
+      "role": "syntax",
+      "title": "例外だけでは止まらない",
+      "board": "default-route",
+      "beats": [
+        {
+          "say": "フックの処理中に起きる失敗を、例外と呼びます。",
+          "term": {
+            "text": "例外",
+            "ruby": "れいがい",
+            "note": "処理中に起きた失敗"
+          }
+        },
+        {
+          "say": "今回は、承認記録の読み取りで起きた失敗です。",
+          "show": ["record", "failure", "read-fails"],
+          "travel": {
+            "along": ["read-fails"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この時点では、拒否の結果を返せていません。",
+          "pulse": ["failure"],
+          "tag": {
+            "failure": "拒否は未返却"
+          }
+        },
+        {
+          "say": "既定では、呼び出しは通常の権限判定へ進みます。",
+          "show": ["permissions", "continue"],
+          "travel": {
+            "along": ["continue"]
+          }
+        },
+        {
+          "say": "ここまででは、編集を止める保証はありません。",
+          "pulse": ["permissions"],
+          "mark": [
+            {
+              "on": "permissions",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "failure-policy",
+      "kind": "board",
+      "role": "syntax",
+      "title": "失敗時の遮断を決める",
+      "board": "blocking",
+      "beats": [
+        {
+          "say": "操作を先へ進めずに止めることを、遮断と呼びます。",
+          "term": {
+            "text": "遮断",
+            "ruby": "しゃだん",
+            "note": "操作を先へ進めずに止める"
+          }
+        },
+        {
+          "say": "今回は、確認に失敗した編集を止める設定です。",
+          "show": ["stop"]
+        },
+        {
+          "say": "フックの例外を受けたとき、この設定が働きます。",
+          "show": ["failure", "block"],
+          "travel": {
+            "along": ["block"]
+          }
+        },
+        {
+          "say": "承認記録を読めない場合も、帳票を書き換えさせません。",
+          "show": ["record", "read-fails"],
+          "pulse": ["stop"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "configure-block",
+      "kind": "code",
+      "role": "syntax",
+      "title": "登録する設定に付ける",
+      "code": [
+        "// TypeScript 版 SDK v0.3.317 以降で使う",
+        "query({",
+        "  // 承認された帳票の更新を頼む",
+        "  prompt: \"承認された帳票を更新してください\",",
+        "  // オプションにフックを登録する",
+        "  options: { hooks: {",
+        "    // 編集の実行前に対象を絞る",
+        "    PreToolUse: [{ matcher: \"Edit\",",
+        "      // 承認を調べる関数を呼ぶ",
+        "      hooks: [checkApproval],",
+        "      // フックが失敗したら遮断する",
+        "      onFailure: \"block\" }],",
+        "  // フックとオプションと呼び出しを閉じる",
+        "  } } });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "hook-config"
+      },
+      "beats": [
+        {
+          "say": "失敗時の動きを指定する項目が、onFailure です。",
+          "speech": "失敗時の動きを指定する項目が、オンフェイリャーです。",
+          "term": {
+            "text": "onFailure",
+            "note": "フックの失敗時の動き"
+          },
+          "part": {
+            "line": 11,
+            "text": "onFailure"
+          }
+        },
+        {
+          "say": "フックの設定は、options の hooks に置きます。",
+          "speech": "フックの設定は、オプションズのフックスに置きます。",
+          "part": {
+            "line": 5,
+            "text": "hooks",
+            "note": "フックの登録"
+          },
+          "figure": {
+            "show": ["edit", "check", "before-edit"]
+          }
+        },
+        {
+          "say": "PreToolUse は、ツールを実行する前のフックです。",
+          "speech": "プリツールユースは、ツールを実行する前のフックです。",
+          "part": {
+            "line": 7,
+            "text": "PreToolUse"
+          },
+          "figure": {
+            "pulse": ["before-edit"]
+          }
+        },
+        {
+          "say": "matcher の Edit で、編集を対象に絞ります。",
+          "speech": "マッチャーのエディットで、編集を対象に絞ります。",
+          "part": {
+            "line": 7,
+            "text": "matcher: \"Edit\""
+          },
+          "figure": {
+            "pulse": ["edit"]
+          }
+        },
+        {
+          "say": "関数名は自分で決め、この例は checkApproval です。",
+          "speech": "関数名は自分で決め、この例はチェックアプルーバルです。",
+          "part": {
+            "line": 9,
+            "text": "checkApproval",
+            "note": "承認を調べる"
+          },
+          "figure": {
+            "pulse": ["check"]
+          }
+        },
+        {
+          "say": "onFailure に block を指定して、例外で止めます。",
+          "speech": "オンフェイリャーにブロックを指定して、例外で止めます。",
+          "part": {
+            "line": 11,
+            "text": "onFailure: \"block\"",
+            "note": "失敗時に遮断"
+          },
+          "figure": {
+            "show": ["stop", "on-failure"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "pass-exception",
+      "kind": "board",
+      "role": "apply",
+      "title": "失敗を隠さず伝える",
+      "board": "report-failure",
+      "beats": [
+        {
+          "say": "この関数は、承認されていない編集に拒否を返します。",
+          "show": ["check"],
+          "tag": {
+            "check": "拒否を返す"
+          }
+        },
+        {
+          "say": "記録を読めないときは、例外を伝える作りです。",
+          "show": ["record", "read"],
+          "tag": {
+            "record": "読めない",
+            "check": "例外を伝える"
+          }
+        },
+        {
+          "say": "空のオブジェクトを返して失敗を隠すと、遮断は働きません。",
+          "tag": {
+            "check": "{}を返す"
+          },
+          "mark": [
+            {
+              "on": "check",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "例外を伝え、失敗時の設定で編集を止めましょう。",
+          "show": ["stop", "block"],
+          "tag": {
+            "check": "例外を伝える"
+          },
+          "unmark": ["check"],
+          "travel": {
+            "along": ["block"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "test-blocking",
+      "kind": "board",
+      "role": "apply",
+      "title": "編集されないことを確かめる",
+      "board": "failure-test",
+      "beats": [
+        {
+          "say": "テストでは、承認記録を読めない状態を作ります。",
+          "show": ["before"],
+          "tag": {
+            "before": "元の内容"
+          }
+        },
+        {
+          "say": "フックにわざと例外を起こさせるのが狙いです。",
+          "show": ["failure", "test"],
+          "travel": {
+            "along": ["test"]
+          }
+        },
+        {
+          "say": "呼び出しの拒否と、帳票が変わらないことを確かめましょう。",
+          "show": ["after", "inspect"],
+          "tag": {
+            "after": "同じ内容"
+          },
+          "mark": [
+            {
+              "on": "after",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "例外の記録だけでは、編集を止めた証拠になりません。",
+          "pulse": ["failure"],
+          "mark": [
+            {
+              "on": "failure",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "持ち物リストの編集を止める",
+      "board": "cooking-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "料理教室で、持ち物リストを編集する場面です。",
+          "show": ["kit", "list"]
+        },
+        {
+          "say": "フックは、先生が承認した内容かを確かめます。",
+          "pulse": ["list"],
+          "tag": {
+            "list": "承認を確認"
+          }
+        },
+        {
+          "say": "ところが、承認記録を読めずに例外が出ました。",
+          "show": ["failure"]
+        },
+        {
+          "say": "一つ目は既定のまま、二つ目は失敗時に遮断する設定です。",
+          "show": ["default", "block"],
+          "pulse": []
+        },
+        {
+          "say": "確認できない編集を止めるには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "default",
+              "kind": "question"
+            },
+            {
+              "on": "block",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "失敗時に遮断する設定",
+      "board": "cooking-quiz",
+      "beats": [
+        {
+          "say": "答えは、失敗時に遮断する二つ目の設定です。",
+          "pulse": ["block"],
+          "mark": [
+            {
+              "on": "default",
+              "kind": "cross"
+            },
+            {
+              "on": "block",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-block",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの設定の動きをたどる",
+      "board": "cooking-quiz",
+      "beats": [
+        {
+          "say": "一つ目では、失敗しても通常の権限判定へ進みます。",
+          "pulse": ["default"],
+          "tag": {
+            "default": "判定継続"
+          }
+        },
+        {
+          "say": "例外だけでは、編集が止まる保証はありません。",
+          "pulse": ["failure"]
+        },
+        {
+          "say": "二つ目は、フックの失敗を受けて編集を止めます。",
+          "pulse": ["block"],
+          "tag": {
+            "block": "編集停止"
+          }
+        },
+        {
+          "say": "持ち物リストを変えない、という今回の条件に合う設定です。",
+          "pulse": ["list"],
+          "tag": {
+            "list": "内容を保つ"
+          },
+          "mark": [
+            {
+              "on": "list",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-with-approval",
+      "kind": "board",
+      "role": "usage",
+      "title": "承認を確かめて編集する場面",
+      "board": "use-case",
+      "beats": [
+        {
+          "say": "承認を確かめてから帳票を編集する場面で使います。",
+          "show": ["report"]
+        },
+        {
+          "say": "確認用の記録が読めない場合も、止める対象です。",
+          "show": ["record"],
+          "tag": {
+            "record": "読めない"
+          }
+        },
+        {
+          "say": "失敗時に遮断する設定を付けておきましょう。",
+          "show": ["stop"]
+        },
+        {
+          "say": "例外を起こすテストで、編集が止まることまで確かめます。",
+          "show": ["test"],
+          "tag": {
+            "test": "変更なし"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "399e5927cb1e196a86f7b959c72dc5b08db9157600b09579ab511256e78b70e2"
+  }
+}

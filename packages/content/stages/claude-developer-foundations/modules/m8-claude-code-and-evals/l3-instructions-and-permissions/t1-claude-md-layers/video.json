@@ -1,0 +1,688 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "複数の CLAUDE.md を読む順番と、下位フォルダーの指示が加わる時点を説明できる。",
+    "stuck": "自分用の指示を足すとチームの指示が消え、下位フォルダーの指示も起動時にすべて読まれると思ってしまう。",
+    "points": ["複数の場所にある CLAUDE.md は、広い範囲から順に重ねて読み込まれます。"],
+    "leaveOut": [
+      "パスを指定したルールファイル",
+      "権限の判定順と権限モード",
+      "会話の圧縮後の読み直し",
+      "別ファイルの取り込み方と行数の目安"
+    ]
+  },
+  "art": {
+    "school-rule": {
+      "prompt": "A closed white school handbook with a blue binding and a small pair of scissors beside it, representing school-wide rules for borrowing tools. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "club-tools": {
+      "prompt": "A blue cup holding two paintbrushes beside a white sheet of paper and a violet paint palette, representing an art club's tool-cleaning instructions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "personal-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a small blank white notebook with a violet bookmark. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "organization-file": {
+      "prompt": "A thick white ring binder with a blue spine standing open, its blank pages clearly visible, representing an organization's shared instruction document. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "user-folder": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a light grey folder containing several blank white sheets with blue tabs. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-folder": {
+      "prompt": "Two hands in blue sleeves holding one open light grey folder with blank white instruction sheets, representing a team's shared instructions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "local-file": {
+      "prompt": "A single white instruction sheet clipped to a small violet clipboard, with a violet pencil beside it, representing project-local instructions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "order-files": {
+      "prompt": "An open light grey file folder with a small light grey parcel sealed with blue tape beside it, representing the order-processing subfolder. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-items": {
+      "prompt": "A folded blue umbrella and a violet glove beside a blank white inquiry slip held by a hand in a blue sleeve, representing a lost-property inquiry. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "school",
+          "label": "学校の約束",
+          "art": "school-rule",
+          "at": [1, 1]
+        },
+        {
+          "id": "club",
+          "label": "美術部の約束",
+          "art": "club-tools",
+          "at": [3, 1]
+        },
+        {
+          "id": "personal",
+          "label": "自分のメモ",
+          "art": "personal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "layers": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "organization",
+          "label": "組織全体",
+          "art": "organization-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "user",
+          "label": "自分の全案件",
+          "art": "user-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "shared",
+          "label": "チーム共有",
+          "art": "shared-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元だけ",
+          "art": "local-file",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "org-user",
+          "from": "organization",
+          "to": "user",
+          "label": "次に足す"
+        },
+        {
+          "id": "user-shared",
+          "from": "user",
+          "to": "shared",
+          "label": "次に足す"
+        },
+        {
+          "id": "shared-local",
+          "from": "shared",
+          "to": "local"
+        }
+      ]
+    },
+    "local": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shared",
+          "label": "共有の指示",
+          "art": "shared-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "ローカル用",
+          "art": "local-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "add",
+          "from": "shared",
+          "to": "local",
+          "label": "続けて読む"
+        }
+      ]
+    },
+    "startup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "上の階層",
+          "art": "shared-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "work",
+          "label": "作業する場所",
+          "art": "shared-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "同じ階層",
+          "art": "local-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "down",
+          "from": "parent",
+          "to": "work",
+          "label": "たどる"
+        },
+        {
+          "id": "append",
+          "from": "work",
+          "to": "local",
+          "label": "共有のあと"
+        }
+      ]
+    },
+    "orders": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "organization",
+          "label": "会社の記録",
+          "art": "organization-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "user",
+          "label": "自分の書き方",
+          "art": "user-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "shared",
+          "label": "テストの手順",
+          "art": "shared-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "local",
+          "label": "試験データ",
+          "art": "local-file",
+          "at": [5, 2]
+        },
+        {
+          "id": "orders",
+          "label": "注文フォルダー",
+          "art": "order-files",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "org-user",
+          "from": "organization",
+          "to": "user"
+        },
+        {
+          "id": "user-shared",
+          "from": "user",
+          "to": "shared"
+        },
+        {
+          "id": "shared-local",
+          "from": "shared",
+          "to": "local"
+        },
+        {
+          "id": "local-orders",
+          "from": "local",
+          "to": "orders",
+          "label": "扱うとき"
+        }
+      ]
+    },
+    "lost": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiry",
+          "label": "忘れ物の相談",
+          "art": "lost-items",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "共有の指示",
+          "art": "shared-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "ローカル用",
+          "art": "local-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "shared",
+          "to": "local",
+          "label": "続けて読む"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "約束を足すとどうなるか",
+      "board": "school",
+      "beats": [
+        {
+          "say": "まず、学校からの約束を受け取りました。",
+          "show": ["school"]
+        },
+        {
+          "say": "美術部にも、道具の扱い方の約束があります。",
+          "show": ["club"]
+        },
+        {
+          "say": "自分用のメモも足したとき、前の約束はどうなるでしょうか。",
+          "show": ["personal"]
+        },
+        {
+          "say": "CLAUDE.md は、広い範囲から順に重ねて読み込みます。",
+          "speech": "クロードエムディーは、広い範囲から順に重ねて読み込みます。",
+          "pulse": ["school", "club", "personal"]
+        }
+      ]
+    },
+    {
+      "id": "school-notes",
+      "kind": "board",
+      "role": "example",
+      "title": "前の約束も残る",
+      "board": "school",
+      "reset": true,
+      "beats": [
+        {
+          "say": "学校の約束は、借りた道具を元に戻すことです。",
+          "show": ["school"],
+          "tag": {
+            "school": "元に戻す"
+          }
+        },
+        {
+          "say": "美術部では、筆を洗ってから返すと決めました。",
+          "show": ["club"],
+          "tag": {
+            "club": "筆を洗う"
+          }
+        },
+        {
+          "say": "自分のメモには、片付けの順番を書きます。",
+          "show": ["personal"],
+          "tag": {
+            "personal": "片付けの順"
+          }
+        },
+        {
+          "say": "メモが増えても、学校や部の約束は消えません。",
+          "pulse": ["school", "club"],
+          "mark": [
+            {
+              "on": "school",
+              "kind": "check"
+            },
+            {
+              "on": "club",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "read-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "広い範囲から読む",
+      "board": "layers",
+      "beats": [
+        {
+          "say": "約束を書くファイルが、CLAUDE.md です。",
+          "speech": "約束を書くファイルが、クロードエムディーです。",
+          "term": {
+            "text": "CLAUDE.md",
+            "ruby": "クロードエムディー",
+            "note": "作業の約束を書くファイル"
+          }
+        },
+        {
+          "say": "まず、組織が配る指示を読み込みます。",
+          "show": ["organization"]
+        },
+        {
+          "say": "次は、自分の全プロジェクトで使う指示です。",
+          "show": ["user", "org-user"],
+          "travel": {
+            "along": ["org-user"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "そのあとに、チームで共有する指示を足します。",
+          "show": ["shared", "user-shared"],
+          "travel": {
+            "along": ["user-shared"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "続いて読むのは、このプロジェクトのローカル用です。",
+          "show": ["local", "shared-local"],
+          "travel": {
+            "along": ["shared-local"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "local-instructions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "共有のあとに足す",
+      "board": "local",
+      "beats": [
+        {
+          "say": "手元だけの約束を、ローカルの指示と呼びます。",
+          "term": {
+            "text": "ローカルの指示",
+            "ruby": "ローカルのしじ",
+            "note": "このプロジェクトの手元用"
+          }
+        },
+        {
+          "say": "共有用の名前は、CLAUDE.md です。",
+          "speech": "共有用の名前は、クロードエムディーです。",
+          "show": ["shared"]
+        },
+        {
+          "say": "手元用は、CLAUDE.local.md に書きます。",
+          "speech": "手元用は、クロードローカルエムディーに書きます。",
+          "show": ["local", "add"]
+        },
+        {
+          "say": "共有の内容は、後のファイルで消えません。",
+          "pulse": ["shared"],
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "読み込んだ文章を、指示として続けて渡します。",
+          "travel": {
+            "along": ["add"],
+            "icon": "file"
+          },
+          "pulse": ["shared", "local"]
+        }
+      ]
+    },
+    {
+      "id": "startup-path",
+      "kind": "board",
+      "role": "syntax",
+      "title": "起動した場所までたどる",
+      "board": "startup",
+      "beats": [
+        {
+          "say": "作業する場所を、作業ディレクトリと呼びます。",
+          "term": {
+            "text": "作業ディレクトリ",
+            "ruby": "さぎょうディレクトリ",
+            "note": "作業をするフォルダー"
+          }
+        },
+        {
+          "say": "この図の中央が、作業する場所です。",
+          "show": ["work"]
+        },
+        {
+          "say": "起動時には、上の階層からその場所までたどります。",
+          "show": ["parent", "down"],
+          "travel": {
+            "along": ["down"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "各階層で、共有のあとにローカルの指示を読む順番です。",
+          "show": ["local", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "order-project",
+      "kind": "board",
+      "role": "apply",
+      "title": "注文管理に当てはめる",
+      "board": "orders",
+      "beats": [
+        {
+          "say": "注文管理のプロジェクトでは、会社が記録の書き方を決めます。",
+          "show": ["organization"]
+        },
+        {
+          "say": "次は、自分の全プロジェクトに共通の書き方です。",
+          "show": ["user", "org-user"]
+        },
+        {
+          "say": "チームは、テストの手順を共有ファイルに書きました。",
+          "show": ["shared", "user-shared"]
+        },
+        {
+          "say": "手元の試験データの指定は、ローカル用に足します。",
+          "show": ["local", "shared-local"]
+        },
+        {
+          "say": "この段階では、四つの場所から読んだ指示が残った状態です。",
+          "pulse": ["organization", "user", "shared", "local"]
+        }
+      ]
+    },
+    {
+      "id": "enter-orders",
+      "kind": "board",
+      "role": "apply",
+      "title": "下のフォルダーはいつ読む",
+      "board": "orders",
+      "beats": [
+        {
+          "say": "上の場所で起動しただけでは、下の注文用はまだ加わりません。",
+          "show": ["orders"],
+          "tag": {
+            "orders": "まだ読まない"
+          }
+        },
+        {
+          "say": "対象は、orders フォルダーのファイルです。",
+          "speech": "対象は、オーダーズフォルダーのファイルです。",
+          "pulse": ["orders"]
+        },
+        {
+          "say": "初めて読むか編集すると、その場所の指示も加わります。",
+          "show": ["local-orders"],
+          "tag": {
+            "orders": "ここで加わる"
+          },
+          "travel": {
+            "along": ["local-orders"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "先に読んだ約束も、続けて渡されたままです。",
+          "pulse": ["organization", "user", "shared", "local"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "lost-property-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "前の指示は消えるか",
+      "board": "lost",
+      "think": 8,
+      "beats": [
+        {
+          "say": "忘れ物の問い合わせを扱うプロジェクトで考えます。",
+          "show": ["inquiry"]
+        },
+        {
+          "say": "共有の指示には、忘れた場所を尋ねると書きました。",
+          "show": ["shared"],
+          "tag": {
+            "shared": "場所を尋ねる"
+          }
+        },
+        {
+          "say": "ローカルには、試験用の記録を使う指示があります。",
+          "show": ["local"],
+          "tag": {
+            "local": "試験用の記録"
+          }
+        },
+        {
+          "say": "両方を読み込んだあとの、問い合わせ対応です。",
+          "show": ["append"],
+          "pulse": ["shared", "local"]
+        },
+        {
+          "say": "忘れた場所を尋ねる指示は、残るでしょうか。",
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["shared"]
+        }
+      ]
+    },
+    {
+      "id": "lost-property-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "共有の指示も残る",
+      "board": "lost",
+      "beats": [
+        {
+          "say": "答えは、共有の指示も残った状態です。",
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["shared"]
+        },
+        {
+          "say": "試験用の記録を使う指示も、一緒に読み込まれます。",
+          "mark": [
+            {
+              "on": "local",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["shared", "local"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-it-remains",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの指示をたどる",
+      "board": "lost",
+      "beats": [
+        {
+          "say": "先に読んだ共有の文章は、指示として渡されています。",
+          "pulse": ["shared"]
+        },
+        {
+          "say": "そのあとに読むのが、ローカルの文章です。",
+          "pulse": ["local"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "後ろの指示を足しても、前の文章は消しません。",
+          "pulse": ["shared", "local"]
+        },
+        {
+          "say": "場所を尋ねる指示も、読み込んだ文章に含まれます。",
+          "tag": {
+            "shared": "消えずに残る"
+          },
+          "pulse": ["shared"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "指示を見直すとき",
+      "board": "layers",
+      "reset": true,
+      "beats": [
+        {
+          "say": "チームの手順を確かめるときは、共有の指示を見ます。",
+          "show": [
+            "organization",
+            "user",
+            "shared",
+            "local",
+            "org-user",
+            "user-shared",
+            "shared-local"
+          ],
+          "pulse": ["shared"]
+        },
+        {
+          "say": "手元の指示も読まれるので、こちらも確認してください。",
+          "pulse": ["local"]
+        },
+        {
+          "say": "同じ作業で内容が食い違うなら、両方を見直しましょう。",
+          "pulse": ["shared", "local"]
+        },
+        {
+          "say": "広い範囲から順に、指示を重ねて読み込みます。",
+          "travel": {
+            "along": ["org-user", "user-shared", "shared-local"],
+            "icon": "file"
+          },
+          "pulse": ["organization", "user", "shared", "local"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "302440786d92194e370b596d0e54e2aa301b81ce5f66b091a4247a549569a236"
+  }
+}

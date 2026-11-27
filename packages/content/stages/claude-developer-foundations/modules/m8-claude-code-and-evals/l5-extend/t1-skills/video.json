@@ -1,0 +1,773 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "繰り返す手順を Skill にまとめ、説明と本文をいつ読み込むかを説明できる。",
+    "stuck": "毎回同じ手順を会話に貼るか、すべての作業で全文を読ませるかの二択だと思ってしまう。",
+    "points": ["繰り返し使う手順や知識は、Skill にして必要なときだけ読み込ませます。"],
+    "leaveOut": [
+      "フックやプラグインなど、ほかの仕組みとの選び分け",
+      "配置先の詳しいパスと、同名の Skill の優先順位",
+      "設定項目の綴りと、モデルやツールの権限の設定",
+      "Claude だけが呼び出す設定と、以前のカスタムコマンド"
+    ]
+  },
+  "art": {
+    "stock-items": {
+      "prompt": "Three light grey cardboard stock boxes with blue tape, one open box showing a few plain blue bottles, representing goods counted for a weekly inventory report. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-manual": {
+      "prompt": "An open white instruction booklet with blue binding and a small pictorial illustration of light grey inventory boxes on one page. All other space on the pages is blank. This is the reusable inventory reporting procedure. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-folder": {
+      "prompt": "A light grey document folder holding an upright white booklet with a blue binding and a blue paper clip, representing a shared inventory reporting skill file. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "description-card": {
+      "prompt": "A single white index card with a blue tab and a small pictorial inventory box in its corner, representing a short description of when to use the inventory reporting procedure. The card is otherwise blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-reader": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white sheet at reading distance. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-clerk": {
+      "prompt": "A human inventory reporting clerk in a plain blue shirt, with short dark hair and simple facial features, holding a blank white clipboard and pointing gently at it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-format": {
+      "prompt": "A white report sample clipped to a blue clipboard, with three small pictorial groups of light grey boxes arranged vertically to suggest grouping goods by warehouse. No writing or drawn table grid. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-booklet": {
+      "prompt": "An open white travel itinerary booklet beside a small blue suitcase, with a simple violet bus pictogram on one page and a blank paper bookmark. The booklet represents a recurring travel itinerary task. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "毎週の在庫",
+          "art": "stock-items",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "同じ手順",
+          "art": "report-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "報告の担当者",
+          "art": "report-clerk",
+          "at": [5, 1]
+        },
+        {
+          "id": "skill",
+          "label": "Skill",
+          "art": "shared-folder",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clerk",
+          "label": "店の担当者",
+          "art": "report-clerk",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "報告の手順書",
+          "art": "report-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫を報告",
+          "art": "stock-items",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "open",
+          "from": "clerk",
+          "to": "manual",
+          "label": "必要なとき"
+        },
+        {
+          "id": "use",
+          "from": "manual",
+          "to": "stock",
+          "label": "手順を使う"
+        }
+      ]
+    },
+    "file": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "手順書",
+          "art": "report-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "共有する場所",
+          "art": "shared-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "チーム",
+          "art": "report-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "store",
+          "from": "manual",
+          "to": "shared",
+          "label": "置く"
+        },
+        {
+          "id": "share",
+          "from": "shared",
+          "to": "clerk",
+          "label": "共有"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "description",
+          "label": "説明",
+          "art": "description-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "body",
+          "label": "本文",
+          "art": "report-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "format",
+          "label": "報告の見本",
+          "art": "report-format",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "selection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "description",
+          "label": "使う場面",
+          "art": "description-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "詳しい手順",
+          "art": "report-manual",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-description",
+          "from": "description",
+          "to": "claude",
+          "label": "先に読む"
+        },
+        {
+          "id": "read-body",
+          "from": "claude",
+          "to": "body",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "report": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫表",
+          "art": "stock-items",
+          "at": [1, 1]
+        },
+        {
+          "id": "body",
+          "label": "補充品を並べる",
+          "art": "report-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "format",
+          "label": "報告の見本",
+          "art": "report-format",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "follow",
+          "from": "stock",
+          "to": "body",
+          "label": "手順に沿う"
+        },
+        {
+          "id": "refer",
+          "from": "body",
+          "to": "format",
+          "label": "必要時に読む"
+        }
+      ]
+    },
+    "manual-choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "description",
+          "label": "説明",
+          "art": "description-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "担当者が選ぶ",
+          "art": "report-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "本文",
+          "art": "report-manual",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "invoke",
+          "from": "clerk",
+          "to": "body",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "trip",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "always",
+          "label": "毎回全文を読む",
+          "art": "travel-booklet",
+          "at": [5, 2]
+        },
+        {
+          "id": "needed",
+          "label": "使うときに読む",
+          "art": "travel-booklet",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "trip-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "description",
+          "label": "しおり作り用",
+          "art": "travel-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "しおりの手順",
+          "art": "travel-booklet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "description",
+          "to": "claude",
+          "label": "説明を読む"
+        },
+        {
+          "id": "load",
+          "from": "claude",
+          "to": "body",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫レポート",
+          "art": "stock-items",
+          "at": [1, 1]
+        },
+        {
+          "id": "trip",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "skill",
+          "label": "手順を共有",
+          "art": "shared-folder",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "毎週の手順を残す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "毎週、在庫レポートを作るよう頼みます。",
+          "show": ["stock"]
+        },
+        {
+          "say": "集計の順序と報告の書式は、毎回同じです。",
+          "show": ["manual"]
+        },
+        {
+          "say": "担当者は、その手順を会話に繰り返し貼っていました。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "繰り返す手順は、Skill にして必要なときだけ読み込ませます。",
+          "speech": "繰り返す手順は、スキルにして必要なときだけ読み込ませます。",
+          "show": ["skill"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "shop-manual",
+      "kind": "board",
+      "role": "example",
+      "title": "店の手順書を開く",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "店の担当者が、在庫の報告を任された場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "報告の手順書を、仕事に取りかかるときに開きます。",
+          "show": ["manual", "open"],
+          "travel": {
+            "along": ["open"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "関係のない仕事で、その手順を読む必要はありません。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "報告のとき"
+          }
+        },
+        {
+          "say": "報告を作る日には、また同じ手順書を使いましょう。",
+          "show": ["stock", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "skill-file",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手順をファイルにする",
+      "board": "file",
+      "beats": [
+        {
+          "say": "Skill の手順を書くファイルが、SKILL.md です。",
+          "speech": "スキルの手順を書くファイルが、スキルドットエムディーです。",
+          "term": {
+            "text": "SKILL.md",
+            "note": "手順や知識を書くファイル"
+          }
+        },
+        {
+          "say": "在庫レポートなら、集計の手順をここに書きます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "チームで使うなら、プロジェクトに置く形です。",
+          "show": ["shared", "store"]
+        },
+        {
+          "say": "そのファイルを共有し、同じ手順を使い回しましょう。",
+          "show": ["clerk", "share"],
+          "travel": {
+            "along": ["share"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "description-and-body",
+      "kind": "board",
+      "role": "syntax",
+      "title": "説明と本文を分ける",
+      "board": "parts",
+      "beats": [
+        {
+          "say": "使う場面を知らせる部分が、説明です。",
+          "term": {
+            "text": "説明",
+            "ruby": "せつめい",
+            "note": "いつ使う手順かを知らせる"
+          }
+        },
+        {
+          "say": "説明には、毎週の在庫レポート用だと書きます。",
+          "show": ["description"],
+          "tag": {
+            "description": "在庫報告用"
+          }
+        },
+        {
+          "say": "実際の手順を書く部分は、本文です。",
+          "term": {
+            "text": "本文",
+            "ruby": "ほんぶん",
+            "note": "呼び出したときに読む手順"
+          }
+        },
+        {
+          "say": "本文には、補充品を倉庫別に並べる手順を書きましょう。",
+          "show": ["body"],
+          "tag": {
+            "body": "倉庫別に並ぶ"
+          }
+        },
+        {
+          "say": "別のファイルにした報告の見本も、本文から参照できます。",
+          "show": ["format"]
+        }
+      ]
+    },
+    {
+      "id": "find-and-load",
+      "kind": "board",
+      "role": "apply",
+      "title": "説明で見つけて使う",
+      "board": "selection",
+      "beats": [
+        {
+          "say": "通常は、会話の始まりに説明を読み込みます。",
+          "show": ["description", "claude", "read-description"],
+          "travel": {
+            "along": ["read-description"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "この段階で読むのは、使いどころの説明です。",
+          "pulse": ["description"]
+        },
+        {
+          "say": "在庫報告を頼まれたら、Claude が説明から選びます。",
+          "speech": "在庫報告を頼まれたら、クロードが説明から選びます。",
+          "pulse": ["claude"],
+          "tag": {
+            "claude": "依頼に合う"
+          }
+        },
+        {
+          "say": "本文を読むのは、その Skill を呼び出したときです。",
+          "speech": "本文を読むのは、そのスキルを呼び出したときです。",
+          "show": ["body", "read-body"],
+          "travel": {
+            "along": ["read-body"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "説明で見つけ、使うときに手順を読むと覚えましょう。",
+          "pulse": ["description", "body"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "follow-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "本文と見本を使う",
+      "board": "report",
+      "beats": [
+        {
+          "say": "本文の最初の手順は、在庫表を読むことです。",
+          "show": ["stock"]
+        },
+        {
+          "say": "続いて、補充が必要な商品を倉庫別に並べます。",
+          "show": ["body", "follow"],
+          "travel": {
+            "along": ["follow"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "項目の並びを確認するための資料が、報告の見本です。",
+          "show": ["format"]
+        },
+        {
+          "say": "別ファイルの見本は、必要になったときに読みます。",
+          "show": ["refer"],
+          "travel": {
+            "along": ["refer"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "human-timing",
+      "kind": "board",
+      "role": "apply",
+      "title": "担当者が時点を決める",
+      "board": "manual-choice",
+      "beats": [
+        {
+          "say": "担当者が、自分で Skill を呼び出す使い方もあります。",
+          "speech": "担当者が、自分でスキルを呼び出す使い方もあります。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "人だけが呼ぶように設定する方法も、選択肢です。",
+          "tag": {
+            "clerk": "人だけが呼ぶ"
+          },
+          "pulse": ["clerk"]
+        },
+        {
+          "say": "その設定では、説明も Claude の文脈に入りません。",
+          "speech": "その設定では、説明もクロードの文脈に入りません。",
+          "show": ["description"],
+          "mark": [
+            {
+              "on": "description",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "担当者が呼び出したときに、本文を読み込みます。",
+          "show": ["body", "invoke"],
+          "travel": {
+            "along": ["invoke"],
+            "icon": "read"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "旅行の手順はいつ読むか",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "旅行のしおりを、同じ手順で何度も作りたいとします。",
+          "show": ["trip"]
+        },
+        {
+          "say": "日程と持ち物を整理する、長い手順です。",
+          "tag": {
+            "trip": "日程と持ち物"
+          },
+          "pulse": ["trip"]
+        },
+        {
+          "say": "一つ目では、どの作業でも手順の全文を読ませます。",
+          "show": ["always"],
+          "tag": {
+            "always": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目は、Skill にして使うときに本文を読む案です。",
+          "speech": "二つ目は、スキルにして使うときに本文を読む案です。",
+          "show": ["needed"],
+          "tag": {
+            "needed": "二つ目"
+          }
+        },
+        {
+          "say": "旅行に関係する作業だけで手順を読むなら、どちらでしょうか。",
+          "pulse": ["always", "needed"],
+          "mark": [
+            {
+              "on": "always",
+              "kind": "question"
+            },
+            {
+              "on": "needed",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "使うときに本文を読む",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、Skill にまとめる二つ目の案です。",
+          "speech": "答えは、スキルにまとめる二つ目の案です。",
+          "mark": [
+            {
+              "on": "needed",
+              "kind": "check"
+            },
+            {
+              "on": "always",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["needed"]
+        },
+        {
+          "say": "しおりを作るために呼び出したとき、本文を読み込みます。",
+          "tag": {
+            "needed": "呼び出すとき"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-needed",
+      "kind": "board",
+      "role": "explain",
+      "title": "説明と手順をたどる",
+      "board": "trip-reason",
+      "beats": [
+        {
+          "say": "説明には、旅行のしおりをまとめる場面を書きます。",
+          "show": ["description"]
+        },
+        {
+          "say": "Claude が使いどころを判断する手がかりです。",
+          "speech": "クロードが使いどころを判断する手がかりです。",
+          "show": ["claude", "find"],
+          "travel": {
+            "along": ["find"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "呼び出すと、日程や持ち物を整理する本文を読みます。",
+          "show": ["body", "load"],
+          "travel": {
+            "along": ["load"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "説明を読む場面と、本文を読む場面を分ける仕組みです。",
+          "pulse": ["description", "body"],
+          "tag": {
+            "description": "使う場面",
+            "body": "実際の手順"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "繰り返す仕事に使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "毎週の在庫報告は、同じ手順を繰り返す仕事です。",
+          "show": ["stock"]
+        },
+        {
+          "say": "旅行のしおりでも、決まった整理の手順を使い回せます。",
+          "show": ["trip"]
+        },
+        {
+          "say": "チームで共有するなら、使う場面と手順を書き分けましょう。",
+          "show": ["skill"]
+        },
+        {
+          "say": "繰り返す手順や知識を、必要なときだけ読み込ませます。",
+          "pulse": ["stock", "trip", "skill"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e4d2975cde38ee69c70b8f7340b4803ae95eb7e694f28022265d540a0e8a4000"
+  }
+}

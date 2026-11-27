@@ -1,0 +1,696 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "HTTPステータスと停止理由の記録から、失敗を最初に調べる場所を選べる。",
+    "stuck": "HTTPの通信が成功していれば、回答も最後まで正しく返ったと思ってしまう。",
+    "points": ["失敗は、まず HTTP のエラーか、成功した応答の中身かで分けます。"],
+    "leaveOut": [
+      "エラーの種類ごとの再試行や入力修正の手順",
+      "提案止まりや履歴の欠落や出力形式の崩れへの対策",
+      "ハルシネーションを減らす指示の書き方",
+      "監視を実装するコード"
+    ]
+  },
+  "art": {
+    "paper-crane": {
+      "prompt": "A violet origami crane beside a white folded instruction leaflet, with a young adult with short dark hair and a plain violet sweater looking at the leaflet with a puzzled expression. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "open-envelope": {
+      "prompt": "An open blue envelope with a white instruction sheet protruding from it, held by a hand. The paper is white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cut-instructions": {
+      "prompt": "A white origami instruction sheet with a visibly torn lower edge, showing only two simple blue paper-folding pictograms at the top and an unfinished fold at the torn edge. No writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "status-record": {
+      "prompt": "A light grey clipboard holding a white communication receipt, beside a blue pen. Only a single blue circular stamp without symbols on the receipt. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stop-record": {
+      "prompt": "A small white spiral notebook with blue tabs beside a blue mechanical stopwatch with a blank dial and no tick marks, representing a record of where a response stopped. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-check": {
+      "prompt": "Two white instruction sheets side by side with simple blue folded-paper pictograms, and a large violet magnifying glass over one sheet. No writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "emergency-bag": {
+      "prompt": "An open blue emergency backpack beside a clear water bottle, a small violet flashlight and a blank white packing checklist. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "craft",
+          "label": "折り紙の手順",
+          "art": "paper-crane",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "途切れた返答",
+          "art": "cut-instructions",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "確認する記録",
+          "art": "status-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "letter": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "envelope",
+          "label": "届いた封筒",
+          "art": "open-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "sheet",
+          "label": "途中までの紙",
+          "art": "cut-instructions",
+          "at": [3, 1]
+        },
+        {
+          "id": "craft",
+          "label": "折れない鶴",
+          "art": "paper-crane",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "open",
+          "from": "envelope",
+          "to": "sheet",
+          "label": "開く"
+        },
+        {
+          "id": "read",
+          "from": "sheet",
+          "to": "craft",
+          "label": "読む"
+        }
+      ]
+    },
+    "layers": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "status",
+          "label": "通信の結果",
+          "art": "status-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "error",
+          "label": "エラー情報",
+          "art": "status-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "成功した応答",
+          "art": "open-envelope",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "error-route",
+          "from": "status",
+          "to": "error",
+          "label": "エラー"
+        },
+        {
+          "id": "success-route",
+          "from": "status",
+          "to": "body",
+          "label": "200"
+        }
+      ]
+    },
+    "stops": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "上限で停止",
+          "art": "stop-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "refusal",
+          "label": "refusal",
+          "art": "stop-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答終了",
+          "art": "stop-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cut": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "status",
+          "label": "HTTP200",
+          "art": "status-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "stop",
+          "label": "上限で停止",
+          "art": "stop-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "折り紙の返答",
+          "art": "cut-instructions",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check-stop",
+          "from": "status",
+          "to": "stop",
+          "label": "停止理由"
+        },
+        {
+          "id": "check-cut",
+          "from": "stop",
+          "to": "reply",
+          "label": "切れた位置"
+        }
+      ]
+    },
+    "truth": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stop",
+          "label": "応答終了",
+          "art": "stop-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答の内容",
+          "art": "open-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "source",
+          "label": "元の手順",
+          "art": "source-check",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-reply",
+          "from": "stop",
+          "to": "reply",
+          "label": "読む"
+        },
+        {
+          "id": "compare",
+          "from": "reply",
+          "to": "source",
+          "label": "照合"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "bag",
+          "label": "防災袋の案内",
+          "art": "emergency-bag",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "HTTP200",
+          "art": "status-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "上限で停止",
+          "art": "stop-record",
+          "at": [5, 1]
+        },
+        {
+          "id": "content",
+          "label": "応答の中身",
+          "art": "cut-instructions",
+          "at": [5, 2]
+        },
+        {
+          "id": "error",
+          "label": "HTTPエラー",
+          "art": "status-record",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "monitor": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "http",
+          "label": "HTTPエラー",
+          "art": "status-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "stop",
+          "label": "停止理由",
+          "art": "stop-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "refusal",
+          "label": "拒否の件数",
+          "art": "stop-record",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "失敗を調べる入口",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "折り紙の手順を、アプリに尋ねたとします。",
+          "show": ["craft"]
+        },
+        {
+          "say": "返った説明は、途中で切れていました。",
+          "show": ["reply"]
+        },
+        {
+          "say": "調べる入口は、通信と応答の中身です。",
+          "show": ["record"]
+        },
+        {
+          "say": "まず通信のエラーか、成功した応答の問題かを分けます。",
+          "pulse": ["record", "reply"]
+        }
+      ]
+    },
+    {
+      "id": "letter",
+      "kind": "board",
+      "role": "example",
+      "title": "届いた紙でも折れない",
+      "board": "letter",
+      "beats": [
+        {
+          "say": "折り紙の手順を、封筒で受け取る場面です。",
+          "show": ["envelope"]
+        },
+        {
+          "say": "封筒は届きましたが、中の紙は途中で切れていました。",
+          "show": ["sheet", "open"]
+        },
+        {
+          "say": "受け取れたことだけでは、最後まで折れるとは限りません。",
+          "show": ["craft", "read"],
+          "mark": [
+            {
+              "on": "craft",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "届いたかを確かめたあとで、中身を調べましょう。",
+          "pulse": ["sheet"],
+          "travel": {
+            "along": ["open"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "layers",
+      "kind": "board",
+      "role": "syntax",
+      "title": "最初は通信の記録",
+      "board": "layers",
+      "beats": [
+        {
+          "say": "失敗の現れ方の種類を、障害モードと呼びます。",
+          "term": {
+            "text": "障害モード",
+            "ruby": "しょうがいモード",
+            "note": "失敗がどう現れるか"
+          }
+        },
+        {
+          "say": "今回のように、返答が途切れるのもその一例です。",
+          "show": ["body"],
+          "tag": {
+            "body": "途中で切れる"
+          }
+        },
+        {
+          "say": "通信の結果は、HTTPステータスで確かめます。",
+          "speech": "通信の結果は、エイチティーティーピーステータスで確かめます。",
+          "term": {
+            "text": "HTTPステータス",
+            "note": "通信の結果を示す値"
+          }
+        },
+        {
+          "say": "4xxや5xxなら、読むのはエラー情報です。",
+          "speech": "よんエックスエックスやごエックスエックスなら、読むのはエラー情報です。",
+          "show": ["status", "error", "error-route"],
+          "pulse": ["error"]
+        },
+        {
+          "say": "200なら、成功した応答の中身へ進みましょう。",
+          "speech": "にひゃくなら、成功した応答の中身へ進みましょう。",
+          "show": ["success-route"],
+          "untag": ["body"],
+          "pulse": ["body"],
+          "travel": {
+            "along": ["success-route"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stop-reasons",
+      "kind": "board",
+      "role": "syntax",
+      "title": "止まった理由を読む",
+      "board": "stops",
+      "beats": [
+        {
+          "say": "応答が止まった理由は、停止理由で確かめます。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "stop_reasonの値"
+          }
+        },
+        {
+          "say": "マックストークンズは、出力の上限に届いた印です。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "出力上限"
+          }
+        },
+        {
+          "say": "リフューザルなら、安全の仕組みによる拒否として扱います。",
+          "show": ["refusal"],
+          "tag": {
+            "refusal": "拒否"
+          }
+        },
+        {
+          "say": "どちらも、通信が成功した応答で現れる種類です。",
+          "pulse": ["limit", "refusal"]
+        },
+        {
+          "say": "エンドターンでも、内容は資料と照合しましょう。",
+          "show": ["end"],
+          "tag": {
+            "end": "内容を照合"
+          },
+          "pulse": ["end"]
+        }
+      ]
+    },
+    {
+      "id": "trace-cut",
+      "kind": "board",
+      "role": "apply",
+      "title": "途切れた手順を調べる",
+      "board": "cut",
+      "beats": [
+        {
+          "say": "折り紙の例では、HTTP200が記録されていました。",
+          "speech": "折り紙の例では、エイチティーティーピーにひゃくが記録されていました。",
+          "show": ["status"]
+        },
+        {
+          "say": "次は停止理由を読みます。",
+          "show": ["stop", "check-stop"],
+          "travel": {
+            "along": ["check-stop"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "この例では、出力の上限に届いた印です。",
+          "tag": {
+            "stop": "出力上限"
+          },
+          "pulse": ["stop"]
+        },
+        {
+          "say": "上限と、手順のどこで切れたかを確かめましょう。",
+          "show": ["reply", "check-cut"],
+          "pulse": ["reply"],
+          "travel": {
+            "along": ["check-cut"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-content",
+      "kind": "board",
+      "role": "apply",
+      "title": "終わった返答も照合する",
+      "board": "truth",
+      "beats": [
+        {
+          "say": "別の返答は、エンドターンで終わったとします。",
+          "show": ["stop"]
+        },
+        {
+          "say": "終わったという記録だけで、正しいとは言えません。",
+          "show": ["reply", "read-reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "回答に、元の手順にない折り方が混ざっていました。",
+          "tag": {
+            "reply": "資料にない"
+          },
+          "pulse": ["reply"]
+        },
+        {
+          "say": "資料にない情報かどうか、原文と照合しましょう。",
+          "show": ["source", "compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "search"
+          },
+          "pulse": ["source"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "防災袋の案内が途切れた",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "防災袋の持ち物を説明するアプリで考えます。",
+          "show": ["bag"]
+        },
+        {
+          "say": "返答は、持ち物の説明の途中で切れていました。",
+          "tag": {
+            "bag": "途中で切れる"
+          }
+        },
+        {
+          "say": "記録はHTTP200で、停止理由はマックストークンズです。",
+          "speech": "記録はエイチティーティーピーにひゃくで、停止理由はマックストークンズです。",
+          "show": ["status", "stop"]
+        },
+        {
+          "say": "候補は、HTTPエラーの情報と、応答の中身になります。",
+          "speech": "候補は、エイチティーティーピーエラーの情報と、応答の中身になります。",
+          "show": ["error", "content"]
+        },
+        {
+          "say": "この記録なら、どちらを調べるべきでしょうか。",
+          "mark": [
+            {
+              "on": "error",
+              "kind": "question"
+            },
+            {
+              "on": "content",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["status", "stop"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "成功した応答を調べる",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、成功した応答の中身です。",
+          "mark": [
+            {
+              "on": "error",
+              "kind": "cross"
+            },
+            {
+              "on": "content",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["content"]
+        },
+        {
+          "say": "出力の上限と、説明が切れた位置を確かめます。",
+          "tag": {
+            "content": "上限と切れ目"
+          },
+          "pulse": ["stop", "content"]
+        }
+      ]
+    },
+    {
+      "id": "follow-record",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの記録をたどる",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "HTTP200なので、通信は成功した記録です。",
+          "speech": "エイチティーティーピーにひゃくなので、通信は成功した記録です。",
+          "pulse": ["status"]
+        },
+        {
+          "say": "ただし、持ち物の説明が完成したとは限りません。",
+          "pulse": ["bag"]
+        },
+        {
+          "say": "停止理由には、出力が上限に届いたと記録されています。",
+          "pulse": ["stop"],
+          "tag": {
+            "stop": "出力上限"
+          }
+        },
+        {
+          "say": "そこで、応答の中身を調べるのが適切です。",
+          "pulse": ["content"]
+        }
+      ]
+    },
+    {
+      "id": "monitor",
+      "kind": "board",
+      "role": "explain",
+      "title": "エラーの監視だけでは不足",
+      "board": "monitor",
+      "beats": [
+        {
+          "say": "5xxだけを数えても、この途切れは見つかりません。",
+          "speech": "ごエックスエックスだけを数えても、この途切れは見つかりません。",
+          "show": ["http"],
+          "tag": {
+            "http": "5xxだけ"
+          }
+        },
+        {
+          "say": "HTTPエラーと停止理由を、分けて記録します。",
+          "speech": "エイチティーティーピーエラーと停止理由を、分けて記録します。",
+          "show": ["stop"],
+          "untag": ["http"],
+          "pulse": ["http", "stop"]
+        },
+        {
+          "say": "拒否の件数も、ほかと分けて記録しましょう。",
+          "show": ["refusal"],
+          "pulse": ["refusal"]
+        }
+      ]
+    },
+    {
+      "id": "use-records",
+      "kind": "board",
+      "role": "usage",
+      "title": "問い合わせを受けたとき",
+      "board": "layers",
+      "reset": true,
+      "beats": [
+        {
+          "say": "返答がないという相談では、まず通信の記録を見ます。",
+          "show": ["status"]
+        },
+        {
+          "say": "エラーなら、リクエストやAPIの情報が調査先です。",
+          "speech": "エラーなら、リクエストやエーピーアイの情報が調査先です。",
+          "show": ["error", "error-route"],
+          "pulse": ["error"]
+        },
+        {
+          "say": "通信が成功していたら、停止理由と中身を確かめましょう。",
+          "show": ["body", "success-route"],
+          "pulse": ["body"]
+        },
+        {
+          "say": "失敗は、まずHTTPのエラーか、成功した応答の中身かで分けます。",
+          "speech": "失敗は、まずエイチティーティーピーのエラーか、成功した応答の中身かで分けます。",
+          "pulse": ["error", "body"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "79c329d6c62a0661cc67ba017d96cedf111ade68bbfab103bf966f1852571fc4"
+  }
+}

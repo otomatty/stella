@@ -1,0 +1,807 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "必ず実行する処理にフックを選び、書き換えの停止と整形を実行前後のどちらに置くか説明できる。",
+    "stuck": "CLAUDE.md に禁止を書けば必ず守られると思い、処理を止める時点と終わったあとに動く時点を混同する。",
+    "points": ["必ず実行したい処理は、CLAUDE.md の指示ではなくフックで決めます。"],
+    "leaveOut": [
+      "設定ファイルの置き場所と効く範囲の違い",
+      "フックの設定コードとコマンドの書き方",
+      "標準入力の JSON と項目の取り出し方",
+      "終了コード 0 と通常の権限確認の関係",
+      "Notification と SessionStart の使い方"
+    ]
+  },
+  "art": {
+    "instruction-note": {
+      "prompt": "A single white paper reminder held upright by a blue clip, with a violet pencil beside it. The paper is completely blank and represents a written instruction. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "protected-file": {
+      "prompt": "A light grey file folder holding a white document, with a small blue padlock attached to the folder clasp. This represents the same protected configuration file throughout the lesson. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hook-command": {
+      "prompt": "An open violet laptop with a completely blank dark screen, connected by a short cable to a small blue mechanical timer with an unmarked dial. This conceptual object represents a command running at a chosen moment, not an actual application screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "archive-cabinet": {
+      "prompt": "A small light grey library cabinet with its door partly open, holding one large violet bound original manuscript with blank white pages. A blue key is inserted in the door lock. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-staff": {
+      "prompt": "A library staff member wearing a plain blue shirt, with simple facial features and short dark hair, holding a blue key close to their body while raising the other hand to stop a book from being taken away. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "formatting-file": {
+      "prompt": "A small stack of white document sheets with light grey edges, neatly aligned beside a violet ruler and blue binder clip. The sheets are blank. This represents the file whose formatting is adjusted after editing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "table-tennis-book": {
+      "prompt": "An open white reservation ledger with blank pages beside two table tennis paddles, one blue and one violet, and a small white ball with a light grey edge. The ledger represents the file of confirmed table tennis reservations. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, looking at one empty blue speech bubble held close to its face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "file",
+          "label": ".env",
+          "art": "protected-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "指示ファイル",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "書き換えた側",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "hook",
+          "label": "フック",
+          "art": "hook-command",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "cabinet": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "original",
+          "label": "原本の戸棚",
+          "art": "archive-cabinet",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "注意書き",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "staff",
+          "label": "鍵を渡す係",
+          "art": "library-staff",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "hook": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "note",
+          "label": "指示ファイル",
+          "art": "instruction-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "command",
+          "label": "フック",
+          "art": "hook-command",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "note",
+          "to": "claude",
+          "label": "指示を読む"
+        },
+        {
+          "id": "run",
+          "from": "claude",
+          "to": "command",
+          "label": "決めた時点"
+        }
+      ]
+    },
+    "before": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "call",
+          "label": "使用の直前",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "実行前フック",
+          "art": "hook-command",
+          "at": [3, 1]
+        },
+        {
+          "id": "file",
+          "label": "書き換える先",
+          "art": "protected-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "before-check",
+          "from": "call",
+          "to": "check",
+          "label": "使用前"
+        },
+        {
+          "id": "target",
+          "from": "check",
+          "to": "file",
+          "label": "対象を確認"
+        }
+      ]
+    },
+    "after": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "file",
+          "label": "編集済み",
+          "art": "formatting-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "command",
+          "label": "実行後フック",
+          "art": "hook-command",
+          "at": [3, 1]
+        },
+        {
+          "id": "tidy",
+          "label": "整形済み",
+          "art": "formatting-file",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "after-edit",
+          "from": "file",
+          "to": "command",
+          "label": "使用後"
+        },
+        {
+          "id": "format",
+          "from": "command",
+          "to": "tidy",
+          "label": "整形する"
+        }
+      ]
+    },
+    "protection": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "file",
+          "label": ".env",
+          "art": "protected-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "実行前フック",
+          "art": "hook-command",
+          "at": [3, 1]
+        },
+        {
+          "id": "stopped",
+          "label": "呼び出し停止",
+          "art": "protected-file",
+          "at": [5, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "file",
+          "to": "check",
+          "label": "対象を照合"
+        },
+        {
+          "id": "stop",
+          "from": "check",
+          "to": "stopped",
+          "label": "2を返す"
+        },
+        {
+          "id": "reason",
+          "from": "stopped",
+          "to": "claude",
+          "label": "理由を伝達"
+        }
+      ]
+    },
+    "reservation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "確定予約",
+          "art": "table-tennis-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "pre",
+          "label": "実行前フック",
+          "art": "hook-command",
+          "at": [3, 1]
+        },
+        {
+          "id": "post",
+          "label": "実行後フック",
+          "art": "hook-command",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reservation-stop": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "確定予約",
+          "art": "table-tennis-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "実行前フック",
+          "art": "hook-command",
+          "at": [3, 1]
+        },
+        {
+          "id": "stopped",
+          "label": "書き換え停止",
+          "art": "table-tennis-book",
+          "at": [5, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "record",
+          "to": "check",
+          "label": "対象を確認"
+        },
+        {
+          "id": "stop",
+          "from": "check",
+          "to": "stopped",
+          "label": "2を返す"
+        },
+        {
+          "id": "reason",
+          "from": "stopped",
+          "to": "claude",
+          "label": "理由を伝達"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "protect",
+          "label": "書き換え防止",
+          "art": "protected-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "format",
+          "label": "編集後の整形",
+          "art": "formatting-file",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "禁止を書いたのに変わる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "書き換えたくないファイルが、.env です。",
+          "speech": "書き換えたくないファイルが、ドットエンブです。",
+          "show": ["file"]
+        },
+        {
+          "say": "CLAUDE.md に、書き換えないよう指示しました。",
+          "speech": "クロードエムディーに、書き換えないよう指示しました。",
+          "show": ["note"]
+        },
+        {
+          "say": "それでも書き換わったのが、教材の例です。",
+          "show": ["claude"],
+          "tag": {
+            "file": "変更された"
+          },
+          "mark": [
+            {
+              "on": "file",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "必ず実行したい処理は、フックで決めます。",
+          "show": ["hook"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "library-key",
+      "kind": "board",
+      "role": "example",
+      "title": "鍵を渡す前に止める",
+      "board": "cabinet",
+      "beats": [
+        {
+          "say": "図書室で、原本を保管する戸棚を考えます。",
+          "show": ["original"]
+        },
+        {
+          "say": "注意書きは、原本を持ち出さないでほしいというお願いです。",
+          "show": ["note"]
+        },
+        {
+          "say": "鍵を渡す前に、係が持ち出す本を確かめましょう。",
+          "show": ["staff"],
+          "tag": {
+            "staff": "渡す前"
+          }
+        },
+        {
+          "say": "原本なら鍵を渡さず、持ち出しを止めます。",
+          "pulse": ["staff"],
+          "tag": {
+            "staff": "渡さない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hook-command",
+      "kind": "board",
+      "role": "syntax",
+      "title": "決めた時点に動く処理",
+      "board": "hook",
+      "beats": [
+        {
+          "say": "CLAUDE.md は、指示として読まれます。",
+          "speech": "クロードエムディーは、指示として読まれます。",
+          "show": ["note", "claude", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "書いた処理が、必ず実行されるとは限りません。",
+          "pulse": ["note"],
+          "mark": [
+            {
+              "on": "note",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "フックは、決めた時点に動く自作のコマンドです。",
+          "term": {
+            "text": "フック",
+            "note": "決めた時点に動かすコマンド"
+          },
+          "show": ["command"]
+        },
+        {
+          "say": "Claude Code が、その時点で必ず動かします。",
+          "speech": "クロードコードが、その時点で必ず動かします。",
+          "show": ["run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "terminal"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "before-tool",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ツールを使う前",
+      "board": "before",
+      "beats": [
+        {
+          "say": "PreToolUse は、ツールを使う前の時点です。",
+          "speech": "プレツールユースは、ツールを使う前の時点です。",
+          "term": {
+            "text": "プレツールユース",
+            "note": "PreToolUse"
+          },
+          "show": ["call", "check"]
+        },
+        {
+          "say": "この時点に、書き換え先を確かめるフックを置きます。",
+          "show": ["before-check", "file", "target"],
+          "travel": {
+            "along": ["before-check", "target"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "まだ、ツールによる書き換えは始まっていません。",
+          "pulse": ["file"],
+          "tag": {
+            "file": "実行前"
+          }
+        },
+        {
+          "say": "守りたいファイルなら、呼び出しをここで止めます。",
+          "pulse": ["check"],
+          "tag": {
+            "check": "停止できる"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "after-tool",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ツールを使ったあと",
+      "board": "after",
+      "beats": [
+        {
+          "say": "PostToolUse は、ツールを使ったあとの時点です。",
+          "speech": "ポストツールユースは、ツールを使ったあとの時点です。",
+          "term": {
+            "text": "ポストツールユース",
+            "note": "PostToolUse"
+          },
+          "show": ["file", "command"]
+        },
+        {
+          "say": "こちらのフックは、編集が終わってから動きます。",
+          "show": ["after-edit"],
+          "travel": {
+            "along": ["after-edit"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "書き換えたファイルの整形に使う時点です。",
+          "show": ["tidy", "format"]
+        },
+        {
+          "say": "実行前に止める処理とは、動かす位置を分けましょう。",
+          "pulse": ["command"],
+          "tag": {
+            "command": "実行後"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "protect-env",
+      "kind": "board",
+      "role": "apply",
+      "title": "書き換えの呼び出しを止める",
+      "board": "protection",
+      "beats": [
+        {
+          "say": ".env への書き換えを、実行前のフックで調べます。",
+          "speech": "ドットエンブへの書き換えを、実行前のフックで調べます。",
+          "show": ["file", "check", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "処理の終わりに返す数が、終了コードです。",
+          "term": {
+            "text": "終了コード",
+            "ruby": "しゅうりょうコード",
+            "note": "次の動きを伝える数"
+          },
+          "pulse": ["check"]
+        },
+        {
+          "say": "ここで終了コード2を返すと、その呼び出しを止めます。",
+          "speech": "ここで終了コードにを返すと、その呼び出しを止めます。",
+          "show": ["stopped", "stop"],
+          "tag": {
+            "check": "終了コード2"
+          }
+        },
+        {
+          "say": "この呼び出しでは、ファイルを書き換えません。",
+          "pulse": ["stopped"],
+          "mark": [
+            {
+              "on": "stopped",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "標準エラーに書いた理由は、Claude に伝わります。",
+          "speech": "標準エラーに書いた理由は、クロードに伝わります。",
+          "show": ["claude", "reason"],
+          "travel": {
+            "along": ["reason"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "format-edited-file",
+      "kind": "board",
+      "role": "apply",
+      "title": "編集後のファイルを整える",
+      "board": "after",
+      "reset": true,
+      "beats": [
+        {
+          "say": "通常のファイルを、ツールで編集したあとの例です。",
+          "show": ["file"]
+        },
+        {
+          "say": "PostToolUse に、整形の処理を置きます。",
+          "speech": "ポストツールユースに、整形の処理を置きます。",
+          "show": ["command", "after-edit"],
+          "travel": {
+            "along": ["after-edit"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "教材で使う整形の道具は、Prettier です。",
+          "speech": "教材で使う整形の道具は、プリティアです。",
+          "tag": {
+            "command": "Prettier"
+          }
+        },
+        {
+          "say": "フックが動き、書き換えたファイルを整えます。",
+          "show": ["tidy", "format"],
+          "travel": {
+            "along": ["format"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reservation-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予約の書き換えを防ぐ時点",
+      "board": "reservation",
+      "think": 8,
+      "beats": [
+        {
+          "say": "卓球場の予約を管理するプロジェクトを考えます。",
+          "show": ["record"]
+        },
+        {
+          "say": "確定予約のファイルを、書き換えから守りたい場面です。",
+          "tag": {
+            "record": "変更を防ぐ"
+          }
+        },
+        {
+          "say": "書き換えようとしたら止めるフックを用意しました。",
+          "show": ["pre", "post"]
+        },
+        {
+          "say": "ツールの実行前と実行後の、どちらに置くべきでしょうか。",
+          "mark": [
+            {
+              "on": "pre",
+              "kind": "question"
+            },
+            {
+              "on": "post",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["pre", "post"]
+        }
+      ]
+    },
+    {
+      "id": "reservation-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実行前に置く",
+      "board": "reservation",
+      "beats": [
+        {
+          "say": "答えは、実行前の PreToolUse です。",
+          "speech": "答えは、実行前のプレツールユースです。",
+          "mark": [
+            {
+              "on": "pre",
+              "kind": "check"
+            },
+            {
+              "on": "post",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["pre"]
+        },
+        {
+          "say": "予約を書き換える前に、その呼び出しを止めます。",
+          "pulse": ["record"],
+          "tag": {
+            "record": "変更前に停止"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reservation-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "止める位置をたどる",
+      "board": "reservation-stop",
+      "beats": [
+        {
+          "say": "まず、書き換え先が確定予約のファイルか調べます。",
+          "show": ["record", "check", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "その対象なら、フックが返す終了コードは2です。",
+          "speech": "その対象なら、フックが返す終了コードはにです。",
+          "tag": {
+            "check": "終了コード2"
+          }
+        },
+        {
+          "say": "書き換えの呼び出しは、実行されずに止まります。",
+          "show": ["stopped", "stop"],
+          "mark": [
+            {
+              "on": "stopped",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "実行後では、書き換える前に止められません。",
+          "pulse": ["check"],
+          "tag": {
+            "check": "実行前に判断"
+          }
+        },
+        {
+          "say": "Claude は、伝えられた理由を見てやり方を変えられます。",
+          "speech": "クロードは、伝えられた理由を見てやり方を変えられます。",
+          "show": ["claude", "reason"],
+          "travel": {
+            "along": ["reason"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "目的から動かす時点を選ぶ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "守るファイルへの書き換えは、実行前に止めます。",
+          "show": ["protect"],
+          "tag": {
+            "protect": "実行前"
+          }
+        },
+        {
+          "say": "編集したファイルの整形は、実行後の仕事です。",
+          "show": ["format"],
+          "tag": {
+            "format": "実行後"
+          }
+        },
+        {
+          "say": "必ず動かす処理は、フックとして設定します。",
+          "pulse": ["protect", "format"]
+        },
+        {
+          "say": "動かしたい処理から、実行前後のどちらかを選びましょう。",
+          "pulse": [],
+          "mark": [
+            {
+              "on": "protect",
+              "kind": "check"
+            },
+            {
+              "on": "format",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6c9d83789eda997ca5195674013261c5502b850cd62f9240c63bd4cc3599874d"
+  }
+}

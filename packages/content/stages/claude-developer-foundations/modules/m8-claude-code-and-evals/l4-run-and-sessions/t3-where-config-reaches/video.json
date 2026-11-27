@@ -1,0 +1,835 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "設定の置き場所から、手元、チーム、CI、クラウドに届く範囲を説明できる。",
+    "stuck": "手元で動くフックは、設定を共有しなくてもCIやクラウドで同じように動くと思ってしまう。",
+    "points": ["リポジトリに入れた設定はチームと CI に届き、端末だけの設定はその端末に残ります。"],
+    "leaveOut": [
+      "設定ファイルの詳細なパスと書き方",
+      "設定の優先順位と権限ルールの合成",
+      "対話なしの実行に使うコマンド",
+      "セッションの開始と再開",
+      "各アプリの機能差とモバイルの操作"
+    ]
+  },
+  "art": {
+    "guide-check": {
+      "prompt": "An open white instruction booklet with a blue binder clip and a violet magnifying glass resting beside it, representing a guide whose formatting is checked. The pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "local-laptop": {
+      "prompt": "A single open light grey laptop with a plain violet screen and a small white settings sheet beside its keyboard. No interface elements. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-folder": {
+      "prompt": "An open blue document folder containing several blank white sheets, ready to be handed to another person. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "remote-computer": {
+      "prompt": "A compact blue and light grey computer tower beside a small blank monitor, representing a separate work environment. No interface elements. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exhibit-kit": {
+      "prompt": "A light grey open transport case holding a small blue ceramic sculpture and a violet display stand, representing equipment packed for a traveling exhibition. No cardboard in brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "private-notebook": {
+      "prompt": "A small closed white personal notebook with a violet elastic strap and a blue pencil beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "organization-admin": {
+      "prompt": "A staff member in a plain blue shirt holding out a white folder with two blank sheets, with simple facial features, representing an organization distributing settings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-order": {
+      "prompt": "A bouquet of naturally pink and yellow flowers with green leaves wrapped in white paper, beside a blank white order slip held by a blue clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "script-sheet": {
+      "prompt": "A blank white document rolled slightly at one corner beside a blue gear and a violet pencil, representing a script file that performs a check. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "書式の確認",
+          "art": "guide-check",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元の端末",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "ci",
+          "label": "CIの記録",
+          "art": "remote-computer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "exhibition": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "展示の道具",
+          "art": "exhibit-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "家の手帳",
+          "art": "private-notebook",
+          "at": [3, 1]
+        },
+        {
+          "id": "shared",
+          "label": "同封する手順",
+          "art": "shared-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pack",
+          "from": "shared",
+          "to": "kit",
+          "route": "under"
+        }
+      ]
+    },
+    "shared": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "shared-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "team",
+          "label": "チームの端末",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "ci",
+          "label": "CI",
+          "art": "remote-computer",
+          "at": [5, 1]
+        },
+        {
+          "id": "cloud",
+          "label": "クラウド",
+          "art": "remote-computer",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "team-copy",
+          "from": "repo",
+          "to": "team",
+          "label": "取得"
+        },
+        {
+          "id": "ci-copy",
+          "from": "repo",
+          "to": "ci",
+          "label": "取得",
+          "route": "over"
+        },
+        {
+          "id": "cloud-copy",
+          "from": "repo",
+          "to": "cloud",
+          "label": "取得",
+          "route": "under"
+        }
+      ]
+    },
+    "local": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "project",
+          "label": "個別設定",
+          "art": "private-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "device",
+          "label": "同じ端末",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "personal",
+          "label": "個人設定",
+          "art": "private-notebook",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "managed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "org",
+          "label": "組織",
+          "art": "organization-admin",
+          "at": [1, 1]
+        },
+        {
+          "id": "device",
+          "label": "配布先の端末",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "cloud",
+          "label": "対象クラウド",
+          "art": "remote-computer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "device-policy",
+          "from": "org",
+          "to": "device",
+          "label": "端末へ"
+        },
+        {
+          "id": "server-policy",
+          "from": "org",
+          "to": "cloud",
+          "label": "配信",
+          "route": "under"
+        }
+      ]
+    },
+    "bundle": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "setting",
+          "label": "フックの設定",
+          "art": "guide-check",
+          "at": [1, 1]
+        },
+        {
+          "id": "script",
+          "label": "スクリプト",
+          "art": "script-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "shared-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "together",
+          "from": "setting",
+          "to": "script",
+          "label": "一緒に"
+        },
+        {
+          "id": "store",
+          "from": "script",
+          "to": "repo",
+          "label": "入れる"
+        }
+      ]
+    },
+    "fetch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repo",
+          "label": "共有した版",
+          "art": "shared-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "CIの取得",
+          "art": "remote-computer",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "起動時の参照",
+          "art": "guide-check",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fetch",
+          "from": "repo",
+          "to": "ci",
+          "label": "取得"
+        },
+        {
+          "id": "read-setting",
+          "from": "ci",
+          "to": "read",
+          "label": "読む"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "花屋の注文",
+          "art": "flower-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "script",
+          "label": "検査の処理",
+          "art": "script-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元の設定",
+          "art": "local-laptop",
+          "at": [5, 1]
+        },
+        {
+          "id": "home",
+          "label": "個人設定へ",
+          "art": "private-notebook",
+          "at": [5, 2]
+        },
+        {
+          "id": "repo",
+          "label": "共有設定へ",
+          "art": "shared-folder",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "local",
+          "label": "端末だけ",
+          "art": "local-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "repo",
+          "label": "共有する設定",
+          "art": "shared-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "ci",
+          "label": "取得するCI",
+          "art": "remote-computer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "deliver",
+          "from": "repo",
+          "to": "ci",
+          "label": "取得"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "local",
+          "label": "手元で動く",
+          "art": "local-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "CIで動かない",
+          "art": "remote-computer",
+          "at": [3, 1]
+        },
+        {
+          "id": "org",
+          "label": "組織の設定",
+          "art": "organization-admin",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "手元と別環境の違い",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "ガイドの書式を確かめるフックを使います。",
+          "show": ["guide"]
+        },
+        {
+          "say": "自分の端末では、確認が動いている状態です。",
+          "show": ["local"],
+          "mark": [
+            {
+              "on": "local",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "CIの記録には、同じ確認が見当たりません。",
+          "speech": "シーアイの記録には、同じ確認が見当たりません。",
+          "show": ["ci"],
+          "mark": [
+            {
+              "on": "ci",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "共有した設定は別環境に届き、端末だけの設定はそこに残ります。",
+          "pulse": ["local", "ci"]
+        }
+      ]
+    },
+    {
+      "id": "exhibition",
+      "kind": "board",
+      "role": "example",
+      "title": "出張先に手順を届ける",
+      "board": "exhibition",
+      "beats": [
+        {
+          "say": "出張先で展示品を並べる係を考えましょう。",
+          "show": ["kit"]
+        },
+        {
+          "say": "並べ方は、自宅に置いた手帳に書いてあります。",
+          "show": ["memo"]
+        },
+        {
+          "say": "道具だけ運んでも、現地では手帳を読めません。",
+          "pulse": ["kit", "memo"],
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "手順も道具と一緒に送れば、現地でも読めます。",
+          "show": ["shared", "pack"],
+          "travel": {
+            "along": ["pack"],
+            "icon": "file"
+          },
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shared-scope",
+      "kind": "board",
+      "role": "syntax",
+      "title": "共有した設定の行き先",
+      "board": "shared",
+      "beats": [
+        {
+          "say": "Gitに入れた設定は、リポジトリで共有します。",
+          "speech": "ギットに入れた設定は、リポジトリで共有します。",
+          "term": {
+            "text": "リポジトリ",
+            "note": "共有して取得するファイル"
+          },
+          "show": ["repo"]
+        },
+        {
+          "say": "チームの端末にも、その設定が届く仕組みです。",
+          "show": ["team", "team-copy"],
+          "travel": {
+            "along": ["team-copy"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "CIも、取得したリポジトリの設定を参照できます。",
+          "speech": "シーアイも、取得したリポジトリの設定を参照できます。",
+          "show": ["ci", "ci-copy"],
+          "travel": {
+            "along": ["ci-copy"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "クラウドのセッションも、取得したファイルから始まる仕組みです。",
+          "show": ["cloud", "cloud-copy"],
+          "travel": {
+            "along": ["cloud-copy"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "local-scope",
+      "kind": "board",
+      "role": "syntax",
+      "title": "端末に残る二つの範囲",
+      "board": "local",
+      "beats": [
+        {
+          "say": "Gitに入れない個別の設定は、ローカル設定です。",
+          "speech": "ギットに入れない個別の設定は、ローカル設定です。",
+          "term": {
+            "text": "ローカル設定",
+            "ruby": "ろーかるせってい",
+            "note": "端末内のプロジェクト用"
+          }
+        },
+        {
+          "say": "この端末の、このプロジェクトで使います。",
+          "show": ["project", "device"],
+          "tag": {
+            "project": "この仕事だけ"
+          }
+        },
+        {
+          "say": "ホームに置く個人設定も、届く先は同じ端末です。",
+          "show": ["personal"],
+          "tag": {
+            "personal": "全ての仕事"
+          }
+        },
+        {
+          "say": "別の端末へは、自動では届きません。",
+          "pulse": ["device"],
+          "mark": [
+            {
+              "on": "device",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "手元の操作方法が違っても、同じフォルダーの設定を読みます。",
+          "pulse": ["project"],
+          "unmark": ["device"]
+        }
+      ]
+    },
+    {
+      "id": "managed-scope",
+      "kind": "board",
+      "role": "syntax",
+      "title": "組織から設定を配る",
+      "board": "managed",
+      "beats": [
+        {
+          "say": "組織が端末に配る管理設定は、その端末に届きます。",
+          "show": ["org", "device", "device-policy"],
+          "travel": {
+            "along": ["device-policy"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "もう一つは、サーバーで管理する設定です。",
+          "term": {
+            "text": "サーバー管理",
+            "ruby": "さーばーかんり",
+            "note": "サーバーで管理する設定"
+          }
+        },
+        {
+          "say": "組織の管理画面から、対象のクラウドへ配ります。",
+          "show": ["cloud", "server-policy"],
+          "travel": {
+            "along": ["server-policy"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "対応する手元の環境も、その配信先です。",
+          "pulse": ["device"],
+          "tag": {
+            "device": "対応環境"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "share-hook",
+      "kind": "board",
+      "role": "apply",
+      "title": "設定と処理を一緒に",
+      "board": "bundle",
+      "beats": [
+        {
+          "say": "ガイドのフックを、CIにも届ける場面に戻ります。",
+          "speech": "ガイドのフックを、シーアイにも届ける場面に戻ります。",
+          "show": ["setting"]
+        },
+        {
+          "say": "共有するのは、まずフックの設定です。",
+          "pulse": ["setting"],
+          "tag": {
+            "setting": "共有設定"
+          }
+        },
+        {
+          "say": "設定が参照するスクリプトも、一緒に入れましょう。",
+          "show": ["script", "together"],
+          "pulse": [],
+          "travel": {
+            "along": ["together"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "両方をリポジトリに入れて、別の環境に届けます。",
+          "show": ["repo", "store"],
+          "travel": {
+            "along": ["store"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-fetch",
+      "kind": "board",
+      "role": "apply",
+      "title": "取得した版と起動の指定",
+      "board": "fetch",
+      "beats": [
+        {
+          "say": "共有したら、CIが取得した版を確かめます。",
+          "speech": "共有したら、シーアイが取得した版を確かめます。",
+          "show": ["repo", "ci", "fetch"],
+          "travel": {
+            "along": ["fetch"],
+            "icon": "download"
+          }
+        },
+        {
+          "say": "確認するのは、設定とスクリプトを入れた版かどうかです。",
+          "pulse": ["ci"],
+          "tag": {
+            "ci": "その版か"
+          }
+        },
+        {
+          "say": "起動時に、共有設定を読む指定かも見てください。",
+          "show": ["read", "read-setting"],
+          "pulse": [],
+          "travel": {
+            "along": ["read-setting"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "設定が届くとは、その環境で設定を参照できることです。",
+          "pulse": ["read"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flower-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "注文の検査を共有する",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "花屋の注文票を検査するフックを用意しました。",
+          "show": ["order"]
+        },
+        {
+          "say": "検査のスクリプトは、すでにGitに入っています。",
+          "speech": "検査のスクリプトは、すでにギットに入っています。",
+          "show": ["script"],
+          "mark": [
+            {
+              "on": "script",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "フックの設定は、自分の端末の個別設定だけです。",
+          "show": ["local"],
+          "tag": {
+            "local": "共有なし"
+          }
+        },
+        {
+          "say": "共有設定に加える案と、ホームの個人設定に移す案を比べます。",
+          "show": ["home", "repo"]
+        },
+        {
+          "say": "チームのCIに届けるには、どちらを選ぶべきでしょうか。",
+          "speech": "チームのシーアイに届けるには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "home",
+              "kind": "question"
+            },
+            {
+              "on": "repo",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flower-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "共有設定に加える",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、フックの設定を共有設定に加える案です。",
+          "mark": [
+            {
+              "on": "repo",
+              "kind": "check"
+            },
+            {
+              "on": "home",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["repo"]
+        },
+        {
+          "say": "加えた設定もGitに入れ、CIが取得できるようにします。",
+          "speech": "加えた設定もギットに入れ、シーアイが取得できるようにします。",
+          "tag": {
+            "repo": "Gitに入れる"
+          },
+          "pulse": ["script", "repo"]
+        }
+      ]
+    },
+    {
+      "id": "flower-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "ホームへ移しても届かない",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "ホームへ移しても、設定が届く範囲は同じ端末です。",
+          "show": ["local"],
+          "tag": {
+            "local": "端末内"
+          }
+        },
+        {
+          "say": "そのため、別環境のCIには設定が届きません。",
+          "speech": "そのため、別環境のシーアイには設定が届きません。",
+          "show": ["ci"],
+          "mark": [
+            {
+              "on": "ci",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "共有設定なら、CIが取得するファイルに含められます。",
+          "speech": "共有設定なら、シーアイが取得するファイルに含められます。",
+          "show": ["repo", "deliver"],
+          "travel": {
+            "along": ["deliver"],
+            "icon": "file"
+          },
+          "unmark": ["ci"]
+        },
+        {
+          "say": "設定を含めた版の取得と、起動時の参照も確認しましょう。",
+          "pulse": ["ci"],
+          "tag": {
+            "ci": "取得と参照"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "動きが違ったときの確認",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "手元で動くフックが、別の環境で動かない場合に使います。",
+          "show": ["local"]
+        },
+        {
+          "say": "最初に見るのは、設定の置き場所と共有したファイルです。",
+          "show": ["ci"],
+          "pulse": ["local", "ci"]
+        },
+        {
+          "say": "組織の管理設定も、どの環境に配るものか確かめましょう。",
+          "show": ["org"],
+          "pulse": ["org"]
+        },
+        {
+          "say": "共有した設定は別環境に届き、端末だけの設定はそこに残ります。",
+          "pulse": ["local", "ci"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "dcc61778e713d9d1ba979bedee905b7ba87fd82a3f2721548ae6d10093d29fb7"
+  }
+}

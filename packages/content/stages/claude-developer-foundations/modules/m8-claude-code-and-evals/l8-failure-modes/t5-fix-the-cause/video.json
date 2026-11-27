@@ -1,0 +1,812 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "実行記録と保存結果の食い違いから、メッセージの組み立て処理と採点器のどちらを直すか選べる。",
+    "stuck": "空の返答には送り直しや上限の変更を繰り返し、保存完了の返答や合格の表示を実際の保存結果と照合しない。",
+    "points": ["対策は、失敗の原因がある場所に合わせて選びます。"],
+    "leaveOut": [
+      "HTTP エラーと停止理由の分類の詳細",
+      "拒否への対応やモデルの切り替え",
+      "履歴の圧縮と出力形式の指定",
+      "回答の根拠や判断の一貫性を改善する方法",
+      "メッセージや採点器を実装するコード"
+    ]
+  },
+  "art": {
+    "delivery-parcel": {
+      "prompt": "A closed light grey cardboard delivery parcel sealed with blue tape, beside one blank white delivery slip. The parcel and paper are light grey or white, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding an empty white speech bubble in both hands. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "record-cards": {
+      "prompt": "Three white paper record cards with blue binder tabs, spread in a clearly ordered overlapping sequence. Each card is blank. The cards represent consecutive entries in an execution record. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "message-assembly": {
+      "prompt": "Two hands arranging blank white message slips into a blue document holder, with one loose white slip beside it. Focus on the hands and the slips. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flashlight": {
+      "prompt": "A large blue handheld flashlight with a violet switch, its lens unlit and its battery cap detached beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "battery-direction": {
+      "prompt": "An open blue flashlight battery compartment beside two light grey cylindrical batteries with clearly visible raised terminals, showing the physical orientation of the batteries. No polarity symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stored-records": {
+      "prompt": "A small blue filing drawer pulled open, containing a few white record cards with violet tabs and an obvious empty space where another card could fit. A concrete metaphor for stored database records. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "grading-sheet": {
+      "prompt": "A white assessment clipboard with a blue clip and a violet handheld rubber stamp beside it. The paper and the stamp face are completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "race-entry": {
+      "prompt": "A violet running vest with a blank white race bib pinned to its front, beside a blank white registration slip and a blue running shoe. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "配送の案内",
+          "art": "delivery-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "空の返答",
+          "art": "reply-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "実行の記録",
+          "art": "record-cards",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "flashlight": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "light",
+          "label": "つかない明かり",
+          "art": "flashlight",
+          "at": [1, 1]
+        },
+        {
+          "id": "battery",
+          "label": "電池の向き",
+          "art": "battery-direction",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "trace": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "入力",
+          "art": "record-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "call",
+          "label": "ツール呼び出し",
+          "art": "record-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "ツール結果",
+          "art": "record-cards",
+          "at": [5, 1]
+        },
+        {
+          "id": "reply",
+          "label": "応答",
+          "art": "reply-robot",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "input-call",
+          "from": "input",
+          "to": "call",
+          "label": "呼び出す"
+        },
+        {
+          "id": "call-result",
+          "from": "call",
+          "to": "result",
+          "label": "結果が返る"
+        },
+        {
+          "id": "result-reply",
+          "from": "result",
+          "to": "reply",
+          "label": "応答へ"
+        }
+      ]
+    },
+    "evidence": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "完了の返答",
+          "art": "reply-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "grading-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "stored",
+          "label": "保存された行",
+          "art": "stored-records",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-reply",
+          "from": "reply",
+          "to": "judge",
+          "label": "文面を読む"
+        },
+        {
+          "id": "check-storage",
+          "from": "judge",
+          "to": "stored",
+          "label": "照合する"
+        }
+      ]
+    },
+    "empty": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "ツール結果",
+          "art": "record-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "extra",
+          "label": "追加の説明文",
+          "art": "message-assembly",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "空の応答",
+          "art": "reply-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "add-text",
+          "from": "result",
+          "to": "extra",
+          "label": "追加する"
+        },
+        {
+          "id": "empty-reply",
+          "from": "extra",
+          "to": "reply",
+          "label": "その後"
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "ツール結果",
+          "art": "record-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "assembly",
+          "label": "組み立て処理",
+          "art": "message-assembly",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "修正後の応答",
+          "art": "reply-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "result-only",
+          "from": "result",
+          "to": "assembly",
+          "label": "結果だけ"
+        },
+        {
+          "id": "retry",
+          "from": "assembly",
+          "to": "reply",
+          "label": "再実行"
+        }
+      ]
+    },
+    "race": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "entry",
+          "label": "参加登録",
+          "art": "race-entry",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "登録の返答",
+          "art": "reply-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "grading-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "stored",
+          "label": "参加者の行",
+          "art": "stored-records",
+          "at": [5, 2]
+        },
+        {
+          "id": "resend",
+          "label": "再送を続ける",
+          "icon": "repeat",
+          "at": [3, 2]
+        },
+        {
+          "id": "fix",
+          "label": "採点器を直す",
+          "art": "grading-sheet",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "entry-reply",
+          "from": "entry",
+          "to": "reply",
+          "label": "返答"
+        },
+        {
+          "id": "reply-judge",
+          "from": "reply",
+          "to": "judge",
+          "label": "文面を読む"
+        },
+        {
+          "id": "judge-stored",
+          "from": "judge",
+          "to": "stored",
+          "label": "照合する"
+        }
+      ]
+    },
+    "race-check": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "登録の返答",
+          "art": "reply-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "grading-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "stored",
+          "label": "参加者の行",
+          "art": "stored-records",
+          "at": [5, 1]
+        },
+        {
+          "id": "input",
+          "label": "ツールへの入力",
+          "art": "record-cards",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "judge-reply",
+          "from": "reply",
+          "to": "judge",
+          "label": "文面だけ"
+        },
+        {
+          "id": "compare",
+          "from": "judge",
+          "to": "stored",
+          "label": "照合する"
+        },
+        {
+          "id": "trace-input",
+          "from": "stored",
+          "to": "input",
+          "label": "記録を調査"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "実行の記録",
+          "art": "record-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "assembly",
+          "label": "組み立て処理",
+          "art": "message-assembly",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "grading-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "配送案内が空になる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "配送の案内を、アプリから頼んだ場面です。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "返答が空になり、上限を増やしても再現しました。",
+          "show": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "手掛かりとなる、実行の記録を見てみましょう。",
+          "show": ["record"]
+        },
+        {
+          "say": "対策は、失敗の原因がある場所に合わせて選びます。",
+          "pulse": ["record"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "flashlight",
+      "kind": "board",
+      "role": "example",
+      "title": "スイッチを押し直しても",
+      "board": "flashlight",
+      "beats": [
+        {
+          "say": "懐中電灯がつかず、スイッチを押し直したとします。",
+          "show": ["light"]
+        },
+        {
+          "say": "何度押しても、明かりはつきません。",
+          "mark": [
+            {
+              "on": "light",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "中を開けると、電池の向きが逆でした。",
+          "show": ["battery"],
+          "tag": {
+            "battery": "逆向き"
+          }
+        },
+        {
+          "say": "この場合は、電池の向きを直しましょう。",
+          "tag": {
+            "battery": "向きを直す"
+          },
+          "pulse": ["battery"]
+        }
+      ]
+    },
+    {
+      "id": "read-transcript",
+      "kind": "board",
+      "role": "syntax",
+      "title": "実行を順番に追う",
+      "board": "trace",
+      "beats": [
+        {
+          "say": "実行を順に追える記録を、トランスクリプトと呼びます。",
+          "term": {
+            "text": "トランスクリプト",
+            "note": "入力から応答までの記録"
+          }
+        },
+        {
+          "say": "最初に見るのは、モデルへ渡した入力です。",
+          "show": ["input"]
+        },
+        {
+          "say": "続いて、ツールの呼び出しをたどりましょう。",
+          "show": ["call", "input-call"],
+          "travel": {
+            "along": ["input-call"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ツールが返した内容を、ツール結果と呼びます。",
+          "term": {
+            "text": "ツール結果",
+            "ruby": "ツールけっか",
+            "note": "ツールが返した内容"
+          },
+          "show": ["result", "call-result"]
+        },
+        {
+          "say": "最後の応答まで並べた、時系列の記録です。",
+          "show": ["reply", "result-reply"],
+          "travel": {
+            "along": ["call-result", "result-reply"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "check-evidence",
+      "kind": "board",
+      "role": "syntax",
+      "title": "採点と保存の結果",
+      "board": "evidence",
+      "beats": [
+        {
+          "say": "合格かどうかを判定する仕組みが、採点器です。",
+          "term": {
+            "text": "採点器",
+            "ruby": "さいてんき",
+            "note": "結果の合否を判定する仕組み"
+          }
+        },
+        {
+          "say": "保存完了という返答を、採点器が合格にしました。",
+          "show": ["reply", "judge", "read-reply"],
+          "tag": {
+            "judge": "合格"
+          }
+        },
+        {
+          "say": "ただし、対象の行が保存されたかも確かめます。",
+          "show": ["stored", "check-storage"],
+          "pulse": ["stored"]
+        },
+        {
+          "say": "返答の文面だけでは、保存の完了は確かめられません。",
+          "mark": [
+            {
+              "on": "stored",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "inspect-empty",
+      "kind": "board",
+      "role": "apply",
+      "title": "空になる直前を見る",
+      "board": "empty",
+      "beats": [
+        {
+          "say": "配送案内の記録では、ツール結果が返っていました。",
+          "show": ["result"]
+        },
+        {
+          "say": "その直後に、アプリが説明文を追加しています。",
+          "show": ["extra", "add-text"]
+        },
+        {
+          "say": "続く応答は、そのまま終わった空の返答です。",
+          "show": ["reply", "empty-reply"],
+          "tag": {
+            "reply": "end_turn"
+          }
+        },
+        {
+          "say": "出力の上限を増やしても、この追加は変わりません。",
+          "pulse": ["extra"],
+          "mark": [
+            {
+              "on": "extra",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "空になる手前で、何を送ったかを確かめましょう。",
+          "travel": {
+            "along": ["add-text", "empty-reply"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "fix-message",
+      "kind": "board",
+      "role": "apply",
+      "title": "結果の渡し方を直す",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "この例では、ツール結果だけを返す形に直します。",
+          "show": ["result"],
+          "tag": {
+            "result": "結果だけ"
+          }
+        },
+        {
+          "say": "修正する場所は、アプリの組み立て処理です。",
+          "show": ["assembly", "result-only"],
+          "pulse": ["assembly"]
+        },
+        {
+          "say": "ツールの機能は残したまま、説明文の追加をやめましょう。",
+          "tag": {
+            "assembly": "説明追加なし"
+          },
+          "mark": [
+            {
+              "on": "assembly",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "直した形で実行し、応答を記録と照らして確かめます。",
+          "show": ["reply", "retry"],
+          "travel": {
+            "along": ["retry"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-delivery-save",
+      "kind": "board",
+      "role": "apply",
+      "title": "保存の報告を照合する",
+      "board": "evidence",
+      "reset": true,
+      "beats": [
+        {
+          "say": "別の実行では、配送情報を保存したという返答でした。",
+          "show": ["reply"]
+        },
+        {
+          "say": "採点は合格でも、保存の確認は必要です。",
+          "show": ["judge", "read-reply"],
+          "tag": {
+            "judge": "合格"
+          }
+        },
+        {
+          "say": "データベースを調べ、対象の行があるかを確かめます。",
+          "show": ["stored", "check-storage"],
+          "pulse": ["stored"]
+        },
+        {
+          "say": "行がなければ、返答どおりに保存は完了していません。",
+          "tag": {
+            "stored": "行がない"
+          },
+          "mark": [
+            {
+              "on": "stored",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "参加登録の合格を疑う",
+      "board": "race",
+      "think": 8,
+      "beats": [
+        {
+          "say": "市民マラソンの参加登録を、アプリで受け付けます。",
+          "show": ["entry"]
+        },
+        {
+          "say": "返答は、参加者を登録したという報告でした。",
+          "show": ["reply", "entry-reply"]
+        },
+        {
+          "say": "採点器は、その返答だけを読んで合格にしています。",
+          "show": ["judge", "reply-judge"],
+          "tag": {
+            "judge": "合格"
+          }
+        },
+        {
+          "say": "ところが、データベースに参加者の行はありません。",
+          "show": ["stored", "judge-stored"],
+          "tag": {
+            "stored": "行がない"
+          }
+        },
+        {
+          "say": "送り直す案と、採点器を直す案ならどちらでしょうか。",
+          "show": ["resend", "fix"],
+          "mark": [
+            {
+              "on": "resend",
+              "kind": "question"
+            },
+            {
+              "on": "fix",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "保存の結果も採点する",
+      "board": "race",
+      "beats": [
+        {
+          "say": "答えは、保存の結果も読むように採点器を直す案です。",
+          "mark": [
+            {
+              "on": "fix",
+              "kind": "check"
+            },
+            {
+              "on": "resend",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["fix"]
+        },
+        {
+          "say": "直した採点器で、同じ評価をもう一度試します。",
+          "pulse": ["judge"],
+          "tag": {
+            "judge": "再評価"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-grading",
+      "kind": "board",
+      "role": "explain",
+      "title": "どこで合格を誤ったか",
+      "board": "race-check",
+      "beats": [
+        {
+          "say": "登録したという返答は、完了を伝える文面です。",
+          "show": ["reply"]
+        },
+        {
+          "say": "採点器は、その文面だけで保存が済んだと判断しました。",
+          "show": ["judge", "judge-reply"],
+          "mark": [
+            {
+              "on": "judge",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "参加者の行も読めば、文面との食い違いを確かめられます。",
+          "show": ["stored", "compare"],
+          "tag": {
+            "stored": "行がない"
+          }
+        },
+        {
+          "say": "保存の失敗は、ツールに渡した入力も調べましょう。",
+          "show": ["input", "trace-input"],
+          "pulse": ["input"]
+        },
+        {
+          "say": "保存処理と採点の、食い違った場所をそれぞれ直します。",
+          "pulse": ["input", "judge"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "失敗の記録から直す場所へ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "失敗が続くときは、まず実行の記録をたどります。",
+          "show": ["record"]
+        },
+        {
+          "say": "空の応答なら、直前に送った内容が手掛かりです。",
+          "show": ["assembly"]
+        },
+        {
+          "say": "保存の合格が実態と違えば、採点器が読む情報も調べましょう。",
+          "show": ["judge"]
+        },
+        {
+          "say": "対策は、失敗の原因がある場所に合わせて選びます。",
+          "pulse": ["record", "assembly", "judge"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "26f3ca573f864a12e18f352251a76ec249e95f31f5ae91512bad97c75d57ea18"
+  }
+}

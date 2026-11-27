@@ -1,0 +1,795 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ操作に複数の権限のルールが一致したとき、拒否・確認・許可の順で結果を判定できる。",
+    "stuck": "個人の設定で細かく許可すれば、共有の設定にある広い拒否を上書きできると思ってしまう。",
+    "points": ["権限のルールは拒否・確認・許可の順に判定され、拒否が最優先です。"],
+    "leaveOut": [
+      "CLAUDE.md の読み込み順",
+      "パスを指定した指示の読み込み",
+      "権限モードごとの動作と選び方",
+      "設定ファイル全体の書き方",
+      "ルールの条件の細かな構文",
+      "どのルールにも一致しない場合の扱い"
+    ]
+  },
+  "art": {
+    "publish-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen beside a closed light grey software package tied with blue ribbon. A conceptual illustration of preparing a software release, with no application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-rules": {
+      "prompt": "Two white rule sheets fastened together on a blue clipboard, with a closed violet padlock attached to the clip. Objects only, representing a shared restriction. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "personal-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding one small blank white permission note. Simple facial features, the note clearly visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-drill": {
+      "prompt": "A blue cordless electric drill with its battery removed and placed beside it, with a small blank white repair tag attached to the handle. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-staff": {
+      "prompt": "A staff member in a plain blue shirt examining one blank white request sheet held in both hands. Simple facial features, attentive expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "permit-key": {
+      "prompt": "A blue key on a violet key ring beside a blank white permission card. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "delivery-parcel": {
+      "prompt": "A light grey cardboard delivery parcel sealed with blue tape, beside a small blank white redelivery slip with a violet clip. Objects only, parcel not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-case": {
+      "prompt": "An open blue portable tool case containing a violet screwdriver and a blue wrench, each clearly visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "opening": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "command",
+          "label": "試験用の公開",
+          "art": "publish-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "共有の拒否",
+          "art": "shared-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "個人の許可",
+          "art": "personal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "drill": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "drill",
+          "label": "修理中の道具",
+          "art": "repair-drill",
+          "at": [1, 1]
+        },
+        {
+          "id": "ban",
+          "label": "貸出禁止",
+          "art": "shared-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "小型だけ許可",
+          "art": "personal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "collection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shared",
+          "label": "共有の設定",
+          "art": "shared-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "個人の設定",
+          "art": "personal-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "権限のルール",
+          "art": "shared-rules",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "deny",
+          "label": "拒否",
+          "art": "shared-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "ask",
+          "label": "確認",
+          "art": "review-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "allow",
+          "label": "許可",
+          "art": "permit-key",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-ask",
+          "from": "deny",
+          "to": "ask",
+          "label": "一致なし"
+        },
+        {
+          "id": "to-allow",
+          "from": "ask",
+          "to": "allow",
+          "label": "一致なし"
+        }
+      ]
+    },
+    "publish": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shared",
+          "label": "共有の拒否",
+          "art": "shared-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "個人の許可",
+          "art": "personal-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "command",
+          "label": "試験用の公開",
+          "art": "publish-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "ask": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "operation",
+          "label": "別の操作",
+          "art": "tool-case",
+          "at": [1, 1]
+        },
+        {
+          "id": "ask",
+          "label": "確認に一致",
+          "art": "review-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "allow",
+          "label": "許可に一致",
+          "art": "permit-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "command",
+          "label": "条件付き拒否",
+          "art": "publish-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツール全体",
+          "art": "tool-case",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "別の許可",
+          "art": "personal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "delivery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "再配達の手配",
+          "art": "delivery-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "deny",
+          "label": "手配を拒否",
+          "art": "shared-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "allow",
+          "label": "明日だけ許可",
+          "art": "personal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "deliveryOrder": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "deny",
+          "label": "拒否",
+          "art": "shared-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "ask",
+          "label": "確認",
+          "art": "review-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "allow",
+          "label": "許可",
+          "art": "permit-key",
+          "at": [5, 1]
+        },
+        {
+          "id": "parcel",
+          "label": "明日の再配達",
+          "art": "delivery-parcel",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-ask",
+          "from": "deny",
+          "to": "ask",
+          "label": "一致なし"
+        },
+        {
+          "id": "to-allow",
+          "from": "ask",
+          "to": "allow",
+          "label": "一致なし"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "許可を足しても止まる",
+      "board": "opening",
+      "beats": [
+        {
+          "say": "試験用の公開コマンドを動かしたい場面です。",
+          "show": ["command"]
+        },
+        {
+          "say": "チームは、公開コマンドをまとめて拒否しています。",
+          "show": ["shared"]
+        },
+        {
+          "say": "担当者は、試験用だけ個人の設定で許可しました。",
+          "show": ["local"]
+        },
+        {
+          "say": "拒否、確認、許可の順で判定し、拒否が最優先です。",
+          "pulse": ["shared"],
+          "mark": [
+            {
+              "on": "command",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "borrow-drill",
+      "kind": "board",
+      "role": "example",
+      "title": "細かい許可は例外になるか",
+      "board": "drill",
+      "beats": [
+        {
+          "say": "修理中の電動工具を貸さない、店の決まりを考えます。",
+          "show": ["drill", "ban"]
+        },
+        {
+          "say": "担当者のメモには、小型の工具だけ貸してよいとありました。",
+          "show": ["note"]
+        },
+        {
+          "say": "この店では、貸出禁止を優先する決まりです。",
+          "pulse": ["ban"]
+        },
+        {
+          "say": "小型でも修理中なら、許可のメモでは貸せません。",
+          "pulse": ["drill"],
+          "mark": [
+            {
+              "on": "drill",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "collect-rules",
+      "kind": "board",
+      "role": "syntax",
+      "title": "設定をまたいで集める",
+      "board": "collection",
+      "beats": [
+        {
+          "say": "ツールの呼び出しに対する決まりを、権限のルールと呼びます。",
+          "term": {
+            "text": "権限のルール",
+            "ruby": "けんげんのルール",
+            "note": "ツールの呼び出しの決まり"
+          }
+        },
+        {
+          "say": "共有の設定にある拒否も、そのルールの一つです。",
+          "show": ["shared"],
+          "tag": {
+            "shared": "拒否"
+          }
+        },
+        {
+          "say": "個人の設定にある許可も、合わせて集めます。",
+          "show": ["local"],
+          "tag": {
+            "local": "許可"
+          }
+        },
+        {
+          "say": "個人の設定を足しても、共有の拒否は消えません。",
+          "pulse": ["shared"]
+        },
+        {
+          "say": "集めたルールを、種類ごとの順に照合しましょう。",
+          "show": ["rules"],
+          "pulse": ["rules"]
+        }
+      ]
+    },
+    {
+      "id": "rule-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "拒否から順に照合する",
+      "board": "order",
+      "beats": [
+        {
+          "say": "操作を止めるルールが、拒否です。",
+          "term": {
+            "text": "拒否",
+            "ruby": "きょひ",
+            "note": "一致する操作を止める"
+          }
+        },
+        {
+          "say": "deny に一致するかを、最初に調べます。",
+          "speech": "デナイに一致するかを、最初に調べます。",
+          "show": ["deny"],
+          "tag": {
+            "deny": "deny"
+          }
+        },
+        {
+          "say": "拒否に一致しなければ、次は確認です。",
+          "term": {
+            "text": "確認",
+            "ruby": "かくにん",
+            "note": "実行前に人に確かめる"
+          },
+          "show": ["ask", "to-ask"]
+        },
+        {
+          "say": "ask に一致した操作は、人の確認へ進みます。",
+          "speech": "アスクに一致した操作は、人の確認へ進みます。",
+          "pulse": ["ask"],
+          "tag": {
+            "ask": "ask"
+          }
+        },
+        {
+          "say": "その次に調べる allow が、許可のルールです。",
+          "speech": "その次に調べるアラウが、許可のルールです。",
+          "term": {
+            "text": "許可",
+            "ruby": "きょか",
+            "note": "操作を許すルール"
+          },
+          "show": ["allow", "to-allow"],
+          "tag": {
+            "allow": "allow"
+          }
+        }
+      ]
+    },
+    {
+      "id": "publish-match",
+      "kind": "code",
+      "role": "apply",
+      "title": "公開の条件を照合する",
+      "code": [
+        "// 共有の設定から、公開を拒否する条件を抜粋",
+        "\"deny\": [\"Bash(npm run publish-*)\"]",
+        "// 個人の設定から、試験用を許可する条件を抜粋",
+        "\"allow\": [\"Bash(npm run publish-preview)\"]"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "publish"
+      },
+      "beats": [
+        {
+          "say": "共有の設定から、公開を拒否する部分を抜き出しました。",
+          "part": {
+            "line": 1,
+            "text": "deny",
+            "note": "拒否"
+          },
+          "figure": {
+            "show": ["shared"]
+          }
+        },
+        {
+          "say": "個人の設定の許可は、試験用の公開だけです。",
+          "part": {
+            "line": 3,
+            "text": "allow",
+            "note": "許可"
+          },
+          "figure": {
+            "show": ["local"]
+          }
+        },
+        {
+          "say": "今回のコマンドは、npm run publish-preview とします。",
+          "speech": "今回のコマンドは、エヌピーエムランパブリッシュプレビューとします。",
+          "part": {
+            "line": 3,
+            "text": "npm run publish-preview"
+          },
+          "figure": {
+            "show": ["command"]
+          }
+        },
+        {
+          "say": "この操作は、共有の拒否の条件にも一致する例です。",
+          "part": {
+            "line": 1,
+            "text": "Bash(npm run publish-*)"
+          },
+          "figure": {
+            "tag": {
+              "shared": "一致"
+            },
+            "pulse": ["shared"]
+          }
+        },
+        {
+          "say": "個人の許可にも一致しますが、拒否の判定が先に決まります。",
+          "focus": [1, 3],
+          "figure": {
+            "tag": {
+              "local": "一致"
+            },
+            "pulse": ["shared", "local"]
+          }
+        },
+        {
+          "say": "許可の条件を細かくしても、この公開は実行できません。",
+          "focus": [1],
+          "figure": {
+            "mark": [
+              {
+                "on": "command",
+                "kind": "cross"
+              }
+            ],
+            "tag": {
+              "command": "実行を拒否"
+            },
+            "pulse": ["command"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ask-before-allow",
+      "kind": "board",
+      "role": "apply",
+      "title": "拒否に一致しない操作",
+      "board": "ask",
+      "beats": [
+        {
+          "say": "次は、拒否に一致しない別の操作を考えましょう。",
+          "show": ["operation"],
+          "tag": {
+            "operation": "拒否なし"
+          }
+        },
+        {
+          "say": "この操作は、確認と許可の両方に一致する例です。",
+          "show": ["ask", "allow"]
+        },
+        {
+          "say": "先に判定する確認のルールに従い、人に確かめます。",
+          "pulse": ["ask"],
+          "tag": {
+            "operation": "確認へ"
+          }
+        },
+        {
+          "say": "許可にも一致していても、確認は省けません。",
+          "pulse": ["allow"],
+          "mark": [
+            {
+              "on": "allow",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deny-scope",
+      "kind": "code",
+      "role": "apply",
+      "title": "拒否する範囲を読む",
+      "code": [
+        "// 条件に合う呼び出しを拒否する書き方",
+        "\"deny\": [\"Bash(npm run publish-*)\"]",
+        "// ツール名だけで全体を拒否する書き方",
+        "\"deny\": [\"Bash\"]"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "scope"
+      },
+      "beats": [
+        {
+          "say": "条件付きの拒否は、その条件に合う呼び出しを止めます。",
+          "part": {
+            "line": 1,
+            "text": "Bash(npm run publish-*)"
+          },
+          "figure": {
+            "show": ["command"]
+          }
+        },
+        {
+          "say": "下の行は、deny にツール名だけを書く形です。",
+          "speech": "下の行は、デナイにツール名だけを書く形です。",
+          "part": {
+            "line": 3,
+            "text": "\"Bash\""
+          },
+          "figure": {
+            "show": ["tool"]
+          }
+        },
+        {
+          "say": "この書き方では、ツール自体を Claude の候補から外します。",
+          "speech": "この書き方では、ツール自体をクロードの候補から外します。",
+          "focus": [3],
+          "figure": {
+            "mark": [
+              {
+                "on": "tool",
+                "kind": "cross"
+              }
+            ],
+            "tag": {
+              "tool": "候補から除外"
+            }
+          }
+        },
+        {
+          "say": "どちらの拒否も、別の場所の許可では上書きできません。",
+          "focus": [1, 3],
+          "figure": {
+            "show": ["local"],
+            "mark": [
+              {
+                "on": "local",
+                "kind": "cross"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delivery-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "再配達を手配できるか",
+      "board": "delivery",
+      "think": 8,
+      "beats": [
+        {
+          "say": "宅配の再配達を手配するツールを、例にして考えます。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "共有のルールは、再配達の手配をすべて拒否する内容です。",
+          "show": ["deny"]
+        },
+        {
+          "say": "個人の設定には、明日の再配達だけ許可すると書きました。",
+          "show": ["allow"]
+        },
+        {
+          "say": "明日の手配は、両方の条件に一致しています。",
+          "tag": {
+            "deny": "一致",
+            "allow": "一致"
+          }
+        },
+        {
+          "say": "拒否、確認、許可のうち、結果はどれになるでしょうか。",
+          "mark": [
+            {
+              "on": "parcel",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delivery-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "明日の手配も拒否",
+      "board": "delivery",
+      "beats": [
+        {
+          "say": "答えは、明日の再配達も拒否です。",
+          "mark": [
+            {
+              "on": "parcel",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "parcel": "拒否"
+          }
+        },
+        {
+          "say": "先に一致した拒否のルールで、手配が止まります。",
+          "pulse": ["deny"]
+        }
+      ]
+    },
+    {
+      "id": "delivery-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "条件の細かさより判定順",
+      "board": "deliveryOrder",
+      "beats": [
+        {
+          "say": "明日の再配達は、手配をすべて止める拒否に一致します。",
+          "show": ["parcel", "deny"],
+          "tag": {
+            "deny": "一致"
+          }
+        },
+        {
+          "say": "この時点で手配は止まり、確認の判定には進みません。",
+          "show": ["ask", "to-ask"],
+          "pulse": ["deny"],
+          "mark": [
+            {
+              "on": "parcel",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "明日だけという許可があっても、判定の順序は同じです。",
+          "show": ["allow", "to-allow"],
+          "tag": {
+            "allow": "明日だけ"
+          }
+        },
+        {
+          "say": "条件の細かさではなく、拒否から照合する順で考えましょう。",
+          "pulse": ["deny"],
+          "tag": {
+            "parcel": "拒否で決定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "許可しても動かないとき",
+      "board": "order",
+      "reset": true,
+      "beats": [
+        {
+          "say": "許可を足しても動かないときは、一致する拒否を探します。",
+          "show": ["deny"],
+          "tag": {
+            "deny": "最初に調べる"
+          }
+        },
+        {
+          "say": "権限モードを変えても、拒否は取り消せません。",
+          "pulse": ["deny"],
+          "mark": [
+            {
+              "on": "deny",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "拒否に一致しなければ、次に確かめるのは確認のルールです。",
+          "show": ["ask", "to-ask"],
+          "pulse": ["ask"]
+        },
+        {
+          "say": "許可は最後に調べ、拒否、確認、許可の順で判断しましょう。",
+          "show": ["allow", "to-allow"],
+          "pulse": ["deny", "ask", "allow"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9061397b1d9a6f22ad3cd3793560f37d516b45c579d383bbcfbd9c088e585a0b"
+  }
+}

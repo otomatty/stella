@@ -1,0 +1,879 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "CI でレポートを要約する設定について、認証情報の渡し方と追加で許可する操作を説明できる。",
+    "stuck": "手元の認証や承認の操作が CI でも使えると思い、秘密の値の置き場所と無人で許可する操作を決めていない。",
+    "points": ["CI では、秘密の値をシークレットに置き、許可するツールを絞って実行します。"],
+    "leaveOut": [
+      "モデルの別名と設定の優先順位",
+      "プロンプトの版管理と評価結果の比較",
+      "シークレットを登録する画面の操作",
+      "ワークフロー全体の書き方と起動条件",
+      "権限確認を省略する指定と隔離環境の詳細",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-report": {
+      "prompt": "A white inventory clipboard beside two small light grey cardboard parcels sealed with blue tape. The clipboard has a simple blue parcel pictogram and otherwise blank paper. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ci-machine": {
+      "prompt": "A compact blue computer tower beside a small violet mechanical timer with a blank face and simple hands, representing a computer running an unattended task. No screen or interface. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "secret-safe": {
+      "prompt": "A small violet key safe with its door open, holding one blue metal key on a hook. The safe has a plain circular handle without a keypad. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reading-report": {
+      "prompt": "An open white paper report held by a blue clip, with a large violet magnifying glass over its blank page, representing reading a report without changing it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "store-clerk": {
+      "prompt": "A young adult store clerk with short dark hair and a plain blue shirt, holding an open palm ready to receive a key. Simple friendly facial features. No furniture or other people. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "checked-folder": {
+      "prompt": "An open light grey file folder containing several white instruction sheets with blue tabs, beside a violet magnifying glass and one small blue gear. The papers are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "music-report": {
+      "prompt": "A blue violin and its bow beside a white lesson attendance clipboard with a violet clip. The clipboard paper is blank, with no musical notation or writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "work-order": {
+      "prompt": "A white work instruction sheet held by a blue binder clip, with a violet pencil resting diagonally beside it. The sheet is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫レポート",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "無人の実行",
+          "art": "ci-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "secret",
+          "label": "秘密の値",
+          "art": "secret-safe",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handover": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "key",
+          "label": "保管した鍵",
+          "art": "secret-safe",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "交代の担当者",
+          "art": "store-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫表の確認",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give-key",
+          "from": "key",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "read-stock",
+          "from": "clerk",
+          "to": "stock",
+          "label": "読む"
+        }
+      ]
+    },
+    "secrets": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "secret",
+          "label": "シークレット",
+          "art": "secret-safe",
+          "at": [1, 1]
+        },
+        {
+          "id": "workflow",
+          "label": "参照を書く",
+          "art": "work-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "ci",
+          "label": "実行時に渡す",
+          "art": "ci-machine",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reference",
+          "from": "secret",
+          "to": "workflow",
+          "label": "参照"
+        },
+        {
+          "id": "supply",
+          "from": "workflow",
+          "to": "ci",
+          "label": "渡す"
+        }
+      ]
+    },
+    "action": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "secret",
+          "label": "シークレット",
+          "art": "secret-safe",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "要約の実行",
+          "art": "ci-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫レポート",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "supply",
+          "from": "secret",
+          "to": "ci",
+          "label": "渡す"
+        },
+        {
+          "id": "read",
+          "from": "ci",
+          "to": "stock",
+          "label": "読む"
+        }
+      ]
+    },
+    "arguments": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "args",
+          "label": "起動引数",
+          "art": "work-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "無人の実行",
+          "art": "ci-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み取り",
+          "art": "reading-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "configure",
+          "from": "args",
+          "to": "ci",
+          "label": "指定"
+        },
+        {
+          "id": "allow-read",
+          "from": "ci",
+          "to": "read",
+          "label": "追加許可"
+        }
+      ]
+    },
+    "permissions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読み取り",
+          "art": "reading-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "other",
+          "label": "編集やBash",
+          "art": "work-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "権限のルール",
+          "art": "checked-folder",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repository": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "version",
+          "label": "確認済みの版",
+          "art": "checked-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "無人の実行",
+          "art": "ci-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "settings",
+          "label": "設定と部品",
+          "art": "checked-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "connection",
+          "label": "接続の用意",
+          "art": "work-order",
+          "at": [5, 2]
+        },
+        {
+          "id": "external",
+          "label": "外部の変更",
+          "art": "checked-folder",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "fetch",
+          "from": "version",
+          "to": "ci",
+          "label": "取得"
+        },
+        {
+          "id": "load",
+          "from": "ci",
+          "to": "settings",
+          "label": "読む"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "楽器教室",
+          "art": "music-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "version",
+          "label": "確認済みの版",
+          "art": "checked-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "ci",
+          "label": "無人の要約",
+          "art": "ci-machine",
+          "at": [5, 1]
+        },
+        {
+          "id": "key",
+          "label": "キーの置き場",
+          "art": "secret-safe",
+          "at": [5, 2]
+        },
+        {
+          "id": "tools",
+          "label": "追加する許可",
+          "art": "reading-report",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "secret",
+          "label": "シークレット",
+          "art": "secret-safe",
+          "at": [1, 1]
+        },
+        {
+          "id": "ci",
+          "label": "楽器教室の要約",
+          "art": "music-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み取り",
+          "art": "reading-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "supply",
+          "from": "secret",
+          "to": "ci",
+          "label": "認証情報"
+        },
+        {
+          "id": "allow",
+          "from": "ci",
+          "to": "read",
+          "label": "追加許可"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の要約",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "secret",
+          "label": "シークレット",
+          "art": "secret-safe",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "必要な許可",
+          "art": "reading-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "在庫の要約を無人で動かす",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "手元では、在庫レポートを要約できました。",
+          "show": ["stock"]
+        },
+        {
+          "say": "CI には、実行中に承認する人がいません。",
+          "speech": "シーアイには、実行中に承認する人がいません。",
+          "show": ["ci"]
+        },
+        {
+          "say": "認証情報の渡し方も、実行前に決めます。",
+          "show": ["secret"]
+        },
+        {
+          "say": "秘密の値はシークレットに置き、許可するツールを絞りましょう。",
+          "pulse": ["secret", "ci"]
+        }
+      ]
+    },
+    {
+      "id": "handover",
+      "kind": "board",
+      "role": "example",
+      "title": "交代の担当者に頼む",
+      "board": "handover",
+      "beats": [
+        {
+          "say": "店の交代担当に、在庫表の確認を頼む場面です。",
+          "show": ["clerk", "stock"]
+        },
+        {
+          "say": "担当者には、保管してある戸棚の鍵を渡します。",
+          "show": ["key", "give-key"],
+          "travel": {
+            "along": ["give-key"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "頼んだ仕事は、在庫表を読むことだけでした。",
+          "show": ["read-stock"],
+          "travel": {
+            "along": ["read-stock"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "鍵を渡しても、在庫表の書き換えまで任せるわけではありません。",
+          "tag": {
+            "stock": "読むだけ"
+          },
+          "pulse": ["stock"]
+        }
+      ]
+    },
+    {
+      "id": "secret-storage",
+      "kind": "board",
+      "role": "syntax",
+      "title": "秘密の値と参照を分ける",
+      "board": "secrets",
+      "beats": [
+        {
+          "say": "認証情報を保管して実行時に渡す仕組みが、シークレットです。",
+          "term": {
+            "text": "シークレット",
+            "note": "認証情報を保管して渡す仕組み"
+          }
+        },
+        {
+          "say": "API キーは、この保管先に置きます。",
+          "speech": "エーピーアイキーは、この保管先に置きます。",
+          "show": ["secret"],
+          "tag": {
+            "secret": "キーを保管"
+          }
+        },
+        {
+          "say": "ワークフローに書くのは、保管した値への参照です。",
+          "show": ["workflow", "reference"]
+        },
+        {
+          "say": "実行するときに、その参照からキーを渡します。",
+          "show": ["ci", "supply"],
+          "travel": {
+            "along": ["reference", "supply"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "action-inputs",
+      "kind": "code",
+      "role": "syntax",
+      "title": "キーと依頼を渡す",
+      "code": [
+        "# 要約するステップで使うアクション",
+        "- uses: anthropics/claude-code-action@v1",
+        "  # アクションに渡す項目",
+        "  with:",
+        "    # 保管したキーを実行時に参照する",
+        "    anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}",
+        "    # 在庫レポートの要約を依頼する",
+        "    prompt: \"reports/stock.md の補充対象を要約してください。\""
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "action"
+      },
+      "beats": [
+        {
+          "say": "GitHub Actions の要約ステップの一部を見ます。",
+          "speech": "ギットハブアクションズの要約ステップの一部を見ます。",
+          "focus": [1, 3],
+          "figure": {
+            "show": ["ci"]
+          }
+        },
+        {
+          "say": "キーを受け取る項目が、この行の左側です。",
+          "part": {
+            "line": 5,
+            "text": "anthropic_api_key",
+            "note": "キーの受け取り"
+          },
+          "figure": {
+            "show": ["secret", "supply"]
+          }
+        },
+        {
+          "say": "右側には、シークレットに保存したキーへの参照を書きます。",
+          "part": {
+            "line": 5,
+            "text": "secrets.ANTHROPIC_API_KEY",
+            "note": "保管先を参照"
+          },
+          "figure": {
+            "travel": {
+              "along": ["supply"],
+              "icon": "send"
+            }
+          }
+        },
+        {
+          "say": "prompt の値は、在庫レポートを要約する依頼です。",
+          "speech": "プロンプトの値は、在庫レポートを要約する依頼です。",
+          "part": {
+            "line": 7,
+            "text": "prompt",
+            "note": "実行する依頼"
+          },
+          "figure": {
+            "show": ["stock", "read"]
+          }
+        },
+        {
+          "say": "依頼を渡すと、呼びかけを待たずに処理します。",
+          "focus": [7],
+          "figure": {
+            "travel": {
+              "along": ["read"],
+              "icon": "read"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "run-arguments",
+      "kind": "code",
+      "role": "apply",
+      "title": "起動引数を項目ごとに見る",
+      "code": [
+        "# claude_args の中身を分けて表示する",
+        "# 使用するモデルの指定",
+        "--model claude-opus-5-5",
+        "# 無人の処理で使う権限モード",
+        "--permission-mode dontAsk",
+        "# 追加で許可する読み取りの操作",
+        "--allowedTools Read"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "arguments"
+      },
+      "beats": [
+        {
+          "say": "実行時に渡す指定を、起動引数と呼びます。",
+          "term": {
+            "text": "起動引数",
+            "ruby": "きどうひきすう",
+            "note": "実行時に渡す指定"
+          },
+          "focus": [0]
+        },
+        {
+          "say": "項目ごとに分けた、最初の行はモデルの指定です。",
+          "part": {
+            "line": 2,
+            "text": "--model",
+            "note": "モデルを指定"
+          },
+          "figure": {
+            "show": ["args"]
+          }
+        },
+        {
+          "say": "無人の処理には、dontAsk を選びます。",
+          "speech": "無人の処理には、ドントアスクを選びます。",
+          "part": {
+            "line": 4,
+            "text": "dontAsk",
+            "note": "無人の処理"
+          },
+          "figure": {
+            "show": ["ci", "configure"]
+          }
+        },
+        {
+          "say": "追加する許可は、Read による読み取りです。",
+          "speech": "追加する許可は、リードによる読み取りです。",
+          "part": {
+            "line": 6,
+            "text": "--allowedTools Read",
+            "note": "読み取りを許可"
+          },
+          "figure": {
+            "show": ["read", "allow-read"]
+          }
+        },
+        {
+          "say": "これらを、起動引数の項目にまとめて渡します。",
+          "part": {
+            "line": 0,
+            "text": "claude_args",
+            "note": "起動引数の項目"
+          },
+          "figure": {
+            "travel": {
+              "along": ["configure", "allow-read"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "permission-scope",
+      "kind": "board",
+      "role": "apply",
+      "title": "追加する許可を絞る",
+      "board": "permissions",
+      "beats": [
+        {
+          "say": "この例で追加したのは、読み取りの許可です。",
+          "show": ["read"],
+          "tag": {
+            "read": "追加許可"
+          }
+        },
+        {
+          "say": "編集や Bash には、追加の許可を与えません。",
+          "speech": "編集やバッシュには、追加の許可を与えません。",
+          "show": ["other"],
+          "tag": {
+            "other": "追加なし"
+          }
+        },
+        {
+          "say": "必要な操作に許可を絞るのが、最小権限です。",
+          "term": {
+            "text": "最小権限",
+            "ruby": "さいしょうけんげん",
+            "note": "必要な操作に許可を絞る"
+          }
+        },
+        {
+          "say": "もともと確認不要の操作も、チームのルールで確かめます。",
+          "show": ["rules"],
+          "pulse": ["read", "other", "rules"]
+        }
+      ]
+    },
+    {
+      "id": "trusted-version",
+      "kind": "board",
+      "role": "note",
+      "title": "取得する版も確かめる",
+      "board": "repository",
+      "beats": [
+        {
+          "say": "キーを渡すジョブには、確認済みの版を使います。",
+          "show": ["version", "ci", "fetch"]
+        },
+        {
+          "say": "対話なしの実行では、信頼の確認が出ません。",
+          "pulse": ["ci"],
+          "tag": {
+            "ci": "確認なし"
+          }
+        },
+        {
+          "say": "CLAUDE.md やフック、接続の設定を先に確かめます。",
+          "speech": "クロードエムディーやフック、接続の設定を先に確かめます。",
+          "show": ["settings", "load"],
+          "pulse": ["settings"]
+        },
+        {
+          "say": "手元だけに登録した接続は、CI に引き継がれません。",
+          "speech": "手元だけに登録した接続は、シーアイに引き継がれません。",
+          "show": ["connection"],
+          "tag": {
+            "connection": "別途用意"
+          }
+        },
+        {
+          "say": "外部のプルリクエストを取得するジョブとは分けます。",
+          "show": ["external"],
+          "tag": {
+            "external": "別のジョブ"
+          },
+          "pulse": ["ci", "external"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "楽器教室の要約を動かす",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "楽器教室で、出席レポートを要約したいとします。",
+          "show": ["report"]
+        },
+        {
+          "say": "取得するのは、設定も確認済みの版です。",
+          "show": ["version"]
+        },
+        {
+          "say": "無人で読み取るだけなので、編集の許可は追加しません。",
+          "show": ["ci"],
+          "tag": {
+            "ci": "要約だけ"
+          }
+        },
+        {
+          "say": "担当者は、API キーと追加する許可を用意します。",
+          "speech": "担当者は、エーピーアイキーと追加する許可を用意します。",
+          "show": ["key", "tools"]
+        },
+        {
+          "say": "キーをどこに置き、どの操作を追加で許可すればよいでしょうか。",
+          "mark": [
+            {
+              "on": "key",
+              "kind": "question"
+            },
+            {
+              "on": "tools",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "保管先と許可の答え",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "キーの保管先は、シークレットです。",
+          "tag": {
+            "key": "シークレット"
+          },
+          "mark": [
+            {
+              "on": "key",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["key"]
+        },
+        {
+          "say": "Read による読み取りを、追加で許可します。",
+          "speech": "リードによる読み取りを、追加で許可します。",
+          "tag": {
+            "tools": "Read"
+          },
+          "mark": [
+            {
+              "on": "tools",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["tools"]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "認証と操作を別々に決める",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "シークレットは、実行時に認証情報を渡すために使います。",
+          "show": ["secret", "ci", "supply"],
+          "travel": {
+            "along": ["supply"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "認証情報を渡すことと、操作を許可することは別です。",
+          "show": ["read", "allow"],
+          "pulse": ["allow"]
+        },
+        {
+          "say": "出席レポートの要約には、読み取りの許可を追加します。",
+          "travel": {
+            "along": ["allow"],
+            "icon": "read"
+          },
+          "tag": {
+            "read": "Read"
+          }
+        },
+        {
+          "say": "この依頼では、編集まで許可する必要はありません。",
+          "pulse": ["ci", "read"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "手元の処理をCIへ移す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "手元で動いた在庫の要約を、CI へ移すときに使います。",
+          "speech": "手元で動いた在庫の要約を、シーアイへ移すときに使います。",
+          "show": ["stock"]
+        },
+        {
+          "say": "最初に用意するのは、キーの保管先と参照です。",
+          "show": ["secret"]
+        },
+        {
+          "say": "実行中に人が承認しなくても済むよう、必要な許可を決めます。",
+          "show": ["read"]
+        },
+        {
+          "say": "シークレットに秘密の値を置き、許可するツールを絞りましょう。",
+          "pulse": ["secret", "read"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b57c5d84b244b5be8d4ba504d512073a0f4363ed019182e2a83372b8d979c53d"
+  }
+}

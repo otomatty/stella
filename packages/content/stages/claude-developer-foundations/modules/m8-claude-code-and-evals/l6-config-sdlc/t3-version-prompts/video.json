@@ -1,0 +1,756 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "プロンプトと設定の変更前後を同じ評価で比べ、結果から使った版と変更した指示をたどる手順を説明できる。",
+    "stuck": "共有メモを上書きして合格件数だけを残し、前回使った指示や不合格になった例を確認できない。",
+    "points": ["プロンプトと設定はリポジトリで版を管理し、変えるたびに同じ評価を回します。"],
+    "leaveOut": [
+      "モデルの別名や指定の優先順位",
+      "CI の認証と許可の設定",
+      "Git のコマンド操作",
+      "評価セットや採点器の作り方"
+    ]
+  },
+  "art": {
+    "stock-report": {
+      "prompt": "A white inventory clipboard beside two small light grey storage bins, one empty and one holding blue spools. The clipboard has only a small pictorial spool vignette and otherwise blank paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "prompt-files": {
+      "prompt": "Two white instruction sheets with a blue paper clip and a violet pencil, each sheet bearing a single broad pale grey band without any writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repo-folder": {
+      "prompt": "An open light grey archival folder holding several separate white document bundles with blue and violet binding clips, each bundle preserved intact and clearly visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-sheet": {
+      "prompt": "A white evaluation clipboard holding several blank white sample cards, with a blue pencil resting diagonally beside the clipboard. Small blue circular stickers distinguish the cards without writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-files": {
+      "prompt": "Two white instruction pages laid side by side with a large blue magnifying glass over one violet strip on the second page, representing close comparison of a changed passage. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-pattern": {
+      "prompt": "Two white sewing instruction cards held by separate blue clips beside a violet spool of thread and a simple needle, representing preserved old and new sewing instructions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-test": {
+      "prompt": "Two matching light grey fabric swatches with blue stitched seams, one seam straight and the other visibly uneven, beside a small violet sewing machine with no markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "plant-care": {
+      "prompt": "A healthy green leafy houseplant in a white pot beside a blue watering can and a blank white care card. Leaves use natural green colours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a small blank white identification badge. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "在庫レポート",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "先週の指示",
+          "art": "prompt-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "評価の結果",
+          "art": "evaluation-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "sewing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instructions",
+          "label": "縫い方のメモ",
+          "art": "sewing-pattern",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "同じ布で試す",
+          "art": "sewing-test",
+          "at": [3, 1]
+        },
+        {
+          "id": "kept",
+          "label": "前後のメモ",
+          "art": "sewing-pattern",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "versions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "files",
+          "label": "指示と設定",
+          "art": "prompt-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "repo-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "review",
+          "label": "変更の確認",
+          "art": "review-files",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "files",
+          "to": "repo",
+          "label": "版を残す"
+        },
+        {
+          "id": "review-change",
+          "from": "repo",
+          "to": "review",
+          "label": "見比べる"
+        }
+      ]
+    },
+    "diff": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "変更前の指示",
+          "art": "prompt-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後の指示",
+          "art": "prompt-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "review",
+          "label": "指示の差分",
+          "art": "review-files",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "edit",
+          "from": "before",
+          "to": "after",
+          "label": "書き足す"
+        },
+        {
+          "id": "read-diff",
+          "from": "after",
+          "to": "review",
+          "label": "確認する"
+        }
+      ]
+    },
+    "compare": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "変更前の版",
+          "art": "repo-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "eval",
+          "label": "同じ評価",
+          "art": "evaluation-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後の版",
+          "art": "repo-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "model",
+          "label": "同じモデル",
+          "art": "model-robot",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "records": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "commit",
+          "label": "コミット",
+          "art": "repo-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルID",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "eval",
+          "label": "評価セットの版",
+          "art": "evaluation-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "failed",
+          "label": "不合格のID",
+          "art": "evaluation-sheet",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "inspect": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "変更前の結果",
+          "art": "evaluation-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後の結果",
+          "art": "evaluation-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "case",
+          "label": "欠品の例",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "plant",
+          "label": "水やり案内",
+          "art": "plant-care",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "件数だけ保存",
+          "art": "evaluation-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "版と結果を保存",
+          "art": "repo-folder",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "trace": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "count",
+          "label": "合格した件数",
+          "art": "evaluation-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "case",
+          "label": "不合格の例",
+          "art": "plant-care",
+          "at": [3, 1]
+        },
+        {
+          "id": "version",
+          "label": "使った版",
+          "art": "repo-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "diff",
+          "label": "変えた指示",
+          "art": "review-files",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "open-case",
+          "from": "count",
+          "to": "case",
+          "label": "内訳を見る"
+        },
+        {
+          "id": "find-version",
+          "from": "case",
+          "to": "version",
+          "label": "記録で戻る"
+        },
+        {
+          "id": "read-change",
+          "from": "version",
+          "to": "diff",
+          "label": "差分を読む"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "edit",
+          "label": "指示を変更",
+          "art": "prompt-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "version",
+          "label": "版を残す",
+          "art": "repo-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "eval",
+          "label": "同じ評価",
+          "art": "evaluation-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "edit",
+          "to": "version",
+          "label": "レビュー"
+        },
+        {
+          "id": "test",
+          "from": "version",
+          "to": "eval",
+          "label": "結果を結ぶ"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "結果から指示へ戻る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫レポートから、欠品の商品が漏れました。",
+          "show": ["report"]
+        },
+        {
+          "say": "共有メモは上書きされ、先週の指示が分かりません。",
+          "show": ["prompt"],
+          "mark": [
+            {
+              "on": "prompt",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "残っているのは、前回の評価結果だけです。",
+          "show": ["result"]
+        },
+        {
+          "say": "指示と設定の版を残し、変えるたびに同じ評価を回します。",
+          "pulse": ["prompt", "result"]
+        }
+      ]
+    },
+    {
+      "id": "sewing",
+      "kind": "board",
+      "role": "example",
+      "title": "縫い方を変えて試す",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "縫い方のメモを書き直し、試し縫いをしたとします。",
+          "show": ["instructions"]
+        },
+        {
+          "say": "前と同じ布なら、縫い目を比べやすいでしょう。",
+          "show": ["test"]
+        },
+        {
+          "say": "ただ、前のメモがなければ、変えた手順を確認できません。",
+          "mark": [
+            {
+              "on": "instructions",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "前後のメモも残すと、縫い目と手順を結び付けられます。",
+          "show": ["kept"],
+          "pulse": ["kept", "test"]
+        }
+      ]
+    },
+    {
+      "id": "keep-versions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "指示と設定の版を残す",
+      "board": "versions",
+      "beats": [
+        {
+          "say": "指示の変更履歴を残すのが、プロンプトの版管理です。",
+          "term": {
+            "text": "プロンプトの版管理",
+            "ruby": "プロンプトのはんかんり",
+            "note": "使った指示と変更をたどる"
+          }
+        },
+        {
+          "say": "管理するのは、プロンプトと設定のファイルになります。",
+          "show": ["files"]
+        },
+        {
+          "say": "共有メモを書き換えるだけでは、前の指示をたどれません。",
+          "mark": [
+            {
+              "on": "files",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "これらをGitに入れ、リポジトリで版を残しましょう。",
+          "speech": "これらをギットに入れ、リポジトリで版を残しましょう。",
+          "show": ["repo", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "変更した内容を、チームのレビューで確かめます。",
+          "show": ["review", "review-change"],
+          "unmark": ["files"]
+        }
+      ]
+    },
+    {
+      "id": "read-diff",
+      "kind": "board",
+      "role": "syntax",
+      "title": "書き足した指示を見る",
+      "board": "diff",
+      "beats": [
+        {
+          "say": "変更前後で違う部分を、差分と呼びます。",
+          "term": {
+            "text": "差分",
+            "ruby": "さぶん",
+            "note": "変更前後で違う部分"
+          }
+        },
+        {
+          "say": "比べるのは、在庫レポートを作る指示のファイルです。",
+          "show": ["before", "after"]
+        },
+        {
+          "say": "今回は、欠品を表の先頭へ出す指示を足しました。",
+          "show": ["edit"],
+          "tag": {
+            "after": "欠品を先頭へ"
+          }
+        },
+        {
+          "say": "足した指示を差分で読み、変更をレビューします。",
+          "show": ["review", "read-diff"],
+          "pulse": ["review"]
+        }
+      ]
+    },
+    {
+      "id": "same-evaluation",
+      "kind": "board",
+      "role": "apply",
+      "title": "評価の条件をそろえる",
+      "board": "compare",
+      "beats": [
+        {
+          "say": "変更前と変更後に、同じ評価のセットを使います。",
+          "show": ["before", "eval", "after"]
+        },
+        {
+          "say": "入力だけでなく、採点の条件も共通です。",
+          "tag": {
+            "eval": "入力と採点"
+          }
+        },
+        {
+          "say": "指示の変更を比べるので、モデルもそろえましょう。",
+          "show": ["model"],
+          "pulse": ["model"]
+        },
+        {
+          "say": "条件を一つずつ変えると、結果の変化を調べやすくなります。",
+          "pulse": ["before", "after"]
+        }
+      ]
+    },
+    {
+      "id": "record-conditions",
+      "kind": "board",
+      "role": "apply",
+      "title": "結果に使った版を記録",
+      "board": "records",
+      "beats": [
+        {
+          "say": "指示と設定の版を記録する目印が、コミットです。",
+          "term": {
+            "text": "コミット",
+            "note": "指示と設定の版をたどる目印"
+          }
+        },
+        {
+          "say": "評価結果に、実行に使ったコミットを残します。",
+          "show": ["commit"]
+        },
+        {
+          "say": "モデルIDは、実際に使ったモデルの記録です。",
+          "speech": "モデルアイディーは、実際に使ったモデルの記録です。",
+          "show": ["model"]
+        },
+        {
+          "say": "評価のセットも、どの版かを控えましょう。",
+          "show": ["eval"],
+          "tag": {
+            "eval": "在庫v3"
+          }
+        },
+        {
+          "say": "さらに、不合格になったケースのIDを残します。",
+          "speech": "さらに、不合格になったケースのアイディーを残します。",
+          "show": ["failed"]
+        }
+      ]
+    },
+    {
+      "id": "inspect-results",
+      "kind": "board",
+      "role": "apply",
+      "title": "件数と内訳を確かめる",
+      "board": "inspect",
+      "beats": [
+        {
+          "say": "変更前は、二十件中十八件が合格しました。",
+          "show": ["before"],
+          "tag": {
+            "before": "18/20"
+          }
+        },
+        {
+          "say": "変更後の合格は、二十件中十七件です。",
+          "show": ["after"],
+          "tag": {
+            "after": "17/20"
+          }
+        },
+        {
+          "say": "前回通った欠品の例が、今回は不合格になっています。",
+          "show": ["case"],
+          "mark": [
+            {
+              "on": "case",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "その例を開き、関連する指示の差分を確かめましょう。",
+          "pulse": ["case"],
+          "tag": {
+            "case": "差分と照合"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "あとから調べられる記録",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水やり案内を作る指示を直し、同じ条件で評価しました。",
+          "show": ["plant"]
+        },
+        {
+          "say": "一つ目は、指示を上書きして合格件数だけ残す案です。",
+          "show": ["first"]
+        },
+        {
+          "say": "二つ目では、指示と設定の版を残します。",
+          "show": ["second"]
+        },
+        {
+          "say": "さらに、使った版や不合格の例も結果に記録する案です。",
+          "tag": {
+            "second": "条件も記録"
+          }
+        },
+        {
+          "say": "結果から変えた指示を調べるには、どちらを選べばよいでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "版と結果を結び付ける",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、版と実行の記録を残す二つ目の案です。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "cross"
+            },
+            {
+              "on": "second",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "使った指示に戻り、変更した部分を確認できます。",
+          "tag": {
+            "second": "指示へ戻れる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "結果から変更をたどる",
+      "board": "trace",
+      "beats": [
+        {
+          "say": "合格件数だけでは、どの案内で失敗したか分かりません。",
+          "show": ["count"],
+          "mark": [
+            {
+              "on": "count",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "不合格の例を記録してあれば、案内の中身を開けます。",
+          "show": ["case", "open-case"],
+          "travel": {
+            "along": ["open-case"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "その結果から戻る先は、実行に使った指示と設定の版です。",
+          "show": ["version", "find-version"],
+          "travel": {
+            "along": ["find-version"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "前の版との差分を読み、失敗した案内と照らし合わせましょう。",
+          "show": ["diff", "read-change"],
+          "travel": {
+            "along": ["read-change"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "指示や設定を変えるたびに",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "アプリの指示や共有設定を直すときに、この流れを使います。",
+          "show": ["edit"]
+        },
+        {
+          "say": "指示のファイルも、コードと同じレビューの対象です。",
+          "show": ["version", "save"]
+        },
+        {
+          "say": "変更前後に同じ評価を回し、使った版を結果に記録しましょう。",
+          "show": ["eval", "test"]
+        },
+        {
+          "say": "結果が変わったら、その例と指示の差分を確かめます。",
+          "pulse": ["edit", "eval"],
+          "tag": {
+            "eval": "内訳も確認"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "17b13e4964e388896d5a37979c4ed799eecffd532f16cc30ad946095b2296050"
+  }
+}
