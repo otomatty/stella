@@ -1,0 +1,786 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "画像と PDF に対応するブロックを選び、質問と一緒に content に並べる方法を説明できる。",
+    "stuck": "画像の内容をすべて文章に書き起こそうとし、資料と質問を別のブロックで渡せると気づかない。",
+    "points": ["画像と PDF は、content のブロックとして渡します。"],
+    "leaveOut": [
+      "Files API へのアップロード手順と利用者ごとのファイル管理",
+      "base64 に変換する処理の実装",
+      "提供元ごとの対応状況の詳しい比較",
+      "画像や PDF のサイズとページ数の制限",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "graph-sheet": {
+      "prompt": "A single light grey sheet of paper bearing three broad blue and violet bars of different heights, representing a graph image without axes or markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-booklet": {
+      "prompt": "A short open report booklet made of white and light grey pages with a blue binding clip and one violet pie chart without markings, representing a PDF report. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-note": {
+      "prompt": "A hand holding a violet pencil beside a small blank white paper note, representing a written question accompanying a document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-staff": {
+      "prompt": "A friendly school staff member in a plain blue shirt with simple facial features, holding one open palm ready to receive a graph sheet. Waist-up view. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "learner-writing": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater, with simple facial features, holding a blank white notebook and a violet pencil while concentrating on writing. Waist-up view. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "local-file": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a single white document sheet tucked beside its keyboard, representing a file on the user's computer. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "public-file": {
+      "prompt": "A blue tablet with a completely blank screen beside a small blue globe on a stand and a white document sheet, representing a document available at a public internet location. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stored-file": {
+      "prompt": "A small blue file drawer holding several upright light grey document folders, with a blank white identification card clipped to the foremost folder, representing an already uploaded file referenced by its identifier. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "postal-leaflet": {
+      "prompt": "An open white postal information leaflet beside a light grey parcel sealed with blue tape and a plain white envelope, representing a PDF guide to sending parcels. The leaflet has a small blue parcel pictogram and no other markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "graph",
+          "label": "グラフの画像",
+          "art": "graph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "learner",
+          "label": "書き起こす人",
+          "art": "learner-writing",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "傾向を尋ねる",
+          "art": "question-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "pdf",
+          "label": "PDFの資料",
+          "art": "report-booklet",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "graph",
+          "label": "グラフの画像",
+          "art": "graph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "傾向を尋ねる",
+          "art": "question-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "staff",
+          "label": "学校の先生",
+          "art": "school-staff",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "attach",
+          "from": "graph",
+          "to": "question",
+          "label": "質問を添える"
+        },
+        {
+          "id": "hand",
+          "from": "question",
+          "to": "staff",
+          "label": "一緒に渡す"
+        }
+      ]
+    },
+    "block-types": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "image",
+          "label": "image",
+          "art": "graph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "document",
+          "label": "ドキュメント",
+          "art": "report-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "text",
+          "label": "text",
+          "art": "question-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "image-content": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "image",
+          "label": "グラフの画像",
+          "art": "graph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "傾向を尋ねる",
+          "art": "question-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "order",
+          "from": "image",
+          "to": "question",
+          "label": "この順に置く"
+        }
+      ]
+    },
+    "sources": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "local",
+          "label": "手元の資料",
+          "art": "local-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "public",
+          "label": "公開中の資料",
+          "art": "public-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "stored",
+          "label": "登録済み資料",
+          "art": "stored-file",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pdf-content": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "content",
+          "label": "content",
+          "tone": "violet",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "document",
+          "label": "ドキュメント",
+          "art": "report-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "text",
+          "art": "question-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "postal-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "郵便の案内",
+          "art": "postal-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "送り方を質問",
+          "art": "question-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "資料の種類",
+          "art": "postal-leaflet",
+          "at": [5, 1]
+        },
+        {
+          "id": "image",
+          "label": "image",
+          "art": "postal-leaflet",
+          "at": [5, 2]
+        },
+        {
+          "id": "document",
+          "label": "ドキュメント",
+          "art": "postal-leaflet",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "postal-reason": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "content",
+          "label": "content",
+          "tone": "violet",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "ドキュメント",
+          "art": "postal-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "text",
+          "art": "question-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "graph",
+          "label": "グラフを読む",
+          "art": "graph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "報告書を読む",
+          "art": "report-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "質問を添える",
+          "art": "question-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "資料をそのまま渡す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "グラフの画像を見て、傾向を知りたいとします。",
+          "show": ["graph"]
+        },
+        {
+          "say": "これまでは、人が内容を文章に書き起こしていました。",
+          "show": ["learner"]
+        },
+        {
+          "say": "質問を送る前に、書き起こす手間がかかる状態です。",
+          "show": ["question"]
+        },
+        {
+          "say": "画像と PDF は、content のブロックとして渡します。",
+          "speech": "画像とピーディーエフは、コンテントのブロックとして渡します。",
+          "show": ["pdf"],
+          "pulse": ["graph", "pdf"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "school-example",
+      "kind": "board",
+      "role": "example",
+      "title": "グラフを先生に見せる",
+      "board": "school",
+      "beats": [
+        {
+          "say": "学校で、グラフの読み方を先生に尋ねる場面です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "グラフの形を、言葉だけで説明しようとしました。",
+          "show": ["graph"],
+          "mark": [
+            {
+              "on": "graph",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "画像を見せれば、先生と同じ資料を見ながら話せます。",
+          "unmark": ["graph"],
+          "pulse": ["graph", "staff"]
+        },
+        {
+          "say": "傾向を知りたいという質問も、一緒に伝えましょう。",
+          "show": ["question", "attach", "hand"],
+          "travel": {
+            "along": ["attach", "hand"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "block-types",
+      "kind": "board",
+      "role": "syntax",
+      "title": "資料に合う種類を選ぶ",
+      "board": "block-types",
+      "beats": [
+        {
+          "say": "画像は、image ブロックとして渡します。",
+          "speech": "画像は、イメージブロックとして渡します。",
+          "term": {
+            "text": "imageブロック",
+            "note": "画像を渡すブロック"
+          }
+        },
+        {
+          "say": "ここでは、グラフの画像を選びました。",
+          "show": ["image"]
+        },
+        {
+          "say": "PDF に使うのは、document ブロックです。",
+          "speech": "ピーディーエフに使うのは、ドキュメントブロックです。",
+          "term": {
+            "text": "document",
+            "note": "PDFを渡すブロック"
+          }
+        },
+        {
+          "say": "冊子の資料も、ブロックとして並べます。",
+          "show": ["document"]
+        },
+        {
+          "say": "一緒に渡す質問の文字は、text ブロックです。",
+          "speech": "一緒に渡す質問の文字は、テキストブロックです。",
+          "show": ["text"]
+        }
+      ]
+    },
+    {
+      "id": "image-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "画像のブロックを読む",
+      "code": [
+        "// 資料と質問を配列に並べる",
+        "const content = [",
+        "  // 画像のブロックと渡し方を書く",
+        "  { type: \"image\", source: {",
+        "    // 中身の渡し方と画像の形式を指定する",
+        "    type: \"base64\", media_type: \"image/png\",",
+        "    // 用意した画像の中身を入れる",
+        "    data: pngBase64",
+        "  // 渡し方と画像のブロックを閉じる",
+        "  } },",
+        "  // 質問の文字を次に置く",
+        "  { type: \"text\", text: \"このグラフの傾向を説明して\" },",
+        "// 配列を閉じる",
+        "];"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "image-content"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "content の配列に、画像と質問を並べます。",
+          "speech": "コンテントの配列に、画像と質問を並べます。",
+          "part": {
+            "line": 1,
+            "text": "content",
+            "note": "資料と質問"
+          },
+          "figure": {
+            "show": ["image", "question"]
+          }
+        },
+        {
+          "say": "最初の type が示すのは、ブロックの種類です。",
+          "speech": "最初のタイプが示すのは、ブロックの種類です。",
+          "part": {
+            "line": 3,
+            "text": "\"image\"",
+            "note": "画像"
+          },
+          "figure": {
+            "pulse": ["image"]
+          }
+        },
+        {
+          "say": "source には、資料の渡し方を指定します。",
+          "speech": "ソースには、資料の渡し方を指定します。",
+          "term": {
+            "text": "source",
+            "note": "資料の渡し方を書く項目"
+          },
+          "part": {
+            "line": 3,
+            "text": "source"
+          }
+        },
+        {
+          "say": "ここで選んでいる渡し方は、base64 です。",
+          "speech": "ここで選んでいる渡し方は、ベースろくじゅうよんです。",
+          "part": {
+            "line": 5,
+            "text": "\"base64\"",
+            "note": "中身を入れる"
+          },
+          "figure": {
+            "tag": {
+              "image": "中身を入れる"
+            }
+          }
+        },
+        {
+          "say": "data に、用意した画像の中身を入れます。",
+          "speech": "データに、用意した画像の中身を入れます。",
+          "part": {
+            "line": 7,
+            "text": "pngBase64",
+            "note": "画像の中身"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "image",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "source-methods",
+      "kind": "board",
+      "role": "syntax",
+      "title": "資料の渡し方を選ぶ",
+      "board": "sources",
+      "beats": [
+        {
+          "say": "base64 では、中身をリクエストに入れます。",
+          "speech": "ベースろくじゅうよんでは、中身をリクエストに入れます。",
+          "show": ["local"],
+          "tag": {
+            "local": "base64"
+          }
+        },
+        {
+          "say": "手元のファイルを送るときに便利です。",
+          "pulse": ["local"]
+        },
+        {
+          "say": "URL なら、公開している資料の場所を指します。",
+          "speech": "ユーアールエルなら、公開している資料の場所を指します。",
+          "show": ["public"],
+          "tag": {
+            "public": "url"
+          }
+        },
+        {
+          "say": "Files API に上げた資料は、ID で指す形です。",
+          "speech": "ファイルズエーピーアイに上げた資料は、アイディーで指す形です。",
+          "show": ["stored"],
+          "tag": {
+            "stored": "file_id"
+          }
+        },
+        {
+          "say": "使える渡し方は、提供元に合わせて確認しましょう。",
+          "pulse": ["local", "public", "stored"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "image-and-question",
+      "kind": "code",
+      "role": "apply",
+      "title": "グラフに質問を添える",
+      "code": [
+        "// 資料と質問を配列に並べる",
+        "const content = [",
+        "  // 画像のブロックと渡し方を書く",
+        "  { type: \"image\", source: {",
+        "    // 中身の渡し方と画像の形式を指定する",
+        "    type: \"base64\", media_type: \"image/png\",",
+        "    // 用意した画像の中身を入れる",
+        "    data: pngBase64",
+        "  // 渡し方と画像のブロックを閉じる",
+        "  } },",
+        "  // 質問の文字を次に置く",
+        "  { type: \"text\", text: \"このグラフの傾向を説明して\" },",
+        "// 配列を閉じる",
+        "];"
+      ],
+      "show": [0, 1, 12, 13],
+      "panel": {
+        "kind": "figure",
+        "board": "image-content"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、グラフの画像を先頭のブロックに入れます。",
+          "type": [2, 3, 4, 5, 6, 7, 8, 9],
+          "figure": {
+            "show": ["image"]
+          }
+        },
+        {
+          "say": "この例で指定している画像の形式は、PNG です。",
+          "speech": "この例で指定している画像の形式は、ピーエヌジーです。",
+          "part": {
+            "line": 5,
+            "text": "\"image/png\"",
+            "note": "画像の形式"
+          },
+          "figure": {
+            "tag": {
+              "image": "PNG"
+            }
+          }
+        },
+        {
+          "say": "そのあとに、傾向の説明を求める質問を置きます。",
+          "type": [10, 11],
+          "figure": {
+            "show": ["question", "order"]
+          }
+        },
+        {
+          "say": "資料と聞きたいことが、同じ配列に並びました。",
+          "focus": [3, 5, 7, 11],
+          "figure": {
+            "pulse": ["image", "question"]
+          }
+        },
+        {
+          "say": "画像を先に置くと、よい結果になりやすいとされています。",
+          "part": {
+            "line": 3,
+            "text": "\"image\""
+          },
+          "figure": {
+            "travel": {
+              "along": ["order"],
+              "icon": "file"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "pdf-and-question",
+      "kind": "board",
+      "role": "apply",
+      "title": "冊子にも質問を添える",
+      "board": "pdf-content",
+      "beats": [
+        {
+          "say": "資料が PDF の報告書なら、ブロックの種類を変えます。",
+          "speech": "資料がピーディーエフの報告書なら、ブロックの種類を変えます。",
+          "show": ["document"]
+        },
+        {
+          "say": "報告書を渡すのは、document ブロックです。",
+          "speech": "報告書を渡すのは、ドキュメントブロックです。",
+          "pulse": ["document"]
+        },
+        {
+          "say": "報告書についての質問は、文字のブロックに書きます。",
+          "show": ["question"]
+        },
+        {
+          "say": "資料と質問を並べる場所は、同じ content です。",
+          "speech": "資料と質問を並べる場所は、同じコンテントです。",
+          "show": ["content"],
+          "pulse": ["content"]
+        }
+      ]
+    },
+    {
+      "id": "postal-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "郵便の案内を渡すには",
+      "board": "postal-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "郵便局の窓口で使う、PDF の案内を渡します。",
+          "speech": "郵便局の窓口で使う、ピーディーエフの案内を渡します。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "PDF"
+          }
+        },
+        {
+          "say": "利用者が知りたいのは、小包の送り方です。",
+          "show": ["question"]
+        },
+        {
+          "say": "質問の文字と一緒に、案内の資料も並べましょう。",
+          "show": ["choice"],
+          "mark": [
+            {
+              "on": "choice",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "資料に使うのは、image と document のどちらでしょうか。",
+          "speech": "資料に使うのは、イメージとドキュメントのどちらでしょうか。",
+          "show": ["image", "document"],
+          "pulse": ["image", "document"]
+        }
+      ]
+    },
+    {
+      "id": "postal-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "資料にはdocument",
+      "board": "postal-quiz",
+      "beats": [
+        {
+          "say": "案内の PDF に使うのは、document です。",
+          "speech": "案内のピーディーエフに使うのは、ドキュメントです。",
+          "mark": [
+            {
+              "on": "document",
+              "kind": "check"
+            },
+            {
+              "on": "image",
+              "kind": "cross"
+            }
+          ],
+          "unmark": ["choice"],
+          "pulse": ["document"]
+        },
+        {
+          "say": "送り方を尋ねる質問も、別のブロックで添えます。",
+          "pulse": ["question"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "postal-explain",
+      "kind": "board",
+      "role": "explain",
+      "title": "資料の形式から選ぶ",
+      "board": "postal-reason",
+      "beats": [
+        {
+          "say": "今回渡す案内は、PDF のファイルでした。",
+          "speech": "今回渡す案内は、ピーディーエフのファイルでした。",
+          "show": ["guide"]
+        },
+        {
+          "say": "ブロックの種類は、渡す資料の形式で選びます。",
+          "pulse": ["guide"],
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "送り方を尋ねる文に使うのは、text です。",
+          "speech": "送り方を尋ねる文に使うのは、テキストです。",
+          "show": ["question"]
+        },
+        {
+          "say": "この二つを、content に一緒に並べましょう。",
+          "speech": "この二つを、コンテントに一緒に並べましょう。",
+          "show": ["content"],
+          "pulse": ["guide", "question"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "資料を見て答えてもらう",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "グラフの傾向を聞くなら、画像を資料として渡します。",
+          "show": ["graph"]
+        },
+        {
+          "say": "報告書について尋ねるときは、PDF も資料です。",
+          "speech": "報告書について尋ねるときは、ピーディーエフも資料です。",
+          "show": ["report"]
+        },
+        {
+          "say": "資料と一緒に、聞きたいことを文字で添えましょう。",
+          "show": ["question"]
+        },
+        {
+          "say": "画像と PDF は、content のブロックとして渡します。",
+          "speech": "画像とピーディーエフは、コンテントのブロックとして渡します。",
+          "pulse": ["graph", "report", "question"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "298b810f20d522f41d2abf50cdd1e8f6341c96416d2540364f0549ea6f69f74b"
+  }
+}

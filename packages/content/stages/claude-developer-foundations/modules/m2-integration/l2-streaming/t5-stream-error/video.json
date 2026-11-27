@@ -1,0 +1,669 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "受信の記録から、error イベントによる混雑と終端前の接続切断を区別し、途中の表示に中断の印を付ける判断ができる。",
+    "stuck": "HTTP 200 だけを見て最後まで成功したと思い、途中のエラーや終端前の切断を見落とす。",
+    "points": ["ストリームの途中のエラーは error イベントで届くので、イベントの種類で分けます。"],
+    "leaveOut": [
+      "本文の差分をつなぐコード",
+      "停止理由ごとの完了表示",
+      "途中の本文を添えて続きを求める方法",
+      "モデルごとの制約と回復できないブロック",
+      "再送の間隔と回数の設計"
+    ]
+  },
+  "art": {
+    "meeting-memo": {
+      "prompt": "A white meeting clipboard with a blue clip and a violet pencil resting beside it, representing notes of meeting decisions. The sheet is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "start-record": {
+      "prompt": "A short white receipt strip held by a blue paper clip, with a small blue stamp lying beside it, representing a record made when reception begins. The receipt and stamp face are completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "radio": {
+      "prompt": "A compact blue portable radio with a violet tuning knob, a telescopic antenna and a circular speaker grille, representing a weather broadcast being heard at home. No display markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-envelope": {
+      "prompt": "An open light grey envelope holding a blank white notice with a small magenta clip, representing a received interruption notice whose contents can be inspected. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "unplugged-cable": {
+      "prompt": "Two disconnected blue network cable ends facing one another with a clear gap between their plugs, representing a broken connection. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reader-app": {
+      "prompt": "An open blue laptop with a completely blank white screen, representing the app receiving a stream of text. No interface elements and no imitation of any real application. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-car": {
+      "prompt": "A small blue rental car beside a violet key fob and a blank white folded rental information leaflet. The car has no badge or license plate lettering. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-agent": {
+      "prompt": "A service agent in a plain blue shirt with simple facial features holding an open light grey envelope and offering its blank white notice forward, representing a helper passing on a reading failure. Upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "meeting": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "会議の決定事項",
+          "art": "meeting-memo",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "開始時の記録",
+          "art": "start-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "event",
+          "label": "途中の知らせ",
+          "art": "error-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "broadcast": {
+      "cols": 1,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "radio",
+          "label": "天気予報",
+          "art": "radio",
+          "at": [1, 1]
+        }
+      ]
+    },
+    "event-fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kind",
+          "label": "type",
+          "art": "error-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "cause",
+          "label": "エラー種別",
+          "art": "error-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "途中の本文",
+          "art": "meeting-memo",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "kind",
+          "to": "cause",
+          "label": "原因を読む"
+        },
+        {
+          "id": "annotate",
+          "from": "cause",
+          "to": "memo",
+          "label": "中断の印"
+        }
+      ]
+    },
+    "disconnect": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cable",
+          "label": "終端前の切断",
+          "art": "unplugged-cable",
+          "at": [1, 1]
+        },
+        {
+          "id": "event",
+          "label": "error",
+          "art": "error-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "途中の本文",
+          "art": "meeting-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "sdk-reader": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "helper",
+          "label": "SDK",
+          "art": "service-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "読み取るアプリ",
+          "art": "reader-app",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "raise",
+          "from": "helper",
+          "to": "app",
+          "label": "読み取り失敗"
+        }
+      ]
+    },
+    "rental-quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "貸出案内",
+          "art": "rental-car",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "開始時の記録",
+          "art": "start-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "cable",
+          "label": "終端前の切断",
+          "art": "unplugged-cable",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "rental-evidence": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "status",
+          "label": "開始時の記録",
+          "art": "start-record",
+          "at": [1, 1]
+        },
+        {
+          "id": "event",
+          "label": "error",
+          "art": "error-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "cable",
+          "label": "終端前の切断",
+          "art": "unplugged-cable",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "会議の決定事項",
+          "art": "meeting-memo",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "貸出案内",
+          "art": "rental-car",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "読み取るアプリ",
+          "art": "reader-app",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "本文が途中で止まったら",
+      "board": "meeting",
+      "beats": [
+        {
+          "say": "会議の決定事項を表示する途中で、本文が止まりました。",
+          "show": ["memo"]
+        },
+        {
+          "say": "通信の記録を見ると、HTTP 200 です。",
+          "speech": "通信の記録を見ると、エイチティーティーピーにひゃくです。",
+          "show": ["status"],
+          "tag": {
+            "status": "200"
+          }
+        },
+        {
+          "say": "途中で届いた知らせも、確かめましょう。",
+          "show": ["event"]
+        },
+        {
+          "say": "途中のエラーは、error イベントで見分けます。",
+          "speech": "途中のエラーは、エラーイベントで見分けます。",
+          "pulse": ["event"],
+          "tag": {
+            "event": "error"
+          }
+        }
+      ]
+    },
+    {
+      "id": "radio-example",
+      "kind": "board",
+      "role": "example",
+      "title": "放送が聞こえ始めても",
+      "board": "broadcast",
+      "beats": [
+        {
+          "say": "家でラジオの天気予報を聞く場面を考えましょう。",
+          "show": ["radio"]
+        },
+        {
+          "say": "声が聞こえて、放送を聞き始めました。",
+          "tag": {
+            "radio": "聞こえた"
+          }
+        },
+        {
+          "say": "ところが、予報の途中で音が途切れます。",
+          "tag": {
+            "radio": "途中で無音"
+          },
+          "mark": [
+            {
+              "on": "radio",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "聞き始めたことは、最後まで聞けた証拠にはなりません。",
+          "pulse": ["radio"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "start-status",
+      "kind": "board",
+      "role": "syntax",
+      "title": "開始時の結果を区別する",
+      "board": "meeting",
+      "reset": true,
+      "beats": [
+        {
+          "say": "開始時の結果を見るのが、HTTP ステータスです。",
+          "speech": "開始時の結果を見るのが、エイチティーティーピーステータスです。",
+          "term": {
+            "text": "HTTPステータス",
+            "note": "受信を始める時点の結果"
+          }
+        },
+        {
+          "say": "この記録の 200 は、受信開始時の結果を示します。",
+          "speech": "この記録のにひゃくは、受信開始時の結果を示します。",
+          "show": ["status"],
+          "tag": {
+            "status": "200"
+          }
+        },
+        {
+          "say": "あとで本文が止まっても、この記録だけでは原因が分かりません。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "途中で停止"
+          }
+        },
+        {
+          "say": "受信を始めたあとのイベントを調べましょう。",
+          "show": ["event"],
+          "pulse": ["event"]
+        }
+      ]
+    },
+    {
+      "id": "event-kind",
+      "kind": "board",
+      "role": "syntax",
+      "title": "種類を見てから原因へ",
+      "board": "event-fields",
+      "beats": [
+        {
+          "say": "途中のエラーを知らせるのが、error イベントです。",
+          "speech": "途中のエラーを知らせるのが、エラーイベントです。",
+          "term": {
+            "text": "errorイベント",
+            "note": "受信途中のエラーの知らせ"
+          }
+        },
+        {
+          "say": "受信したイベントの type が error かを確かめます。",
+          "speech": "受信したイベントのタイプがエラーかを確かめます。",
+          "show": ["kind"],
+          "tag": {
+            "kind": "error"
+          }
+        },
+        {
+          "say": "その中の error.type が、原因を分ける手がかりです。",
+          "speech": "その中のエラードットタイプが、原因を分ける手がかりです。",
+          "show": ["cause", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "種類を見つけてから、中にある原因を読みましょう。",
+          "pulse": ["kind", "cause"],
+          "pause": 1
+        },
+        {
+          "say": "表示済みの本文には、中断の印を付けます。",
+          "show": ["memo", "annotate"],
+          "tag": {
+            "memo": "中断"
+          }
+        }
+      ]
+    },
+    {
+      "id": "meeting-overload",
+      "kind": "board",
+      "role": "apply",
+      "title": "混雑で止まった場合",
+      "board": "event-fields",
+      "reset": true,
+      "beats": [
+        {
+          "say": "会議の本文が止まった例で、error が届きました。",
+          "speech": "会議の本文が止まった例で、エラーが届きました。",
+          "show": ["kind"],
+          "tag": {
+            "kind": "error"
+          }
+        },
+        {
+          "say": "混雑を示す値は、オーバーローデッドエラーです。",
+          "term": {
+            "text": "混雑",
+            "ruby": "こんざつ",
+            "note": "overloaded_error"
+          },
+          "show": ["cause", "inspect"],
+          "pulse": ["cause"]
+        },
+        {
+          "say": "この値なら、API の混雑による中断と記録します。",
+          "speech": "この値なら、エーピーアイの混雑による中断と記録します。",
+          "tag": {
+            "cause": "混雑"
+          }
+        },
+        {
+          "say": "画面の途中の本文にも、中断の印が必要です。",
+          "show": ["memo", "annotate"],
+          "tag": {
+            "memo": "中断"
+          },
+          "pulse": ["memo"]
+        }
+      ]
+    },
+    {
+      "id": "missing-terminal",
+      "kind": "board",
+      "role": "apply",
+      "title": "知らせが届かない切断",
+      "board": "disconnect",
+      "beats": [
+        {
+          "say": "通信が途中で切れる、接続切断の場合も考えましょう。",
+          "term": {
+            "text": "接続切断",
+            "ruby": "せつぞくせつだん",
+            "note": "受信途中で通信が切れること"
+          }
+        },
+        {
+          "say": "メッセージストップより前に、接続が切れました。",
+          "show": ["cable"],
+          "tag": {
+            "cable": "終端なし"
+          }
+        },
+        {
+          "say": "この場合、error イベントは届きません。",
+          "speech": "この場合、エラーイベントは届きません。",
+          "show": ["event"],
+          "tag": {
+            "event": "未受信"
+          }
+        },
+        {
+          "say": "受信し切れなかったと記録し、本文に中断の印を付けます。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "中断"
+          },
+          "pulse": ["memo"]
+        }
+      ]
+    },
+    {
+      "id": "sdk-failure",
+      "kind": "board",
+      "role": "note",
+      "title": "SDKで読み取る場合",
+      "board": "sdk-reader",
+      "beats": [
+        {
+          "say": "SDK を使うと、読み取り処理がエラーで止まります。",
+          "speech": "エスディーケーを使うと、読み取り処理がエラーで止まります。",
+          "show": ["helper"],
+          "tag": {
+            "helper": "エラーで停止"
+          }
+        },
+        {
+          "say": "アプリで扱うのは、その読み取り時のエラーです。",
+          "show": ["app", "raise"],
+          "travel": {
+            "along": ["raise"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "SDK は、受信途中のエラーを自動では送り直しません。",
+          "speech": "エスディーケーは、受信途中のエラーを自動では送り直しません。",
+          "tag": {
+            "helper": "自動再送なし"
+          },
+          "pulse": ["helper"]
+        },
+        {
+          "say": "読み取るアプリの側で、失敗を扱いましょう。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "失敗を扱う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "貸出案内が途切れたら",
+      "board": "rental-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "レンタカーの貸出案内を、少しずつ表示するアプリです。",
+          "show": ["guide"]
+        },
+        {
+          "say": "受信開始時には、HTTP 200 が返りました。",
+          "speech": "受信開始時には、エイチティーティーピーにひゃくが返りました。",
+          "show": ["status"],
+          "tag": {
+            "status": "200"
+          }
+        },
+        {
+          "say": "本文の途中で切断され、メッセージストップは未受信です。",
+          "show": ["cable"],
+          "tag": {
+            "cable": "終端なし"
+          }
+        },
+        {
+          "say": "error イベントも届いていません。",
+          "speech": "エラーイベントも届いていません。",
+          "tag": {
+            "guide": "errorなし"
+          }
+        },
+        {
+          "say": "完了か、混雑か、受信し切れなかったか、どれを記録しますか。",
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["guide"]
+        }
+      ]
+    },
+    {
+      "id": "rental-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "受信し切れなかった",
+      "board": "rental-quiz",
+      "beats": [
+        {
+          "say": "答えは、受信し切れなかったと記録することです。",
+          "tag": {
+            "cable": "受信未完了"
+          },
+          "pulse": ["cable"]
+        },
+        {
+          "say": "途中まで表示した貸出案内に、中断の印を付けます。",
+          "tag": {
+            "guide": "中断"
+          },
+          "unmark": ["guide"],
+          "pulse": ["guide"]
+        },
+        {
+          "say": "この記録だけで、混雑とは決められません。",
+          "tag": {
+            "cable": "混雑かは不明"
+          },
+          "pulse": ["cable"]
+        }
+      ]
+    },
+    {
+      "id": "rental-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "何が分かる記録なのか",
+      "board": "rental-evidence",
+      "beats": [
+        {
+          "say": "200 が示したのは、受信開始時の結果でした。",
+          "speech": "にひゃくが示したのは、受信開始時の結果でした。",
+          "show": ["status"],
+          "tag": {
+            "status": "開始時だけ"
+          }
+        },
+        {
+          "say": "error がないだけでは、完了した証拠になりません。",
+          "speech": "エラーがないだけでは、完了した証拠になりません。",
+          "show": ["event"],
+          "tag": {
+            "event": "未受信"
+          }
+        },
+        {
+          "say": "終端より前に切れたので、受信は途中のままです。",
+          "show": ["cable"],
+          "tag": {
+            "cable": "受信未完了"
+          }
+        },
+        {
+          "say": "混雑と分けるには、届いたエラーの原因を確かめます。",
+          "pulse": ["event"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "途中表示の失敗を扱う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "会議の決定事項を表示するなら、途中のエラーも扱います。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "中断の印"
+          }
+        },
+        {
+          "say": "貸出案内でも、終端前の切断は記録が必要です。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "切断を記録"
+          }
+        },
+        {
+          "say": "受信を続けるアプリの処理を、確かめてください。",
+          "show": ["app"]
+        },
+        {
+          "say": "イベントの種類で途中のエラーを分け、中断の印を付けましょう。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "種類で分ける"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7dfd2ae3871f06c6c8cedf7ede0a13964d9fd1c3d4172eb989904da8e3b32191"
+  }
+}

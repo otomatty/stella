@@ -1,0 +1,857 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "content_block_stop と message_stop を区別し、停止理由から「完了」と「上限で中断」の表示を選べる。",
+    "stuck": "最初のブロックが閉じた時点を応答の完了と考え、後続の本文や停止理由を読み落とす。",
+    "points": ["content_block_stop はブロックの終わりで、応答の終わりは message_stop です。"],
+    "leaveOut": [
+      "本文の差分を組み立てるコード",
+      "SDK でまとめた応答を受け取る方法",
+      "途中のエラーや接続切断からの回復",
+      "停止理由の全種類",
+      "出力の上限を変更する具体的な手順",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "inspection-report": {
+      "prompt": "A light grey clipboard with blank white inspection sheets and a small blue flashlight beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "receiving-laptop": {
+      "prompt": "An open blue laptop with a completely blank white screen and a small violet receiving tray beside it. A conceptual object illustration, no interface controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "folded-towel": {
+      "prompt": "One neatly folded blue towel beside a loose violet towel, showing a single finished part of a laundry task. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-basket": {
+      "prompt": "A light grey laundry basket containing several unfolded blue and violet towels. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-helper": {
+      "prompt": "A young adult helper with short dark hair and a plain blue shirt holding a neat stack of folded towels, with simple facial features and a relaxed smile. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-memo": {
+      "prompt": "A blank white memo held by a blue clip, with a violet pencil beside it, representing a recorded reason. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "received-envelope": {
+      "prompt": "An open blue envelope containing a small stack of blank white sheets, representing a fully received message. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-duty": {
+      "prompt": "A light grey school lunch tray with an empty white bowl, a blue handled serving ladle and a blank white duty sheet held by a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "設備点検の報告",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "screen",
+          "label": "早すぎる完了",
+          "art": "receiving-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "towel",
+          "label": "一枚たためた",
+          "art": "folded-towel",
+          "at": [1, 1]
+        },
+        {
+          "id": "basket",
+          "label": "まだ残っている",
+          "art": "laundry-basket",
+          "at": [3, 1]
+        },
+        {
+          "id": "helper",
+          "label": "全体の終わり",
+          "art": "laundry-helper",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "next",
+          "from": "towel",
+          "to": "basket",
+          "label": "続き"
+        },
+        {
+          "id": "finish",
+          "from": "basket",
+          "to": "helper",
+          "label": "最後に"
+        }
+      ]
+    },
+    "block": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "closed",
+          "label": "閉じたブロック",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "rest",
+          "label": "後ろの本文",
+          "art": "inspection-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-memo",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "more",
+          "from": "closed",
+          "to": "rest",
+          "label": "受信を続ける"
+        },
+        {
+          "id": "later",
+          "from": "rest",
+          "to": "reason",
+          "label": "後ろに続く"
+        }
+      ]
+    },
+    "end": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "block",
+          "label": "ブロック終了",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "控えた理由",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "block",
+          "to": "reason",
+          "label": "続ける"
+        },
+        {
+          "id": "arrive",
+          "from": "reason",
+          "to": "end",
+          "label": "最後まで"
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "event",
+          "label": "理由の通知",
+          "art": "reason-memo",
+          "at": [1, 1]
+        },
+        {
+          "id": "saved",
+          "label": "停止理由の控え",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "画面の表示",
+          "art": "receiving-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record",
+          "from": "event",
+          "to": "saved",
+          "label": "値を控える"
+        },
+        {
+          "id": "decide",
+          "from": "saved",
+          "to": "screen",
+          "label": "終端で決める"
+        }
+      ]
+    },
+    "normal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "点検の報告",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "通常終了",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "screen",
+          "label": "報告の画面",
+          "art": "receiving-laptop",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "reason-arrives",
+          "from": "report",
+          "to": "reason"
+        },
+        {
+          "id": "end-arrives",
+          "from": "reason",
+          "to": "end"
+        },
+        {
+          "id": "display",
+          "from": "end",
+          "to": "screen"
+        }
+      ]
+    },
+    "limited": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "長い点検報告",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "上限で中断",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "screen",
+          "label": "報告の画面",
+          "art": "receiving-laptop",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "reason-arrives",
+          "from": "report",
+          "to": "reason"
+        },
+        {
+          "id": "end-arrives",
+          "from": "reason",
+          "to": "end"
+        },
+        {
+          "id": "display",
+          "from": "end",
+          "to": "screen"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "duty",
+          "label": "給食の当番案内",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "上限で中断",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "screen",
+          "label": "案内の画面",
+          "art": "receiving-laptop",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "reason-arrives",
+          "from": "duty",
+          "to": "reason"
+        },
+        {
+          "id": "end-arrives",
+          "from": "reason",
+          "to": "end"
+        },
+        {
+          "id": "display",
+          "from": "end",
+          "to": "screen"
+        }
+      ]
+    },
+    "explain": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "block",
+          "label": "ブロック終了",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "上限で中断",
+          "art": "reason-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答の終わり",
+          "art": "received-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "continue",
+          "from": "block",
+          "to": "reason",
+          "label": "読み続ける"
+        },
+        {
+          "id": "receive",
+          "from": "reason",
+          "to": "end",
+          "label": "最後まで"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "short",
+          "label": "短い報告",
+          "art": "inspection-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "long",
+          "label": "長い報告",
+          "art": "inspection-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "終了表示",
+          "art": "receiving-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "short",
+          "to": "long",
+          "label": "両方で確認"
+        },
+        {
+          "id": "display",
+          "from": "long",
+          "to": "screen",
+          "label": "理由を反映"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "完了を早く出してしまう",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "設備点検の報告を、届いた順に画面へ表示します。",
+          "show": ["report"]
+        },
+        {
+          "say": "最初のブロックで完了にすると、残りを読めません。",
+          "show": ["screen"],
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "受信を終える合図は、別にあると考えましょう。",
+          "show": ["end"]
+        },
+        {
+          "say": "ブロックが閉じても、応答の終わりまで受信を続けます。",
+          "pulse": ["report", "end"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "laundry",
+      "kind": "board",
+      "role": "example",
+      "title": "一枚と全部の違い",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "洗濯物を、一枚ずつたたむ場面を考えましょう。",
+          "show": ["towel"]
+        },
+        {
+          "say": "タオルを一枚たたんでも、かごには残りがあります。",
+          "show": ["basket", "next"]
+        },
+        {
+          "say": "一枚が済んだという知らせだけでは、全体は終わりません。",
+          "pulse": ["towel"],
+          "tag": {
+            "towel": "一部だけ"
+          }
+        },
+        {
+          "say": "全部を終えた係は、作業全体の終了を知らせました。",
+          "show": ["helper", "finish"]
+        },
+        {
+          "say": "部分の終わりと全体の終わりを、分けて受け取る例です。",
+          "pulse": ["towel", "helper"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "block-stop",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ブロックが閉じたとき",
+      "board": "block",
+      "beats": [
+        {
+          "say": "コンテントブロックストップは、ブロックの終わりです。",
+          "term": {
+            "text": "ブロックの終わり",
+            "ruby": "ぶろっくのおわり",
+            "note": "部分を閉じる合図"
+          }
+        },
+        {
+          "say": "この通知で閉じたブロックを控え、受信は続けます。",
+          "show": ["closed"],
+          "tag": {
+            "closed": "受信を続ける"
+          }
+        },
+        {
+          "say": "ここで読むのをやめると、後ろに続く本文は読めません。",
+          "show": ["rest", "more"],
+          "mark": [
+            {
+              "on": "rest",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "止まった理由が、このあとに届く場合もあります。",
+          "show": ["reason", "later"],
+          "travel": {
+            "along": ["more", "later"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "message-stop",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答を受信し終える合図",
+      "board": "end",
+      "beats": [
+        {
+          "say": "メッセージストップは、応答の終わりを知らせます。",
+          "term": {
+            "text": "応答の終わり",
+            "ruby": "おうとうのおわり",
+            "note": "message_stop"
+          }
+        },
+        {
+          "say": "ブロックが閉じたときは、まだ受信の途中です。",
+          "show": ["block"]
+        },
+        {
+          "say": "そのあとも読み続け、止まった理由を控えましょう。",
+          "show": ["reason", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "最後の合図が届いたところで、応答を受信し終えます。",
+          "show": ["end", "arrive"],
+          "tag": {
+            "end": "受信終了"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "stop-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "表示に使う理由を控える",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "応答が止まった理由を、停止理由と呼びます。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "なぜ応答が止まったか"
+          }
+        },
+        {
+          "say": "理由を受け取るのは、メッセージデルタの通知です。",
+          "show": ["event"]
+        },
+        {
+          "say": "デルタのストップリーズンに値があれば、控えます。",
+          "show": ["saved", "record"],
+          "travel": {
+            "along": ["record"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ただし、この通知だけで受信を終えるわけではありません。",
+          "tag": {
+            "saved": "理由を保持"
+          },
+          "pulse": ["saved"]
+        },
+        {
+          "say": "メッセージストップが届いたら、控えた理由で表示を決めます。",
+          "show": ["screen", "decide"],
+          "travel": {
+            "along": ["decide"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "normal-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "通常終了した報告",
+      "board": "normal",
+      "beats": [
+        {
+          "say": "点検の報告で、ブロックの終わりを受け取りました。",
+          "show": ["report"],
+          "tag": {
+            "report": "ブロック終了"
+          }
+        },
+        {
+          "say": "受信を続けると、停止理由はエンドターンです。",
+          "show": ["reason", "reason-arrives"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "メッセージストップも届いたので、理由を確かめます。",
+          "show": ["end", "end-arrives"],
+          "tag": {
+            "end": "受信終了"
+          }
+        },
+        {
+          "say": "この通常終了の報告は、「完了」と表示してよい例です。",
+          "show": ["screen", "display"],
+          "tag": {
+            "screen": "完了"
+          },
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "limited-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "上限で止まった報告",
+      "board": "limited",
+      "beats": [
+        {
+          "say": "長い報告も、ブロックが閉じたあとまで読み続けます。",
+          "show": ["report"],
+          "tag": {
+            "report": "受信を続ける"
+          }
+        },
+        {
+          "say": "今度の停止理由は、マックストークンズでした。",
+          "show": ["reason", "reason-arrives"],
+          "tag": {
+            "reason": "上限に到達"
+          }
+        },
+        {
+          "say": "メッセージストップが届いても、報告は途中です。",
+          "show": ["end", "end-arrives"],
+          "tag": {
+            "end": "受信終了"
+          }
+        },
+        {
+          "say": "画面には「完了」ではなく、「上限で中断」と表示します。",
+          "show": ["screen", "display"],
+          "tag": {
+            "screen": "上限で中断"
+          },
+          "pulse": ["screen"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "給食の当番案内の表示",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "給食の当番案内を作るアプリで、応答を受け取りました。",
+          "show": ["duty"]
+        },
+        {
+          "say": "ブロックの終わりでは受信を続け、理由を控えています。",
+          "show": ["reason", "reason-arrives"]
+        },
+        {
+          "say": "控えた値は、マックストークンズです。",
+          "pulse": ["reason"],
+          "tag": {
+            "reason": "上限に到達"
+          }
+        },
+        {
+          "say": "そのあと、メッセージストップも届きました。",
+          "show": ["end", "end-arrives"],
+          "tag": {
+            "end": "受信終了"
+          }
+        },
+        {
+          "say": "案内の画面は、「完了」と「上限で中断」のどちらでしょうか。",
+          "show": ["screen", "display"],
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["screen"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "案内は上限で中断",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、「上限で中断」です。",
+          "tag": {
+            "screen": "上限で中断"
+          },
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        },
+        {
+          "say": "受信終了と、案内を書き終えたかどうかを分けて判断します。",
+          "pulse": ["reason", "end"]
+        }
+      ]
+    },
+    {
+      "id": "why-interrupted",
+      "kind": "board",
+      "role": "explain",
+      "title": "受信終了だけでは決めない",
+      "board": "explain",
+      "beats": [
+        {
+          "say": "ブロックの終わりで読み終えると、停止理由を取り逃します。",
+          "show": ["block"],
+          "mark": [
+            {
+              "on": "block",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "今回の理由は、案内が出力の上限で止まったという意味です。",
+          "show": ["reason", "continue"],
+          "tag": {
+            "reason": "案内は途中"
+          }
+        },
+        {
+          "say": "最後の合図が示すのは、応答を受信し終えたことでした。",
+          "show": ["end", "receive"],
+          "tag": {
+            "end": "受信終了"
+          }
+        },
+        {
+          "say": "受信できた案内を、書き終えたと決めてはいけません。",
+          "pulse": ["reason", "end"],
+          "pause": 1,
+          "tag": {
+            "reason": "上限で中断"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-display",
+      "kind": "board",
+      "role": "usage",
+      "title": "短い報告と長い報告で確認",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "点検報告の画面を作るときは、短い報告で表示を確かめます。",
+          "show": ["short"]
+        },
+        {
+          "say": "長い報告では、点検項目が欠けた例もありました。",
+          "show": ["long", "compare"]
+        },
+        {
+          "say": "上限を増やすだけでは、最初のブロックで止まる処理は直りません。",
+          "pulse": ["long"],
+          "tag": {
+            "long": "処理も見直す"
+          }
+        },
+        {
+          "say": "応答の終わりまで受信し、停止理由に合う表示を確かめましょう。",
+          "show": ["screen", "display"],
+          "pulse": ["screen"],
+          "tag": {
+            "screen": "理由で決める"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "781f9f8ddcfca867cdf9185a866439fa8508975ae7a54c8d85576b2e05d0e333"
+  }
+}

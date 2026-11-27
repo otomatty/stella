@@ -1,0 +1,856 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "バッチの結果を受け取れる時点を判断し、custom_id で元のリクエストと結ぶ手順を説明できる。",
+    "stuck": "送信直後に結果を取りに行ったり、結果が送った順に並ぶと思って元の依頼と結んだりする。",
+    "points": ["バッチの結果は、すべて終わるか 24 時間たつと受け取れます。"],
+    "leaveOut": [
+      "バッチを作成するリクエストの組み立て方",
+      "バッチに向く仕事と通常の料金との比較",
+      "状態を問い合わせる具体的な呼び出し方",
+      "失敗した分を再送する実装",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "pottery-set": {
+      "prompt": "Two handmade ceramic cups, one blue and one violet, each beside a blank white paper description slip, representing works from a pottery class awaiting written introductions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claim-ticket": {
+      "prompt": "A pair of matching white paper claim tickets with identical blue circular punch holes, one held by a hand and the other attached to a violet ceramic cup. The tickets have no markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "finished-pottery": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features holding out a finished violet ceramic cup with a blank white claim ticket attached, ready for its owner to collect. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-sheets": {
+      "prompt": "A small fanned stack of white paper result sheets held together by a blue binder clip, with a violet tab on each sheet. All sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-clock": {
+      "prompt": "A large simple blue analog alarm clock with a white face, two dark hands and no hour marks, beside one closed light grey paper folder. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stopped-ticket": {
+      "prompt": "A blank white request slip next to an empty light grey document tray, with a blue-shirted staff member's hand gently held upright to indicate that no reply was produced. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "concert-reservation": {
+      "prompt": "Two violet concert seats beside two blank white reservation tickets and a small blue violin case, representing seat reservations for a music concert. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "archive-folder": {
+      "prompt": "An open blue archive folder holding blank white result sheets with violet tabs, with a small light grey binder clip on the front sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "works",
+          "label": "作品の紹介",
+          "art": "pottery-set",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "受け取る時点",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "紹介の結果",
+          "art": "result-sheets",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pottery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "works",
+          "label": "預けた作品",
+          "art": "pottery-set",
+          "at": [1, 1]
+        },
+        {
+          "id": "ready",
+          "label": "仕上がり",
+          "art": "finished-pottery",
+          "at": [3, 1]
+        },
+        {
+          "id": "ticket",
+          "label": "受付票の番号",
+          "art": "claim-ticket",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "finish",
+          "from": "works",
+          "to": "ready",
+          "label": "仕上げる"
+        },
+        {
+          "id": "match",
+          "from": "ready",
+          "to": "ticket",
+          "label": "照合"
+        }
+      ]
+    },
+    "timing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sent",
+          "label": "送信直後",
+          "art": "pottery-set",
+          "at": [1, 1]
+        },
+        {
+          "id": "done",
+          "label": "すべて終了",
+          "art": "result-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "deadline",
+          "label": "24時間",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "deadline": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "24時間",
+          "art": "waiting-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "unfinished",
+          "label": "終わらない分",
+          "art": "stopped-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "受け取る結果",
+          "art": "result-sheets",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "expire",
+          "from": "limit",
+          "to": "unfinished",
+          "label": "期限"
+        },
+        {
+          "id": "receive",
+          "from": "unfinished",
+          "to": "results",
+          "label": "結果に含む"
+        }
+      ]
+    },
+    "code-results": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "results",
+          "label": "結果の集まり",
+          "art": "result-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "item",
+          "label": "一件の結果",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "saved",
+          "label": "目印で保存",
+          "art": "archive-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "take",
+          "from": "results",
+          "to": "item",
+          "label": "一件ずつ"
+        },
+        {
+          "id": "save",
+          "from": "item",
+          "to": "saved",
+          "label": "対応付け"
+        }
+      ]
+    },
+    "match-results": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "result-b",
+          "label": "先の結果",
+          "art": "result-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "request-b",
+          "label": "二つ目の依頼",
+          "art": "pottery-set",
+          "at": [3, 1]
+        },
+        {
+          "id": "result-a",
+          "label": "次の結果",
+          "art": "result-sheets",
+          "at": [3, 2]
+        },
+        {
+          "id": "request-a",
+          "label": "一つ目の依頼",
+          "art": "pottery-set",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "match-b",
+          "from": "result-b",
+          "to": "request-b",
+          "label": "cup-b"
+        },
+        {
+          "id": "match-a",
+          "from": "result-a",
+          "to": "request-a",
+          "label": "cup-a"
+        }
+      ]
+    },
+    "types": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "success",
+          "label": "成功",
+          "art": "result-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "error",
+          "label": "errored",
+          "art": "stopped-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "cancel",
+          "label": "取り消し",
+          "art": "stopped-ticket",
+          "at": [3, 2]
+        },
+        {
+          "id": "expire",
+          "label": "expired",
+          "art": "stopped-ticket",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "concert": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reservations",
+          "label": "座席の予約",
+          "art": "concert-reservation",
+          "at": [1, 1]
+        },
+        {
+          "id": "done",
+          "label": "すべて終了",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "確認文の結果",
+          "art": "result-sheets",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "process",
+          "from": "reservations",
+          "to": "done",
+          "label": "処理"
+        },
+        {
+          "id": "receive",
+          "from": "done",
+          "to": "results",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "works",
+          "label": "作品の紹介",
+          "art": "pottery-set",
+          "at": [1, 1]
+        },
+        {
+          "id": "time",
+          "label": "終了か期限",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "archive",
+          "label": "結果の保管",
+          "art": "archive-folder",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "紹介文をいつ受け取るか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "陶芸教室の作品紹介を、バッチでまとめて頼みます。",
+          "show": ["works"]
+        },
+        {
+          "say": "送った直後は、まだ結果を受け取れません。",
+          "show": ["wait"]
+        },
+        {
+          "say": "紹介文を受け取れる時点を確かめましょう。",
+          "show": ["results"]
+        },
+        {
+          "say": "バッチの結果は、すべて終わるか二十四時間たつと受け取れます。",
+          "speech": "バッチの結果は、すべて終わるかにじゅうよじかんたつと受け取れます。",
+          "pulse": ["wait", "results"]
+        }
+      ]
+    },
+    {
+      "id": "pottery-tickets",
+      "kind": "board",
+      "role": "example",
+      "title": "作品と受付票を照らす",
+      "board": "pottery",
+      "beats": [
+        {
+          "say": "陶芸教室で、焼き上げる作品を預けたとします。",
+          "show": ["works"]
+        },
+        {
+          "say": "受け取るのは、作品が仕上がってからです。",
+          "show": ["ready", "finish"]
+        },
+        {
+          "say": "出来上がった順だけで、自分の作品を選んではいけません。",
+          "pulse": ["ready"],
+          "mark": [
+            {
+              "on": "ready",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "受付票の番号と照らして、自分の作品を受け取りましょう。",
+          "show": ["ticket", "match"],
+          "unmark": ["ready"],
+          "travel": {
+            "along": ["match"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "receive-time",
+      "kind": "board",
+      "role": "syntax",
+      "title": "先に来た時点で受け取る",
+      "board": "timing",
+      "beats": [
+        {
+          "say": "バッチの結果は、各依頼を処理した結果の集まりです。",
+          "term": {
+            "text": "バッチの結果",
+            "ruby": "バッチのけっか",
+            "note": "各依頼を処理した結果の集まり"
+          }
+        },
+        {
+          "say": "送信した直後は、処理の終了を待ちます。",
+          "show": ["sent"],
+          "tag": {
+            "sent": "まだ待つ"
+          }
+        },
+        {
+          "say": "すべて終われば、その時点で受け取れるタイミングです。",
+          "show": ["done"],
+          "tag": {
+            "done": "受取可能"
+          }
+        },
+        {
+          "say": "二十四時間たったときも、結果を受け取れます。",
+          "speech": "にじゅうよじかんたったときも、結果を受け取れます。",
+          "show": ["deadline"],
+          "tag": {
+            "deadline": "受取可能"
+          }
+        },
+        {
+          "say": "二つのうち、先に来た時点を選びましょう。",
+          "pulse": ["done", "deadline"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "deadline-results",
+      "kind": "board",
+      "role": "syntax",
+      "title": "終わらない分の扱い",
+      "board": "deadline",
+      "beats": [
+        {
+          "say": "多くのバッチは、一時間以内に終わります。",
+          "speech": "多くのバッチは、いちじかん以内に終わります。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "多くは1時間"
+          }
+        },
+        {
+          "say": "ただし、一時間が結果を受け取る期限ではありません。",
+          "speech": "ただし、いちじかんが結果を受け取る期限ではありません。",
+          "untag": ["limit"],
+          "pulse": ["limit"]
+        },
+        {
+          "say": "二十四時間で終わらない分は、期限切れになります。",
+          "speech": "にじゅうよじかんで終わらない分は、期限切れになります。",
+          "term": {
+            "text": "期限切れ",
+            "ruby": "きげんぎれ",
+            "note": "期限までに処理が終わらない"
+          }
+        },
+        {
+          "say": "期限切れの分も、受け取る結果で分かる仕組みです。",
+          "show": ["unfinished", "results", "expire", "receive"],
+          "tag": {
+            "unfinished": "期限切れ"
+          },
+          "travel": {
+            "along": ["expire", "receive"],
+            "icon": "result"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-result-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "目印で結果を保存する",
+      "code": [
+        "// 結果の集まりから一件ずつ取り出す",
+        "for (const item of results) {",
+        "  // 元の依頼の目印と結果を組にして保存する",
+        "  byId.set(item.custom_id, item.result);",
+        "// すべての結果を扱うまで繰り返す",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "code-results"
+      },
+      "beats": [
+        {
+          "say": "元の依頼と結ぶ目印が、カスタムアイディーです。",
+          "term": {
+            "text": "custom_id",
+            "note": "元の依頼と結果を結ぶ目印"
+          }
+        },
+        {
+          "say": "結果に付いた同じ目印で、元の依頼と結びます。",
+          "part": {
+            "line": 3,
+            "text": "item.custom_id",
+            "note": "元の依頼の目印"
+          },
+          "figure": {
+            "show": ["item"],
+            "tag": {
+              "item": "cup-b"
+            }
+          }
+        },
+        {
+          "say": "results は、結果の集まりに付けた名前です。",
+          "speech": "リザルツは、結果の集まりに付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "results",
+            "note": "結果の集まり"
+          },
+          "figure": {
+            "show": ["results", "take"]
+          }
+        },
+        {
+          "say": "一件を表す item も、書く人が自分で名付けます。",
+          "speech": "一件を表すアイテムも、書く人が自分で名付けます。",
+          "part": {
+            "line": 1,
+            "text": "item",
+            "note": "一件"
+          },
+          "figure": {
+            "travel": {
+              "along": ["take"],
+              "icon": "result"
+            }
+          }
+        },
+        {
+          "say": "byId も、自分で付けた保存先の名前です。",
+          "speech": "バイアイディーも、自分で付けた保存先の名前です。",
+          "part": {
+            "line": 3,
+            "text": "byId",
+            "note": "目印ごと"
+          },
+          "figure": {
+            "show": ["saved", "save"]
+          }
+        },
+        {
+          "say": "この例では、目印と result の中身を組にして保存します。",
+          "speech": "この例では、目印とリザルトの中身を組にして保存します。",
+          "part": {
+            "line": 3,
+            "text": "item.result",
+            "note": "結果の中身"
+          },
+          "figure": {
+            "travel": {
+              "along": ["save"],
+              "icon": "save"
+            },
+            "tag": {
+              "saved": "cup-b"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "match-works",
+      "kind": "board",
+      "role": "apply",
+      "title": "返った順に結ばない",
+      "board": "match-results",
+      "beats": [
+        {
+          "say": "作品紹介を二件頼み、二つ目の結果が先に並んだとします。",
+          "show": ["result-b", "request-b"],
+          "tag": {
+            "result-b": "cup-b",
+            "request-b": "cup-b"
+          }
+        },
+        {
+          "say": "これは同じ目印を持つ、二つ目の依頼の結果です。",
+          "show": ["match-b"],
+          "travel": {
+            "along": ["match-b"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "次の結果も目印を見て、一つ目の依頼と結びます。",
+          "show": ["result-a", "request-a", "match-a"],
+          "tag": {
+            "result-a": "cup-a",
+            "request-a": "cup-a"
+          },
+          "travel": {
+            "along": ["match-a"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "送った順に結果が並ぶとは限らないので、目印を使いましょう。",
+          "pulse": ["result-b", "request-b", "result-a", "request-a"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "result-types",
+      "kind": "board",
+      "role": "note",
+      "title": "応答があるかも確かめる",
+      "board": "types",
+      "beats": [
+        {
+          "say": "succeeded は、成功して応答がある結果です。",
+          "speech": "サクシーデッドは、成功して応答がある結果です。",
+          "show": ["success"],
+          "tag": {
+            "success": "応答あり"
+          }
+        },
+        {
+          "say": "errored は、エラーで応答が作られなかったことを示します。",
+          "speech": "エラードは、エラーで応答が作られなかったことを示します。",
+          "show": ["error"],
+          "tag": {
+            "error": "応答なし"
+          }
+        },
+        {
+          "say": "canceled は、処理される前に取り消された結果です。",
+          "speech": "キャンセルドは、処理される前に取り消された結果です。",
+          "show": ["cancel"],
+          "tag": {
+            "cancel": "取消"
+          }
+        },
+        {
+          "say": "expired は、処理される前に期限が来たことを示します。",
+          "speech": "エクスパイアードは、処理される前に期限が来たことを示します。",
+          "show": ["expire"],
+          "tag": {
+            "expire": "期限切れ"
+          }
+        },
+        {
+          "say": "応答が作られなかった分には、課金されません。",
+          "pulse": ["error", "cancel", "expire"],
+          "tag": {
+            "error": "課金なし",
+            "cancel": "課金なし",
+            "expire": "課金なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "concert-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予約の確認文を受け取る",
+      "board": "concert",
+      "think": 8,
+      "beats": [
+        {
+          "say": "音楽会の予約ごとに、確認文をバッチで頼みました。",
+          "show": ["reservations"]
+        },
+        {
+          "say": "二時間後には、すべての処理が終わっています。",
+          "speech": "にじかんごには、すべての処理が終わっています。",
+          "show": ["done", "process"],
+          "tag": {
+            "done": "2時間後"
+          }
+        },
+        {
+          "say": "結果の並びは、予約を送った順とは逆です。",
+          "show": ["results"],
+          "tag": {
+            "results": "逆の順番"
+          }
+        },
+        {
+          "say": "今受け取るか、二十四時間まで待つかを選びましょう。",
+          "speech": "今受け取るか、にじゅうよじかんまで待つかを選びましょう。",
+          "pulse": ["done"],
+          "mark": [
+            {
+              "on": "done",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "元の予約と結ぶときは、何を目印にするのでしょうか。",
+          "pulse": ["results"],
+          "mark": [
+            {
+              "on": "results",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "concert-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "今受け取り目印で結ぶ",
+      "board": "concert",
+      "beats": [
+        {
+          "say": "今受け取り、カスタムアイディーで元の予約と結びます。",
+          "show": ["receive"],
+          "mark": [
+            {
+              "on": "done",
+              "kind": "check"
+            },
+            {
+              "on": "results",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "results": "同じ目印"
+          }
+        },
+        {
+          "say": "二十四時間まで待ち続ける必要はありません。",
+          "speech": "にじゅうよじかんまで待ち続ける必要はありません。",
+          "pulse": ["done"],
+          "tag": {
+            "done": "今受け取る"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-receive-now",
+      "kind": "board",
+      "role": "explain",
+      "title": "終了の時点と目印を見る",
+      "board": "concert",
+      "reset": true,
+      "beats": [
+        {
+          "say": "先に来た条件は、すべての処理の終了です。",
+          "show": ["done"],
+          "tag": {
+            "done": "2時間後"
+          }
+        },
+        {
+          "say": "期限より早く終わったので、もう結果を受け取れます。",
+          "show": ["results", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "返る順番だけでは、元の予約を間違えるかもしれません。",
+          "tag": {
+            "results": "逆の順番"
+          },
+          "mark": [
+            {
+              "on": "results",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "予約と結果にある同じ目印を照らしましょう。",
+          "show": ["reservations"],
+          "tag": {
+            "reservations": "同じ目印",
+            "results": "同じ目印"
+          },
+          "mark": [
+            {
+              "on": "results",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["reservations", "results"]
+        }
+      ]
+    },
+    {
+      "id": "use-results",
+      "kind": "board",
+      "role": "usage",
+      "title": "紹介文を受け取って使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "作品紹介をまとめて頼んだら、受け取る時点を確かめます。",
+          "show": ["works", "time"]
+        },
+        {
+          "say": "確認するのは、各結果の目印と処理の種類です。",
+          "show": ["archive"],
+          "tag": {
+            "archive": "目印と種類"
+          }
+        },
+        {
+          "say": "結果は、作ってから二十九日間取り出せます。",
+          "speech": "結果は、作ってからにじゅうくにちかん取り出せます。",
+          "tag": {
+            "archive": "作成後29日"
+          }
+        },
+        {
+          "say": "すべての終了か二十四時間の、早い時点で受け取りましょう。",
+          "speech": "すべての終了かにじゅうよじかんの、早い時点で受け取りましょう。",
+          "pulse": ["time"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ad79ae9dd1053f1ed35746b52b5777b70ed43f65a49e9a0c71dd0dd3e9c72f91"
+  }
+}

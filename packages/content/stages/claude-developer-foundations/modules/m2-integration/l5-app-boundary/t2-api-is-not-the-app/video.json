@@ -1,0 +1,663 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ウェブ版で試した依頼を自作アプリに移す際に、出力の指示と参照資料を送信内容のどこに用意するか説明できる。",
+    "stuck": "同じ依頼文を送れば、ウェブ版で使った指示や開いた資料も自作アプリに引き継がれると思ってしまう。",
+    "points": ["claude.ai のアプリが持つ指示や機能は、API のリクエストには付きません。"],
+    "leaveOut": [
+      "system と利用者の発言の優先順位",
+      "会話の途中で指示を追加する方法",
+      "履歴と添付ファイルを利用者ごとに管理する方法",
+      "応答のスキーマと大文字小文字の比較",
+      "API を呼び出すコードと資料の取得処理の実装"
+    ]
+  },
+  "art": {
+    "handover-note": {
+      "prompt": "A light grey folder holding several white handover memo sheets, with blue paper clips and a violet pencil. The sheets are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. One empty speech bubble beside its head. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "custom-app": {
+      "prompt": "An open violet laptop with a completely blank screen, representing a custom application. No interface elements. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "colleague": {
+      "prompt": "A staff member in a plain blue shirt, with simple facial features, holding out an empty hand to receive a memo. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "format-sheet": {
+      "prompt": "One white clipboard with two large blank fields arranged vertically, each with a blue tab on the left, representing a requested output format. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "An open blue envelope with a white instruction sheet and a light grey document folder tucked inside. The papers are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bookmobile": {
+      "prompt": "A blue and white mobile library van with an open side hatch showing several violet and light grey books. No people. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "route-sheet": {
+      "prompt": "A white route sheet held by a blue clip, with a simple blue path connecting two violet location dots and a small blank clock face beside the sheet. No map background. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "引き継ぎメモ",
+          "art": "handover-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "web",
+          "label": "ウェブ版",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "自作アプリ",
+          "art": "custom-app",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "colleague": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "別の担当者",
+          "art": "colleague",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "使う見出し",
+          "art": "format-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "元のメモ",
+          "art": "handover-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "boundary": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "web",
+          "label": "ウェブ版",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "製品の指示",
+          "art": "format-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "自作アプリ",
+          "art": "custom-app",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "format",
+          "label": "system",
+          "art": "format-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "入力のメモ",
+          "art": "handover-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "verify": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "自作アプリ",
+          "art": "custom-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "送信する内容",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "assemble",
+          "from": "app",
+          "to": "request",
+          "label": "組み立てる"
+        },
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "送る"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "van",
+          "label": "移動図書館",
+          "art": "bookmobile",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "巡回の予定表",
+          "art": "route-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "format",
+          "label": "停留所と時刻",
+          "art": "format-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "first",
+          "label": "依頼文だけ",
+          "art": "request-envelope",
+          "at": [5, 2]
+        },
+        {
+          "id": "second",
+          "label": "欄と資料も",
+          "art": "request-envelope",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "format",
+          "label": "system",
+          "art": "format-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "巡回の予定表",
+          "art": "route-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-envelope",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "引き継ぎメモを移す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "担当者と期限が分かる、引き継ぎメモを作ります。",
+          "show": ["memo"]
+        },
+        {
+          "say": "試していた場所は、claude.ai です。",
+          "speech": "試していた場所は、クロードドットエーアイです。",
+          "show": ["web"]
+        },
+        {
+          "say": "自作アプリに移すと、必要な欄が抜けました。",
+          "show": ["app"],
+          "tag": {
+            "app": "欄が足りない"
+          }
+        },
+        {
+          "say": "アプリの指示や機能は、APIには自動で付きません。",
+          "speech": "アプリの指示や機能は、エーピーアイには自動で付きません。",
+          "pulse": ["web", "app"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "colleague",
+      "kind": "board",
+      "role": "example",
+      "title": "別の担当者に頼むなら",
+      "board": "colleague",
+      "beats": [
+        {
+          "say": "別の担当者に、メモの整理を頼む場面を考えましょう。",
+          "show": ["staff"]
+        },
+        {
+          "say": "「いつもの形式で」だけでは、見出しが分かりません。",
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、担当者と期限の欄を作るよう伝えます。",
+          "show": ["form"],
+          "tag": {
+            "form": "担当者と期限"
+          }
+        },
+        {
+          "say": "整理する元のメモも、一緒に渡さなければいけません。",
+          "show": ["memo"],
+          "unmark": ["staff"]
+        }
+      ]
+    },
+    {
+      "id": "boundary",
+      "kind": "board",
+      "role": "syntax",
+      "title": "製品が加える指示",
+      "board": "boundary",
+      "beats": [
+        {
+          "say": "Claude のウェブ版は、一つの製品です。",
+          "speech": "クロードのウェブ版は、一つの製品です。",
+          "show": ["web"]
+        },
+        {
+          "say": "その製品が、会話に加える指示もあります。",
+          "show": ["form"]
+        },
+        {
+          "say": "自作アプリの呼び出しには、その指示は付きません。",
+          "show": ["app"],
+          "mark": [
+            {
+              "on": "app",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "自作アプリで必要な前提は、送信する内容に書きましょう。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "前提を書く"
+          }
+        }
+      ]
+    },
+    {
+      "id": "request-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "送信する内容を見る",
+      "board": "request",
+      "beats": [
+        {
+          "say": "確認するのは、実際に送るリクエストです。",
+          "term": {
+            "text": "リクエスト",
+            "note": "APIへ送る依頼"
+          }
+        },
+        {
+          "say": "自作アプリがまとめた、この中身を調べます。",
+          "show": ["request"]
+        },
+        {
+          "say": "出力の形を書く場所は、system です。",
+          "speech": "出力の形を書く場所は、システムです。",
+          "term": {
+            "text": "system",
+            "note": "出力の項目を指示する場所"
+          }
+        },
+        {
+          "say": "ここに、必要な見出しを指定しましょう。",
+          "show": ["format"],
+          "pulse": ["format"]
+        },
+        {
+          "say": "参照するメモも、送る内容に含めます。",
+          "show": ["source"],
+          "pulse": ["source"]
+        }
+      ]
+    },
+    {
+      "id": "specify-fields",
+      "kind": "board",
+      "role": "apply",
+      "title": "担当者と期限を指定する",
+      "board": "request",
+      "reset": true,
+      "beats": [
+        {
+          "say": "引き継ぎメモでは、担当者と期限を残したいとします。",
+          "show": ["format"],
+          "tag": {
+            "format": "担当者と期限"
+          }
+        },
+        {
+          "say": "「いつもの形式で」だけでは、この指定がありません。",
+          "show": ["request"],
+          "tag": {
+            "request": "いつもの形式"
+          },
+          "mark": [
+            {
+              "on": "request",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "必要なのは、二つの欄を出すという指示です。",
+          "pulse": ["format"]
+        },
+        {
+          "say": "system に、担当者と期限の見出しを書くよう指定します。",
+          "speech": "システムに、担当者と期限の見出しを書くよう指定します。",
+          "untag": ["request"],
+          "unmark": ["request"],
+          "mark": [
+            {
+              "on": "format",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "include-source",
+      "kind": "board",
+      "role": "apply",
+      "title": "元のメモも添える",
+      "board": "request",
+      "beats": [
+        {
+          "say": "参照するメモは、リクエストの入力に含めます。",
+          "term": {
+            "text": "入力",
+            "ruby": "にゅうりょく",
+            "note": "判断に使う内容"
+          }
+        },
+        {
+          "say": "ここに必要なのは、整理する元のメモです。",
+          "show": ["source"],
+          "pulse": ["source"]
+        },
+        {
+          "say": "ウェブ版で開いたメモは、自動では添付されません。",
+          "mark": [
+            {
+              "on": "source",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "自作アプリで元のメモを取り出して、入力に添えましょう。",
+          "mark": [
+            {
+              "on": "source",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "source": "本文を添える"
+          }
+        }
+      ]
+    },
+    {
+      "id": "try-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "自作アプリの内容で試す",
+      "board": "verify",
+      "beats": [
+        {
+          "say": "自作アプリが組み立てたリクエストを使って試します。",
+          "show": ["app", "request", "assemble"],
+          "travel": {
+            "along": ["assemble"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "まず見るのは、担当者と期限を指定した指示です。",
+          "tag": {
+            "request": "担当者と期限"
+          },
+          "pulse": ["request"]
+        },
+        {
+          "say": "整理するメモの本文も、含まれているか確かめましょう。",
+          "tag": {
+            "request": "メモの本文"
+          }
+        },
+        {
+          "say": "指示と資料を含めた内容を、APIへ送ります。",
+          "speech": "指示と資料を含めた内容を、エーピーアイへ送ります。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "移動図書館の巡回案内",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "移動図書館の巡回案内を、自作アプリで作ります。",
+          "show": ["van"]
+        },
+        {
+          "say": "元の予定表は、ウェブ版で開いた資料です。",
+          "show": ["source"]
+        },
+        {
+          "say": "担当者は、停留所と時刻の欄を出したいと考えました。",
+          "show": ["format"]
+        },
+        {
+          "say": "一つ目は依頼文だけ、二つ目は欄の指定と予定表も送ります。",
+          "show": ["first", "second"]
+        },
+        {
+          "say": "必要な前提を送れているのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "欄の指定と予定表を送る",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、欄の指定と予定表も送る二つ目です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "欲しい出力の形と、参照する資料を用意しています。",
+          "pulse": ["format", "source"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-both",
+      "kind": "board",
+      "role": "explain",
+      "title": "形式と資料の役割",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "停留所と時刻の欄は、system に指定します。",
+          "speech": "停留所と時刻の欄は、システムに指定します。",
+          "show": ["format"],
+          "tag": {
+            "format": "停留所と時刻"
+          }
+        },
+        {
+          "say": "その指示で伝えるのは、欲しい出力の形です。",
+          "pulse": ["format"]
+        },
+        {
+          "say": "欄に書く内容は、巡回の予定表を入力に添えて渡しましょう。",
+          "show": ["source"],
+          "tag": {
+            "source": "予定表の本文"
+          }
+        },
+        {
+          "say": "ウェブ版で開いた資料が、自動で付くわけではありません。",
+          "mark": [
+            {
+              "on": "source",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "自作アプリが資料も送れば、必要な前提を渡せます。",
+          "show": ["request"],
+          "mark": [
+            {
+              "on": "source",
+              "kind": "check"
+            },
+            {
+              "on": "request",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "ウェブ版から移すとき",
+      "board": "verify",
+      "reset": true,
+      "beats": [
+        {
+          "say": "ウェブ版で試した依頼を、自作アプリに移す場面です。",
+          "show": ["app"]
+        },
+        {
+          "say": "期待した欄が出ないときは、実際の送信内容を見ます。",
+          "show": ["request", "assemble"],
+          "pulse": ["request"]
+        },
+        {
+          "say": "指示や資料は、自動では付かないと考えてください。",
+          "tag": {
+            "request": "指示と資料"
+          }
+        },
+        {
+          "say": "必要な前提を送る内容に含めてから、動作を確かめましょう。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "65f94886e3d55437d27b276b951f38a20e106a626193c5ea02ac517ef433bbec"
+  }
+}

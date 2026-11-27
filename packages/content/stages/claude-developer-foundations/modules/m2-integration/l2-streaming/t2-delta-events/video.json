@@ -1,0 +1,837 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "イベントの種類を見分け、本文の差分を届いた順につないだ結果を答えられる。",
+    "stuck": "届いたイベントを完成した応答と同じ形で読み、本文の続きと停止理由を取り違える。",
+    "points": ["ストリーミングでは、本文が差分のイベントとして順に届きます。"],
+    "leaveOut": [
+      "SDKでまとめた応答を受け取る方法",
+      "終了理由ごとの完了と中断の判定",
+      "途中のエラーや切断からの回復",
+      "ツール入力のJSON断片とブロックのindexの詳細",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "recipe-book": {
+      "prompt": "An open white recipe booklet beside a blue cooking pot and a small clear measuring jug filled with water. The pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "first-strip": {
+      "prompt": "One short horizontal white paper strip held at its left edge by a hand, with a small blue paper clip at the corner. The strip is blank and represents the first few words of a cooking instruction. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "next-strip": {
+      "prompt": "One short horizontal light grey paper strip held at its right edge by a hand, with a small violet paper clip at the corner. The strip is blank and represents the next few words of the same cooking instruction. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "assembled-note": {
+      "prompt": "Two blank white paper strips placed end to end and joined by a small violet clip, forming one long horizontal note. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "event-envelope": {
+      "prompt": "An open light grey envelope with a blank white slip partly pulled out and a small solid blue circular seal on its flap. This represents one small incoming notice. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-clipboard": {
+      "prompt": "A small upright blue clipboard holding one blank white sheet, with a violet pencil beside it. This represents the separate record of why a response stopped. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "camp-tent": {
+      "prompt": "A blue camping tent with a rolled violet sleeping bag and one blank white reservation slip beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reading-screen": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a tablet with a completely blank blue screen, looking at the screen with a simple attentive face. This is a conceptual illustration, with no interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "料理の手順",
+          "art": "recipe-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "pieces",
+          "label": "続きの文字",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "つないだ本文",
+          "art": "assembled-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "最初の紙",
+          "art": "first-strip",
+          "at": [1, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の紙",
+          "art": "next-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "whole",
+          "label": "水を入れます",
+          "art": "assembled-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first-next",
+          "from": "first",
+          "to": "next",
+          "label": "続き"
+        },
+        {
+          "id": "next-whole",
+          "from": "next",
+          "to": "whole",
+          "label": "つなぐ"
+        }
+      ]
+    },
+    "events": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "小さな知らせ",
+          "art": "event-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "text",
+          "label": "本文の差分",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-clipboard",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "filter": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "outer",
+          "label": "外側の種類",
+          "art": "event-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "inner",
+          "label": "本文の差分",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "足す文字",
+          "art": "assembled-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "outer-inner",
+          "from": "outer",
+          "to": "inner"
+        },
+        {
+          "id": "inner-body",
+          "from": "inner",
+          "to": "body"
+        }
+      ]
+    },
+    "sequence": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "start",
+          "label": "応答の開始",
+          "art": "event-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "block",
+          "label": "ブロック",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "delta",
+          "label": "応答の差分",
+          "art": "reason-clipboard",
+          "at": [5, 1]
+        },
+        {
+          "id": "stop",
+          "label": "応答の終端",
+          "art": "event-envelope",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "start-block",
+          "from": "start",
+          "to": "block"
+        },
+        {
+          "id": "block-delta",
+          "from": "block",
+          "to": "delta"
+        },
+        {
+          "id": "delta-stop",
+          "from": "delta",
+          "to": "stop"
+        }
+      ]
+    },
+    "join": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "最初の差分",
+          "art": "first-strip",
+          "at": [1, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の差分",
+          "art": "next-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "ためた本文",
+          "art": "assembled-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first-next",
+          "from": "first",
+          "to": "next"
+        },
+        {
+          "id": "next-body",
+          "from": "next",
+          "to": "body"
+        }
+      ]
+    },
+    "others": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ping",
+          "label": "ping",
+          "art": "event-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "text",
+          "label": "本文の差分",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "unknown",
+          "label": "知らない種類",
+          "art": "event-envelope",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "camp": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "camp",
+          "label": "キャンプ場",
+          "art": "camp-tent",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初の差分",
+          "art": "first-strip",
+          "at": [3, 1]
+        },
+        {
+          "id": "ping",
+          "label": "ping",
+          "art": "event-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の差分",
+          "art": "next-strip",
+          "at": [5, 2]
+        },
+        {
+          "id": "body",
+          "label": "つないだ本文",
+          "art": "assembled-note",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "first-ping",
+          "from": "first",
+          "to": "ping"
+        },
+        {
+          "id": "ping-next",
+          "from": "ping",
+          "to": "next"
+        },
+        {
+          "id": "next-body",
+          "from": "next",
+          "to": "body"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "料理の手順",
+          "art": "recipe-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "screen",
+          "label": "本文を表示",
+          "art": "reading-screen",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-clipboard",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "続きの文字をつなぐ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "料理の手順を、少しずつ受け取る場面を考えます。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "届くのは、一度に完成した本文ではありません。",
+          "show": ["pieces"]
+        },
+        {
+          "say": "小さな続きの文字を、順につなぐ練習です。",
+          "show": ["body"]
+        },
+        {
+          "say": "ストリーミングでは、本文が差分のイベントとして順に届きます。",
+          "pulse": ["pieces", "body"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "paper-strips",
+      "kind": "board",
+      "role": "example",
+      "title": "台所で手順の紙を受け取る",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "台所で、手順を分けた紙を受け取るとしましょう。",
+          "show": ["first"]
+        },
+        {
+          "say": "最初の紙には「水を」と書いてあります。",
+          "tag": {
+            "first": "水を"
+          }
+        },
+        {
+          "say": "次の紙に書かれた言葉は「入れます」です。",
+          "show": ["next", "first-next"],
+          "tag": {
+            "next": "入れます"
+          }
+        },
+        {
+          "say": "二枚を順につなぐと、手順の一文が読めます。",
+          "show": ["whole", "next-whole"],
+          "travel": {
+            "along": ["first-next", "next-whole"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "event-shape",
+      "kind": "board",
+      "role": "syntax",
+      "title": "知らせの種類を見分ける",
+      "board": "events",
+      "beats": [
+        {
+          "say": "種類が分かる小さな知らせを、イベントと呼びます。",
+          "term": {
+            "text": "イベント",
+            "note": "種類の分かる小さな知らせ"
+          },
+          "show": ["notice"]
+        },
+        {
+          "say": "届いた一つは、完成した応答全体ではありません。",
+          "pulse": ["notice"],
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "イベントの種類は、タイプという項目で確かめます。",
+          "tag": {
+            "notice": "type"
+          },
+          "unmark": ["notice"]
+        },
+        {
+          "say": "本文の差分と停止理由は、別の種類の知らせです。",
+          "show": ["text", "reason"],
+          "pulse": ["text", "reason"]
+        }
+      ]
+    },
+    {
+      "id": "read-delta",
+      "kind": "code",
+      "role": "syntax",
+      "title": "本文の差分を選ぶ",
+      "code": [
+        "// 外側の種類がブロックの差分かを調べる",
+        "if (event.type === \"content_block_delta\" &&",
+        "    // 内側の種類が本文の差分かを調べる",
+        "    event.delta.type === \"text_delta\") {",
+        "  // 届いた続きの文字を本文の末尾に足す",
+        "  text += event.delta.text;",
+        "// 条件に合うときの処理を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "filter"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "本文の続きの文字を運ぶ差分が、テキストデルタです。",
+          "term": {
+            "text": "text_delta",
+            "note": "本文の続きの文字"
+          },
+          "figure": {
+            "show": ["inner"]
+          }
+        },
+        {
+          "say": "まず、外側がコンテントブロックデルタかを調べます。",
+          "part": {
+            "line": 1,
+            "text": "\"content_block_delta\"",
+            "note": "ブロックの差分"
+          },
+          "figure": {
+            "show": ["outer", "outer-inner"]
+          }
+        },
+        {
+          "say": "内側の種類は、テキストデルタであることが条件です。",
+          "part": {
+            "line": 3,
+            "text": "\"text_delta\"",
+            "note": "本文の差分"
+          },
+          "figure": {
+            "pulse": ["inner"]
+          }
+        },
+        {
+          "say": "二つの条件がそろったときだけ、本文を足します。",
+          "focus": [1, 3],
+          "figure": {
+            "mark": [
+              {
+                "on": "inner",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "足す文字は、イベントのデルタのテキストです。",
+          "part": {
+            "line": 5,
+            "text": "event.delta.text",
+            "note": "続きの文字"
+          },
+          "figure": {
+            "show": ["body", "inner-body"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "event-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "届く順序と停止理由",
+      "board": "sequence",
+      "beats": [
+        {
+          "say": "メッセージスタートで、応答が始まります。",
+          "show": ["start"]
+        },
+        {
+          "say": "続いて、ブロックの開始と差分、終了を受け取りました。",
+          "show": ["block", "start-block"],
+          "tag": {
+            "block": "開始から終了"
+          }
+        },
+        {
+          "say": "応答の差分を運ぶのが、メッセージデルタです。",
+          "term": {
+            "text": "応答の差分",
+            "ruby": "おうとうのさぶん",
+            "note": "message_delta"
+          },
+          "show": ["delta", "block-delta"]
+        },
+        {
+          "say": "その中のデルタのストップリーズンに、停止理由が入ります。",
+          "pulse": ["delta"],
+          "tag": {
+            "delta": "停止理由"
+          }
+        },
+        {
+          "say": "応答の最後の知らせは、メッセージストップです。",
+          "show": ["stop", "delta-stop"],
+          "travel": {
+            "along": ["delta-stop"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "join-body",
+      "kind": "code",
+      "role": "apply",
+      "title": "水を入れますとつなぐ",
+      "code": [
+        "// 外側の種類がブロックの差分かを調べる",
+        "if (event.type === \"content_block_delta\" &&",
+        "    // 内側の種類が本文の差分かを調べる",
+        "    event.delta.type === \"text_delta\") {",
+        "  // 届いた続きの文字を本文の末尾に足す",
+        "  text += event.delta.text;",
+        "// 条件に合うときの処理を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "join"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "イベントとテキストは、ここで付けた変数名です。",
+          "part": {
+            "line": 1,
+            "text": "event",
+            "note": "届いた知らせ"
+          },
+          "figure": {
+            "show": ["first"]
+          }
+        },
+        {
+          "say": "テキストという変数に、本文をためていきます。",
+          "part": {
+            "line": 5,
+            "text": "text",
+            "note": "本文"
+          },
+          "figure": {
+            "show": ["body"],
+            "tag": {
+              "body": "空の文字列"
+            }
+          }
+        },
+        {
+          "say": "最初に届いた本文の差分は、「水を」でした。",
+          "part": {
+            "line": 5,
+            "text": "event.delta.text",
+            "note": "続きの文字"
+          },
+          "figure": {
+            "tag": {
+              "first": "水を",
+              "body": "水を"
+            }
+          }
+        },
+        {
+          "say": "次の差分は「入れます」です。",
+          "figure": {
+            "show": ["next", "first-next"],
+            "tag": {
+              "next": "入れます"
+            }
+          }
+        },
+        {
+          "say": "届いた文字を末尾に足すと、一文につながります。",
+          "part": {
+            "line": 5,
+            "text": "+=",
+            "note": "末尾に足す"
+          },
+          "figure": {
+            "show": ["next-body"],
+            "tag": {
+              "body": "水を入れます"
+            },
+            "travel": {
+              "along": ["next-body"],
+              "icon": "file"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "other-events",
+      "kind": "board",
+      "role": "apply",
+      "title": "本文以外の知らせ",
+      "board": "others",
+      "beats": [
+        {
+          "say": "途中には、ピングが混ざることもあります。",
+          "show": ["ping"]
+        },
+        {
+          "say": "届く知らせの全部が、本文の続きではありません。",
+          "show": ["text"],
+          "tag": {
+            "ping": "本文ではない"
+          },
+          "pulse": ["text"]
+        },
+        {
+          "say": "知らない種類は読み飛ばし、本文の差分をつなぎましょう。",
+          "show": ["unknown"],
+          "tag": {
+            "unknown": "読み飛ばす"
+          },
+          "pulse": ["unknown"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "キャンプ場の予約案内",
+      "board": "camp",
+      "think": 8,
+      "beats": [
+        {
+          "say": "キャンプ場の予約案内を、少しずつ受け取ります。",
+          "show": ["camp"]
+        },
+        {
+          "say": "最初の本文の差分は、「予約」です。",
+          "show": ["first"],
+          "tag": {
+            "first": "予約"
+          }
+        },
+        {
+          "say": "途中に、ピングが届きました。",
+          "show": ["ping", "first-ping"]
+        },
+        {
+          "say": "次の本文の差分として、「できます」が続きます。",
+          "show": ["next", "ping-next"],
+          "tag": {
+            "next": "できます"
+          }
+        },
+        {
+          "say": "この時点で、本文はどのようにつながるでしょうか。",
+          "show": ["body"],
+          "mark": [
+            {
+              "on": "body",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "本文だけをつないだ答え",
+      "board": "camp",
+      "beats": [
+        {
+          "say": "本文は、「予約できます」です。",
+          "tag": {
+            "body": "予約できます"
+          },
+          "mark": [
+            {
+              "on": "body",
+              "kind": "check"
+            }
+          ],
+          "show": ["next-body"],
+          "pause": 1
+        },
+        {
+          "say": "ピングを加えず、二つの文字を順につなぎます。",
+          "pulse": ["first", "next"]
+        }
+      ]
+    },
+    {
+      "id": "why-join",
+      "kind": "board",
+      "role": "explain",
+      "title": "本文になる文字をたどる",
+      "board": "camp",
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の差分で、本文の先頭に「予約」が入ります。",
+          "show": ["camp", "first"],
+          "tag": {
+            "first": "予約"
+          }
+        },
+        {
+          "say": "続く「できます」は、その後ろに足す文字です。",
+          "show": ["next"],
+          "tag": {
+            "next": "できます"
+          }
+        },
+        {
+          "say": "ピングは本文の差分ではないので、文字として足しません。",
+          "show": ["ping", "first-ping", "ping-next"],
+          "tag": {
+            "ping": "本文ではない"
+          }
+        },
+        {
+          "say": "二つの本文の差分を順に足すと、「予約できます」になります。",
+          "show": ["body", "next-body"],
+          "tag": {
+            "body": "予約できます"
+          },
+          "travel": {
+            "along": ["next-body"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "途中の本文を画面に足す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "料理の手順を途中から表示するときに、この読み方を使います。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "画面に足すのは、本文の続きの文字です。",
+          "show": ["screen"]
+        },
+        {
+          "say": "停止理由は、メッセージデルタの中で確かめます。",
+          "show": ["reason"],
+          "tag": {
+            "reason": "停止理由"
+          }
+        },
+        {
+          "say": "種類を見分けて、本文の差分を届いた順につなぎましょう。",
+          "pulse": ["recipe", "screen"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4becbf53ae6f0ff499bc911127b8a6506c906416ca27cfabbb2d12e4452f448d"
+  }
+}

@@ -1,0 +1,700 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答のヘッダーで回数とトークン数の残りを読み分け、残りが少ないときに送る速さを落とす判断ができる。",
+    "stuck": "エラーになるまで送り続け、応答に制限の残りが入っていることや、残りの数と待つ秒数の違いに気づかない。",
+    "points": ["応答のヘッダーで、レート制限の残りを確かめます。"],
+    "leaveOut": [
+      "組織の利用段階やモデル区分ごとの具体的な上限値",
+      "元に戻る時刻の計算とヘッダー取得のコード",
+      "指数バックオフとSDKの送り直し設定",
+      "ほかのエラーの分類とrequest IDの記録",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "night-documents": {
+      "prompt": "A large stack of white documents clipped with violet clips beside a blue laptop with a completely blank screen, and a small crescent moon above it. This represents processing documents at night, not a real application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "header-slip": {
+      "prompt": "A white reply envelope with a white slip partially pulled out, with three blue tabs along the slip edge. The slip is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-machines": {
+      "prompt": "Three blue front loading washing machines, two with grey clothes visible inside and one with its round door open and an empty drum. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rate-timer": {
+      "prompt": "A blue kitchen timer with a blank dial and two simple violet hands beside a small white measuring cup. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "A single white envelope with a blue flap, slightly open, holding one blank white request sheet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "token-beads": {
+      "prompt": "A small white container holding several large violet counting beads, with two loose beads beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "send-hand": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white request envelope back with one hand while looking at a blank blue wristwatch. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bicycle-repair": {
+      "prompt": "A blue bicycle with its front wheel detached, a violet hand pump and a large light grey wrench arranged beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "retry-hourglass": {
+      "prompt": "A large blue hourglass with a small amount of light grey sand in the upper bulb and more in the lower bulb. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "jobs",
+          "label": "夜間の処理",
+          "art": "night-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "返る応答",
+          "art": "header-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "pace",
+          "label": "送る速さ",
+          "art": "send-hand",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "returns",
+          "from": "jobs",
+          "to": "reply",
+          "label": "応答"
+        },
+        {
+          "id": "adjust",
+          "from": "reply",
+          "to": "pace",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "machines",
+          "label": "洗濯機",
+          "art": "laundry-machines",
+          "at": [1, 1]
+        },
+        {
+          "id": "space",
+          "label": "空き台数",
+          "art": "laundry-machines",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "machines",
+          "to": "space",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "minute",
+          "label": "一定の時間",
+          "art": "rate-timer",
+          "at": [1, 1]
+        },
+        {
+          "id": "requests",
+          "label": "リクエスト数",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "input",
+          "label": "入力の量",
+          "art": "token-beads",
+          "at": [5, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力の量",
+          "art": "token-beads",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "headers": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "応答",
+          "art": "header-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "remaining",
+          "label": "残り",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待つ秒数",
+          "art": "retry-hourglass",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "names": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "requests",
+          "label": "依頼回数",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "tokens",
+          "label": "tokens",
+          "art": "token-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "remaining",
+          "label": "残り",
+          "art": "header-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "jobs",
+          "label": "夜間の処理",
+          "art": "night-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "remaining",
+          "label": "制限の残り",
+          "art": "header-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "pace",
+          "label": "送る速さ",
+          "art": "send-hand",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "jobs",
+          "to": "remaining",
+          "label": "応答を見る"
+        },
+        {
+          "id": "slow",
+          "from": "remaining",
+          "to": "pace",
+          "label": "少ない"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "修理の案内",
+          "art": "bicycle-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "left",
+          "label": "トークン残り",
+          "art": "token-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "same",
+          "label": "同じ速さ",
+          "art": "request-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "slow",
+          "label": "速さを落とす",
+          "art": "send-hand",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "修理の案内",
+          "art": "bicycle-repair",
+          "at": [1, 1]
+        },
+        {
+          "id": "left",
+          "label": "トークン残り",
+          "art": "token-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "pace",
+          "label": "送る速さ",
+          "art": "send-hand",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "response",
+          "from": "repair",
+          "to": "left",
+          "label": "応答"
+        },
+        {
+          "id": "adjust",
+          "from": "left",
+          "to": "pace",
+          "label": "少ない"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "jobs",
+          "label": "一括処理",
+          "art": "night-documents",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "ヘッダー",
+          "art": "header-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "pace",
+          "label": "送る速さ",
+          "art": "send-hand",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "jobs",
+          "to": "reply",
+          "label": "残りを見る"
+        },
+        {
+          "id": "adjust",
+          "from": "reply",
+          "to": "pace",
+          "label": "調整"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "止まる前に残りを見る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "夜間に、書類をまとめて処理するアプリを考えます。",
+          "show": ["jobs"]
+        },
+        {
+          "say": "途中から返ってきたのは、429ばかりでした。",
+          "speech": "途中から返ってきたのは、よんにーきゅうばかりでした。",
+          "show": ["reply", "returns"],
+          "tag": {
+            "reply": "429"
+          }
+        },
+        {
+          "say": "送る速さを決める手がかりは、応答の中です。",
+          "show": ["pace", "adjust"]
+        },
+        {
+          "say": "応答のヘッダーで、レート制限の残りを確かめます。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "残りを見る"
+          }
+        }
+      ]
+    },
+    {
+      "id": "laundry-example",
+      "kind": "board",
+      "role": "example",
+      "title": "使う前に空きを見る",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "コインランドリーで、洗濯機を使いたいとします。",
+          "show": ["machines"]
+        },
+        {
+          "say": "次の利用者が気にするのは、まだ空きがあるかどうかです。",
+          "show": ["space", "check"]
+        },
+        {
+          "say": "空き台数を見ずに行くと、待つかどうか分かりません。",
+          "pulse": ["space"],
+          "tag": {
+            "space": "未確認"
+          }
+        },
+        {
+          "say": "空き台数を先に確かめて、使うか待つかを決めましょう。",
+          "pulse": ["machines", "space"],
+          "tag": {
+            "space": "先に確認"
+          },
+          "travel": {
+            "along": ["check"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rate-limit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "時間あたりの上限",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "一定の時間に使える回数や量の上限を、レート制限と呼びます。",
+          "term": {
+            "text": "レート制限",
+            "ruby": "れーとせいげん",
+            "note": "一定時間の回数や量の上限"
+          },
+          "show": ["minute"]
+        },
+        {
+          "say": "ここでは、一分あたりで数える上限です。",
+          "pulse": ["minute"],
+          "tag": {
+            "minute": "一分あたり"
+          }
+        },
+        {
+          "say": "リクエストの回数に、上限があります。",
+          "show": ["requests"]
+        },
+        {
+          "say": "入力と出力のトークン数も、制限の対象です。",
+          "show": ["input", "output"]
+        },
+        {
+          "say": "回数だけでなく、扱う量の制限も確かめましょう。",
+          "pulse": ["requests", "input", "output"]
+        }
+      ]
+    },
+    {
+      "id": "response-headers",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答のどこを見るか",
+      "board": "headers",
+      "beats": [
+        {
+          "say": "応答に付く情報の欄を、レスポンスヘッダーと呼びます。",
+          "term": {
+            "text": "レスポンスヘッダー",
+            "note": "応答に付く情報の欄"
+          },
+          "show": ["reply"]
+        },
+        {
+          "say": "制限の残りを確かめる場所は、このヘッダーです。",
+          "show": ["remaining"],
+          "pulse": ["reply"]
+        },
+        {
+          "say": "上限や、元に戻る時刻を示すヘッダーもあります。",
+          "tag": {
+            "reply": "上限と時刻"
+          }
+        },
+        {
+          "say": "retry-after が示すのは、送り直せるまでの秒数です。",
+          "speech": "リトライアフターが示すのは、送り直せるまでの秒数です。",
+          "show": ["wait"]
+        },
+        {
+          "say": "残りの数と、待つ秒数を分けて読みましょう。",
+          "pulse": ["remaining", "wait"]
+        }
+      ]
+    },
+    {
+      "id": "remaining-names",
+      "kind": "board",
+      "role": "syntax",
+      "title": "残りを示す名前",
+      "board": "names",
+      "beats": [
+        {
+          "say": "残りのヘッダー名の先頭は、anthropic-ratelimit です。",
+          "speech": "残りのヘッダー名の先頭は、アンソロピックハイフンレートリミットです。",
+          "show": ["requests", "tokens"]
+        },
+        {
+          "say": "末尾の remaining は、残りという意味を表します。",
+          "speech": "末尾のリメイニングは、残りという意味を表します。",
+          "term": {
+            "text": "remaining",
+            "note": "残り"
+          },
+          "show": ["remaining"]
+        },
+        {
+          "say": "続く requests-remaining は、残りの回数です。",
+          "speech": "続くリクエスツハイフンリメイニングは、残りの回数です。",
+          "pulse": ["requests", "remaining"],
+          "tag": {
+            "requests": "残りの回数"
+          }
+        },
+        {
+          "say": "tokens-remaining では、残りのトークン数を見ます。",
+          "speech": "トークンズハイフンリメイニングでは、残りのトークン数を見ます。",
+          "pulse": ["tokens", "remaining"],
+          "tag": {
+            "tokens": "残りの量"
+          }
+        },
+        {
+          "say": "先頭と後ろの部分を、ハイフンでつないだ名前です。",
+          "pulse": ["requests", "tokens", "remaining"]
+        }
+      ]
+    },
+    {
+      "id": "slow-before-limit",
+      "kind": "board",
+      "role": "apply",
+      "title": "夜間の処理に当てはめる",
+      "board": "apply",
+      "beats": [
+        {
+          "say": "夜間の処理でも、返った応答のヘッダーを読みます。",
+          "show": ["jobs", "remaining", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "次に送る前に見たいのは、制限の残りです。",
+          "pulse": ["remaining"]
+        },
+        {
+          "say": "残りが少なければ、送る速さを落としましょう。",
+          "show": ["pace", "slow"],
+          "tag": {
+            "remaining": "残り少ない"
+          }
+        },
+        {
+          "say": "429が続く前に、残りを見て速さを調整します。",
+          "speech": "よんにーきゅうが続く前に、残りを見て速さを調整します。",
+          "travel": {
+            "along": ["slow"],
+            "icon": "send"
+          },
+          "tag": {
+            "pace": "ゆっくり"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repair-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "残りが少ないとき",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "自転車修理の案内を、まとめて作るアプリを考えましょう。",
+          "show": ["repair"]
+        },
+        {
+          "say": "応答のヘッダーでは、残りのトークン数が少なくなっています。",
+          "show": ["left"],
+          "tag": {
+            "left": "残り少ない"
+          }
+        },
+        {
+          "say": "一つ目の案は、そのままの速さで依頼を送り続けることです。",
+          "show": ["same"]
+        },
+        {
+          "say": "二つ目では、残りを見て依頼を送る速さを落とします。",
+          "show": ["slow"]
+        },
+        {
+          "say": "制限に届く前に調整するなら、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "same",
+              "kind": "question"
+            },
+            {
+              "on": "slow",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "repair-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "送る速さを落とす",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、送る速さを落とす二つ目の案です。",
+          "mark": [
+            {
+              "on": "same",
+              "kind": "cross"
+            },
+            {
+              "on": "slow",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["slow"]
+        },
+        {
+          "say": "残りが少ないという応答を、次の送り方に生かします。",
+          "pulse": ["left", "slow"]
+        }
+      ]
+    },
+    {
+      "id": "why-slow",
+      "kind": "board",
+      "role": "explain",
+      "title": "応答から判断をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "修理の案内を作る依頼にも、トークン数の制限があります。",
+          "show": ["repair", "left", "response"]
+        },
+        {
+          "say": "今回の判断の手がかりは、残りが少ないという値です。",
+          "pulse": ["left"],
+          "tag": {
+            "left": "残り少ない"
+          }
+        },
+        {
+          "say": "そのまま送り続ける案では、この値を生かせません。",
+          "mark": [
+            {
+              "on": "left",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "残りを見て速さを落とし、制限に届く前に調整しましょう。",
+          "show": ["pace", "adjust"],
+          "unmark": ["left"],
+          "travel": {
+            "along": ["adjust"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "一括処理で使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "依頼を繰り返す一括処理では、応答の残りを確かめます。",
+          "show": ["jobs", "reply", "check"]
+        },
+        {
+          "say": "見るのは、リクエスト数やトークン数の残りです。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "回数と量"
+          }
+        },
+        {
+          "say": "残りが少なくなったら、次に送る速さを落としましょう。",
+          "show": ["pace", "adjust"],
+          "travel": {
+            "along": ["adjust"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "応答のヘッダーを、送る速さを決める手がかりにします。",
+          "pulse": ["reply", "pace"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a6a7d62b0052a2396a0af071c22619bde9ad882285932fcae2be193e5a6b60c6"
+  }
+}

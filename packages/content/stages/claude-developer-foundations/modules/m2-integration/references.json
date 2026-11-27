@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m2-integration@7",
-  "contentHash": "f731e91f6a8a4911aeb3270c7b47ade71d293c694bacbeddbdda8f25d83900df",
+  "unitId": "claude-developer-foundations/m2-integration@8",
+  "contentHash": "3aeb146347ccf91d333d3441e726317bb38d3b534cf75968f8e061a3956d5946",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

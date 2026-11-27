@@ -1,0 +1,832 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ資料を繰り返し使うとき、Files API に上げて返った ID を source に指定する流れと、利用者との対応をアプリで持つ理由を説明できる。",
+    "stuck": "質問のたびにファイル全体を送り直し、返った ID で同じファイルを指せることが分からない。",
+    "points": ["何度も使うファイルは、Files API に上げて ID で指します。"],
+    "leaveOut": [
+      "アップロードを実行する API 呼び出しの詳細",
+      "画像と PDF を質問の文字と並べる方法",
+      "base64 や URL との使い分け",
+      "ファイルの容量や料金、削除に関する仕様",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "work-rules": {
+      "prompt": "A thick white booklet of workplace rules with a blue binder clip and a small violet briefcase pictogram on its otherwise blank cover. The booklet represents one document reused for several questions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-slips": {
+      "prompt": "Two separate white paper request slips with blue paper clips, each accompanied by an empty violet speech bubble, representing different questions about the same document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "id-token": {
+      "prompt": "A hand holding one small white rectangular identification tag with a blue reinforced hole and a short violet cord. The tag is completely blank and represents an identifier pointing to an uploaded file. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "score-folder": {
+      "prompt": "An open light grey music folder containing blank white sheets with a small blue violin beside it, representing sheet music kept in a school music room. No musical notation on the sheets. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "music-clerk": {
+      "prompt": "A school music room clerk in a plain blue shirt with simple facial features, holding a light grey folder in one hand and offering a blank white identification card with the other hand. Only the person and these objects. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "uploaded-files": {
+      "prompt": "An upright blue file holder containing a white booklet and a few light grey folders, representing files uploaded for later reuse. A violet binder clip fastens the front booklet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ownership-ledger": {
+      "prompt": "An open white ledger with two simple person portraits paired with separate folder pictograms on its pages, beside a violet pencil. One portrait has a violet sweater and the other a blue shirt. This is a paper illustration of keeping track of which file belongs to which person, not an application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sewing-guide": {
+      "prompt": "A compact blue sewing machine beside a thick white instruction booklet with a small violet spool pictogram on its blank cover, representing one sewing manual consulted repeatedly. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "就業規則",
+          "art": "work-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "questions",
+          "label": "繰り返す質問",
+          "art": "question-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "stored",
+          "label": "一度上げる",
+          "art": "uploaded-files",
+          "at": [5, 1]
+        },
+        {
+          "id": "id",
+          "label": "IDで指す",
+          "art": "id-token",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "music": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "score",
+          "label": "使う楽譜",
+          "art": "score-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "音楽室の係",
+          "art": "music-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "stored",
+          "label": "預けた楽譜",
+          "art": "score-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "deposit",
+          "from": "score",
+          "to": "clerk",
+          "label": "預ける"
+        },
+        {
+          "id": "locate",
+          "from": "clerk",
+          "to": "stored",
+          "label": "番号で指す"
+        }
+      ]
+    },
+    "upload": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "就業規則",
+          "art": "work-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "stored",
+          "label": "ファイル保管",
+          "art": "uploaded-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "file_id",
+          "art": "id-token",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "upload",
+          "from": "rules",
+          "to": "stored",
+          "label": "上げる"
+        },
+        {
+          "id": "receive",
+          "from": "stored",
+          "to": "id",
+          "label": "返る"
+        }
+      ]
+    },
+    "source": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stored",
+          "label": "上げた資料",
+          "art": "uploaded-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "返ったID",
+          "art": "id-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "block",
+          "label": "文書ブロック",
+          "art": "question-slips",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "stored",
+          "to": "id",
+          "label": "返る"
+        },
+        {
+          "id": "use",
+          "from": "id",
+          "to": "block",
+          "label": "指定する"
+        }
+      ]
+    },
+    "reuse": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "就業規則",
+          "art": "work-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "stored",
+          "label": "上げた資料",
+          "art": "uploaded-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "返ったID",
+          "art": "id-token",
+          "at": [5, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初の質問",
+          "art": "question-slips",
+          "at": [5, 2]
+        },
+        {
+          "id": "second",
+          "label": "次の質問",
+          "art": "question-slips",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "upload",
+          "from": "rules",
+          "to": "stored",
+          "label": "一度上げる"
+        },
+        {
+          "id": "receive",
+          "from": "stored",
+          "to": "id",
+          "label": "返る"
+        },
+        {
+          "id": "first-use",
+          "from": "id",
+          "to": "first",
+          "label": "指定する"
+        },
+        {
+          "id": "reuse",
+          "from": "first",
+          "to": "second",
+          "label": "同じID"
+        }
+      ]
+    },
+    "ownership": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stored",
+          "label": "共有ファイル",
+          "art": "uploaded-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "受け取ったID",
+          "art": "id-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "利用者と資料",
+          "art": "ownership-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "ミシンの資料",
+          "art": "sewing-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "resend",
+          "label": "毎回送り直す",
+          "art": "sewing-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "IDで指す",
+          "art": "id-token",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "sewing-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "上げた説明書",
+          "art": "sewing-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "返ったID",
+          "art": "id-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "次の質問",
+          "art": "question-slips",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "manual",
+          "to": "id",
+          "label": "返る"
+        },
+        {
+          "id": "use",
+          "from": "id",
+          "to": "question",
+          "label": "指定する"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "就業規則",
+          "art": "work-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "ミシンの資料",
+          "art": "sewing-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "ledger",
+          "label": "利用者と資料",
+          "art": "ownership-ledger",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じ資料を何度も使う",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "就業規則の資料に、何度も質問する場面を考えましょう。",
+          "show": ["rules"]
+        },
+        {
+          "say": "質問のたびに、同じファイルを埋め込んでいました。",
+          "show": ["questions"]
+        },
+        {
+          "say": "そこで使うのが、一度上げたファイルを指す方法です。",
+          "show": ["stored"]
+        },
+        {
+          "say": "何度も使うファイルは、Files API に上げて ID で指します。",
+          "speech": "何度も使うファイルは、ファイルズエーピーアイに上げてアイディーで指します。",
+          "show": ["id"],
+          "pulse": ["stored", "id"]
+        }
+      ]
+    },
+    {
+      "id": "music-room",
+      "kind": "board",
+      "role": "example",
+      "title": "楽譜を番号で指定する",
+      "board": "music",
+      "beats": [
+        {
+          "say": "学校の音楽室に、楽譜を預ける場面を考えましょう。",
+          "show": ["score", "clerk", "deposit"],
+          "travel": {
+            "along": ["deposit"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "係は楽譜を保管し、その番号を教えてくれます。",
+          "show": ["stored"],
+          "tag": {
+            "clerk": "楽譜の番号"
+          }
+        },
+        {
+          "say": "次に使うときは、その番号を伝えるだけです。",
+          "show": ["locate"],
+          "travel": {
+            "along": ["locate"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "同じ楽譜を、そのつど運び直す手間が省けます。",
+          "pulse": ["stored"],
+          "mark": [
+            {
+              "on": "stored",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "upload-and-id",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一度上げてIDを受け取る",
+      "board": "upload",
+      "beats": [
+        {
+          "say": "一度上げて繰り返し使う仕組みが、Files API です。",
+          "speech": "一度上げて繰り返し使う仕組みが、ファイルズエーピーアイです。",
+          "term": {
+            "text": "Files API",
+            "note": "一度上げて何度も使う"
+          },
+          "show": ["stored"]
+        },
+        {
+          "say": "最初に、使う就業規則のファイルを上げます。",
+          "show": ["rules", "upload"],
+          "travel": {
+            "along": ["upload"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "上げたファイルを指す値が、ファイルIDです。",
+          "speech": "上げたファイルを指す値が、ファイルアイディーです。",
+          "term": {
+            "text": "file_id",
+            "note": "上げたファイルを指す値"
+          }
+        },
+        {
+          "say": "上げ終わると、この値が返ってきます。",
+          "show": ["id", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "あとの依頼に書くのは、返ってきたこの値です。",
+          "pulse": ["id"],
+          "tag": {
+            "id": "依頼に使う"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "source-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "ブロックにIDを書く",
+      "code": [
+        "// 文書のブロックに名前を付ける",
+        "const block = {",
+        "  // 文書の種類を指定する",
+        "  type: \"document\",",
+        "  // 上げたファイルを返った識別子で指す",
+        "  source: { type: \"file\", file_id: uploadedFile.id },",
+        "// ブロックの指定を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "source"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "この例では、変数に block と名前を付けます。",
+          "speech": "この例では、変数にブロックと名前を付けます。",
+          "part": {
+            "line": 1,
+            "text": "block",
+            "note": "ブロック"
+          },
+          "figure": {
+            "show": ["block"]
+          }
+        },
+        {
+          "say": "document は、文書を表す種類の指定です。",
+          "speech": "ドキュメントは、文書を表す種類の指定です。",
+          "part": {
+            "line": 3,
+            "text": "\"document\"",
+            "note": "文書"
+          },
+          "figure": {
+            "pulse": ["block"]
+          }
+        },
+        {
+          "say": "source は、ファイルの指定を書く欄と考えましょう。",
+          "speech": "ソースは、ファイルの指定を書く欄と考えましょう。",
+          "term": {
+            "text": "source",
+            "note": "ファイルの指定を書く欄"
+          },
+          "part": {
+            "line": 5,
+            "text": "source",
+            "note": "参照元"
+          }
+        },
+        {
+          "say": "中の file で、上げたファイルを使うと指定します。",
+          "speech": "中のファイルで、上げたファイルを使うと指定します。",
+          "part": {
+            "line": 5,
+            "text": "\"file\"",
+            "note": "上げたファイル"
+          },
+          "figure": {
+            "show": ["stored"],
+            "pulse": ["stored"]
+          }
+        },
+        {
+          "say": "uploadedFile は、返った情報に付けた名前です。",
+          "speech": "アップローデッドファイルは、返った情報に付けた名前です。",
+          "part": {
+            "line": 5,
+            "text": "uploadedFile",
+            "note": "上げたファイル"
+          },
+          "figure": {
+            "show": ["id", "receive"]
+          }
+        },
+        {
+          "say": "その id の値を、ファイルIDの欄に入れます。",
+          "speech": "そのアイディーの値を、ファイルアイディーの欄に入れます。",
+          "part": {
+            "line": 5,
+            "text": "file_id: uploadedFile.id"
+          },
+          "figure": {
+            "show": ["use"],
+            "travel": {
+              "along": ["use"],
+              "icon": "file"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reuse-rules",
+      "kind": "board",
+      "role": "apply",
+      "title": "質問を変えても同じ資料",
+      "board": "reuse",
+      "beats": [
+        {
+          "say": "就業規則の例で、最初から流れをたどりましょう。",
+          "show": ["rules", "stored", "upload"],
+          "travel": {
+            "along": ["upload"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "上げたあとに受け取るのが、この資料のIDです。",
+          "speech": "上げたあとに受け取るのが、この資料のアイディーです。",
+          "show": ["id", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "最初は、休暇について尋ねる依頼で指定します。",
+          "show": ["first", "first-use"],
+          "tag": {
+            "first": "休暇の質問"
+          }
+        },
+        {
+          "say": "次は勤務時間の質問でも、参照するのは同じ資料です。",
+          "show": ["second", "reuse"],
+          "tag": {
+            "second": "勤務時間"
+          }
+        },
+        {
+          "say": "次の依頼にも同じIDを書けば、全文の再送を省けます。",
+          "speech": "次の依頼にも同じアイディーを書けば、全文の再送を省けます。",
+          "pulse": ["id", "second"],
+          "travel": {
+            "along": ["first-use", "reuse"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "keep-ownership",
+      "kind": "board",
+      "role": "note",
+      "title": "だれのファイルかを持つ",
+      "board": "ownership",
+      "beats": [
+        {
+          "say": "上げたファイルは、利用者や会話ごとには分かれていません。",
+          "show": ["stored"],
+          "tag": {
+            "stored": "共有される"
+          }
+        },
+        {
+          "say": "同じワークスペースなら、どのAPIキーでも読めます。",
+          "speech": "同じワークスペースなら、どのエーピーアイキーでも読めます。",
+          "pulse": ["stored"]
+        },
+        {
+          "say": "注意したいのは、利用者から受け取ったファイルIDです。",
+          "speech": "注意したいのは、利用者から受け取ったファイルアイディーです。",
+          "show": ["input"],
+          "mark": [
+            {
+              "on": "input",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そのまま使うと、別の利用者のファイルを見せてしまいます。",
+          "mark": [
+            {
+              "on": "input",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "input": "だれの資料"
+          }
+        },
+        {
+          "say": "利用者とファイルの対応を、アプリで持ちましょう。",
+          "show": ["ledger"],
+          "pulse": ["ledger"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "説明書を繰り返し使う",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "ミシンの説明書に、何度も質問するアプリを考えましょう。",
+          "show": ["manual"]
+        },
+        {
+          "say": "説明書はすでに上げてあり、返ったIDも持っています。",
+          "speech": "説明書はすでに上げてあり、返ったアイディーも持っています。",
+          "tag": {
+            "manual": "上げてある"
+          }
+        },
+        {
+          "say": "一つ目は、質問のたびに説明書を丸ごと送る方法です。",
+          "show": ["resend"],
+          "tag": {
+            "resend": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、次の依頼に返ったIDを指定します。",
+          "speech": "二つ目では、次の依頼に返ったアイディーを指定します。",
+          "show": ["id"],
+          "tag": {
+            "id": "二つ目"
+          }
+        },
+        {
+          "say": "同じ説明書を送る手間を減らせるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "resend",
+              "kind": "question"
+            },
+            {
+              "on": "id",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "返ったIDを指定する",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、返ったIDを指定する二つ目の方法です。",
+          "speech": "答えは、返ったアイディーを指定する二つ目の方法です。",
+          "mark": [
+            {
+              "on": "id",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["id"]
+        },
+        {
+          "say": "説明書を丸ごと送り直す手間を省けます。",
+          "mark": [
+            {
+              "on": "resend",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["resend"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-id",
+      "kind": "board",
+      "role": "explain",
+      "title": "説明書とIDをたどる",
+      "board": "sewing-flow",
+      "beats": [
+        {
+          "say": "使いたい説明書は、すでに上げたファイルです。",
+          "show": ["manual"]
+        },
+        {
+          "say": "返ったIDは、その説明書を指しています。",
+          "speech": "返ったアイディーは、その説明書を指しています。",
+          "show": ["id", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "次の依頼には、ファイルの中身を埋め直す必要がありません。",
+          "show": ["question", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "中身の代わりにIDを書くので、依頼も小さくなります。",
+          "speech": "中身の代わりにアイディーを書くので、依頼も小さくなります。",
+          "tag": {
+            "question": "再送は不要"
+          },
+          "pulse": ["question"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "同じ資料への質問で使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "就業規則について質問が続くときに使えます。",
+          "show": ["rules"]
+        },
+        {
+          "say": "ミシンの説明書も、何度も参照する資料の例です。",
+          "show": ["manual"]
+        },
+        {
+          "say": "利用者ごとの資料を扱うなら、アプリで対応を持ちましょう。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "同じファイルを繰り返し使うときは、上げてIDで指します。",
+          "speech": "同じファイルを繰り返し使うときは、上げてアイディーで指します。",
+          "pulse": ["rules", "manual"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "15608ef07e596fa7a6e8d0a990eb6ab7d972539a14df34bf07648d530f8062bf"
+  }
+}

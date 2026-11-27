@@ -1,0 +1,746 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "処理の量と結果を使う時点から、Message Batches API に向く仕事を選べる。",
+    "stuck": "大量の処理なら何でもまとめてよいと思い、すぐに返答が必要な画面にもバッチを使おうとする。",
+    "points": ["急がない大量の処理は、Message Batches API にまとめて送ります。"],
+    "leaveOut": [
+      "バッチの料金",
+      "結果を受け取れる時刻と保存期間",
+      "結果の種類と取り出すコード",
+      "バッチに入れられる件数と容量の上限",
+      "custom_id の文字種と長さの細かい制限",
+      "送信用の API 呼び出しと課題の解答コード"
+    ]
+  },
+  "art": {
+    "inquiries": {
+      "prompt": "A large fan of many white inquiry slips with small blue envelope pictograms, held together loosely by one violet clip. The paper is white and light grey. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-bundle": {
+      "prompt": "A thick stack of separate white request sheets neatly secured with a wide blue paper band, with the individual light grey paper edges clearly visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "print-orders": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a thick stack of white school handouts ready to pass to a printing attendant. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "printer": {
+      "prompt": "A compact blue and light grey photocopier with a stack of separate white handouts emerging from its output slot. No controls with readable marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "batch-worker": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding two separate white request sheets, one in each hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "id-slip": {
+      "prompt": "A single white request slip with a large blank violet identification tab clipped securely to its top edge. A blue paper clip holds the tab. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-feedback": {
+      "prompt": "A thick fan of white museum visitor feedback sheets, each bearing a small blue pottery pictogram, gathered beside a blue pencil. All paper is white or light grey. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-visitor": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a folded white museum map and looking toward a blue pottery artifact, with one empty speech bubble beside their face. Simple facial features. No pedestal. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "問い合わせ",
+          "art": "inquiries",
+          "at": [1, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "依頼の束",
+          "art": "request-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "worker",
+          "label": "まとめて処理",
+          "art": "batch-worker",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "printing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "orders",
+          "label": "配布用の原稿",
+          "art": "print-orders",
+          "at": [1, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "まとめて渡す",
+          "art": "request-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "printer",
+          "label": "印刷する係",
+          "art": "printer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "gather",
+          "from": "orders",
+          "to": "bundle",
+          "label": "まとめる"
+        },
+        {
+          "id": "hand",
+          "from": "bundle",
+          "to": "printer",
+          "label": "渡す"
+        }
+      ]
+    },
+    "batch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bundle",
+          "label": "バッチ",
+          "art": "request-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "worker",
+          "label": "処理する側",
+          "art": "batch-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "処理の結果",
+          "art": "id-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "bundle",
+          "to": "worker",
+          "label": "送る"
+        },
+        {
+          "id": "receive",
+          "from": "worker",
+          "to": "results",
+          "label": "完了後"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "問い合わせ",
+          "art": "inquiries",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "識別子",
+          "art": "id-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "params",
+          "label": "処理する内容",
+          "art": "inquiries",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "source",
+          "to": "id"
+        },
+        {
+          "id": "attach",
+          "from": "id",
+          "to": "params"
+        }
+      ]
+    },
+    "ids": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "一件目の依頼",
+          "art": "id-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "second",
+          "label": "二件目の依頼",
+          "art": "id-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "同じバッチ",
+          "art": "request-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "feedback",
+          "label": "感想の分類",
+          "art": "museum-feedback",
+          "at": [1, 1]
+        },
+        {
+          "id": "visitor",
+          "label": "見学中の質問",
+          "art": "museum-visitor",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "問い合わせ",
+          "art": "inquiries",
+          "at": [1, 1]
+        },
+        {
+          "id": "feedback",
+          "label": "見学の感想",
+          "art": "museum-feedback",
+          "at": [3, 1]
+        },
+        {
+          "id": "bundle",
+          "label": "バッチ",
+          "art": "request-bundle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "collect",
+          "from": "feedback",
+          "to": "bundle",
+          "label": "まとめる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "大量でも急がない仕事",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "問い合わせ五千件を、内容ごとに分類するとします。",
+          "show": ["inquiries"]
+        },
+        {
+          "say": "今回は、結果をすぐに使わなくてもよい仕事です。",
+          "show": ["bundle"]
+        },
+        {
+          "say": "大量の依頼を、まとめて処理する方法を選びましょう。",
+          "show": ["worker"]
+        },
+        {
+          "say": "急がない大量の処理は、バッチにまとめて送ります。",
+          "pulse": ["bundle", "worker"]
+        }
+      ]
+    },
+    {
+      "id": "printing",
+      "kind": "board",
+      "role": "example",
+      "title": "原稿をまとめて渡す",
+      "board": "printing",
+      "beats": [
+        {
+          "say": "学校で配る資料を、印刷の係に頼む場面です。",
+          "show": ["orders"]
+        },
+        {
+          "say": "急ぎでなければ、原稿をまとめて渡します。",
+          "show": ["bundle", "gather"],
+          "travel": {
+            "along": ["gather"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "係は、受け取った原稿をそれぞれ印刷する役目です。",
+          "show": ["printer", "hand"]
+        },
+        {
+          "say": "一枚ずつ頼みに行く代わりに、束で渡すと考えましょう。",
+          "travel": {
+            "along": ["gather", "hand"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "バッチの流れ",
+      "board": "batch",
+      "beats": [
+        {
+          "say": "まとめて送るリクエストの束を、バッチと呼びます。",
+          "term": {
+            "text": "バッチ",
+            "note": "まとめて送る依頼の束"
+          }
+        },
+        {
+          "say": "この束は、一件ずつの依頼の集まりです。",
+          "show": ["bundle"]
+        },
+        {
+          "say": "送った依頼を、非同期に処理させます。",
+          "term": {
+            "text": "非同期",
+            "ruby": "ひどうき",
+            "note": "送信時に結果を待たない処理"
+          }
+        },
+        {
+          "say": "送り先は Message Batches API です。",
+          "speech": "送り先はメッセージバッチズエーピーアイです。",
+          "show": ["worker", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "処理が終わったら、結果をまとめて受け取ります。",
+          "show": ["results", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "result"
+          }
+        }
+      ]
+    },
+    {
+      "id": "request-fields",
+      "kind": "code",
+      "role": "syntax",
+      "title": "依頼一件の中身",
+      "code": [
+        "// 問い合わせごとに依頼を作る",
+        "const requests = tickets.map((ticket) => ({",
+        "  // 元の問い合わせと結ぶ識別子",
+        "  custom_id: `ticket-${ticket.id}`,",
+        "  // モデルと出力の上限を指定する",
+        "  params: { model, max_tokens: 256,",
+        "    // 問い合わせの本文を利用者の発言として渡す",
+        "    messages: [{ role: \"user\", content: ticket.body }] },",
+        "// 作った依頼を配列にまとめる",
+        "}));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "各依頼には、識別子と処理する内容を持たせます。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "show": ["id", "params"]
+          }
+        },
+        {
+          "say": "識別子の項目名は、カスタムIDです。",
+          "speech": "識別子の項目名は、カスタムアイディーです。",
+          "term": {
+            "text": "custom_id",
+            "note": "元の依頼と結果を結ぶID"
+          },
+          "part": {
+            "line": 3,
+            "text": "custom_id",
+            "note": "元の依頼の印"
+          }
+        },
+        {
+          "say": "この値で、結果と元のリクエストを結びます。",
+          "part": {
+            "line": 3,
+            "text": "`ticket-${ticket.id}`"
+          },
+          "figure": {
+            "pulse": ["id"]
+          }
+        },
+        {
+          "say": "処理する内容を入れる項目は、paramsです。",
+          "speech": "処理する内容を入れる項目は、パラメーターズです。",
+          "part": {
+            "line": 5,
+            "text": "params",
+            "note": "処理する内容"
+          },
+          "figure": {
+            "pulse": ["params"]
+          }
+        },
+        {
+          "say": "中には、Messages APIと同じ項目を書きます。",
+          "speech": "中には、メッセージズエーピーアイと同じ項目を書きます。",
+          "focus": [5, 7],
+          "figure": {
+            "tag": {
+              "params": "いつもの項目"
+            }
+          }
+        },
+        {
+          "say": "この例では、問い合わせの本文が発言の中身です。",
+          "part": {
+            "line": 7,
+            "text": "ticket.body",
+            "note": "問い合わせ本文"
+          },
+          "figure": {
+            "show": ["source"],
+            "pulse": ["source"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "build-requests",
+      "kind": "code",
+      "role": "apply",
+      "title": "問い合わせから束を作る",
+      "code": [
+        "// 問い合わせごとに依頼を作る",
+        "const requests = tickets.map((ticket) => ({",
+        "  // 元の問い合わせと結ぶ識別子",
+        "  custom_id: `ticket-${ticket.id}`,",
+        "  // モデルと出力の上限を指定する",
+        "  params: { model, max_tokens: 256,",
+        "    // 問い合わせの本文を利用者の発言として渡す",
+        "    messages: [{ role: \"user\", content: ticket.body }] },",
+        "// 作った依頼を配列にまとめる",
+        "}));"
+      ],
+      "show": [0, 1, 8, 9],
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ticketsは、問い合わせの一覧に付けた名前です。",
+          "speech": "チケッツは、問い合わせの一覧に付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "tickets",
+            "note": "問い合わせ一覧"
+          },
+          "figure": {
+            "show": ["source"]
+          }
+        },
+        {
+          "say": "一覧の一件ずつを、ticketという名前で扱います。",
+          "speech": "一覧の一件ずつを、チケットという名前で扱います。",
+          "part": {
+            "line": 1,
+            "text": "(ticket)",
+            "note": "一件の問い合わせ"
+          },
+          "figure": {
+            "pulse": ["source"]
+          }
+        },
+        {
+          "say": "識別子には、元の問い合わせの番号を使いました。",
+          "type": [2, 3],
+          "part": {
+            "line": 3,
+            "text": "ticket.id",
+            "note": "問い合わせ番号"
+          },
+          "figure": {
+            "show": ["id", "identify"]
+          }
+        },
+        {
+          "say": "本文を含む処理の内容も、同じ依頼に入れます。",
+          "type": [4, 5, 6, 7],
+          "figure": {
+            "show": ["params", "attach"]
+          }
+        },
+        {
+          "say": "できた配列に付けた名前が、requestsです。",
+          "speech": "できた配列に付けた名前が、リクエスツです。",
+          "part": {
+            "line": 1,
+            "text": "requests",
+            "note": "依頼の配列"
+          },
+          "figure": {
+            "pulse": ["id", "params"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "distinct-ids",
+      "kind": "board",
+      "role": "apply",
+      "title": "束の中で識別子を分ける",
+      "board": "ids",
+      "beats": [
+        {
+          "say": "一件目の識別子は、元の問い合わせ一番から作りました。",
+          "show": ["first"],
+          "tag": {
+            "first": "ticket-1"
+          }
+        },
+        {
+          "say": "二件目には、二番から作った識別子を付けます。",
+          "show": ["second"],
+          "tag": {
+            "second": "ticket-2"
+          }
+        },
+        {
+          "say": "同じ束の中で、識別子を重ねてはいけません。",
+          "show": ["bundle"],
+          "pulse": ["first", "second"]
+        },
+        {
+          "say": "結果を元の依頼に結べるよう、別々の値を使いましょう。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            },
+            {
+              "on": "second",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "send-bundle",
+      "kind": "board",
+      "role": "apply",
+      "title": "作った束を送る",
+      "board": "batch",
+      "reset": true,
+      "beats": [
+        {
+          "say": "このコードで作った配列は、まだ送る前の束です。",
+          "show": ["bundle"],
+          "tag": {
+            "bundle": "送信前"
+          }
+        },
+        {
+          "say": "用意した束を、Message Batches APIに送ります。",
+          "speech": "用意した束を、メッセージバッチズエーピーアイに送ります。",
+          "show": ["worker", "send"],
+          "untag": ["bundle"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "束にしても、中の依頼はそれぞれ別の処理です。",
+          "pulse": ["worker"],
+          "tag": {
+            "worker": "一件ずつ"
+          }
+        },
+        {
+          "say": "急いで結果を使わない仕事か、送る前に確かめましょう。",
+          "pulse": ["bundle"],
+          "tag": {
+            "bundle": "待てる仕事"
+          }
+        }
+      ]
+    },
+    {
+      "id": "museum-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "博物館で選ぶ処理",
+      "board": "museum",
+      "think": 8,
+      "beats": [
+        {
+          "say": "博物館の見学を支える、二つの仕事を比べます。",
+          "show": ["feedback", "visitor"]
+        },
+        {
+          "say": "一つ目は、あとで読む大量の感想を分類する仕事です。",
+          "pulse": ["feedback"],
+          "tag": {
+            "feedback": "後日読む"
+          }
+        },
+        {
+          "say": "二つ目では、見学中の質問にその場で答えます。",
+          "pulse": ["visitor"],
+          "tag": {
+            "visitor": "今答える"
+          }
+        },
+        {
+          "say": "バッチに向いているのは、どちらでしょうか。",
+          "pulse": [],
+          "mark": [
+            {
+              "on": "feedback",
+              "kind": "question"
+            },
+            {
+              "on": "visitor",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "museum-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "感想の分類を選ぶ",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "答えは、あとで読む大量の感想を分類する仕事です。",
+          "mark": [
+            {
+              "on": "feedback",
+              "kind": "check"
+            },
+            {
+              "on": "visitor",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["feedback"]
+        },
+        {
+          "say": "すぐに答える必要がある質問は、バッチに向きません。",
+          "pulse": ["visitor"]
+        }
+      ]
+    },
+    {
+      "id": "museum-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "結果をいつ使うか",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "感想の分類は量が多く、結果はあとで使います。",
+          "pulse": ["feedback"]
+        },
+        {
+          "say": "送ったあとに処理し、終わってから受け取れる仕事です。",
+          "tag": {
+            "feedback": "結果を待てる"
+          }
+        },
+        {
+          "say": "見学中の質問には、その場で答える必要があります。",
+          "pulse": ["visitor"]
+        },
+        {
+          "say": "件数だけでなく、今すぐ結果が必要かも確かめましょう。",
+          "pulse": ["feedback", "visitor"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "まとめて送る前の判断",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "急がない問い合わせの分類なら、まとめて送れます。",
+          "show": ["inquiries"],
+          "tag": {
+            "inquiries": "大量の分類"
+          }
+        },
+        {
+          "say": "たまった見学の感想を要約する仕事も、使いどころです。",
+          "show": ["feedback"],
+          "tag": {
+            "feedback": "まとめて要約"
+          }
+        },
+        {
+          "say": "どちらも、結果を待てる仕事か確かめましょう。",
+          "pulse": ["inquiries", "feedback"]
+        },
+        {
+          "say": "急がない大量の処理は、バッチにまとめて送ります。",
+          "show": ["bundle", "collect"],
+          "travel": {
+            "along": ["collect"],
+            "icon": "send"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f72028a711f270fd152e3694010974b9f46ec787add05e002bbacb140ac57ccc"
+  }
+}

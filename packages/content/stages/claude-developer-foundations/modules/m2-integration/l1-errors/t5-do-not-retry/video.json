@@ -1,0 +1,798 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "400と413の応答を見て、送り直す前に確認し修正する入力の箇所を説明できる。",
+    "stuck": "どのエラーも待って送り直せば通ると思い、項目の誤りとデータ全体の大きさを区別しない。",
+    "points": ["400 と 413 は送り直しても通らないので、リクエストを直します。"],
+    "leaveOut": [
+      "送り直せるエラーの種類と待つ間隔",
+      "request ID の記録や調査の手順",
+      "API ごとのバイト数の上限",
+      "max_tokens の設定と出力の長さ",
+      "課題の実装コード"
+    ]
+  },
+  "art": {
+    "report-files": {
+      "prompt": "A thick stack of white monthly report pages in a blue binder with several light grey tabs and a large blue paper clip. The pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-photos": {
+      "prompt": "Several overlapping white photographic prints showing simple blue machine parts, held together by a violet clip, representing extra attachments to a monthly report. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "selected-pages": {
+      "prompt": "A hand lifting two selected white pages from a blue monthly report binder, leaving the other light grey pages inside the binder. All pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-note": {
+      "prompt": "A large magnifying glass over a blank white response slip with one violet tab, representing reading the details of an error response. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bread-order": {
+      "prompt": "A white bakery order form with empty pale grey fields beside a violet pencil and a small golden bread roll. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bakery-clerk": {
+      "prompt": "A friendly bakery clerk in a plain blue shirt holding a golden loaf in one hand and pointing gently with the other hand. Simple facial features, short dark hair, no counter. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-folder": {
+      "prompt": "A blue folder containing a thick fan of blank white documents and small light grey conversation slips, representing the material and history in one request. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-property": {
+      "prompt": "A violet backpack beside a small camera and a fan of white photographs showing that same backpack from different angles, representing a lost item and its attached photos. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-clock": {
+      "prompt": "A simple blue alarm clock with a blank white face and two dark hands, beside a closed light grey envelope, representing waiting before sending the same request again. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "月次報告",
+          "art": "report-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "photos",
+          "label": "増えた添付",
+          "art": "report-photos",
+          "at": [3, 1]
+        },
+        {
+          "id": "fix",
+          "label": "資料を選ぶ",
+          "art": "selected-pages",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bakery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "注文用紙",
+          "art": "bread-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "パン屋の店員",
+          "art": "bakery-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "数量を記入",
+          "art": "bread-order",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "hand",
+          "from": "order",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "correct",
+          "from": "clerk",
+          "to": "fixed",
+          "label": "書き直す"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "error",
+          "label": "400の本文",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "送る項目",
+          "art": "input-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "直した項目",
+          "art": "input-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "error",
+          "to": "input",
+          "label": "照合"
+        },
+        {
+          "id": "fix",
+          "from": "input",
+          "to": "fixed",
+          "label": "修正"
+        }
+      ]
+    },
+    "length": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "error",
+          "label": "400の本文",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "資料と履歴",
+          "art": "input-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "short",
+          "label": "絞った入力",
+          "art": "input-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "error",
+          "to": "input",
+          "label": "確認"
+        },
+        {
+          "id": "reduce",
+          "from": "input",
+          "to": "short",
+          "label": "絞る"
+        }
+      ]
+    },
+    "size": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "error",
+          "label": "413の応答",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "photos",
+          "label": "添付の画像",
+          "art": "report-photos",
+          "at": [3, 1]
+        },
+        {
+          "id": "all",
+          "label": "送信データ",
+          "art": "report-files",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "include",
+          "from": "photos",
+          "to": "all",
+          "label": "含める"
+        }
+      ]
+    },
+    "monthly": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "送った報告書",
+          "art": "report-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "error",
+          "label": "413の応答",
+          "art": "error-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "photos",
+          "label": "今月の添付",
+          "art": "report-photos",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fail",
+          "from": "report",
+          "to": "error",
+          "label": "失敗"
+        },
+        {
+          "id": "inspect",
+          "from": "error",
+          "to": "photos",
+          "label": "調べる"
+        }
+      ]
+    },
+    "select": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "報告の資料",
+          "art": "report-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "selected",
+          "label": "集計用ページ",
+          "art": "selected-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "send",
+          "label": "選んだ資料",
+          "art": "selected-pages",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "all",
+          "to": "selected",
+          "label": "選ぶ"
+        },
+        {
+          "id": "send-selected",
+          "from": "selected",
+          "to": "send",
+          "label": "送る"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "lost",
+          "label": "落とし物案内",
+          "art": "lost-property",
+          "at": [1, 1]
+        },
+        {
+          "id": "error",
+          "label": "413の応答",
+          "art": "error-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って再送",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "select",
+          "label": "写真を選ぶ",
+          "art": "lost-property",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "failure",
+          "from": "lost",
+          "to": "error",
+          "label": "失敗"
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "lost",
+          "label": "添付した写真",
+          "art": "lost-property",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "同じ写真",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "selected",
+          "label": "必要な写真",
+          "art": "lost-property",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "error",
+          "label": "400の本文",
+          "art": "error-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "413の資料",
+          "art": "report-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "fix",
+          "label": "直して送る",
+          "art": "input-folder",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "送り直す前に入力を直す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "月次報告を作るアプリで、送信に失敗しました。",
+          "show": ["report"]
+        },
+        {
+          "say": "今月は、添付する画像が増えています。",
+          "show": ["photos"]
+        },
+        {
+          "say": "同じものを送る前に、資料を見直しましょう。",
+          "show": ["fix"]
+        },
+        {
+          "say": "400と413は、送り直しても通らないので入力を直します。",
+          "speech": "ヨンヒャクとヨンヒャクジュウサンは、送り直しても通らないので入力を直します。",
+          "pulse": ["report", "fix"]
+        }
+      ]
+    },
+    {
+      "id": "bakery-order",
+      "kind": "board",
+      "role": "example",
+      "title": "空欄の注文用紙",
+      "board": "bakery",
+      "beats": [
+        {
+          "say": "パン屋で、数量が空欄の注文用紙を渡したとします。",
+          "show": ["order", "clerk", "hand"],
+          "tag": {
+            "order": "数量が空欄"
+          }
+        },
+        {
+          "say": "店員が困るのは、必要な個数が分からないからです。",
+          "pulse": ["clerk"],
+          "mark": [
+            {
+              "on": "order",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "時間を置いて同じ紙を渡しても、空欄は埋まりません。",
+          "travel": {
+            "along": ["hand"],
+            "icon": "file"
+          },
+          "pulse": ["order"]
+        },
+        {
+          "say": "注文を進めるには、用紙に数量を書き込みます。",
+          "show": ["fixed", "correct"],
+          "tag": {
+            "fixed": "数量を補う"
+          },
+          "pulse": ["fixed"]
+        }
+      ]
+    },
+    {
+      "id": "read-400",
+      "kind": "board",
+      "role": "syntax",
+      "title": "400は本文から調べる",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "400は、送る内容を直す必要がある応答です。",
+          "speech": "ヨンヒャクは、送る内容を直す必要がある応答です。",
+          "term": {
+            "text": "400",
+            "note": "本文を読んで入力を直す"
+          }
+        },
+        {
+          "say": "まず、エラー本文が示す項目を確かめます。",
+          "show": ["error"]
+        },
+        {
+          "say": "不足している項目がないか、送った内容と比べましょう。",
+          "show": ["input", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "値の型が違う場合も、修正が必要です。",
+          "tag": {
+            "input": "項目や型"
+          },
+          "pulse": ["input"]
+        },
+        {
+          "say": "指摘された項目を直してから、改めて送ります。",
+          "show": ["fixed", "fix"],
+          "travel": {
+            "along": ["fix"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "long-input",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力が長すぎる場合",
+      "board": "length",
+      "beats": [
+        {
+          "say": "400では、入力が長すぎる場合もあります。",
+          "speech": "ヨンヒャクでは、入力が長すぎる場合もあります。",
+          "show": ["error"],
+          "tag": {
+            "error": "入力が長い"
+          }
+        },
+        {
+          "say": "入力だけで、モデルが扱えるトークン数を超えた状態です。",
+          "show": ["input", "inspect"],
+          "pulse": ["input"]
+        },
+        {
+          "say": "この場合は、送る資料や履歴を絞りましょう。",
+          "show": ["short", "reduce"],
+          "travel": {
+            "along": ["reduce"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "同じ400でも、本文の説明を読んで直す場所を決めます。",
+          "speech": "同じヨンヒャクでも、本文の説明を読んで直す場所を決めます。",
+          "pulse": ["error"],
+          "tag": {
+            "short": "必要な入力"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-413",
+      "kind": "board",
+      "role": "syntax",
+      "title": "413は全体の大きさ",
+      "board": "size",
+      "beats": [
+        {
+          "say": "413は、送るデータ全体が大きすぎる応答です。",
+          "speech": "ヨンヒャクジュウサンは、送るデータ全体が大きすぎる応答です。",
+          "term": {
+            "text": "413",
+            "note": "送信データ全体が大きすぎる"
+          }
+        },
+        {
+          "say": "文章に加えて、添付も合わせて確かめます。",
+          "show": ["error", "photos", "all", "include"],
+          "travel": {
+            "along": ["include"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "データの大きさを表すのが、バイト数です。",
+          "term": {
+            "text": "バイト数",
+            "ruby": "ばいとすう",
+            "note": "送るデータの大きさ"
+          }
+        },
+        {
+          "say": "ここでは、添付を含む全体のバイト数を調べます。",
+          "pulse": ["all"],
+          "tag": {
+            "all": "全体の大きさ"
+          }
+        },
+        {
+          "say": "文章が短くても、添付の確認を省かないでください。",
+          "pulse": ["photos"]
+        }
+      ]
+    },
+    {
+      "id": "inspect-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "増えた添付を確かめる",
+      "board": "monthly",
+      "beats": [
+        {
+          "say": "この報告書は、先月まで送れていました。",
+          "show": ["report"]
+        },
+        {
+          "say": "今月は、送り直しても413が返ります。",
+          "speech": "今月は、送り直してもヨンヒャクジュウサンが返ります。",
+          "show": ["error", "fail"],
+          "tag": {
+            "error": "413"
+          }
+        },
+        {
+          "say": "ここで確かめたいのは、増えた添付の画像です。",
+          "show": ["photos", "inspect"],
+          "pulse": ["photos"]
+        },
+        {
+          "say": "待つ時間を変えても、送るデータの大きさは減りません。",
+          "pulse": ["report", "photos"],
+          "tag": {
+            "report": "大きさは同じ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "select-pages",
+      "kind": "board",
+      "role": "apply",
+      "title": "集計に要るページを選ぶ",
+      "board": "select",
+      "beats": [
+        {
+          "say": "まず、報告に添えた資料を見直しましょう。",
+          "show": ["all"]
+        },
+        {
+          "say": "残すのは、月次報告の集計に使うページです。",
+          "show": ["selected", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "必要な情報を残しながら、送るデータを小さくします。",
+          "pulse": ["selected"],
+          "tag": {
+            "selected": "必要な情報"
+          }
+        },
+        {
+          "say": "減らせない資料なら、必要な部分に分けて送りましょう。",
+          "show": ["send", "send-selected"],
+          "travel": {
+            "along": ["send-selected"],
+            "icon": "send"
+          },
+          "tag": {
+            "send": "部分に分ける"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "駅の落とし物の写真",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駅の落とし物案内を作るアプリを考えましょう。",
+          "show": ["lost"]
+        },
+        {
+          "say": "かばんの写真を大量に添付すると、413が返りました。",
+          "speech": "かばんの写真を大量に添付すると、ヨンヒャクジュウサンが返りました。",
+          "show": ["error", "failure"],
+          "tag": {
+            "error": "413"
+          }
+        },
+        {
+          "say": "一つ目は、待って同じ写真を送り直す案です。",
+          "show": ["wait"]
+        },
+        {
+          "say": "二つ目では、特徴が分かる写真を選んで添付を減らします。",
+          "show": ["select"]
+        },
+        {
+          "say": "入力を直す方法は、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "question"
+            },
+            {
+              "on": "select",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["wait", "select"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "必要な写真を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、写真を選んで添付を減らす案です。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "cross"
+            },
+            {
+              "on": "select",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["select"]
+        },
+        {
+          "say": "かばんの特徴が分かる写真を残して、全体を小さくします。",
+          "tag": {
+            "select": "特徴を残す"
+          },
+          "pulse": ["lost", "select"]
+        }
+      ]
+    },
+    {
+      "id": "why-select",
+      "kind": "board",
+      "role": "explain",
+      "title": "待っても写真は減らない",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "413で見直すのは、添付を含む送信データの大きさです。",
+          "speech": "ヨンヒャクジュウサンで見直すのは、添付を含む送信データの大きさです。",
+          "show": ["lost"],
+          "tag": {
+            "lost": "添付も含む"
+          }
+        },
+        {
+          "say": "待つだけでは、同じ写真のデータは小さくなりません。",
+          "show": ["wait"],
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "特徴が分かる写真に絞れば、必要な情報を残せます。",
+          "show": ["selected"],
+          "tag": {
+            "selected": "必要な写真"
+          }
+        },
+        {
+          "say": "選んだ写真を含めて、送信データ全体を確かめましょう。",
+          "pulse": ["selected"],
+          "mark": [
+            {
+              "on": "selected",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "エラーに合わせて直す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "400では、本文に沿って項目や入力の長さを直します。",
+          "speech": "ヨンヒャクでは、本文に沿って項目や入力の長さを直します。",
+          "show": ["error"]
+        },
+        {
+          "say": "413なら、添付を含めたデータ全体が確認の対象です。",
+          "speech": "ヨンヒャクジュウサンなら、添付を含めたデータ全体が確認の対象です。",
+          "show": ["report"]
+        },
+        {
+          "say": "送り直す前に、エラーに合わせて入力を見直しましょう。",
+          "show": ["fix"]
+        },
+        {
+          "say": "修正したリクエストを、改めて送ります。",
+          "pulse": ["fix"],
+          "tag": {
+            "fix": "修正して送る"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "79b5de7631ff6be5f6f2ff29a911df585308f58e24214f9c4922373044f9e1c0"
+  }
+}
