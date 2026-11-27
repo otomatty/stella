@@ -1,0 +1,652 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "最初から効かせる役割や前提と利用者の発言を分け、system と messages のどちらに書くか説明できる。",
+    "stuck": "役割の指示を利用者の発言につなぎ、system も messages の中に置くと思ってしまう。",
+    "points": ["最初から効かせる役割や前提は、messages ではなく system に書きます。"],
+    "leaveOut": [
+      "会話の履歴を毎回送る手順",
+      "出力の上限と応答の取り出し方",
+      "会話の途中で指示を足す方法とモデルごとの違い",
+      "指示文を工夫する技法",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "help-agent": {
+      "prompt": "A support agent in a plain blue shirt wearing a headset and holding a small white identification badge, simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "connection-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen and an unplugged blue network cable beside it. Objects only, no interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "role-card": {
+      "prompt": "A large white instruction card held by a blue clip, with a simple blue person pictogram and no other markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-staff": {
+      "prompt": "An event reception attendant in a plain blue shirt holding a folded white leaflet and wearing a blank violet badge, simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "visitor": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a small white admission ticket, with an empty speech bubble beside their face. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-folder": {
+      "prompt": "An open light grey folder containing two separate white sheets with blue and violet tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-booklet": {
+      "prompt": "A white travel booklet with a simple blue suitcase pictogram beside a small violet suitcase. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "packing-bag": {
+      "prompt": "An open blue travel bag with a folded violet shirt and white walking shoes beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "role",
+          "label": "社内の担当者",
+          "art": "help-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "issue",
+          "label": "接続の相談",
+          "art": "connection-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "separate",
+          "label": "分けて書く",
+          "art": "request-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "role-card",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reception": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "催しの受付",
+          "art": "festival-staff",
+          "at": [1, 1]
+        },
+        {
+          "id": "visitor",
+          "label": "来場者の質問",
+          "art": "visitor",
+          "at": [3, 1]
+        },
+        {
+          "id": "role",
+          "label": "受付という役割",
+          "art": "role-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "meaning": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "system",
+          "label": "system",
+          "art": "role-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "messages",
+          "label": "やり取り",
+          "art": "connection-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "system",
+          "label": "system",
+          "art": "help-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "messages",
+          "label": "やり取り",
+          "art": "connection-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "placement": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "system",
+          "label": "system",
+          "art": "role-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "messages",
+          "label": "やり取り",
+          "art": "connection-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "travel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "booklet",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "初参加者向け",
+          "art": "role-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "持ち物を質問",
+          "art": "packing-bag",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "help",
+          "label": "社内の相談",
+          "art": "help-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "travel",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "separate",
+          "label": "役割と発言",
+          "art": "request-folder",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "役割と発言の置き場所",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "社内の相談に答える担当者として、話してほしいとします。",
+          "show": ["role"]
+        },
+        {
+          "say": "利用者が伝えたのは、接続できずに困っているという話です。",
+          "show": ["issue"]
+        },
+        {
+          "say": "担当者という役割と、今回の相談を分けてみましょう。",
+          "show": ["separate"]
+        },
+        {
+          "say": "最初から効かせる役割や前提は、system に書きます。",
+          "speech": "最初から効かせる役割や前提は、システムに書きます。",
+          "show": ["system"],
+          "pulse": ["system"]
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "kind": "board",
+      "role": "example",
+      "title": "受付の役割と来場者の質問",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "催しの受付を任された人を、思い浮かべてください。",
+          "show": ["staff"]
+        },
+        {
+          "say": "この人には、来場者を案内する役割があります。",
+          "show": ["role"]
+        },
+        {
+          "say": "来場者が尋ねたのは、会場までの行き方です。",
+          "show": ["visitor"]
+        },
+        {
+          "say": "質問の中に、受付の役割まで毎回つなぐと読みにくくなります。",
+          "pulse": ["visitor"],
+          "tag": {
+            "visitor": "役割も混在"
+          }
+        },
+        {
+          "say": "担当の役割と、来場者が聞いたことを分けましょう。",
+          "untag": ["visitor"],
+          "pulse": ["role", "visitor"]
+        }
+      ]
+    },
+    {
+      "id": "meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前提を渡す項目",
+      "board": "meaning",
+      "beats": [
+        {
+          "say": "ここでいう前提は、最初から効かせたい役割や目的です。",
+          "term": {
+            "text": "前提",
+            "ruby": "ぜんてい",
+            "note": "最初から効かせる役割や目的"
+          }
+        },
+        {
+          "say": "この例では、社内の相談に答える担当者という役割を渡します。",
+          "show": ["system"],
+          "tag": {
+            "system": "社内の担当者"
+          }
+        },
+        {
+          "say": "その前提を書く項目が、system です。",
+          "speech": "その前提を書く項目が、システムです。",
+          "term": {
+            "text": "system",
+            "note": "役割や前提を書く項目"
+          }
+        },
+        {
+          "say": "ここに、最初の役割をまとめて書きます。",
+          "pulse": ["system"]
+        },
+        {
+          "say": "利用者の相談とは、書く場所を分けるのが要点です。",
+          "show": ["messages"],
+          "tag": {
+            "messages": "今回の相談"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "request-shape",
+      "kind": "code",
+      "role": "syntax",
+      "title": "リクエストの外側に置く",
+      "code": [
+        "// 役割と発言をまとめる",
+        "const request = {",
+        "  // 最初から効かせる役割",
+        "  system: \"あなたは社内ヘルプデスクの担当者です\",",
+        "  // 利用者とのやり取り",
+        "  messages: [",
+        "    // 利用者が困っていること",
+        "    { role: \"user\", content: \"VPN につながりません\" },",
+        "  // 発言の配列を閉じる",
+        "  ],",
+        "// リクエストを閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "教材のリクエストでは、二つの項目を並べます。",
+          "focus": [3, 5],
+          "figure": {
+            "show": ["system", "messages"]
+          }
+        },
+        {
+          "say": "前提を書く system は、一番上の階層の項目です。",
+          "speech": "前提を書くシステムは、一番上の階層の項目です。",
+          "part": {
+            "line": 3,
+            "text": "system",
+            "note": "役割や前提"
+          },
+          "figure": {
+            "pulse": ["system"]
+          }
+        },
+        {
+          "say": "やり取りは、messages という項目にまとめます。",
+          "speech": "やり取りは、メッセージズという項目にまとめます。",
+          "term": {
+            "text": "messages",
+            "note": "利用者とClaudeのやり取り"
+          },
+          "part": {
+            "line": 5,
+            "text": "messages"
+          }
+        },
+        {
+          "say": "この配列に入っているのは、利用者の発言です。",
+          "part": {
+            "line": 7,
+            "text": "\"VPN につながりません\"",
+            "note": "利用者の発言"
+          },
+          "figure": {
+            "pulse": ["messages"]
+          }
+        },
+        {
+          "say": "system が配列の外にあることを確かめましょう。",
+          "speech": "システムが配列の外にあることを確かめましょう。",
+          "focus": [3, 5, 9],
+          "figure": {
+            "pulse": ["system", "messages"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "write-support",
+      "kind": "code",
+      "role": "apply",
+      "title": "役割と相談を別々に書く",
+      "code": [
+        "// 役割と発言をまとめる",
+        "const request = {",
+        "  // 最初から効かせる役割",
+        "  system: \"あなたは社内ヘルプデスクの担当者です\",",
+        "  // 利用者とのやり取り",
+        "  messages: [",
+        "    // 利用者が困っていること",
+        "    { role: \"user\", content: \"VPN につながりません\" },",
+        "  // 発言の配列を閉じる",
+        "  ],",
+        "// リクエストを閉じる",
+        "};"
+      ],
+      "show": [0, 1, 10, 11],
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、社内ヘルプデスクの担当者という役割を書きます。",
+          "type": [2, 3],
+          "figure": {
+            "show": ["system"]
+          }
+        },
+        {
+          "say": "これは、最初から効かせたい前提です。",
+          "part": {
+            "line": 3,
+            "text": "あなたは社内ヘルプデスクの担当者です"
+          },
+          "figure": {
+            "tag": {
+              "system": "最初の前提"
+            }
+          }
+        },
+        {
+          "say": "続いて、利用者とのやり取りを書く配列を用意しましょう。",
+          "type": [4, 5, 8, 9],
+          "figure": {
+            "show": ["messages"]
+          }
+        },
+        {
+          "say": "その中に、接続できないという利用者の発言を入れます。",
+          "type": [6, 7],
+          "figure": {
+            "pulse": ["messages"]
+          }
+        },
+        {
+          "say": "役割の指示と今回の相談が、別々の項目に収まった形です。",
+          "focus": [3, 7],
+          "figure": {
+            "tag": {
+              "messages": "今回の相談"
+            },
+            "pulse": ["system", "messages"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "check-placement",
+      "kind": "board",
+      "role": "apply",
+      "title": "二つの項目を見直す",
+      "board": "placement",
+      "beats": [
+        {
+          "say": "リクエスト全体を、図でも確かめてみましょう。",
+          "show": ["request", "system", "messages"]
+        },
+        {
+          "say": "system には、役割や前提を書きます。",
+          "speech": "システムには、役割や前提を書きます。",
+          "pulse": ["system"]
+        },
+        {
+          "say": "messages は、利用者と Claude のやり取りです。",
+          "speech": "メッセージズは、利用者とクロードのやり取りです。",
+          "pulse": ["messages"]
+        },
+        {
+          "say": "最初の役割の指示を、毎回の発言につながずに済みます。",
+          "pulse": ["system", "messages"],
+          "mark": [
+            {
+              "on": "system",
+              "kind": "check"
+            },
+            {
+              "on": "messages",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "travel-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "しおりの前提はどこに書く",
+      "board": "travel",
+      "think": 8,
+      "beats": [
+        {
+          "say": "旅行のしおりを作る、別の例で考えましょう。",
+          "show": ["booklet"]
+        },
+        {
+          "say": "最初から、初参加者向けに説明する役割を持たせたい場面です。",
+          "show": ["rule"]
+        },
+        {
+          "say": "利用者は、当日の持ち物を教えてほしいと頼みました。",
+          "show": ["question"]
+        },
+        {
+          "say": "この役割は、system と messages のどちらに書きますか。",
+          "speech": "この役割は、システムとメッセージズのどちらに書きますか。",
+          "pulse": ["rule"],
+          "mark": [
+            {
+              "on": "rule",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "持ち物を尋ねた発言の置き場所も、考えてください。",
+          "pulse": ["question"],
+          "mark": [
+            {
+              "on": "question",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "travel-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "役割と質問の答え合わせ",
+      "board": "travel",
+      "beats": [
+        {
+          "say": "初参加者向けに説明する役割は、system に書きます。",
+          "speech": "初参加者向けに説明する役割は、システムに書きます。",
+          "tag": {
+            "rule": "system"
+          },
+          "mark": [
+            {
+              "on": "rule",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["rule"]
+        },
+        {
+          "say": "持ち物を尋ねた発言は、messages の中です。",
+          "speech": "持ち物を尋ねた発言は、メッセージズの中です。",
+          "tag": {
+            "question": "messages"
+          },
+          "mark": [
+            {
+              "on": "question",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["question"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "travel-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "内容で置き場所を判断する",
+      "board": "travel",
+      "beats": [
+        {
+          "say": "初参加者向けという役割は、説明するときの前提です。",
+          "pulse": ["rule"]
+        },
+        {
+          "say": "最初から効かせるので、system に書きます。",
+          "speech": "最初から効かせるので、システムに書きます。",
+          "tag": {
+            "rule": "最初の前提"
+          }
+        },
+        {
+          "say": "一方、持ち物を教えてほしいという言葉は、今回の発言でした。",
+          "pulse": ["question"]
+        },
+        {
+          "say": "その発言は、やり取りを並べる messages に入れます。",
+          "speech": "その発言は、やり取りを並べるメッセージズに入れます。",
+          "tag": {
+            "question": "今回の発言"
+          }
+        },
+        {
+          "say": "同じ旅行の話でも、前提か発言かで置き場所が違うのです。",
+          "pulse": ["rule", "question"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "役割を決めて相談を受ける",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "社内の相談では、担当者として答える役割を決めます。",
+          "show": ["help"]
+        },
+        {
+          "say": "旅行のしおりなら、初参加者に説明する役割です。",
+          "show": ["travel"]
+        },
+        {
+          "say": "その役割と、利用者がいま尋ねたことを分けて書きましょう。",
+          "show": ["separate"]
+        },
+        {
+          "say": "最初から効かせる役割や前提は、system に書きます。",
+          "speech": "最初から効かせる役割や前提は、システムに書きます。",
+          "pulse": ["separate"],
+          "tag": {
+            "separate": "前提を分ける"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "36164ce56ed323e0bdb82053acd4d0432673c7761a26de695fb6855c663c86e6"
+  }
+}

@@ -1,0 +1,822 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "モデル ID が固定した版を指すことと、新しい版へ切り替える手順を説明できる。",
+    "stuck": "同じモデル名を指定すれば、新しい版が出たときに自動で切り替わると思ってしまう。",
+    "points": ["モデル ID は決まったスナップショットを指し、新しい版は別の ID で出ます。"],
+    "leaveOut": [
+      "4.6 世代より前の別名の詳しい扱い",
+      "モデルごとの性能や料金と選び方",
+      "SDK や API キーの扱い",
+      "max_tokens や messages の詳しい書き方",
+      "開発環境と本番で送信する指示の違い",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "recipe-old": {
+      "prompt": "A white recipe booklet with a blue binding beside one golden round bread roll and a small white measuring spoon. The booklet pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-new": {
+      "prompt": "A white recipe booklet with a violet binding beside one golden braided bread roll and a small white measuring spoon. The booklet pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-slip": {
+      "prompt": "A hand holding a blank white recipe selection slip with a small blue tab, beside a violet pencil. No writing on the slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-fixed": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, beside a small closed light grey settings case with two blue knobs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "An open blue envelope with a blank white request sheet partly visible and a violet pen beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "compare-sheets": {
+      "prompt": "Two blank white result sheets side by side, one held by a blue clip and one held by a violet clip, with a magnifying glass between them. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-kit": {
+      "prompt": "A blue camera beside a light grey film canister and two white photographic prints showing a simple green tree in natural colors. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "calendar": {
+      "prompt": "A small white tear-off calendar with a blue binding and a violet pencil beside it, with completely blank pages and no grid. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-new": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, beside a tall closed light grey settings case with three violet sliders. This case represents a different saved model version from the shorter case with blue knobs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "recipe-goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "保存した版",
+          "art": "recipe-old",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "recipe-new",
+          "at": [3, 1]
+        },
+        {
+          "id": "slip",
+          "label": "指定する名前",
+          "art": "recipe-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "recipe-choice": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "slip",
+          "label": "選んだ名前",
+          "art": "recipe-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "保存した版",
+          "art": "recipe-old",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "recipe-new",
+          "at": [5, 1]
+        },
+        {
+          "id": "new-slip",
+          "label": "別の名前",
+          "art": "recipe-slip",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "slip",
+          "to": "old",
+          "label": "指定"
+        },
+        {
+          "id": "new-name",
+          "from": "new",
+          "to": "new-slip",
+          "label": "別に付ける"
+        }
+      ]
+    },
+    "versions": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "id-old",
+          "label": "元のID",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "固定した版",
+          "art": "model-fixed",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "model-new",
+          "at": [3, 2]
+        },
+        {
+          "id": "id-new",
+          "label": "別のID",
+          "art": "request-envelope",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "old-target",
+          "from": "id-old",
+          "to": "old",
+          "label": "指す"
+        },
+        {
+          "id": "new-target",
+          "from": "new",
+          "to": "id-new",
+          "label": "別の名前"
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルの版",
+          "art": "model-fixed",
+          "at": [3, 1]
+        },
+        {
+          "id": "greeting",
+          "label": "あいさつ",
+          "art": "request-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "request",
+          "to": "model",
+          "label": "指定"
+        }
+      ]
+    },
+    "evaluation": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "前の版",
+          "art": "model-fixed",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "model-new",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "結果を比べる",
+          "art": "compare-sheets",
+          "at": [5, 1]
+        },
+        {
+          "id": "switch",
+          "label": "切り替える",
+          "art": "request-envelope",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "new",
+          "to": "results",
+          "label": "評価"
+        },
+        {
+          "id": "adopt",
+          "from": "results",
+          "to": "switch",
+          "label": "確認後"
+        }
+      ]
+    },
+    "photo-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "photo",
+          "label": "現像の案内",
+          "art": "photo-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "同じID",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "old",
+          "label": "前の版",
+          "art": "model-fixed",
+          "at": [5, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "model-new",
+          "at": [5, 2]
+        },
+        {
+          "id": "auto",
+          "label": "自動で替わる",
+          "art": "request-envelope",
+          "at": [3, 2]
+        },
+        {
+          "id": "keep",
+          "label": "前の版を指す",
+          "art": "request-envelope",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "selected",
+          "from": "id",
+          "to": "old",
+          "label": "指す"
+        }
+      ]
+    },
+    "photo-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "id",
+          "label": "同じID",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "前の版",
+          "art": "model-fixed",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい版",
+          "art": "model-new",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fixed",
+          "from": "id",
+          "to": "old",
+          "label": "指す"
+        }
+      ]
+    },
+    "use": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "compare",
+          "label": "版の比較",
+          "art": "compare-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "switch",
+          "label": "指定を変更",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "提供終了予定",
+          "art": "calendar",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "review",
+          "from": "compare",
+          "to": "switch",
+          "label": "確認後"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "指定した版を使う",
+      "board": "recipe-goal",
+      "beats": [
+        {
+          "say": "保存したパンのレシピで、作り方を案内するとします。",
+          "show": ["old"]
+        },
+        {
+          "say": "別の作り方を載せた、新しい版も出たところです。",
+          "show": ["new"]
+        },
+        {
+          "say": "前の名前を指定したら、新しい版に替わるでしょうか。",
+          "show": ["slip"],
+          "mark": [
+            {
+              "on": "slip",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "モデル ID は版を固定し、新しい版は別の ID で出ます。",
+          "speech": "モデルアイディーは版を固定し、新しい版は別のアイディーで出ます。",
+          "pulse": ["old", "new"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "recipe-example",
+      "kind": "board",
+      "role": "example",
+      "title": "レシピの名前と中身",
+      "board": "recipe-choice",
+      "beats": [
+        {
+          "say": "レシピを保存し、版ごとに違う名前を付けておきます。",
+          "show": ["old", "new"]
+        },
+        {
+          "say": "使う人が選んだのは、前の版に付けた名前です。",
+          "show": ["slip", "choose"]
+        },
+        {
+          "say": "その名前で取り出すのは、保存しておいた前の版になります。",
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "別のレシピが増えても、保存した中身は変わりません。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "中身は固定"
+          }
+        },
+        {
+          "say": "新しい版を使いたければ、その版の名前を選びましょう。",
+          "show": ["new-slip", "new-name"],
+          "pulse": ["new", "new-slip"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "id-and-snapshot",
+      "kind": "board",
+      "role": "syntax",
+      "title": "名前が指すモデルの版",
+      "board": "versions",
+      "beats": [
+        {
+          "say": "モデルを指定する名前が、モデル ID です。",
+          "speech": "モデルを指定する名前が、モデルアイディーです。",
+          "term": {
+            "text": "モデルID",
+            "note": "使うモデルの版を指す名前"
+          },
+          "show": ["id-old"]
+        },
+        {
+          "say": "この名前で、使うモデルの版を選びます。",
+          "show": ["old", "old-target"],
+          "travel": {
+            "along": ["old-target"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "中身や設定を固定した版が、スナップショットです。",
+          "term": {
+            "text": "スナップショット",
+            "note": "重みや設定を固定した版"
+          }
+        },
+        {
+          "say": "図のモデルが、その一つの版に当たります。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "固定した版"
+          }
+        },
+        {
+          "say": "新しい版には、元とは別の ID が付く仕組みです。",
+          "speech": "新しい版には、元とは別のアイディーが付く仕組みです。",
+          "show": ["new", "id-new", "new-target"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "model-field",
+      "kind": "code",
+      "role": "syntax",
+      "title": "指定する項目と文字列",
+      "code": [
+        "// 送る依頼に名前を付ける",
+        "const request = {",
+        "  // 使うモデルの版を指定する",
+        "  model: \"claude-opus-5-5\",",
+        "  // 出力の上限を指定する",
+        "  max_tokens: 1024,",
+        "  // 利用者のあいさつを入れる",
+        "  messages: [{ role: \"user\", content: \"こんにちは\" }],",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "request は、依頼に自分で付けた名前です。",
+          "speech": "リクエストは、依頼に自分で付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "request",
+            "note": "依頼"
+          },
+          "figure": {
+            "show": ["request"]
+          }
+        },
+        {
+          "say": "モデル ID は、model の項目に書きます。",
+          "speech": "モデルアイディーは、モデルの項目に書きます。",
+          "part": {
+            "line": 3,
+            "text": "model",
+            "note": "使う版の指定"
+          },
+          "figure": {
+            "show": ["model", "select"]
+          }
+        },
+        {
+          "say": "引用符の中の文字列が、指定するモデル ID です。",
+          "speech": "引用符の中の文字列が、指定するモデルアイディーです。",
+          "part": {
+            "line": 3,
+            "text": "\"claude-opus-5-5\""
+          },
+          "figure": {
+            "pulse": ["model"]
+          }
+        },
+        {
+          "say": "この例には、2026年10月時点の ID を使っています。",
+          "speech": "この例には、にせんにじゅうろくねんじゅうがつ時点のアイディーを使っています。",
+          "part": {
+            "line": 3,
+            "text": "claude-opus-5-5",
+            "note": "教材の指定例"
+          }
+        },
+        {
+          "say": "4.6世代以降は、日付なしの ID も版を固定する形です。",
+          "speech": "よんてんろく世代以降は、日付なしのアイディーも版を固定する形です。",
+          "figure": {
+            "tag": {
+              "model": "版は固定"
+            }
+          }
+        },
+        {
+          "say": "今の ID は、モデルのページで確かめてください。",
+          "speech": "今のアイディーは、モデルのページで確かめてください。",
+          "part": {
+            "line": 3,
+            "text": "claude-opus-5-5",
+            "note": "使用前に確認"
+          },
+          "figure": {
+            "pulse": ["request"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "same-id",
+      "kind": "code",
+      "role": "apply",
+      "title": "同じ指定が指す版",
+      "code": [
+        "// 送る依頼に名前を付ける",
+        "const request = {",
+        "  // 使うモデルの版を指定する",
+        "  model: \"claude-opus-5-5\",",
+        "  // 出力の上限を指定する",
+        "  max_tokens: 1024,",
+        "  // 利用者のあいさつを入れる",
+        "  messages: [{ role: \"user\", content: \"こんにちは\" }],",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "beats": [
+        {
+          "say": "この例では、あいさつを送る依頼を組み立てました。",
+          "part": {
+            "line": 7,
+            "text": "こんにちは"
+          },
+          "figure": {
+            "show": ["greeting"]
+          }
+        },
+        {
+          "say": "使う版は、この文字列が指すモデルです。",
+          "part": {
+            "line": 3,
+            "text": "claude-opus-5-5"
+          },
+          "figure": {
+            "pulse": ["model"]
+          }
+        },
+        {
+          "say": "同じ ID のまま、新しい版には切り替わりません。",
+          "speech": "同じアイディーのまま、新しい版には切り替わりません。",
+          "figure": {
+            "tag": {
+              "model": "自動変更なし"
+            }
+          }
+        },
+        {
+          "say": "使う版を替えるときは、この値を書き換えます。",
+          "part": {
+            "line": 3,
+            "text": "\"claude-opus-5-5\"",
+            "note": "変更する値"
+          },
+          "figure": {
+            "pulse": ["request"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "compare-before-switch",
+      "kind": "board",
+      "role": "apply",
+      "title": "切り替える前に比べる",
+      "board": "evaluation",
+      "beats": [
+        {
+          "say": "版を替える前に、前の版の結果を控えておきます。",
+          "show": ["old"]
+        },
+        {
+          "say": "新しい版は、別の ID を指定して試す対象です。",
+          "speech": "新しい版は、別のアイディーを指定して試す対象です。",
+          "show": ["new"]
+        },
+        {
+          "say": "結果を比べて確かめることを、ここでは評価と呼びます。",
+          "term": {
+            "text": "評価",
+            "ruby": "ひょうか",
+            "note": "結果を比べて確かめること"
+          }
+        },
+        {
+          "say": "同じ条件で比べれば、モデルの変化が分かりやすいです。",
+          "show": ["results", "compare"],
+          "tag": {
+            "results": "同じ条件"
+          }
+        },
+        {
+          "say": "評価で前の版と比べてから、使う版を切り替えましょう。",
+          "show": ["switch", "adopt"],
+          "travel": {
+            "along": ["adopt"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "photo-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "新しい版に替わるか",
+      "board": "photo-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "写真の現像を案内するアプリを、作ったとします。",
+          "show": ["photo"]
+        },
+        {
+          "say": "指定しているのは、日付なしで版を固定する ID です。",
+          "speech": "指定しているのは、日付なしで版を固定するアイディーです。",
+          "show": ["id", "old", "selected"]
+        },
+        {
+          "say": "新しい版が出ても、アプリの ID は書き換えません。",
+          "speech": "新しい版が出ても、アプリのアイディーは書き換えません。",
+          "show": ["new"],
+          "tag": {
+            "id": "変更なし"
+          }
+        },
+        {
+          "say": "同じ ID の指定先も、自動で新しい版に替わるでしょうか。",
+          "speech": "同じアイディーの指定先も、自動で新しい版に替わるでしょうか。",
+          "show": ["auto"],
+          "mark": [
+            {
+              "on": "auto",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "それとも前の版を指したままか、選んでください。",
+          "show": ["keep"],
+          "mark": [
+            {
+              "on": "keep",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "photo-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "前の版を指したまま",
+      "board": "photo-quiz",
+      "beats": [
+        {
+          "say": "答えは、前の版を指したままです。",
+          "mark": [
+            {
+              "on": "keep",
+              "kind": "check"
+            },
+            {
+              "on": "auto",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["keep"]
+        },
+        {
+          "say": "新しい版が出ただけでは、指定先は変わりません。",
+          "pulse": ["id", "old"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-same-version",
+      "kind": "board",
+      "role": "explain",
+      "title": "名前と版の関係をたどる",
+      "board": "photo-reason",
+      "beats": [
+        {
+          "say": "アプリが送る ID は、書き換える前と同じです。",
+          "speech": "アプリが送るアイディーは、書き換える前と同じです。",
+          "show": ["id"]
+        },
+        {
+          "say": "その ID は、固定された一つの版を指しています。",
+          "speech": "そのアイディーは、固定された一つの版を指しています。",
+          "show": ["old", "fixed"],
+          "travel": {
+            "along": ["fixed"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "新しい版には、別の ID が付いているためです。",
+          "speech": "新しい版には、別のアイディーが付いているためです。",
+          "show": ["new"],
+          "tag": {
+            "new": "別のID"
+          }
+        },
+        {
+          "say": "前の名前の中身が、新しい版に置き換わるわけではありません。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "中身は固定"
+          }
+        },
+        {
+          "say": "写真の案内でも、版を替えるには ID を変更します。",
+          "speech": "写真の案内でも、版を替えるにはアイディーを変更します。",
+          "pulse": ["id", "new"],
+          "tag": {
+            "id": "変更が必要"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-model-versions",
+      "kind": "board",
+      "role": "usage",
+      "title": "アプリで版を切り替える",
+      "board": "use",
+      "beats": [
+        {
+          "say": "アプリのモデルを替えるときは、前の版と結果を比べます。",
+          "show": ["compare"]
+        },
+        {
+          "say": "評価のあとに変更するのが、使うモデルの ID です。",
+          "speech": "評価のあとに変更するのが、使うモデルのアイディーです。",
+          "show": ["switch", "review"]
+        },
+        {
+          "say": "古い ID にも提供終了の予定があるので、確認しましょう。",
+          "speech": "古いアイディーにも提供終了の予定があるので、確認しましょう。",
+          "show": ["end"]
+        },
+        {
+          "say": "モデル ID で版を指定し、比較してから切り替えます。",
+          "speech": "モデルアイディーで版を指定し、比較してから切り替えます。",
+          "pulse": ["compare", "switch"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "89762241b1226a0c8992ba726243dad5aa6e0c881a7454704a2da96330f7e441"
+  }
+}

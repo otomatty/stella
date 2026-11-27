@@ -1,0 +1,821 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "受け取った応答の stop_reason を読み、自然な終了と上限到達を別の処理へ分ける理由を説明できる。",
+    "stuck": "応答が返れば完成した答えだと思い、止まった理由を確かめず同じ表示処理へ渡してしまう。",
+    "points": ["応答の処理は、stop_reason の値ごとに分けます。"],
+    "leaveOut": [
+      "上限を上げる方法と続きを書かせる手順",
+      "拒否の詳細情報と通信エラーとの違い",
+      "ツールの実行と結果を返すコード",
+      "stop_sequence・pause_turn などの細かな仕様",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "printer": {
+      "prompt": "A compact blue and white home printer with a small stack of white paper in its input tray. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "printed-pages": {
+      "prompt": "A neatly aligned stack of completed white printed handouts, represented by broad blue pictorial blocks without writing, held together by a small violet binder clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "empty-printer": {
+      "prompt": "A compact blue and white home printer with a clearly empty input tray and a single white sheet partly emerging from the output slot, representing printing interrupted by lack of paper. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-document": {
+      "prompt": "A single upright white document with a large blank blue speech bubble and a small violet paper clip, representing the text of an application response. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-slip": {
+      "prompt": "A small light grey clipboard holding a blank white status slip with a blue tab attached to its upper edge, representing a record of why work stopped. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-garment": {
+      "prompt": "A freshly cleaned blue shirt on a light grey hanger inside a simple open white garment cover, with a blank white collection ticket attached. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-worker": {
+      "prompt": "A service worker in a plain blue shirt holding a violet wrench, ready to carry out a requested task. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "refusal-worker": {
+      "prompt": "A service worker in a plain blue shirt raising one open palm to politely decline a request, with a blank white request slip in the other hand. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "printing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "printer",
+          "label": "案内を印刷",
+          "art": "printer",
+          "at": [1, 1]
+        },
+        {
+          "id": "finished",
+          "label": "印刷終了",
+          "art": "printed-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "empty",
+          "label": "紙切れ",
+          "art": "empty-printer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取る応答",
+          "art": "response-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "ended",
+          "label": "自然な終了",
+          "art": "response-document",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "値を読む"
+        },
+        {
+          "id": "ended-value",
+          "from": "reason",
+          "to": "ended",
+          "label": "値の意味"
+        }
+      ]
+    },
+    "options": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答えを表示",
+          "art": "response-document",
+          "at": [2, 1]
+        },
+        {
+          "id": "cut",
+          "label": "途中を表示",
+          "art": "response-document",
+          "at": [3, 1]
+        },
+        {
+          "id": "other",
+          "label": "その他の値",
+          "art": "reason-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "natural": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取る応答",
+          "art": "response-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答えを使う",
+          "art": "response-document",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "読む"
+        },
+        {
+          "id": "use",
+          "from": "reason",
+          "to": "answer",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "capped": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取る応答",
+          "art": "response-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "出力上限",
+          "art": "reason-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "cut",
+          "label": "途中の応答",
+          "art": "response-document",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "読む"
+        },
+        {
+          "id": "handle",
+          "from": "reason",
+          "to": "cut",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "others": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "other",
+          "label": "その他の値",
+          "art": "reason-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツール要求",
+          "art": "tool-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "refusal",
+          "label": "refusal",
+          "art": "refusal-worker",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "laundry",
+          "label": "受け取り案内",
+          "art": "laundry-garment",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "出力上限",
+          "art": "reason-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "complete",
+          "label": "完成した答え",
+          "art": "response-document",
+          "at": [5, 1]
+        },
+        {
+          "id": "cut",
+          "label": "途中の応答",
+          "art": "response-document",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "案内文の応答",
+          "art": "response-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "handle",
+          "label": "値ごとの処理",
+          "art": "response-document",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "確認"
+        },
+        {
+          "id": "choose",
+          "from": "reason",
+          "to": "handle",
+          "label": "選ぶ"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "止まっただけでは分からない",
+      "board": "printing",
+      "beats": [
+        {
+          "say": "プリンターで、案内の印刷を頼みました。",
+          "show": ["printer"]
+        },
+        {
+          "say": "印刷が終わって止まる場合もあります。",
+          "show": ["finished"]
+        },
+        {
+          "say": "紙切れで止まると、まだ印刷の途中です。",
+          "show": ["empty"]
+        },
+        {
+          "say": "応答も、止まった理由の値で処理を分けます。",
+          "pulse": ["finished", "empty"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "printer-example",
+      "kind": "board",
+      "role": "example",
+      "title": "次の行動が変わる",
+      "board": "printing",
+      "reset": true,
+      "beats": [
+        {
+          "say": "止まったと聞くだけでは、終わったか分かりません。",
+          "show": ["printer"]
+        },
+        {
+          "say": "印刷終了なら、できた案内を配ります。",
+          "show": ["finished"],
+          "tag": {
+            "finished": "配れる"
+          }
+        },
+        {
+          "say": "紙切れなら、まだ配る準備は途中です。",
+          "show": ["empty"],
+          "tag": {
+            "empty": "紙を補充"
+          }
+        },
+        {
+          "say": "止まった理由を確かめて、次の行動を選びましょう。",
+          "pulse": ["finished", "empty"]
+        }
+      ]
+    },
+    {
+      "id": "reason-field",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答の停止理由を読む",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "応答には、止まった理由を表す項目があります。",
+          "show": ["reply"]
+        },
+        {
+          "say": "その項目が、ストップリーズンです。",
+          "speech": "その項目が、ストップリーズンです。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "stop_reason"
+          }
+        },
+        {
+          "say": "受け取った応答の、この値を読みます。",
+          "show": ["reason", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "答えが自然に終わった値は、エンドターンです。",
+          "speech": "答えが自然に終わった値は、エンドターンです。",
+          "term": {
+            "text": "end_turn",
+            "note": "答えを自然に終えた"
+          },
+          "show": ["ended", "ended-value"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "switch-cases",
+      "kind": "code",
+      "role": "syntax",
+      "title": "値と処理を対応させる",
+      "code": [
+        "// 応答の停止理由で処理を分ける",
+        "switch (response.stop_reason) {",
+        "  // 答えを自然に終えた場合",
+        "  case \"end_turn\": return showAnswer(response);",
+        "  // 出力の上限に届いた場合",
+        "  case \"max_tokens\": return showTruncated(response);",
+        "  // この例では残りの値を別の処理へ回す",
+        "  default: return showError(response);",
+        "// 停止理由による分岐を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "options"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "値に応じて処理を分けることを、分岐と呼びます。",
+          "term": {
+            "text": "分岐",
+            "ruby": "ぶんき",
+            "note": "値に応じて処理を分ける"
+          }
+        },
+        {
+          "say": "この例では、スイッチで停止理由を調べる形です。",
+          "speech": "この例では、スイッチで停止理由を調べる形です。",
+          "part": {
+            "line": 1,
+            "text": "switch",
+            "note": "値で処理を選ぶ"
+          },
+          "figure": {
+            "show": ["reason"]
+          }
+        },
+        {
+          "say": "ケースの後ろに、調べたい値を書きます。",
+          "speech": "ケースの後ろに、調べたい値を書きます。",
+          "part": {
+            "line": 3,
+            "text": "\"end_turn\""
+          },
+          "figure": {
+            "show": ["answer"],
+            "tag": {
+              "answer": "自然に終了"
+            }
+          }
+        },
+        {
+          "say": "エンドターンなら、答えを表示する処理です。",
+          "speech": "エンドターンなら、答えを表示する処理です。",
+          "part": {
+            "line": 3,
+            "text": "showAnswer",
+            "note": "答えを表示"
+          },
+          "figure": {
+            "pulse": ["answer"]
+          }
+        },
+        {
+          "say": "出力の上限なら、途中として扱う処理に進みます。",
+          "part": {
+            "line": 5,
+            "text": "\"max_tokens\""
+          },
+          "figure": {
+            "show": ["cut"],
+            "tag": {
+              "cut": "上限で停止"
+            }
+          }
+        },
+        {
+          "say": "残りの値の行き先は、デフォルトの行です。",
+          "speech": "残りの値の行き先は、デフォルトの行です。",
+          "part": {
+            "line": 7,
+            "text": "default",
+            "note": "残りの値"
+          },
+          "figure": {
+            "show": ["other"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "natural-end",
+      "kind": "code",
+      "role": "apply",
+      "title": "自然に終わった場合",
+      "code": [
+        "// 応答の停止理由で処理を分ける",
+        "switch (response.stop_reason) {",
+        "  // 答えを自然に終えた場合",
+        "  case \"end_turn\": return showAnswer(response);",
+        "  // 出力の上限に届いた場合",
+        "  case \"max_tokens\": return showTruncated(response);",
+        "  // この例では残りの値を別の処理へ回す",
+        "  default: return showError(response);",
+        "// 停止理由による分岐を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "natural"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "レスポンスは、応答を入れた変数に付けた名前です。",
+          "speech": "レスポンスは、応答を入れた変数に付けた名前です。",
+          "part": {
+            "line": 1,
+            "text": "response",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["reply"]
+          }
+        },
+        {
+          "say": "停止理由がエンドターンの例をたどります。",
+          "speech": "停止理由がエンドターンの例をたどります。",
+          "part": {
+            "line": 3,
+            "text": "\"end_turn\""
+          },
+          "figure": {
+            "show": ["reason", "read"],
+            "tag": {
+              "reason": "end_turn"
+            }
+          }
+        },
+        {
+          "say": "答えを表示する関数名も、書き手が決めたものです。",
+          "part": {
+            "line": 3,
+            "text": "showAnswer",
+            "note": "答えを表示"
+          },
+          "figure": {
+            "show": ["answer", "use"]
+          }
+        },
+        {
+          "say": "この値なら、答えを使う処理へ進めましょう。",
+          "focus": [3],
+          "figure": {
+            "travel": {
+              "along": ["use"],
+              "icon": "file"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "output-limit",
+      "kind": "code",
+      "role": "apply",
+      "title": "上限で止まった場合",
+      "code": [
+        "// 応答の停止理由で処理を分ける",
+        "switch (response.stop_reason) {",
+        "  // 答えを自然に終えた場合",
+        "  case \"end_turn\": return showAnswer(response);",
+        "  // 出力の上限に届いた場合",
+        "  case \"max_tokens\": return showTruncated(response);",
+        "  // この例では残りの値を別の処理へ回す",
+        "  default: return showError(response);",
+        "// 停止理由による分岐を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "capped"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、出力の上限に届いた応答を受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "response"
+          },
+          "figure": {
+            "show": ["reply"]
+          }
+        },
+        {
+          "say": "値は、マックストークンズです。",
+          "speech": "値は、マックストークンズです。",
+          "part": {
+            "line": 5,
+            "text": "\"max_tokens\""
+          },
+          "figure": {
+            "show": ["reason", "read"],
+            "tag": {
+              "reason": "上限に到達"
+            }
+          }
+        },
+        {
+          "say": "この例では、途中の応答を示す関数を呼びます。",
+          "part": {
+            "line": 5,
+            "text": "showTruncated",
+            "note": "途中を表示"
+          },
+          "figure": {
+            "show": ["cut", "handle"],
+            "travel": {
+              "along": ["handle"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "この関数名も、書き手が決めた名前です。",
+          "part": {
+            "line": 5,
+            "text": "showTruncated",
+            "note": "途中を表示"
+          },
+          "figure": {
+            "pulse": ["cut"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "other-reasons",
+      "kind": "board",
+      "role": "apply",
+      "title": "残りの値も分けて扱う",
+      "board": "others",
+      "beats": [
+        {
+          "say": "残りを受ける行だけで、すべての処理は決まりません。",
+          "show": ["other"]
+        },
+        {
+          "say": "ツールユースは、ツールを呼びたいという値です。",
+          "speech": "ツールユースは、ツールを呼びたいという値です。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "実行して返す"
+          }
+        },
+        {
+          "say": "リフューザルなら、拒否として扱います。",
+          "speech": "リフューザルなら、拒否として扱います。",
+          "show": ["refusal"],
+          "tag": {
+            "refusal": "拒否"
+          }
+        },
+        {
+          "say": "この二つにも、値に応じた処理が必要です。",
+          "pulse": ["tool", "refusal"]
+        },
+        {
+          "say": "知らない値も、完成した答えとして扱わないでください。",
+          "pulse": ["other"],
+          "tag": {
+            "other": "未知は分ける"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受け取り案内をどう扱う",
+      "board": "laundry",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニングの受け取り案内を、作ってもらいました。",
+          "show": ["laundry"]
+        },
+        {
+          "say": "返った停止理由は、マックストークンズです。",
+          "speech": "返った停止理由は、マックストークンズです。",
+          "show": ["reason"]
+        },
+        {
+          "say": "画面に出す前に、この応答の扱いを選びます。",
+          "show": ["complete", "cut"]
+        },
+        {
+          "say": "完成した答えか、途中の応答か、どちらでしょうか。",
+          "pulse": ["complete", "cut"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "途中の応答として扱う",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "答えは、途中の応答として扱う方です。",
+          "mark": [
+            {
+              "on": "cut",
+              "kind": "check"
+            },
+            {
+              "on": "complete",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["cut"],
+          "pause": 1
+        },
+        {
+          "say": "完成した答えの表示へ、そのまま進めてはいけません。",
+          "pulse": ["complete"]
+        }
+      ]
+    },
+    {
+      "id": "why-limit",
+      "kind": "board",
+      "role": "explain",
+      "title": "値の意味から判断する",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "見分ける手がかりは、返ってきた停止理由です。",
+          "pulse": ["reason"]
+        },
+        {
+          "say": "この値は、出力の上限に届いたことを表します。",
+          "tag": {
+            "reason": "上限で停止"
+          }
+        },
+        {
+          "say": "自然に答えを終えた、という値ではありません。",
+          "pulse": ["complete"],
+          "tag": {
+            "complete": "自然な終了"
+          }
+        },
+        {
+          "say": "そのため、途中の応答として処理を分けましょう。",
+          "pulse": ["cut"],
+          "tag": {
+            "cut": "途中の応答"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-before-display",
+      "kind": "board",
+      "role": "usage",
+      "title": "表示する前に値を見る",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "案内文を作るアプリでも、応答を受け取ります。",
+          "show": ["reply"]
+        },
+        {
+          "say": "画面へ出す前に見るのが、停止理由の値です。",
+          "show": ["reason", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "自然な終了か、それ以外かで処理を分けましょう。",
+          "show": ["handle", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "応答は、停止理由の値に合う処理へ渡します。",
+          "pulse": ["reason", "handle"],
+          "tag": {
+            "handle": "値ごとに処理"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c5023334df31ff575538fa40fad85facdb8662629279b7ce3bad4f8a67f0cb23"
+  }
+}

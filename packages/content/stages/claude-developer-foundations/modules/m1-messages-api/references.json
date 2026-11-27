@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "claude-developer-foundations/m1-messages-api@6",
-  "contentHash": "d2cc35b153ce620fd1259c474ebe8a07da0a1eb41412651642f6ceca2175e0e7",
+  "contentHash": "2e29150b7b185bcd466b652db5021f3496ec343b299a69d4aa5c61d57f232dd5",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

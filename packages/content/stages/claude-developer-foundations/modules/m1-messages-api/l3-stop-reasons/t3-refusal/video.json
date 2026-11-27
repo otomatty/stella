@@ -1,0 +1,898 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "拒否された応答を stop_reason で見分け、利用者への案内と理由の説明の扱いを説明できる。",
+    "stuck": "HTTP のエラーだけを処理し、普通の応答として返る拒否を見落としてしまう。",
+    "points": ["stop_reason が refusal の応答は、エラーではなく拒否として扱います。"],
+    "leaveOut": [
+      "ほかの stop_reason の値とその処理",
+      "別のモデルへ送り直す具体的な実装",
+      "拒否の分類の一覧と判定基準",
+      "理由の分類や説明が null の場合の細部",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "broken-umbrella": {
+      "prompt": "A blue folding umbrella with one visibly bent light grey rib, opened halfway, beside a small violet repair tool. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "returned-letter": {
+      "prompt": "An open blue envelope with one blank white reply letter protruding from it. A small blue paper clip holds the letter. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-staff": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features, holding a small light grey repair tool and gently raising the other open palm to decline a repair request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, gently raising one open hand beside an empty speech bubble. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-sheet": {
+      "prompt": "One blank white response sheet held upright by a blue clip, with a violet magnifying glass directed toward the bottom corner. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-folder": {
+      "prompt": "An open light grey folder containing two white sheets with blue and violet divider tabs, representing a classification and a human-readable explanation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater carefully reading a blank white reply letter held in both hands. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-kit": {
+      "prompt": "A neatly folded blue cooking apron with a violet neck strap, a white kitchen towel and a light grey metal mixing bowl. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-bell": {
+      "prompt": "A small blue warning bell with a light grey clapper and a violet base, silent and still, representing an error alert. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "傘の修理",
+          "art": "broken-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "letter",
+          "label": "断る返事",
+          "art": "returned-letter",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "依頼した人",
+          "art": "reader",
+          "at": [5, 1]
+        },
+        {
+          "id": "claude",
+          "label": "拒否の応答",
+          "art": "claude-robot",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "修理の依頼",
+          "art": "broken-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "店の担当者",
+          "art": "repair-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "letter",
+          "label": "断る返事",
+          "art": "returned-letter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "umbrella",
+          "to": "staff",
+          "label": "頼む"
+        },
+        {
+          "id": "reply",
+          "from": "staff",
+          "to": "letter",
+          "label": "返事"
+        }
+      ]
+    },
+    "transport": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "普通の応答",
+          "art": "response-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "alarm",
+          "label": "例外の処理",
+          "art": "error-bell",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "claude",
+          "to": "reply",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "value": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "応答の項目",
+          "art": "response-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "refusal",
+          "label": "拒否",
+          "art": "claude-robot",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "refusal",
+          "label": "値を読む"
+        }
+      ]
+    },
+    "details": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "拒否の理由",
+          "art": "reason-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "category",
+          "label": "理由の分類",
+          "art": "reason-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "explanation",
+          "label": "人が読む説明",
+          "art": "returned-letter",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handling": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取る",
+          "art": "response-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "理由を確認",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "利用者へ案内",
+          "art": "reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "reply",
+          "to": "reason",
+          "label": "確認"
+        },
+        {
+          "id": "tell",
+          "from": "reason",
+          "to": "reader",
+          "label": "伝える"
+        }
+      ]
+    },
+    "display": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "理由の説明",
+          "art": "reason-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "利用者へ表示",
+          "art": "reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "branch",
+          "label": "文面で分岐",
+          "art": "response-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "display",
+          "from": "reason",
+          "to": "reader",
+          "label": "表示"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "料理の持ち物",
+          "art": "cooking-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "受けた応答",
+          "art": "response-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "value",
+          "label": "停止の理由",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "ignore",
+          "label": "案内しない",
+          "art": "error-bell",
+          "at": [5, 2]
+        },
+        {
+          "id": "tell",
+          "label": "拒否を伝える",
+          "art": "reader",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "why": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "普通の応答",
+          "art": "response-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "refusal",
+          "label": "拒否の値",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "依頼した人",
+          "art": "reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "response",
+          "to": "refusal",
+          "label": "値を読む"
+        },
+        {
+          "id": "tell",
+          "from": "refusal",
+          "to": "reader",
+          "label": "案内"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "応答を受ける",
+          "art": "response-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "拒否を知らせる",
+          "art": "reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "model",
+          "label": "別のモデル",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tell",
+          "from": "response",
+          "to": "reader",
+          "label": "拒否なら"
+        },
+        {
+          "id": "retry",
+          "from": "reader",
+          "to": "model",
+          "label": "必要なら"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "返事が届いても断られる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "壊れた傘の修理を、店に頼んだとします。",
+          "show": ["umbrella"]
+        },
+        {
+          "say": "返ってきたのは、修理を断る返事です。",
+          "show": ["letter"]
+        },
+        {
+          "say": "返事が届いても、依頼どおりとは限りません。",
+          "show": ["reader"]
+        },
+        {
+          "say": "refusal は、エラーではなく拒否として扱います。",
+          "speech": "リフューザルは、エラーではなく拒否として扱います。",
+          "show": ["claude"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "repair-reply",
+      "kind": "board",
+      "role": "example",
+      "title": "返事と引き受けること",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "店の担当者へ、傘を修理してほしいと頼みました。",
+          "show": ["umbrella", "staff", "ask"]
+        },
+        {
+          "say": "担当者は、この傘の修理を引き受けられません。",
+          "pulse": ["staff"],
+          "tag": {
+            "staff": "修理は断る"
+          }
+        },
+        {
+          "say": "その返事を、依頼した人へきちんと届けます。",
+          "show": ["letter", "reply"],
+          "travel": {
+            "along": ["reply"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "届いたことと、返事の内容は別です。",
+          "pulse": ["letter"],
+          "tag": {
+            "letter": "届いたが拒否"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ordinary-response",
+      "kind": "board",
+      "role": "syntax",
+      "title": "拒否も普通の応答",
+      "board": "transport",
+      "beats": [
+        {
+          "say": "Claude が答えるのを断ることを、拒否と呼びます。",
+          "speech": "クロードが答えるのを断ることを、拒否と呼びます。",
+          "term": {
+            "text": "拒否",
+            "ruby": "きょひ",
+            "note": "答えるのを断ること"
+          },
+          "show": ["claude"]
+        },
+        {
+          "say": "返ってくるのは、HTTP 200 の普通の応答です。",
+          "speech": "返ってくるのは、エイチティーティーピーにひゃくの普通の応答です。",
+          "show": ["reply", "receive"],
+          "tag": {
+            "reply": "HTTP200"
+          }
+        },
+        {
+          "say": "この応答は、HTTP のエラーとしては返りません。",
+          "speech": "この応答は、エイチティーティーピーのエラーとしては返りません。",
+          "show": ["alarm"],
+          "mark": [
+            {
+              "on": "alarm",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "例外の処理だけに頼ると、拒否を見落とします。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "中身を確認"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "refusal-value",
+      "kind": "code",
+      "role": "syntax",
+      "title": "拒否を表す値を読む",
+      "code": [
+        "// 応答の内容を示す",
+        "{ \"content\": [],",
+        "  // 止まった理由を示す",
+        "  \"stop_reason\": \"refusal\",",
+        "  // 拒否の理由をまとめる",
+        "  \"stop_details\": {",
+        "    // 理由の種類と分類を示す",
+        "    \"type\": \"refusal\", \"category\": \"cyber\",",
+        "    // 人が読む説明を示す",
+        "    \"explanation\": \"…\"",
+        "  // 理由と応答を閉じる",
+        "  } }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "value"
+      },
+      "beats": [
+        {
+          "say": "応答のストップリーズンを確かめましょう。",
+          "part": {
+            "line": 3,
+            "text": "stop_reason",
+            "note": "止まった理由"
+          },
+          "figure": {
+            "show": ["reply"]
+          }
+        },
+        {
+          "say": "拒否を表す値が refusal です。",
+          "speech": "拒否を表す値がリフューザルです。",
+          "term": {
+            "text": "refusal",
+            "note": "答えるのを断った"
+          },
+          "part": {
+            "line": 3,
+            "text": "\"refusal\""
+          }
+        },
+        {
+          "say": "この値なら、答えるのを断ったと判断します。",
+          "figure": {
+            "show": ["refusal", "read"],
+            "travel": {
+              "along": ["read"]
+            }
+          }
+        },
+        {
+          "say": "見る場所は、止まった理由を示すこの項目です。",
+          "part": {
+            "line": 3,
+            "text": "stop_reason"
+          },
+          "figure": {
+            "pulse": ["reply"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reason-fields",
+      "kind": "code",
+      "role": "syntax",
+      "title": "理由の分類と説明",
+      "code": [
+        "// 応答の内容を示す",
+        "{ \"content\": [],",
+        "  // 止まった理由を示す",
+        "  \"stop_reason\": \"refusal\",",
+        "  // 拒否の理由をまとめる",
+        "  \"stop_details\": {",
+        "    // 理由の種類と分類を示す",
+        "    \"type\": \"refusal\", \"category\": \"cyber\",",
+        "    // 人が読む説明を示す",
+        "    \"explanation\": \"…\"",
+        "  // 理由と応答を閉じる",
+        "  } }"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "details"
+      },
+      "beats": [
+        {
+          "say": "拒否の理由は、ストップディテールズで読みます。",
+          "term": {
+            "text": "拒否の理由",
+            "ruby": "きょひのりゆう",
+            "note": "分類と人が読む説明"
+          },
+          "part": {
+            "line": 5,
+            "text": "stop_details"
+          }
+        },
+        {
+          "say": "type の値も、この例では refusal です。",
+          "speech": "タイプの値も、この例ではリフューザルです。",
+          "part": {
+            "line": 7,
+            "text": "\"type\": \"refusal\""
+          },
+          "figure": {
+            "show": ["reason"]
+          }
+        },
+        {
+          "say": "category は、拒否の理由を分類しています。",
+          "speech": "カテゴリーは、拒否の理由を分類しています。",
+          "part": {
+            "line": 7,
+            "text": "category",
+            "note": "理由の分類"
+          },
+          "figure": {
+            "show": ["category"],
+            "tag": {
+              "category": "cyber"
+            }
+          }
+        },
+        {
+          "say": "explanation は、人が読むための説明です。",
+          "speech": "エクスプラネーションは、人が読むための説明です。",
+          "part": {
+            "line": 9,
+            "text": "explanation",
+            "note": "人が読む説明"
+          },
+          "figure": {
+            "show": ["explanation"]
+          }
+        },
+        {
+          "say": "説明の文は変わることがあり、中身で分岐しません。",
+          "figure": {
+            "pulse": ["explanation"],
+            "tag": {
+              "explanation": "分岐に使わず"
+            }
+          }
+        },
+        {
+          "say": "この説明は、表示するために使います。",
+          "part": {
+            "line": 9,
+            "text": "\"…\"",
+            "note": "説明文の位置"
+          },
+          "figure": {
+            "tag": {
+              "explanation": "表示に使う"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "handle-response",
+      "kind": "board",
+      "role": "apply",
+      "title": "応答を受けた後の扱い",
+      "board": "handling",
+      "beats": [
+        {
+          "say": "傘の返事と同じように、届いた中身を確かめましょう。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "HTTP200"
+          }
+        },
+        {
+          "say": "教材の応答では、止まった理由が refusal でした。",
+          "speech": "教材の応答では、止まった理由がリフューザルでした。",
+          "show": ["reason", "inspect"],
+          "tag": {
+            "reason": "refusal"
+          }
+        },
+        {
+          "say": "ここで選ぶ扱いは、拒否を利用者へ伝えることです。",
+          "show": ["reader", "tell"],
+          "travel": {
+            "along": ["tell"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "エラーがなくても、この値を見て案内します。",
+          "pulse": ["reason"],
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "display-explanation",
+      "kind": "board",
+      "role": "apply",
+      "title": "説明を表示に使う",
+      "board": "display",
+      "beats": [
+        {
+          "say": "理由の説明を使う場面も、確かめておきましょう。",
+          "show": ["reason"]
+        },
+        {
+          "say": "人が読む説明は、利用者への表示に使います。",
+          "show": ["reader", "display"],
+          "travel": {
+            "along": ["display"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "説明文の言い回しは、いつも同じとは限りません。",
+          "tag": {
+            "reason": "文は変わる"
+          }
+        },
+        {
+          "say": "文面で処理を分けるのは避けましょう。",
+          "show": ["branch"],
+          "mark": [
+            {
+              "on": "branch",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cooking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "料理教室の案内で考える",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "料理教室の持ち物を案内するアプリで考えましょう。",
+          "show": ["kit"]
+        },
+        {
+          "say": "ここでは、拒否の応答を受けたとします。",
+          "show": ["response"],
+          "tag": {
+            "response": "HTTP200"
+          }
+        },
+        {
+          "say": "止まった理由の値は、refusal でした。",
+          "speech": "止まった理由の値は、リフューザルでした。",
+          "show": ["value"],
+          "tag": {
+            "value": "refusal"
+          }
+        },
+        {
+          "say": "担当者は、エラーがなければ案内しない方針です。",
+          "show": ["ignore"]
+        },
+        {
+          "say": "そのままでよいか、拒否を伝えるか、選んでください。",
+          "show": ["tell"],
+          "mark": [
+            {
+              "on": "ignore",
+              "kind": "question"
+            },
+            {
+              "on": "tell",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cooking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "拒否されたことを伝える",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、拒否されたことを利用者に伝える方です。",
+          "mark": [
+            {
+              "on": "tell",
+              "kind": "check"
+            },
+            {
+              "on": "ignore",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["tell"]
+        },
+        {
+          "say": "エラーがないという理由で、案内を省いてはいけません。",
+          "pulse": ["response", "value"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-not-error",
+      "kind": "board",
+      "role": "explain",
+      "title": "受けた値から判断する",
+      "board": "why",
+      "beats": [
+        {
+          "say": "この例では、HTTP 200 の応答が返りました。",
+          "speech": "この例では、エイチティーティーピーにひゃくの応答が返りました。",
+          "show": ["response"],
+          "tag": {
+            "response": "HTTP200"
+          }
+        },
+        {
+          "say": "そのため、例外の処理だけでは拒否に気づけません。",
+          "pulse": ["response"],
+          "mark": [
+            {
+              "on": "response",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "止まった理由を読むと、答えるのを断ったと分かります。",
+          "show": ["refusal", "inspect"],
+          "tag": {
+            "refusal": "refusal"
+          },
+          "travel": {
+            "along": ["inspect"]
+          }
+        },
+        {
+          "say": "案内を決めるのは、この拒否を表す値です。",
+          "show": ["reader", "tell"],
+          "travel": {
+            "along": ["tell"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "応答を扱う場所で備える",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "アプリで応答を受けたら、止まった理由を確認します。",
+          "show": ["response"]
+        },
+        {
+          "say": "拒否なら、利用者へそのことを知らせる場面です。",
+          "show": ["reader", "tell"],
+          "travel": {
+            "along": ["tell"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "必要なら、別のモデルで送り直しましょう。",
+          "show": ["model", "retry"],
+          "travel": {
+            "along": ["retry"],
+            "icon": "repeat"
+          }
+        },
+        {
+          "say": "refusal の応答は、拒否として扱います。",
+          "speech": "リフューザルの応答は、拒否として扱います。",
+          "pulse": ["response", "reader"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "79168e70c75146d6ced78bf3d061c682683b6585e79b7a7c9913ffb9114711f6"
+  }
+}

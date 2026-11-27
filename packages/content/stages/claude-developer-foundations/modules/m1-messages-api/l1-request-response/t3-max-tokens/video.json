@@ -1,0 +1,702 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "max_tokens の値を出力の上限として読み、上限より前に終わる場合と上限で止まる場合を説明できる。",
+    "stuck": "max_tokens を必ずその長さまで書く目安だと思い、文の終わりまでは上限を超えられると考えてしまう。",
+    "points": ["max_tokens は出力の上限で、届くと応答はそこで止まります。"],
+    "leaveOut": [
+      "会話の履歴や system の指定",
+      "応答の content の取り出し方",
+      "停止理由の項目と見分け方",
+      "モデルごとに指定できる上限の値",
+      "トークンと文字数の換算や料金",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "meeting-notes": {
+      "prompt": "A thick stack of white meeting notes secured with a blue binder clip, with a violet pencil beside it. All paper is white or light grey and completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stopped-note": {
+      "prompt": "A white sheet with a violet pencil whose tip has been lifted away halfway down the sheet, held by one simple human hand. The blank lower half is clearly visible. This represents an unfinished written summary without writing any text. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-speaker": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white speech sheet and speaking, with simple facial features and a small empty blue speech bubble. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "timer": {
+      "prompt": "A large blue mechanical kitchen timer with a violet pointer and a small magenta stop button. Its round face is blank, without tick marks or numerals. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "counting-beads": {
+      "prompt": "A small blue abacus with large violet and light grey beads on two rods, shown as a tangible tool for counting. No surrounding illustration border. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "An open blue envelope with a blank white request sheet partly pulled out, held by one simple human hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "finished-note": {
+      "prompt": "A neatly rolled white sheet secured by a blue ribbon, with a capped violet pen beside it, representing a finished written summary. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleanup-tools": {
+      "prompt": "A blue broom, a blue dustpan, a pair of violet work gloves and a blank white duty roster clipped together, representing a neighborhood cleaning duty. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "長い議事録",
+          "art": "meeting-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "cut",
+          "label": "途中の要約",
+          "art": "stopped-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "timer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "speech": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "speaker",
+          "label": "学校での発表",
+          "art": "school-speaker",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "持ち時間",
+          "art": "timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "finish",
+          "label": "発表を終える",
+          "art": "finished-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "time",
+          "from": "speaker",
+          "to": "limit",
+          "label": "時間を計る"
+        },
+        {
+          "id": "stop",
+          "from": "limit",
+          "to": "finish",
+          "label": "ここで終了"
+        }
+      ]
+    },
+    "tokens": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "応答の文章",
+          "art": "stopped-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "count",
+          "label": "トークン数",
+          "art": "counting-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "timer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "counting",
+          "from": "reply",
+          "to": "count",
+          "label": "数える"
+        },
+        {
+          "id": "compare",
+          "from": "count",
+          "to": "limit",
+          "label": "上限と比較"
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "議事録の要約",
+          "art": "stopped-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "set",
+          "from": "request",
+          "to": "limit",
+          "label": "指定する"
+        },
+        {
+          "id": "bound",
+          "from": "limit",
+          "to": "reply",
+          "label": "出力を制限"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "early",
+          "label": "上限より前",
+          "art": "finished-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "上限に到達",
+          "art": "timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "cut",
+          "label": "文の途中",
+          "art": "stopped-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "stop",
+          "from": "limit",
+          "to": "cut",
+          "label": "ここで停止"
+        }
+      ]
+    },
+    "cleanup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "duty",
+          "label": "清掃当番",
+          "art": "cleanup-tools",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "上限に到達",
+          "art": "timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "案内の途中",
+          "art": "stopped-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "duty",
+          "to": "limit",
+          "label": "案内を依頼"
+        },
+        {
+          "id": "stop",
+          "from": "limit",
+          "to": "reply",
+          "label": "停止"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notes",
+          "label": "議事録の要約",
+          "art": "meeting-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "duty",
+          "label": "清掃の案内",
+          "art": "cleanup-tools",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-envelope",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "要約が途中で止まる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "長い議事録の要約を、Claude に頼んだ場面です。",
+          "speech": "長い議事録の要約を、クロードに頼んだ場面です。",
+          "show": ["source"]
+        },
+        {
+          "say": "返ってきた要約は、文の途中で止まっていました。",
+          "show": ["cut"]
+        },
+        {
+          "say": "リクエストで決めた出力の上限を確かめます。",
+          "show": ["limit"]
+        },
+        {
+          "say": "上限に届くと、文の途中でも応答は止まる決まりです。",
+          "pulse": ["limit", "cut"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "school-timer",
+      "kind": "board",
+      "role": "example",
+      "title": "持ち時間で発表を止める",
+      "board": "speech",
+      "beats": [
+        {
+          "say": "学校で、持ち時間を決めて発表するとしましょう。",
+          "show": ["speaker"]
+        },
+        {
+          "say": "時間が来たら、話の途中でも終える約束です。",
+          "show": ["limit", "time"]
+        },
+        {
+          "say": "このように、超えられない限度を上限と呼びます。",
+          "term": {
+            "text": "上限",
+            "ruby": "じょうげん",
+            "note": "超えられない限度"
+          }
+        },
+        {
+          "say": "この例では、決めた持ち時間が上限でした。",
+          "pulse": ["limit"],
+          "tag": {
+            "limit": "超えられない"
+          }
+        },
+        {
+          "say": "時間が余っていても、話が済めば終えられます。",
+          "show": ["finish", "stop"],
+          "pulse": ["finish"]
+        }
+      ]
+    },
+    {
+      "id": "count-tokens",
+      "kind": "board",
+      "role": "syntax",
+      "title": "文章を数える単位",
+      "board": "tokens",
+      "beats": [
+        {
+          "say": "モデルが文章を数える単位を、トークンと呼びます。",
+          "term": {
+            "text": "トークン",
+            "note": "モデルが文章を数える単位"
+          }
+        },
+        {
+          "say": "ここで数えるのは、応答として出す文章です。",
+          "show": ["reply"]
+        },
+        {
+          "say": "その文章の量を、トークンの数で数えましょう。",
+          "show": ["count", "counting"],
+          "travel": {
+            "along": ["counting"]
+          }
+        },
+        {
+          "say": "出力するトークン数に、超えられない上限を決めます。",
+          "show": ["limit", "compare"],
+          "pulse": ["limit"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "limit-field",
+      "kind": "code",
+      "role": "syntax",
+      "title": "上限を指定する項目",
+      "code": [
+        "// 送る依頼に名前を付ける",
+        "const request = {",
+        "  // 出力するトークン数の上限を決める",
+        "  max_tokens: 1024,",
+        "  // 利用者の依頼を入れる",
+        "  messages: [{ role: \"user\", content: \"議事録を要約して\" }],",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "出力の上限を決める項目が、マックストークンズです。",
+          "term": {
+            "text": "max_tokens",
+            "ruby": "マックストークンズ",
+            "note": "出力するトークン数の上限"
+          }
+        },
+        {
+          "say": "リクエストには、この項目を必ず書きます。",
+          "part": {
+            "line": 3,
+            "text": "max_tokens",
+            "note": "出力の上限"
+          },
+          "figure": {
+            "show": ["request", "limit", "set"]
+          }
+        },
+        {
+          "say": "ここで指定している値は、1024 です。",
+          "speech": "ここで指定している値は、せんにじゅうよんです。",
+          "part": {
+            "line": 3,
+            "text": "1024"
+          },
+          "figure": {
+            "tag": {
+              "limit": "1024"
+            }
+          }
+        },
+        {
+          "say": "この値が、出力するトークン数の上限になります。",
+          "figure": {
+            "show": ["reply", "bound"],
+            "pulse": ["reply"]
+          }
+        },
+        {
+          "say": "request は、この例で付けた依頼の名前です。",
+          "speech": "リクエストは、この例で付けた依頼の名前です。",
+          "part": {
+            "line": 1,
+            "text": "request",
+            "note": "依頼"
+          },
+          "figure": {
+            "pulse": ["request"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "meeting-request",
+      "kind": "code",
+      "role": "apply",
+      "title": "議事録の要約を頼む",
+      "code": [
+        "// 送る依頼に名前を付ける",
+        "const request = {",
+        "  // 出力するトークン数の上限を決める",
+        "  max_tokens: 1024,",
+        "  // 利用者の依頼を入れる",
+        "  messages: [{ role: \"user\", content: \"議事録を要約して\" }],",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "利用者は、議事録を要約するように頼んでいます。",
+          "part": {
+            "line": 5,
+            "text": "議事録を要約して"
+          },
+          "figure": {
+            "show": ["request"]
+          }
+        },
+        {
+          "say": "同じリクエストにある、この数値が出力の上限です。",
+          "part": {
+            "line": 3,
+            "text": "1024"
+          },
+          "figure": {
+            "show": ["limit", "set"],
+            "tag": {
+              "limit": "1024"
+            }
+          }
+        },
+        {
+          "say": "応答は、指定した上限を超えては書き続けられません。",
+          "figure": {
+            "show": ["reply", "bound"],
+            "travel": {
+              "along": ["bound"]
+            }
+          }
+        },
+        {
+          "say": "上限に届けば、要約の文の途中でも止まります。",
+          "figure": {
+            "pulse": ["reply"],
+            "tag": {
+              "reply": "途中で停止"
+            }
+          }
+        },
+        {
+          "say": "指定した数は、必ず書き切る長さではありません。",
+          "part": {
+            "line": 3,
+            "text": "max_tokens",
+            "note": "目安ではなく上限"
+          },
+          "figure": {
+            "pulse": ["limit"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "two-endings",
+      "kind": "board",
+      "role": "apply",
+      "title": "早く終える場合もある",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "要約が上限より前に終わることもあります。",
+          "show": ["early"]
+        },
+        {
+          "say": "短く終わった応答も、上限の範囲内です。",
+          "mark": [
+            {
+              "on": "early",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "一方、書いている途中で上限に届いたとしましょう。",
+          "show": ["limit"]
+        },
+        {
+          "say": "その場合は、文の終わりを待たずに止まります。",
+          "show": ["cut", "stop"],
+          "travel": {
+            "along": ["stop"]
+          }
+        },
+        {
+          "say": "早く終えることと、上限を超えることは別です。",
+          "pulse": ["early", "limit"],
+          "tag": {
+            "limit": "超えない"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "cleanup-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "案内の途中で上限に到達",
+      "board": "cleanup",
+      "think": 8,
+      "beats": [
+        {
+          "say": "町内の清掃当番を知らせる案内を、作ってもらいましょう。",
+          "show": ["duty"]
+        },
+        {
+          "say": "リクエストには、出力の上限を指定しています。",
+          "show": ["limit", "request"]
+        },
+        {
+          "say": "今回は、案内の文の途中で上限に届いた場面です。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "文の途中"
+          }
+        },
+        {
+          "say": "上限を超えて文の終わりまで書くか、考えてください。",
+          "pulse": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "それとも、この位置で応答が止まるでしょうか？",
+          "pulse": ["limit"],
+          "mark": [
+            {
+              "on": "limit",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cleanup-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "文の途中でも止まる",
+      "board": "cleanup",
+      "beats": [
+        {
+          "say": "応答は、文の途中でもその位置で止まります。",
+          "show": ["stop"],
+          "unmark": ["limit", "reply"],
+          "tag": {
+            "reply": "ここで停止"
+          }
+        },
+        {
+          "say": "文の終わりまで書き続けることはありません。",
+          "pulse": ["reply"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-stop",
+      "kind": "board",
+      "role": "explain",
+      "title": "上限と文の終わり",
+      "board": "cleanup",
+      "beats": [
+        {
+          "say": "指定したのは、出力するトークン数の上限です。",
+          "pulse": ["limit"],
+          "tag": {
+            "limit": "トークン数"
+          }
+        },
+        {
+          "say": "清掃の案内でも、出力がその数に届けば止まります。",
+          "travel": {
+            "along": ["stop"]
+          }
+        },
+        {
+          "say": "文の途中であっても、上限を超えることはありません。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "続きは出ない"
+          }
+        },
+        {
+          "say": "文の終わりより、出力の上限が先に来たためです。",
+          "pulse": ["limit", "reply"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "文章を頼む前に確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "長い議事録を要約するときは、出力の上限を確かめます。",
+          "show": ["notes"]
+        },
+        {
+          "say": "清掃の案内を作るときも、同じ指定が必要です。",
+          "show": ["duty"]
+        },
+        {
+          "say": "依頼を送る前に、マックストークンズの値を見ましょう。",
+          "show": ["request"],
+          "tag": {
+            "request": "出力の上限"
+          }
+        },
+        {
+          "say": "上限に届けば、応答は文の途中でも止まります。",
+          "pulse": ["request"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ec5df1635b416a8515288cee91af182c2f9bf02ef1de6547e784817a851bd655"
+  }
+}
