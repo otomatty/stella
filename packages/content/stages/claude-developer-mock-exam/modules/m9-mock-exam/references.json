@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-mock-exam/m9-mock-exam@2",
-  "contentHash": "ddbe93d375cc80b74ccb16414472b5144a517078ac9bd8db0ca51b1aee8684fa",
+  "unitId": "claude-developer-mock-exam/m9-mock-exam@3",
+  "contentHash": "cef8e299ca72ffa8aa0882656ca9cb11ec793ad960c855271372d34a721e4ac2",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

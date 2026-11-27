@@ -1,0 +1,796 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "設問の分野を手がかりに復習する範囲を選び、採った案、見落とした条件、戻るトピックを一行に記録できる。",
+    "stuck": "正解した番号だけを覚え、判断に迷った条件を残さないため、条件が変わると同じ判断をしてしまう。",
+    "points": ["分野名を手がかりに解き、判断に迷った条件を一つ控えます。"],
+    "leaveOut": [
+      "八分野それぞれの仕様や設計の詳しい説明",
+      "模擬試験当日の時間配分",
+      "試験ガイドの改訂日と配点",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "learner-sheet": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white exercise sheet, with a thoughtful expression and simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fraction-cards": {
+      "prompt": "Three white arithmetic practice cards fanned out, each with a small blue circle divided into equal sectors and one violet sector, with no written notation. The cards represent practice on fractions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "condition-note": {
+      "prompt": "A hand holding a violet pencil over a small blank white notebook with a blue page tab, ready to record one overlooked condition. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "domain-folder": {
+      "prompt": "A light grey exercise folder with a blue tab, holding exactly three separate blank white question sheets visible above its open edge. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reference-book": {
+      "prompt": "An open reference book with blank white pages, a blue cover and a violet ribbon bookmark marking one page, representing the source used to check a mistaken answer. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "calendar-cards": {
+      "prompt": "A small white tear-off calendar with blue binding loops, several blank pages turned over, beside three blank white practice cards held by a violet clip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "paired-slips": {
+      "prompt": "Two pairs of blank white paper slips, one pair held together by a blue clip and the other by a violet clip. The paired slips represent matching each inquiry to its own result. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "loan-umbrellas": {
+      "prompt": "Two closed lending umbrellas with curved handles, one blue and one violet, each with a small blank light grey paper tag attached to its handle. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "fractions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "正解した人",
+          "art": "learner-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "practice",
+          "label": "分数の練習",
+          "art": "fraction-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "迷った条件",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "learner",
+          "to": "practice",
+          "label": "範囲を絞る"
+        },
+        {
+          "id": "record",
+          "from": "practice",
+          "to": "memo",
+          "label": "控える"
+        }
+      ]
+    },
+    "domains": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "drill",
+          "label": "分野別の問題",
+          "art": "domain-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "heading",
+          "label": "冒頭の分野",
+          "art": "condition-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "weak",
+          "label": "理由が曖昧",
+          "art": "learner-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "record-fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "choice",
+          "label": "採った案",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "見落とし",
+          "art": "paired-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "topic",
+          "label": "戻るトピック",
+          "art": "reference-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "missed",
+          "from": "choice",
+          "to": "condition",
+          "label": "何が不足"
+        },
+        {
+          "id": "return",
+          "from": "condition",
+          "to": "topic",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "domain",
+          "label": "D8",
+          "art": "domain-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "results",
+          "label": "注文の照会",
+          "art": "paired-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "復習メモ",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "look",
+          "from": "domain",
+          "to": "results",
+          "label": "結び方"
+        },
+        {
+          "id": "write",
+          "from": "results",
+          "to": "memo",
+          "label": "条件を記録"
+        }
+      ]
+    },
+    "revisit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "到着順を選択",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "matching",
+          "label": "IDで照合",
+          "art": "paired-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "source",
+          "label": "5-1-2",
+          "art": "reference-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "notice",
+          "from": "memo",
+          "to": "matching",
+          "label": "見落とし"
+        },
+        {
+          "id": "check",
+          "from": "matching",
+          "to": "source",
+          "label": "戻って確認"
+        }
+      ]
+    },
+    "retry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "later",
+          "label": "日を空ける",
+          "art": "calendar-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "根拠を説明",
+          "art": "condition-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "other",
+          "label": "別案を退ける",
+          "art": "domain-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "solve",
+          "from": "later",
+          "to": "reason",
+          "label": "三問とも"
+        },
+        {
+          "id": "reject",
+          "from": "reason",
+          "to": "other",
+          "label": "条件で比較"
+        }
+      ]
+    },
+    "umbrella-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "loans",
+          "label": "傘の貸し出し",
+          "art": "loan-umbrellas",
+          "at": [1, 1]
+        },
+        {
+          "id": "results",
+          "label": "結果を逆順に",
+          "art": "paired-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "mistake",
+          "label": "到着順を選択",
+          "art": "learner-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "number",
+          "label": "番号だけ控え",
+          "art": "condition-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "condition",
+          "label": "照合条件控え",
+          "art": "condition-note",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inquire",
+          "from": "loans",
+          "to": "results",
+          "label": "二件の照会"
+        },
+        {
+          "id": "choose",
+          "from": "results",
+          "to": "mistake",
+          "label": "誤った判断"
+        }
+      ]
+    },
+    "umbrella-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "results",
+          "label": "逆順の結果",
+          "art": "paired-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "loans",
+          "label": "照会と照合",
+          "art": "loan-umbrellas",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "D8の記録",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "results",
+          "to": "loans",
+          "label": "IDを使う"
+        },
+        {
+          "id": "keep",
+          "from": "loans",
+          "to": "memo",
+          "label": "条件を残す"
+        }
+      ]
+    },
+    "use-drill": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "uncertain",
+          "label": "理由を言えず",
+          "art": "learner-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "changed",
+          "label": "条件を変える",
+          "art": "loan-umbrellas",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "分野と条件",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "正解でも理由が言えない",
+      "board": "fractions",
+      "beats": [
+        {
+          "say": "算数で正解しても、理由を言えないことがあります。",
+          "show": ["learner"]
+        },
+        {
+          "say": "迷ったのは、分数の足し算の問題でした。",
+          "show": ["practice"]
+        },
+        {
+          "say": "復習のために残したいのは、迷った条件です。",
+          "show": ["memo"]
+        },
+        {
+          "say": "分野名を手がかりに解き、判断に迷った条件を一つ控えます。",
+          "show": ["choose", "record"],
+          "pulse": ["practice", "memo"]
+        }
+      ]
+    },
+    {
+      "id": "fraction-practice",
+      "kind": "board",
+      "role": "example",
+      "title": "分数の問題に絞る",
+      "board": "fractions",
+      "beats": [
+        {
+          "say": "分数だけに絞って練習する場面を考えましょう。",
+          "pulse": ["practice"]
+        },
+        {
+          "say": "分母が違うとき、どう足すのか迷いました。",
+          "tag": {
+            "practice": "分母が違う"
+          }
+        },
+        {
+          "say": "答えだけ覚えても、迷った理由は残りません。",
+          "pulse": ["learner"],
+          "mark": [
+            {
+              "on": "learner",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "分母の違いを控えると、復習する条件が分かります。",
+          "tag": {
+            "memo": "分母の違い"
+          },
+          "travel": {
+            "along": ["record"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-domain",
+      "kind": "board",
+      "role": "syntax",
+      "title": "番号より冒頭の分野",
+      "board": "domains",
+      "beats": [
+        {
+          "say": "分野ごとに集めた練習問題を、ドリルと呼びます。",
+          "term": {
+            "text": "ドリル",
+            "note": "分野ごとの練習問題"
+          }
+        },
+        {
+          "say": "このドリルは、八分野を三問ずつ練習する構成です。",
+          "show": ["drill"],
+          "tag": {
+            "drill": "各三問"
+          }
+        },
+        {
+          "say": "問題の順番は変わるので、冒頭の分野を読みましょう。",
+          "show": ["heading"]
+        },
+        {
+          "say": "記録する目印には、問題番号より分野名を使います。",
+          "pulse": ["heading"],
+          "tag": {
+            "heading": "分野名"
+          }
+        },
+        {
+          "say": "正解でも理由を言えない分野は、復習の対象です。",
+          "show": ["weak"],
+          "mark": [
+            {
+              "on": "weak",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "record-condition",
+      "kind": "board",
+      "role": "syntax",
+      "title": "見落とした条件を残す",
+      "board": "record-fields",
+      "beats": [
+        {
+          "say": "判断の決め手になる問題文の内容が、条件です。",
+          "term": {
+            "text": "条件",
+            "ruby": "じょうけん",
+            "note": "判断の決め手になる内容"
+          }
+        },
+        {
+          "say": "外した問題では、見落とした条件を一つ控えます。",
+          "show": ["condition"]
+        },
+        {
+          "say": "その前には、自分が採った案を書いてください。",
+          "show": ["choice", "missed"]
+        },
+        {
+          "say": "後ろに添えるのは、戻って確かめるトピックです。",
+          "show": ["topic", "return"]
+        },
+        {
+          "say": "採った案と見落とした条件と戻る先を、一行にまとめます。",
+          "pulse": ["choice", "condition", "topic"]
+        }
+      ]
+    },
+    {
+      "id": "apply-order",
+      "kind": "board",
+      "role": "apply",
+      "title": "照会の問題を解く",
+      "board": "order",
+      "beats": [
+        {
+          "say": "問題の冒頭は、D8のツールとMCPです。",
+          "speech": "問題の冒頭は、ディーはちのツールとエムシーピーです。",
+          "show": ["domain"]
+        },
+        {
+          "say": "注文の照会と結果を結ぶIDに注目します。",
+          "speech": "注文の照会と結果を結ぶアイディーに注目します。",
+          "show": ["results", "look"],
+          "tag": {
+            "results": "呼び出しID"
+          }
+        },
+        {
+          "say": "まず資料を閉じて、自分で案を選んでみましょう。",
+          "pulse": ["results"]
+        },
+        {
+          "say": "選んだ範囲では、決め手になった条件を一つ書きます。",
+          "show": ["memo", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revisit-source",
+      "kind": "board",
+      "role": "apply",
+      "title": "外した記録から戻る",
+      "board": "revisit",
+      "beats": [
+        {
+          "say": "二件の結果を到着順で結び、間違えたとします。",
+          "show": ["memo"],
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "見落としたのは、IDごとの照合が必要という条件です。",
+          "speech": "見落としたのは、アイディーごとの照合が必要という条件です。",
+          "show": ["matching", "notice"]
+        },
+        {
+          "say": "戻るトピックも添えて、記録を一行にまとめましょう。",
+          "show": ["source", "check"],
+          "pulse": ["memo", "matching", "source"]
+        },
+        {
+          "say": "解説の復習先から、公式資料のその部分を確かめます。",
+          "pulse": ["source"],
+          "tag": {
+            "source": "公式資料"
+          }
+        }
+      ]
+    },
+    {
+      "id": "retry-with-reasons",
+      "kind": "board",
+      "role": "apply",
+      "title": "日を空けて理由を言う",
+      "board": "retry",
+      "beats": [
+        {
+          "say": "日を空けて、同じ分野の三問を解き直します。",
+          "show": ["later"]
+        },
+        {
+          "say": "答えを選んだ理由が、ここでいう根拠です。",
+          "term": {
+            "text": "根拠",
+            "ruby": "こんきょ",
+            "note": "答えを選んだ理由"
+          }
+        },
+        {
+          "say": "三問すべてで、決め手の条件を説明しましょう。",
+          "show": ["reason", "solve"],
+          "travel": {
+            "along": ["solve"],
+            "icon": "repeat"
+          }
+        },
+        {
+          "say": "別案も一つ退けられたら、講座内では復習終了の目安です。",
+          "show": ["other", "reject"],
+          "mark": [
+            {
+              "on": "other",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "umbrella-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "傘の照会で残す記録",
+      "board": "umbrella-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "D8の練習として、傘の貸し出しを二件照会します。",
+          "speech": "ディーはちの練習として、傘の貸し出しを二件照会します。",
+          "show": ["loans"],
+          "tag": {
+            "loans": "D8"
+          }
+        },
+        {
+          "say": "結果が返る順番は、照会した順番と逆です。",
+          "show": ["results", "inquire"]
+        },
+        {
+          "say": "到着順で結ぶ案を選んで、間違えました。",
+          "show": ["mistake", "choose"],
+          "mark": [
+            {
+              "on": "mistake",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "問題番号だけのメモと、照合の条件を書くメモを比べます。",
+          "show": ["number", "condition"]
+        },
+        {
+          "say": "次の復習に使えるのは、どちらのメモでしょうか。",
+          "mark": [
+            {
+              "on": "number",
+              "kind": "question"
+            },
+            {
+              "on": "condition",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["number", "condition"]
+        }
+      ]
+    },
+    {
+      "id": "umbrella-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "照合の条件を書く",
+      "board": "umbrella-quiz",
+      "beats": [
+        {
+          "say": "答えは、照合の条件を書くメモです。",
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "check"
+            },
+            {
+              "on": "number",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["condition"]
+        },
+        {
+          "say": "IDごとに結ぶ条件を、分野名とともに残します。",
+          "speech": "アイディーごとに結ぶ条件を、分野名とともに残します。",
+          "tag": {
+            "condition": "IDで照合"
+          }
+        }
+      ]
+    },
+    {
+      "id": "explain-record",
+      "kind": "board",
+      "role": "explain",
+      "title": "番号では判断を戻せない",
+      "board": "umbrella-reason",
+      "beats": [
+        {
+          "say": "到着順だと、別の照会の結果を結んでしまいます。",
+          "show": ["results"],
+          "mark": [
+            {
+              "on": "results",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "順番が逆でも、IDで照合する条件は同じです。",
+          "speech": "順番が逆でも、アイディーで照合する条件は同じです。",
+          "show": ["loans", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "問題番号だけでは、見落とした条件が分かりません。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "条件が必要"
+          },
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "採った案と照合の条件に、戻るトピックも添えましょう。",
+          "show": ["keep"],
+          "tag": {
+            "memo": "戻る先も"
+          },
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-drill",
+      "kind": "board",
+      "role": "usage",
+      "title": "迷った分野に戻る",
+      "board": "use-drill",
+      "beats": [
+        {
+          "say": "正解の理由が曖昧なら、その分野に絞って練習します。",
+          "show": ["uncertain"]
+        },
+        {
+          "say": "傘の例で変えてみるのは、結果が返る順番です。",
+          "show": ["changed"],
+          "tag": {
+            "changed": "照会順に返る"
+          }
+        },
+        {
+          "say": "条件を一つ変えたあとも、判断の理由を説明しましょう。",
+          "pulse": ["changed"],
+          "mark": [
+            {
+              "on": "changed",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "迷ったら、分野名と条件を一つ控えて復習に戻ります。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "条件を一つ"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2112b6d8e96766334af8a6162c6fdcbac2203eb35a8f497f7a4d53865e7e5b71"
+  }
+}
