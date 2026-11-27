@@ -1,0 +1,757 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答の usage の三つの入力値から、キャッシュの読み込みと書き込みの有無を判断し、入力の合計を求められる。",
+    "stuck": "キャッシュの印を付ければ必ず使われると思い、input_tokens を入力全体の量と取り違える。",
+    "points": ["キャッシュが効いたかは、応答の usage の値で確かめます。"],
+    "leaveOut": [
+      "キャッシュの区切りの置き方",
+      "キャッシュの期限と料金の倍率",
+      "モデルごとの最低トークン数の具体値",
+      "ストリーミングのイベントと並列送信の待ち方",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "club-guide": {
+      "prompt": "A white booklet with a blue binding beside a violet sports whistle, representing a school club information guide. The booklet is open with completely blank pages. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-clerk": {
+      "prompt": "A school office clerk in a plain blue shirt holding a blank white record slip and looking carefully at it. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "read-folder": {
+      "prompt": "A hand lifting a white document out of an open light grey folder with a blue tab, representing reading a saved document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "write-folder": {
+      "prompt": "A hand placing a white document into an open light grey folder with a violet tab, representing saving a new document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "loose-sheet": {
+      "prompt": "A single loose white paper sheet with a blue paper clip beside a violet pencil, separate from any folder. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "usage-slip": {
+      "prompt": "Three narrow blank white paper slips arranged side by side and held together by a single blue binder clip, representing separate parts of one usage record. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-umbrella": {
+      "prompt": "A closed violet umbrella with a curved blue handle beside a small blank white lost property tag. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-total": {
+      "prompt": "A compact blue calculator with blank white keys and an empty display beside a white tally sheet. No mathematical symbols on the calculator. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "部活動の案内",
+          "art": "club-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "費用を確認",
+          "art": "school-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "usage",
+          "art": "usage-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "paper": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "保存分を読む",
+          "art": "read-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "新たに保存",
+          "art": "write-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "rest",
+          "label": "保存外の紙",
+          "art": "loose-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "record",
+          "label": "別々に記録",
+          "art": "usage-slip",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "record": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "案内への質問",
+          "art": "club-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "応答の内訳",
+          "art": "usage-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "total",
+          "label": "入力の合計",
+          "art": "input-total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "returned",
+          "from": "guide",
+          "to": "record",
+          "label": "応答"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "read-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "write-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "rest",
+          "label": "区切りの後ろ",
+          "art": "loose-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "total": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "read-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "write-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "rest",
+          "label": "区切りの後ろ",
+          "art": "loose-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "total",
+          "label": "入力の合計",
+          "art": "input-total",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "zero": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "read-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "write-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "前半の長さ",
+          "art": "club-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "lost": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "inquiry",
+          "label": "忘れ物の質問",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "read-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "write-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "rest",
+          "label": "区切りの後ろ",
+          "art": "loose-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "total",
+          "label": "入力の合計",
+          "art": "input-total",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "案内を繰り返す",
+          "art": "club-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "usage",
+          "art": "usage-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用の見積もり",
+          "art": "input-total",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "guide",
+          "to": "record",
+          "label": "確かめる"
+        },
+        {
+          "id": "estimate",
+          "from": "record",
+          "to": "cost",
+          "label": "量を使う"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "印を付けた後の確認",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "部活動の案内を使い、何度も質問に答える場面です。",
+          "show": ["guide"]
+        },
+        {
+          "say": "キャッシュの印を付けたのに、費用が下がらないままでした。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "エラーがないだけでは、キャッシュを使ったか分かりません。",
+          "show": ["record"]
+        },
+        {
+          "say": "キャッシュが効いたかは、応答の usage の値で確かめます。",
+          "pulse": ["record"],
+          "speech": "キャッシュが効いたかは、応答のユーセージの値で確かめます。"
+        }
+      ]
+    },
+    {
+      "id": "paper-record",
+      "kind": "board",
+      "role": "example",
+      "title": "紙の扱いを記録する",
+      "board": "paper",
+      "beats": [
+        {
+          "say": "学校の事務室で、保存した紙を取り出す場面を考えましょう。",
+          "show": ["read"]
+        },
+        {
+          "say": "今回新たに保存する紙は、別に数えます。",
+          "show": ["write"]
+        },
+        {
+          "say": "保存せずに扱う紙も、別にしておくルールです。",
+          "show": ["rest"]
+        },
+        {
+          "say": "内訳を記録すれば、どの扱いがあったか確かめられます。",
+          "show": ["record"]
+        }
+      ]
+    },
+    {
+      "id": "find-usage",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答の内訳を開く",
+      "board": "record",
+      "beats": [
+        {
+          "say": "応答に付くトークン数の内訳が、usage です。",
+          "show": ["guide"],
+          "speech": "応答に付くトークン数の内訳が、ユーセージです。",
+          "term": {
+            "text": "usage",
+            "note": "応答のトークン数の内訳"
+          }
+        },
+        {
+          "say": "質問への応答を受け取ったら、ここを開きます。",
+          "show": ["record", "returned"],
+          "travel": {
+            "along": ["returned"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "見るのは、入力についての三つの値です。",
+          "tag": {
+            "record": "入力三項目"
+          },
+          "pulse": ["record"]
+        },
+        {
+          "say": "入力の合計を知るには、その三つを足します。",
+          "show": ["total"]
+        }
+      ]
+    },
+    {
+      "id": "read-and-create",
+      "kind": "code",
+      "role": "syntax",
+      "title": "読み込みと書き込み",
+      "code": [
+        "// 応答から入力の内訳を取り出す",
+        "const {",
+        "  // キャッシュから読み込んだ量",
+        "  cache_read_input_tokens,",
+        "  // 今回キャッシュに書き込んだ量",
+        "  cache_creation_input_tokens,",
+        "  // 最後の区切りより後ろの量",
+        "  input_tokens",
+        "// 応答の内訳を参照する",
+        "} = message.usage;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初に、キャッシュから読み込んだ量を見ます。",
+          "part": {
+            "line": 3,
+            "text": "cache_read_input_tokens"
+          },
+          "figure": {
+            "show": ["read"]
+          },
+          "term": {
+            "text": "読み込み",
+            "ruby": "よみこみ",
+            "note": "キャッシュから読んだ量"
+          }
+        },
+        {
+          "say": "コードでは、この長い名前の項目です。",
+          "part": {
+            "line": 3,
+            "text": "cache_read_input_tokens",
+            "note": "読み込んだ量"
+          },
+          "figure": {
+            "pulse": ["read"]
+          }
+        },
+        {
+          "say": "ゼロより大きければ、保存した前半を使ったと分かります。",
+          "figure": {
+            "tag": {
+              "read": "再利用あり"
+            }
+          }
+        },
+        {
+          "say": "今回キャッシュに保存した量が、書き込みです。",
+          "part": {
+            "line": 5,
+            "text": "cache_creation_input_tokens"
+          },
+          "figure": {
+            "show": ["write"]
+          },
+          "term": {
+            "text": "書き込み",
+            "ruby": "かきこみ",
+            "note": "今回キャッシュに保存した量"
+          }
+        },
+        {
+          "say": "こちらの項目で、書き込んだ量を確かめます。",
+          "part": {
+            "line": 5,
+            "text": "cache_creation_input_tokens",
+            "note": "書き込んだ量"
+          },
+          "figure": {
+            "pulse": ["write"]
+          }
+        },
+        {
+          "say": "読み込みと書き込みは、別々の値です。",
+          "focus": [3, 5],
+          "figure": {
+            "pulse": ["read", "write"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "uncached-input",
+      "kind": "code",
+      "role": "syntax",
+      "title": "入力全体と取り違えない",
+      "code": [
+        "// 応答から入力の内訳を取り出す",
+        "const {",
+        "  // キャッシュから読み込んだ量",
+        "  cache_read_input_tokens,",
+        "  // 今回キャッシュに書き込んだ量",
+        "  cache_creation_input_tokens,",
+        "  // 最後の区切りより後ろの量",
+        "  input_tokens",
+        "// 応答の内訳を参照する",
+        "} = message.usage;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "fields"
+      },
+      "beats": [
+        {
+          "say": "最後の項目は、区切りより後ろのトークン数です。",
+          "part": {
+            "line": 7,
+            "text": "input_tokens"
+          },
+          "figure": {
+            "show": ["rest"]
+          }
+        },
+        {
+          "say": "キャッシュに関わらない入力の量を表します。",
+          "part": {
+            "line": 7,
+            "text": "input_tokens",
+            "note": "区切りの後ろ"
+          },
+          "figure": {
+            "tag": {
+              "rest": "キャッシュ外"
+            }
+          }
+        },
+        {
+          "say": "名前に入力とありますが、入力全体ではありません。",
+          "part": {
+            "line": 7,
+            "text": "input_tokens",
+            "note": "合計ではない"
+          },
+          "figure": {
+            "pulse": ["rest"]
+          }
+        },
+        {
+          "say": "合計を求めるときは、三つとも足してください。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "pulse": ["read", "write", "rest"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-input",
+      "kind": "board",
+      "role": "apply",
+      "title": "三つの量を足す",
+      "board": "total",
+      "beats": [
+        {
+          "say": "案内の例で、読み込みが八百トークンだったとします。",
+          "show": ["read"],
+          "tag": {
+            "read": "800"
+          }
+        },
+        {
+          "say": "今回の書き込みは、ゼロです。",
+          "show": ["write"],
+          "tag": {
+            "write": "0"
+          }
+        },
+        {
+          "say": "区切りより後ろには、六十トークンあります。",
+          "show": ["rest"],
+          "tag": {
+            "rest": "60"
+          }
+        },
+        {
+          "say": "三つを足した入力の合計は、八百六十です。",
+          "show": ["total"],
+          "tag": {
+            "total": "860"
+          },
+          "pulse": ["read", "write", "rest", "total"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "both-zero",
+      "kind": "board",
+      "role": "apply",
+      "title": "両方ゼロなら",
+      "board": "zero",
+      "beats": [
+        {
+          "say": "読み込みと書き込みが、両方ゼロの場合を見ます。",
+          "show": ["read", "write"],
+          "tag": {
+            "read": "0",
+            "write": "0"
+          }
+        },
+        {
+          "say": "この場合は、キャッシュされていない状態です。",
+          "mark": [
+            {
+              "on": "read",
+              "kind": "cross"
+            },
+            {
+              "on": "write",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "前半が短すぎると、こうなることがよくあります。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "短すぎる"
+          }
+        },
+        {
+          "say": "最低の長さに届かなくても、エラーにはなりません。",
+          "pulse": ["guide"],
+          "tag": {
+            "guide": "エラーなし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lost-property-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "忘れ物の応答を読む",
+      "board": "lost",
+      "think": 8,
+      "beats": [
+        {
+          "say": "忘れ物の問い合わせで、次の内訳が返ったとします。",
+          "show": ["inquiry"]
+        },
+        {
+          "say": "読み込みは、千二百トークンです。",
+          "show": ["read"],
+          "tag": {
+            "read": "1200"
+          }
+        },
+        {
+          "say": "今回の書き込みは、ゼロになっています。",
+          "show": ["write"],
+          "tag": {
+            "write": "0"
+          }
+        },
+        {
+          "say": "区切りより後ろは、八十トークンです。",
+          "show": ["rest"],
+          "tag": {
+            "rest": "80"
+          }
+        },
+        {
+          "say": "再利用できたかと、入力の合計を答えてください。",
+          "show": ["total"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "question"
+            },
+            {
+              "on": "total",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lost-property-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "再利用と合計の答え",
+      "board": "lost",
+      "beats": [
+        {
+          "say": "キャッシュから読み込めているので、再利用できています。",
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["read"]
+        },
+        {
+          "say": "入力の合計は、千二百八十トークンです。",
+          "tag": {
+            "total": "1280"
+          },
+          "mark": [
+            {
+              "on": "total",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["total"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "trace-values",
+      "kind": "board",
+      "role": "explain",
+      "title": "内訳から答えをたどる",
+      "board": "lost",
+      "beats": [
+        {
+          "say": "読み込みの千二百が、保存した前半を使った量です。",
+          "pulse": ["read"]
+        },
+        {
+          "say": "書き込みはゼロなので、今回は新たに保存していません。",
+          "pulse": ["write"]
+        },
+        {
+          "say": "八十だけを入力全体として数えると、読み込み分が抜けます。",
+          "pulse": ["rest"],
+          "tag": {
+            "rest": "合計ではない"
+          }
+        },
+        {
+          "say": "三つを足すので、合計は千二百八十です。",
+          "pulse": ["read", "write", "rest", "total"],
+          "tag": {
+            "rest": "80"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-record",
+      "kind": "board",
+      "role": "usage",
+      "title": "運用で内訳を確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "同じ案内を繰り返し使うなら、応答の内訳を見ましょう。",
+          "show": ["guide"]
+        },
+        {
+          "say": "印を付けた後に確かめるのは、usage の値です。",
+          "show": ["record", "inspect"],
+          "speech": "印を付けた後に確かめるのは、ユーセージの値です。"
+        },
+        {
+          "say": "三つの入力値は、費用の見積もりにも使えます。",
+          "show": ["cost", "estimate"]
+        },
+        {
+          "say": "まず読み込みと書き込みを確かめ、合計も数えてください。",
+          "pulse": ["record", "cost"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6dc80f9b22536ae307398cc865e58716e66409c6eec6e599ec1ee8746263a243"
+  }
+}

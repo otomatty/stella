@@ -1,0 +1,646 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "考える過程も出力に含まれることを説明し、effort を上げるときに max_tokens も見直せる。",
+    "stuck": "目に見える答えだけが出力だと思い、effort を上げても max_tokens を変えず、答えが途中で切れる。",
+    "points": ["考える過程のトークンも出力に数えるので、出力の上限は max_tokens で決めます。"],
+    "leaveOut": [
+      "入力のトークン数を数える方法",
+      "ストリーミングやモデル選択による速度の調整",
+      "モデルごとの思考を止める条件や設定の細部",
+      "具体的なトークン数や料金の計算",
+      "応答からブロックを取り出すコード"
+    ]
+  },
+  "art": {
+    "worksheet": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding up one large blank white worksheet and a blue pencil, ready to work on a school problem. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pencil-notes": {
+      "prompt": "A violet pencil touching a small white sheet with a few blue and violet circular sketches, representing rough working before an answer. The sketches are simple filled shapes without writing or mathematical symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-sheet": {
+      "prompt": "A neat white answer sheet held by a blue paper clip, with one broad violet band near the top representing a finished response without readable writing. A capped blue pen lies beside the sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "thinking-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a violet pencil over a small blank white notepad while thinking. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "covered-notes": {
+      "prompt": "A closed light grey paper folder with several white note sheets tucked inside and their edges visible, representing working notes whose contents are not displayed. A blue clasp keeps the folder closed. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "control-dial": {
+      "prompt": "A large physical blue rotary control knob with a violet pointer and a few small light grey tick marks, viewed straight on as a single isolated object. No scale numbers and no surrounding machine panel. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "limit-tray": {
+      "prompt": "A shallow blue paper tray with upright sides holding two small stacks of white paper next to each other, one clipped in violet and the other clipped in blue, representing shared room for working notes and a final answer. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "redelivery-parcel": {
+      "prompt": "A closed light grey cardboard delivery parcel sealed with blue tape beside a blank white delivery notice and a small blue clock with plain hands and no numerals. The parcel and notice are light grey or white, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sheet",
+          "label": "一枚の答案用紙",
+          "art": "worksheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "working",
+          "label": "考えるための欄",
+          "art": "pencil-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答えを書く欄",
+          "art": "answer-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "thinking": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "Claude",
+          "art": "thinking-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "working",
+          "label": "考える過程",
+          "art": "pencil-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答え",
+          "art": "answer-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "consider",
+          "from": "model",
+          "to": "working",
+          "label": "考える"
+        },
+        {
+          "id": "respond",
+          "from": "working",
+          "to": "answer",
+          "label": "答える"
+        }
+      ]
+    },
+    "blocks": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "thinking",
+          "label": "考える過程",
+          "art": "covered-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "text",
+          "label": "text",
+          "art": "answer-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "total",
+          "label": "出力に数える",
+          "art": "limit-tray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "order",
+          "from": "thinking",
+          "to": "text",
+          "label": "その後"
+        }
+      ]
+    },
+    "controls": {
+      "cols": 3,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "effort",
+          "label": "effort",
+          "art": "control-dial",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "limit-tray",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "budget": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "output",
+          "label": "両方とも出力",
+          "tone": "blue",
+          "cells": [1, 1, 3, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "working",
+          "label": "考える分",
+          "art": "pencil-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "answer",
+          "label": "答えの分",
+          "art": "answer-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "limit-tray",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "redelivery": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "再配達の相談",
+          "art": "redelivery-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "effort",
+          "label": "effort",
+          "art": "control-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "途中で切れた文",
+          "art": "answer-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "display",
+          "label": "中身を非表示",
+          "art": "covered-notes",
+          "at": [5, 2]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "limit-tray",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "再配達の案内文",
+          "art": "redelivery-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "effort",
+          "label": "effort",
+          "art": "control-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "limit-tray",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "考える分と答えの分",
+      "board": "school",
+      "beats": [
+        {
+          "say": "一枚の答案用紙で、学校の問題を解く場面です。",
+          "show": ["sheet"]
+        },
+        {
+          "say": "答えの前に、考えるための下書きを書きます。",
+          "show": ["working"]
+        },
+        {
+          "say": "同じ紙に、答えを書く場所も必要でしょう。",
+          "show": ["answer"]
+        },
+        {
+          "say": "考える分を含め、マックストークンズで出力の上限を決めます。",
+          "pulse": ["working", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "shared-paper",
+      "kind": "board",
+      "role": "example",
+      "title": "下書きも同じ紙を使う",
+      "board": "school",
+      "beats": [
+        {
+          "say": "このたとえでは、使える紙は一枚だけとします。",
+          "tag": {
+            "sheet": "一枚だけ"
+          },
+          "pulse": ["sheet"]
+        },
+        {
+          "say": "下書きを増やすと、答えを書く場所が減るわけです。",
+          "tag": {
+            "working": "多く使う",
+            "answer": "残りが減る"
+          },
+          "pulse": ["working", "answer"]
+        },
+        {
+          "say": "紙が足りなければ、答えを最後まで書けません。",
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["answer"]
+        },
+        {
+          "say": "出力の上限も、考える分と答えの分で一緒に使います。",
+          "pulse": ["working", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "thinking-process",
+      "kind": "board",
+      "role": "syntax",
+      "title": "答えの前に考える",
+      "board": "thinking",
+      "beats": [
+        {
+          "say": "モデルが答えの前に検討するのが、考える過程です。",
+          "term": {
+            "text": "考える過程",
+            "ruby": "かんがえるかてい",
+            "note": "答えを出す前の検討"
+          }
+        },
+        {
+          "say": "図では、答えに進む前の部分に当たります。",
+          "show": ["model", "working", "consider"],
+          "pulse": ["working"]
+        },
+        {
+          "say": "答えを書くときにも、トークンが必要です。",
+          "show": ["answer", "respond"],
+          "pulse": ["answer"]
+        },
+        {
+          "say": "考えた分のトークンも、出力として数えます。",
+          "tag": {
+            "working": "出力に含む"
+          },
+          "pulse": ["working"]
+        },
+        {
+          "say": "見える答えだけを数えて終わりにはできません。",
+          "pulse": ["working", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "response-blocks",
+      "kind": "board",
+      "role": "syntax",
+      "title": "空でも考えた分は数える",
+      "board": "blocks",
+      "beats": [
+        {
+          "say": "考えた過程を表すのが、thinking ブロックです。",
+          "speech": "考えた過程を表すのが、シンキングブロックです。",
+          "term": {
+            "text": "thinking",
+            "ruby": "シンキング",
+            "note": "考えた過程のブロック"
+          }
+        },
+        {
+          "say": "応答では、答えの text ブロックより前に並びます。",
+          "speech": "応答では、答えのテキストブロックより前に並びます。",
+          "show": ["thinking", "text", "order"],
+          "travel": {
+            "along": ["order"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "多くのモデルでは、考えた過程の中身は最初から空です。",
+          "tag": {
+            "thinking": "中身は空も"
+          },
+          "pulse": ["thinking"]
+        },
+        {
+          "say": "中身を表示しなくても、考えた分は出力として数えます。",
+          "show": ["total"],
+          "pulse": ["thinking", "total"]
+        }
+      ]
+    },
+    {
+      "id": "two-controls",
+      "kind": "board",
+      "role": "syntax",
+      "title": "目安と厳密な上限",
+      "board": "controls",
+      "beats": [
+        {
+          "say": "effort は、どれだけ考えるかの目安です。",
+          "speech": "エフォートは、どれだけ考えるかの目安です。",
+          "term": {
+            "text": "effort",
+            "ruby": "エフォート",
+            "note": "考える量の目安"
+          }
+        },
+        {
+          "say": "考える量を増やしたいときは、この値を上げます。",
+          "show": ["effort"],
+          "tag": {
+            "effort": "量の目安"
+          }
+        },
+        {
+          "say": "マックストークンズは、出力の厳密な上限です。",
+          "term": {
+            "text": "max_tokens",
+            "ruby": "マックストークンズ",
+            "note": "考える分も含む出力の上限"
+          }
+        },
+        {
+          "say": "考える過程と答えを合わせた量に、この上限を使います。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "厳密な上限"
+          }
+        }
+      ]
+    },
+    {
+      "id": "same-limit",
+      "kind": "board",
+      "role": "apply",
+      "title": "上限を変えずに考える量を増やす",
+      "board": "budget",
+      "beats": [
+        {
+          "say": "教材の例では、effort を high に上げました。",
+          "speech": "教材の例では、エフォートをハイに上げました。",
+          "show": ["output", "working"],
+          "pulse": ["working"]
+        },
+        {
+          "say": "出力の上限は、前と同じままです。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "前と同じ"
+          },
+          "pulse": ["limit"]
+        },
+        {
+          "say": "考える量が増えると、答えに回る分が減ります。",
+          "show": ["answer"],
+          "pulse": ["working", "answer"]
+        },
+        {
+          "say": "この例で途中までしか返らなかったのは、答えの部分です。",
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["answer"]
+        }
+      ]
+    },
+    {
+      "id": "leave-room",
+      "kind": "board",
+      "role": "apply",
+      "title": "両方が入る余地を残す",
+      "board": "budget",
+      "beats": [
+        {
+          "say": "答えに使える量は、考える分を含む上限で決まります。",
+          "pulse": ["output", "limit"]
+        },
+        {
+          "say": "答えだけに別の上限がある、という意味ではありません。",
+          "pulse": ["answer", "limit"]
+        },
+        {
+          "say": "考える量を増やすときは、出力の上限も大きくします。",
+          "tag": {
+            "limit": "上限を拡大"
+          },
+          "pulse": ["limit"]
+        },
+        {
+          "say": "考える過程と答えの両方が入る余地を残しましょう。",
+          "unmark": ["answer"],
+          "pulse": ["working", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "再配達の返事が切れたら",
+      "board": "redelivery",
+      "think": 8,
+      "beats": [
+        {
+          "say": "宅配の再配達について、希望を整理した返事を作ります。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "effort を high にしたら、返事が途中で切れました。",
+          "speech": "エフォートをハイにしたら、返事が途中で切れました。",
+          "show": ["effort", "answer"],
+          "tag": {
+            "effort": "high"
+          },
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "一つ目の案は、考えた過程の中身を非表示にする方法です。",
+          "show": ["display"],
+          "tag": {
+            "display": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、そのままにしていた出力の上限を大きくします。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "二つ目"
+          }
+        },
+        {
+          "say": "考える量を保ち、答えの余地を増やすのはどちらでしょうか。",
+          "mark": [
+            {
+              "on": "display",
+              "kind": "question"
+            },
+            {
+              "on": "limit",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "出力の上限を大きくする",
+      "board": "redelivery",
+      "beats": [
+        {
+          "say": "答えは、出力の上限を大きくする二つ目の案です。",
+          "mark": [
+            {
+              "on": "limit",
+              "kind": "check"
+            },
+            {
+              "on": "display",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["limit"]
+        },
+        {
+          "say": "考えた過程を隠しても、使ったトークンは減りません。",
+          "pulse": ["display"]
+        }
+      ]
+    },
+    {
+      "id": "why-limit",
+      "kind": "board",
+      "role": "explain",
+      "title": "表示と量を分けて考える",
+      "board": "blocks",
+      "reset": true,
+      "beats": [
+        {
+          "say": "一つ目の案が変えるのは、考えた過程の表示です。",
+          "show": ["thinking"],
+          "tag": {
+            "thinking": "非表示"
+          }
+        },
+        {
+          "say": "中身が見えなくても、考えた分は上限に数えます。",
+          "show": ["total"],
+          "pulse": ["thinking", "total"]
+        },
+        {
+          "say": "答えも同じ出力に含まれるので、残りの量が必要です。",
+          "show": ["text", "order"],
+          "pulse": ["text", "total"]
+        },
+        {
+          "say": "二つ目の案なら、両方に使える量の上限を増やせます。",
+          "tag": {
+            "total": "上限を拡大"
+          },
+          "pulse": ["total"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "考える量を変えるとき",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "再配達の案内文を、じっくり考えて作りたいとします。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "考える量を調整する目安は、effort です。",
+          "speech": "考える量を調整する目安は、エフォートです。",
+          "show": ["effort"]
+        },
+        {
+          "say": "値を上げるときには、出力の上限も合わせて見直しましょう。",
+          "show": ["limit"],
+          "pulse": ["effort", "limit"]
+        },
+        {
+          "say": "考える分も含め、マックストークンズで出力の上限を決めます。",
+          "tag": {
+            "limit": "両方を含む"
+          },
+          "pulse": ["limit"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "0d0fe7e31b830d0f86d749eb0c6abfc80352bc80224022f49f3e6ca63f727490"
+  }
+}

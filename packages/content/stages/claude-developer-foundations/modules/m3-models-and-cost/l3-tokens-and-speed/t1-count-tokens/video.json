@@ -1,0 +1,737 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "入力を送る前に、使うモデルと入力を countTokens に渡し、返る数を見積もりとして扱う手順を説明できる。",
+    "stuck": "文字数からトークン数を決めつけたり、別のモデルで数えた値をそのまま使ったりしてしまう。",
+    "points": ["入力のトークン数は、送る前にトークン数を数える API で確かめます。"],
+    "leaveOut": [
+      "考える過程と出力の上限",
+      "応答を速くする方法",
+      "具体的なモデル名と料金の計算",
+      "リクエスト数の制限と管理の詳細",
+      "画像や PDF の渡し方と数えられないツール",
+      "SDK の初期設定と課題の答えのコード"
+    ]
+  },
+  "art": {
+    "parcel": {
+      "prompt": "A single closed light grey cardboard parcel secured with blue tape, with a small blank white shipping tag tied to it. The parcel is light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parcel-scale": {
+      "prompt": "A compact blue parcel weighing scale with a light grey cardboard parcel on its weighing platform. The small display is completely blank. The parcel is light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cost-note": {
+      "prompt": "A violet calculator with a blank display and plain unmarked buttons beside a white estimate slip held with a blue paper clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-bundle": {
+      "prompt": "An open blue document folder holding a thick stack of white papers and a small white request note clipped to the front. All paper surfaces are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "count-tool": {
+      "prompt": "A blue handheld mechanical tally counter with a large violet push button and a completely blank white display, held by one simple human hand. A concrete illustration of counting, with no computer interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "token-result": {
+      "prompt": "A small blue abacus with violet beads beside one blank white result slip held by a violet clip. Objects only, representing the result of counting. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a closed blank white booklet. No other characters or speech bubbles. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-guide": {
+      "prompt": "A folded white museum admission leaflet with a small blue sculpture pictogram, next to two blank white admission tickets and a small violet sculpture on its own narrow pedestal. No building or room. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "before-sending": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "送る荷物",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "scale",
+          "label": "先に量る",
+          "art": "parcel-scale",
+          "at": [3, 1]
+        },
+        {
+          "id": "input",
+          "label": "送る入力",
+          "art": "input-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "weigh-parcel": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "送る荷物",
+          "art": "parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "scale",
+          "label": "重さを量る",
+          "art": "parcel-scale",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "料金の目安",
+          "art": "cost-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "weigh",
+          "from": "parcel",
+          "to": "scale",
+          "label": "量る"
+        },
+        {
+          "id": "estimate",
+          "from": "scale",
+          "to": "cost",
+          "label": "見積もる"
+        }
+      ]
+    },
+    "count-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "送る入力",
+          "art": "input-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "counter",
+          "label": "数えるAPI",
+          "art": "count-tool",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "入力の数",
+          "art": "token-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "input",
+          "to": "counter",
+          "label": "渡す"
+        },
+        {
+          "id": "return",
+          "from": "counter",
+          "to": "result",
+          "label": "数が返る"
+        }
+      ]
+    },
+    "estimate-use": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "入力の数",
+          "art": "token-result",
+          "at": [1, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用の見積もり",
+          "art": "cost-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルの選択",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "model-count": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "送る入力",
+          "art": "input-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "使うモデル",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "counter",
+          "label": "数え直す",
+          "art": "count-tool",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum-choice": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "美術館の案内",
+          "art": "museum-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "別のモデル",
+          "art": "model-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "reuse",
+          "label": "前の数を使う",
+          "art": "token-result",
+          "at": [5, 2]
+        },
+        {
+          "id": "recount",
+          "label": "数え直す",
+          "art": "count-tool",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "museum-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "同じ入場案内",
+          "art": "museum-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "counter",
+          "label": "数えるAPI",
+          "art": "count-tool",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "今回の数",
+          "art": "token-result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "guide",
+          "to": "counter",
+          "label": "渡す"
+        },
+        {
+          "id": "return",
+          "from": "counter",
+          "to": "result",
+          "label": "見積もり"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "before-sending",
+      "kind": "board",
+      "role": "goal",
+      "title": "送る前に量を知る",
+      "board": "before-sending",
+      "beats": [
+        {
+          "say": "荷物を送る前に、重さを知りたいとします。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "料金の目安を考えるため、先に量る場面です。",
+          "show": ["scale"]
+        },
+        {
+          "say": "文章の入力も、送る前に量を確かめましょう。",
+          "show": ["input"]
+        },
+        {
+          "say": "入力のトークン数は、送る前に数える API で確かめます。",
+          "speech": "入力のトークン数は、送る前に数えるエーピーアイで確かめます。",
+          "pulse": ["input"]
+        }
+      ]
+    },
+    {
+      "id": "weigh-parcel",
+      "kind": "board",
+      "role": "example",
+      "title": "見た目で重さを決めない",
+      "board": "weigh-parcel",
+      "beats": [
+        {
+          "say": "この荷物を、重さに応じた料金で送るとします。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "箱を見ただけでは、重さを正しく判断できません。",
+          "mark": [
+            {
+              "on": "parcel",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、送る前にはかりに載せて量ります。",
+          "show": ["scale", "weigh"],
+          "travel": {
+            "along": ["weigh"]
+          }
+        },
+        {
+          "say": "量った重さは、料金を見積もるための材料です。",
+          "show": ["cost", "estimate"],
+          "pulse": ["cost"]
+        }
+      ]
+    },
+    {
+      "id": "count-input",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力のトークン数を知る",
+      "board": "count-flow",
+      "beats": [
+        {
+          "say": "入力の量は、トークン数で確かめます。",
+          "term": {
+            "text": "トークン数",
+            "ruby": "トークンすう",
+            "note": "入力に含まれるトークンの数"
+          },
+          "show": ["input"]
+        },
+        {
+          "say": "文字数からの見当だけでは、正しく見積もれません。",
+          "pulse": ["input"],
+          "mark": [
+            {
+              "on": "input",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "送る前に使うのが、トークン数を数える API です。",
+          "speech": "送る前に使うのが、トークン数を数えるエーピーアイです。",
+          "term": {
+            "text": "数えるAPI",
+            "ruby": "かぞえるエーピーアイ",
+            "note": "入力のトークン数を返す"
+          }
+        },
+        {
+          "say": "入力を渡すと、このように数が返ります。",
+          "show": ["counter", "result", "send", "return"],
+          "unmark": ["input"],
+          "travel": {
+            "along": ["send", "return"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-call",
+      "kind": "code",
+      "role": "syntax",
+      "title": "数える呼び出しを読む",
+      "code": [
+        "// 入力を数えて結果を受け取る",
+        "const { input_tokens } = await client.messages.countTokens({",
+        "  // 実際に使うモデルを渡す",
+        "  model,",
+        "  // システムの指示を渡す",
+        "  system,",
+        "  // 送るメッセージを渡す",
+        "  messages,",
+        "// 数える入力の指定を閉じる",
+        "});"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "count-flow"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "SDK では、countTokens を呼びます。",
+          "speech": "エスディーケーでは、カウントトークンズを呼びます。",
+          "part": {
+            "line": 1,
+            "text": "countTokens",
+            "note": "トークンを数える"
+          },
+          "figure": {
+            "show": ["counter"]
+          }
+        },
+        {
+          "say": "model に渡すのは、実際に使うモデルです。",
+          "speech": "モデルに渡すのは、実際に使うモデルです。",
+          "part": {
+            "line": 3,
+            "text": "model",
+            "note": "使うモデル"
+          },
+          "figure": {
+            "show": ["input", "send"]
+          }
+        },
+        {
+          "say": "system には、送る予定の指示を渡します。",
+          "speech": "システムには、送る予定の指示を渡します。",
+          "part": {
+            "line": 5,
+            "text": "system",
+            "note": "システムの指示"
+          },
+          "figure": {
+            "tag": {
+              "input": "指示も含む"
+            }
+          }
+        },
+        {
+          "say": "messages は、送るメッセージのまとまりです。",
+          "speech": "メッセージズは、送るメッセージのまとまりです。",
+          "part": {
+            "line": 7,
+            "text": "messages",
+            "note": "送るメッセージ"
+          },
+          "figure": {
+            "pulse": ["input"]
+          }
+        },
+        {
+          "say": "左側の項目で、入力のトークン数を受け取ります。",
+          "part": {
+            "line": 1,
+            "text": "input_tokens",
+            "note": "入力のトークン数"
+          },
+          "figure": {
+            "show": ["result", "return"],
+            "pulse": ["result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "count-request",
+      "kind": "code",
+      "role": "apply",
+      "title": "長い資料を含めて数える",
+      "code": [
+        "// 入力を数えて結果を受け取る",
+        "const { input_tokens } = await client.messages.countTokens({",
+        "  // 実際に使うモデルを渡す",
+        "  model,",
+        "  // システムの指示を渡す",
+        "  system,",
+        "  // 送るメッセージを渡す",
+        "  messages,",
+        "// 数える入力の指定を閉じる",
+        "});"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "count-flow"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "長い資料を足した入力を、ここへ渡してみましょう。",
+          "focus": [3, 5, 7],
+          "figure": {
+            "show": ["input"],
+            "tag": {
+              "input": "資料を追加"
+            }
+          }
+        },
+        {
+          "say": "messages.create と同じ形の入力を使います。",
+          "speech": "メッセージズクリエイトと同じ形の入力を使います。",
+          "part": {
+            "line": 1,
+            "text": "countTokens",
+            "note": "今回は数えるだけ"
+          },
+          "figure": {
+            "show": ["counter", "send"],
+            "travel": {
+              "along": ["send"]
+            }
+          }
+        },
+        {
+          "say": "この呼び出しは無料で、返るのは入力の数です。",
+          "part": {
+            "line": 1,
+            "text": "input_tokens",
+            "note": "数えた結果"
+          },
+          "figure": {
+            "show": ["result", "return"],
+            "tag": {
+              "counter": "無料"
+            }
+          }
+        },
+        {
+          "say": "資料への回答など、応答の文章は作りません。",
+          "figure": {
+            "pulse": ["counter"],
+            "tag": {
+              "counter": "応答なし"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-estimate",
+      "kind": "board",
+      "role": "apply",
+      "title": "返る数は見積もり",
+      "board": "estimate-use",
+      "beats": [
+        {
+          "say": "返る数は、実際の量を予測する見積もりです。",
+          "term": {
+            "text": "見積もり",
+            "ruby": "みつもり",
+            "note": "実際の量を予測した値"
+          }
+        },
+        {
+          "say": "この数は、実際に使われる数と少しずれることがあります。",
+          "show": ["result"],
+          "tag": {
+            "result": "見積もり"
+          }
+        },
+        {
+          "say": "費用を見積もるときに使える材料です。",
+          "show": ["cost"]
+        },
+        {
+          "say": "入力の長さに応じてモデルを振り分けるときにも使えます。",
+          "show": ["model"]
+        }
+      ]
+    },
+    {
+      "id": "choose-count-model",
+      "kind": "board",
+      "role": "apply",
+      "title": "使うモデルで数える",
+      "board": "model-count",
+      "beats": [
+        {
+          "say": "同じ文章を、別のモデルに送る場面を考えます。",
+          "show": ["input"]
+        },
+        {
+          "say": "モデルが違えば、数える結果も同じとは限りません。",
+          "show": ["model"],
+          "tag": {
+            "model": "モデル変更"
+          }
+        },
+        {
+          "say": "前のモデルで数えた値を、そのまま使うのは避けます。",
+          "mark": [
+            {
+              "on": "model",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "実際に使うモデルを指定して、数え直しましょう。",
+          "show": ["counter"],
+          "pulse": ["counter"]
+        }
+      ]
+    },
+    {
+      "id": "museum-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "美術館の案内を数える",
+      "board": "museum-choice",
+      "think": 8,
+      "beats": [
+        {
+          "say": "美術館の入場案内を使い、質問に答える場面です。",
+          "show": ["guide"]
+        },
+        {
+          "say": "入力は同じまま、使うモデルだけを替えます。",
+          "show": ["model"]
+        },
+        {
+          "say": "前のモデルで数えた値は、すでに手元にある状態です。",
+          "show": ["reuse"]
+        },
+        {
+          "say": "送る前に、その値を使うか数え直すか、どちらでしょうか。",
+          "show": ["recount"],
+          "mark": [
+            {
+              "on": "reuse",
+              "kind": "question"
+            },
+            {
+              "on": "recount",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "museum-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "替えたモデルで数え直す",
+      "board": "museum-choice",
+      "beats": [
+        {
+          "say": "答えは、これから使うモデルで数え直すことです。",
+          "mark": [
+            {
+              "on": "recount",
+              "kind": "check"
+            },
+            {
+              "on": "reuse",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["recount"]
+        },
+        {
+          "say": "数えるときも、替えたあとのモデルを指定します。",
+          "pulse": ["model"],
+          "tag": {
+            "model": "今回使う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "museum-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "文章が同じでも数え直す",
+      "board": "museum-reason",
+      "beats": [
+        {
+          "say": "入場案内が同じでも、トークン数まで同じとは限りません。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "入力は同じ"
+          }
+        },
+        {
+          "say": "数える結果は、モデルによって変わるためです。",
+          "show": ["counter"],
+          "tag": {
+            "counter": "今回のモデル"
+          }
+        },
+        {
+          "say": "使うモデルと入場案内を指定し、今回の数を受け取ります。",
+          "show": ["result", "send", "return"],
+          "travel": {
+            "along": ["send", "return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この数も、実際とは少しずれることのある見積もりです。",
+          "pulse": ["result"],
+          "tag": {
+            "result": "見積もり"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-before-send",
+      "kind": "board",
+      "role": "usage",
+      "title": "資料やモデルを替えるとき",
+      "board": "model-count",
+      "reset": true,
+      "beats": [
+        {
+          "say": "長い資料を足すときは、送る前に入力の量を確かめます。",
+          "show": ["input"],
+          "tag": {
+            "input": "資料を追加"
+          }
+        },
+        {
+          "say": "モデルを替えるときも、数え直す場面です。",
+          "show": ["model"],
+          "tag": {
+            "model": "モデル変更"
+          }
+        },
+        {
+          "say": "どちらも、使うモデルと送る入力をそろえましょう。",
+          "pulse": ["input", "model"]
+        },
+        {
+          "say": "応答を頼む前に数え、費用の見積もりに使います。",
+          "show": ["counter"],
+          "pulse": ["counter"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a3293889964e6ef716154206a7b53425f46e8524be06ecf46c5d04f8646628d5"
+  }
+}

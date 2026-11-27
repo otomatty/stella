@@ -1,0 +1,777 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "今のモデルで費用を下げたいとき、output_config.effort を調整し、評価のセットで質を確かめる手順を説明できる。",
+    "stuck": "費用を下げるには小さいモデルに替えるしかないと思い、今のモデルで使うトークンの量を調整しない。",
+    "points": ["effort で、1 つのモデルが応答にかけるトークンの量を調整します。"],
+    "leaveOut": [
+      "モデルを最初に選ぶ基準とモデルの組み合わせ方",
+      "モデルごとに使える値と既定値の一覧",
+      "各値の細かな使い分けと料金の数値",
+      "評価のセットの詳しい作り方",
+      "API の接続準備と応答の取り出し方"
+    ]
+  },
+  "art": {
+    "flower-note": {
+      "prompt": "A small bunch of naturally colored pink and yellow flowers beside a blank white product note attached with a blue clip, representing a florist's product description. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-staff": {
+      "prompt": "A florist in a plain blue shirt with simple facial features holding a violet pencil and a white product note, considering how to describe a small naturally colored bouquet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a violet pencil beside its face as it considers a request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "setting-dial": {
+      "prompt": "One large blue physical rotary control knob with a violet pointer and a light grey circular base, viewed slightly from above. The knob has no scale or labels. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "output-sheet": {
+      "prompt": "A single white sheet with a blue paper clip and a violet fountain pen beside it, representing the written response produced for a request. The paper is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-kit": {
+      "prompt": "An open light grey tool case containing a blue wrench and a violet screwdriver, representing tools used during a task. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-folder": {
+      "prompt": "An open blue folder holding several pairs of blank white example sheets, each pair joined by a violet paper clip, representing requests and expected answers used for evaluation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-timetable": {
+      "prompt": "A white paper weekly timetable with a simple blue grid and a few solid violet blocks, beside two closed blue schoolbooks and a violet pencil. The grid cells contain no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "flowers",
+          "label": "花の商品説明",
+          "art": "flower-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "今のモデル",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "effort",
+          "label": "かける量",
+          "art": "setting-dial",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "florist": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "flowers",
+          "label": "花の商品説明",
+          "art": "flower-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "同じ担当者",
+          "art": "shop-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "draft",
+          "label": "説明の下書き",
+          "art": "output-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "flowers",
+          "to": "staff",
+          "label": "頼む"
+        },
+        {
+          "id": "write",
+          "from": "staff",
+          "to": "draft",
+          "label": "考えて書く"
+        }
+      ]
+    },
+    "effort": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "同じモデル",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "setting",
+          "label": "effort",
+          "art": "setting-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "応答",
+          "art": "output-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "adjust",
+          "from": "setting",
+          "to": "output",
+          "label": "量を調整"
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "今のモデル",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "config",
+          "label": "出力設定",
+          "art": "setting-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "花の商品説明",
+          "art": "flower-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "configured",
+          "from": "model",
+          "to": "config"
+        },
+        {
+          "id": "respond",
+          "from": "config",
+          "to": "output"
+        }
+      ]
+    },
+    "evaluation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "set",
+          "label": "評価セット",
+          "art": "evaluation-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "before",
+          "label": "変更前の説明",
+          "art": "flower-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後の説明",
+          "art": "flower-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "before",
+          "to": "after",
+          "label": "質を比べる"
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "body",
+          "label": "本文",
+          "art": "output-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "ツール呼び出し",
+          "art": "tool-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "thinking",
+          "label": "考える過程",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schedule",
+          "label": "塾の時間割",
+          "art": "school-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "今のモデル",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "setting",
+          "label": "effort",
+          "art": "setting-dial",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "今のモデル",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "setting",
+          "label": "かける量減少",
+          "art": "setting-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "test",
+          "label": "時間割の評価",
+          "art": "school-timetable",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "model",
+          "to": "setting",
+          "label": "モデル維持"
+        },
+        {
+          "id": "evaluate",
+          "from": "setting",
+          "to": "test",
+          "label": "質を確認"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "flowers",
+          "label": "花の商品説明",
+          "art": "flower-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "schedule",
+          "label": "塾の時間割",
+          "art": "school-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "test",
+          "label": "評価で決める",
+          "art": "evaluation-folder",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "質を保って費用を下げたい",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "花屋で、商品の説明文を作る場面を考えます。",
+          "show": ["flowers"]
+        },
+        {
+          "say": "今のモデルの文章には、満足しているところです。",
+          "show": ["model"]
+        },
+        {
+          "say": "費用を下げたいときは、かける量に注目しましょう。",
+          "show": ["effort"]
+        },
+        {
+          "say": "effort で、同じモデルが使うトークンの量を調整します。",
+          "speech": "エフォートで、同じモデルが使うトークンの量を調整します。",
+          "pulse": ["model", "effort"]
+        }
+      ]
+    },
+    {
+      "id": "florist",
+      "kind": "board",
+      "role": "example",
+      "title": "同じ人にかけ方を頼む",
+      "board": "florist",
+      "beats": [
+        {
+          "say": "店員に、花の説明文を考えてもらう場面です。",
+          "show": ["flowers", "staff", "ask"]
+        },
+        {
+          "say": "詳しく検討してほしいときは、そのように頼みます。",
+          "show": ["draft", "write"],
+          "tag": {
+            "draft": "詳しく検討"
+          }
+        },
+        {
+          "say": "急ぐときは、手短に仕上げてほしいと頼みましょう。",
+          "tag": {
+            "draft": "手短に"
+          },
+          "pulse": ["draft"]
+        },
+        {
+          "say": "担当者が同じでも、仕事へのかけ方は変えられます。",
+          "pulse": ["staff"]
+        }
+      ]
+    },
+    {
+      "id": "effort-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "モデルの中で量を調整する",
+      "board": "effort",
+      "beats": [
+        {
+          "say": "応答にかけるトークンの量を指示する値が effort です。",
+          "speech": "応答にかけるトークンの量を指示する値がエフォートです。",
+          "term": {
+            "text": "effort",
+            "note": "応答にかける量の目安"
+          }
+        },
+        {
+          "say": "この設定を変える間も、同じモデルを使います。",
+          "show": ["model", "setting"]
+        },
+        {
+          "say": "値を上げるほど、問題に深く取り組む設定です。",
+          "show": ["output", "adjust"],
+          "tag": {
+            "setting": "高くする"
+          }
+        },
+        {
+          "say": "下げると、より速く安く応答するようになります。",
+          "tag": {
+            "setting": "低くする"
+          },
+          "pulse": ["output"]
+        },
+        {
+          "say": "ただし、必要な質が保てるかは確かめましょう。",
+          "mark": [
+            {
+              "on": "output",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "config-location",
+      "kind": "code",
+      "role": "syntax",
+      "title": "出力設定に値を書く",
+      "code": [
+        "// 応答を作るリクエストを送る",
+        "const message = await client.messages.create({",
+        "  // モデルと出力上限と発言を渡す",
+        "  model, max_tokens: 4096, messages,",
+        "  // 応答にかける量を低くする",
+        "  output_config: { effort: \"low\" },",
+        "// リクエストを閉じる",
+        "});"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "リクエストの中に、出力設定を書きます。",
+          "term": {
+            "text": "出力設定",
+            "ruby": "しゅつりょくせってい",
+            "note": "output_config"
+          }
+        },
+        {
+          "say": "この項目の名前は、アウトプットコンフィグです。",
+          "part": {
+            "line": 5,
+            "text": "output_config",
+            "note": "出力設定"
+          },
+          "figure": {
+            "show": ["config"]
+          }
+        },
+        {
+          "say": "その内側の effort に、使う値を指定します。",
+          "speech": "その内側のエフォートに、使う値を指定します。",
+          "part": {
+            "line": 5,
+            "text": "effort",
+            "note": "かける量"
+          },
+          "figure": {
+            "tag": {
+              "config": "effort"
+            }
+          }
+        },
+        {
+          "say": "この例で指定しているのは、低い値の low です。",
+          "speech": "この例で指定しているのは、低い値のローです。",
+          "part": {
+            "line": 5,
+            "text": "\"low\"",
+            "note": "低い値"
+          },
+          "figure": {
+            "tag": {
+              "config": "low"
+            }
+          }
+        },
+        {
+          "say": "モデルの指定は、別の項目に残っています。",
+          "part": {
+            "line": 3,
+            "text": "model",
+            "note": "モデルの指定"
+          },
+          "figure": {
+            "show": ["model", "configured"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-low",
+      "kind": "code",
+      "role": "apply",
+      "title": "花の説明で低い値を試す",
+      "code": [
+        "// 応答を作るリクエストを送る",
+        "const message = await client.messages.create({",
+        "  // モデルと出力上限と発言を渡す",
+        "  model, max_tokens: 4096, messages,",
+        "  // 応答にかける量を低くする",
+        "  output_config: { effort: \"low\" },",
+        "// リクエストを閉じる",
+        "});"
+      ],
+      "show": [0, 1, 2, 3, 6, 7],
+      "panel": {
+        "kind": "figure",
+        "board": "request"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "花の商品説明を作る、今のモデルを残します。",
+          "part": {
+            "line": 3,
+            "text": "model"
+          },
+          "figure": {
+            "show": ["model"]
+          }
+        },
+        {
+          "say": "費用を下げるために試すのが、この設定です。",
+          "type": [4, 5],
+          "figure": {
+            "show": ["config", "configured"],
+            "tag": {
+              "config": "low"
+            }
+          }
+        },
+        {
+          "say": "low を指定して、説明文を作ってみましょう。",
+          "speech": "ローを指定して、説明文を作ってみましょう。",
+          "part": {
+            "line": 5,
+            "text": "\"low\""
+          },
+          "figure": {
+            "show": ["output", "respond"],
+            "travel": {
+              "along": ["respond"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "返ってきた文章の質が十分かは、まだ分かりません。",
+          "figure": {
+            "mark": [
+              {
+                "on": "output",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-quality",
+      "kind": "board",
+      "role": "apply",
+      "title": "同じ例で質を比べる",
+      "board": "evaluation",
+      "beats": [
+        {
+          "say": "質を比べるために、評価セットを使います。",
+          "term": {
+            "text": "評価セット",
+            "ruby": "ひょうかセット",
+            "note": "依頼と期待する答えの集まり"
+          }
+        },
+        {
+          "say": "商品説明の依頼に、期待する答えを添えた例です。",
+          "show": ["set"]
+        },
+        {
+          "say": "同じ例で、変更前と変更後の文章を比べましょう。",
+          "show": ["before", "after", "compare"]
+        },
+        {
+          "say": "低い値でも、必要な質が保てるかを調べます。",
+          "pulse": ["after"],
+          "tag": {
+            "after": "質を確認"
+          }
+        },
+        {
+          "say": "費用が下がるだけでは、採用する理由になりません。",
+          "pulse": ["before", "after"],
+          "mark": [
+            {
+              "on": "after",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "output-scope",
+      "kind": "board",
+      "role": "note",
+      "title": "本文以外にも効く",
+      "board": "scope",
+      "beats": [
+        {
+          "say": "effort は、本文のトークンの量に効きます。",
+          "speech": "エフォートは、本文のトークンの量に効きます。",
+          "show": ["body"]
+        },
+        {
+          "say": "ツールを呼び出すときの出力も、調整の対象です。",
+          "show": ["tools"]
+        },
+        {
+          "say": "考える過程を含む、すべての出力に効きます。",
+          "show": ["thinking"]
+        },
+        {
+          "say": "ただし、使う量の上限を決める設定ではありません。",
+          "pulse": ["body", "tools", "thinking"],
+          "tag": {
+            "thinking": "量の目安"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時間割の費用を下げるには",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学習塾で、時間割の案を作る場面を考えます。",
+          "show": ["schedule"]
+        },
+        {
+          "say": "今のモデルは、必要な質を満たすものの費用が高い状態です。",
+          "show": ["model"],
+          "tag": {
+            "model": "質は十分"
+          }
+        },
+        {
+          "say": "今は、高い値の effort で応答させています。",
+          "speech": "今は、高い値のエフォートで応答させています。",
+          "show": ["setting"],
+          "tag": {
+            "setting": "高い値"
+          }
+        },
+        {
+          "say": "モデルを替える前に、何を試して確かめるとよいでしょうか。",
+          "pulse": ["setting"],
+          "mark": [
+            {
+              "on": "setting",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "同じモデルで下げて評価",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "同じモデルで effort を下げるのが、先に試す方法です。",
+          "speech": "同じモデルでエフォートを下げるのが、先に試す方法です。",
+          "tag": {
+            "setting": "低くする"
+          },
+          "mark": [
+            {
+              "on": "setting",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["model", "setting"]
+        },
+        {
+          "say": "評価セットで、時間割の質が保てるかを確かめます。",
+          "pulse": ["schedule"],
+          "tag": {
+            "schedule": "質を再確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-evaluate",
+      "kind": "board",
+      "role": "explain",
+      "title": "値を下げた後も確かめる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "この例では、今のモデルで必要な質が出ていました。",
+          "show": ["model"]
+        },
+        {
+          "say": "モデルはそのままに、応答にかける量を下げてみます。",
+          "show": ["setting", "keep"]
+        },
+        {
+          "say": "ただし、低い値でも時間割の質が同じとは限りません。",
+          "show": ["test", "evaluate"],
+          "mark": [
+            {
+              "on": "test",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "同じ評価セットで比べ、質と費用の釣り合いを見ましょう。",
+          "travel": {
+            "along": ["evaluate"],
+            "icon": "file"
+          },
+          "tag": {
+            "test": "質と費用"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "質は十分だが費用が高いとき",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "商品説明の質は十分でも、費用を抑えたいことがあります。",
+          "show": ["flowers"]
+        },
+        {
+          "say": "時間割の作成でも、同じ調整が候補です。",
+          "show": ["schedule"]
+        },
+        {
+          "say": "どの値を使うかは、自分の課題で確かめましょう。",
+          "show": ["test"]
+        },
+        {
+          "say": "同じモデルの effort を調整し、必要な質と費用を比べます。",
+          "speech": "同じモデルのエフォートを調整し、必要な質と費用を比べます。",
+          "pulse": ["test"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7c70429b323ea213ef40047902e8c2a92096258bf903ea3a612dcaec04635749"
+  }
+}

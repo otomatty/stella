@@ -1,0 +1,779 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ前半を再利用する印の位置と、最初の書き込みから次の読み込みまでの流れを説明できる。",
+    "stuck": "同じ資料を毎回送る必要があると、前半の処理結果を使い回せることに気付かない。",
+    "points": ["毎回同じ前半のプロンプトは、プロンプトキャッシュで使い回します。"],
+    "leaveOut": [
+      "tools・system・messages の並び順と複数の区切り",
+      "usage による確認とキャッシュできる最低の長さ",
+      "一時間の期限とモデルごとの料金の違い",
+      "バッチ処理との割引の組み合わせ",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "office-manual": {
+      "prompt": "A thick open office handbook with white pages, a light grey cover and blue index tabs. The pages are entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-slip": {
+      "prompt": "A small white paper question slip held with a violet pencil, with a single empty blue speech bubble beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reception-clerk": {
+      "prompt": "A receptionist in a plain blue shirt with a simple face and short dark hair, holding a thick open handbook with white pages and a light grey cover. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "checked-notes": {
+      "prompt": "A few white note sheets represented by blank pages, held together with a blue binder clip, beside a violet pencil. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cached-folder": {
+      "prompt": "An open light grey document folder containing a neat stack of white sheets with blue tabs, representing a temporarily saved processing result. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. The robot has its hands gently open. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "expiry-clock": {
+      "prompt": "A blue kitchen timer with a plain white circular dial and two violet hands, without ticks or numerals. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bicycle-rules": {
+      "prompt": "A blue city bicycle beside a thick open light grey booklet of bicycle parking rules with blank white pages. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repeated-requests": {
+      "prompt": "Three separate thick bundles of white paper, each held by a blue clip and paired with a small white question slip with a violet tab. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "社内の手引き",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "短い質問",
+          "art": "question-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "repeat",
+          "label": "毎回送る",
+          "art": "repeated-requests",
+          "at": [5, 1]
+        },
+        {
+          "id": "saved",
+          "label": "前半を再利用",
+          "art": "cached-folder",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reception": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "同じ手引き",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "受付の担当者",
+          "art": "reception-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "確認したメモ",
+          "art": "checked-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "manual",
+          "to": "clerk",
+          "label": "読む"
+        },
+        {
+          "id": "keep",
+          "from": "clerk",
+          "to": "memo",
+          "label": "残す"
+        }
+      ]
+    },
+    "cache": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "同じ前半",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "saved",
+          "label": "処理済みの前半",
+          "art": "cached-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の依頼",
+          "art": "repeated-requests",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "manual",
+          "to": "saved",
+          "label": "保存"
+        },
+        {
+          "id": "reuse",
+          "from": "saved",
+          "to": "next",
+          "label": "再利用"
+        }
+      ]
+    },
+    "code": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "手引きの本文",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "end",
+          "label": "前半の終わり",
+          "art": "cached-folder",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "target",
+          "from": "manual",
+          "to": "end",
+          "label": "ここまで"
+        }
+      ]
+    },
+    "write": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "同じ前半",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "saved",
+          "label": "処理した結果",
+          "art": "cached-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "process",
+          "from": "manual",
+          "to": "claude",
+          "label": "処理"
+        },
+        {
+          "id": "save",
+          "from": "claude",
+          "to": "saved",
+          "label": "書き込む"
+        }
+      ]
+    },
+    "read": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "saved",
+          "label": "保存した前半",
+          "art": "cached-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "next",
+          "label": "次の依頼",
+          "art": "repeated-requests",
+          "at": [3, 1]
+        },
+        {
+          "id": "clock",
+          "label": "期限",
+          "art": "expiry-clock",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reuse",
+          "from": "saved",
+          "to": "next",
+          "label": "読み込む"
+        }
+      ]
+    },
+    "rates": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "normal",
+          "label": "通常の入力",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "cached-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "cached-folder",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "parking": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "rules",
+          "label": "駐輪場の案内",
+          "art": "bicycle-rules",
+          "at": [1, 1]
+        },
+        {
+          "id": "saved",
+          "label": "保存した前半",
+          "art": "cached-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "別の質問",
+          "art": "question-slip",
+          "at": [5, 1]
+        },
+        {
+          "id": "clock",
+          "label": "二分後",
+          "art": "expiry-clock",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "save",
+          "from": "rules",
+          "to": "saved",
+          "label": "保存済み"
+        },
+        {
+          "id": "reuse",
+          "from": "saved",
+          "to": "question",
+          "label": "再利用"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "長い資料",
+          "art": "office-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "repeat",
+          "label": "同じ指示の作業",
+          "art": "repeated-requests",
+          "at": [3, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じ手引きを毎回送る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "社内の長い手引きを、質問のたびに送っています。",
+          "show": ["manual"]
+        },
+        {
+          "say": "毎回変わるのは、短い質問だけです。",
+          "show": ["question"]
+        },
+        {
+          "say": "同じ手引きにも、毎回入力の料金がかかっていました。",
+          "show": ["repeat"]
+        },
+        {
+          "say": "毎回同じ前半は、プロンプトキャッシュで使い回します。",
+          "show": ["saved"]
+        }
+      ]
+    },
+    {
+      "id": "reception-example",
+      "kind": "board",
+      "role": "example",
+      "title": "受付で確認したメモ",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "受付の担当者が、長い手引きを読む場面を考えましょう。",
+          "show": ["manual", "clerk", "read"]
+        },
+        {
+          "say": "手引きの内容は、次の質問でも同じです。",
+          "pulse": ["manual"]
+        },
+        {
+          "say": "確認した内容をメモに残せば、次も使えます。",
+          "show": ["memo", "keep"]
+        },
+        {
+          "say": "毎回初めから確認する手間を減らすたとえです。",
+          "pulse": ["memo"]
+        }
+      ]
+    },
+    {
+      "id": "cache-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前半を処理した結果を保存",
+      "board": "cache",
+      "beats": [
+        {
+          "say": "前半の処理結果を使い回す仕組みが、プロンプトキャッシュです。",
+          "term": {
+            "text": "プロンプトキャッシュ",
+            "note": "同じ前半の処理結果を再利用"
+          },
+          "pause": 1
+        },
+        {
+          "say": "社内の手引きなら、同じ前半を処理して一時的に保存します。",
+          "show": ["manual", "saved", "save"]
+        },
+        {
+          "say": "次の依頼で使うのは、この保存した結果です。",
+          "show": ["next", "reuse"],
+          "travel": {
+            "along": ["reuse"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "使い回す部分の処理時間と費用を、減らせます。",
+          "pulse": ["saved"],
+          "tag": {
+            "saved": "再利用"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cache-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "使い回す終わりに印を付ける",
+      "code": [
+        "// 手引きを入れる項目",
+        "system: [",
+        "  // テキストとして手引きの本文を渡す",
+        "  { type: \"text\", text: manual,",
+        "    // このブロックまでをキャッシュする",
+        "    cache_control: { type: \"ephemeral\" }",
+        "  // 手引きのブロックを閉じる",
+        "  },",
+        "// 配列を閉じる",
+        "],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "code"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "手引きは、system の項目に入れます。",
+          "part": {
+            "line": 1,
+            "text": "system"
+          },
+          "figure": {
+            "show": ["manual"]
+          },
+          "speech": "手引きは、システムの項目に入れます。"
+        },
+        {
+          "say": "manual は、手引きの本文に付けた名前です。",
+          "part": {
+            "line": 3,
+            "text": "manual",
+            "note": "手引き"
+          },
+          "figure": {
+            "pulse": ["manual"]
+          },
+          "speech": "マニュアルは、手引きの本文に付けた名前です。"
+        },
+        {
+          "say": "この名前は、書く人が自分で決められます。",
+          "part": {
+            "line": 3,
+            "text": "manual",
+            "note": "自分で決める"
+          }
+        },
+        {
+          "say": "使い回す終わりの印が、キャッシュコントロールです。",
+          "part": {
+            "line": 5,
+            "text": "cache_control",
+            "note": "ここまで保存"
+          },
+          "figure": {
+            "show": ["end", "target"]
+          }
+        },
+        {
+          "say": "この例では、type に ephemeral を指定します。",
+          "part": {
+            "line": 5,
+            "text": "\"ephemeral\""
+          },
+          "figure": {
+            "pulse": ["end"]
+          },
+          "speech": "この例では、タイプにエフェメラルを指定します。"
+        },
+        {
+          "say": "印を付けた手引きのブロックまでが、使い回す前半です。",
+          "focus": [3, 5],
+          "figure": {
+            "travel": {
+              "along": ["target"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "first-write",
+      "kind": "board",
+      "role": "apply",
+      "title": "最初のリクエストで保存",
+      "board": "write",
+      "beats": [
+        {
+          "say": "まだ保存がないときは、前半も全部処理します。",
+          "show": ["manual", "claude", "process"],
+          "travel": {
+            "along": ["process"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "処理結果を保存するのが、キャッシュの書き込みです。",
+          "term": {
+            "text": "キャッシュの書き込み",
+            "ruby": "キャッシュのかきこみ",
+            "note": "前半を処理した結果を保存"
+          },
+          "pause": 1
+        },
+        {
+          "say": "応答が始まった時点で、前半の結果を書き込みます。",
+          "show": ["saved", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この保存した結果が、次の依頼で使うものです。",
+          "pulse": ["saved"],
+          "tag": {
+            "saved": "保存済み"
+          }
+        }
+      ]
+    },
+    {
+      "id": "later-read",
+      "kind": "board",
+      "role": "apply",
+      "title": "保存した結果を読み出す",
+      "board": "read",
+      "beats": [
+        {
+          "say": "保存した結果を使うのが、キャッシュの読み込みです。",
+          "term": {
+            "text": "キャッシュの読み込み",
+            "ruby": "キャッシュのよみこみ",
+            "note": "保存した前半の結果を再利用"
+          },
+          "pause": 1
+        },
+        {
+          "say": "前半が同じなら、次の依頼で読み込んで使います。",
+          "show": ["saved", "next", "reuse"],
+          "travel": {
+            "along": ["reuse"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "キャッシュの期限は、基本は五分です。",
+          "show": ["clock"],
+          "tag": {
+            "clock": "五分"
+          }
+        },
+        {
+          "say": "期限内に使われるたび、追加費用なしで期限が延びます。",
+          "pulse": ["clock"],
+          "tag": {
+            "clock": "期限を延長"
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-read-cost",
+      "kind": "board",
+      "role": "apply",
+      "title": "書き込みと読み込みの料金",
+      "board": "rates",
+      "beats": [
+        {
+          "say": "通常の入力を一倍として、料金を比べましょう。",
+          "show": ["normal"],
+          "tag": {
+            "normal": "1倍"
+          }
+        },
+        {
+          "say": "五分の書き込みは、通常の入力の1.25倍です。",
+          "show": ["write"],
+          "tag": {
+            "write": "1.25倍"
+          },
+          "speech": "五分の書き込みは、通常の入力のいってんにご倍です。"
+        },
+        {
+          "say": "読み込みは、通常の入力の0.1倍になります。",
+          "show": ["read"],
+          "tag": {
+            "read": "0.1倍"
+          },
+          "speech": "読み込みは、通常の入力のれいてんいち倍になります。"
+        },
+        {
+          "say": "一部のモデルでは、読み込みはさらに安い料金です。",
+          "pulse": ["read"],
+          "tag": {
+            "read": "さらに安い"
+          }
+        },
+        {
+          "say": "同じ前半を再利用できれば、二回目から得になります。",
+          "pulse": ["write", "read"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "二分後の質問で何が起こるか",
+      "board": "parking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駐輪場の長い利用案内を、前半に入れて質問します。",
+          "show": ["rules"]
+        },
+        {
+          "say": "案内の最後に印があり、書き込みも済んだ状態です。",
+          "show": ["saved", "save"],
+          "tag": {
+            "saved": "書き込み済み"
+          }
+        },
+        {
+          "say": "二分後、同じ前半のまま別の質問を送ります。",
+          "show": ["question", "clock"]
+        },
+        {
+          "say": "今回は、五分の期限内です。",
+          "pulse": ["clock"],
+          "tag": {
+            "clock": "期限内"
+          }
+        },
+        {
+          "say": "保存した前半は、書き込みと読み込みのどちらになるでしょうか。",
+          "mark": [
+            {
+              "on": "saved",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["saved"]
+        }
+      ]
+    },
+    {
+      "id": "parking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "保存した前半を読み込む",
+      "board": "parking",
+      "beats": [
+        {
+          "say": "答えは、保存した前半の読み込みです。",
+          "mark": [
+            {
+              "on": "saved",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "saved": "読み込み"
+          }
+        },
+        {
+          "say": "前半の処理結果を、今回の質問でも使い回します。",
+          "show": ["reuse"],
+          "travel": {
+            "along": ["reuse"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "parking-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "案内の一致と期限を確かめる",
+      "board": "parking",
+      "beats": [
+        {
+          "say": "案内の最後の印まで、前半は同じ内容でした。",
+          "pulse": ["rules"],
+          "tag": {
+            "rules": "前半は同じ"
+          }
+        },
+        {
+          "say": "二分後なので、保存した結果の期限も残っています。",
+          "pulse": ["clock"]
+        },
+        {
+          "say": "質問が変わっても、今回の前半は再利用できる状態です。",
+          "pulse": ["saved", "question"],
+          "travel": {
+            "along": ["reuse"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "前半が少しでも変われば、同じようには使い回せません。",
+          "pulse": ["rules"],
+          "tag": {
+            "rules": "変えたら不可"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-cases",
+      "kind": "board",
+      "role": "usage",
+      "title": "同じ前半が続く仕事で使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "同じ長い資料を使って、繰り返し質問するときに向きます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "同じ指示で繰り返す作業も、使いどころです。",
+          "show": ["repeat"]
+        },
+        {
+          "say": "使う前に、毎回同じ前半があるか確かめましょう。",
+          "pulse": ["manual", "repeat"]
+        },
+        {
+          "say": "その前半をプロンプトキャッシュで使い回します。",
+          "tag": {
+            "manual": "前半を再利用",
+            "repeat": "前半を再利用"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "372b1a354307cca06f562758807b1832684dabbdf7fe9fea188afe6cc97e5eeb"
+  }
+}

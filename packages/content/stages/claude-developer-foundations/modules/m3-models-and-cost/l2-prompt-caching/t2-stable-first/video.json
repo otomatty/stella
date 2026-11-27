@@ -1,0 +1,696 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "毎回同じ資料と変わる質問を並べ、キャッシュの区切りを置く位置と理由を説明できる。",
+    "stuck": "後ろの資料が同じなら、先頭の時刻や区切りを置く質問が毎回変わっても使い回せると思ってしまう。",
+    "points": ["キャッシュは前から一致した部分に効くので、変わる部分は後ろに置きます。"],
+    "leaveOut": [
+      "キャッシュの期限と料金",
+      "応答の使用量による確認",
+      "キャッシュに必要な最低の長さ",
+      "自動の区切りと複数の区切り",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "rental-manual": {
+      "prompt": "An open white rental guide booklet with a small blue bicycle pictogram on one page and a blue bookmark. All other areas of the pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-slip": {
+      "prompt": "A hand holding a violet pencil beside a small blank white question slip and an empty blue speech bubble. The paper is white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-clerk": {
+      "prompt": "A rental shop attendant wearing a plain blue shirt holding a blue bicycle helmet, with a simple friendly face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clock": {
+      "prompt": "A large round blue analog clock with two dark hands and a plain white face without any marks or numerals. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-kit": {
+      "prompt": "An open light grey toolbox containing a blue wrench and a violet screwdriver. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instruction-card": {
+      "prompt": "A white clipboard holding a blank white instruction sheet, with a blue clip and a violet pencil beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "menu-book": {
+      "prompt": "An open white cafeteria menu booklet with small pictorial vignettes of rice, golden fried fish and green vegetables, and a blue bookmark. Natural food colours. No writing on either page. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-tray": {
+      "prompt": "A light grey cafeteria tray holding a white plate of brown curry and white rice, a small bowl of green salad, and a spoon, with an empty blue speech bubble above. Natural food colours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clerk",
+          "label": "貸出の窓口",
+          "art": "rental-clerk",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "貸出の案内",
+          "art": "rental-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "毎回の質問",
+          "art": "question-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "packet": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "共通の案内",
+          "art": "rental-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "担当者",
+          "art": "rental-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-first",
+          "from": "manual",
+          "to": "question",
+          "label": "先に案内"
+        },
+        {
+          "id": "hand-over",
+          "from": "question",
+          "to": "clerk",
+          "label": "渡す"
+        }
+      ]
+    },
+    "api": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "tools",
+          "art": "tool-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "instruction-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "messages",
+          "label": "メッセージ",
+          "art": "question-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "tools-system",
+          "from": "tools",
+          "to": "system",
+          "label": "次に"
+        },
+        {
+          "id": "system-messages",
+          "from": "system",
+          "to": "messages",
+          "label": "次に"
+        }
+      ]
+    },
+    "parts": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instruction",
+          "label": "共通の指示",
+          "art": "instruction-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "貸出の案内",
+          "art": "rental-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "instruction-manual",
+          "from": "instruction",
+          "to": "manual"
+        },
+        {
+          "id": "manual-question",
+          "from": "manual",
+          "to": "question"
+        }
+      ]
+    },
+    "bad-order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clock",
+          "label": "今の時刻",
+          "art": "clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "貸出の案内",
+          "art": "rental-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "clock-manual",
+          "from": "clock",
+          "to": "manual"
+        },
+        {
+          "id": "manual-question",
+          "from": "manual",
+          "to": "question"
+        }
+      ]
+    },
+    "good-order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "貸出の案内",
+          "art": "rental-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "clock",
+          "label": "今の時刻",
+          "art": "clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "manual-clock",
+          "from": "manual",
+          "to": "clock"
+        },
+        {
+          "id": "clock-question",
+          "from": "clock",
+          "to": "question"
+        }
+      ]
+    },
+    "cafeteria": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instruction",
+          "label": "共通の指示",
+          "art": "instruction-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "menu",
+          "label": "今週の献立",
+          "art": "menu-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "社員の質問",
+          "art": "lunch-tray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "instruction-menu",
+          "from": "instruction",
+          "to": "menu"
+        },
+        {
+          "id": "menu-question",
+          "from": "menu",
+          "to": "question"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じ案内で質問に答える",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "貸出の窓口で、案内を使って質問に答える場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "毎回送る資料は、同じ貸出の案内にそろえます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "利用者から届く質問は、そのつど違う内容です。",
+          "show": ["question"]
+        },
+        {
+          "say": "前から一致するよう、変わる部分は後ろに置きます。",
+          "pulse": ["manual", "question"]
+        }
+      ]
+    },
+    {
+      "id": "paper-packet",
+      "kind": "board",
+      "role": "example",
+      "title": "共通の案内と質問のメモ",
+      "board": "packet",
+      "beats": [
+        {
+          "say": "紙で渡すなら、共通の案内を最初に置きましょう。",
+          "show": ["manual"]
+        },
+        {
+          "say": "その後ろに、今回の質問を書いたメモを添えます。",
+          "show": ["question", "read-first"]
+        },
+        {
+          "say": "受け取る担当者が最初に見るのは、いつも同じ案内です。",
+          "show": ["clerk", "hand-over"],
+          "travel": {
+            "along": ["hand-over"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この並びを、送るプロンプトでも使います。",
+          "pulse": ["manual", "question"]
+        }
+      ]
+    },
+    {
+      "id": "check-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前から確かめる順番",
+      "board": "api",
+      "beats": [
+        {
+          "say": "一致の確認は、tools から始まります。",
+          "speech": "一致の確認は、ツールズから始まります。",
+          "show": ["tools"]
+        },
+        {
+          "say": "次に確かめるのは system です。",
+          "speech": "次に確かめるのはシステムです。",
+          "show": ["system", "tools-system"]
+        },
+        {
+          "say": "その後に、messages が続きます。",
+          "speech": "その後に、メッセージズが続きます。",
+          "show": ["messages", "system-messages"]
+        },
+        {
+          "say": "同じ文章があるかを、後ろだけで探すわけではありません。",
+          "travel": {
+            "along": ["tools-system", "system-messages"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "separate-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ部分と変わる部分",
+      "board": "parts",
+      "beats": [
+        {
+          "say": "毎回同じ指示や資料を、ここでは固定部分と呼びます。",
+          "term": {
+            "text": "固定部分",
+            "ruby": "こていぶぶん",
+            "note": "毎回同じ指示や資料"
+          }
+        },
+        {
+          "say": "この例の固定部分は、共通の指示と貸出の案内です。",
+          "show": ["instruction", "manual", "instruction-manual"]
+        },
+        {
+          "say": "毎回変わる質問などは、可変部分と呼びます。",
+          "term": {
+            "text": "可変部分",
+            "ruby": "かへんぶぶん",
+            "note": "毎回変わる時刻や質問"
+          }
+        },
+        {
+          "say": "可変部分に当たるのは、右に置いた今回の質問です。",
+          "show": ["question", "manual-question"]
+        },
+        {
+          "say": "同じ指示と案内を前にまとめ、質問を後ろに置きましょう。",
+          "pulse": ["instruction", "manual"],
+          "tag": {
+            "question": "毎回変わる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "place-boundary",
+      "kind": "board",
+      "role": "syntax",
+      "title": "固定部分の最後に区切り",
+      "board": "parts",
+      "beats": [
+        {
+          "say": "使い回す前半の終わりを、キャッシュの区切りと呼びます。",
+          "term": {
+            "text": "キャッシュの区切り",
+            "ruby": "キャッシュのくぎり",
+            "note": "cache_controlの位置"
+          }
+        },
+        {
+          "say": "この例では、案内の最後のブロックが区切りの位置です。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "ここまで"
+          }
+        },
+        {
+          "say": "ここに、キャッシュコントロールを付けます。",
+          "speech": "ここに、キャッシュコントロールを付けます。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "毎回変わる質問は、区切りより後ろです。",
+          "pulse": ["question"]
+        }
+      ]
+    },
+    {
+      "id": "time-first",
+      "kind": "board",
+      "role": "apply",
+      "title": "先頭の時刻が変わると",
+      "board": "bad-order",
+      "beats": [
+        {
+          "say": "教材の失敗例では、system の先頭に時刻を入れました。",
+          "speech": "教材の失敗例では、システムの先頭に時刻を入れました。",
+          "show": ["clock"],
+          "tag": {
+            "clock": "前回の時刻"
+          }
+        },
+        {
+          "say": "この例でも、時刻の後ろに貸出の案内を置く形です。",
+          "show": ["manual", "question", "clock-manual", "manual-question"],
+          "tag": {
+            "manual": "区切り"
+          }
+        },
+        {
+          "say": "次のリクエストでは、先頭の時刻が変わります。",
+          "tag": {
+            "clock": "新しい時刻"
+          },
+          "mark": [
+            {
+              "on": "clock",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "先頭が違えば、後ろの同じ案内も使い回せません。",
+          "pulse": ["manual"],
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "move-time-back",
+      "kind": "board",
+      "role": "apply",
+      "title": "時刻を区切りの後ろへ",
+      "board": "good-order",
+      "beats": [
+        {
+          "say": "案内を前に置き、最後のブロックに区切りを付けます。",
+          "show": ["manual"],
+          "tag": {
+            "manual": "区切り"
+          }
+        },
+        {
+          "say": "今の時刻は、案内の後ろです。",
+          "show": ["clock", "manual-clock"]
+        },
+        {
+          "say": "利用者から届く質問も、その後ろに続けましょう。",
+          "show": ["question", "clock-question"]
+        },
+        {
+          "say": "時刻や質問が変わっても、区切りまでの案内は一致します。",
+          "pulse": ["manual"],
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "社員食堂の区切りを選ぶ",
+      "board": "cafeteria",
+      "think": 8,
+      "beats": [
+        {
+          "say": "社員食堂で、献立についての質問に答える場面です。",
+          "show": ["question"]
+        },
+        {
+          "say": "前には、毎回同じ答え方の指示を置きます。",
+          "show": ["instruction"]
+        },
+        {
+          "say": "その次の献立も、今回比べる依頼では同じ内容です。",
+          "show": ["menu", "instruction-menu", "menu-question"]
+        },
+        {
+          "say": "最後の質問だけが、社員ごとに変わります。",
+          "pulse": ["question"],
+          "tag": {
+            "question": "毎回変わる"
+          }
+        },
+        {
+          "say": "共通の前半を使い回すには、どこに区切りを置くでしょうか。",
+          "pulse": [],
+          "mark": [
+            {
+              "on": "instruction",
+              "kind": "question"
+            },
+            {
+              "on": "menu",
+              "kind": "question"
+            },
+            {
+              "on": "question",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "献立の最後が区切り",
+      "board": "cafeteria",
+      "beats": [
+        {
+          "say": "答えは、毎回同じ献立の最後のブロックです。",
+          "unmark": ["instruction", "question"],
+          "mark": [
+            {
+              "on": "menu",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "menu": "区切り"
+          }
+        },
+        {
+          "say": "献立までを、共通の前半としてまとめます。",
+          "pulse": ["instruction", "menu"]
+        },
+        {
+          "say": "社員ごとに変わる質問は、区切りの後ろに残しましょう。",
+          "pulse": ["question"]
+        }
+      ]
+    },
+    {
+      "id": "follow-prefix",
+      "kind": "board",
+      "role": "explain",
+      "title": "先頭から区切りまでたどる",
+      "board": "cafeteria",
+      "beats": [
+        {
+          "say": "先頭の指示は、前のリクエストと同じです。",
+          "pulse": ["instruction"],
+          "mark": [
+            {
+              "on": "instruction",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "続く献立も、前と一致しています。",
+          "pulse": ["menu"],
+          "travel": {
+            "along": ["instruction-menu"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "区切りまでの前半が一致する並べ方になりました。",
+          "pulse": ["instruction", "menu"]
+        },
+        {
+          "say": "質問に区切りを移すと、変わる内容まで含めてしまいます。",
+          "untag": ["menu"],
+          "tag": {
+            "question": "区切り"
+          },
+          "pulse": ["question"],
+          "mark": [
+            {
+              "on": "question",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "区切りは、同じ内容が続く献立の最後に戻しましょう。",
+          "untag": ["question"],
+          "tag": {
+            "menu": "区切り"
+          },
+          "unmark": ["question"],
+          "pulse": ["menu"]
+        }
+      ]
+    },
+    {
+      "id": "use-in-requests",
+      "kind": "board",
+      "role": "usage",
+      "title": "依頼を送る前に見る場所",
+      "board": "parts",
+      "beats": [
+        {
+          "say": "同じ貸出の案内で、繰り返し質問に答えるときに使います。",
+          "show": ["instruction", "manual", "instruction-manual"]
+        },
+        {
+          "say": "確認するのは、固定部分の最後に置いた区切りです。",
+          "tag": {
+            "manual": "区切り"
+          },
+          "pulse": ["manual"]
+        },
+        {
+          "say": "新しい質問を、その後ろに置きましょう。",
+          "show": ["question", "manual-question"],
+          "pulse": ["question"]
+        },
+        {
+          "say": "キャッシュは前から一致した部分に効くので、変わる部分は後ろに置きます。",
+          "pulse": ["instruction", "manual", "question"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "71fbec5c41861e8242434bac8bb85fe8210bad1ddceb4f972c503e9ee79183b3"
+  }
+}

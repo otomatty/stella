@@ -1,0 +1,823 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ評価で必須ケースの退行を見つけ、品質・速度・費用からモデルの切り替えに進めるか判断できる。",
+    "stuck": "全体の正解数と単価だけを見て、今まで通った重要なケースの失敗を見落とす。",
+    "points": ["モデルを替える前に、同じ評価のセットで品質・速度・費用を比べ直します。"],
+    "leaveOut": [
+      "モデルの廃止日と移行の日程",
+      "出力が揺れる仕組みや成功率の計算",
+      "モデルごとの料金表や設定値の一覧",
+      "countTokens のコードとトークン数の増加率",
+      "本番の通信を分ける実装方法"
+    ]
+  },
+  "art": {
+    "delivery-slips": {
+      "prompt": "A neat stack of white delivery slips clipped together in blue, beside a small light grey parcel sealed with blue tape. The slips are blank and the parcel has no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "handwritten-slip": {
+      "prompt": "A single white delivery slip beside a violet fountain pen and a small light grey parcel, representing a handwritten delivery record. Leave the paper completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "receiving-clerk": {
+      "prompt": "A receiving clerk wearing a plain blue shirt, holding a blank white delivery slip in one hand and pointing at a small light grey parcel with the other. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white delivery slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-ledger": {
+      "prompt": "An open white comparison notebook with two large blue binder tabs and a violet pencil resting alongside it. Both pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "token-counter": {
+      "prompt": "A blue and violet abacus with large solid beads, beside a blank white sheet of paper, representing counting the input for a candidate model. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stopwatch": {
+      "prompt": "A large blue stopwatch with a white blank dial, two simple violet hands and a large top button. No tick marks or numerals. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-membership": {
+      "prompt": "A blue dumbbell beside a blank white gym membership application and a violet pen. The application has no writing or markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "An open blue envelope containing a blank white request sheet, representing one incoming request being used for comparison. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "slips",
+          "label": "納品書の読取",
+          "art": "delivery-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "candidate",
+          "label": "次のモデル",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "hand",
+          "label": "手書きの分",
+          "art": "handwritten-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handover": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "slips",
+          "label": "同じ納品書",
+          "art": "delivery-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "次の担当者",
+          "art": "receiving-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "hand",
+          "label": "手書きも確認",
+          "art": "handwritten-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "slips",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "check",
+          "from": "clerk",
+          "to": "hand",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "same-evaluation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cases",
+          "label": "同じケース",
+          "art": "delivery-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "results",
+          "label": "前後の結果",
+          "art": "result-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "criteria",
+          "label": "合否の条件",
+          "art": "result-ledger",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "cases",
+          "to": "results",
+          "label": "比べる"
+        },
+        {
+          "id": "judge",
+          "from": "results",
+          "to": "criteria",
+          "label": "採点"
+        }
+      ]
+    },
+    "measure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "quality",
+          "label": "重要な合否",
+          "art": "handwritten-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "speed",
+          "label": "応答時間",
+          "art": "stopwatch",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "一件の費用",
+          "art": "token-counter",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "results": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "現行の全体",
+          "art": "result-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "候補の全体",
+          "art": "result-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "new-hand",
+          "label": "候補の手書き",
+          "art": "handwritten-slip",
+          "at": [3, 2]
+        },
+        {
+          "id": "required",
+          "label": "必須の条件",
+          "art": "result-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "old-hand",
+          "label": "現行の手書き",
+          "art": "handwritten-slip",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "retry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "failed",
+          "label": "落ちた納品書",
+          "art": "handwritten-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "setting",
+          "label": "候補の設定",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "使う指示",
+          "art": "delivery-slips",
+          "at": [5, 1]
+        },
+        {
+          "id": "again",
+          "label": "同じ評価",
+          "art": "result-ledger",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "failed",
+          "to": "setting",
+          "label": "調べる"
+        },
+        {
+          "id": "revise",
+          "from": "setting",
+          "to": "prompt",
+          "label": "見直す"
+        },
+        {
+          "id": "run",
+          "from": "prompt",
+          "to": "again"
+        }
+      ]
+    },
+    "cost-speed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tokens",
+          "label": "入力を数える",
+          "art": "token-counter",
+          "at": [1, 1]
+        },
+        {
+          "id": "cost",
+          "label": "実測の費用",
+          "art": "result-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "speed",
+          "label": "実測の時間",
+          "art": "stopwatch",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "入会の案内",
+          "art": "gym-membership",
+          "at": [1, 1]
+        },
+        {
+          "id": "total",
+          "label": "候補の全体",
+          "art": "result-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "must",
+          "label": "必要な書類",
+          "art": "gym-membership",
+          "at": [5, 1]
+        },
+        {
+          "id": "missing",
+          "label": "候補の抜け",
+          "art": "result-ledger",
+          "at": [5, 2]
+        },
+        {
+          "id": "decision",
+          "label": "切替の判断",
+          "art": "model-robot",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "parallel": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "一部の依頼",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "current",
+          "label": "現行の結果",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "利用者へ返す",
+          "art": "request-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "candidate",
+          "label": "候補の結果",
+          "art": "model-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "measure",
+          "label": "品質速度費用",
+          "art": "result-ledger",
+          "at": [3, 2]
+        },
+        {
+          "id": "switch",
+          "label": "切替へ進む",
+          "art": "result-ledger",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "serve",
+          "from": "request",
+          "to": "current",
+          "label": "現行へ"
+        },
+        {
+          "id": "reply",
+          "from": "current",
+          "to": "user",
+          "label": "応答"
+        },
+        {
+          "id": "observe",
+          "from": "candidate",
+          "to": "measure"
+        },
+        {
+          "id": "adopt",
+          "from": "measure",
+          "to": "switch"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "替える前に比べ直す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "納品書を読むモデルを、替えたいとします。",
+          "show": ["slips"]
+        },
+        {
+          "say": "候補は、全体の正解数が多いモデルです。",
+          "show": ["candidate"]
+        },
+        {
+          "say": "ただし、手書きの納品書で失敗が増えました。",
+          "show": ["hand"],
+          "mark": [
+            {
+              "on": "hand",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "替える前に、同じ評価で品質と速度と費用を比べ直します。",
+          "pulse": ["slips", "candidate", "hand"]
+        }
+      ]
+    },
+    {
+      "id": "handover",
+      "kind": "board",
+      "role": "example",
+      "title": "担当者の交代で考える",
+      "board": "handover",
+      "beats": [
+        {
+          "say": "店で、納品書を確認する担当者が交代するとします。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "前の担当者が読めた納品書を、同じように渡しましょう。",
+          "show": ["slips", "pass"],
+          "travel": {
+            "along": ["pass"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "手書きの数量まで正しく読めるかが、確認したい点です。",
+          "show": ["hand", "check"]
+        },
+        {
+          "say": "ほかの書類を速く読めても、この確認は省けません。",
+          "pulse": ["hand"],
+          "mark": [
+            {
+              "on": "hand",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "same-cases",
+      "kind": "board",
+      "role": "syntax",
+      "title": "前に通ったケースを試す",
+      "board": "same-evaluation",
+      "beats": [
+        {
+          "say": "前に通ったケースを再び確かめるのが、回帰評価です。",
+          "term": {
+            "text": "回帰評価",
+            "ruby": "かいきひょうか",
+            "note": "前に通ったケースを再確認"
+          }
+        },
+        {
+          "say": "今のモデルと候補に、同じケースを同じ回数渡します。",
+          "show": ["cases", "results", "compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "結果はケースの ID ごとに突き合わせましょう。",
+          "speech": "結果はケースのアイディーごとに突き合わせましょう。",
+          "pulse": ["results"],
+          "tag": {
+            "results": "ケースごと"
+          }
+        },
+        {
+          "say": "正解と判断する条件が、合否の基準です。",
+          "term": {
+            "text": "合否の基準",
+            "ruby": "ごうひのきじゅん",
+            "note": "正解と判断する条件"
+          }
+        },
+        {
+          "say": "使う指示とデータをそろえ、同じ基準で採点します。",
+          "show": ["criteria", "judge"],
+          "tag": {
+            "criteria": "同じ基準"
+          }
+        }
+      ]
+    },
+    {
+      "id": "measure-three",
+      "kind": "board",
+      "role": "syntax",
+      "title": "記録するものをそろえる",
+      "board": "measure",
+      "beats": [
+        {
+          "say": "重要なケースが通ったかを、一件ずつ記録します。",
+          "show": ["quality"]
+        },
+        {
+          "say": "応答が返るまでの時間も、比較の対象です。",
+          "show": ["speed"]
+        },
+        {
+          "say": "仕事一件の費用は、実際の使用量から求めます。",
+          "term": {
+            "text": "仕事一件の費用",
+            "ruby": "しごといっけんのひよう",
+            "note": "仕事を終えるまでの費用"
+          }
+        },
+        {
+          "say": "失敗した試行の費用も、含めておきましょう。",
+          "show": ["cost"],
+          "tag": {
+            "cost": "失敗分も含む"
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-regression",
+      "kind": "board",
+      "role": "apply",
+      "title": "全体の改善と必須の失敗",
+      "board": "results",
+      "beats": [
+        {
+          "say": "納品書を百件ずつ試すと、現行は九十二件正解でした。",
+          "show": ["old"],
+          "tag": {
+            "old": "92件正解"
+          }
+        },
+        {
+          "say": "候補の正解は、九十五件に増えています。",
+          "show": ["new"],
+          "tag": {
+            "new": "95件正解"
+          }
+        },
+        {
+          "say": "百件に含まれる手書き二十件は、全問正解が条件です。",
+          "show": ["required"],
+          "tag": {
+            "required": "20件必須"
+          }
+        },
+        {
+          "say": "現行は、この二十件をすべて読めていました。",
+          "show": ["old-hand"],
+          "tag": {
+            "old-hand": "20件正解"
+          },
+          "mark": [
+            {
+              "on": "old-hand",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "候補は十七件なので、必須の三件が通りません。",
+          "show": ["new-hand"],
+          "tag": {
+            "new-hand": "17件正解"
+          },
+          "mark": [
+            {
+              "on": "new-hand",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adjust-retest",
+      "kind": "board",
+      "role": "apply",
+      "title": "失敗を調べて再評価する",
+      "board": "retry",
+      "beats": [
+        {
+          "say": "まず、候補が落とした納品書を調べます。",
+          "show": ["failed"]
+        },
+        {
+          "say": "候補で対応する effort の値を、明示しましょう。",
+          "speech": "候補で対応するエフォートの値を、明示しましょう。",
+          "show": ["setting", "inspect"],
+          "tag": {
+            "setting": "値を明示"
+          }
+        },
+        {
+          "say": "設定と合わせて見直すのは、実際に使う指示です。",
+          "show": ["prompt", "revise"]
+        },
+        {
+          "say": "指示を直したら、同じケースと合否の基準で再評価します。",
+          "show": ["again", "run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "repeat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "remeasure-cost",
+      "kind": "board",
+      "role": "apply",
+      "title": "候補の費用と速度を測る",
+      "board": "cost-speed",
+      "beats": [
+        {
+          "say": "候補の countTokens で、入力を数え直します。",
+          "speech": "候補のカウントトークンズで、入力を数え直します。",
+          "show": ["tokens"]
+        },
+        {
+          "say": "同じ文章でも、モデルが替われば同じ数とは限りません。",
+          "pulse": ["tokens"],
+          "tag": {
+            "tokens": "候補で数える"
+          }
+        },
+        {
+          "say": "採用の判断には、実測から求めた一件の費用を使います。",
+          "show": ["cost"],
+          "tag": {
+            "cost": "実測で比較"
+          }
+        },
+        {
+          "say": "速度も、実際に使う設定で測り直しましょう。",
+          "show": ["speed"],
+          "tag": {
+            "speed": "使う設定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "入会案内の候補を選ぶ",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "スポーツジムで、入会の案内をするモデルを替えます。",
+          "show": ["request"]
+        },
+        {
+          "say": "同じ評価では、候補のほうが全体で正確で、速くて安い結果です。",
+          "show": ["total"],
+          "tag": {
+            "total": "全体は改善"
+          }
+        },
+        {
+          "say": "このジムでは、必要な書類を必ず案内すると決めました。",
+          "show": ["must"],
+          "tag": {
+            "must": "必須の案内"
+          }
+        },
+        {
+          "say": "現行が通った一件で、候補は書類を案内していません。",
+          "show": ["missing"],
+          "tag": {
+            "missing": "書類が抜ける"
+          }
+        },
+        {
+          "say": "この結果で、候補への切り替えに進んでよいでしょうか。",
+          "show": ["decision"],
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "切り替えは保留する",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "答えは、切り替えを保留することです。",
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "decision": "保留"
+          },
+          "pulse": ["decision"]
+        },
+        {
+          "say": "必要な書類の案内という、必須の条件を満たしていません。",
+          "pulse": ["missing"],
+          "mark": [
+            {
+              "on": "missing",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why-hold",
+      "kind": "board",
+      "role": "explain",
+      "title": "全体だけでは判断できない",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "全体の成績が良くても、この一件の抜けは残ります。",
+          "pulse": ["total"]
+        },
+        {
+          "say": "合格に必要なのは、書類の案内があることです。",
+          "pulse": ["must"],
+          "mark": [
+            {
+              "on": "must",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "失敗した入力と指示、候補の設定を調べましょう。",
+          "pulse": ["missing"],
+          "tag": {
+            "missing": "原因を調べる"
+          }
+        },
+        {
+          "say": "修正後も同じ評価を回し、必須の条件が通るか確かめます。",
+          "pulse": ["decision"],
+          "tag": {
+            "decision": "再評価"
+          },
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "redo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "limited-traffic",
+      "kind": "board",
+      "role": "usage",
+      "title": "評価後は一部の通信で試す",
+      "board": "parallel",
+      "beats": [
+        {
+          "say": "評価を通った構成は、一部の本番リクエストでも試します。",
+          "show": ["request"]
+        },
+        {
+          "say": "利用者に返すのは、現行のモデルの結果です。",
+          "show": ["current", "user", "serve", "reply"],
+          "travel": {
+            "along": ["serve", "reply"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "候補にも同じ依頼を渡して、並行して動かしましょう。",
+          "show": ["candidate"],
+          "tag": {
+            "current": "同じ依頼",
+            "candidate": "同じ依頼"
+          }
+        },
+        {
+          "say": "ここでも、品質と速度と費用を確かめます。",
+          "show": ["measure", "observe"],
+          "tag": {
+            "measure": "基準と照合"
+          }
+        },
+        {
+          "say": "基準に収まったら、候補に切り替える範囲を広げましょう。",
+          "show": ["switch", "adopt"],
+          "mark": [
+            {
+              "on": "switch",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f3576cadb03b78471d7305cc06e4908e935acf286a24233ec843faf1b9dc6851"
+  }
+}

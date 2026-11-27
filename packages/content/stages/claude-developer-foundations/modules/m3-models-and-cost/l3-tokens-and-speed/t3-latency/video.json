@@ -1,0 +1,712 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答の待ち時間を減らすための見直しを選び、ストリーミングで変わる点を説明できる。",
+    "stuck": "出力の完了までの時間と表示が始まるまでの時間を混同し、ストリーミングで両方が短くなると思ってしまう。",
+    "points": ["応答を速くするには、モデル・トークンの量・ストリーミングの 3 つを見直します。"],
+    "leaveOut": [
+      "トークン数を数える API の使い方",
+      "考える過程の表示や課金の仕組み",
+      "ストリーミングの実装コードとイベントの種類",
+      "具体的な応答秒数や料金の比較"
+    ]
+  },
+  "art": {
+    "waiting-traveler": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a smartphone with a blank blue screen, waiting for a railway directions reply, with a small blue suitcase beside them. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "station-attendant": {
+      "prompt": "A railway information attendant in a plain blue shirt holding a blank white directions leaflet and gently pointing with an open hand. Simple facial features, no uniform insignia. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A violet pencil beside a single white paper note with a blue clip, representing a concise written request. The paper is blank and light grey at its edge. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a violet pencil ready to compose a reply. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "first-slip": {
+      "prompt": "A hand in a blue sleeve offering one small blank white paper slip, representing the first arriving piece of a reply. The slip is light grey at its edge. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "complete-reply": {
+      "prompt": "A neat small bundle of blank white reply sheets fastened together with a blue paper clip, representing a completed written response. Light grey paper edges, no writing marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stopwatch": {
+      "prompt": "A large handheld blue stopwatch with a white face, one violet hand and a simple top button, without numerals or tick marks, representing elapsed waiting time. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dental-booking": {
+      "prompt": "A blank white appointment calendar with blue binding rings beside a small white tooth model, representing a dental appointment booking. A single violet dot marks a blank calendar cell. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "traveler",
+          "label": "駅の案内を待つ",
+          "art": "waiting-traveler",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "答えるモデル",
+          "art": "reply-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "届く案内",
+          "art": "first-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "counter": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "attendant",
+          "label": "駅の担当者",
+          "art": "station-attendant",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初の案内",
+          "art": "first-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "complete",
+          "label": "案内の終わり",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "attendant",
+          "to": "first",
+          "label": "話し始める"
+        },
+        {
+          "id": "finish",
+          "from": "first",
+          "to": "complete",
+          "label": "続ける"
+        }
+      ]
+    },
+    "timing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "send",
+          "label": "依頼を送る",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初に届く",
+          "art": "first-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "出力が終わる",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-first",
+          "from": "send",
+          "to": "first",
+          "label": "待つ"
+        },
+        {
+          "id": "to-end",
+          "from": "first",
+          "to": "end",
+          "label": "出力が続く"
+        }
+      ]
+    },
+    "stream": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "最初の表示",
+          "art": "first-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "案内を読む人",
+          "art": "waiting-traveler",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "出力の完了",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "first",
+          "to": "reader",
+          "label": "すぐ見せる"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "乗り場の案内",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "ハイク5.5",
+          "art": "reply-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "案内の答え",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "request",
+          "to": "model",
+          "label": "頼む"
+        },
+        {
+          "id": "answer",
+          "from": "model",
+          "to": "reply",
+          "label": "返す"
+        }
+      ]
+    },
+    "amount": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "プロンプト",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "output",
+          "label": "案内の答え",
+          "art": "complete-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "booking": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "booking",
+          "label": "歯科の予約",
+          "art": "dental-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初の表示",
+          "art": "first-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "出力の完了",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "booking-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "予約を尋ねる",
+          "art": "dental-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "最初に届く",
+          "art": "first-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "出力が終わる",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-first",
+          "from": "request",
+          "to": "first",
+          "label": "待つ"
+        },
+        {
+          "id": "to-end",
+          "from": "first",
+          "to": "end",
+          "label": "出力が続く"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "screen",
+          "label": "待たせる画面",
+          "art": "waiting-traveler",
+          "at": [1, 1]
+        },
+        {
+          "id": "time",
+          "label": "時間を測る",
+          "art": "stopwatch",
+          "at": [3, 1]
+        },
+        {
+          "id": "quality",
+          "label": "答えを確かめる",
+          "art": "complete-reply",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "駅の案内を待つ時間",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "駅の乗り場を尋ねて、返事を待つ場面です。",
+          "show": ["traveler"]
+        },
+        {
+          "say": "画面の裏では、モデルが案内を作っています。",
+          "show": ["model"]
+        },
+        {
+          "say": "案内が出るまで、何も読めないとしたらどうでしょうか。",
+          "show": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "モデルとトークンの量、ストリーミングを見直します。",
+          "pulse": ["model", "reply"],
+          "unmark": ["reply"]
+        }
+      ]
+    },
+    {
+      "id": "counter-example",
+      "kind": "board",
+      "role": "example",
+      "title": "窓口で案内を聞くなら",
+      "board": "counter",
+      "beats": [
+        {
+          "say": "駅の窓口で、乗り場への道を聞くとしましょう。",
+          "show": ["attendant"]
+        },
+        {
+          "say": "係の人が話し始めれば、最初の案内を聞けます。",
+          "show": ["first", "start"],
+          "travel": {
+            "along": ["start"]
+          }
+        },
+        {
+          "say": "すべての案内を聞き終えるのは、そのあとです。",
+          "show": ["complete", "finish"],
+          "travel": {
+            "along": ["finish"]
+          }
+        },
+        {
+          "say": "聞き始める時点と、聞き終える時点を分けて考えます。",
+          "pulse": ["first", "complete"]
+        }
+      ]
+    },
+    {
+      "id": "measure-time",
+      "kind": "board",
+      "role": "syntax",
+      "title": "二つの時間を測る",
+      "board": "timing",
+      "beats": [
+        {
+          "say": "送信から出力の完了までの時間を、遅延と呼びます。",
+          "term": {
+            "text": "遅延",
+            "ruby": "ちえん",
+            "note": "送信から出力の完了まで"
+          }
+        },
+        {
+          "say": "図では、依頼を送ってから右端までの時間です。",
+          "show": ["send", "first", "end", "to-first", "to-end"],
+          "travel": {
+            "along": ["to-first", "to-end"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "最初のトークンが届くまでの時間も測ります。",
+          "term": {
+            "text": "TTFT",
+            "ruby": "ティーティーエフティー",
+            "note": "最初のトークンまでの時間"
+          }
+        },
+        {
+          "say": "こちらは、送信から中央までの時間です。",
+          "pulse": ["send", "first", "to-first"]
+        },
+        {
+          "say": "順に表示する画面では、この待ち時間に注目しましょう。",
+          "tag": {
+            "first": "使いやすさ"
+          },
+          "pulse": ["first"]
+        }
+      ]
+    },
+    {
+      "id": "streaming-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "届いた順に表示する",
+      "board": "stream",
+      "beats": [
+        {
+          "say": "届いた順に表示する方法が、ストリーミングです。",
+          "term": {
+            "text": "ストリーミング",
+            "note": "出力の完了前から順に表示"
+          }
+        },
+        {
+          "say": "最初のトークンから、画面に見せられます。",
+          "show": ["first", "reader", "read"],
+          "travel": {
+            "along": ["read"]
+          }
+        },
+        {
+          "say": "ただし、出力が終わるまでの時間は縮みません。",
+          "show": ["end"],
+          "tag": {
+            "end": "縮まらない"
+          }
+        },
+        {
+          "say": "利用者が感じる待ち時間を小さくする方法です。",
+          "pulse": ["reader"]
+        }
+      ]
+    },
+    {
+      "id": "choose-speed",
+      "kind": "board",
+      "role": "apply",
+      "title": "案内を作るモデルを選ぶ",
+      "board": "model",
+      "beats": [
+        {
+          "say": "乗り場の案内では、速さを重視するとします。",
+          "show": ["request"]
+        },
+        {
+          "say": "速いモデルの候補は、Haiku 5.5 です。",
+          "speech": "速いモデルの候補は、ハイクごてんごです。",
+          "show": ["model", "ask"]
+        },
+        {
+          "say": "effort を下げる方法も試してみましょう。",
+          "speech": "エフォートを下げる方法も試してみましょう。",
+          "tag": {
+            "model": "低いeffort"
+          }
+        },
+        {
+          "say": "速さと案内の質は、評価のセットで確かめます。",
+          "show": ["reply", "answer"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shorten-text",
+      "kind": "board",
+      "role": "apply",
+      "title": "送る量と返す量を減らす",
+      "board": "amount",
+      "beats": [
+        {
+          "say": "次に、案内を頼むプロンプトを簡潔にします。",
+          "show": ["input"],
+          "tag": {
+            "input": "簡潔に"
+          }
+        },
+        {
+          "say": "答えには、短い文を頼む方法が有効です。",
+          "show": ["output"]
+        },
+        {
+          "say": "たとえば、乗り場の案内を二文でと頼みましょう。",
+          "tag": {
+            "output": "二文で"
+          }
+        },
+        {
+          "say": "長さは語の数より、文や段落の数で指示します。",
+          "pulse": ["output"]
+        },
+        {
+          "say": "出力の上限で切る方法は、文の途中でも止まる点に注意しましょう。",
+          "show": ["limit"],
+          "tag": {
+            "limit": "途中でも切る"
+          },
+          "mark": [
+            {
+              "on": "limit",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "show-directions",
+      "kind": "board",
+      "role": "apply",
+      "title": "案内を読み始めてもらう",
+      "board": "stream",
+      "reset": true,
+      "beats": [
+        {
+          "say": "駅の案内も、届いた部分から表示します。",
+          "show": ["first"],
+          "tag": {
+            "first": "順に表示"
+          }
+        },
+        {
+          "say": "利用者は、全文がそろう前に読み始められるわけです。",
+          "show": ["reader", "read"],
+          "travel": {
+            "along": ["read"]
+          }
+        },
+        {
+          "say": "出力を作り終える時点まで早まるわけではありません。",
+          "show": ["end"],
+          "tag": {
+            "end": "完了は同じ"
+          }
+        },
+        {
+          "say": "表示の工夫と、処理を速くする工夫を分けて考えましょう。",
+          "pulse": ["first", "end"]
+        }
+      ]
+    },
+    {
+      "id": "booking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "歯科予約の案内を表示する",
+      "board": "booking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "歯科の予約手順を、画面で案内する場面です。",
+          "show": ["booking"]
+        },
+        {
+          "say": "今は、出力が終わるまで案内を表示していません。",
+          "show": ["end"],
+          "tag": {
+            "end": "待って表示"
+          }
+        },
+        {
+          "say": "モデルと文量を変えず、届いた順の表示に替えます。",
+          "show": ["first"],
+          "tag": {
+            "first": "順に表示"
+          }
+        },
+        {
+          "say": "早められるのは、最初の表示と出力の完了のどちらでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "end",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "booking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "最初の表示を早める",
+      "board": "booking",
+      "beats": [
+        {
+          "say": "答えは、案内を最初に表示する時点です。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            },
+            {
+              "on": "end",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["first"]
+        },
+        {
+          "say": "ストリーミングだけでは、出力の完了は早まりません。",
+          "pulse": ["end"],
+          "tag": {
+            "end": "早まらない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-booking",
+      "kind": "board",
+      "role": "explain",
+      "title": "表示を始める場所が変わる",
+      "board": "booking-flow",
+      "beats": [
+        {
+          "say": "歯科予約の質問を送ると、案内が返ってきます。",
+          "show": ["request", "first", "to-first"]
+        },
+        {
+          "say": "前の表示方法では、右端まで待つ必要がありました。",
+          "show": ["end", "to-end"],
+          "tag": {
+            "end": "前はここから"
+          }
+        },
+        {
+          "say": "届いた順なら、中央の時点から案内を表示できます。",
+          "pulse": ["first"],
+          "tag": {
+            "first": "今はここから"
+          }
+        },
+        {
+          "say": "変えたのは、出力が続く間にも読めるようにした点です。",
+          "travel": {
+            "along": ["to-end"]
+          },
+          "pulse": ["first", "end"]
+        }
+      ]
+    },
+    {
+      "id": "use-latency-checks",
+      "kind": "board",
+      "role": "usage",
+      "title": "待てる時間が短い画面で",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "入力の補完など、待てる時間が短い画面で使います。",
+          "show": ["screen"]
+        },
+        {
+          "say": "測るのは、全体と最初のトークンまでの時間です。",
+          "show": ["time"]
+        },
+        {
+          "say": "モデルと文量を変えたら、答えの質も確かめましょう。",
+          "show": ["quality"]
+        },
+        {
+          "say": "順に表示する工夫も合わせ、利用者の待ち時間を見直します。",
+          "pulse": ["screen", "time", "quality"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "8ef6925fef006d24a12e9f32ba3f30ad6cd9fcf0da86fb9af31f6b5332beac13"
+  }
+}
