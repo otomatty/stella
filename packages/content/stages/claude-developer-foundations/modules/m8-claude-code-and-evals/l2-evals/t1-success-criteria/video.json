@@ -1,0 +1,729 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "アプリの目的に合い、実現できる見込みのある、具体的で測れる成功の基準を書ける。",
+    "stuck": "プロンプトを直した印象だけで良くなったと考え、何をどこまで達成すれば成功かを決めていない。",
+    "points": ["作る前に、具体的で測れる成功の基準を決めます。"],
+    "leaveOut": [
+      "評価のセットの作り方と入力の分布",
+      "採点方法の選択と採点器の校正",
+      "ツールの誤用の直し方",
+      "安全性の基準の数値例",
+      "モデルごとの性能や実際のアプリの達成率"
+    ]
+  },
+  "art": {
+    "lunch-tray": {
+      "prompt": "An open white lunch container with separate compartments holding white rice, golden fried chicken and green broccoli, representing a lunch order to be checked. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-order": {
+      "prompt": "A white paper order slip with small pictorial cutouts of a lunch container and broccoli, held by a blue paper clip. The paper is white, not brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-staff": {
+      "prompt": "A staff member in a plain blue shirt holding an open white lunch container and looking carefully at its contents, with simple facial features and short dark hair. Food has natural colors. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "criterion-note": {
+      "prompt": "A hand holding a violet pencil over a white paper note clipped with a blue clip, representing a success criterion written before work begins. The paper is blank and white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-counter": {
+      "prompt": "A small blue handheld tally counter beside a white sheet with neatly arranged blue and light grey round stickers, representing counted correct results. The counter display is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "trial-record": {
+      "prompt": "An open white notebook with blue page tabs and a violet pencil, with blue and light grey round stickers on its pages to represent recorded trial results. No written marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "class-timetable": {
+      "prompt": "A white paper school timetable with a simple grid of blue and violet blocks, beside a blue analog clock with hands but no numerals or marks. This is a physical paper schedule, not an application screen. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "class-teacher": {
+      "prompt": "A teacher in a plain blue shirt holding two closed books, one blue and one violet, looking at a small white paper timetable in the other hand. Simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "lunch-goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "lunch",
+          "label": "弁当の注文",
+          "art": "lunch-tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "order",
+          "label": "注文の内容",
+          "art": "lunch-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "criterion",
+          "label": "成功の基準",
+          "art": "criterion-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "packing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "弁当の担当者",
+          "art": "lunch-staff",
+          "at": [1, 1]
+        },
+        {
+          "id": "order",
+          "label": "注文票",
+          "art": "lunch-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "lunch",
+          "label": "弁当の中身",
+          "art": "lunch-tray",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "order",
+          "to": "lunch",
+          "label": "照合"
+        }
+      ]
+    },
+    "criterion": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "vague",
+          "label": "よい性能",
+          "art": "criterion-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "specific",
+          "label": "注文を正しく",
+          "art": "lunch-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "target",
+          "label": "成功の基準",
+          "art": "criterion-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "specify",
+          "from": "vague",
+          "to": "specific",
+          "label": "具体化"
+        },
+        {
+          "id": "set",
+          "from": "specific",
+          "to": "target",
+          "label": "目標を決める"
+        }
+      ]
+    },
+    "measure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "調べた注文",
+          "art": "lunch-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "correct",
+          "label": "正しい件数",
+          "art": "result-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "rate",
+          "label": "正解率",
+          "art": "result-counter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "count",
+          "from": "all",
+          "to": "correct",
+          "label": "数える"
+        },
+        {
+          "id": "ratio",
+          "from": "correct",
+          "to": "rate",
+          "label": "割合にする"
+        }
+      ]
+    },
+    "fit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "purpose",
+          "label": "取り違え防止",
+          "art": "lunch-staff",
+          "at": [1, 1]
+        },
+        {
+          "id": "criterion",
+          "label": "注文の正確さ",
+          "art": "lunch-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "trial",
+          "label": "前の版の結果",
+          "art": "trial-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "lunch-target": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "subject",
+          "label": "注文の読み取り",
+          "art": "lunch-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "sample",
+          "label": "調べる件数",
+          "art": "result-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "target",
+          "label": "必要な正解数",
+          "art": "criterion-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "lunch-results": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "target",
+          "label": "決めた基準",
+          "art": "criterion-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "before",
+          "label": "変更前",
+          "art": "trial-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後",
+          "art": "trial-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "school-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "teacher",
+          "label": "先生の重複防止",
+          "art": "class-teacher",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "使いやすい",
+          "art": "class-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "20中19以上",
+          "art": "class-timetable",
+          "at": [5, 1]
+        },
+        {
+          "id": "condition",
+          "label": "先生の重複ゼロ",
+          "art": "class-teacher",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "detail",
+          "from": "second",
+          "to": "condition"
+        }
+      ]
+    },
+    "school-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "condition",
+          "label": "先生の重複ゼロ",
+          "art": "class-teacher",
+          "at": [1, 1]
+        },
+        {
+          "id": "target",
+          "label": "20中19以上",
+          "art": "class-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "trial",
+          "label": "試した結果",
+          "art": "trial-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "lunch",
+          "label": "注文の読み取り",
+          "art": "lunch-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "school",
+          "label": "時間割の作成",
+          "art": "class-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "criterion",
+          "label": "作る前に決める",
+          "art": "criterion-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "注文を正しく読めるか",
+      "board": "lunch-goal",
+      "beats": [
+        {
+          "say": "弁当の注文を読み取るアプリを作るとします。",
+          "show": ["lunch"]
+        },
+        {
+          "say": "目指すのは、注文の内容を正しく読み取ることです。",
+          "show": ["order"]
+        },
+        {
+          "say": "何ができたら成功か、先に書いておきましょう。",
+          "show": ["criterion"]
+        },
+        {
+          "say": "作る前に、具体的で測れる成功の基準を決めます。",
+          "pulse": ["criterion"]
+        }
+      ]
+    },
+    {
+      "id": "packing-example",
+      "kind": "board",
+      "role": "example",
+      "title": "弁当の中身を確かめる",
+      "board": "packing",
+      "beats": [
+        {
+          "say": "店で弁当を詰める担当者も、出来を確かめます。",
+          "show": ["staff"]
+        },
+        {
+          "say": "見た目が良くなったという感想だけでは不十分です。",
+          "show": ["lunch"],
+          "mark": [
+            {
+              "on": "lunch",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "注文票と中身が合っているかを、先に基準にしましょう。",
+          "show": ["order", "compare"]
+        },
+        {
+          "say": "照らし合わせれば、注文どおりかを確かめられます。",
+          "travel": {
+            "along": ["compare"],
+            "icon": "check"
+          },
+          "mark": [
+            {
+              "on": "lunch",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "name-criterion",
+      "kind": "board",
+      "role": "syntax",
+      "title": "成功を具体的に書く",
+      "board": "criterion",
+      "beats": [
+        {
+          "say": "成功の基準は、何ができたら成功かを決めたものです。",
+          "term": {
+            "text": "成功の基準",
+            "ruby": "せいこうのきじゅん",
+            "note": "何ができたら成功か"
+          }
+        },
+        {
+          "say": "弁当の例でも、作る前に基準を書きます。",
+          "show": ["target"]
+        },
+        {
+          "say": "ただし、「よい性能」では達成したいことが分かりません。",
+          "show": ["vague"],
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この例で達成したいのは、注文の正しい読み取りです。",
+          "show": ["specific", "specify"]
+        },
+        {
+          "say": "次に、どこまでできたら成功かを決めましょう。",
+          "show": ["set"],
+          "pulse": ["target"]
+        }
+      ]
+    },
+    {
+      "id": "measure-success",
+      "kind": "board",
+      "role": "syntax",
+      "title": "数や尺度で表す",
+      "board": "measure",
+      "beats": [
+        {
+          "say": "注文のうち、正しく読み取れた件数を数えます。",
+          "show": ["all", "correct", "count"]
+        },
+        {
+          "say": "全体のうち正しい答えが占める割合が、正解率です。",
+          "term": {
+            "text": "正解率",
+            "ruby": "せいかいりつ",
+            "note": "全体に占める正解の割合"
+          }
+        },
+        {
+          "say": "数えた件数を、全体に対する割合で表しましょう。",
+          "show": ["rate", "ratio"],
+          "travel": {
+            "along": ["ratio"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "測れる基準には、こうした数や決まった尺度を使います。",
+          "pulse": ["correct", "rate"]
+        }
+      ]
+    },
+    {
+      "id": "fit-purpose",
+      "kind": "board",
+      "role": "syntax",
+      "title": "用途と実現の見込み",
+      "board": "fit",
+      "beats": [
+        {
+          "say": "アプリを何のために使うかが、用途です。",
+          "term": {
+            "text": "用途",
+            "ruby": "ようと",
+            "note": "何のために使うか"
+          }
+        },
+        {
+          "say": "この店では、注文の取り違えを防ぐために使います。",
+          "show": ["purpose"]
+        },
+        {
+          "say": "その目的に合う基準は、注文を正しく読み取れるかです。",
+          "show": ["criterion"]
+        },
+        {
+          "say": "前の版の結果から、いまのモデルで届く目標を決めましょう。",
+          "show": ["trial"],
+          "tag": {
+            "trial": "届くか確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-lunch-target",
+      "kind": "board",
+      "role": "apply",
+      "title": "注文の基準を書く",
+      "board": "lunch-target",
+      "beats": [
+        {
+          "say": "弁当の注文を読み取る例で、基準を組み立てます。",
+          "show": ["subject"]
+        },
+        {
+          "say": "正しい読み取りとは、注文内容と結果が一致することです。",
+          "tag": {
+            "subject": "注文と一致"
+          }
+        },
+        {
+          "say": "ここでは、二十件の注文について調べるとしましょう。",
+          "show": ["sample"],
+          "tag": {
+            "sample": "20件"
+          }
+        },
+        {
+          "say": "試した結果をもとに、十八件以上の一致を目標にします。",
+          "show": ["target"],
+          "tag": {
+            "target": "18件以上"
+          }
+        },
+        {
+          "say": "二十件中十八件以上なので、正解率九割以上という基準です。",
+          "pulse": ["sample", "target"],
+          "tag": {
+            "target": "9割以上"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-lunch-results",
+      "kind": "board",
+      "role": "apply",
+      "title": "変更の結果を数字で言う",
+      "board": "lunch-results",
+      "beats": [
+        {
+          "say": "この仮の例では、二十件中十八件以上の一致が目標です。",
+          "show": ["target"],
+          "tag": {
+            "target": "18件以上"
+          }
+        },
+        {
+          "say": "プロンプトを変える前は、十六件が一致したとします。",
+          "show": ["before"],
+          "tag": {
+            "before": "16件一致"
+          },
+          "mark": [
+            {
+              "on": "before",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "変えたあとに十八件が一致すれば、目標達成です。",
+          "show": ["after"],
+          "tag": {
+            "after": "18件一致"
+          },
+          "mark": [
+            {
+              "on": "after",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "基準を先に決めると、改善を数字で説明できます。",
+          "pulse": ["before", "after"]
+        }
+      ]
+    },
+    {
+      "id": "timetable-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時間割の基準を選ぶ",
+      "board": "school-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学習塾で、先生の予定が重ならない時間割を作ります。",
+          "show": ["teacher"]
+        },
+        {
+          "say": "一つ目の基準は、「使いやすい時間割」です。",
+          "show": ["first"],
+          "tag": {
+            "first": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、二十案中十九案以上で条件を満たすと決めました。",
+          "show": ["second"],
+          "tag": {
+            "second": "二つ目"
+          }
+        },
+        {
+          "say": "条件は、同じ先生の授業時間が重ならないことです。",
+          "show": ["condition", "detail"]
+        },
+        {
+          "say": "具体的で測れる成功の基準は、どちらでしょうか。",
+          "pulse": ["first", "second"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timetable-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つ目の基準を選ぶ",
+      "board": "school-quiz",
+      "beats": [
+        {
+          "say": "答えは、二十案中十九案以上という二つ目の基準です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "先生の授業時間に重複がない案を、数えられます。",
+          "pulse": ["condition"]
+        }
+      ]
+    },
+    {
+      "id": "timetable-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "条件と数をたどる",
+      "board": "school-reason",
+      "beats": [
+        {
+          "say": "授業時間の重複を調べるので、見る点が具体的です。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "具体的"
+          }
+        },
+        {
+          "say": "二十案中十九案以上なら、達成したかを数で表せます。",
+          "show": ["target"],
+          "tag": {
+            "target": "測れる"
+          }
+        },
+        {
+          "say": "先生の予定を重ねないという、塾の目的にも合う基準です。",
+          "pulse": ["condition"],
+          "tag": {
+            "condition": "用途に合う"
+          }
+        },
+        {
+          "say": "実際に採用する前には、試した結果から届く目標か確かめましょう。",
+          "show": ["trial"],
+          "tag": {
+            "trial": "届くか確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-before-building",
+      "kind": "board",
+      "role": "usage",
+      "title": "作り始める前に書く",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "注文を読むアプリなら、何件を正しく読めるかを決めます。",
+          "show": ["lunch"]
+        },
+        {
+          "say": "時間割なら、先生の予定が重ならない案の数が基準の例です。",
+          "show": ["school"]
+        },
+        {
+          "say": "目的と実現の見込みを確かめ、作る前に基準を書きましょう。",
+          "show": ["criterion"]
+        },
+        {
+          "say": "その基準があれば、変更による良し悪しを数字で説明できます。",
+          "pulse": ["criterion"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "833fdc1c84515d04f92eb5a5fa3469e4e542b5e58ec98eb8116172962fbbade4"
+  }
+}

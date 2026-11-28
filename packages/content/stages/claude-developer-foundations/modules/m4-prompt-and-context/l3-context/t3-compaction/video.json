@@ -1,0 +1,823 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "長い会話を要約に置き換える理由と、圧縮後に確かめる情報を説明できる。",
+    "stuck": "古い順に会話を消したり、要約ができただけで安心したりして、あとで要る条件を失ってしまう。",
+    "points": ["長い会話は、圧縮で古いやり取りを要約に置き換えて続けます。"],
+    "leaveOut": [
+      "コンテキストウィンドウの上限とトークン数の計算",
+      "結果に効く情報を選ぶ一般的な設計",
+      "圧縮を呼び出すコードと細かな設定",
+      "モデルごとの対応状況と料金",
+      "教材の演習の解答"
+    ]
+  },
+  "art": {
+    "repair-bicycle": {
+      "prompt": "A blue city bicycle with a loose front brake cable and a small violet wrench beside the front wheel, representing a bicycle brought in for repair. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-records": {
+      "prompt": "A thick stack of white bicycle repair conversation notes with light grey edges and blue paper clips, with a tiny bicycle pictogram on the top sheet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-memo": {
+      "prompt": "One short white handover note with a blue bicycle pictogram and a violet paper clip, representing the essential conditions for a bicycle repair. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a white sheet and a blue pencil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-app": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater pressing a single large blue button beside a laptop with a completely blank screen, representing an application choosing when to request a summary. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "threshold-tray": {
+      "prompt": "A light grey upright paper holder filled with white sheets up to a small violet physical tab attached near its top edge, representing a preset amount being reached. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "old-search": {
+      "prompt": "A fan of light grey search result sheets with blank blue picture placeholders and a blue magnifying glass beside them, representing old tool results. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-umbrella": {
+      "prompt": "A closed blue umbrella with a curved handle and a small violet ribbon tied around the handle, representing a specific lost umbrella. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "umbrella-memo": {
+      "prompt": "A white lost property inquiry note with a small blue umbrella pictogram and a violet paper clip, representing a summary of an umbrella inquiry. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bike",
+          "label": "自転車の修理",
+          "art": "repair-bicycle",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "長い相談記録",
+          "art": "repair-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "条件の要約",
+          "art": "repair-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handover": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "修理の記録",
+          "art": "repair-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "最初の条件",
+          "art": "repair-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "bike",
+          "label": "修理の続き",
+          "art": "repair-bicycle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "history",
+          "to": "condition",
+          "label": "まとめる"
+        },
+        {
+          "id": "resume",
+          "from": "condition",
+          "to": "bike",
+          "label": "引き継ぐ"
+        }
+      ]
+    },
+    "compaction": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "古いやり取り",
+          "art": "repair-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "要約",
+          "art": "repair-memo",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "old",
+          "to": "claude",
+          "label": "読む"
+        },
+        {
+          "id": "write",
+          "from": "claude",
+          "to": "memo",
+          "label": "要約する"
+        }
+      ]
+    },
+    "triggers": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "自分で頼む",
+          "art": "request-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "しきい値",
+          "art": "threshold-tray",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "要約を作る",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reached",
+          "from": "limit",
+          "to": "claude",
+          "label": "量に届く"
+        }
+      ]
+    },
+    "replace": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "古い相談",
+          "art": "repair-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "条件を残す",
+          "art": "repair-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "bike",
+          "label": "修理の続き",
+          "art": "repair-bicycle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "shorten",
+          "from": "old",
+          "to": "memo",
+          "label": "置き換える"
+        },
+        {
+          "id": "continue",
+          "from": "memo",
+          "to": "bike",
+          "label": "続ける"
+        }
+      ]
+    },
+    "review": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "最初の条件",
+          "art": "repair-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "after",
+          "label": "要約の内容",
+          "art": "repair-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "要約の指示",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "before",
+          "to": "after",
+          "label": "照らす"
+        },
+        {
+          "id": "instruct",
+          "from": "after",
+          "to": "claude",
+          "label": "足りなければ"
+        }
+      ]
+    },
+    "editing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "古い検索結果",
+          "art": "old-search",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "残す要約",
+          "art": "repair-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "bike",
+          "label": "修理の続き",
+          "art": "repair-bicycle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "resume",
+          "from": "memo",
+          "to": "bike",
+          "label": "続ける"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "なくした傘",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "place",
+          "label": "なくした場所",
+          "art": "umbrella-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "できた要約",
+          "art": "umbrella-memo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "傘の特徴",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "place",
+          "label": "場所の記録",
+          "art": "umbrella-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "続けられる要約",
+          "art": "umbrella-memo",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "details",
+          "from": "umbrella",
+          "to": "place",
+          "label": "合わせる"
+        },
+        {
+          "id": "retain",
+          "from": "place",
+          "to": "memo",
+          "label": "要約に残す"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "長く続く相談",
+          "art": "repair-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "条件の要約",
+          "art": "repair-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "bike",
+          "label": "相談の続き",
+          "art": "repair-bicycle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compact",
+          "from": "history",
+          "to": "memo",
+          "label": "圧縮"
+        },
+        {
+          "id": "resume",
+          "from": "memo",
+          "to": "bike",
+          "label": "確かめて続く"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "条件を残して相談を続ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "自転車の修理について、長く相談した場面です。",
+          "show": ["bike"]
+        },
+        {
+          "say": "やり取りが増えると、会話の枠に近づきます。",
+          "show": ["history"]
+        },
+        {
+          "say": "続きに要る条件を、短い要約に残しましょう。",
+          "show": ["memo"]
+        },
+        {
+          "say": "長い会話は、圧縮で古いやり取りを要約に置き換えて続けます。",
+          "pulse": ["history", "memo"]
+        }
+      ]
+    },
+    {
+      "id": "repair-handover",
+      "kind": "board",
+      "role": "example",
+      "title": "古い記録にも条件がある",
+      "board": "handover",
+      "beats": [
+        {
+          "say": "修理の担当者に、これまでの記録を引き継ぎます。",
+          "show": ["history"]
+        },
+        {
+          "say": "最初に頼んだのは、ベルを交換しないことでした。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "ベルは残す"
+          }
+        },
+        {
+          "say": "古い順に消すと、この条件まで失うかもしれません。",
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "条件を短くまとめて渡せば、続きにも使えます。",
+          "show": ["bike", "keep", "resume"],
+          "travel": {
+            "along": ["keep", "resume"],
+            "icon": "file"
+          },
+          "unmark": ["condition"]
+        }
+      ]
+    },
+    {
+      "id": "compaction",
+      "kind": "board",
+      "role": "syntax",
+      "title": "古いやり取りを要約にする",
+      "board": "compaction",
+      "beats": [
+        {
+          "say": "会話の古い部分を要約に置き換える機能が、圧縮です。",
+          "term": {
+            "text": "圧縮",
+            "ruby": "あっしゅく",
+            "note": "古いやり取りを要約にする"
+          }
+        },
+        {
+          "say": "まず、要約に置き換える古いやり取りを見ます。",
+          "show": ["old"]
+        },
+        {
+          "say": "要約を書くのは、サーバー側の Claude です。",
+          "speech": "要約を書くのは、サーバー側のクロードです。",
+          "show": ["claude", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "自分で要約の処理を書かずに、会話を縮められます。",
+          "show": ["memo", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この要約が、古いやり取りの代わりになるわけです。",
+          "pulse": ["memo"],
+          "tag": {
+            "memo": "会話の代わり"
+          }
+        }
+      ]
+    },
+    {
+      "id": "start-options",
+      "kind": "board",
+      "role": "syntax",
+      "title": "圧縮を始める時期",
+      "board": "triggers",
+      "beats": [
+        {
+          "say": "自分で頼む方法では、アプリが要約の時期を決めます。",
+          "show": ["app"],
+          "tag": {
+            "app": "時期を決める"
+          }
+        },
+        {
+          "say": "もう一つの目安は、入力の量に設けるしきい値です。",
+          "term": {
+            "text": "しきい値",
+            "ruby": "しきいち",
+            "note": "要約を始める入力の量"
+          }
+        },
+        {
+          "say": "入力が決めた量に届くと、API が要約を始めます。",
+          "speech": "入力が決めた量に届くと、エーピーアイが要約を始めます。",
+          "show": ["limit", "claude", "reached"],
+          "travel": {
+            "along": ["reached"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "どちらの始め方も、ベータの機能です。",
+          "pulse": ["app", "limit"]
+        },
+        {
+          "say": "最近の会話をそのまま残したいときは、自分で頼みます。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "最近は残す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "replace-history",
+      "kind": "board",
+      "role": "apply",
+      "title": "修理の相談を縮める",
+      "board": "replace",
+      "beats": [
+        {
+          "say": "自転車の相談で、圧縮する部分を考えましょう。",
+          "show": ["old"]
+        },
+        {
+          "say": "古い相談にある、ベルを残す条件は今も必要です。",
+          "tag": {
+            "old": "ベルは残す"
+          }
+        },
+        {
+          "say": "その条件を含む要約に、古いやり取りを置き換えます。",
+          "show": ["memo", "shorten"],
+          "tag": {
+            "memo": "ベルは残す"
+          },
+          "travel": {
+            "along": ["shorten"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "続ける相談でも、この条件が分かる形にするのが大切です。",
+          "show": ["bike", "continue"],
+          "travel": {
+            "along": ["continue"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-summary",
+      "kind": "board",
+      "role": "apply",
+      "title": "必要な条件が残ったか",
+      "board": "review",
+      "beats": [
+        {
+          "say": "圧縮のあとは、要約と元の条件を照らし合わせます。",
+          "show": ["before", "after", "compare"],
+          "tag": {
+            "before": "ベルは残す"
+          },
+          "travel": {
+            "along": ["compare"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "短くなっただけでは、条件が残ったか分かりません。",
+          "mark": [
+            {
+              "on": "after",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この例なら、ベルを残す条件があるか確かめましょう。",
+          "tag": {
+            "after": "ベルは残す"
+          },
+          "mark": [
+            {
+              "on": "after",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "足りないときは、要約の指示を自分で書くこともできます。",
+          "show": ["claude", "instruct"],
+          "pulse": ["claude"]
+        }
+      ]
+    },
+    {
+      "id": "context-editing",
+      "kind": "board",
+      "role": "note",
+      "title": "要約せずに消せる記録",
+      "board": "editing",
+      "beats": [
+        {
+          "say": "決まりに従って情報を消す方法が、コンテキストの編集です。",
+          "term": {
+            "text": "コンテキストの編集",
+            "ruby": "コンテキストのへんしゅう",
+            "note": "決まりに従って情報を消す"
+          }
+        },
+        {
+          "say": "古いツールの結果や、前の考える過程を消すのに使います。",
+          "show": ["old"]
+        },
+        {
+          "say": "要約せずに消してよい情報にだけ使う方法です。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "不要と確認"
+          }
+        },
+        {
+          "say": "必要な条件の要約は残して、相談を続けましょう。",
+          "hide": ["old"],
+          "show": ["memo", "bike", "resume"],
+          "tag": {
+            "memo": "ベルは残す"
+          },
+          "travel": {
+            "along": ["resume"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "傘の問い合わせを引き継ぐ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駅の落とし物について、長く問い合わせた場面です。",
+          "show": ["umbrella"]
+        },
+        {
+          "say": "最初に、青い傘に紫のリボンがあると伝えました。",
+          "tag": {
+            "umbrella": "紫のリボン"
+          }
+        },
+        {
+          "say": "なくした場所は、東口のベンチだと伝えています。",
+          "show": ["place"],
+          "tag": {
+            "place": "東口のベンチ"
+          }
+        },
+        {
+          "say": "圧縮後の要約には、青い傘を探しているとだけありました。",
+          "show": ["memo"],
+          "tag": {
+            "memo": "青い傘を探す"
+          }
+        },
+        {
+          "say": "続きを尋ねる前に、要約の何を確かめるべきでしょうか。",
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "特徴と場所が抜けている",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "確かめるのは、紫のリボンとなくした場所が残っているかです。",
+          "pulse": ["umbrella", "place"],
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "この要約では、その二つの情報が抜けています。",
+          "tag": {
+            "memo": "特徴場所不足"
+          },
+          "pulse": ["memo"]
+        }
+      ]
+    },
+    {
+      "id": "why-keep-details",
+      "kind": "board",
+      "role": "explain",
+      "title": "短さだけでは判断しない",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "紫のリボンは、探す傘を見分けるための特徴です。",
+          "show": ["umbrella"],
+          "tag": {
+            "umbrella": "紫のリボン"
+          }
+        },
+        {
+          "say": "東口のベンチという場所も、探す手がかりになります。",
+          "show": ["place", "details"],
+          "tag": {
+            "place": "東口のベンチ"
+          }
+        },
+        {
+          "say": "どちらも、古い話だから不要とは言えません。",
+          "pulse": ["umbrella", "place"]
+        },
+        {
+          "say": "必要な特徴と場所が、要約にも残るよう確かめましょう。",
+          "show": ["memo", "retain"],
+          "travel": {
+            "along": ["details", "retain"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "これで、手がかりを保って問い合わせを続けられます。",
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["memo"]
+        }
+      ]
+    },
+    {
+      "id": "use-compaction",
+      "kind": "board",
+      "role": "usage",
+      "title": "長い会話を続ける前に",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "修理の相談のように長く続く会話で、圧縮を使います。",
+          "show": ["history"]
+        },
+        {
+          "say": "古いやり取りの代わりに持つのは、短い要約です。",
+          "show": ["memo", "compact"],
+          "travel": {
+            "along": ["compact"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "続ける前に、必要な条件が残っているか確かめましょう。",
+          "tag": {
+            "memo": "ベルは残す"
+          },
+          "mark": [
+            {
+              "on": "memo",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "必要な情報を要約に残して、会話を縮めながら続けます。",
+          "show": ["bike", "resume"],
+          "travel": {
+            "along": ["resume"],
+            "icon": "file"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6ebb85f8adee7f82f4e57914488d9af4dfffa8d246d58e6aa05369a865ddad38"
+  }
+}

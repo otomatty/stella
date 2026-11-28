@@ -1,0 +1,685 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "サーバーの置き場所と使い方を読み取り、MCP コネクターと Agent SDK のどちらでつなぐかを理由付きで選べる。",
+    "stuck": "MCP サーバーなら、手元で動くものも MCP コネクターから直接使えると思ってしまう。",
+    "points": [
+      "公開された MCP サーバーは MCP コネクターで API から使い、手元で動く stdio のサーバーは Agent SDK でつなぎます。"
+    ],
+    "leaveOut": [
+      "接続設定の項目名と具体的なコード",
+      "ツールの許可一覧と禁止一覧の書き方",
+      "アプリ内に定義したツールの渡し方",
+      "HTTP と SSE の通信方式の詳細",
+      "ワークフローとエージェントの選び分け"
+    ]
+  },
+  "art": {
+    "sewing-kit": {
+      "prompt": "An open light grey sewing box containing large violet thread spools, blue scissors and a white pincushion. Concrete sewing tools arranged as one clear object. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "phone-clerk": {
+      "prompt": "A friendly clerk in a plain blue shirt holding a blue telephone handset, with simple facial features and short dark hair. Show the person alone without furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "local-laptop": {
+      "prompt": "An open violet laptop with a blank dark screen and a short blue cable plugged into its side. A physical computer representing a server running locally, without any application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "public-server": {
+      "prompt": "A single upright light grey computer server tower with blue front panels and a clearly visible blue network cable plugged into its side. Physical hardware only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "An open blue envelope holding one blank white request sheet, representing a request sent to an API. Paper and envelope only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "connector-cable": {
+      "prompt": "A short thick blue network cable with two large recognisable light grey plugs, one at each end, forming a gentle curve. A concrete connecting cable. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "agent-kit": {
+      "prompt": "An open violet tool case containing a light grey wrench, a blue screwdriver and a small white electronic module. A concrete toolkit for building an agent, without symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-car": {
+      "prompt": "A compact blue rental car beside a single light grey car key with a violet key fob. Three-quarter view, large wheels and simple rounded body, no license plate markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "裁縫道具",
+          "art": "sewing-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元で動く",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "public",
+          "label": "公開して使う",
+          "art": "public-server",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "sewing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clerk",
+          "label": "店に尋ねる",
+          "art": "phone-clerk",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "裁縫道具",
+          "art": "sewing-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "box",
+          "label": "手元で探す",
+          "art": "sewing-kit",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "public": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "API",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "connector",
+          "label": "コネクター",
+          "art": "connector-cable",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "公開サーバー",
+          "art": "public-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "request",
+          "to": "connector",
+          "label": "使う"
+        },
+        {
+          "id": "connect",
+          "from": "connector",
+          "to": "server",
+          "label": "HTTP"
+        }
+      ]
+    },
+    "local": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "自分のアプリ",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "agent-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "手元のサーバー",
+          "art": "local-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "request",
+          "to": "sdk",
+          "label": "設定"
+        },
+        {
+          "id": "connect",
+          "from": "sdk",
+          "to": "server",
+          "label": "stdio"
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "agent-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "public",
+          "label": "公開サーバー",
+          "art": "public-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "connector",
+          "label": "コネクター",
+          "art": "connector-cable",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "sdk-http",
+          "from": "sdk",
+          "to": "public",
+          "label": "HTTP"
+        },
+        {
+          "id": "connector-http",
+          "from": "connector",
+          "to": "public",
+          "label": "HTTP"
+        }
+      ]
+    },
+    "blocked": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "API",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "connector",
+          "label": "コネクター",
+          "art": "connector-cable",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元のサーバー",
+          "art": "local-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "request",
+          "to": "connector",
+          "label": "使う"
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "car",
+          "label": "車の空き照会",
+          "art": "rental-car",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "店舗のパソコン",
+          "art": "local-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "どちらで接続",
+          "art": "connector-cable",
+          "at": [5, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "agent-kit",
+          "at": [3, 2]
+        },
+        {
+          "id": "connector",
+          "label": "コネクター",
+          "art": "connector-cable",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "APIで使う",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "public",
+          "label": "公開サーバー",
+          "art": "public-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "local",
+          "label": "手元のサーバー",
+          "art": "local-laptop",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "サーバーの場所を見分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "裁縫道具の在庫を調べる仕組みを考えます。",
+          "show": ["tools"]
+        },
+        {
+          "say": "サーバーを手元で動かす場合です。",
+          "show": ["local"]
+        },
+        {
+          "say": "外から使えるように公開する場合も考えましょう。",
+          "show": ["public"]
+        },
+        {
+          "say": "サーバーの置き場所から、つなぎ方を選びます。",
+          "pulse": ["local", "public"]
+        }
+      ]
+    },
+    {
+      "id": "sewing-example",
+      "kind": "board",
+      "role": "example",
+      "title": "裁縫道具の置き場所",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "裁縫道具を借りるときの、連絡先を考えましょう。",
+          "show": ["tools"]
+        },
+        {
+          "say": "店の道具は、電話で店員に尋ねます。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "手元の裁縫箱なら、その場で中身を確かめるだけです。",
+          "show": ["box"]
+        },
+        {
+          "say": "同じ道具探しでも、置き場所で方法を選びます。",
+          "pulse": ["clerk", "box"]
+        }
+      ]
+    },
+    {
+      "id": "connector",
+      "kind": "board",
+      "role": "syntax",
+      "title": "公開先をAPIから使う",
+      "board": "public",
+      "beats": [
+        {
+          "say": "MCP コネクターは、Messages API の機能です。",
+          "speech": "エムシーピーコネクターは、メッセージズエーピーアイの機能です。",
+          "term": {
+            "text": "MCPコネクター",
+            "ruby": "エムシーピーコネクター",
+            "note": "APIからサーバーを使う"
+          }
+        },
+        {
+          "say": "このリクエストから、コネクターを使います。",
+          "show": ["request", "connector", "use"]
+        },
+        {
+          "say": "接続先は、HTTP で公開されたサーバーです。",
+          "speech": "接続先は、エイチティーティーピーで公開されたサーバーです。",
+          "show": ["server", "connect"]
+        },
+        {
+          "say": "そこで公開されたツールを呼び出します。",
+          "travel": {
+            "along": ["use", "connect"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "local-sdk",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手元のサーバーにつなぐ",
+      "board": "local",
+      "beats": [
+        {
+          "say": "手元で動くプロセスとの接続に、stdio を使います。",
+          "speech": "手元で動くプロセスとの接続に、スタンダードアイオーを使います。",
+          "term": {
+            "text": "stdio",
+            "ruby": "スタンダードアイオー",
+            "note": "手元のプロセスと接続"
+          }
+        },
+        {
+          "say": "図のパソコンで動かしているサーバーです。",
+          "show": ["server"],
+          "tag": {
+            "server": "stdio"
+          }
+        },
+        {
+          "say": "このサーバーには、Agent SDK でつなぎます。",
+          "speech": "このサーバーには、エージェントエスディーケーでつなぎます。",
+          "term": {
+            "text": "Agent SDK",
+            "ruby": "エージェントエスディーケー",
+            "note": "自分のエージェントで設定"
+          }
+        },
+        {
+          "say": "設定を書くのは、自分のエージェント側です。",
+          "show": ["request", "sdk", "use", "connect"]
+        },
+        {
+          "say": "このつなぎ方なら、手元のツールを呼び出せます。",
+          "travel": {
+            "along": ["use", "connect"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shared-support",
+      "kind": "board",
+      "role": "syntax",
+      "title": "公開先は両方から使える",
+      "board": "scope",
+      "beats": [
+        {
+          "say": "Agent SDK も、HTTP の接続に対応しています。",
+          "speech": "エージェントエスディーケーも、エイチティーティーピーの接続に対応しています。",
+          "show": ["sdk", "public", "sdk-http"]
+        },
+        {
+          "say": "公開先への接続は、コネクターだけの機能ではありません。",
+          "show": ["connector", "connector-http"]
+        },
+        {
+          "say": "API から使いたいなら、コネクターを選びます。",
+          "speech": "エーピーアイから使いたいなら、コネクターを選びます。",
+          "pulse": ["connector", "connector-http"]
+        },
+        {
+          "say": "どちらも、接続用のクライアントを自作せずに済む方法です。",
+          "pulse": ["sdk", "connector"]
+        }
+      ]
+    },
+    {
+      "id": "apply-public",
+      "kind": "board",
+      "role": "apply",
+      "title": "公開された在庫照会",
+      "board": "public",
+      "beats": [
+        {
+          "say": "裁縫道具の在庫を調べるサーバーを公開しました。",
+          "show": ["server"],
+          "tag": {
+            "server": "HTTP"
+          }
+        },
+        {
+          "say": "使いたいのは、API の一回のリクエストからです。",
+          "speech": "使いたいのは、エーピーアイの一回のリクエストからです。",
+          "show": ["request"]
+        },
+        {
+          "say": "この条件なら、MCP コネクターを選びます。",
+          "speech": "この条件なら、エムシーピーコネクターを選びます。",
+          "show": ["connector", "use", "connect"],
+          "travel": {
+            "along": ["use", "connect"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "ただし、コネクターで使える機能はツールの呼び出しだけです。",
+          "tag": {
+            "connector": "ツールのみ"
+          },
+          "pulse": ["connector"]
+        }
+      ]
+    },
+    {
+      "id": "apply-local",
+      "kind": "board",
+      "role": "apply",
+      "title": "手元の在庫照会なら",
+      "board": "blocked",
+      "beats": [
+        {
+          "say": "今度は、同じ在庫照会を手元だけで動かします。",
+          "show": ["local"],
+          "tag": {
+            "local": "stdio"
+          }
+        },
+        {
+          "say": "接続先は、公開されたサーバーではありません。",
+          "tag": {
+            "local": "未公開"
+          },
+          "pulse": ["local"]
+        },
+        {
+          "say": "コネクターからは直接つなげない仕組みです。",
+          "show": ["request", "connector", "use"],
+          "mark": [
+            {
+              "on": "connector",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "手元で動かす条件を見て、Agent SDK を選びましょう。",
+          "speech": "手元で動かす条件を見て、エージェントエスディーケーを選びましょう。",
+          "pulse": ["local"],
+          "tag": {
+            "local": "SDKで接続"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rental-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "レンタカーの空きを調べる",
+      "board": "rental",
+      "think": 8,
+      "beats": [
+        {
+          "say": "レンタカーの貸し出しで、空いている車を調べます。",
+          "show": ["car"]
+        },
+        {
+          "say": "使うのは、店舗のパソコンで動く MCP サーバーです。",
+          "speech": "使うのは、店舗のパソコンで動くエムシーピーサーバーです。",
+          "show": ["local"]
+        },
+        {
+          "say": "接続方式は stdio で、外へは公開していません。",
+          "speech": "接続方式はスタンダードアイオーで、外へは公開していません。",
+          "tag": {
+            "local": "stdio"
+          }
+        },
+        {
+          "say": "このサーバーのツールにつなぐ方法を選びましょう。",
+          "show": ["choice"],
+          "mark": [
+            {
+              "on": "choice",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "コネクターと Agent SDK の、どちらが使えますか。",
+          "speech": "コネクターとエージェントエスディーケーの、どちらが使えますか。",
+          "show": ["connector", "sdk"],
+          "pulse": ["connector", "sdk"]
+        }
+      ]
+    },
+    {
+      "id": "rental-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "手元の接続を選ぶ",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "答えは、Agent SDK です。",
+          "speech": "答えは、エージェントエスディーケーです。",
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "check"
+            },
+            {
+              "on": "connector",
+              "kind": "cross"
+            }
+          ],
+          "unmark": ["choice"],
+          "pulse": ["sdk"]
+        },
+        {
+          "say": "店舗のパソコンで動く、という条件に注目します。",
+          "pulse": ["local"]
+        },
+        {
+          "say": "コネクターから直接つなげる条件には合いません。",
+          "pulse": ["connector"]
+        }
+      ]
+    },
+    {
+      "id": "rental-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "接続できる条件をたどる",
+      "board": "local",
+      "reset": true,
+      "beats": [
+        {
+          "say": "車の空きを調べるツールは、手元のサーバーにあります。",
+          "show": ["server"],
+          "tag": {
+            "server": "車の空き"
+          }
+        },
+        {
+          "say": "この問題で指定した接続方式は、stdio です。",
+          "speech": "この問題で指定した接続方式は、スタンダードアイオーです。",
+          "tag": {
+            "server": "stdio"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "その方式に対応する Agent SDK からつなぎます。",
+          "speech": "その方式に対応するエージェントエスディーケーからつなぎます。",
+          "show": ["request", "sdk", "use", "connect"],
+          "travel": {
+            "along": ["use", "connect"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "貸し出しという仕事の名前では、つなぎ方は決まりません。",
+          "pulse": ["server", "sdk"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "問題文で場所を探す",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "接続方法を選ぶ問題では、まず使い方を読みましょう。",
+          "show": ["request"]
+        },
+        {
+          "say": "API から公開先を使うなら、コネクターです。",
+          "speech": "エーピーアイから公開先を使うなら、コネクターです。",
+          "show": ["public"],
+          "tag": {
+            "public": "HTTP"
+          }
+        },
+        {
+          "say": "手元の stdio なら、Agent SDK を選びます。",
+          "speech": "手元のスタンダードアイオーなら、エージェントエスディーケーを選びます。",
+          "show": ["local"],
+          "tag": {
+            "local": "stdio"
+          }
+        },
+        {
+          "say": "サーバーがどこで動くかを、問題文で確かめてください。",
+          "pulse": ["public", "local"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4c8f5b647b9a848821fbb08558b4ccab1a2029e0e2ea6c7295ed2285c8b92df5"
+  }
+}

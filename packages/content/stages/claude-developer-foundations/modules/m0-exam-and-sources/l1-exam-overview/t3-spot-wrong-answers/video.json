@@ -1,0 +1,663 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "場面に示された原因と守る条件をもとに、誤りの選択肢を外す理由を一文で説明できる。",
+    "stuck": "効きそうな対応を選び、原因が残ることや必要な機能を失うことを見落とす。",
+    "points": ["誤りの選択肢の多くは、症状を減らすだけか、原因から離れた場所を直します。"],
+    "leaveOut": [
+      "資格の対象と試験形式",
+      "問題数や制限時間、結果の見方",
+      "Claude や API の個別の仕様",
+      "窓の修理や美術館の受付の詳しい手順"
+    ]
+  },
+  "art": {
+    "leaking-window": {
+      "prompt": "An isolated blue window assembly with a small gap at its lower edge and several blue raindrops passing through the gap. A small blue puddle below it represents water entering the room. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-cloth": {
+      "prompt": "A folded light grey cleaning cloth held by a hand, wiping a small blue puddle. Only the hand, cloth and water are visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "window-part": {
+      "prompt": "Two small window sealing parts side by side, one light grey strip visibly split and one intact blue replacement strip, with a small violet screwdriver. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "opening-window": {
+      "prompt": "An isolated blue casement window with one leaf swung open and a clearly visible handle, showing that it can still open and close. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-manual": {
+      "prompt": "An open white maintenance booklet beside a violet screwdriver, with a small pictorial window seal on one page and all other areas blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "entrance-notice": {
+      "prompt": "A freestanding blue notice stand holding a blank white notice sheet, representing a warning placed at a room entrance. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-queue": {
+      "prompt": "Two young adult museum visitors with short dark hair and plain violet sweaters, standing one behind the other and holding blank white admission tickets. Simple faces, no surrounding architecture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "admission-list": {
+      "prompt": "A white reservation sheet on a blue clipboard, with a violet date tab at the top and a second white sheet tucked behind it. All pages and tabs are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "ticket-attendant": {
+      "prompt": "A museum attendant in a plain blue shirt with a simple face, comparing a blank white admission ticket with a white reservation sheet held in the other hand. No surrounding furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "water",
+          "label": "床がぬれる",
+          "art": "leaking-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "wipe",
+          "label": "床を拭く",
+          "art": "cleaning-cloth",
+          "at": [3, 1]
+        },
+        {
+          "id": "part",
+          "label": "傷んだ部品",
+          "art": "window-part",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "rain": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "water",
+          "label": "床がぬれる",
+          "art": "leaking-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "part",
+          "label": "窓のすき間",
+          "art": "window-part",
+          "at": [3, 1]
+        },
+        {
+          "id": "open",
+          "label": "開け閉め",
+          "art": "opening-window",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "read": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "symptom",
+          "label": "症状",
+          "art": "leaking-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "cause",
+          "label": "原因",
+          "art": "window-part",
+          "at": [3, 1]
+        },
+        {
+          "id": "condition",
+          "label": "守る条件",
+          "art": "opening-window",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "wrong": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "wipe",
+          "label": "床を何度も拭く",
+          "art": "cleaning-cloth",
+          "at": [1, 1]
+        },
+        {
+          "id": "gap",
+          "label": "窓のすき間",
+          "art": "window-part",
+          "at": [3, 1]
+        },
+        {
+          "id": "notice",
+          "label": "入口の注意書き",
+          "art": "entrance-notice",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "open",
+          "label": "開け閉め",
+          "art": "opening-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "手入れの手順",
+          "art": "repair-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "part",
+          "label": "部品を替える",
+          "art": "window-part",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "queue",
+          "label": "入場で足止め",
+          "art": "museum-queue",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "別の日の名簿",
+          "art": "admission-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "rule",
+          "label": "予約を確認",
+          "art": "ticket-attendant",
+          "at": [5, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待ち時間を延長",
+          "art": "museum-queue",
+          "at": [5, 2]
+        },
+        {
+          "id": "skip",
+          "label": "確認を省く",
+          "art": "ticket-attendant",
+          "at": [3, 2]
+        },
+        {
+          "id": "replace",
+          "label": "当日の名簿へ",
+          "art": "admission-list",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "correct": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "別の日の名簿",
+          "art": "admission-list",
+          "at": [1, 1]
+        },
+        {
+          "id": "today",
+          "label": "当日の名簿",
+          "art": "admission-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "check",
+          "label": "予約を確認",
+          "art": "ticket-attendant",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "replace-list",
+          "from": "old",
+          "to": "today",
+          "label": "差し替える"
+        },
+        {
+          "id": "check-ticket",
+          "from": "today",
+          "to": "check",
+          "label": "照合する"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "symptom",
+          "label": "起きたこと",
+          "art": "leaking-window",
+          "at": [1, 1]
+        },
+        {
+          "id": "cause",
+          "label": "分かった原因",
+          "art": "window-part",
+          "at": [3, 1]
+        },
+        {
+          "id": "condition",
+          "label": "守る条件",
+          "art": "opening-window",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "効きそうな対応を比べる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "雨の日に床がぬれ、何度も拭く場面を考えます。",
+          "show": ["water"]
+        },
+        {
+          "say": "拭いた直後は、水がなくなったように見えるはずです。",
+          "show": ["wipe"]
+        },
+        {
+          "say": "でも、水が入る窓のすき間は残ったままでした。",
+          "show": ["part"]
+        },
+        {
+          "say": "症状だけを減らす対応や、原因と違う場所の対応を見分けます。",
+          "pulse": ["water", "part"]
+        }
+      ]
+    },
+    {
+      "id": "rain-example",
+      "kind": "board",
+      "role": "example",
+      "title": "窓の場面を読む",
+      "board": "rain",
+      "beats": [
+        {
+          "say": "雨が降ると、いつも窓の下からぬれ始めます。",
+          "show": ["water"]
+        },
+        {
+          "say": "調べると、傷んだ部品のすき間から水が入っていました。",
+          "show": ["part"]
+        },
+        {
+          "say": "残したいのは、今までどおり窓を開け閉めする機能です。",
+          "show": ["open"]
+        },
+        {
+          "say": "水を止める方法を、この条件に合わせて比べましょう。",
+          "pulse": ["part", "open"]
+        }
+      ]
+    },
+    {
+      "id": "symptom-cause",
+      "kind": "board",
+      "role": "syntax",
+      "title": "症状と原因を分ける",
+      "board": "read",
+      "beats": [
+        {
+          "say": "目に見えて起きている問題を、ここでは症状と呼びます。",
+          "term": {
+            "text": "症状",
+            "ruby": "しょうじょう",
+            "note": "目に見えて起きている問題"
+          }
+        },
+        {
+          "say": "この例の症状は、雨の日に床がぬれることです。",
+          "show": ["symptom"],
+          "tag": {
+            "symptom": "床がぬれる"
+          }
+        },
+        {
+          "say": "その問題を起こしているものを、原因と呼びます。",
+          "term": {
+            "text": "原因",
+            "ruby": "げんいん",
+            "note": "問題を起こしているもの"
+          }
+        },
+        {
+          "say": "ここで分かった原因は、窓の傷んだ部品でした。",
+          "show": ["cause"],
+          "tag": {
+            "cause": "傷んだ部品"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-condition",
+      "kind": "board",
+      "role": "syntax",
+      "title": "直すときの条件を拾う",
+      "board": "read",
+      "beats": [
+        {
+          "say": "対応を選ぶときに守る決まりが、条件です。",
+          "term": {
+            "text": "条件",
+            "ruby": "じょうけん",
+            "note": "対応を選ぶときに守る決まり"
+          }
+        },
+        {
+          "say": "今回は、窓の開け閉めを保つという条件があります。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "開け閉め可"
+          }
+        },
+        {
+          "say": "選択肢を読む前に、症状と原因を拾いましょう。",
+          "pulse": ["symptom", "cause"]
+        },
+        {
+          "say": "守る条件も拾えば、対応を比べる準備が整います。",
+          "pulse": ["condition"]
+        }
+      ]
+    },
+    {
+      "id": "wrong-place",
+      "kind": "board",
+      "role": "apply",
+      "title": "原因が残る対応を外す",
+      "board": "wrong",
+      "beats": [
+        {
+          "say": "まず、床を拭く回数を増やす対応を考えます。",
+          "show": ["wipe"]
+        },
+        {
+          "say": "床は乾いても、水が入るすき間は残ったままです。",
+          "show": ["gap"],
+          "tag": {
+            "gap": "すき間が残る"
+          }
+        },
+        {
+          "say": "同じ雨が降れば、またぬれると分かりました。",
+          "mark": [
+            {
+              "on": "wipe",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "入口に注意書きを足しても、窓のすき間は直りません。",
+          "show": ["notice"],
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "対応した場所が、分かった原因に合うかを確かめましょう。",
+          "pulse": ["gap", "notice"]
+        }
+      ]
+    },
+    {
+      "id": "keep-function",
+      "kind": "board",
+      "role": "apply",
+      "title": "原因を直して機能を保つ",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "窓をふさいで開かなくする対応も、候補にありました。",
+          "show": ["open"],
+          "tag": {
+            "open": "開け閉め不可"
+          }
+        },
+        {
+          "say": "水が入らなくても、開け閉めを保つ条件には合いません。",
+          "mark": [
+            {
+              "on": "open",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "そこで、窓の手入れの手順に戻って確かめます。",
+          "show": ["manual"]
+        },
+        {
+          "say": "手順どおりに傷んだ部品を替えるのが、この例の答えです。",
+          "show": ["part"],
+          "mark": [
+            {
+              "on": "part",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "水が入る場所を直し、開け閉めできる状態を保ちます。",
+          "tag": {
+            "open": "開け閉め可"
+          },
+          "mark": [
+            {
+              "on": "open",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["part", "open"]
+        }
+      ]
+    },
+    {
+      "id": "museum-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "美術館の入場を直す",
+      "board": "museum",
+      "think": 8,
+      "beats": [
+        {
+          "say": "練習用の美術館で、予約した人が入場できずに待っています。",
+          "show": ["queue"]
+        },
+        {
+          "say": "調べると、受付が見ていたのは別の日の予約名簿でした。",
+          "show": ["list"]
+        },
+        {
+          "say": "受付の手順には、当日の名簿で予約を確認するとあります。",
+          "show": ["rule"],
+          "tag": {
+            "rule": "当日と照合"
+          }
+        },
+        {
+          "say": "候補は、待ち時間の延長、確認の省略、当日の名簿への差し替えです。",
+          "show": ["wait", "skip", "replace"]
+        },
+        {
+          "say": "原因を直し、確認を続けられる対応を一つ選びましょう。",
+          "pulse": ["wait", "skip", "replace"]
+        }
+      ]
+    },
+    {
+      "id": "museum-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "当日の名簿に替える",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "答えは、手順に沿って当日の名簿に差し替える対応です。",
+          "mark": [
+            {
+              "on": "replace",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["replace"]
+        },
+        {
+          "say": "間違った日の名簿を使っていた、という原因を直します。",
+          "pulse": ["list"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-wrong",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの候補を外す理由",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "待ち時間を延ばしても、名簿の日付は変わりません。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["wait", "list"]
+        },
+        {
+          "say": "名簿が違うままなので、同じ確認でまた止まります。",
+          "tag": {
+            "list": "別の日のまま"
+          },
+          "pulse": ["list"]
+        },
+        {
+          "say": "確認を省く対応は、予約を確認する条件に合いません。",
+          "mark": [
+            {
+              "on": "skip",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["skip", "rule"]
+        },
+        {
+          "say": "待ち時間を短くするために、必要な確認をなくしていました。",
+          "tag": {
+            "skip": "条件を失う"
+          },
+          "pulse": ["skip"]
+        }
+      ]
+    },
+    {
+      "id": "why-correct",
+      "kind": "board",
+      "role": "explain",
+      "title": "原因と条件をたどる",
+      "board": "correct",
+      "beats": [
+        {
+          "say": "原因があるのは、受付で照合する名簿の日付です。",
+          "show": ["old"]
+        },
+        {
+          "say": "手順に沿って当日の名簿へ替えると、その原因を直せます。",
+          "show": ["today", "replace-list"],
+          "travel": {
+            "along": ["replace-list"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その名簿で予約を確認するので、守る条件も満たしました。",
+          "show": ["check", "check-ticket"],
+          "mark": [
+            {
+              "on": "check",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "選んだ対応が何に効くか、名簿の日付を示して説明しましょう。",
+          "pulse": ["old", "today"]
+        }
+      ]
+    },
+    {
+      "id": "use-reasons",
+      "kind": "board",
+      "role": "usage",
+      "title": "練習問題で理由を言う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "練習問題で迷ったときは、まず起きたことに戻ります。",
+          "show": ["symptom"]
+        },
+        {
+          "say": "床がぬれるという症状だけでは、選ぶ理由はまだ不十分です。",
+          "tag": {
+            "symptom": "症状だけ"
+          }
+        },
+        {
+          "say": "記録から分かった原因に、その対応が効くか確かめましょう。",
+          "show": ["cause"],
+          "tag": {
+            "cause": "原因に効く"
+          }
+        },
+        {
+          "say": "必要な機能や品質を保てるかも、守る条件に合わせて考えます。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "機能を保つ"
+          }
+        },
+        {
+          "say": "選んだ理由と、迷った候補を外す理由を一文ずつ説明してください。",
+          "pulse": ["cause", "condition"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "381e551b73f5deeae12162a80013b9759a8638814cf8b934aa309f1dd6b90ceb"
+  }
+}

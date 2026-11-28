@@ -1,0 +1,699 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールの許可判定を順にたどり、拒否で止まる場合と canUseTool に届く場合を説明できる。",
+    "stuck": "フックの許可で実行が決まると思い、すべての呼び出しが最後の canUseTool を通ると考えてしまう。",
+    "points": [
+      "ツールの許可は、フック・拒否・確認・権限モード・許可ルール・canUseTool の順に判定します。"
+    ],
+    "leaveOut": [
+      "フックの登録コードと返り値の詳しい書き方",
+      "フックが失敗したときの遮断設定",
+      "確認を出さない権限モードの細かな挙動",
+      "bypassPermissions に必要な追加設定",
+      "無人実行の設定とツールの除外方法",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "audit-sheet": {
+      "prompt": "A white audit form held by a blue binder clip with a violet pencil beside it. The paper has a few empty light grey rectangular cells without any marks, representing a form about to be edited. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "aquarium-entry": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white admission ticket beside a large simple blue fish silhouette, representing an aquarium activity reception. The person has simple facial features. No building or scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hook-inspector": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile holding a magnifying glass over a blank white operation slip, representing an inspection before an action. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "closed-gate": {
+      "prompt": "A closed blue portable access barrier with a horizontal violet bar and a small solid padlock, representing a rule that stops an action. A concrete freestanding object, no prohibition sign. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "asking-staff": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features holding a blank white clipboard and raising an open palm to request confirmation, with one empty speech bubble beside the head. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mode-switch": {
+      "prompt": "A large physical violet rotary selector switch with a blue handle and several small unmarked light grey position notches, representing a mode that determines how an operation is handled. A freestanding object without a surrounding panel. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "approval-stamp": {
+      "prompt": "A blue rubber approval stamp with a rounded handle resting beside a blank white permission slip, with the stamp face turned away so no mark is visible. Objects only, representing approval. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a large blue magnifying glass beside it, representing an application reviewing a request. Objects only, no interface, no buttons on the screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-timetable": {
+      "prompt": "A small blue city bus beside a large folded white timetable sheet with empty light grey grid cells and a violet pencil. All grid cells are blank. Objects only, representing an attempt to edit a published timetable. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "conflict": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "form",
+          "label": "監査用の帳票",
+          "art": "audit-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "hook",
+          "label": "フックの許可",
+          "art": "hook-inspector",
+          "at": [3, 1]
+        },
+        {
+          "id": "deny",
+          "label": "拒否ルール",
+          "art": "closed-gate",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "aquarium": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "entry",
+          "label": "体験の受付",
+          "art": "aquarium-entry",
+          "at": [1, 1]
+        },
+        {
+          "id": "approval",
+          "label": "受付の了承",
+          "art": "approval-stamp",
+          "at": [3, 1]
+        },
+        {
+          "id": "capacity",
+          "label": "定員の規則",
+          "art": "closed-gate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "entry-approval",
+          "from": "entry",
+          "to": "approval"
+        },
+        {
+          "id": "approval-capacity",
+          "from": "approval",
+          "to": "capacity"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "hook",
+          "label": "フック",
+          "art": "hook-inspector",
+          "at": [1, 1]
+        },
+        {
+          "id": "deny",
+          "label": "拒否ルール",
+          "art": "closed-gate",
+          "at": [3, 1]
+        },
+        {
+          "id": "ask",
+          "label": "確認ルール",
+          "art": "asking-staff",
+          "at": [5, 1]
+        },
+        {
+          "id": "mode",
+          "label": "権限モード",
+          "art": "mode-switch",
+          "at": [5, 2]
+        },
+        {
+          "id": "allow",
+          "label": "許可ルール",
+          "art": "approval-stamp",
+          "at": [3, 2]
+        },
+        {
+          "id": "review",
+          "label": "アプリの審査",
+          "art": "review-laptop",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "hook-deny",
+          "from": "hook",
+          "to": "deny"
+        },
+        {
+          "id": "deny-ask",
+          "from": "deny",
+          "to": "ask"
+        },
+        {
+          "id": "ask-mode",
+          "from": "ask",
+          "to": "mode"
+        },
+        {
+          "id": "mode-allow",
+          "from": "mode",
+          "to": "allow"
+        },
+        {
+          "id": "allow-review",
+          "from": "allow",
+          "to": "review"
+        }
+      ]
+    },
+    "bus": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "timetable",
+          "label": "時刻表の編集",
+          "art": "bus-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "hook",
+          "label": "フック",
+          "art": "hook-inspector",
+          "at": [3, 1]
+        },
+        {
+          "id": "deny",
+          "label": "拒否ルール",
+          "art": "closed-gate",
+          "at": [5, 1]
+        },
+        {
+          "id": "review",
+          "label": "アプリの審査",
+          "art": "review-laptop",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "edit-hook",
+          "from": "timetable",
+          "to": "hook"
+        },
+        {
+          "id": "hook-deny",
+          "from": "hook",
+          "to": "deny"
+        }
+      ]
+    },
+    "inspection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "form",
+          "label": "帳票の確認",
+          "art": "audit-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "review",
+          "label": "アプリの審査",
+          "art": "review-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "hook",
+          "label": "実行前フック",
+          "art": "hook-inspector",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "許可と拒否が重なる",
+      "board": "conflict",
+      "beats": [
+        {
+          "say": "監査用の帳票を、ツールで編集しようとしています。",
+          "show": ["form"]
+        },
+        {
+          "say": "フックが返したのは、編集してよいという許可です。",
+          "show": ["hook"]
+        },
+        {
+          "say": "チームの規則は、この帳票の編集を拒否するものでした。",
+          "show": ["deny"]
+        },
+        {
+          "say": "複数の判定が重なるときは、決まった順でたどります。",
+          "pulse": ["hook", "deny"]
+        }
+      ]
+    },
+    {
+      "id": "aquarium-entry",
+      "kind": "board",
+      "role": "example",
+      "title": "受付の了承のあと",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "水族館で、体験の参加受付をする場面です。",
+          "show": ["entry"]
+        },
+        {
+          "say": "受付の担当者は、参加してよいと伝えました。",
+          "show": ["approval", "entry-approval"]
+        },
+        {
+          "say": "ただ、この受付では定員の規則も後から確かめます。",
+          "show": ["capacity", "approval-capacity"],
+          "travel": {
+            "along": ["approval-capacity"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "締め切りの条件に合えば、先の了承があっても参加できません。",
+          "mark": [
+            {
+              "on": "capacity",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "capacity": "ここで止まる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "first-checks",
+      "kind": "board",
+      "role": "syntax",
+      "title": "フックから確認まで",
+      "board": "order",
+      "beats": [
+        {
+          "say": "最初は、実行前のフックで呼び出しを調べます。",
+          "show": ["hook"]
+        },
+        {
+          "say": "フックが拒否を返せば、ここで判定は終わりです。",
+          "mark": [
+            {
+              "on": "hook",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "hook": "拒否なら終了"
+          }
+        },
+        {
+          "say": "次に調べる拒否ルールは、禁止する操作の条件を定めます。",
+          "term": {
+            "text": "拒否ルール",
+            "ruby": "きょひルール",
+            "note": "禁止する操作の条件"
+          },
+          "unmark": ["hook"],
+          "untag": ["hook"],
+          "show": ["deny", "hook-deny"]
+        },
+        {
+          "say": "ここに一致した呼び出しは、拒否の対象です。",
+          "pulse": ["deny"],
+          "tag": {
+            "deny": "一致なら拒否"
+          }
+        },
+        {
+          "say": "続く確認ルールで、確認に回す条件を調べましょう。",
+          "term": {
+            "text": "確認ルール",
+            "ruby": "かくにんルール",
+            "note": "確認に回す操作の条件"
+          },
+          "show": ["ask", "deny-ask"],
+          "pulse": ["ask"],
+          "tag": {
+            "ask": "確認に回す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "later-checks",
+      "kind": "board",
+      "role": "syntax",
+      "title": "モードから最後の関数へ",
+      "board": "order",
+      "beats": [
+        {
+          "say": "次は、権限モードに応じた判定です。",
+          "show": ["mode", "ask-mode"],
+          "pulse": ["mode"]
+        },
+        {
+          "say": "モードで決まらなければ、許可ルールを調べます。",
+          "show": ["allow", "mode-allow"],
+          "pulse": ["allow"]
+        },
+        {
+          "say": "条件が合えば、その呼び出しは承認です。",
+          "tag": {
+            "allow": "一致なら承認"
+          },
+          "mark": [
+            {
+              "on": "allow",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "最後の canUseTool は、必要な承認をアプリで審査します。",
+          "speech": "最後のキャンユーズツールは、必要な承認をアプリで審査します。",
+          "term": {
+            "text": "canUseTool",
+            "note": "必要な承認を審査する関数"
+          },
+          "pulse": [],
+          "unmark": ["allow"],
+          "tag": {
+            "allow": "未承認の場合"
+          }
+        },
+        {
+          "say": "前で決まらなかった呼び出しが、この関数の対象です。",
+          "show": ["review", "allow-review"],
+          "pulse": ["review"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "deny-edit",
+      "kind": "board",
+      "role": "apply",
+      "title": "帳票の編集をたどる",
+      "board": "order",
+      "reset": true,
+      "beats": [
+        {
+          "say": "帳票の編集では、フックが allow を返しました。",
+          "speech": "帳票の編集では、フックがアローを返しました。",
+          "show": ["hook"],
+          "tag": {
+            "hook": "許可を返す"
+          }
+        },
+        {
+          "say": "次に調べるのは、チームの拒否ルールです。",
+          "show": ["deny", "hook-deny"],
+          "travel": {
+            "along": ["hook-deny"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "監査用の帳票の編集に一致するので、ここで拒否します。",
+          "pulse": ["deny"],
+          "mark": [
+            {
+              "on": "deny",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "deny": "拒否で終了"
+          }
+        },
+        {
+          "say": "後ろにある確認や承認の判定へは進みません。",
+          "show": ["ask", "mode", "allow", "review"],
+          "tag": {
+            "ask": "進まない",
+            "mode": "進まない",
+            "allow": "進まない",
+            "review": "進まない"
+          },
+          "pulse": ["ask", "mode", "allow", "review"]
+        }
+      ]
+    },
+    {
+      "id": "automatic-approval",
+      "kind": "board",
+      "role": "apply",
+      "title": "読み取りの自動承認",
+      "board": "order",
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、帳票の読み取りが前の判定を通った場面です。",
+          "show": ["hook", "deny", "ask", "mode", "hook-deny", "deny-ask", "ask-mode"]
+        },
+        {
+          "say": "許可ルールで、この読み取りを承認します。",
+          "show": ["allow", "mode-allow"],
+          "mark": [
+            {
+              "on": "allow",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "allow": "読み取り許可"
+          }
+        },
+        {
+          "say": "個別の審査を待たない承認が、自動承認です。",
+          "term": {
+            "text": "自動承認",
+            "ruby": "じどうしょうにん",
+            "note": "個別の審査を待たず承認"
+          },
+          "pulse": ["allow"]
+        },
+        {
+          "say": "自動承認されると、canUseTool には進みません。",
+          "speech": "自動承認されると、キャンユーズツールには進みません。",
+          "show": ["review"],
+          "tag": {
+            "review": "通らない"
+          },
+          "pulse": ["review"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "remaining-review",
+      "kind": "board",
+      "role": "apply",
+      "title": "最後の関数に届く場合",
+      "board": "order",
+      "reset": true,
+      "beats": [
+        {
+          "say": "前の段階で決まらない呼び出しも、順にたどりましょう。",
+          "show": ["hook", "deny", "ask", "mode", "hook-deny", "deny-ask", "ask-mode"]
+        },
+        {
+          "say": "許可ルールでも、自動承認の条件に合わない例です。",
+          "show": ["allow", "mode-allow"],
+          "tag": {
+            "allow": "一致なし"
+          }
+        },
+        {
+          "say": "ここで、canUseTool に審査を任せます。",
+          "speech": "ここで、キャンユーズツールに審査を任せます。",
+          "show": ["review", "allow-review"],
+          "travel": {
+            "along": ["allow-review"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この関数に集まるのは、承認が必要な呼び出しです。",
+          "pulse": ["review"],
+          "tag": {
+            "review": "アプリで審査"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時刻表の編集はどこで止まる",
+      "board": "bus",
+      "think": 8,
+      "beats": [
+        {
+          "say": "バスの時刻表を、ツールで編集しようとしています。",
+          "show": ["timetable"]
+        },
+        {
+          "say": "フックは、時刻表を編集してよいと判断しました。",
+          "show": ["hook", "edit-hook"],
+          "tag": {
+            "hook": "許可を返す"
+          }
+        },
+        {
+          "say": "拒否ルールは、公開済みの時刻表の編集を止める条件です。",
+          "show": ["deny", "hook-deny"],
+          "tag": {
+            "deny": "公開済み対象"
+          }
+        },
+        {
+          "say": "この時刻表は、すでに公開されています。",
+          "tag": {
+            "timetable": "公開済み"
+          },
+          "pulse": ["timetable"]
+        },
+        {
+          "say": "拒否ルールと canUseTool のどちらで止まるでしょうか。",
+          "speech": "拒否ルールとキャンユーズツールのどちらで止まるでしょうか。",
+          "show": ["review"],
+          "pulse": ["deny", "review"],
+          "mark": [
+            {
+              "on": "deny",
+              "kind": "question"
+            },
+            {
+              "on": "review",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "拒否ルールで止まる",
+      "board": "bus",
+      "beats": [
+        {
+          "say": "答えは、拒否ルールで止まります。",
+          "mark": [
+            {
+              "on": "deny",
+              "kind": "check"
+            }
+          ],
+          "unmark": ["review"],
+          "pulse": ["deny"]
+        },
+        {
+          "say": "この編集は、canUseTool まで進みません。",
+          "speech": "この編集は、キャンユーズツールまで進みません。",
+          "tag": {
+            "review": "届かない"
+          },
+          "pulse": ["review"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "trace-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "先の許可で決まらない理由",
+      "board": "bus",
+      "beats": [
+        {
+          "say": "フックが許可しても、拒否ルールの確認は残ります。",
+          "pulse": ["hook"],
+          "travel": {
+            "along": ["hook-deny"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "今回の時刻表は、公開済みという条件の対象です。",
+          "pulse": ["timetable", "deny"]
+        },
+        {
+          "say": "そのため、編集の呼び出しはここで拒否されます。",
+          "pulse": ["deny"],
+          "tag": {
+            "deny": "拒否で終了"
+          }
+        },
+        {
+          "say": "最後の関数で、拒否を許可へ変える流れにはなりません。",
+          "pulse": ["review"],
+          "tag": {
+            "review": "審査しない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inspect-every-call",
+      "kind": "board",
+      "role": "usage",
+      "title": "全件の検査をどこに置くか",
+      "board": "inspection",
+      "beats": [
+        {
+          "say": "帳票を扱うエージェントで、全件の検査を置く場面です。",
+          "show": ["form"]
+        },
+        {
+          "say": "最後の関数だけでは、すべての呼び出しを検査できません。",
+          "show": ["review"],
+          "tag": {
+            "review": "一部だけ"
+          }
+        },
+        {
+          "say": "全件の検査には、対象を絞らない PreToolUse を使います。",
+          "speech": "全件の検査には、対象を絞らないプリツールユーズを使います。",
+          "show": ["hook"],
+          "pulse": ["hook"]
+        },
+        {
+          "say": "自動承認より前に動く、このフックが検査の場所です。",
+          "tag": {
+            "hook": "承認の前"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "22251e432cf9d712b1bd2b93beea774c47709fea89a209989628d756e36a4a5c"
+  }
+}

@@ -1,0 +1,768 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "仕事の手順を前もって書けるかを根拠に、ワークフローとエージェントを選べる。",
+    "stuck": "入力によって扱いが変わるだけでも、すべてエージェントが必要だと思ってしまう。",
+    "points": [
+      "手順を前もって書ける仕事はワークフローで、柔軟な判断が要る仕事はエージェントで作ります。"
+    ],
+    "leaveOut": [
+      "並列化・オーケストレーター・評価役の詳しい構成",
+      "MCPのつなぎ方",
+      "エージェントの実装やツールの設定",
+      "具体的な料金や速度の数値"
+    ]
+  },
+  "art": {
+    "lost-glove": {
+      "prompt": "A single blue knitted glove with a small blank white lost-property tag attached, representing an item found at school. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "record-sheet": {
+      "prompt": "A white clipboard with a blank light grey paper sheet and a violet pencil, representing a record of a found item. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "storage-boxes": {
+      "prompt": "Two open light grey cardboard storage boxes, one containing a blue glove and the other containing a violet umbrella, clearly separated by item type. Boxes are light grey, never brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "search-person": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater looking carefully inside an open blue school bag with a handheld magnifying glass, searching for a missing item. The bag is empty and the character has a curious simple facial expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white note and considering what to do next. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-pottery": {
+      "prompt": "A large ancient ceramic jug with a blue body and simple violet geometric decoration, representing one museum exhibit. The jug stands alone without a pedestal. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-fossil": {
+      "prompt": "A large light grey fossil slab containing the distinct near-black spiral impression of an ammonite, representing a second museum exhibit. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "route-leaflet": {
+      "prompt": "An open white museum guide leaflet bearing only a small pictorial blue ceramic jug and a light grey ammonite fossil, connected by a simple blue path without arrowheads. No map labels. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clock-coins": {
+      "prompt": "A blue stopwatch with a plain white dial and two simple hands, beside a small stack of light grey coins with blank faces, representing time and cost. No tick marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "glove",
+          "label": "学校の忘れ物",
+          "art": "lost-glove",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "受け付ける",
+          "art": "record-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "search",
+          "label": "探しに行く",
+          "art": "search-person",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reception": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "glove",
+          "label": "拾った手袋",
+          "art": "lost-glove",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "特徴を記録",
+          "art": "record-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "boxes",
+          "label": "種類別に保管",
+          "art": "storage-boxes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record-item",
+          "from": "glove",
+          "to": "record",
+          "label": "記録"
+        },
+        {
+          "id": "store-item",
+          "from": "record",
+          "to": "boxes",
+          "label": "保管"
+        }
+      ]
+    },
+    "control": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "steps",
+          "label": "決めた手順",
+          "art": "record-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "workflow",
+          "label": "ワークフロー",
+          "art": "storage-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "follow",
+          "from": "steps",
+          "to": "workflow",
+          "label": "先に決める"
+        }
+      ]
+    },
+    "patterns": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "record",
+          "label": "特徴をまとめる",
+          "art": "record-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "案内文を作る",
+          "art": "record-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "kind",
+          "label": "種類を調べる",
+          "art": "lost-glove",
+          "at": [5, 1]
+        },
+        {
+          "id": "route",
+          "label": "種類別の扱い",
+          "art": "storage-boxes",
+          "at": [5, 2]
+        },
+        {
+          "id": "workflow",
+          "label": "ワークフロー",
+          "art": "record-sheet",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "chain",
+          "from": "record",
+          "to": "notice",
+          "label": "次の段へ"
+        },
+        {
+          "id": "route-kind",
+          "from": "kind",
+          "to": "route",
+          "label": "種類で選ぶ"
+        },
+        {
+          "id": "known",
+          "from": "route",
+          "to": "workflow",
+          "label": "先に決定"
+        }
+      ]
+    },
+    "search": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clue",
+          "label": "聞いた手がかり",
+          "art": "lost-glove",
+          "at": [1, 1]
+        },
+        {
+          "id": "judge",
+          "label": "次を考える",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "place",
+          "label": "探す場所",
+          "art": "search-person",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-clue",
+          "from": "clue",
+          "to": "judge",
+          "label": "結果を見る"
+        },
+        {
+          "id": "choose-place",
+          "from": "judge",
+          "to": "place",
+          "label": "判断"
+        }
+      ]
+    },
+    "museum": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "fixed",
+          "label": "決まった順路",
+          "art": "route-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "pottery",
+          "label": "土器を見る",
+          "art": "museum-pottery",
+          "at": [3, 1]
+        },
+        {
+          "id": "fossil",
+          "label": "化石を見る",
+          "art": "museum-fossil",
+          "at": [5, 1]
+        },
+        {
+          "id": "found",
+          "label": "見て気づいた事",
+          "art": "museum-pottery",
+          "at": [5, 2]
+        },
+        {
+          "id": "judge",
+          "label": "次を判断",
+          "art": "claude-robot",
+          "at": [3, 2]
+        },
+        {
+          "id": "next",
+          "label": "次に見る展示",
+          "art": "museum-fossil",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "start-route",
+          "from": "fixed",
+          "to": "pottery",
+          "label": "順路"
+        },
+        {
+          "id": "fixed-next",
+          "from": "pottery",
+          "to": "fossil",
+          "label": "必ず次へ"
+        },
+        {
+          "id": "read-result",
+          "from": "found",
+          "to": "judge",
+          "label": "発見"
+        },
+        {
+          "id": "choose-next",
+          "from": "judge",
+          "to": "next",
+          "label": "その都度"
+        }
+      ]
+    },
+    "simple": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "note",
+          "label": "短い案内文",
+          "art": "record-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "速さと費用",
+          "art": "clock-coins",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "one-request",
+          "from": "note",
+          "to": "claude",
+          "label": "一度頼む"
+        }
+      ]
+    },
+    "choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "fixed",
+          "label": "受付の手順",
+          "art": "record-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "route",
+          "label": "種類別の扱い",
+          "art": "storage-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "search",
+          "label": "捜索の判断",
+          "art": "search-person",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "手順を先に書けるか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "学校で、落とし物の手袋を預かったとします。",
+          "show": ["glove"]
+        },
+        {
+          "say": "受付は、記録して保管する決まった手順です。",
+          "show": ["record"]
+        },
+        {
+          "say": "なくした物を探すときは、手がかりから次の場所を選びましょう。",
+          "show": ["search"]
+        },
+        {
+          "say": "手順を先に書けるかで、作り方を選びます。",
+          "pulse": ["record", "search"]
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "kind": "board",
+      "role": "example",
+      "title": "忘れ物を受け付ける",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "受付の係は、拾った手袋を受け取りました。",
+          "show": ["glove"]
+        },
+        {
+          "say": "最初に、色や拾った場所を記録します。",
+          "show": ["record", "record-item"],
+          "travel": {
+            "along": ["record-item"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その次は、種類に合う箱への保管です。",
+          "show": ["boxes", "store-item"],
+          "travel": {
+            "along": ["store-item"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "預かる物が変わっても、この順で進められます。",
+          "pulse": ["record", "boxes"]
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手順を決めるのはだれか",
+      "board": "control",
+      "beats": [
+        {
+          "say": "ワークフローは、手順をコードで決める仕組みです。",
+          "term": {
+            "text": "ワークフロー",
+            "note": "手順をコードで決める"
+          },
+          "show": ["steps", "workflow"]
+        },
+        {
+          "say": "先に書いた手順に沿って、処理を進めます。",
+          "show": ["follow"],
+          "travel": {
+            "along": ["follow"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "エージェントは、手順をClaudeに任せる仕組みです。",
+          "speech": "エージェントは、手順をクロードに任せる仕組みです。",
+          "term": {
+            "text": "エージェント",
+            "note": "手順をClaudeに任せる"
+          },
+          "show": ["agent"]
+        },
+        {
+          "say": "何をするかは、結果を見たClaudeが判断します。",
+          "speech": "何をするかは、結果を見たクロードが判断します。",
+          "pulse": ["agent"],
+          "tag": {
+            "agent": "その都度判断"
+          }
+        }
+      ]
+    },
+    {
+      "id": "patterns",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ段と種類別の扱い",
+      "board": "patterns",
+      "beats": [
+        {
+          "say": "毎回同じ段で処理する形を、プロンプトの連鎖と呼びます。",
+          "term": {
+            "text": "プロンプトの連鎖",
+            "ruby": "ぷろんぷとのれんさ",
+            "note": "毎回同じ段で処理する"
+          },
+          "show": ["record"]
+        },
+        {
+          "say": "特徴をまとめてから案内文を作る、という順番です。",
+          "show": ["notice", "chain"],
+          "travel": {
+            "along": ["chain"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "種類ごとに扱いを変える形を、ルーティングと呼びます。",
+          "term": {
+            "text": "ルーティング",
+            "note": "入力の種類で扱いを選ぶ"
+          },
+          "show": ["kind"]
+        },
+        {
+          "say": "手袋か傘かで、決めた扱いに振り分ける形です。",
+          "show": ["route", "route-kind"],
+          "travel": {
+            "along": ["route-kind"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "種類別の手順も、前もって書ければワークフローで作れます。",
+          "show": ["workflow", "known"],
+          "travel": {
+            "along": ["known"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-fixed",
+      "kind": "board",
+      "role": "apply",
+      "title": "受付は手順を書ける",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "忘れ物の受付を作るなら、まず手順を確かめましょう。",
+          "show": ["glove", "record", "boxes", "record-item", "store-item"]
+        },
+        {
+          "say": "記録して保管する順番は、前もって決まっています。",
+          "travel": {
+            "along": ["record-item", "store-item"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "手袋と傘で保管先が変わっても、振り分け方は同じです。",
+          "tag": {
+            "boxes": "決めた分類"
+          },
+          "pulse": ["boxes"]
+        },
+        {
+          "say": "この受付は、ワークフローで作ります。",
+          "pulse": ["record", "boxes"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "check"
+            },
+            {
+              "on": "boxes",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apply-search",
+      "kind": "board",
+      "role": "apply",
+      "title": "捜索は結果から次を選ぶ",
+      "board": "search",
+      "beats": [
+        {
+          "say": "なくした手袋を探す仕事も、考えてみましょう。",
+          "show": ["clue"]
+        },
+        {
+          "say": "ここでは、聞いた話から次に探す場所を考えます。",
+          "show": ["judge", "read-clue"],
+          "travel": {
+            "along": ["read-clue"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "先の行動は、調べるまで決まりません。",
+          "show": ["place", "choose-place"],
+          "mark": [
+            {
+              "on": "place",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この判断をClaudeに任せるなら、エージェントが向きます。",
+          "speech": "この判断をクロードに任せるなら、エージェントが向きます。",
+          "pulse": ["judge"],
+          "travel": {
+            "along": ["choose-place"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "博物館の見学を案内する",
+      "board": "museum",
+      "think": 8,
+      "beats": [
+        {
+          "say": "博物館の見学を案内する、二つの仕組みを比べます。",
+          "show": ["fixed"]
+        },
+        {
+          "say": "一つ目は、毎回、土器の次に化石へ案内する仕組みです。",
+          "show": ["pottery", "fossil", "start-route", "fixed-next"]
+        },
+        {
+          "say": "二つ目では、見学中の発見をClaudeが読み取ります。",
+          "speech": "二つ目では、見学中の発見をクロードが読み取ります。",
+          "show": ["found", "judge", "read-result"]
+        },
+        {
+          "say": "次の行動は決めず、その都度判断する仕組みです。",
+          "show": ["next", "choose-next"]
+        },
+        {
+          "say": "それぞれ、ワークフローとエージェントのどちらでしょうか。",
+          "pulse": ["fixed", "judge"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "順路とその都度の判断",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "一つ目の決まった順路は、ワークフローで作ります。",
+          "pulse": ["fixed", "pottery", "fossil"],
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "二つ目の、その都度判断する仕組みはエージェントです。",
+          "pulse": ["found", "judge", "next"],
+          "mark": [
+            {
+              "on": "judge",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "board",
+      "role": "explain",
+      "title": "いつ次が決まるかをたどる",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "一つ目は、見学前から次に見る展示を決められます。",
+          "pulse": ["fixed"],
+          "travel": {
+            "along": ["start-route", "fixed-next"],
+            "icon": "person"
+          }
+        },
+        {
+          "say": "案内の手順を、前もってコードに書ける仕事です。",
+          "pulse": ["pottery", "fossil"],
+          "tag": {
+            "fixed": "事前に決定"
+          }
+        },
+        {
+          "say": "二つ目は、見学で分かったことから次を選びます。",
+          "pulse": ["judge"],
+          "travel": {
+            "along": ["read-result", "choose-next"],
+            "icon": "idea"
+          }
+        },
+        {
+          "say": "この例で必要なのは、結果に応じた柔軟な判断です。",
+          "pulse": ["next"],
+          "tag": {
+            "judge": "結果から判断"
+          }
+        }
+      ]
+    },
+    {
+      "id": "simple",
+      "kind": "board",
+      "role": "usage",
+      "title": "まず単純な作りで試す",
+      "board": "simple",
+      "beats": [
+        {
+          "say": "受付の短い案内文を作るだけなら、まず一度頼んでみます。",
+          "show": ["note", "claude", "one-request"],
+          "travel": {
+            "along": ["one-request"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "Claudeを一回呼ぶだけで足りる仕事もあるためです。",
+          "speech": "クロードをいっかい呼ぶだけで足りる仕事もあるためです。",
+          "pulse": ["claude"],
+          "tag": {
+            "claude": "一回で足りる"
+          }
+        },
+        {
+          "say": "エージェントは、速さと費用を性能と引き換えにします。",
+          "show": ["cost"]
+        },
+        {
+          "say": "必要な結果が得られるなら、単純な作りを選びましょう。",
+          "pulse": ["note", "claude"],
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choose",
+      "kind": "board",
+      "role": "usage",
+      "title": "問題文の手順に注目する",
+      "board": "choice",
+      "beats": [
+        {
+          "say": "問題文では、まず「毎回同じ」という手順の言葉を探します。",
+          "show": ["fixed"],
+          "tag": {
+            "fixed": "同じ段"
+          }
+        },
+        {
+          "say": "「種類ごとに扱う」も、先に手順を書ける仕事です。",
+          "show": ["route"],
+          "tag": {
+            "route": "決めた分類"
+          }
+        },
+        {
+          "say": "やってみないと次が決まらないなら、エージェントを選びます。",
+          "show": ["search"],
+          "tag": {
+            "search": "その都度判断"
+          }
+        },
+        {
+          "say": "手順を先に書けるかを、選ぶ根拠にしましょう。",
+          "pulse": ["fixed", "route", "search"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9e95ae48e4937e5a2636e85a8eb535fde4d504ee7740cb792718ffe2d869413d"
+  }
+}

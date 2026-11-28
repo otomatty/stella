@@ -1,0 +1,755 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "回数と予算の上限を設定する理由を説明し、終了結果の種別に応じて完成した結果と中断の表示を選べる。",
+    "stuck": "実行が止まれば仕事も完成したと思い、途中の結果を完成として表示してしまう。",
+    "points": [
+      "エージェントには最大ターン数と予算の上限を決め、結果の種別を見てから結果を使います。"
+    ],
+    "leaveOut": [
+      "実行環境の選択と移行",
+      "監査用のワークフローの設計",
+      "実行エラーと構造化出力の再試行の詳細",
+      "SDK を呼び出すコードと中断後の再開手順"
+    ]
+  },
+  "art": {
+    "stock-boxes": {
+      "prompt": "Three light grey cardboard stock boxes of different sizes, one open with folded white towels inside, beside a blank white inventory sheet clipped with a blue clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tally-counter": {
+      "prompt": "A large blue mechanical handheld tally counter with a round thumb button and a completely blank light grey display, beside a hand poised to press the button. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "budget-purse": {
+      "prompt": "An open violet clasp purse with a small stack of plain light grey coin discs inside and a separate small stack of the same discs beside it, clearly showing money kept in reserve. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "agent-reply": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding out a white envelope with a blue flap. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stock-report": {
+      "prompt": "A white clipboard with a blank sheet and a blue pencil, with a small light grey stock box placed beside the clipboard to represent an inventory report. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stock-clerk": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features, holding a light grey stock box in one arm and raising the other open hand to pause the work. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-leaflet": {
+      "prompt": "An open white folded gym membership leaflet beside a blue dumbbell and a neatly rolled violet exercise mat. The leaflet is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "run-log": {
+      "prompt": "An open white record notebook with three blue divider tabs, a blue pen and a small plain light grey identification tag attached to the notebook. All pages and the tag are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "棚卸しの集計",
+          "art": "stock-boxes",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "回数の上限",
+          "art": "tally-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "集計の表示",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "counting": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "数える商品",
+          "art": "stock-boxes",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "数える担当者",
+          "art": "stock-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "作業を中断",
+          "art": "tally-counter",
+          "at": [5, 1]
+        },
+        {
+          "id": "report",
+          "label": "途中の集計",
+          "art": "stock-report",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "count",
+          "from": "stock",
+          "to": "clerk"
+        },
+        {
+          "id": "stop",
+          "from": "clerk",
+          "to": "limit"
+        },
+        {
+          "id": "report-stop",
+          "from": "limit",
+          "to": "report"
+        }
+      ]
+    },
+    "turns": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "最大ターン数",
+          "art": "tally-counter",
+          "at": [1, 1]
+        },
+        {
+          "id": "read",
+          "label": "結果を読む",
+          "art": "stock-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "最後に答える",
+          "art": "agent-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "final-turn",
+          "from": "read",
+          "to": "reply",
+          "label": "見込む"
+        }
+      ]
+    },
+    "budget": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "budget",
+          "label": "予算の上限",
+          "art": "budget-purse",
+          "at": [1, 1]
+        },
+        {
+          "id": "turns",
+          "label": "回数の上限",
+          "art": "tally-counter",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "result-kind": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "message",
+          "label": "終了の結果",
+          "art": "agent-reply",
+          "at": [1, 1]
+        },
+        {
+          "id": "kind",
+          "label": "subtype",
+          "art": "run-log",
+          "at": [3, 1]
+        },
+        {
+          "id": "display",
+          "label": "表示を選ぶ",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-kind",
+          "from": "message",
+          "to": "kind",
+          "label": "確認"
+        },
+        {
+          "id": "choose",
+          "from": "kind",
+          "to": "display",
+          "label": "分ける"
+        }
+      ]
+    },
+    "stock-display": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "success",
+          "label": "正常に終了",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "turns",
+          "label": "回数で中断",
+          "art": "tally-counter",
+          "at": [3, 1]
+        },
+        {
+          "id": "budget",
+          "label": "予算で中断",
+          "art": "budget-purse",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "budget-check": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "応答を受け取る",
+          "art": "agent-reply",
+          "at": [1, 1]
+        },
+        {
+          "id": "compare",
+          "label": "費用を照合",
+          "art": "budget-purse",
+          "at": [3, 1]
+        },
+        {
+          "id": "helpers",
+          "label": "サブの費用",
+          "art": "agent-reply",
+          "at": [5, 1]
+        },
+        {
+          "id": "reserve",
+          "label": "余裕を残す",
+          "art": "budget-purse",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "after-reply",
+          "from": "reply",
+          "to": "compare",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "入会案内を作る",
+          "art": "gym-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "stopped",
+          "label": "予算で中断",
+          "art": "budget-purse",
+          "at": [3, 1]
+        },
+        {
+          "id": "done",
+          "label": "案内が完成",
+          "art": "gym-leaflet",
+          "at": [5, 1]
+        },
+        {
+          "id": "notice",
+          "label": "中断を知らせる",
+          "art": "run-log",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "stop-reason",
+          "from": "guide",
+          "to": "stopped"
+        }
+      ]
+    },
+    "gym-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stopped",
+          "label": "予算で中断",
+          "art": "budget-purse",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "中断の表示",
+          "art": "gym-leaflet",
+          "at": [3, 1]
+        },
+        {
+          "id": "log",
+          "label": "実行の記録",
+          "art": "run-log",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "show-reason",
+          "from": "stopped",
+          "to": "notice",
+          "label": "伝える"
+        },
+        {
+          "id": "keep-record",
+          "from": "notice",
+          "to": "log",
+          "label": "控える"
+        }
+      ]
+    },
+    "operation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "turns",
+          "label": "回数を決める",
+          "art": "tally-counter",
+          "at": [1, 1]
+        },
+        {
+          "id": "budget",
+          "label": "予算を決める",
+          "art": "budget-purse",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "種別を確かめる",
+          "art": "run-log",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "止まったら完成か",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "棚卸しの集計を、エージェントに任せます。",
+          "show": ["stock"]
+        },
+        {
+          "say": "ところが、回数の上限で途中までしか進みません。",
+          "show": ["limit"]
+        },
+        {
+          "say": "それでも画面には、集計完了と出ていました。",
+          "show": ["report"],
+          "tag": {
+            "report": "集計完了"
+          },
+          "mark": [
+            {
+              "on": "report",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "回数と予算の上限を決め、結果の種別を見てから使います。",
+          "pulse": ["limit", "report"]
+        }
+      ]
+    },
+    {
+      "id": "counting",
+      "kind": "board",
+      "role": "example",
+      "title": "数え終わる前に止める",
+      "board": "counting",
+      "beats": [
+        {
+          "say": "店で、担当者が商品を順に数える場面です。",
+          "show": ["stock", "clerk", "count"]
+        },
+        {
+          "say": "まだ商品が残っていても、決めた回数で手を止めます。",
+          "show": ["limit", "stop"],
+          "travel": {
+            "along": ["stop"]
+          }
+        },
+        {
+          "say": "手を止めただけでは、集計が完成したとは言えません。",
+          "show": ["report", "report-stop"],
+          "mark": [
+            {
+              "on": "report",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "報告には、回数の上限で中断したと書きましょう。",
+          "tag": {
+            "report": "回数で中断"
+          },
+          "unmark": ["report"],
+          "pulse": ["report"]
+        }
+      ]
+    },
+    {
+      "id": "turn-limit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "最後に答える分も数える",
+      "board": "turns",
+      "beats": [
+        {
+          "say": "最大ターン数を決める設定が、maxTurns です。",
+          "speech": "最大ターン数を決める設定が、マックスターンズです。",
+          "term": {
+            "text": "maxTurns",
+            "ruby": "マックスターンズ",
+            "note": "最大ターン数の設定"
+          }
+        },
+        {
+          "say": "この設定で、何ターンまで動かすかを決めます。",
+          "show": ["limit"]
+        },
+        {
+          "say": "ツールの結果を読んだあとにも、答えるターンが必要です。",
+          "show": ["read", "reply", "final-turn"]
+        },
+        {
+          "say": "上限を決めるときは、最後に答える分も見込みましょう。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "上限に含む"
+          }
+        }
+      ]
+    },
+    {
+      "id": "budget-limit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "予算の上限も設定する",
+      "board": "budget",
+      "beats": [
+        {
+          "say": "予算の上限は、maxBudgetUsd で指定します。",
+          "speech": "予算の上限は、マックスバジェットユーエスディーで指定します。",
+          "term": {
+            "text": "予算の上限",
+            "ruby": "よさんのじょうげん",
+            "note": "maxBudgetUsd"
+          }
+        },
+        {
+          "say": "こちらは、費用をもとに止めるための設定です。",
+          "show": ["budget"]
+        },
+        {
+          "say": "回数の上限も、合わせて指定しましょう。",
+          "show": ["turns"]
+        },
+        {
+          "say": "どちらも指定しなければ、無制限になります。",
+          "tag": {
+            "budget": "未指定は無限",
+            "turns": "未指定は無限"
+          },
+          "pulse": ["budget", "turns"]
+        }
+      ]
+    },
+    {
+      "id": "result-kind",
+      "kind": "board",
+      "role": "syntax",
+      "title": "終了の結果で分ける",
+      "board": "result-kind",
+      "beats": [
+        {
+          "say": "終了時には、ResultMessage が届きます。",
+          "speech": "終了時には、リザルトメッセージが届きます。",
+          "show": ["message"]
+        },
+        {
+          "say": "その結果の種別を示す項目が、subtype です。",
+          "speech": "その結果の種別を示す項目が、サブタイプです。",
+          "term": {
+            "text": "subtype",
+            "ruby": "サブタイプ",
+            "note": "結果の種別"
+          }
+        },
+        {
+          "say": "正常な終了か、上限での中断かをここで確かめましょう。",
+          "show": ["kind", "read-kind"],
+          "travel": {
+            "along": ["read-kind"]
+          }
+        },
+        {
+          "say": "種別を見てから、画面に出す内容を分けます。",
+          "show": ["display", "choose"],
+          "travel": {
+            "along": ["choose"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "stock-display",
+      "kind": "board",
+      "role": "apply",
+      "title": "棚卸しの表示を分ける",
+      "board": "stock-display",
+      "beats": [
+        {
+          "say": "棚卸しが正常に終了した種別は、success です。",
+          "speech": "棚卸しが正常に終了した種別は、サクセスです。",
+          "show": ["success"],
+          "tag": {
+            "success": "success"
+          }
+        },
+        {
+          "say": "このときは、result の集計結果を表示します。",
+          "speech": "このときは、リザルトの集計結果を表示します。",
+          "pulse": ["success"],
+          "tag": {
+            "success": "集計結果"
+          }
+        },
+        {
+          "say": "回数の上限なら、表示するのは中断したことです。",
+          "show": ["turns"],
+          "pulse": ["turns"]
+        },
+        {
+          "say": "予算の上限でも、予算で中断したことを伝えましょう。",
+          "show": ["budget"],
+          "pulse": ["budget"]
+        }
+      ]
+    },
+    {
+      "id": "budget-check",
+      "kind": "board",
+      "role": "apply",
+      "title": "設定額を超える場合",
+      "board": "budget-check",
+      "beats": [
+        {
+          "say": "費用と予算の照合は、応答を受け取ったあとです。",
+          "show": ["reply", "compare", "after-reply"],
+          "travel": {
+            "along": ["after-reply"]
+          }
+        },
+        {
+          "say": "上限に達した応答の費用で、設定額を超えることがあります。",
+          "tag": {
+            "compare": "超過もある"
+          },
+          "pulse": ["compare"]
+        },
+        {
+          "say": "サブエージェントの費用も、同じ予算に含む決まりです。",
+          "show": ["helpers"],
+          "pulse": ["helpers"]
+        },
+        {
+          "say": "動いていたサブエージェントが、止まるまでの分もかかることもあります。",
+          "tag": {
+            "helpers": "停止までの分"
+          }
+        },
+        {
+          "say": "使える金額の全額を設定せず、超過分の余裕を残しましょう。",
+          "show": ["reserve"],
+          "pulse": ["reserve"],
+          "tag": {
+            "reserve": "全額にしない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gym-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "入会案内の表示を選ぶ",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "スポーツジムの入会案内を、エージェントに作らせます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "届いた結果の種別は、予算の上限での中断です。",
+          "show": ["stopped", "stop-reason"]
+        },
+        {
+          "say": "表示の候補に、案内が完成したと伝える文を用意しました。",
+          "show": ["done"]
+        },
+        {
+          "say": "中断を知らせる文と比べ、どちらを選ぶべきでしょうか。",
+          "show": ["notice"],
+          "mark": [
+            {
+              "on": "done",
+              "kind": "question"
+            },
+            {
+              "on": "notice",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gym-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "予算で中断と伝える",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "選ぶのは、予算の上限で中断したと知らせる文です。",
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "check"
+            },
+            {
+              "on": "done",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["notice"]
+        },
+        {
+          "say": "案内が完成したという表示にはしません。",
+          "pulse": ["done"]
+        }
+      ]
+    },
+    {
+      "id": "gym-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "中断の理由をたどる",
+      "board": "gym-reason",
+      "beats": [
+        {
+          "say": "今回止まった理由は、予算の上限に達したことです。",
+          "show": ["stopped"]
+        },
+        {
+          "say": "result を持つのは、success の結果だけに限ります。",
+          "speech": "リザルトを持つのは、サクセスの結果だけに限ります。",
+          "pulse": ["stopped"],
+          "tag": {
+            "stopped": "結果本文なし"
+          }
+        },
+        {
+          "say": "この終了の知らせからは、完成した案内を取り出せません。",
+          "show": ["notice", "show-reason"],
+          "travel": {
+            "along": ["show-reason"]
+          }
+        },
+        {
+          "say": "中断した実行も、停止した理由と合わせて記録しましょう。",
+          "show": ["log", "keep-record"],
+          "travel": {
+            "along": ["keep-record"],
+            "icon": "save"
+          }
+        }
+      ]
+    },
+    {
+      "id": "operation",
+      "kind": "board",
+      "role": "usage",
+      "title": "任せる前と使う前に",
+      "board": "operation",
+      "beats": [
+        {
+          "say": "集計や案内作りを任せる前に、回数の上限を決めます。",
+          "show": ["turns"]
+        },
+        {
+          "say": "予算を設定するときには、超過分を見込むことも必要です。",
+          "show": ["budget"]
+        },
+        {
+          "say": "終了したら、結果の種別を確かめましょう。",
+          "show": ["result"]
+        },
+        {
+          "say": "どの種別でも、セッション ID と費用とターン数を控えます。",
+          "speech": "どの種別でも、セッションアイディーと費用とターン数を控えます。",
+          "pulse": ["result"],
+          "tag": {
+            "result": "記録を残す"
+          }
+        },
+        {
+          "say": "回数と予算に上限を設け、結果は種別を見てから使う決まりです。",
+          "pulse": ["turns", "budget", "result"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6f440a8ba12f58b9cd3c83199d147dcc769fa6b531fc4dae8165975d50e7b60a"
+  }
+}

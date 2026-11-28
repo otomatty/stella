@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m7-safety@7",
-  "contentHash": "fbadedfbc16407d933314985dee466b3c135bff9da09f2fb1b5f7287e678bcfc",
+  "unitId": "claude-developer-foundations/m7-safety@8",
+  "contentHash": "78eaea626e91b143faedec696a6a90dd33e00f6939734d5f2b0df874563eb7a5",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

@@ -1,0 +1,826 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "公式 SDK でリクエストを送る箇所を示し、一時的なエラーの送り直しの回数と間隔を説明できる。",
+    "stuck": "通信を自分で書き、接続や混雑のエラーが出るたびに送り直す処理を足そうとしてしまう。",
+    "points": ["API は公式の SDK から呼び、一時的なエラーの送り直しを SDK に任せます。"],
+    "leaveOut": [
+      "API キーの渡し方",
+      "モデル ID の選び方",
+      "408 と 409 のエラーの細かな意味",
+      "maxRetries による回数の変更",
+      "リクエストの組み立て方と応答の本文の取り出し方",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "bread-errand": {
+      "prompt": "A light grey grocery bag containing a golden baguette and two golden bread rolls, with a small blank white shopping note clipped to the bag. Food has natural colours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "errand-helper": {
+      "prompt": "A friendly person in a plain blue shirt carrying an empty light grey grocery bag, ready to run an errand. Short dark hair and simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-clock": {
+      "prompt": "A large blue round kitchen timer with a blank white dial, a single violet hand and a small blue winding knob. No tick marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sdk-tools": {
+      "prompt": "An open blue portable toolbox holding a violet wrench and a light grey screwdriver, representing ready-made tools for communication. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-sheet": {
+      "prompt": "A hand holding one blank white request sheet with a blue paper clip. The paper is white, with no writing or marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding an open laptop with a completely blank violet screen. Simple facial features. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. One empty speech bubble beside the robot. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-guide": {
+      "prompt": "A blue dumbbell beside a rolled violet exercise mat and a blank white membership leaflet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "errand": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bread",
+          "label": "パンの買い出し",
+          "art": "bread-errand",
+          "at": [1, 1]
+        },
+        {
+          "id": "helper",
+          "label": "買い出し係",
+          "art": "errand-helper",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って出直す",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "bread",
+          "to": "helper",
+          "label": "任せる"
+        },
+        {
+          "id": "retry",
+          "from": "helper",
+          "to": "wait",
+          "label": "出直す"
+        }
+      ]
+    },
+    "sdk": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "公式SDK",
+          "art": "sdk-tools",
+          "at": [3, 1]
+        },
+        {
+          "id": "api",
+          "label": "API",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "app",
+          "to": "sdk",
+          "label": "呼ぶ"
+        },
+        {
+          "id": "send",
+          "from": "sdk",
+          "to": "api",
+          "label": "通信"
+        }
+      ]
+    },
+    "call": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "client",
+          "label": "呼び出す道具",
+          "art": "sdk-tools",
+          "at": [3, 1]
+        },
+        {
+          "id": "response",
+          "label": "応答",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "request",
+          "to": "client",
+          "label": "渡す"
+        },
+        {
+          "id": "receive",
+          "from": "client",
+          "to": "response",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "errors": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "sdk",
+          "label": "公式SDK",
+          "art": "sdk-tools",
+          "at": [1, 1]
+        },
+        {
+          "id": "connection",
+          "label": "接続のエラー",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "quota",
+          "label": "回数の制限",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "server",
+          "label": "サーバー側",
+          "art": "claude-robot",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "retries": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "initial",
+          "label": "最初の送信",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait-one",
+          "label": "少し待つ",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "retry-one",
+          "label": "送り直し一回",
+          "art": "request-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "wait-two",
+          "label": "さらに待つ",
+          "art": "waiting-clock",
+          "at": [5, 2]
+        },
+        {
+          "id": "retry-two",
+          "label": "送り直し二回",
+          "art": "request-sheet",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "initial-wait",
+          "from": "initial",
+          "to": "wait-one"
+        },
+        {
+          "id": "wait-retry",
+          "from": "wait-one",
+          "to": "retry-one"
+        },
+        {
+          "id": "retry-wait",
+          "from": "retry-one",
+          "to": "wait-two"
+        },
+        {
+          "id": "last-retry",
+          "from": "wait-two",
+          "to": "retry-two"
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "gym",
+          "label": "入会案内",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "公式SDK",
+          "art": "sdk-tools",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "429",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待つ間隔",
+          "art": "waiting-clock",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "gym",
+          "to": "sdk",
+          "label": "使う"
+        },
+        {
+          "id": "error-back",
+          "from": "error",
+          "to": "sdk",
+          "label": "エラー"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "送り直しまで任せる",
+      "board": "errand",
+      "beats": [
+        {
+          "say": "パンの買い出しを、係の人に頼む場面を考えましょう。",
+          "show": ["bread"]
+        },
+        {
+          "say": "混んでいるときの出直しも、任せたいところです。",
+          "show": ["helper", "ask"]
+        },
+        {
+          "say": "通信のエラーでも、送り直しを任せられるでしょうか。",
+          "show": ["wait", "retry"]
+        },
+        {
+          "say": "公式 SDK を使い、一時的なエラーの送り直しを任せます。",
+          "speech": "公式エスディーケーを使い、一時的なエラーの送り直しを任せます。",
+          "pulse": ["helper", "wait"]
+        }
+      ]
+    },
+    {
+      "id": "errand",
+      "kind": "board",
+      "role": "example",
+      "title": "出直す仕事も頼む",
+      "board": "errand",
+      "reset": true,
+      "beats": [
+        {
+          "say": "パンを買う仕事を、買い出し係に任せたとします。",
+          "show": ["bread", "helper", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ところが、店が混んでいて購入を見送りました。",
+          "tag": {
+            "helper": "混雑中"
+          },
+          "mark": [
+            {
+              "on": "helper",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "係の人が少し待ち、もう一度買いに行きます。",
+          "show": ["wait", "retry"],
+          "travel": {
+            "along": ["retry"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "頼む側は、出直すたびに自分で店へ行く必要がありません。",
+          "pulse": ["helper"],
+          "tag": {
+            "helper": "出直しも任す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sdk-role",
+      "kind": "board",
+      "role": "syntax",
+      "title": "通信を引き受ける道具",
+      "board": "sdk",
+      "beats": [
+        {
+          "say": "SDK は、API を呼ぶための公式ライブラリーです。",
+          "speech": "エスディーケーは、エーピーアイを呼ぶための公式ライブラリーです。",
+          "term": {
+            "text": "SDK",
+            "note": "APIを呼ぶライブラリー"
+          }
+        },
+        {
+          "say": "図の中央が、通信を引き受ける SDK に当たります。",
+          "speech": "図の中央が、通信を引き受けるエスディーケーに当たります。",
+          "show": ["sdk"]
+        },
+        {
+          "say": "アプリが API を呼ぶときに使う道具です。",
+          "speech": "アプリがエーピーアイを呼ぶときに使う道具です。",
+          "show": ["app", "api", "call", "send"],
+          "travel": {
+            "along": ["call", "send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "必要な送り直しも、SDK に任せましょう。",
+          "speech": "必要な送り直しも、エスディーケーに任せましょう。",
+          "pulse": ["sdk"],
+          "tag": {
+            "sdk": "送り直し"
+          }
+        }
+      ]
+    },
+    {
+      "id": "prepare-client",
+      "kind": "code",
+      "role": "syntax",
+      "title": "公式の道具を用意する",
+      "code": [
+        "// 公式のライブラリーを読み込む",
+        "import Anthropic from \"@anthropic-ai/sdk\";",
+        "// API を呼ぶ道具を用意する",
+        "const client = new Anthropic();",
+        "// 用意したリクエストを送り、応答を受け取る",
+        "const response = await client.messages.create(request);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "call"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、公式 SDK を読み込む行を見ます。",
+          "speech": "まず、公式エスディーケーを読み込む行を見ます。",
+          "part": {
+            "line": 1,
+            "text": "\"@anthropic-ai/sdk\"",
+            "note": "公式の道具"
+          },
+          "figure": {
+            "show": ["client"]
+          }
+        },
+        {
+          "say": "読み込んだ道具を使うのが、この次の行です。",
+          "part": {
+            "line": 3,
+            "text": "new Anthropic()",
+            "note": "道具を用意"
+          },
+          "figure": {
+            "pulse": ["client"]
+          }
+        },
+        {
+          "say": "用意した道具には、client という名前を付けます。",
+          "speech": "用意した道具には、クライアントという名前を付けます。",
+          "part": {
+            "line": 3,
+            "text": "client",
+            "note": "呼び出す側"
+          },
+          "figure": {
+            "tag": {
+              "client": "client"
+            }
+          }
+        },
+        {
+          "say": "client は、この例で書く人が決めた名前です。",
+          "speech": "クライアントは、この例で書く人が決めた名前です。",
+          "part": {
+            "line": 5,
+            "text": "client",
+            "note": "同じ道具"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "client",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-request",
+      "kind": "code",
+      "role": "apply",
+      "title": "用意した依頼を渡す",
+      "code": [
+        "// 公式のライブラリーを読み込む",
+        "import Anthropic from \"@anthropic-ai/sdk\";",
+        "// API を呼ぶ道具を用意する",
+        "const client = new Anthropic();",
+        "// 用意したリクエストを送り、応答を受け取る",
+        "const response = await client.messages.create(request);"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "call"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "request に入っているのは、用意した依頼です。",
+          "speech": "リクエストに入っているのは、用意した依頼です。",
+          "part": {
+            "line": 5,
+            "text": "request",
+            "note": "送る依頼"
+          },
+          "figure": {
+            "show": ["request"]
+          }
+        },
+        {
+          "say": "このリクエストを、呼び出す道具へ渡します。",
+          "part": {
+            "line": 5,
+            "text": "client.messages.create(request)",
+            "note": "依頼を送る"
+          },
+          "figure": {
+            "show": ["client", "pass"],
+            "travel": {
+              "along": ["pass"],
+              "icon": "send"
+            }
+          }
+        },
+        {
+          "say": "返ってきた応答を受け取る名前が response です。",
+          "speech": "返ってきた応答を受け取る名前がレスポンスです。",
+          "part": {
+            "line": 5,
+            "text": "response",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["response", "receive"],
+            "travel": {
+              "along": ["receive"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "この呼び出しで、通信を SDK に任せています。",
+          "speech": "この呼び出しで、通信をエスディーケーに任せています。",
+          "focus": [5],
+          "figure": {
+            "pulse": ["client"],
+            "tag": {
+              "client": "通信を任せる"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "retry-errors",
+      "kind": "board",
+      "role": "apply",
+      "title": "送り直しの対象",
+      "board": "errors",
+      "beats": [
+        {
+          "say": "一時的なエラーで再び送ることを、送り直しと呼びます。",
+          "term": {
+            "text": "送り直し",
+            "ruby": "おくりなおし",
+            "note": "エラーのあとに再び送る"
+          },
+          "show": ["sdk"]
+        },
+        {
+          "say": "接続のエラーは、送り直しの対象です。",
+          "show": ["connection"],
+          "mark": [
+            {
+              "on": "connection",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "回数の制限に当たると、429 のエラーになります。",
+          "speech": "回数の制限に当たると、よんにーきゅうのエラーになります。",
+          "term": {
+            "text": "回数の制限",
+            "ruby": "かいすうのせいげん",
+            "note": "429が表すエラー"
+          },
+          "show": ["quota"],
+          "tag": {
+            "quota": "429"
+          }
+        },
+        {
+          "say": "この429も、SDK が送り直す対象です。",
+          "speech": "このよんにーきゅうも、エスディーケーが送り直す対象です。",
+          "pulse": ["quota"],
+          "mark": [
+            {
+              "on": "quota",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "500 以上のサーバー側のエラーにも対応します。",
+          "speech": "ごひゃく以上のサーバー側のエラーにも対応します。",
+          "show": ["server"],
+          "tag": {
+            "server": "500以上"
+          },
+          "mark": [
+            {
+              "on": "server",
+              "kind": "redo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "retry-timing",
+      "kind": "board",
+      "role": "apply",
+      "title": "二回まで間隔を広げる",
+      "board": "retries",
+      "beats": [
+        {
+          "say": "まず、用意したリクエストを一度送ります。",
+          "show": ["initial"]
+        },
+        {
+          "say": "対象のエラーが出たら、少し待って送り直す流れです。",
+          "show": ["wait-one", "retry-one", "initial-wait", "wait-retry"],
+          "travel": {
+            "along": ["initial-wait", "wait-retry"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "また対象のエラーなら、間隔を広げて送り直します。",
+          "show": ["wait-two", "retry-two", "retry-wait", "last-retry"],
+          "travel": {
+            "along": ["retry-wait", "last-retry"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "設定を変えなければ、送り直しは二回までです。",
+          "pulse": ["retry-one", "retry-two"],
+          "tag": {
+            "retry-two": "二回まで"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "gym-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "ジムの案内で考える",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "ジムの入会案内を作るアプリで、考えてみましょう。",
+          "show": ["gym"]
+        },
+        {
+          "say": "公式 SDK を、設定を変えずに使っています。",
+          "speech": "公式エスディーケーを、設定を変えずに使っています。",
+          "show": ["sdk", "use"],
+          "tag": {
+            "sdk": "既定の設定"
+          }
+        },
+        {
+          "say": "最初の通信で返ったのは、429 のエラーです。",
+          "speech": "最初の通信で返ったのは、よんにーきゅうのエラーです。",
+          "show": ["error", "error-back"],
+          "travel": {
+            "along": ["error-back"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "送り直せる回数と、待つ間隔はどうなるでしょうか。",
+          "show": ["wait"],
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "question"
+            },
+            {
+              "on": "wait",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gym-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "回数と間隔を確かめる",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "設定を変えなければ、送り直しは二回までです。",
+          "tag": {
+            "sdk": "二回まで"
+          },
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "間隔を少しずつ広げながら、SDK が送り直します。",
+          "speech": "間隔を少しずつ広げながら、エスディーケーが送り直します。",
+          "tag": {
+            "wait": "間隔を広げる"
+          },
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["wait"]
+        }
+      ]
+    },
+    {
+      "id": "gym-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "エラーから動きをたどる",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "429 は、回数の制限を表すエラーです。",
+          "speech": "よんにーきゅうは、回数の制限を表すエラーです。",
+          "pulse": ["error"],
+          "tag": {
+            "error": "回数の制限"
+          }
+        },
+        {
+          "say": "そのため、SDK が自動で送り直します。",
+          "speech": "そのため、エスディーケーが自動で送り直します。",
+          "pulse": ["sdk"],
+          "mark": [
+            {
+              "on": "error",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "待つ間隔は、少しずつ広がる決まりです。",
+          "pulse": ["wait"]
+        },
+        {
+          "say": "最初に送った一回を、送り直しの回数に混ぜないでください。",
+          "pulse": ["sdk"],
+          "tag": {
+            "sdk": "初回は別"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-sdk",
+      "kind": "board",
+      "role": "usage",
+      "title": "アプリに組み込むとき",
+      "board": "sdk",
+      "reset": true,
+      "beats": [
+        {
+          "say": "案内文を作るアプリでも、公式 SDK から呼びます。",
+          "speech": "案内文を作るアプリでも、公式エスディーケーから呼びます。",
+          "show": ["app", "sdk", "api", "call", "send"],
+          "travel": {
+            "along": ["call", "send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "通信を自分で書くなら、送り直す処理も忘れないでください。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "自前の通信"
+          }
+        },
+        {
+          "say": "SDK は、その送り直しを引き受ける道具です。",
+          "speech": "エスディーケーは、その送り直しを引き受ける道具です。",
+          "pulse": ["sdk"],
+          "untag": ["app"],
+          "tag": {
+            "sdk": "送り直し"
+          }
+        },
+        {
+          "say": "呼び出す部分は、公式 SDK を使う形にしましょう。",
+          "speech": "呼び出す部分は、公式エスディーケーを使う形にしましょう。",
+          "pulse": ["call"],
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ff549f7393d2d5f187d2270859d1ade502cfa56289a8bb66bdf6e8d517478800"
+  }
+}

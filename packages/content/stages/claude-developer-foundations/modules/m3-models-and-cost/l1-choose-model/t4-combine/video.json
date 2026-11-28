@@ -1,0 +1,720 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "モデルを組み合わせる前に試す調整と、比較する候補を説明できる。",
+    "stuck": "安いモデルと強いモデルを組み合わせれば、必ず費用と質の両方が良くなると思ってしまう。",
+    "points": ["モデルの組み合わせは、1 つのモデルの effort を調整しても足りないときに考えます。"],
+    "leaveOut": [
+      "具体的なモデル名と料金",
+      "effort の設定値とコード",
+      "組み合わせを実装する方法",
+      "評価のセットの詳しい作り方",
+      "キャッシュとバッチ処理"
+    ]
+  },
+  "art": {
+    "alteration-request": {
+      "prompt": "A pair of blue trousers with one hem folded up, a violet measuring tape and a blank white alteration slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tailor": {
+      "prompt": "A friendly clothing alteration worker in a plain blue shirt holding a pair of blue trousers and a small pair of scissors. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "economical-model": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a neat stack of blank white work slips. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "strong-model": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, thoughtfully examining a blank white sheet through a blue magnifying glass. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "effort-control": {
+      "prompt": "A close-up of a hand turning a large blue rotary knob on a small white handheld control device. No scale markings. A physical object, not an app screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "comparison-sheets": {
+      "prompt": "Two white clipboards standing side by side, each holding a blank white sheet, with a violet pencil between them. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-guide": {
+      "prompt": "A folded white library information leaflet beside two closed books with blue and violet covers and a small blue bookend. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "work-plan": {
+      "prompt": "Several separate blank white document bundles with blue clips beside one larger white planning sheet and a violet pencil. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "裾直しの相談",
+          "art": "alteration-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "一つのモデル",
+          "art": "strong-model",
+          "at": [3, 1]
+        },
+        {
+          "id": "adjust",
+          "label": "労力の調整",
+          "art": "effort-control",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "tailor": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "裾直し",
+          "art": "alteration-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "worker",
+          "label": "進める担当者",
+          "art": "tailor",
+          "at": [3, 1]
+        },
+        {
+          "id": "expert",
+          "label": "相談する担当者",
+          "art": "tailor",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "request",
+          "to": "worker",
+          "label": "作業"
+        },
+        {
+          "id": "ask",
+          "from": "worker",
+          "to": "expert",
+          "label": "難しい判断"
+        }
+      ]
+    },
+    "combine": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cheap",
+          "label": "安いモデル",
+          "art": "economical-model",
+          "at": [1, 1]
+        },
+        {
+          "id": "strong",
+          "label": "強いモデル",
+          "art": "strong-model",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "advisor": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cheap",
+          "label": "安いモデル",
+          "art": "economical-model",
+          "at": [1, 1]
+        },
+        {
+          "id": "decision",
+          "label": "難しい判断",
+          "art": "work-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "strong",
+          "label": "強いモデル",
+          "art": "strong-model",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "progress",
+          "from": "cheap",
+          "to": "decision",
+          "label": "進める"
+        },
+        {
+          "id": "consult",
+          "from": "decision",
+          "to": "strong",
+          "label": "聞く"
+        }
+      ]
+    },
+    "orchestrator": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "strong",
+          "label": "強いモデル",
+          "art": "strong-model",
+          "at": [1, 1]
+        },
+        {
+          "id": "plan",
+          "label": "計画と分担",
+          "art": "work-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "cheap",
+          "label": "安いモデル",
+          "art": "economical-model",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "plan-work",
+          "from": "strong",
+          "to": "plan",
+          "label": "計画する"
+        },
+        {
+          "id": "assign",
+          "from": "plan",
+          "to": "cheap",
+          "label": "作業を配る"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "adjust",
+          "label": "今のモデル",
+          "art": "effort-control",
+          "at": [1, 1]
+        },
+        {
+          "id": "strong",
+          "label": "強いモデル",
+          "art": "strong-model",
+          "at": [3, 1]
+        },
+        {
+          "id": "combine",
+          "label": "組み合わせ",
+          "art": "work-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "still-short",
+          "from": "adjust",
+          "to": "strong",
+          "label": "足りなければ"
+        },
+        {
+          "id": "compare",
+          "from": "strong",
+          "to": "combine",
+          "label": "比べる"
+        }
+      ]
+    },
+    "comparison": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "same",
+          "label": "同じモデル",
+          "art": "strong-model",
+          "at": [1, 1]
+        },
+        {
+          "id": "lower",
+          "label": "一つ下のモデル",
+          "art": "economical-model",
+          "at": [3, 1]
+        },
+        {
+          "id": "combined",
+          "label": "組み合わせ",
+          "art": "work-plan",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "図書室の案内",
+          "art": "library-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "adjust",
+          "label": "一つを調整",
+          "art": "effort-control",
+          "at": [3, 1]
+        },
+        {
+          "id": "combine",
+          "label": "二つを使う",
+          "art": "work-plan",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "同じ利用案内",
+          "art": "library-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "同じ評価",
+          "art": "comparison-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "decision",
+          "label": "組み合わせ",
+          "art": "work-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "evaluate",
+          "from": "guide",
+          "to": "test",
+          "label": "試す"
+        },
+        {
+          "id": "decide",
+          "from": "test",
+          "to": "decision",
+          "label": "比べて決める"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ongoing",
+          "label": "一続きの作業",
+          "art": "alteration-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "documents",
+          "label": "独立した文書",
+          "art": "work-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "adjust",
+          "label": "まず一つを調整",
+          "art": "effort-control",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "増やす前に調整する",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "洋服店で、裾直しの相談に答えるモデルを考えます。",
+          "show": ["request"]
+        },
+        {
+          "say": "費用を抑えたいときも、出発点は一つのモデルです。",
+          "show": ["model"]
+        },
+        {
+          "say": "まず、一つのモデルで effort を調整しましょう。",
+          "speech": "まず、一つのモデルでエフォートを調整しましょう。",
+          "show": ["adjust"]
+        },
+        {
+          "say": "組み合わせは、その調整でも足りないときに考えます。",
+          "pulse": ["model", "adjust"]
+        }
+      ]
+    },
+    {
+      "id": "tailor-example",
+      "kind": "board",
+      "role": "example",
+      "title": "難しい判断だけ相談する",
+      "board": "tailor",
+      "beats": [
+        {
+          "say": "裾直しの担当者が、お客さんの依頼を受けました。",
+          "show": ["request", "worker", "start"]
+        },
+        {
+          "say": "普段の作業は、同じ担当者が進めます。",
+          "pulse": ["worker"]
+        },
+        {
+          "say": "難しい判断だけ、詳しい担当者に聞く形です。",
+          "show": ["expert", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "作業を進める役と、相談を受ける役に注目しましょう。",
+          "pulse": ["worker", "expert"]
+        }
+      ]
+    },
+    {
+      "id": "combine-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "組み合わせの目的",
+      "board": "combine",
+      "beats": [
+        {
+          "say": "安いモデルと強いモデルを、一つの処理で使います。",
+          "term": {
+            "text": "モデルの組み合わせ",
+            "ruby": "モデルのくみあわせ",
+            "note": "一つの処理で使い分ける"
+          }
+        },
+        {
+          "say": "図の二つが、組み合わせて使うモデルです。",
+          "show": ["cheap", "strong"]
+        },
+        {
+          "say": "トークンの多くを安い料金で処理することを狙います。",
+          "pulse": ["cheap"]
+        },
+        {
+          "say": "ただし、仕組みが複雑になり、いつも得とは限りません。",
+          "pulse": ["cheap", "strong"],
+          "mark": [
+            {
+              "on": "strong",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "advisor",
+      "kind": "board",
+      "role": "syntax",
+      "title": "進める役と相談する役",
+      "board": "advisor",
+      "beats": [
+        {
+          "say": "難しい判断だけ強いモデルに聞く形が、アドバイザーです。",
+          "term": {
+            "text": "アドバイザー",
+            "note": "安いモデルが進める"
+          }
+        },
+        {
+          "say": "先ほどの裾直しのように、安いモデルが進めます。",
+          "show": ["cheap"]
+        },
+        {
+          "say": "強いモデルに聞くのは、難しい判断があるときです。",
+          "show": ["decision", "strong", "progress", "consult"],
+          "travel": {
+            "along": ["consult"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "一続きの作業で、ところどころ判断が難しいときに使います。",
+          "pulse": ["cheap", "decision"]
+        }
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "kind": "board",
+      "role": "syntax",
+      "title": "計画して作業を配る",
+      "board": "orchestrator",
+      "beats": [
+        {
+          "say": "強いモデルが計画する形は、オーケストレーターです。",
+          "term": {
+            "text": "オーケストレーター",
+            "note": "強いモデルが計画する"
+          }
+        },
+        {
+          "say": "強いモデルが、作業の計画を立てます。",
+          "show": ["strong", "plan", "plan-work"],
+          "travel": {
+            "along": ["plan-work"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "安いモデルに配るのは、実際に進める大量の作業です。",
+          "show": ["cheap", "assign"],
+          "travel": {
+            "along": ["assign"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "互いに独立した文書を、手分けして処理するときに使います。",
+          "pulse": ["plan", "cheap"]
+        }
+      ]
+    },
+    {
+      "id": "try-one-first",
+      "kind": "board",
+      "role": "apply",
+      "title": "先に試す順番",
+      "board": "order",
+      "beats": [
+        {
+          "say": "裾直しの相談でも、まず今のモデルの effort を変えます。",
+          "speech": "裾直しの相談でも、まず今のモデルのエフォートを変えます。",
+          "show": ["adjust"]
+        },
+        {
+          "say": "たいていの処理は、この調整で使い方が決まるからです。",
+          "pulse": ["adjust"],
+          "tag": {
+            "adjust": "先に比べる"
+          }
+        },
+        {
+          "say": "足りなければ、強いモデルの低い effort で費用を見積もります。",
+          "speech": "足りなければ、強いモデルの低いエフォートで費用を見積もります。",
+          "show": ["strong", "still-short"],
+          "tag": {
+            "strong": "低くして試す"
+          }
+        },
+        {
+          "say": "組み合わせを作る前に、この候補まで比べましょう。",
+          "show": ["combine", "compare"],
+          "pulse": ["strong", "combine"]
+        }
+      ]
+    },
+    {
+      "id": "compare-options",
+      "kind": "board",
+      "role": "apply",
+      "title": "単独の候補とも比べる",
+      "board": "comparison",
+      "beats": [
+        {
+          "say": "組み合わせも、同じ評価のセットで試します。",
+          "show": ["combined"]
+        },
+        {
+          "say": "比較相手の一つは、同じモデルの低い effort です。",
+          "speech": "比較相手の一つは、同じモデルの低いエフォートです。",
+          "show": ["same"],
+          "tag": {
+            "same": "低いeffort"
+          }
+        },
+        {
+          "say": "一つ下のモデルだけで動かした場合とも比べましょう。",
+          "show": ["lower"]
+        },
+        {
+          "say": "単独のどの effort よりも良いときだけ、組み合わせを作ります。",
+          "speech": "単独のどのエフォートよりも良いときだけ、組み合わせを作ります。",
+          "pulse": ["same", "lower", "combined"]
+        }
+      ]
+    },
+    {
+      "id": "library-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "案内の費用を抑えるには",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "図書室の利用案内に答えるモデルを、安く使いたいとします。",
+          "show": ["guide"]
+        },
+        {
+          "say": "まだ、一つのモデルの effort を変えて比べていません。",
+          "speech": "まだ、一つのモデルのエフォートを変えて比べていません。",
+          "show": ["adjust"],
+          "tag": {
+            "adjust": "未比較"
+          }
+        },
+        {
+          "say": "担当者は、安いモデルと強いモデルを組む案を出しました。",
+          "show": ["combine"]
+        },
+        {
+          "say": "先にするのは、一つの調整と二つの組み合わせのどちらでしょうか。",
+          "mark": [
+            {
+              "on": "adjust",
+              "kind": "question"
+            },
+            {
+              "on": "combine",
+              "kind": "question"
+            }
+          ]
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "library-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "先に一つを調整する",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "先にするのは、一つのモデルの effort の調整です。",
+          "speech": "先にするのは、一つのモデルのエフォートの調整です。",
+          "unmark": ["combine"],
+          "mark": [
+            {
+              "on": "adjust",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["adjust"]
+        },
+        {
+          "say": "組み合わせを作る判断は、その比較のあとに回します。",
+          "tag": {
+            "combine": "比較のあと"
+          },
+          "pulse": ["combine"]
+        }
+      ]
+    },
+    {
+      "id": "library-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "なぜ比較を先にするか",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "図書室の案内に答える処理を、同じ評価で試しましょう。",
+          "show": ["guide", "test", "evaluate"]
+        },
+        {
+          "say": "まず、effort を変えた一つのモデルで比べます。",
+          "speech": "まず、エフォートを変えた一つのモデルで比べます。",
+          "pulse": ["test"],
+          "tag": {
+            "test": "まず単独"
+          }
+        },
+        {
+          "say": "低い effort の強いモデルが、組むより安くて正確な場合もあるからです。",
+          "speech": "低いエフォートの強いモデルが、組むより安くて正確な場合もあるからです。",
+          "tag": {
+            "test": "費用と正確さ"
+          },
+          "pulse": ["guide"]
+        },
+        {
+          "say": "二つを使うだけでは、良くなるとは言えません。",
+          "show": ["decision", "decide"],
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "組み合わせのほうが良いか、単独の候補と比べて決めます。",
+          "pulse": ["test", "decision"],
+          "tag": {
+            "decision": "比較して決定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "作業の形から考える",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "一続きの作業に難しい判断が混じるなら、相談する形を考えます。",
+          "show": ["ongoing"],
+          "tag": {
+            "ongoing": "難しい時だけ"
+          }
+        },
+        {
+          "say": "独立した文書が多いなら、計画して配る形が候補です。",
+          "show": ["documents"],
+          "tag": {
+            "documents": "計画して配る"
+          }
+        },
+        {
+          "say": "どちらも、まず一つのモデルの effort を調整しましょう。",
+          "speech": "どちらも、まず一つのモデルのエフォートを調整しましょう。",
+          "show": ["adjust"]
+        },
+        {
+          "say": "それでも足りないときに、組み合わせを同じ評価で比べます。",
+          "pulse": ["adjust"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "d76e45157149b4fa11c785ddd2234d4402b367d102a72f1c6083ec55d06967f4"
+  }
+}

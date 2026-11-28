@@ -1,0 +1,722 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "運用者の方針と利用者の依頼を渡す場所を分け、食い違う場合に優先する指示を選べる。",
+    "stuck": "利用者が求めた内容なら、運用者が決めた案内の方針も変更してよいと思ってしまう。",
+    "points": [
+      "system は運用者の指示、user の発言は利用者の言葉として読まれ、食い違えば system が優先されます。"
+    ],
+    "leaveOut": [
+      "会話の途中で運用者の指示を追加する方法と対応モデル",
+      "Claude のアプリと API の違い",
+      "利用者ごとの履歴やファイルの管理",
+      "リクエストのコードと課題の解答"
+    ]
+  },
+  "art": {
+    "allowance-envelope": {
+      "prompt": "A white open envelope holding a blank white allowance statement, with a small blue purse beside it. The paper and envelope are white, with no printed markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "policy-clipboard": {
+      "prompt": "A blue clipboard holding a single white policy sheet, with a blue pen clipped to its side. The sheet is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "requesting-user": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white request slip, with a blank violet speech bubble beside their simple face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "staff-member": {
+      "prompt": "A helpful staff member in a plain blue shirt, with simple facial features, holding out an open hand to welcome an inquiry. Show the person alone without furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white reply card. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "aquarium-ticket": {
+      "prompt": "Two white admission tickets with blue edges beside a small blue toy dolphin, representing an aquarium visit. The tickets are entirely blank and the toy is a simple generic object. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open blue laptop with a completely blank white screen beside two separate white paper slips, one with a blue clip and the other with a violet clip. No interface or application controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "amount",
+          "label": "手当の案内",
+          "art": "allowance-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "policy",
+          "label": "不明なら窓口",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "推測を求める",
+          "art": "requesting-user",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "counter": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "窓口の方針",
+          "art": "policy-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "窓口の担当者",
+          "art": "staff-member",
+          "at": [3, 1]
+        },
+        {
+          "id": "visitor",
+          "label": "相談する人",
+          "art": "requesting-user",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "policy-staff",
+          "from": "policy",
+          "to": "staff",
+          "label": "適用"
+        }
+      ]
+    },
+    "operator": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "operator",
+          "label": "運用者",
+          "art": "staff-member",
+          "at": [1, 1]
+        },
+        {
+          "id": "policy",
+          "label": "案内の方針",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "案内アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "decide",
+          "from": "operator",
+          "to": "policy",
+          "label": "決める"
+        },
+        {
+          "id": "use",
+          "from": "policy",
+          "to": "app",
+          "label": "使う"
+        }
+      ]
+    },
+    "fields": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "運用者の指示",
+          "art": "policy-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "user",
+          "art": "requesting-user",
+          "at": [3, 2]
+        },
+        {
+          "id": "request",
+          "label": "利用者の言葉",
+          "art": "requesting-user",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-system",
+          "from": "policy",
+          "to": "system",
+          "label": "書く"
+        },
+        {
+          "id": "to-user",
+          "from": "request",
+          "to": "user",
+          "label": "書く"
+        }
+      ]
+    },
+    "place": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "不明なら窓口",
+          "art": "policy-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "user",
+          "label": "user",
+          "art": "requesting-user",
+          "at": [3, 2]
+        },
+        {
+          "id": "request",
+          "label": "推測で教えて",
+          "art": "requesting-user",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "policy-field",
+          "from": "policy",
+          "to": "system",
+          "label": "方針"
+        },
+        {
+          "id": "request-field",
+          "from": "request",
+          "to": "user",
+          "label": "依頼"
+        }
+      ]
+    },
+    "resolve": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "system",
+          "art": "policy-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "user",
+          "art": "requesting-user",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "窓口を案内",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "aquarium": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "ticket",
+          "label": "水族館の券",
+          "art": "aquarium-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "policy",
+          "label": "不明なら窓口",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "推測を求める",
+          "art": "requesting-user",
+          "at": [5, 1]
+        },
+        {
+          "id": "estimate",
+          "label": "料金を推測",
+          "art": "aquarium-ticket",
+          "at": [5, 2]
+        },
+        {
+          "id": "desk",
+          "label": "窓口を案内",
+          "art": "staff-member",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "quiz-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "system",
+          "art": "policy-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "user",
+          "art": "requesting-user",
+          "at": [3, 1]
+        },
+        {
+          "id": "desk",
+          "label": "窓口を案内",
+          "art": "staff-member",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "手当のアプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "policy",
+          "label": "運用者の方針",
+          "art": "policy-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "利用者の依頼",
+          "art": "requesting-user",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "金額を推測してよいか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "社内の手当を案内するアプリを考えましょう。",
+          "show": ["amount"]
+        },
+        {
+          "say": "支給額が不明なら、窓口を案内する方針です。",
+          "show": ["policy"]
+        },
+        {
+          "say": "利用者は、推測でよいので金額を教えてと頼みました。",
+          "show": ["request"]
+        },
+        {
+          "say": "方針と依頼が食い違えば、system が優先されます。",
+          "speech": "方針と依頼が食い違えば、システムが優先されます。",
+          "pulse": ["policy"],
+          "tag": {
+            "policy": "system"
+          }
+        }
+      ]
+    },
+    {
+      "id": "counter",
+      "kind": "board",
+      "role": "example",
+      "title": "窓口でも方針に従う",
+      "board": "counter",
+      "beats": [
+        {
+          "say": "人が対応する、社内の相談窓口に置き換えてみましょう。",
+          "show": ["staff"]
+        },
+        {
+          "say": "ここでも、不明な金額を推測しない方針です。",
+          "show": ["policy", "policy-staff"]
+        },
+        {
+          "say": "相談する人は、おおよその額だけでも知りたいと頼みました。",
+          "show": ["visitor"],
+          "tag": {
+            "visitor": "推測でよい"
+          }
+        },
+        {
+          "say": "その希望だけで、方針は変わりません。",
+          "pulse": ["policy"],
+          "tag": {
+            "policy": "推測しない"
+          }
+        },
+        {
+          "say": "担当者は、金額を確認できる窓口を案内します。",
+          "pulse": ["staff"],
+          "tag": {
+            "staff": "窓口を案内"
+          }
+        }
+      ]
+    },
+    {
+      "id": "operator",
+      "kind": "board",
+      "role": "syntax",
+      "title": "方針を決めるのはだれか",
+      "board": "operator",
+      "beats": [
+        {
+          "say": "アプリの方針を決める側を、運用者と呼びます。",
+          "term": {
+            "text": "運用者",
+            "ruby": "うんようしゃ",
+            "note": "アプリの方針を決める側"
+          }
+        },
+        {
+          "say": "この図で方針を決めている人が、運用者です。",
+          "show": ["operator"]
+        },
+        {
+          "say": "運用者は、根拠のない数字を使わないと決めました。",
+          "show": ["policy", "decide"]
+        },
+        {
+          "say": "アプリから送る指示にも、その方針を反映します。",
+          "show": ["app", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fields",
+      "kind": "board",
+      "role": "syntax",
+      "title": "指示と発言の場所",
+      "board": "fields",
+      "beats": [
+        {
+          "say": "運用者の指示を書く欄が、system です。",
+          "speech": "運用者の指示を書く欄が、システムです。",
+          "term": {
+            "text": "system",
+            "ruby": "システム",
+            "note": "運用者の指示を書く欄"
+          }
+        },
+        {
+          "say": "アプリが、決められた方針をこの欄に入れます。",
+          "show": ["policy", "system", "to-system"],
+          "travel": {
+            "along": ["to-system"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "利用者の言葉として読む発言が、user です。",
+          "speech": "利用者の言葉として読む発言が、ユーザーです。",
+          "term": {
+            "text": "user",
+            "ruby": "ユーザー",
+            "note": "利用者の言葉として読む発言"
+          }
+        },
+        {
+          "say": "依頼は、messages の user の発言として渡します。",
+          "speech": "依頼は、メッセージズのユーザーの発言として渡します。",
+          "show": ["request", "user", "to-user"],
+          "travel": {
+            "along": ["to-user"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "方針と依頼を、別々の場所に書き分けましょう。",
+          "pulse": ["system", "user"]
+        }
+      ]
+    },
+    {
+      "id": "place-policy",
+      "kind": "board",
+      "role": "apply",
+      "title": "手当の例を書き分ける",
+      "board": "place",
+      "beats": [
+        {
+          "say": "手当の例では、不明なら窓口を案内するよう指示します。",
+          "show": ["policy"]
+        },
+        {
+          "say": "その方針を書く先は、system です。",
+          "speech": "その方針を書く先は、システムです。",
+          "show": ["system", "policy-field"],
+          "travel": {
+            "along": ["policy-field"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "利用者は、推測でよいので支給額を教えてと頼みました。",
+          "show": ["request"]
+        },
+        {
+          "say": "この依頼は、user の発言として渡します。",
+          "speech": "この依頼は、ユーザーの発言として渡します。",
+          "show": ["user", "request-field"],
+          "travel": {
+            "along": ["request-field"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "resolve-conflict",
+      "kind": "board",
+      "role": "apply",
+      "title": "食い違う指示を比べる",
+      "board": "resolve",
+      "beats": [
+        {
+          "say": "system の指示は、不明なら窓口を案内する方針です。",
+          "speech": "システムの指示は、不明なら窓口を案内する方針です。",
+          "show": ["policy"],
+          "tag": {
+            "policy": "不明なら窓口"
+          }
+        },
+        {
+          "say": "user では、不明な金額の推測を求めています。",
+          "speech": "ユーザーでは、不明な金額の推測を求めています。",
+          "show": ["request"],
+          "tag": {
+            "request": "推測でよい"
+          }
+        },
+        {
+          "say": "二つが食い違うので、運用者の指示を優先しましょう。",
+          "pulse": ["policy"],
+          "mark": [
+            {
+              "on": "policy",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "方針に沿った応答は、窓口の案内です。",
+          "show": ["reply"],
+          "pulse": ["reply"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "水族館での案内を選ぶ",
+      "board": "aquarium",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水族館のチケットを案内する、架空のアプリです。",
+          "show": ["ticket"]
+        },
+        {
+          "say": "運用者は、料金が不明なら窓口へ案内するよう決めました。",
+          "show": ["policy"],
+          "tag": {
+            "policy": "system"
+          }
+        },
+        {
+          "say": "利用者は、推測でよいので料金を教えてと頼みます。",
+          "show": ["request"],
+          "tag": {
+            "request": "user"
+          }
+        },
+        {
+          "say": "今は料金が不明で、方針と依頼が食い違う状態です。",
+          "pulse": ["policy", "request"]
+        },
+        {
+          "say": "料金を推測するか、窓口を案内するか、どちらでしょうか。",
+          "show": ["estimate", "desk"],
+          "pulse": [],
+          "mark": [
+            {
+              "on": "estimate",
+              "kind": "question"
+            },
+            {
+              "on": "desk",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "窓口を案内する",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "答えは、料金の推測をせず、窓口を案内する方です。",
+          "mark": [
+            {
+              "on": "desk",
+              "kind": "check"
+            },
+            {
+              "on": "estimate",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["desk"]
+        },
+        {
+          "say": "運用者が決めた、不明な場合の方針に従います。",
+          "pulse": ["policy"]
+        },
+        {
+          "say": "利用者の希望との違いを、書かれた場所からたどりましょう。",
+          "pulse": ["policy", "request"]
+        }
+      ]
+    },
+    {
+      "id": "explain-priority",
+      "kind": "board",
+      "role": "explain",
+      "title": "書いた側から理由をたどる",
+      "board": "quiz-reason",
+      "beats": [
+        {
+          "say": "窓口へ案内する方針は、運用者が決めた指示です。",
+          "show": ["policy"],
+          "tag": {
+            "policy": "不明なら窓口"
+          }
+        },
+        {
+          "say": "アプリは、その指示を system に書いて送ります。",
+          "speech": "アプリは、その指示をシステムに書いて送ります。",
+          "pulse": ["policy"]
+        },
+        {
+          "say": "推測を求める言葉は、user に書いた利用者の依頼です。",
+          "speech": "推測を求める言葉は、ユーザーに書いた利用者の依頼です。",
+          "show": ["request"],
+          "tag": {
+            "request": "推測でよい"
+          }
+        },
+        {
+          "say": "依頼が方針と食い違えば、system を優先します。",
+          "speech": "依頼が方針と食い違えば、システムを優先します。",
+          "pulse": ["policy"],
+          "mark": [
+            {
+              "on": "policy",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "そのため、料金が不明な今回は窓口への案内が答えです。",
+          "show": ["desk"],
+          "pulse": ["desk"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "案内アプリで確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "手当のような案内アプリで、方針と依頼を書き分けます。",
+          "show": ["app"]
+        },
+        {
+          "say": "まず確認するのは、運用者が決めた案内の方針です。",
+          "show": ["policy"],
+          "tag": {
+            "policy": "system"
+          }
+        },
+        {
+          "say": "利用者が入力した依頼は、user の発言に入れましょう。",
+          "speech": "利用者が入力した依頼は、ユーザーの発言に入れましょう。",
+          "show": ["request"],
+          "tag": {
+            "request": "user"
+          }
+        },
+        {
+          "say": "食い違う場合は、system の指示を優先します。",
+          "speech": "食い違う場合は、システムの指示を優先します。",
+          "pulse": ["policy"],
+          "mark": [
+            {
+              "on": "policy",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "3b21a8300771e0c4d7f6204e70a9b15b399d9a0b8321ca93dfc74b9bfa97f595"
+  }
+}

@@ -1,0 +1,721 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "stop_reason が max_tokens の応答を未完として見分け、送り直すか続きを書かせる扱いを説明できる。",
+    "stuck": "文字が返ってきたら完成した答えだと思い、途中で切れた文や JSON をそのまま使ってしまう。",
+    "points": ["stop_reason が max_tokens の応答は、途中で切れています。"],
+    "leaveOut": [
+      "ほかの停止理由の一覧と拒否の扱い",
+      "コンテキストウィンドウの上限で止まる場合の詳細",
+      "上限に指定する具体的な数値とトークンの数え方",
+      "再送と継続を実装するコード",
+      "textOf の実装と課題の解答コード"
+    ]
+  },
+  "art": {
+    "origami-crane": {
+      "prompt": "A single carefully folded blue origami crane beside an unfolded square of violet paper, representing the paper craft whose instructions are requested. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "small-memo": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a tiny white memo pad and a blue pencil, looking at the bottom edge of the pad with a puzzled expression. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "partial-note": {
+      "prompt": "A white instruction sheet with a folded blue paper corner and three broad pale violet bands representing unfinished writing, the final band stopping abruptly halfway across the sheet. A violet pencil lies beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-card": {
+      "prompt": "A large blue magnifying glass examining a blank white card attached to a white instruction sheet with a blue clip. The card represents information explaining why writing stopped. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "unfinished-folder": {
+      "prompt": "An open violet document folder containing a white instruction sheet with a folded blue paper corner, with a blank light grey tab protruding from the folder to identify unfinished work. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "larger-pad": {
+      "prompt": "A large blank white writing pad with a smaller light grey memo pad overlapping its corner and a blue pencil beside it, suggesting more room to rewrite instructions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "continuation-sheet": {
+      "prompt": "Two white instruction sheets placed end to end with a blue paper clip joining their adjacent edges, a violet pencil poised over the second sheet to continue the same instructions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-timetable": {
+      "prompt": "A blue city bus shown from a slight front angle beside a large white timetable leaflet with pale grey empty cells and a blank lower portion, representing an unfinished bus timetable. No route display details. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "craft",
+          "label": "折り紙の手順",
+          "art": "origami-crane",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "途切れた文",
+          "art": "partial-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "止まった理由",
+          "art": "reason-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "memo": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "writer",
+          "label": "手順を写す人",
+          "art": "small-memo",
+          "at": [1, 1]
+        },
+        {
+          "id": "partial",
+          "label": "書きかけ",
+          "art": "partial-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "separate",
+          "label": "未完として渡す",
+          "art": "unfinished-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "writer",
+          "to": "partial",
+          "label": "写す"
+        },
+        {
+          "id": "hand",
+          "from": "partial",
+          "to": "separate",
+          "label": "分ける"
+        }
+      ]
+    },
+    "limit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "出力の上限",
+          "art": "small-memo",
+          "at": [1, 1]
+        },
+        {
+          "id": "partial",
+          "label": "途切れた応答",
+          "art": "partial-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "unfinished",
+          "label": "未完の扱い",
+          "art": "unfinished-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "stop",
+          "from": "limit",
+          "to": "partial",
+          "label": "届くと停止"
+        },
+        {
+          "id": "separate",
+          "from": "partial",
+          "to": "unfinished",
+          "label": "区別"
+        }
+      ]
+    },
+    "handling": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取った文",
+          "art": "partial-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "flag",
+          "label": "未完の印と文",
+          "art": "unfinished-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "reply",
+          "to": "reason",
+          "label": "確認"
+        },
+        {
+          "id": "flagged",
+          "from": "reason",
+          "to": "flag",
+          "label": "区別"
+        }
+      ]
+    },
+    "recovery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "partial",
+          "label": "途切れた手順",
+          "art": "partial-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "retry",
+          "label": "上限を上げる",
+          "art": "larger-pad",
+          "at": [3, 1]
+        },
+        {
+          "id": "continue",
+          "label": "続きを書かせる",
+          "art": "continuation-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bus": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "バスの時刻表",
+          "art": "bus-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "partial",
+          "label": "返った時刻表",
+          "art": "bus-timetable",
+          "at": [5, 1]
+        },
+        {
+          "id": "complete",
+          "label": "完成として使う",
+          "art": "bus-timetable",
+          "at": [5, 2]
+        },
+        {
+          "id": "unfinished",
+          "label": "未完として扱う",
+          "art": "bus-timetable",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instructions",
+          "label": "折り方の説明",
+          "art": "origami-crane",
+          "at": [1, 1]
+        },
+        {
+          "id": "timetable",
+          "label": "バスの時刻表",
+          "art": "bus-timetable",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由を確認",
+          "art": "reason-card",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "途切れた手順を見分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "折り紙の折り方を、文章で教えてもらう場面です。",
+          "show": ["craft"]
+        },
+        {
+          "say": "手順の途中までで、返ってきた文が止まっています。",
+          "show": ["reply"]
+        },
+        {
+          "say": "完成した説明か、止まった理由を確かめましょう。",
+          "show": ["reason"]
+        },
+        {
+          "say": "停止理由がマックストークンズなら、応答は途中で切れています。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "未完の応答"
+          }
+        }
+      ]
+    },
+    {
+      "id": "small-memo",
+      "kind": "board",
+      "role": "example",
+      "title": "メモの余白が足りない",
+      "board": "memo",
+      "beats": [
+        {
+          "say": "折り紙の手順を、小さなメモに写す場面を考えましょう。",
+          "show": ["writer"]
+        },
+        {
+          "say": "最後まで書く前に、紙の余白がなくなりました。",
+          "show": ["partial", "write"]
+        },
+        {
+          "say": "書きかけの手順だけでは、折り方の説明は途中です。",
+          "pulse": ["partial"],
+          "tag": {
+            "partial": "続きが必要"
+          }
+        },
+        {
+          "say": "受け取る人には、まだ続きがあることを伝えます。",
+          "show": ["separate", "hand"],
+          "travel": {
+            "along": ["hand"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "応答が途中で切れたときも、完成した答えと分けましょう。",
+          "mark": [
+            {
+              "on": "separate",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "output-limit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "文字があっても未完",
+      "board": "limit",
+      "beats": [
+        {
+          "say": "応答を出せる長さの限度が、出力の上限です。",
+          "term": {
+            "text": "出力の上限",
+            "ruby": "しゅつりょくのじょうげん",
+            "note": "出せる長さの限度"
+          },
+          "show": ["limit"]
+        },
+        {
+          "say": "上限に届くと、文の途中でも出力が止まります。",
+          "show": ["partial", "stop"],
+          "travel": {
+            "along": ["stop"]
+          }
+        },
+        {
+          "say": "これを、途中で切れた応答として扱いましょう。",
+          "term": {
+            "text": "途中で切れた応答",
+            "ruby": "とちゅうできれたおうとう",
+            "note": "完成した答えと分ける"
+          },
+          "show": ["unfinished", "separate"]
+        },
+        {
+          "say": "文字が返っていても、完成した答えとは限りません。",
+          "pulse": ["partial"],
+          "mark": [
+            {
+              "on": "partial",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "check-reason",
+      "kind": "code",
+      "role": "syntax",
+      "title": "停止理由の値を調べる",
+      "code": [
+        "// 出力の上限で止まったかを確かめる",
+        "if (response.stop_reason === \"max_tokens\") {",
+        "  // 途中で切れた印と受け取った文字を返す",
+        "  return { truncated: true, text: textOf(response) };",
+        "// この条件の処理を閉じる",
+        "}"
+      ],
+      "show": [0, 1, 4, 5],
+      "panel": {
+        "kind": "figure",
+        "board": "handling"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "この例では、応答に response という名前を付けています。",
+          "speech": "この例では、応答にレスポンスという名前を付けています。",
+          "part": {
+            "line": 1,
+            "text": "response",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["reply"]
+          }
+        },
+        {
+          "say": "応答が止まった理由が、停止理由です。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "応答が止まった理由"
+          },
+          "part": {
+            "line": 1,
+            "text": "stop_reason",
+            "note": "止まった理由"
+          }
+        },
+        {
+          "say": "応答のこの項目で、止まった理由を確かめます。",
+          "part": {
+            "line": 1,
+            "text": "response.stop_reason"
+          },
+          "figure": {
+            "show": ["reason", "inspect"]
+          }
+        },
+        {
+          "say": "比べる値は、マックストークンズです。",
+          "part": {
+            "line": 1,
+            "text": "\"max_tokens\"",
+            "note": "上限に到達"
+          },
+          "figure": {
+            "tag": {
+              "reason": "上限に到達"
+            }
+          }
+        },
+        {
+          "say": "値が一致したときに、中の行の結果を返します。",
+          "type": [2, 3],
+          "figure": {
+            "show": ["flag", "flagged"]
+          }
+        },
+        {
+          "say": "上限で切れた応答を、ここで分けて扱いましょう。",
+          "focus": [3],
+          "figure": {
+            "travel": {
+              "along": ["flagged"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mark-partial",
+      "kind": "code",
+      "role": "apply",
+      "title": "未完の印と文字を返す",
+      "code": [
+        "// 出力の上限で止まったかを確かめる",
+        "if (response.stop_reason === \"max_tokens\") {",
+        "  // 途中で切れた印と受け取った文字を返す",
+        "  return { truncated: true, text: textOf(response) };",
+        "// この条件の処理を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "handling"
+      },
+      "beats": [
+        {
+          "say": "truncated は、未完の印に付けた名前です。",
+          "speech": "トランケイテッドは、未完の印に付けた名前です。",
+          "part": {
+            "line": 3,
+            "text": "truncated",
+            "note": "途中で切れた"
+          },
+          "figure": {
+            "pulse": ["flag"]
+          }
+        },
+        {
+          "say": "true を返して、途中で切れた印を付けます。",
+          "speech": "トゥルーを返して、途中で切れた印を付けます。",
+          "part": {
+            "line": 3,
+            "text": "true",
+            "note": "未完の印"
+          },
+          "figure": {
+            "tag": {
+              "flag": "途中で切れた"
+            }
+          }
+        },
+        {
+          "say": "textOf は、この例で用意した関数の名前です。",
+          "speech": "テキストオブは、この例で用意した関数の名前です。",
+          "part": {
+            "line": 3,
+            "text": "textOf",
+            "note": "文字を取り出す"
+          }
+        },
+        {
+          "say": "応答から、受け取った文字を取り出します。",
+          "part": {
+            "line": 3,
+            "text": "textOf(response)"
+          },
+          "figure": {
+            "pulse": ["reply"]
+          }
+        },
+        {
+          "say": "印を付けても、途切れた続きが補われるわけではありません。",
+          "part": {
+            "line": 3,
+            "text": "text:",
+            "note": "受け取った文字"
+          },
+          "figure": {
+            "tag": {
+              "reply": "手順の途中"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-recovery",
+      "kind": "board",
+      "role": "apply",
+      "title": "切れたあとの二つの方法",
+      "board": "recovery",
+      "beats": [
+        {
+          "say": "折り方の説明は、まだ途中のままです。",
+          "show": ["partial"]
+        },
+        {
+          "say": "一つ目では、マックストークンズを上げて送り直します。",
+          "show": ["retry"],
+          "tag": {
+            "retry": "送り直す"
+          }
+        },
+        {
+          "say": "もう一つは、受け取った分に続けて書かせる方法です。",
+          "show": ["continue"],
+          "tag": {
+            "continue": "続きを依頼"
+          }
+        },
+        {
+          "say": "必要な長さに合わせて、どちらを選ぶか決めましょう。",
+          "pulse": ["retry", "continue"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時刻表をそのまま使うか",
+      "board": "bus",
+      "think": 8,
+      "beats": [
+        {
+          "say": "利用者が、バスの時刻表をまとめてほしいと頼みました。",
+          "show": ["request"]
+        },
+        {
+          "say": "応答の停止理由は、マックストークンズです。",
+          "show": ["reason"],
+          "tag": {
+            "reason": "上限に到達"
+          }
+        },
+        {
+          "say": "返ってきた表には、いくつかの発車時刻が入っています。",
+          "show": ["partial"],
+          "tag": {
+            "partial": "時刻はある"
+          }
+        },
+        {
+          "say": "完成した表として使うか、未完として扱うかを考えましょう。",
+          "show": ["complete", "unfinished"]
+        },
+        {
+          "say": "この応答には、どちらの扱いが合うでしょうか？",
+          "mark": [
+            {
+              "on": "complete",
+              "kind": "question"
+            },
+            {
+              "on": "unfinished",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "未完の時刻表として扱う",
+      "board": "bus",
+      "beats": [
+        {
+          "say": "答えは、未完として扱うほうです。",
+          "mark": [
+            {
+              "on": "unfinished",
+              "kind": "check"
+            },
+            {
+              "on": "complete",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "発車時刻がいくつかあっても、完成した表としては使いません。",
+          "pulse": ["partial"],
+          "tag": {
+            "partial": "完成ではない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "時刻の有無では決めない",
+      "board": "bus",
+      "beats": [
+        {
+          "say": "時刻が入っているのは、途中までの出力を受け取れたためです。",
+          "pulse": ["partial"]
+        },
+        {
+          "say": "まず、応答が止まった理由に注目しましょう。",
+          "pulse": ["reason"]
+        },
+        {
+          "say": "マックストークンズは、出力の上限で止まったことを示します。",
+          "tag": {
+            "reason": "出力が停止"
+          }
+        },
+        {
+          "say": "そのため、今回の時刻表は途中で切れた応答です。",
+          "pulse": ["unfinished"],
+          "tag": {
+            "unfinished": "途中で切れた"
+          }
+        },
+        {
+          "say": "上限を上げて送り直すか、続きを書かせます。",
+          "tag": {
+            "unfinished": "再送か継続"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "返った文字を使う前に",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "折り方の説明を表示するときも、止まった理由を確かめます。",
+          "show": ["instructions"]
+        },
+        {
+          "say": "時刻表を JSON で受け取る場合も、同じ確認が必要です。",
+          "speech": "時刻表をジェイソンで受け取る場合も、同じ確認が必要です。",
+          "show": ["timetable"]
+        },
+        {
+          "say": "途中で切れて閉じかっこがなければ、読み取りでエラーになります。",
+          "pulse": ["timetable"],
+          "tag": {
+            "timetable": "読み取り失敗"
+          }
+        },
+        {
+          "say": "返った文字を使う前に、未完の応答を分けて扱いましょう。",
+          "show": ["reason"],
+          "pulse": ["reason"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "61932bcbc69a5138a9a70efe4358f7094a1ec2125d321cf93bde975cf7f7b5a7"
+  }
+}

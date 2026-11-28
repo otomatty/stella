@@ -1,0 +1,813 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "人が承認できない検査で、-pによる起動と必要なツールの事前許可を組み合わせる理由を説明できる。",
+    "stuck": "-pを付ければ、承認が必要な操作も自動で許可されると思ってしまう。",
+    "points": ["スクリプトや CI からは -p で対話なしに実行し、許可するツールを指定します。"],
+    "leaveOut": [
+      "入出力形式とターン数の上限",
+      "会話の消去とセッションの再開",
+      "設定の配信範囲と優先順位",
+      "自動読み込みを省く設定の詳細",
+      "権限確認を省略する特別な指定",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "night-machine": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a small blue crescent moon beside it, representing an unattended overnight test run. Objects only, no application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "test-files": {
+      "prompt": "Two white file sheets held together by a blue binder clip, with a large violet magnifying glass resting diagonally across them. The sheets are completely blank, representing files used for software tests. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "report-sheet": {
+      "prompt": "One white report sheet held by a blue clipboard clip, with a violet pencil beside it. The paper is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "print-job": {
+      "prompt": "A compact blue printer with a small stack of blank white paper coming out of its tray. Objects only, representing a printing job entrusted to another person. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "print-clerk": {
+      "prompt": "A staff member in a plain blue shirt holding a blank white job slip and raising one open hand to ask for permission. Simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "permission-sheet": {
+      "prompt": "A large blank white permission slip beside a small blue key with a violet round keyring. Objects only, representing permission arranged before work starts. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-runner": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white task slip. No other characters. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "config-folder": {
+      "prompt": "An open light grey file folder containing white sheets, with a short blue cable and a violet plug beside it, representing configuration loaded when starting work. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-kit": {
+      "prompt": "A pair of blue indoor sports shoes beside a violet sports bag and a blank white lending form, representing a community gym rental. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "night",
+          "label": "夜間の検査",
+          "art": "night-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "結果の要約",
+          "art": "report-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "permit",
+          "label": "事前の許可",
+          "art": "permission-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "printing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "job",
+          "label": "印刷の依頼",
+          "art": "print-job",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "印刷の担当者",
+          "art": "print-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "permit",
+          "label": "使える物",
+          "art": "permission-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "entrust",
+          "from": "job",
+          "to": "clerk",
+          "label": "任せる"
+        },
+        {
+          "id": "allow",
+          "from": "permit",
+          "to": "clerk",
+          "label": "先に許可"
+        }
+      ]
+    },
+    "automation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "change",
+          "label": "変更した物",
+          "art": "test-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "run",
+          "label": "自動の検査",
+          "art": "night-machine",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "検査結果",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "trigger",
+          "from": "change",
+          "to": "run",
+          "label": "変更のたび"
+        },
+        {
+          "id": "result",
+          "from": "run",
+          "to": "report",
+          "label": "結果"
+        }
+      ]
+    },
+    "execution": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "テストの依頼",
+          "art": "test-files",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-runner",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果の要約",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "依頼"
+        },
+        {
+          "id": "return",
+          "from": "claude",
+          "to": "result",
+          "label": "結果"
+        }
+      ]
+    },
+    "permissions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mode",
+          "label": "確認時は拒否",
+          "art": "permission-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "テストの実行",
+          "art": "test-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み取り",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "application": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "night",
+          "label": "夜間の検査",
+          "art": "night-machine",
+          "at": [1, 1]
+        },
+        {
+          "id": "permit",
+          "label": "許可した操作",
+          "art": "permission-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "結果の要約",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "night",
+          "to": "permit",
+          "label": "実行"
+        },
+        {
+          "id": "report-back",
+          "from": "permit",
+          "to": "report",
+          "label": "返す"
+        }
+      ]
+    },
+    "startup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "config",
+          "label": "起動時の構成",
+          "art": "config-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-runner",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "load",
+          "from": "config",
+          "to": "claude",
+          "label": "読み込む"
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "gym",
+          "label": "体育館の貸出",
+          "art": "gym-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "テストの実行",
+          "art": "test-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間の検査",
+          "art": "night-machine",
+          "at": [5, 1]
+        },
+        {
+          "id": "first",
+          "label": "許可を足さない",
+          "art": "permission-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "second",
+          "label": "先に許可する",
+          "art": "permission-sheet",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mode",
+          "label": "確認時は拒否",
+          "art": "permission-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "必要なテスト",
+          "art": "test-files",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み取り",
+          "art": "report-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "夜間の検査を任せる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "夜間にテストを実行する場面を考えます。",
+          "show": ["night"]
+        },
+        {
+          "say": "欲しいのは、テスト結果の短い報告です。",
+          "show": ["report"]
+        },
+        {
+          "say": "その場で承認する担当者はいません。",
+          "show": ["permit"],
+          "tag": {
+            "permit": "人は不在"
+          }
+        },
+        {
+          "say": "対話なしで起動し、許可する操作を先に決めます。",
+          "pulse": ["night", "permit"],
+          "untag": ["permit"]
+        }
+      ]
+    },
+    {
+      "id": "printing",
+      "kind": "board",
+      "role": "example",
+      "title": "印刷を任せて席を外す",
+      "board": "printing",
+      "beats": [
+        {
+          "say": "印刷を頼んでから、席を外すとしましょう。",
+          "show": ["job", "clerk", "entrust"]
+        },
+        {
+          "say": "担当者が紙を使うたびに尋ねても、返事はありません。",
+          "pulse": ["clerk"],
+          "mark": [
+            {
+              "on": "clerk",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、使ってよい紙を先に伝えます。",
+          "show": ["permit", "allow"],
+          "travel": {
+            "along": ["allow"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "留守の間に任せる範囲を、出かける前に決めた例です。",
+          "unmark": ["clerk"],
+          "pulse": ["permit"]
+        }
+      ]
+    },
+    {
+      "id": "automatic-checks",
+      "kind": "board",
+      "role": "syntax",
+      "title": "変更のたびに検査する",
+      "board": "automation",
+      "beats": [
+        {
+          "say": "変更のたびに自動で検査する仕組みが、CIです。",
+          "speech": "変更のたびに自動で検査する仕組みが、シーアイです。",
+          "term": {
+            "text": "CI",
+            "note": "変更のたびに自動で検査"
+          }
+        },
+        {
+          "say": "変更を受け取り、テストや検査を動かします。",
+          "show": ["change", "run", "trigger"],
+          "travel": {
+            "along": ["trigger"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "夜間にも走るため、その場で人が承認するとは限りません。",
+          "pulse": ["run"],
+          "tag": {
+            "run": "人は不在"
+          }
+        },
+        {
+          "say": "この検査の結果を、Claudeに要約してもらいましょう。",
+          "speech": "この検査の結果を、クロードに要約してもらいましょう。",
+          "show": ["report", "result"],
+          "pulse": ["report"]
+        }
+      ]
+    },
+    {
+      "id": "print-option",
+      "kind": "code",
+      "role": "syntax",
+      "title": "対話なしの起動部分",
+      "code": [
+        "# 対話なしでテストと要約を頼む",
+        "claude -p \"テストを実行して結果を要約してください\""
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "execution"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "確認画面を出さずに依頼を処理するのが、対話なしの実行です。",
+          "term": {
+            "text": "対話なしの実行",
+            "ruby": "たいわなしのじっこう",
+            "note": "確認画面を出さずに処理"
+          }
+        },
+        {
+          "say": "起動部分では、claudeに-pを付けます。",
+          "speech": "起動部分では、クロードにハイフンピーを付けます。",
+          "part": {
+            "line": 1,
+            "text": "-p",
+            "note": "対話なし"
+          },
+          "figure": {
+            "show": ["request", "claude", "send"]
+          }
+        },
+        {
+          "say": "-pは、--printの短い書き方です。",
+          "speech": "ハイフンピーは、ハイフンハイフンプリントの短い書き方です。",
+          "part": {
+            "line": 1,
+            "text": "-p",
+            "note": "printの略"
+          },
+          "figure": {
+            "pulse": ["claude"]
+          }
+        },
+        {
+          "say": "引用符の中に、テストと要約を頼む依頼を書きます。",
+          "part": {
+            "line": 1,
+            "text": "テストを実行して結果を要約してください",
+            "note": "依頼の内容"
+          },
+          "figure": {
+            "pulse": ["request"]
+          }
+        },
+        {
+          "say": "結果を返しますが、操作の許可も別に必要です。",
+          "figure": {
+            "show": ["result", "return"],
+            "travel": {
+              "along": ["return"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "permission-options",
+      "kind": "code",
+      "role": "syntax",
+      "title": "同じコマンドに足す引数",
+      "code": [
+        "# 確認が必要な操作を拒否する",
+        "--permission-mode dontAsk",
+        "# テストの実行と読み取りを事前に許可する",
+        "--allowedTools \"Bash(npm test)\" \"Read\""
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "permissions"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じコマンドに加える引数を、取り出して見てみましょう。",
+          "focus": [1, 3],
+          "figure": {
+            "show": ["mode", "test", "read"]
+          }
+        },
+        {
+          "say": "dontAskでは、確認が必要な操作を拒否します。",
+          "speech": "ドントアスクでは、確認が必要な操作を拒否します。",
+          "part": {
+            "line": 1,
+            "text": "dontAsk",
+            "note": "確認時は拒否"
+          },
+          "term": {
+            "text": "dontAsk",
+            "note": "確認が必要な操作を拒否"
+          }
+        },
+        {
+          "say": "この指定は、人の承認を待つためのものではありません。",
+          "part": {
+            "line": 1,
+            "text": "--permission-mode",
+            "note": "権限モード"
+          },
+          "figure": {
+            "pulse": ["mode"]
+          }
+        },
+        {
+          "say": "allowedToolsで、確認なしに実行できる操作を足します。",
+          "speech": "アラウドツールズで、確認なしに実行できる操作を足します。",
+          "part": {
+            "line": 3,
+            "text": "--allowedTools",
+            "note": "許可を追加"
+          },
+          "figure": {
+            "pulse": ["test", "read"]
+          }
+        },
+        {
+          "say": "この例の指定は、npm testとReadです。",
+          "speech": "この例の指定は、エヌピーエムテストとリードです。",
+          "part": {
+            "line": 3,
+            "text": "\"Bash(npm test)\" \"Read\"",
+            "note": "事前に許可"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "test",
+                "kind": "check"
+              },
+              {
+                "on": "read",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-to-night",
+      "kind": "board",
+      "role": "apply",
+      "title": "夜間の検査に当てはめる",
+      "board": "application",
+      "beats": [
+        {
+          "say": "夜間の検査では、-pで依頼を実行します。",
+          "speech": "夜間の検査では、ハイフンピーで依頼を実行します。",
+          "show": ["night"],
+          "tag": {
+            "night": "-p"
+          }
+        },
+        {
+          "say": "Bashの許可は、npm testに絞った指定です。",
+          "speech": "バッシュの許可は、エヌピーエムテストに絞った指定です。",
+          "show": ["permit", "use"],
+          "tag": {
+            "permit": "npm test"
+          }
+        },
+        {
+          "say": "そのテストの実行は、事前に許可しておきましょう。",
+          "pulse": ["permit"],
+          "travel": {
+            "along": ["use"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "テストを実行した結果を、要約として受け取ります。",
+          "show": ["report", "report-back"],
+          "travel": {
+            "along": ["report-back"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "startup-config",
+      "kind": "board",
+      "role": "note",
+      "title": "起動時の構成も読む",
+      "board": "startup",
+      "beats": [
+        {
+          "say": "通常の-pでは、フォルダーを信頼するか尋ねません。",
+          "speech": "通常のハイフンピーでは、フォルダーを信頼するか尋ねません。",
+          "show": ["claude"]
+        },
+        {
+          "say": "リポジトリにあるフックは、そのまま動きます。",
+          "show": ["config", "load"],
+          "tag": {
+            "config": "フック"
+          }
+        },
+        {
+          "say": "MCPサーバーも、通常の起動で接続する対象です。",
+          "speech": "エムシーピーサーバーも、通常の起動で接続する対象です。",
+          "tag": {
+            "config": "MCP"
+          },
+          "pulse": ["config"]
+        },
+        {
+          "say": "実行前に、読み込む構成を確かめましょう。",
+          "untag": ["config"],
+          "travel": {
+            "along": ["load"],
+            "icon": "folder"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gym-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "体育館のテストを夜間に",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "体育館の貸出アプリを、夜間にテストします。",
+          "show": ["gym", "test", "night"]
+        },
+        {
+          "say": "このテストは、実行前の許可が必要な設定です。",
+          "pulse": ["test"],
+          "tag": {
+            "test": "要許可"
+          }
+        },
+        {
+          "say": "一つ目は、-pとdontAskだけを指定しました。",
+          "speech": "一つ目は、ハイフンピーとドントアスクだけを指定しました。",
+          "show": ["first"]
+        },
+        {
+          "say": "二つ目は、同じ指定に必要なテストの許可を足します。",
+          "show": ["second"]
+        },
+        {
+          "say": "人がいない場でこのテストを実行するなら、どちらでしょうか。",
+          "pulse": ["first", "second"]
+        }
+      ]
+    },
+    {
+      "id": "gym-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "必要なテストを許可する",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "答えは、必要なテストを事前に許可する二つ目です。",
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "起動の指定と、操作の許可をそろえます。",
+          "pulse": ["night", "second"]
+        }
+      ]
+    },
+    {
+      "id": "why-permit",
+      "kind": "board",
+      "role": "explain",
+      "title": "確認と許可を区別する",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "dontAskは、確認が必要な操作を拒否する指定でした。",
+          "speech": "ドントアスクは、確認が必要な操作を拒否する指定でした。",
+          "show": ["mode"]
+        },
+        {
+          "say": "許可を足さない案では、今回のテストは実行できません。",
+          "show": ["test"],
+          "mark": [
+            {
+              "on": "test",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "事前の許可を足すことで、そのテストを任せられます。",
+          "mark": [
+            {
+              "on": "test",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["test"]
+        },
+        {
+          "say": "元から確認不要の読み取りも、実行できる操作です。",
+          "show": ["read"],
+          "mark": [
+            {
+              "on": "read",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["read"]
+        }
+      ]
+    },
+    {
+      "id": "use-in-automation",
+      "kind": "board",
+      "role": "usage",
+      "title": "人がいない処理に組み込む",
+      "board": "application",
+      "reset": true,
+      "beats": [
+        {
+          "say": "スクリプトやCIから、テスト結果の要約を頼めます。",
+          "speech": "スクリプトやシーアイから、テスト結果の要約を頼めます。",
+          "show": ["night", "report"]
+        },
+        {
+          "say": "その場で承認する人がいない処理に使う方法です。",
+          "pulse": ["night"]
+        },
+        {
+          "say": "起動は-p、必要な操作は事前に許可しましょう。",
+          "speech": "起動はハイフンピー、必要な操作は事前に許可しましょう。",
+          "show": ["permit", "use", "report-back"],
+          "pulse": ["permit"]
+        },
+        {
+          "say": "任せる操作を決めてから、自動の処理に組み込みます。",
+          "travel": {
+            "along": ["use", "report-back"],
+            "icon": "file"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "fbc5da05390565cf3fa471dde3057e92d486b875a0a744c9b24e0f01e7863b91"
+  }
+}

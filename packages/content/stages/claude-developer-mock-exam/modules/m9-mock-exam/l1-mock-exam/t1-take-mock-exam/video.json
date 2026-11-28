@@ -1,0 +1,916 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "模擬試験を時間内に通して解き、採点結果から復習先を選び、条件を変えて確かめる手順を説明できる。",
+    "stuck": "総合点や誤答の数だけを見て復習先に迷い、正解の選択肢を覚えるだけで終えてしまう。",
+    "points": ["模擬試験は時間を計って通しで解き、間違えた問題の単元に戻って直します。"],
+    "leaveOut": [
+      "本番の採点対象と尺度点の詳しい仕組み",
+      "領域ごとの出題範囲の一覧",
+      "問題画面の細かな操作",
+      "復習先の課題の解答コード",
+      "個々の仕様やエラー処理の実装"
+    ]
+  },
+  "art": {
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a violet pencil and looking thoughtfully at a blank white practice sheet. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-timer": {
+      "prompt": "A large blue mechanical study timer with a white circular dial and one violet hand, without tick marks or numerals. A single blue button is visible on top. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-sheets": {
+      "prompt": "A neatly clipped stack of white examination papers with blue corner tabs and a violet pencil beside it. All pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-notes": {
+      "prompt": "An open small white notebook with two light grey blank paper slips tucked inside and a blue pencil pointing to one page. All pages and slips are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-workbook": {
+      "prompt": "An open light grey exercise workbook with white blank pages, one violet page tab and a blue pencil resting beside the book. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-practice": {
+      "prompt": "A white school practice booklet with a violet binding and a blue pencil beside a small white eraser. The open pages are completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-reference": {
+      "prompt": "An open blue school textbook with thick white blank pages and a violet ribbon marking a page. A small white eraser lies beside the book. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bread-reservation": {
+      "prompt": "Two golden bread rolls beside a white reservation slip held by a blue paper clip. The slip is completely blank. Food has natural golden brown colours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "disconnected-terminal": {
+      "prompt": "A blue compact computer terminal with a completely blank dark screen and a loose disconnected blue cable beside it. The two connector ends are visibly apart. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "復習に迷う",
+          "art": "learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "timer",
+          "label": "時間を計る",
+          "art": "exam-timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "exam",
+          "label": "通しで解く",
+          "art": "exam-sheets",
+          "at": [5, 1]
+        },
+        {
+          "id": "review",
+          "label": "単元に戻る",
+          "art": "review-workbook",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "time-exam",
+          "from": "timer",
+          "to": "exam"
+        },
+        {
+          "id": "exam-review",
+          "from": "exam",
+          "to": "review"
+        }
+      ]
+    },
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "test",
+          "label": "漢字テスト",
+          "art": "school-practice",
+          "at": [1, 1]
+        },
+        {
+          "id": "book",
+          "label": "教科書のページ",
+          "art": "school-reference",
+          "at": [3, 1]
+        },
+        {
+          "id": "retry",
+          "label": "書き直す",
+          "art": "school-practice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "test",
+          "to": "book",
+          "label": "戻る"
+        },
+        {
+          "id": "practice",
+          "from": "book",
+          "to": "retry",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "timing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "timer",
+          "label": "タイマー",
+          "art": "exam-timer",
+          "at": [1, 1]
+        },
+        {
+          "id": "exam",
+          "label": "模擬試験",
+          "art": "exam-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "迷った場面",
+          "art": "review-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "timer",
+          "to": "exam",
+          "label": "開始"
+        },
+        {
+          "id": "record",
+          "from": "exam",
+          "to": "memo",
+          "label": "控える"
+        }
+      ]
+    },
+    "analysis": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mistake",
+          "label": "不正解の解説",
+          "art": "exam-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "review",
+          "label": "復習先の課題",
+          "art": "review-workbook",
+          "at": [3, 1]
+        },
+        {
+          "id": "unsure",
+          "label": "理由が曖昧",
+          "art": "learner",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "return",
+          "from": "mistake",
+          "to": "review",
+          "label": "復習"
+        }
+      ]
+    },
+    "rates": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "integration",
+          "label": "D2",
+          "art": "exam-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "evaluation",
+          "label": "D4",
+          "art": "exam-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "priority",
+          "label": "先に復習",
+          "art": "review-workbook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "evaluation",
+          "to": "priority",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "memo": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "scene",
+          "label": "迷った場面",
+          "art": "exam-sheets",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "見落とした条件",
+          "art": "review-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "task",
+          "label": "復習先の課題",
+          "art": "review-workbook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "scene",
+          "to": "condition",
+          "label": "控える"
+        },
+        {
+          "id": "open",
+          "from": "condition",
+          "to": "task",
+          "label": "戻る"
+        }
+      ]
+    },
+    "bakery-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reservation",
+          "label": "パンの予約",
+          "art": "bread-reservation",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "接続できない",
+          "art": "disconnected-terminal",
+          "at": [3, 1]
+        },
+        {
+          "id": "mistake",
+          "label": "予約なしと判断",
+          "art": "review-notes",
+          "at": [5, 1]
+        },
+        {
+          "id": "memorize",
+          "label": "答えを暗記",
+          "art": "exam-sheets",
+          "at": [5, 2]
+        },
+        {
+          "id": "compare",
+          "label": "条件を変える",
+          "art": "review-workbook",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "query",
+          "from": "reservation",
+          "to": "failure",
+          "label": "照会"
+        },
+        {
+          "id": "wrong",
+          "from": "failure",
+          "to": "mistake",
+          "label": "誤答"
+        }
+      ]
+    },
+    "bakery-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "failure",
+          "label": "接続できない",
+          "art": "disconnected-terminal",
+          "at": [1, 1]
+        },
+        {
+          "id": "unknown",
+          "label": "件数は不明",
+          "art": "review-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "照会失敗を返す",
+          "art": "disconnected-terminal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "unknown-count",
+          "from": "failure",
+          "to": "unknown",
+          "label": "未確認"
+        },
+        {
+          "id": "report",
+          "from": "unknown",
+          "to": "error",
+          "label": "返す"
+        }
+      ]
+    },
+    "bakery-retry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "接続できる",
+          "art": "bread-reservation",
+          "at": [1, 1]
+        },
+        {
+          "id": "empty",
+          "label": "検索完了で0件",
+          "art": "review-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "該当なし",
+          "art": "review-notes",
+          "at": [5, 1]
+        },
+        {
+          "id": "task",
+          "label": "課題で確かめる",
+          "art": "review-workbook",
+          "at": [5, 2]
+        },
+        {
+          "id": "branch",
+          "label": "実装の分岐",
+          "art": "review-workbook",
+          "at": [3, 2]
+        },
+        {
+          "id": "compare",
+          "label": "結果を比べる",
+          "art": "learner",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "search",
+          "from": "input",
+          "to": "empty",
+          "label": "検索"
+        },
+        {
+          "id": "normal",
+          "from": "empty",
+          "to": "result",
+          "label": "返す"
+        },
+        {
+          "id": "try",
+          "from": "result",
+          "to": "task"
+        },
+        {
+          "id": "trace",
+          "from": "task",
+          "to": "branch",
+          "label": "たどる"
+        },
+        {
+          "id": "compare-results",
+          "from": "branch",
+          "to": "compare",
+          "label": "照合"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "today",
+          "label": "誤答の復習",
+          "art": "review-workbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "fact",
+          "label": "事実のメモ",
+          "art": "review-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "explain",
+          "label": "理由を説明",
+          "art": "learner",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "today",
+          "to": "fact",
+          "label": "残す"
+        },
+        {
+          "id": "recall",
+          "from": "fact",
+          "to": "explain",
+          "label": "翌日"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "模試のあとに戻る場所",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "模試を解いたあと、次の練習に迷う場面です。",
+          "show": ["learner"]
+        },
+        {
+          "say": "まずはタイマーを用意しましょう。",
+          "show": ["timer"]
+        },
+        {
+          "say": "最後まで通して解くのが、今回の練習です。",
+          "show": ["exam", "time-exam"]
+        },
+        {
+          "say": "模擬試験は時間を計って通しで解き、間違えた問題の単元に戻って直します。",
+          "show": ["review", "exam-review"],
+          "pulse": ["review"]
+        }
+      ]
+    },
+    {
+      "id": "school-example",
+      "kind": "board",
+      "role": "example",
+      "title": "漢字テストを解き直す",
+      "board": "school",
+      "beats": [
+        {
+          "say": "学校の漢字テストを、時間を計って通しで解きます。",
+          "show": ["test"]
+        },
+        {
+          "say": "採点後に確かめるのは、間違えた漢字です。",
+          "mark": [
+            {
+              "on": "test",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "教科書のそのページに戻りましょう。",
+          "show": ["book", "find"],
+          "travel": {
+            "along": ["find"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "間違えた漢字を、見本を確かめながら書き直します。",
+          "show": ["retry", "practice"],
+          "travel": {
+            "along": ["practice"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "timed-exam",
+      "kind": "board",
+      "role": "syntax",
+      "title": "時間を計って通しで解く",
+      "board": "timing",
+      "beats": [
+        {
+          "say": "本番に向けて通しで練習する試験を、模擬試験と呼びます。",
+          "term": {
+            "text": "模擬試験",
+            "ruby": "もぎしけん",
+            "note": "本番に向けた通しの練習"
+          }
+        },
+        {
+          "say": "今回の制限時間は、120分です。",
+          "speech": "今回の制限時間は、ひゃくにじゅっぷんです。",
+          "show": ["timer"],
+          "tag": {
+            "timer": "120分"
+          }
+        },
+        {
+          "say": "タイマーを動かして、70問を通して解きましょう。",
+          "speech": "タイマーを動かして、ななじゅうもんを通して解きましょう。",
+          "show": ["exam", "start"],
+          "tag": {
+            "exam": "70問"
+          }
+        },
+        {
+          "say": "迷った場面と理由は、手元のメモに残します。",
+          "show": ["memo", "record"],
+          "travel": {
+            "along": ["record"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "STELLAの模試は、70問すべてが採点対象です。",
+          "speech": "ステラの模試は、ななじゅうもんすべてが採点対象です。",
+          "pulse": ["exam"],
+          "tag": {
+            "exam": "全問を採点"
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-results",
+      "kind": "board",
+      "role": "syntax",
+      "title": "採点結果から復習先へ",
+      "board": "analysis",
+      "beats": [
+        {
+          "say": "間違えた原因を調べて復習につなげるのが、誤答分析です。",
+          "term": {
+            "text": "誤答分析",
+            "ruby": "ごとうぶんせき",
+            "note": "誤りの原因から復習先を選ぶ"
+          }
+        },
+        {
+          "say": "採点後は、不正解の解説から範囲と復習先を控えます。",
+          "show": ["mistake", "review", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "正解でも、理由が曖昧な問題を見落とさないでください。",
+          "show": ["unsure"],
+          "mark": [
+            {
+              "on": "unsure",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "その問題も、復習する対象です。",
+          "pulse": ["unsure"],
+          "tag": {
+            "unsure": "復習に含める"
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-rates",
+      "kind": "board",
+      "role": "apply",
+      "title": "正解率で優先順位を決める",
+      "board": "rates",
+      "beats": [
+        {
+          "say": "問題数に対する正解の割合を、正解率と呼びます。",
+          "term": {
+            "text": "正解率",
+            "ruby": "せいかいりつ",
+            "note": "問題数に対する正解の割合"
+          }
+        },
+        {
+          "say": "D2では、14問中2問の誤答で、正解率は約86％です。",
+          "speech": "ディーにでは、じゅうよんもんちゅうにもんの誤答で、正解率は約はちじゅうろくパーセントです。",
+          "show": ["integration"],
+          "tag": {
+            "integration": "約86％"
+          }
+        },
+        {
+          "say": "D4は、7問中3問の誤答で、正解率は約57％になります。",
+          "speech": "ディーよんは、ななもんちゅうさんもんの誤答で、正解率は約ごじゅうななパーセントになります。",
+          "show": ["evaluation"],
+          "tag": {
+            "evaluation": "約57％"
+          }
+        },
+        {
+          "say": "この例で先に復習するのは、D4の誤答です。",
+          "speech": "この例で先に復習するのは、ディーよんの誤答です。",
+          "show": ["priority", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "正解率は、復習の優先順位を決めるために使いましょう。",
+          "pulse": ["integration", "evaluation", "priority"]
+        }
+      ]
+    },
+    {
+      "id": "record-condition",
+      "kind": "board",
+      "role": "apply",
+      "title": "見落とした条件を残す",
+      "board": "memo",
+      "beats": [
+        {
+          "say": "問題番号だけでは、迷った場面を思い出せません。",
+          "show": ["scene"],
+          "tag": {
+            "scene": "番号だけ"
+          },
+          "mark": [
+            {
+              "on": "scene",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "設問と選択肢の順番は、出題のたびに変わります。",
+          "pulse": ["scene"],
+          "tag": {
+            "scene": "順番が変わる"
+          }
+        },
+        {
+          "say": "残すのは、場面の言葉と見落とした条件です。",
+          "show": ["condition", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "条件をメモしたら、復習先の課題に戻りましょう。",
+          "show": ["task", "open"],
+          "travel": {
+            "along": ["open"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bakery-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "パン屋の予約を復習する",
+      "board": "bakery-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "パン屋の予約を調べる問題で、間違えたとします。",
+          "show": ["reservation"]
+        },
+        {
+          "say": "問題の条件は、予約の検索先に接続できないことです。",
+          "show": ["failure", "query"]
+        },
+        {
+          "say": "ところが、予約がないと決める選択肢を選びました。",
+          "show": ["mistake", "wrong"],
+          "mark": [
+            {
+              "on": "mistake",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "答えを暗記する案と、条件を変えて試す案を比べます。",
+          "show": ["memorize", "compare"]
+        },
+        {
+          "say": "復習先の課題で、次に取り組むのはどちらでしょうか。",
+          "mark": [
+            {
+              "on": "memorize",
+              "kind": "question"
+            },
+            {
+              "on": "compare",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["memorize", "compare"]
+        }
+      ]
+    },
+    {
+      "id": "bakery-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "条件を変えて確かめる",
+      "board": "bakery-quiz",
+      "beats": [
+        {
+          "say": "答えは、条件を変えて試す案です。",
+          "mark": [
+            {
+              "on": "compare",
+              "kind": "check"
+            },
+            {
+              "on": "memorize",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["compare"]
+        },
+        {
+          "say": "接続できない場合と、検索が終わって予約がない場合を比べます。",
+          "pulse": ["failure", "compare"],
+          "tag": {
+            "compare": "結果を比べる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-failure",
+      "kind": "board",
+      "role": "explain",
+      "title": "接続失敗では件数が不明",
+      "board": "bakery-reason",
+      "beats": [
+        {
+          "say": "見落としたのは、検索先に接続できなかった事実です。",
+          "show": ["failure"]
+        },
+        {
+          "say": "接続できなければ、予約の件数は確認できません。",
+          "show": ["unknown", "unknown-count"],
+          "travel": {
+            "along": ["unknown-count"],
+            "icon": "question"
+          }
+        },
+        {
+          "say": "この場合は、照会失敗を返します。",
+          "show": ["error", "report"],
+          "travel": {
+            "along": ["report"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "予約がないと決めた理由を、この事実から見直しましょう。",
+          "pulse": ["failure", "unknown"],
+          "mark": [
+            {
+              "on": "unknown",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "try-another-input",
+      "kind": "board",
+      "role": "explain",
+      "title": "別の入力で処理をたどる",
+      "board": "bakery-retry",
+      "beats": [
+        {
+          "say": "今度は、検索が完了して予約が0件だった場合です。",
+          "speech": "今度は、検索が完了して予約がゼロけんだった場合です。",
+          "show": ["input", "empty", "search"]
+        },
+        {
+          "say": "この場合は、該当なしを正常な検索結果として返します。",
+          "show": ["result", "normal"],
+          "travel": {
+            "along": ["normal"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "別の入力と期待する結果を、課題のメモに書きましょう。",
+          "show": ["task", "try"],
+          "tag": {
+            "task": "入力と結果"
+          }
+        },
+        {
+          "say": "実装のどの分岐を通るかも、同じメモに残します。",
+          "show": ["branch", "trace"],
+          "travel": {
+            "along": ["trace"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "分岐を指で追い、期待した結果に着くか確かめてください。",
+          "show": ["compare", "compare-results"],
+          "travel": {
+            "along": ["compare-results"],
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-review-notes",
+      "kind": "board",
+      "role": "usage",
+      "title": "翌日は事実だけで説明する",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "採点した日は、誤答の単元に戻って条件を変えて試します。",
+          "show": ["today"]
+        },
+        {
+          "say": "翌日に使う手がかりは、判断を分けた事実のメモです。",
+          "show": ["fact", "keep"],
+          "travel": {
+            "along": ["keep"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "解説を閉じて、事実だけから処理と理由を説明しましょう。",
+          "show": ["explain", "recall"],
+          "travel": {
+            "along": ["recall"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "まだ迷うところがあれば、同じ領域の一問を条件を変えて解きます。",
+          "pulse": ["today"],
+          "mark": [
+            {
+              "on": "today",
+              "kind": "redo"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "26d180a2ac3b5346a8dbc2e0bf4cd1b56bb495d40b2ab73a2f40802ed68a7db9"
+  }
+}

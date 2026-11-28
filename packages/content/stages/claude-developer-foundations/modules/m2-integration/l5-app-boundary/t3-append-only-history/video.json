@@ -1,0 +1,870 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "新しい発言を本人の会話の末尾に追加し、添付も本人の記録から選ぶ手順を説明できる。",
+    "stuck": "追加の依頼に合わせて過去の発言を書き換えたり、利用者を確かめず履歴や添付を選んだりしてしまう。",
+    "points": ["会話の履歴は書き換えずに後ろへ足し、利用者ごとに保存場所を分けます。"],
+    "leaveOut": [
+      "system に運用者の指示を追加する方法",
+      "キャッシュの再利用と考える過程のブロックに関するエラー",
+      "ワークスペースやバッチの詳しい仕様",
+      "履歴を保存するデータベースの実装",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "equipment-kit": {
+      "prompt": "A portable blue projector with its cable neatly coiled beside a light grey carrying case and a blank white return slip. The case is open and the equipment is clearly recognizable. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-cards": {
+      "prompt": "A small stack of white conversation record cards with alternating blue and violet tabs, held together by a blue binder clip. The cards are offset slightly so their order is visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "new-note": {
+      "prompt": "A hand holding a violet pen beside a single fresh white note card with one blue corner tab, representing a new message being added to a record. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "signed-in-user": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a plain white personal identification card with a small blue portrait silhouette and no writing. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "personal-folder": {
+      "prompt": "An open light grey document folder holding white conversation cards, with a small violet portrait silhouette on its tab to represent the owner of the records. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "attached-guide": {
+      "prompt": "A white equipment return instruction leaflet with a blue paper clip, a small pictorial blue projector on the cover, and a blank white identification tag attached to the clip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "class-notebook": {
+      "prompt": "An open white communication notebook for a calligraphy class, with a violet binding, a blue brush holder and a single calligraphy brush beside it. The pages are completely blank, with no ink strokes. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choir-calendar": {
+      "prompt": "A blue handheld microphone beside a white ring-bound practice calendar with two blank pages, one with a blue circular tab and the other with a violet circular tab. No calendar grid or printed marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "equipment",
+          "label": "備品の返却",
+          "art": "equipment-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "受付も説明",
+          "art": "new-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "other",
+          "label": "別の利用者",
+          "art": "personal-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "own",
+          "label": "本人の履歴",
+          "art": "history-cards",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "notebook": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "本人の連絡帳",
+          "art": "class-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "past",
+          "label": "前の記録",
+          "art": "history-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい連絡",
+          "art": "new-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "book",
+          "to": "past",
+          "label": "残す"
+        },
+        {
+          "id": "append",
+          "from": "past",
+          "to": "new",
+          "label": "後ろへ"
+        }
+      ]
+    },
+    "append": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "最初の発言",
+          "art": "history-cards",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "前の返答",
+          "art": "history-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい発言",
+          "art": "new-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first-reply",
+          "from": "first",
+          "to": "reply"
+        },
+        {
+          "id": "reply-new",
+          "from": "reply",
+          "to": "new",
+          "label": "追記"
+        }
+      ]
+    },
+    "select": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "user",
+          "label": "ログイン中",
+          "art": "signed-in-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "conversation",
+          "label": "会話のID",
+          "art": "personal-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "本人の履歴",
+          "art": "history-cards",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "user",
+          "to": "conversation",
+          "label": "照合"
+        },
+        {
+          "id": "choose",
+          "from": "conversation",
+          "to": "history",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "equipment": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "user",
+          "label": "ログイン中",
+          "art": "signed-in-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "conversation",
+          "label": "備品の会話",
+          "art": "equipment-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "past",
+          "label": "これまでの話",
+          "art": "history-cards",
+          "at": [5, 1]
+        },
+        {
+          "id": "new",
+          "label": "受付も説明",
+          "art": "new-note",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "user",
+          "to": "conversation",
+          "label": "照合"
+        },
+        {
+          "id": "read",
+          "from": "conversation",
+          "to": "past",
+          "label": "履歴"
+        },
+        {
+          "id": "append",
+          "from": "past",
+          "to": "new"
+        }
+      ]
+    },
+    "attachment": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "user",
+          "label": "ログイン中",
+          "art": "signed-in-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "attachment",
+          "label": "添付ID",
+          "art": "attached-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "本人の記録",
+          "art": "personal-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "file",
+          "label": "file_id",
+          "art": "attached-guide",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "user",
+          "to": "attachment",
+          "label": "照合"
+        },
+        {
+          "id": "lookup",
+          "from": "attachment",
+          "to": "record",
+          "label": "探す"
+        },
+        {
+          "id": "resolve",
+          "from": "record",
+          "to": "file"
+        }
+      ]
+    },
+    "choir": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "由紀さん",
+          "art": "signed-in-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "土曜に練習",
+          "art": "choir-calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "日曜に変更",
+          "art": "new-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "choice",
+          "label": "残すか直すか",
+          "art": "history-cards",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "conversation",
+          "from": "person",
+          "to": "old"
+        },
+        {
+          "id": "later",
+          "from": "old",
+          "to": "new"
+        },
+        {
+          "id": "question",
+          "from": "new",
+          "to": "choice"
+        }
+      ]
+    },
+    "choirHistory": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "土曜に練習",
+          "art": "choir-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "これまでの話",
+          "art": "history-cards",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "日曜に変更",
+          "art": "new-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "before",
+          "from": "old",
+          "to": "reply"
+        },
+        {
+          "id": "after",
+          "from": "reply",
+          "to": "new",
+          "label": "追記"
+        }
+      ]
+    },
+    "choirOwner": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "由紀さん",
+          "art": "signed-in-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "own",
+          "label": "由紀さんの会話",
+          "art": "personal-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "日曜に変更",
+          "art": "new-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "other",
+          "label": "直人さんの会話",
+          "art": "personal-folder",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "person",
+          "to": "own",
+          "label": "照合"
+        },
+        {
+          "id": "append",
+          "from": "own",
+          "to": "new",
+          "label": "追記"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "owner",
+          "label": "本人の履歴",
+          "art": "personal-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい発言",
+          "art": "new-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "attachment",
+          "label": "本人の添付",
+          "art": "attached-guide",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "owner",
+          "to": "new",
+          "label": "末尾へ"
+        },
+        {
+          "id": "attach",
+          "from": "new",
+          "to": "attachment",
+          "label": "添付あり"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "履歴を足す場所",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "備品の返却方法を尋ねるアプリを考えましょう。",
+          "show": ["equipment"]
+        },
+        {
+          "say": "利用者は、返却時に受付へ寄る説明も求めました。",
+          "show": ["request"]
+        },
+        {
+          "say": "同じアプリには、別の利用者の会話もあります。",
+          "show": ["other"]
+        },
+        {
+          "say": "履歴は本人ごとに分け、書き換えず後ろへ足すのが基本です。",
+          "show": ["own"],
+          "pulse": ["own"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "class-notebook",
+      "kind": "board",
+      "role": "example",
+      "title": "連絡帳の続きを書く",
+      "board": "notebook",
+      "beats": [
+        {
+          "say": "習字教室で、生徒ごとの連絡帳を使う場面です。",
+          "show": ["book"]
+        },
+        {
+          "say": "前の連絡は、そのとき書いた形で残します。",
+          "show": ["past", "keep"]
+        },
+        {
+          "say": "新しい連絡を、前の記録の後ろに書き足しましょう。",
+          "show": ["new", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "書く先は、その連絡を受け取る本人の連絡帳です。",
+          "pulse": ["book"],
+          "tag": {
+            "book": "本人のもの"
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-rule",
+      "kind": "board",
+      "role": "syntax",
+      "title": "追記は末尾に足すこと",
+      "board": "append",
+      "beats": [
+        {
+          "say": "記録を残したまま末尾に足すことを、追記と呼びます。",
+          "term": {
+            "text": "追記",
+            "ruby": "ついき",
+            "note": "古い記録を残して末尾に足す"
+          }
+        },
+        {
+          "say": "ここまでの発言と返答が、すでにある履歴です。",
+          "show": ["first", "reply", "first-reply"]
+        },
+        {
+          "say": "追加する発言は、最後の返答より後ろに置きましょう。",
+          "show": ["new", "reply-new"],
+          "travel": {
+            "along": ["reply-new"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "前の発言に、新しい言葉を書き込むことはしません。",
+          "pulse": ["first"],
+          "tag": {
+            "first": "変更しない"
+          }
+        },
+        {
+          "say": "過去の発言は、届いたときの形を保ちます。",
+          "pulse": ["first", "reply"],
+          "tag": {
+            "reply": "そのまま"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "select-history",
+      "kind": "board",
+      "role": "syntax",
+      "title": "本人と会話を照合する",
+      "board": "select",
+      "beats": [
+        {
+          "say": "まず、ログインしている利用者を確かめます。",
+          "show": ["user"]
+        },
+        {
+          "say": "会話を見分ける印が、会話のIDです。",
+          "speech": "会話を見分ける印が、会話のアイディーです。",
+          "term": {
+            "text": "会話のID",
+            "ruby": "かいわのアイディー",
+            "note": "どの会話かを見分ける印"
+          }
+        },
+        {
+          "say": "利用者と会話のIDを、アプリで照らし合わせましょう。",
+          "speech": "利用者と会話のアイディーを、アプリで照らし合わせましょう。",
+          "show": ["conversation", "identify"],
+          "travel": {
+            "along": ["identify"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "読み出す先は、本人のその会話の履歴です。",
+          "show": ["history", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "同じアプリでも、利用者ごとに保存場所を分けます。",
+          "pulse": ["history"],
+          "tag": {
+            "history": "本人の会話"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "add-equipment-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "備品の会話に足す",
+      "board": "equipment",
+      "beats": [
+        {
+          "say": "備品の問い合わせに、追加の依頼が届きました。",
+          "show": ["conversation"]
+        },
+        {
+          "say": "アプリは、ログイン中の利用者と会話を照合します。",
+          "show": ["user", "select"],
+          "travel": {
+            "along": ["select"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "選ぶのは、その人が備品について話していた履歴です。",
+          "show": ["past", "read"],
+          "tag": {
+            "past": "変更しない"
+          }
+        },
+        {
+          "say": "受付に寄る説明を求めた発言を、末尾に追加しましょう。",
+          "show": ["new", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "resolve-attachment",
+      "kind": "board",
+      "role": "apply",
+      "title": "添付も本人の記録から",
+      "board": "attachment",
+      "beats": [
+        {
+          "say": "添付を見分けるアプリ内の印を、添付IDと呼びます。",
+          "speech": "添付を見分けるアプリ内の印を、添付アイディーと呼びます。",
+          "term": {
+            "text": "添付ID",
+            "ruby": "てんぷアイディー",
+            "note": "アプリ内で添付を見分ける印"
+          }
+        },
+        {
+          "say": "返却案内を添えるなら、利用者と添付IDを照合しましょう。",
+          "speech": "返却案内を添えるなら、利用者と添付アイディーを照合しましょう。",
+          "show": ["user", "attachment", "identify"],
+          "travel": {
+            "along": ["identify"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "照合に使うのは、本人の添付を記録した情報です。",
+          "show": ["record", "lookup"],
+          "travel": {
+            "along": ["lookup"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その記録から、対応するファイルIDを引きます。",
+          "speech": "その記録から、対応するファイルアイディーを引きます。",
+          "show": ["file", "resolve"],
+          "travel": {
+            "along": ["resolve"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "画面が渡すファイルIDだけでは、別の人の添付を取り違えかねません。",
+          "speech": "画面が渡すファイルアイディーだけでは、別の人の添付を取り違えかねません。",
+          "pulse": ["file"],
+          "mark": [
+            {
+              "on": "file",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "合唱の練習日が変わる",
+      "board": "choir",
+      "think": 8,
+      "beats": [
+        {
+          "say": "由紀さんが、合唱の練習日を相談するアプリを使います。",
+          "show": ["person"]
+        },
+        {
+          "say": "最初の発言で伝えた練習日は、土曜日でした。",
+          "show": ["old", "conversation"]
+        },
+        {
+          "say": "今度は、日曜日に変えると伝えたところです。",
+          "show": ["new", "later"]
+        },
+        {
+          "say": "以前の発言を直すか、残して足すかを選びましょう。",
+          "show": ["choice", "question"]
+        },
+        {
+          "say": "だれのどの会話に、どのように追加しますか。",
+          "pulse": ["person", "old", "new"],
+          "mark": [
+            {
+              "on": "choice",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "本人の会話の末尾へ",
+      "board": "choir",
+      "beats": [
+        {
+          "say": "由紀さんの練習日の会話を選び、末尾に追加します。",
+          "pulse": ["person", "new"],
+          "mark": [
+            {
+              "on": "choice",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "土曜日と伝えた過去の発言は、そのままです。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "変更しない"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-append",
+      "kind": "board",
+      "role": "explain",
+      "title": "変更の依頼も発言として残す",
+      "board": "choirHistory",
+      "beats": [
+        {
+          "say": "最初に土曜日と伝えたことも、会話の記録です。",
+          "show": ["old"]
+        },
+        {
+          "say": "そこまでのやり取りは、届いた形で残します。",
+          "show": ["reply", "before"],
+          "tag": {
+            "reply": "そのまま"
+          }
+        },
+        {
+          "say": "日曜日に変える依頼を、最後に続けましょう。",
+          "show": ["new", "after"],
+          "travel": {
+            "along": ["after"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "予定を変える依頼も、新しい発言として追記します。",
+          "pulse": ["old", "new"],
+          "mark": [
+            {
+              "on": "new",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-owner",
+      "kind": "board",
+      "role": "explain",
+      "title": "別の人の会話に混ぜない",
+      "board": "choirOwner",
+      "beats": [
+        {
+          "say": "同じアプリを、直人さんも使っているとします。",
+          "show": ["other"]
+        },
+        {
+          "say": "今回は、由紀さんがログイン中です。",
+          "show": ["person"]
+        },
+        {
+          "say": "由紀さんと会話のIDを照合して、本人の履歴を選びます。",
+          "speech": "由紀さんと会話のアイディーを照合して、本人の履歴を選びます。",
+          "show": ["own", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "練習日の変更は、その会話の末尾だけに足しましょう。",
+          "show": ["new", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "追加の発言を受け取ったら",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "問い合わせアプリで続きの発言を受けたら、本人の会話を選びます。",
+          "show": ["owner"]
+        },
+        {
+          "say": "過去の記録はそのまま残し、足す場所は履歴の末尾です。",
+          "show": ["new", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "添付が選ばれたときも、本人の記録から探しましょう。",
+          "show": ["attachment", "attach"],
+          "travel": {
+            "along": ["attach"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "利用者ごとに保存先を分け、履歴には新しい発言を足します。",
+          "pulse": ["owner", "new", "attachment"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "1e118892841e86f77f38d32b936474f31d0f6a2ea0e695918262f0f9872efe29"
+  }
+}

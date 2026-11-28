@@ -1,0 +1,704 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "誰が使い始めるかを見て、MCP サーバーで提供するツール・リソース・プロンプトを選べる。",
+    "stuck": "サーバーに用意する機能をすべてツールと考え、アプリが読む資料や利用者が選ぶひな形を区別できない。",
+    "points": ["MCP サーバーは、ツール・リソース・プロンプトの 3 つを出します。"],
+    "leaveOut": [
+      "stdio と Streamable HTTP の選び方",
+      "認可とトークンの検査",
+      "サーバーの実装コードと登録手順",
+      "JSON-RPC のメッセージ構造とエラーの返し分け",
+      "Claude Code で資料やひな形を開く操作"
+    ]
+  },
+  "art": {
+    "room-calendar": {
+      "prompt": "A white appointment calendar with blank pale grey cells, a blue magnifying glass and two small violet meeting chairs beside it. The calendar represents searching for an available meeting room. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "room-rules": {
+      "prompt": "An open white booklet with a blue binding and a small pictorial pair of meeting chairs on one page. All other areas of the pages are blank. This is the meeting room rules booklet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "room-template": {
+      "prompt": "Two white letter sheets with matching violet tabs, one held by a blue paper clip, beside a violet pencil. Both sheets are blank and represent a reusable meeting room reservation notice template. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "receptionist": {
+      "prompt": "A staff member with short dark hair and a plain blue shirt, simple facial features, holding a blank white letter sheet and pointing to it with one hand. Upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "host-laptop": {
+      "prompt": "An open blue laptop with a completely blank white screen, representing the app used for meeting room reservations. No interface elements. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, looking at a small blue magnifying glass held in one hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-van": {
+      "prompt": "A blue mobile library van with an open side compartment showing several large violet and white books. A small blue magnifying glass beside the van represents finding its next stop. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "route-sheet": {
+      "prompt": "A white folded paper route sheet with a simple blue winding line joining three violet circular stops, beside a small blank white calendar. This represents a mobile library schedule. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-template": {
+      "prompt": "A white announcement leaflet with a small blue van pictogram and a violet pencil beside it. The rest of the leaflet is blank. This represents a reusable mobile library visit notice template. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "room-needs": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "空き検索",
+          "art": "room-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "rules",
+          "label": "利用規則",
+          "art": "room-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "template",
+          "label": "案内のひな形",
+          "art": "room-template",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reception": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "clerk",
+          "label": "受付の人",
+          "art": "receptionist",
+          "at": [1, 1]
+        },
+        {
+          "id": "search",
+          "label": "空きを調べる",
+          "art": "room-calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "規則を読む",
+          "art": "room-rules",
+          "at": [5, 1]
+        },
+        {
+          "id": "template",
+          "label": "ひな形を選ぶ",
+          "art": "room-template",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "connection": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "host",
+          "label": "ホスト",
+          "art": "host-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "client",
+          "label": "クライアント",
+          "icon": "extension",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "サーバー",
+          "icon": "terminal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "has-client",
+          "from": "host",
+          "to": "client",
+          "label": "接続先ごと"
+        },
+        {
+          "id": "exchange",
+          "from": "client",
+          "to": "server",
+          "label": "やり取り"
+        }
+      ]
+    },
+    "offerings": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tool",
+          "label": "ツール",
+          "art": "room-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "resource",
+          "label": "リソース",
+          "art": "room-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "プロンプト",
+          "art": "room-template",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "tool-path": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "actor",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツール",
+          "icon": "search",
+          "at": [3, 1]
+        },
+        {
+          "id": "search",
+          "label": "空き検索",
+          "art": "room-calendar",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "actor",
+          "to": "tool",
+          "label": "呼ぶ判断"
+        },
+        {
+          "id": "call",
+          "from": "tool",
+          "to": "search",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "resource-path": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "actor",
+          "label": "アプリ",
+          "art": "host-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "resource",
+          "label": "リソース",
+          "icon": "read",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "利用規則",
+          "art": "room-rules",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "actor",
+          "to": "resource",
+          "label": "読む判断"
+        },
+        {
+          "id": "read",
+          "from": "resource",
+          "to": "rules",
+          "label": "読み取る"
+        }
+      ]
+    },
+    "prompt-path": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "actor",
+          "label": "受付の人",
+          "art": "receptionist",
+          "at": [1, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "プロンプト",
+          "icon": "write",
+          "at": [3, 1]
+        },
+        {
+          "id": "template",
+          "label": "案内のひな形",
+          "art": "room-template",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "actor",
+          "to": "prompt",
+          "label": "選ぶ"
+        },
+        {
+          "id": "get",
+          "from": "prompt",
+          "to": "template",
+          "label": "取得する"
+        }
+      ]
+    },
+    "library": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "停留所の検索",
+          "art": "library-van",
+          "at": [1, 1]
+        },
+        {
+          "id": "schedule",
+          "label": "巡回予定表",
+          "art": "route-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "notice",
+          "label": "案内のひな形",
+          "art": "library-template",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "会議室の機能を分ける",
+      "board": "room-needs",
+      "beats": [
+        {
+          "say": "会議室の予約では、まず空き検索を使います。",
+          "show": ["search"]
+        },
+        {
+          "say": "予約の前に読む資料は、利用規則です。",
+          "show": ["rules"]
+        },
+        {
+          "say": "受付の人は、案内文のひな形も使いましょう。",
+          "show": ["template"]
+        },
+        {
+          "say": "MCP サーバーは、ツール・リソース・プロンプトを出します。",
+          "pulse": ["search", "rules", "template"],
+          "speech": "エムシーピーサーバーは、ツール・リソース・プロンプトを出します。"
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "kind": "board",
+      "role": "example",
+      "title": "受付の仕事を思い浮かべる",
+      "board": "reception",
+      "beats": [
+        {
+          "say": "会議室の受付で、予約を案内する場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "空きの確認には、予約の予定表を調べます。",
+          "show": ["search"]
+        },
+        {
+          "say": "利用規則は、読むために用意した資料です。",
+          "show": ["rules"]
+        },
+        {
+          "say": "案内文を書く人は、用途に合うひな形を選びましょう。",
+          "show": ["template"]
+        }
+      ]
+    },
+    {
+      "id": "host-client",
+      "kind": "board",
+      "role": "syntax",
+      "title": "アプリと接続の担当",
+      "board": "connection",
+      "beats": [
+        {
+          "say": "利用者が使うアプリを、MCP ホストと呼びます。",
+          "speech": "利用者が使うアプリを、エムシーピーホストと呼びます。",
+          "term": {
+            "text": "MCP ホスト",
+            "note": "利用者が使うアプリ"
+          }
+        },
+        {
+          "say": "この例では、会議室を予約するアプリです。",
+          "show": ["host"]
+        },
+        {
+          "say": "接続先ごとの担当を、MCP クライアントと呼びます。",
+          "speech": "接続先ごとの担当を、エムシーピークライアントと呼びます。",
+          "term": {
+            "text": "MCP クライアント",
+            "note": "接続先ごとに持つ担当"
+          }
+        },
+        {
+          "say": "ホストは、サーバーごとにクライアントを一つ持つ形です。",
+          "show": ["client", "server", "has-client"]
+        },
+        {
+          "say": "クライアントが、サーバーとメッセージをやり取りします。",
+          "show": ["exchange"],
+          "travel": {
+            "along": ["exchange"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "three-kinds",
+      "kind": "board",
+      "role": "syntax",
+      "title": "何を誰が使うか",
+      "board": "offerings",
+      "beats": [
+        {
+          "say": "ツールは、モデルが呼ぶかを決めます。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "モデル"
+          }
+        },
+        {
+          "say": "アプリが読む資料が、リソースです。",
+          "term": {
+            "text": "リソース",
+            "note": "アプリが読む資料"
+          }
+        },
+        {
+          "say": "利用規則を読むかどうかは、アプリが決めます。",
+          "show": ["resource"],
+          "tag": {
+            "resource": "アプリ"
+          }
+        },
+        {
+          "say": "プロンプトは、利用者が選ぶひな形です。",
+          "show": ["prompt"],
+          "tag": {
+            "prompt": "利用者"
+          }
+        },
+        {
+          "say": "何を出すかは、誰が使い始めるかで考えましょう。",
+          "pulse": ["tool", "resource", "prompt"]
+        }
+      ]
+    },
+    {
+      "id": "search-tool",
+      "kind": "board",
+      "role": "apply",
+      "title": "空き検索をツールにする",
+      "board": "tool-path",
+      "beats": [
+        {
+          "say": "空き検索を呼ぶ判断は、Claude に任せます。",
+          "show": ["actor"],
+          "speech": "空き検索を呼ぶ判断は、クロードに任せます。"
+        },
+        {
+          "say": "そのため、検索をツールとして用意する設計です。",
+          "show": ["tool", "choose"]
+        },
+        {
+          "say": "呼び出すときは、図の矢印の先で空きを調べます。",
+          "show": ["search", "call"],
+          "travel": {
+            "along": ["choose", "call"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "誰が検索を使うと決めたか、左の絵を見てください。",
+          "pulse": ["actor"],
+          "tag": {
+            "search": "ツール"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-resource",
+      "kind": "board",
+      "role": "apply",
+      "title": "利用規則を資料にする",
+      "board": "resource-path",
+      "beats": [
+        {
+          "say": "予約アプリは、利用規則を画面に出します。",
+          "show": ["actor"]
+        },
+        {
+          "say": "この設計では、読むかを決めるのはアプリです。",
+          "show": ["resource", "choose"]
+        },
+        {
+          "say": "そこで、利用規則をリソースとして用意します。",
+          "show": ["rules", "read"],
+          "travel": {
+            "along": ["choose", "read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "資料の内容だけでなく、読むと決める側も確かめましょう。",
+          "pulse": ["actor"],
+          "tag": {
+            "rules": "リソース"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-prompt",
+      "kind": "board",
+      "role": "apply",
+      "title": "案内のひな形を選ぶ",
+      "board": "prompt-path",
+      "beats": [
+        {
+          "say": "案内文を作り始めるのは、受付の人です。",
+          "show": ["actor"]
+        },
+        {
+          "say": "受付の人が、必要なひな形を選びます。",
+          "show": ["prompt", "choose"]
+        },
+        {
+          "say": "サーバーが提供する種類は、プロンプトです。",
+          "show": ["template", "get"],
+          "travel": {
+            "along": ["choose", "get"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "選ばれたひな形を取得する流れを、矢印でたどりましょう。",
+          "pulse": ["get"],
+          "tag": {
+            "template": "プロンプト"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "移動図書館ならどう分ける",
+      "board": "library",
+      "think": 8,
+      "beats": [
+        {
+          "say": "移動図書館の巡回を案内するアプリを考えます。",
+          "show": ["search"]
+        },
+        {
+          "say": "停留所の検索を呼ぶ判断は、モデルの担当です。",
+          "tag": {
+            "search": "モデル"
+          }
+        },
+        {
+          "say": "巡回予定表を読むかは、アプリが決めます。",
+          "show": ["schedule"],
+          "tag": {
+            "schedule": "アプリ"
+          }
+        },
+        {
+          "say": "係員が選ぶのは、巡回を知らせる案内文のひな形です。",
+          "show": ["notice"],
+          "tag": {
+            "notice": "利用者"
+          }
+        },
+        {
+          "say": "三つの機能を、どの種類で提供すればよいでしょうか。",
+          "mark": [
+            {
+              "on": "search",
+              "kind": "question"
+            },
+            {
+              "on": "schedule",
+              "kind": "question"
+            },
+            {
+              "on": "notice",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "三つの種類を割り当てる",
+      "board": "library",
+      "beats": [
+        {
+          "say": "停留所の検索は、ツールです。",
+          "tag": {
+            "search": "ツール"
+          },
+          "mark": [
+            {
+              "on": "search",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["search"]
+        },
+        {
+          "say": "巡回予定表は、リソースとして提供します。",
+          "tag": {
+            "schedule": "リソース"
+          },
+          "mark": [
+            {
+              "on": "schedule",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["schedule"]
+        },
+        {
+          "say": "案内文のひな形は、プロンプトです。",
+          "tag": {
+            "notice": "プロンプト"
+          },
+          "mark": [
+            {
+              "on": "notice",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["notice"]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "使い始める側をたどる",
+      "board": "library",
+      "beats": [
+        {
+          "say": "検索を呼ぶと決めるモデルに、ツールを対応させます。",
+          "pulse": ["search"],
+          "tag": {
+            "search": "モデルが呼ぶ"
+          }
+        },
+        {
+          "say": "予定表は、アプリが読むための資料です。",
+          "pulse": ["schedule"],
+          "tag": {
+            "schedule": "アプリが読む"
+          }
+        },
+        {
+          "say": "係員が自分でひな形を選ぶので、プロンプトに当たります。",
+          "pulse": ["notice"],
+          "tag": {
+            "notice": "人が選ぶ"
+          }
+        },
+        {
+          "say": "同じ巡回の情報でも、使い始める側に注目しましょう。",
+          "pulse": ["search", "schedule", "notice"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "機能を決めるときに使う",
+      "board": "offerings",
+      "reset": true,
+      "beats": [
+        {
+          "say": "会議室のサーバーを設計するとき、この分け方を使います。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "空き検索"
+          }
+        },
+        {
+          "say": "アプリに読ませる規則は、リソースです。",
+          "show": ["resource"],
+          "tag": {
+            "resource": "利用規則"
+          }
+        },
+        {
+          "say": "受付の人が選ぶ案内のひな形は、プロンプトにします。",
+          "show": ["prompt"],
+          "tag": {
+            "prompt": "ひな形"
+          }
+        },
+        {
+          "say": "必要な機能ごとに、誰が使い始めるかを確かめましょう。",
+          "pulse": ["tool", "resource", "prompt"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6ea874f010f6e297e8e988b948d93cb36d4a8d9d9229b65f8b8955fa78b73ea7"
+  }
+}

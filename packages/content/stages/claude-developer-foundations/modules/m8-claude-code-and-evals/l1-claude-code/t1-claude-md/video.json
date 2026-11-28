@@ -1,0 +1,690 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "毎回伝えるプロジェクトの約束を、CLAUDE.md に書く短く具体的な文に直せる。",
+    "stuck": "前の会話で伝えた約束が次も通じると思い、同じ説明や訂正を繰り返してしまう。",
+    "points": ["毎回効かせたいプロジェクトの約束は、CLAUDE.md に短く具体的に書きます。"],
+    "leaveOut": [
+      "組織や個人向けのファイルの置き場所",
+      "フックの書き方とイベント",
+      "設定ファイルの優先順位",
+      "スキルやフォルダーごとの決まりの作り方",
+      "自動メモリーの内部の仕組み"
+    ]
+  },
+  "art": {
+    "learner-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white note and a violet pencil, pausing to explain a correction. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "test-list": {
+      "prompt": "A white clipboard with three empty blue checkboxes and a violet pencil alongside it, representing a checklist for testing project changes. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "project-folder": {
+      "prompt": "An open light grey project folder holding a few white document sheets with blue tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rule-note": {
+      "prompt": "One short white instruction sheet held by a blue clip, with two small violet circular bullet marks and generous blank space. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "kitchen-kit": {
+      "prompt": "A blue mixing bowl, a violet whisk and a neatly folded light grey cleaning cloth grouped together, representing utensils that must be washed after cooking. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-reader": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, attentively reading a short white instruction sheet held in both hands. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "auto-note": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, using a violet pencil to update a small white notebook. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choir-calendar": {
+      "prompt": "A blue calendar with blank white pages beside an open white choir music folder and a violet tuning fork. The music folder contains no musical notation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "同じ説明",
+          "art": "learner-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "テストの手順",
+          "art": "test-list",
+          "at": [3, 1]
+        },
+        {
+          "id": "folder",
+          "label": "フォルダー",
+          "art": "project-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "rule",
+          "label": "短く具体的に",
+          "art": "rule-note",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "調理道具",
+          "art": "kitchen-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "片付けの約束",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "使う人",
+          "art": "learner-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "rule",
+          "to": "reader",
+          "label": "毎回読む"
+        }
+      ]
+    },
+    "file": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "folder",
+          "label": "プロジェクト",
+          "art": "project-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "指示ファイル",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "place",
+          "from": "folder",
+          "to": "rule",
+          "label": "直下に置く"
+        },
+        {
+          "id": "load",
+          "from": "rule",
+          "to": "claude",
+          "label": "会話の始め"
+        }
+      ]
+    },
+    "wording": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "vague",
+          "label": "コードを整えて",
+          "art": "rule-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "indent",
+          "label": "インデント",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "test",
+          "label": "テストの手順",
+          "art": "test-list",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "short": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "指示ファイル",
+          "art": "rule-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "headings",
+          "label": "見出し",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "bullets",
+          "label": "箇条書き",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "memory": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "human",
+          "label": "人が書く約束",
+          "art": "rule-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "auto",
+          "label": "自動メモリー",
+          "art": "auto-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "指示として読む",
+          "art": "claude-reader",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "choir": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "calendar",
+          "label": "合唱の練習日",
+          "art": "choir-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "vague",
+          "label": "練習日を正しく",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "specific",
+          "label": "毎週水曜日",
+          "art": "rule-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "correction",
+          "label": "同じ訂正",
+          "art": "learner-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "指示ファイル",
+          "art": "rule-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "folder",
+          "label": "共有する約束",
+          "art": "project-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "correction",
+          "to": "rule",
+          "label": "書き足す"
+        },
+        {
+          "id": "share",
+          "from": "rule",
+          "to": "folder",
+          "label": "共有する"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "毎回の説明を約束に",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "新しい会話のたびに、同じ説明を繰り返していました。",
+          "show": ["learner"]
+        },
+        {
+          "say": "テストの手順も、毎回伝えたい約束です。",
+          "show": ["test"]
+        },
+        {
+          "say": "フォルダーの決まりも、繰り返し説明しています。",
+          "show": ["folder"]
+        },
+        {
+          "say": "毎回効かせたい約束を、短く具体的に書きましょう。",
+          "show": ["rule"],
+          "pulse": ["rule"]
+        }
+      ]
+    },
+    {
+      "id": "kitchen-note",
+      "kind": "board",
+      "role": "example",
+      "title": "片付けの約束を残す",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "共同の台所で、片付けの約束を伝える場面です。",
+          "show": ["kit"]
+        },
+        {
+          "say": "使う人が変わるたびに、道具を洗うよう頼んでいました。",
+          "show": ["reader"]
+        },
+        {
+          "say": "そこで、使った道具を洗うと短いメモに書きます。",
+          "show": ["rule"],
+          "tag": {
+            "rule": "使ったら洗う"
+          }
+        },
+        {
+          "say": "毎回読めるメモがあれば、同じ約束を伝えやすいでしょう。",
+          "show": ["read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "project-file",
+      "kind": "board",
+      "role": "syntax",
+      "title": "毎回読む指示のファイル",
+      "board": "file",
+      "beats": [
+        {
+          "say": "この約束を書くファイルが、CLAUDE.md です。",
+          "speech": "この約束を書くファイルが、クロードドットエムディーです。",
+          "term": {
+            "text": "CLAUDE.md",
+            "note": "毎回読み込まれる指示"
+          }
+        },
+        {
+          "say": "プロジェクトの直下に置いて、チームで共有します。",
+          "show": ["folder", "rule", "place"],
+          "travel": {
+            "along": ["place"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "中に書くのは、人が決めた指示や決まりです。",
+          "pulse": ["rule"],
+          "tag": {
+            "rule": "人が書く"
+          }
+        },
+        {
+          "say": "Claude Code は、会話の始まりに毎回読み込みます。",
+          "speech": "クロードコードは、会話の始まりに毎回読み込みます。",
+          "show": ["claude", "load"],
+          "pulse": ["claude"],
+          "travel": {
+            "along": ["load"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "毎回伝える約束を、このファイルに集めましょう。",
+          "pulse": ["rule"]
+        }
+      ]
+    },
+    {
+      "id": "checkable-wording",
+      "kind": "board",
+      "role": "syntax",
+      "title": "確かめられる文にする",
+      "board": "wording",
+      "beats": [
+        {
+          "say": "「コードを整えて」だけでは、整え方が分かりません。",
+          "show": ["vague"],
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "たとえば、行の先頭の空白まで指定します。",
+          "show": ["indent"]
+        },
+        {
+          "say": "テストなら、いつ何を実行するかが必要です。",
+          "show": ["test"]
+        },
+        {
+          "say": "できたか確かめられる言葉に、書き直しましょう。",
+          "pulse": ["indent", "test"]
+        }
+      ]
+    },
+    {
+      "id": "concrete-rules",
+      "kind": "board",
+      "role": "apply",
+      "title": "空白とテストを指定する",
+      "board": "wording",
+      "beats": [
+        {
+          "say": "行の先頭は、空白二文字と具体的に指定します。",
+          "tag": {
+            "indent": "空白二文字"
+          },
+          "pulse": ["indent"]
+        },
+        {
+          "say": "これなら、コードの字下げと照らせる約束です。",
+          "mark": [
+            {
+              "on": "indent",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "テストの約束には、コミットの前とタイミングを書きましょう。",
+          "tag": {
+            "test": "コミット前"
+          },
+          "pulse": ["test"]
+        },
+        {
+          "say": "そこで npm test を走らせると指定します。",
+          "speech": "そこでエヌピーエムテストを走らせると指定します。",
+          "tag": {
+            "test": "npm test"
+          }
+        },
+        {
+          "say": "いつ何を実行するかが分かる、具体的な指示です。",
+          "mark": [
+            {
+              "on": "test",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "short-file",
+      "kind": "board",
+      "role": "apply",
+      "title": "短く整理して残す",
+      "board": "short",
+      "beats": [
+        {
+          "say": "一つのファイルは、二百行より短くまとめます。",
+          "show": ["rule"],
+          "tag": {
+            "rule": "二百行未満"
+          }
+        },
+        {
+          "say": "長い指示ほど、守られにくくなるためです。",
+          "pulse": ["rule"]
+        },
+        {
+          "say": "見出しで分け、約束を箇条書きにしましょう。",
+          "show": ["headings"],
+          "term": {
+            "text": "箇条書き",
+            "ruby": "かじょうがき",
+            "note": "項目を分けて並べる書き方"
+          }
+        },
+        {
+          "say": "一つずつ分けて書くと、約束を見直しやすくなります。",
+          "show": ["bullets"],
+          "pulse": ["bullets"]
+        }
+      ]
+    },
+    {
+      "id": "memory-difference",
+      "kind": "board",
+      "role": "note",
+      "title": "人の指示と覚えたこと",
+      "board": "memory",
+      "beats": [
+        {
+          "say": "CLAUDE.md の約束は、人が書く指示です。",
+          "speech": "クロードドットエムディーの約束は、人が書く指示です。",
+          "show": ["human"]
+        },
+        {
+          "say": "自動メモリーでは、Claude が訂正から覚えます。",
+          "speech": "自動メモリーでは、クロードが訂正から覚えます。",
+          "term": {
+            "text": "自動メモリー",
+            "ruby": "じどうメモリー",
+            "note": "訂正や傾向から覚えたこと"
+          }
+        },
+        {
+          "say": "こちらに残るのは、直されたことや覚えた傾向です。",
+          "show": ["auto"],
+          "pulse": ["auto"]
+        },
+        {
+          "say": "どちらも、指示として読まれます。",
+          "show": ["claude"],
+          "pulse": ["human", "auto"]
+        },
+        {
+          "say": "必ず守られる設定だとは考えないでください。",
+          "pulse": ["claude"],
+          "tag": {
+            "claude": "保証ではない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choir-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "練習日の約束を選ぶ",
+      "board": "choir",
+      "think": 8,
+      "beats": [
+        {
+          "say": "合唱の予定表を作るプロジェクトで考えます。",
+          "show": ["calendar"]
+        },
+        {
+          "say": "毎週水曜日が練習日という決まりです。",
+          "tag": {
+            "calendar": "毎週水曜日"
+          }
+        },
+        {
+          "say": "一つ目には、練習日を正しく書くよう指示しました。",
+          "show": ["vague"],
+          "tag": {
+            "vague": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目には、練習日は毎週水曜日と書いています。",
+          "show": ["specific"],
+          "tag": {
+            "specific": "二つ目"
+          }
+        },
+        {
+          "say": "毎回読む約束として、確かめやすいのはどちらでしょうか。",
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "question"
+            },
+            {
+              "on": "specific",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["vague", "specific"]
+        }
+      ]
+    },
+    {
+      "id": "choir-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "曜日を書いた約束",
+      "board": "choir",
+      "beats": [
+        {
+          "say": "答えは、毎週水曜日と書いた二つ目の約束です。",
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "cross"
+            },
+            {
+              "on": "specific",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["specific"]
+        },
+        {
+          "say": "曜日まで指定すると、予定表と照らして確かめられます。",
+          "pulse": ["calendar", "specific"]
+        }
+      ]
+    },
+    {
+      "id": "choir-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "正しいの中身を示す",
+      "board": "choir",
+      "beats": [
+        {
+          "say": "一つ目では、正しい曜日が書かれていません。",
+          "pulse": ["vague"],
+          "tag": {
+            "vague": "何曜日"
+          }
+        },
+        {
+          "say": "二つ目には、水曜日という判断の基準があります。",
+          "pulse": ["specific"],
+          "tag": {
+            "specific": "曜日を指定"
+          }
+        },
+        {
+          "say": "毎週という頻度も、予定表を作るときの約束です。",
+          "pulse": ["calendar"],
+          "tag": {
+            "calendar": "毎週"
+          }
+        },
+        {
+          "say": "こうした約束を、CLAUDE.md に短く書きましょう。",
+          "speech": "こうした約束を、クロードドットエムディーに短く書きましょう。",
+          "pulse": ["specific"],
+          "tag": {
+            "specific": "短く具体的に"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-corrections",
+      "kind": "board",
+      "role": "usage",
+      "title": "繰り返す訂正を書き足す",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "同じ訂正をまた入力したときが、書き足すタイミングです。",
+          "show": ["correction"]
+        },
+        {
+          "say": "毎回必要な約束を、CLAUDE.md に残します。",
+          "speech": "毎回必要な約束を、クロードドットエムディーに残します。",
+          "show": ["rule", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "チームで共有する約束は、ときどき見直しましょう。",
+          "show": ["folder", "share"],
+          "travel": {
+            "along": ["share"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "毎回効かせたい約束は、短く具体的に書きます。",
+          "pulse": ["rule"],
+          "tag": {
+            "rule": "短く具体的に"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f09b6b436ab7aaf7810eba87924687e8dfca4416785e9e285f10b1bc1514411a"
+  }
+}

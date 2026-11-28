@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m4-prompt-and-context@5",
-  "contentHash": "c2ab3fcf1135835d78377993ebacd0fb1bce85ce7360fa00d1235c1f4df3e543",
+  "unitId": "claude-developer-foundations/m4-prompt-and-context@6",
+  "contentHash": "79f5dee707729e399694bd64d118e0aba1961afda6857152e8ca4f4c4429e8b4",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

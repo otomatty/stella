@@ -1,0 +1,646 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "評価の結果を根拠に、単純な作りを保つか複雑な仕組みを足すかを選べる。",
+    "stuck": "エージェントや便利な道具を増やせば、必ず正確でよい仕組みになると思ってしまう。",
+    "points": ["まず単純な作りで試し、効果が確かめられたときだけ複雑にします。"],
+    "leaveOut": [
+      "ワークフローの個別の型と実装",
+      "エージェントのループやツールの細かな設計",
+      "評価の指標や評価セットの詳しい作り方",
+      "具体的なフレームワークの選び方と使い方",
+      "長時間の調査を動かす実行環境やサービスの比較"
+    ]
+  },
+  "art": {
+    "rental-equipment": {
+      "prompt": "Two blue badminton rackets and a white shuttlecock beside a light grey equipment bag, representing sports equipment available to borrow at a community center. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-staff": {
+      "prompt": "A friendly staff member in a plain blue shirt with short dark hair and simple facial features, holding one blue badminton racket and gesturing toward a visitor with an open hand. No counter. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-guide": {
+      "prompt": "An open white paper booklet with a small blue badminton racket pictogram on one page and a small violet clock pictogram on the other, representing instructions for borrowing sports equipment. No writing or numbers. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-call": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white request sheet in one hand and a blank white reply sheet in the other. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-set": {
+      "prompt": "A violet clipboard holding several white paper question sheets with small blank answer spaces, beside a blue pencil and a simple stopwatch with no numbers. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fixed-steps": {
+      "prompt": "Three separate shallow light grey document trays arranged in a clear row, each holding one white paper sheet, representing a predetermined sequence of work. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "framework-kit": {
+      "prompt": "An open light grey toolbox containing a blue wrench and several violet connectors, with a removable light grey lid placed beside it so the contents are visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-guide": {
+      "prompt": "A white folded museum admission leaflet with a blue pictogram of an ancient ceramic vase, beside two blank white admission tickets with blue perforated ends. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "multiple-agents": {
+      "prompt": "Three friendly small robots with rounded white bodies, blue accents and dark screen faces with simple smiles, passing blank white request and reply sheets between them. Each robot uses the same design. No furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "rental": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "equipment",
+          "label": "道具の貸出",
+          "art": "rental-equipment",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "担当者",
+          "art": "rental-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "貸出の案内",
+          "art": "rental-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "single": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "資料と例",
+          "art": "rental-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "call",
+          "label": "一回の呼出し",
+          "art": "claude-call",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluation",
+          "label": "評価のセット",
+          "art": "evaluation-set",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "guide",
+          "to": "call",
+          "label": "添える"
+        },
+        {
+          "id": "test",
+          "from": "call",
+          "to": "evaluation",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "evaluation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "set",
+          "label": "評価のセット",
+          "art": "evaluation-set",
+          "at": [1, 1]
+        },
+        {
+          "id": "single",
+          "label": "単純な作り",
+          "art": "claude-call",
+          "at": [3, 1]
+        },
+        {
+          "id": "complex",
+          "label": "複雑な作り",
+          "art": "multiple-agents",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "choices": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "single",
+          "label": "一回の呼出し",
+          "art": "claude-call",
+          "at": [1, 1]
+        },
+        {
+          "id": "workflow",
+          "label": "ワークフロー",
+          "art": "fixed-steps",
+          "at": [3, 1]
+        },
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "claude-call",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "add-steps",
+          "from": "single",
+          "to": "workflow",
+          "label": "足りなければ"
+        },
+        {
+          "id": "add-judgment",
+          "from": "workflow",
+          "to": "agent",
+          "label": "柔軟さが必要"
+        }
+      ]
+    },
+    "framework": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "フレームワーク",
+          "art": "framework-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "call",
+          "label": "呼出しの中身",
+          "art": "claude-call",
+          "at": [3, 1]
+        },
+        {
+          "id": "guide",
+          "label": "渡す資料と例",
+          "art": "rental-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "美術館の入場",
+          "art": "museum-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "single",
+          "label": "一回の呼出し",
+          "art": "claude-call",
+          "at": [3, 1]
+        },
+        {
+          "id": "complex",
+          "label": "複数の担当",
+          "art": "multiple-agents",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rental",
+          "label": "貸出の案内",
+          "art": "rental-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "museum",
+          "label": "入場の案内",
+          "art": "museum-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluation",
+          "label": "効果を確かめる",
+          "art": "evaluation-set",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "単純な作りを選ぶ",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "公民館で、ラケットの貸出を案内する場面を考えます。",
+          "show": ["equipment"]
+        },
+        {
+          "say": "窓口の担当者は、一人です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "貸出の案内を読めば、質問に答えられました。",
+          "show": ["guide"]
+        },
+        {
+          "say": "まず単純な作りで試し、効果が確かめられたときだけ複雑にします。",
+          "pulse": ["staff", "guide"]
+        }
+      ]
+    },
+    {
+      "id": "rental-desk",
+      "kind": "board",
+      "role": "example",
+      "title": "窓口を増やす前に",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "利用者は、ラケットをいつ返すか尋ねました。",
+          "pulse": ["equipment"]
+        },
+        {
+          "say": "案内を持つ担当者なら、その場で答えられます。",
+          "pulse": ["staff", "guide"]
+        },
+        {
+          "say": "何人もの担当者に回す必要はありません。",
+          "tag": {
+            "staff": "一人で足りる"
+          }
+        },
+        {
+          "say": "まず今の窓口で、必要な案内ができるか確かめましょう。",
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["staff"]
+        }
+      ]
+    },
+    {
+      "id": "single-call",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一回の呼び出しから",
+      "board": "single",
+      "beats": [
+        {
+          "say": "まずは、一回の呼び出しで試します。",
+          "term": {
+            "text": "一回の呼び出し",
+            "ruby": "いっかいのよびだし",
+            "note": "一度依頼して応答を受け取る"
+          },
+          "show": ["call"]
+        },
+        {
+          "say": "図の中央が、依頼を受けて答える Claude です。",
+          "speech": "図の中央が、依頼を受けて答えるクロードです。",
+          "pulse": ["call"]
+        },
+        {
+          "say": "依頼には、必要な資料や回答の例を添えましょう。",
+          "show": ["guide", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "多くの場合は、この呼び出しを磨くだけで足ります。",
+          "show": ["evaluation", "test"],
+          "travel": {
+            "along": ["test"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "measure-effect",
+      "kind": "board",
+      "role": "syntax",
+      "title": "効果を確かめる",
+      "board": "evaluation",
+      "beats": [
+        {
+          "say": "効果を確かめる問題の集まりが、評価のセットです。",
+          "term": {
+            "text": "評価のセット",
+            "ruby": "ひょうかのせっと",
+            "note": "効果を確かめる問題の集まり"
+          },
+          "show": ["set"]
+        },
+        {
+          "say": "用意した問題で、単純な作りの答えを確かめます。",
+          "show": ["single"],
+          "pulse": ["set", "single"]
+        },
+        {
+          "say": "作りを変えたら、同じ問題で結果を比べましょう。",
+          "show": ["complex"],
+          "pulse": ["set", "complex"]
+        },
+        {
+          "say": "複雑にするなら、待ち時間や費用に見合う効果が必要です。",
+          "tag": {
+            "complex": "効果を比べる"
+          },
+          "pulse": ["single", "complex"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "choose-structure",
+      "kind": "board",
+      "role": "syntax",
+      "title": "足りないときの選択",
+      "board": "choices",
+      "beats": [
+        {
+          "say": "一回の呼び出しで足りるなら、そこで止めます。",
+          "show": ["single"],
+          "tag": {
+            "single": "まず試す"
+          }
+        },
+        {
+          "say": "決まった手順を足すなら、ワークフローが候補です。",
+          "show": ["workflow", "add-steps"],
+          "tag": {
+            "workflow": "手順が決まる"
+          }
+        },
+        {
+          "say": "柔軟な判断が必要なら、エージェントを検討しましょう。",
+          "show": ["agent", "add-judgment"],
+          "tag": {
+            "agent": "判断を任せる"
+          }
+        },
+        {
+          "say": "どの段階でも、評価で効果を確かめます。",
+          "pulse": ["single", "workflow", "agent"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "apply-rental",
+      "kind": "board",
+      "role": "apply",
+      "title": "貸出案内を試す",
+      "board": "single",
+      "reset": true,
+      "beats": [
+        {
+          "say": "貸出の質問に答える仕組みも、小さく作り始めましょう。",
+          "show": ["call"]
+        },
+        {
+          "say": "まず渡すのは、貸出の案内と回答の例です。",
+          "show": ["guide", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "その資料を使い、返却時刻を答えるよう頼みます。",
+          "pulse": ["call"],
+          "tag": {
+            "call": "返却時刻"
+          }
+        },
+        {
+          "say": "答えを確かめずに、仕組みを増やす理由はありません。",
+          "show": ["evaluation", "test"],
+          "mark": [
+            {
+              "on": "evaluation",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "案内や例を磨きながら、評価で足りない点を確かめましょう。",
+          "pulse": ["guide", "evaluation"],
+          "unmark": ["evaluation"],
+          "tag": {
+            "evaluation": "足りるか確認"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "framework",
+      "kind": "board",
+      "role": "note",
+      "title": "道具の中も理解する",
+      "board": "framework",
+      "beats": [
+        {
+          "say": "組み立てを助ける道具を、フレームワークと呼びます。",
+          "term": {
+            "text": "フレームワーク",
+            "note": "呼び出しやツールを組み立てる"
+          },
+          "show": ["kit"]
+        },
+        {
+          "say": "呼び出しやツールを、手軽につなげられる道具です。",
+          "show": ["call"],
+          "pulse": ["kit", "call"]
+        },
+        {
+          "say": "ただし、中のプロンプトと応答が見えにくくなる場合もあります。",
+          "tag": {
+            "call": "中身に注意"
+          },
+          "pulse": ["call"]
+        },
+        {
+          "say": "まずは、API を直接使って試しましょう。",
+          "speech": "まずは、エーピーアイを直接使って試しましょう。",
+          "show": ["guide"],
+          "pulse": ["guide", "call"]
+        },
+        {
+          "say": "道具を使うときも、中の動きを理解しておきます。",
+          "pulse": ["kit", "call"],
+          "untag": ["call"],
+          "tag": {
+            "kit": "中身を理解"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "美術館の入場案内",
+      "board": "museum",
+      "think": 8,
+      "beats": [
+        {
+          "say": "美術館の入場の質問に答える仕組みを比べます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "資料を渡す一回の呼び出しで、必要な正確さを満たしました。",
+          "show": ["single"],
+          "tag": {
+            "single": "必要を満たす"
+          }
+        },
+        {
+          "say": "複数のエージェントでも、正確さは同じです。",
+          "show": ["complex"],
+          "tag": {
+            "complex": "正確さは同じ"
+          }
+        },
+        {
+          "say": "ただし、待ち時間と費用は増えています。",
+          "tag": {
+            "complex": "遅く高くなる"
+          },
+          "pulse": ["complex"]
+        },
+        {
+          "say": "この結果なら、どちらの作りを選ぶべきでしょうか。",
+          "pulse": ["single", "complex"],
+          "mark": [
+            {
+              "on": "single",
+              "kind": "question"
+            },
+            {
+              "on": "complex",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "一回の呼び出しを選ぶ",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "答えは、資料を渡す一回の呼び出しです。",
+          "mark": [
+            {
+              "on": "single",
+              "kind": "check"
+            },
+            {
+              "on": "complex",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["single"]
+        },
+        {
+          "say": "必要な正確さを満たす、単純な作りを選びます。",
+          "tag": {
+            "single": "採用する"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-simple",
+      "kind": "board",
+      "role": "explain",
+      "title": "増やす効果がない",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "一回の呼び出しで、入場の質問には答えられました。",
+          "pulse": ["guide", "single"]
+        },
+        {
+          "say": "担当を増やしても、正確さは上がりません。",
+          "pulse": ["complex"],
+          "tag": {
+            "complex": "改善なし"
+          }
+        },
+        {
+          "say": "増えたのは、待ち時間と費用です。",
+          "tag": {
+            "complex": "遅く高くなる"
+          }
+        },
+        {
+          "say": "その負担に見合う効果がないので、複雑にするのは見送ります。",
+          "pulse": ["single"],
+          "tag": {
+            "single": "単純なまま"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "作る前に小さく試す",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "貸出案内の仕組みなら、案内と例を渡して試します。",
+          "show": ["rental"]
+        },
+        {
+          "say": "美術館の入場案内も、単純な作りから試す場面です。",
+          "show": ["museum"]
+        },
+        {
+          "say": "仕組みを増やす前に、評価の結果を確かめましょう。",
+          "show": ["evaluation"]
+        },
+        {
+          "say": "まず単純な作りで試し、効果が確かめられたときだけ複雑にします。",
+          "pulse": ["rental", "museum", "evaluation"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "714c25926b4a7514b0a0eb6d5a8c12d0d78623f8c5498a4df656ce585f03f194"
+  }
+}

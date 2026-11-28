@@ -1,0 +1,699 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "HTTP の MCP サーバーで、トークンの渡し方とあて先を確かめ、別サービス用のトークンを拒否する理由を説明できる。",
+    "stuck": "同じ発行元のトークンなら、別のサービス用でも受け入れてよいと思ってしまう。",
+    "points": [
+      "HTTP の MCP サーバーは、トークンをヘッダーで受け取り、自分あてのものかを確かめます。"
+    ],
+    "leaveOut": [
+      "OAuth 2.1 の詳しい手順",
+      "保護されたリソースのメタデータの構造",
+      "Agent SDK の headers 設定",
+      "別サービス用の認証情報の取得方法",
+      "トランスポートの選び方"
+    ]
+  },
+  "art": {
+    "room-server": {
+      "prompt": "A compact blue server tower beside two violet meeting chairs, representing a meeting room reservation server. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "equipment-token": {
+      "prompt": "A single white access card with a blue pictogram of a portable projector, representing a token intended for equipment management. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "swimming-pass": {
+      "prompt": "A single white admission ticket beside blue swimming goggles, representing a swimming pool pass. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "skating-entry": {
+      "prompt": "A pair of white ice skates beside a blue admission gate with a closed violet barrier, representing a skating rink entrance. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-app": {
+      "prompt": "An open blue laptop with a completely blank white screen, representing the client sending a request. No user interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "access-token": {
+      "prompt": "A single white access card with a small violet key pictogram and a blue clip, representing a token presented to a server. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-letter": {
+      "prompt": "An open blue envelope holding a blank white information sheet, representing the server response. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "table-tennis-server": {
+      "prompt": "A compact blue server tower beside a violet table tennis paddle and a white ball, representing a table tennis reservation server. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shoe-token": {
+      "prompt": "A single white access card with a blue sports shoe pictogram, representing a token intended for a shoe rental service. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "room",
+          "label": "会議室サーバー",
+          "art": "room-server",
+          "at": [1, 1]
+        },
+        {
+          "id": "token",
+          "label": "備品用トークン",
+          "art": "equipment-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "受付アプリ",
+          "art": "request-app",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "passes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pass",
+          "label": "プール利用券",
+          "art": "swimming-pass",
+          "at": [1, 1]
+        },
+        {
+          "id": "rink",
+          "label": "スケート場",
+          "art": "skating-entry",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "present",
+          "from": "pass",
+          "to": "rink",
+          "label": "提示"
+        }
+      ]
+    },
+    "entrance": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "受付アプリ",
+          "art": "request-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "token",
+          "label": "トークン",
+          "art": "access-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "room",
+          "label": "会議室サーバー",
+          "art": "room-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "attach",
+          "from": "app",
+          "to": "token",
+          "label": "付ける"
+        },
+        {
+          "id": "send",
+          "from": "token",
+          "to": "room",
+          "label": "送る"
+        }
+      ]
+    },
+    "audience": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "token",
+          "label": "トークン",
+          "art": "equipment-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "room",
+          "label": "会議室サーバー",
+          "art": "room-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "arrive",
+          "from": "token",
+          "to": "room",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "missing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "受付アプリ",
+          "art": "request-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "room",
+          "label": "会議室サーバー",
+          "art": "room-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "応答ヘッダー",
+          "art": "response-letter",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "app",
+          "to": "room",
+          "label": "要求"
+        },
+        {
+          "id": "respond",
+          "from": "room",
+          "to": "reply",
+          "label": "応答"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "token",
+          "label": "貸靴用トークン",
+          "art": "shoe-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "予約アプリ",
+          "art": "request-app",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "卓球場サーバー",
+          "art": "table-tennis-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "attach",
+          "from": "token",
+          "to": "app",
+          "label": "ヘッダー"
+        },
+        {
+          "id": "send",
+          "from": "app",
+          "to": "server",
+          "label": "送る"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "受付アプリ",
+          "art": "request-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "token",
+          "label": "トークン",
+          "art": "access-token",
+          "at": [3, 1]
+        },
+        {
+          "id": "room",
+          "label": "会議室サーバー",
+          "art": "room-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "attach",
+          "from": "app",
+          "to": "token",
+          "label": "ヘッダー"
+        },
+        {
+          "id": "send",
+          "from": "token",
+          "to": "room",
+          "label": "検査"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "会議室の入口を守る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "会議室の検索を、社員だけに開く場面です。",
+          "show": ["room"]
+        },
+        {
+          "say": "受付アプリが、備品用のトークンを送ってきました。",
+          "show": ["app", "token"]
+        },
+        {
+          "say": "発行元が同じでも、会議室で使えるとは限りません。",
+          "mark": [
+            {
+              "on": "token",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "トークンはヘッダーで受け取り、自分あてか確かめます。",
+          "pulse": ["room", "token"]
+        }
+      ]
+    },
+    {
+      "id": "passes",
+      "kind": "board",
+      "role": "example",
+      "title": "利用券の使える場所",
+      "board": "passes",
+      "beats": [
+        {
+          "say": "同じ施設が、プールとスケート場を運営しています。",
+          "show": ["rink"]
+        },
+        {
+          "say": "持ってきたのは、プールだけで使える利用券です。",
+          "show": ["pass"]
+        },
+        {
+          "say": "同じ施設の券でも、スケート場には入れません。",
+          "show": ["present"],
+          "mark": [
+            {
+              "on": "rink",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "発行した所と、使える場所を分けて確かめましょう。",
+          "tag": {
+            "pass": "使える場所"
+          },
+          "pulse": ["pass"]
+        }
+      ]
+    },
+    {
+      "id": "permission",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入口で認可する",
+      "board": "entrance",
+      "beats": [
+        {
+          "say": "操作を許してよいか確かめることを、認可と呼びます。",
+          "term": {
+            "text": "認可",
+            "ruby": "にんか",
+            "note": "操作を許してよいかの確認"
+          }
+        },
+        {
+          "say": "会議室の検索では、確認する場所はサーバーの入口です。",
+          "show": ["room"]
+        },
+        {
+          "say": "アプリは、認証情報としてトークンを送ります。",
+          "show": ["app", "token"],
+          "term": {
+            "text": "トークン",
+            "note": "リクエストで渡す認証情報"
+          }
+        },
+        {
+          "say": "このトークンを受け取って、サーバーが検査する形です。",
+          "show": ["attach", "send"],
+          "travel": {
+            "along": ["attach", "send"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "header",
+      "kind": "code",
+      "role": "syntax",
+      "title": "ヘッダーで渡す",
+      "code": ["// ヘッダーにトークンを指定する", "Authorization: Bearer <トークン>"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "entrance"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "トークンを渡すヘッダーは、Authorization です。",
+          "part": {
+            "line": 1,
+            "text": "Authorization",
+            "note": "ヘッダー名"
+          },
+          "figure": {
+            "show": ["app", "token"]
+          },
+          "speech": "トークンを渡すヘッダーは、オーソライゼーションです。"
+        },
+        {
+          "say": "Bearer に続けて、取得したトークンを入れます。",
+          "part": {
+            "line": 1,
+            "text": "Bearer <トークン>",
+            "note": "トークンを入れる"
+          },
+          "figure": {
+            "show": ["attach"]
+          },
+          "speech": "ベアラーに続けて、取得したトークンを入れます。"
+        },
+        {
+          "say": "URL の問い合わせ文字列には入れません。",
+          "figure": {
+            "tag": {
+              "token": "URLは不可"
+            }
+          },
+          "speech": "ユーアールエルの問い合わせ文字列には入れません。"
+        },
+        {
+          "say": "その渡し方では、アクセスログなどに残るためです。",
+          "figure": {
+            "tag": {
+              "token": "ログに残る"
+            }
+          }
+        },
+        {
+          "say": "サーバーは、ヘッダーからトークンを取り出します。",
+          "focus": [1],
+          "figure": {
+            "show": ["room", "send"],
+            "travel": {
+              "along": ["send"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "audience",
+      "kind": "board",
+      "role": "syntax",
+      "title": "あて先を確かめる",
+      "board": "audience",
+      "beats": [
+        {
+          "say": "トークンのあて先を、audience と呼びます。",
+          "speech": "トークンのあて先を、オーディエンスと呼びます。",
+          "term": {
+            "text": "audience",
+            "note": "トークンのあて先"
+          }
+        },
+        {
+          "say": "このトークンのあて先は、備品管理サービスです。",
+          "show": ["token"],
+          "tag": {
+            "token": "備品管理"
+          }
+        },
+        {
+          "say": "会議室サーバーは、自分あてに発行されたか確かめます。",
+          "show": ["room", "arrive"],
+          "pulse": ["room"]
+        },
+        {
+          "say": "発行元が同じという確認だけでは、足りません。",
+          "pulse": ["token"],
+          "mark": [
+            {
+              "on": "token",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reject-other",
+      "kind": "board",
+      "role": "apply",
+      "title": "別サービス用は拒否する",
+      "board": "audience",
+      "beats": [
+        {
+          "say": "受付アプリから届いたのは、備品管理用のトークンです。",
+          "pulse": ["token"]
+        },
+        {
+          "say": "会議室サーバーは、トークンが有効かを検査します。",
+          "pulse": ["room"]
+        },
+        {
+          "say": "それに加えて必要なのが、あて先の検査です。",
+          "tag": {
+            "room": "あて先も検査"
+          }
+        },
+        {
+          "say": "備品管理あてなので、会議室の入口では拒否します。",
+          "mark": [
+            {
+              "on": "token",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "room": "拒否"
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing-token",
+      "kind": "board",
+      "role": "apply",
+      "title": "トークンがなければ",
+      "board": "missing",
+      "beats": [
+        {
+          "say": "今度は、トークンのないリクエストが届きます。",
+          "show": ["app", "room", "request"],
+          "tag": {
+            "app": "トークンなし"
+          }
+        },
+        {
+          "say": "保護した入口で返す状態は、401 です。",
+          "show": ["reply", "respond"],
+          "tag": {
+            "reply": "401"
+          },
+          "speech": "保護した入口で返す状態は、よんまるいちです。"
+        },
+        {
+          "say": "WWW-Authenticate も応答に付けます。",
+          "pulse": ["reply"],
+          "speech": "ダブリューダブリューダブリューオーセンティケートも応答に付けます。"
+        },
+        {
+          "say": "これは、トークンの取得に必要な情報を知らせるヘッダーです。",
+          "tag": {
+            "reply": "取得の案内"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "卓球場で受け入れるか",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "卓球場の予約を扱う、保護されたサーバーがあります。",
+          "show": ["server"]
+        },
+        {
+          "say": "届いたトークンのあて先は、貸靴サービスです。",
+          "show": ["token"],
+          "tag": {
+            "token": "貸靴あて"
+          }
+        },
+        {
+          "say": "予約アプリは、トークンをヘッダーに入れて送りました。",
+          "show": ["app", "attach", "send"],
+          "travel": {
+            "along": ["attach", "send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "貸靴用と卓球場用のトークンは、同じ発行元です。",
+          "tag": {
+            "app": "同じ発行元"
+          }
+        },
+        {
+          "say": "卓球場サーバーは、これを受け入れてよいでしょうか。",
+          "mark": [
+            {
+              "on": "server",
+              "kind": "question"
+            }
+          ]
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "貸靴用は受け入れない",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、貸靴用のトークンを拒否することです。",
+          "mark": [
+            {
+              "on": "server",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "server": "拒否"
+          }
+        },
+        {
+          "say": "卓球場サーバーあてではないので、受け入れません。",
+          "pulse": ["token"],
+          "mark": [
+            {
+              "on": "token",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why-reject",
+      "kind": "board",
+      "role": "explain",
+      "title": "渡し方とあて先を分ける",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "トークンは、指定どおりヘッダーで届いています。",
+          "pulse": ["attach"],
+          "tag": {
+            "app": "ヘッダー"
+          }
+        },
+        {
+          "say": "ただし、あて先は貸靴サービスのままです。",
+          "pulse": ["token"]
+        },
+        {
+          "say": "発行元が同じでも、あて先の違いは消えません。",
+          "tag": {
+            "server": "あて先が違う"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "卓球場用のトークンかどうかを、入口で確かめます。",
+          "pulse": ["send"]
+        },
+        {
+          "say": "渡し方が正しいことと、自分あてであることは別です。",
+          "pulse": ["attach", "token"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "共有する入口で確認する",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "複数の部署に会議室の検索を開くときに使います。",
+          "show": ["app", "room"]
+        },
+        {
+          "say": "アクセスを制限する場所は、HTTP の入口です。",
+          "pulse": ["room"],
+          "speech": "アクセスを制限する場所は、エイチティーティーピーの入口です。"
+        },
+        {
+          "say": "受け取ったトークンの有効性とあて先を検査します。",
+          "show": ["token", "attach", "send"],
+          "tag": {
+            "room": "自分あてか"
+          }
+        },
+        {
+          "say": "受け取り方とあて先の確認を、入口にそろえましょう。",
+          "pulse": ["attach", "room"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "44098451e133eda95112e1f4bcec651fbb4ff032cd16ec94d4b2a6be1b28fbcf"
+  }
+}

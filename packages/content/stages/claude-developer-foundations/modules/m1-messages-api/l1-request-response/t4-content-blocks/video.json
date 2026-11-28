@@ -1,0 +1,808 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答の content から type が text のブロックを選んで文字をつなぐ手順と、先頭だけでは取りこぼす理由を説明できる。",
+    "stuck": "応答の content を一続きの文字だと思ったり、先頭の要素の text だけで本文を取り出せると思ったりする。",
+    "points": ["応答の content は、type で形の決まるブロックの配列です。"],
+    "leaveOut": [
+      "テキスト以外のブロックの種類や具体的な形",
+      "ツール使用の処理",
+      "リクエストの項目と会話履歴",
+      "配列を扱う構文の詳しい仕様",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "notice-bundle": {
+      "prompt": "An open light grey paper envelope holding two separate white school announcement slips with blue and violet corner clips. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "notice-start": {
+      "prompt": "A single short white school announcement slip with a blue paper clip at its upper left corner. The paper is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "notice-end": {
+      "prompt": "A single short white school announcement slip with a violet paper clip at its upper right corner. The paper is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "notice-pair": {
+      "prompt": "Two separate blank white school announcement slips arranged side by side, the left slip held by a blue clip and the right slip by a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "joined-note": {
+      "prompt": "A single long blank white school announcement strip held by a blue clip on the left and a violet clip on the right. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-print": {
+      "prompt": "A small loose photographic print on white paper showing a simple blue school entrance door. The paper has no border. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "other-block": {
+      "prompt": "A closed light grey document folder secured by a violet elastic strap, representing an unopened non-text item whose contents are not shown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-seats": {
+      "prompt": "Three adjacent blue cinema seats with the middle seat upholstered in violet, beside a blank white admission ticket. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a long blank white announcement strip and reading it attentively. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bundle",
+          "label": "受け取った応答",
+          "art": "notice-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "集合は",
+          "art": "notice-start",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "玄関です",
+          "art": "notice-end",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handouts": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "photo",
+          "label": "写真",
+          "art": "photo-print",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "集合は",
+          "art": "notice-start",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "玄関です",
+          "art": "notice-end",
+          "at": [5, 1]
+        },
+        {
+          "id": "joined",
+          "label": "集合は玄関です",
+          "art": "joined-note",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "next",
+          "from": "first",
+          "to": "second"
+        },
+        {
+          "id": "combine",
+          "from": "second",
+          "to": "joined"
+        }
+      ]
+    },
+    "structure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "content",
+          "art": "notice-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "一つの要素",
+          "art": "notice-start",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "次の要素",
+          "art": "notice-end",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shape": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "block",
+          "label": "一つの要素",
+          "art": "notice-start",
+          "at": [1, 1]
+        },
+        {
+          "id": "kind",
+          "label": "種類",
+          "art": "notice-start",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "集合は",
+          "art": "notice-start",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "extract": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "all",
+          "label": "全ブロック",
+          "art": "notice-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "selected",
+          "label": "文字のブロック",
+          "art": "notice-pair",
+          "at": [2, 1]
+        },
+        {
+          "id": "pieces",
+          "label": "二つの文字",
+          "art": "notice-pair",
+          "at": [3, 1]
+        },
+        {
+          "id": "joined",
+          "label": "集合は玄関です",
+          "art": "joined-note",
+          "at": [4, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "all",
+          "to": "selected"
+        },
+        {
+          "id": "read",
+          "from": "selected",
+          "to": "pieces"
+        },
+        {
+          "id": "join",
+          "from": "pieces",
+          "to": "joined"
+        }
+      ]
+    },
+    "firstOnly": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "other",
+          "label": "文字以外",
+          "art": "other-block",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "集合は",
+          "art": "notice-start",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "玄関です",
+          "art": "notice-end",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cinema": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "other",
+          "label": "文字以外",
+          "art": "other-block",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "座席は",
+          "art": "cinema-seats",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "中央です",
+          "art": "cinema-seats",
+          "at": [5, 1]
+        },
+        {
+          "id": "joined",
+          "label": "座席は中央です",
+          "art": "cinema-seats",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "next",
+          "from": "first",
+          "to": "second"
+        },
+        {
+          "id": "join",
+          "from": "second",
+          "to": "joined"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "受け取った応答",
+          "art": "notice-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "text",
+          "label": "表示する本文",
+          "art": "joined-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "案内を読む人",
+          "art": "reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "reply",
+          "to": "text"
+        },
+        {
+          "id": "display",
+          "from": "text",
+          "to": "reader"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "応答から本文を取り出す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "集合場所を知らせる応答から、本文を取り出します。",
+          "show": ["bundle"]
+        },
+        {
+          "say": "最初の断片は「集合は」という文字です。",
+          "show": ["first"]
+        },
+        {
+          "say": "続きには「玄関です」という文字が入っています。",
+          "show": ["second"]
+        },
+        {
+          "say": "応答の content は、type で形の決まるブロックの配列です。",
+          "speech": "応答のコンテントは、タイプで形の決まるブロックの配列です。",
+          "pulse": ["bundle", "first", "second"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "handouts",
+      "kind": "board",
+      "role": "example",
+      "title": "紙の種類を見分ける",
+      "board": "handouts",
+      "beats": [
+        {
+          "say": "学校で、写真と案内の紙を一緒に受け取ったとします。",
+          "show": ["photo", "first", "second"]
+        },
+        {
+          "say": "読みたいのは、二枚の紙に分かれた案内です。",
+          "pulse": ["first", "second"]
+        },
+        {
+          "say": "写真を除き、案内の文字を順につなぎましょう。",
+          "show": ["next", "joined", "combine"],
+          "travel": {
+            "along": ["next", "combine"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "こうすると、集合場所まで読み取れます。",
+          "pulse": ["joined"],
+          "mark": [
+            {
+              "on": "joined",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "content-array",
+      "kind": "board",
+      "role": "syntax",
+      "title": "配列と一つずつの要素",
+      "board": "structure",
+      "beats": [
+        {
+          "say": "応答の中身が入る項目は、content です。",
+          "speech": "応答の中身が入る項目は、コンテントです。",
+          "term": {
+            "text": "content",
+            "note": "応答の中身が入る項目"
+          }
+        },
+        {
+          "say": "この項目には、複数の要素を並べた配列が入ります。",
+          "show": ["all"]
+        },
+        {
+          "say": "配列の一つずつの要素が、コンテンツブロックです。",
+          "term": {
+            "text": "コンテンツブロック",
+            "note": "配列の一つずつの要素"
+          }
+        },
+        {
+          "say": "この図では、二つの要素を取り出して見せています。",
+          "show": ["first", "second"]
+        },
+        {
+          "say": "中身を一続きの文字だと思わず、要素に注目しましょう。",
+          "pulse": ["first", "second"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "block-shape",
+      "kind": "code",
+      "role": "syntax",
+      "title": "種類と文字を見分ける",
+      "code": ["// テキストのブロックの形を示す", "{ type: \"text\", text: \"集合は\" }"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "shape"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ブロックの形を決める項目を、type と呼びます。",
+          "speech": "ブロックの形を決める項目を、タイプと呼びます。",
+          "term": {
+            "text": "type",
+            "note": "ブロックの種類"
+          },
+          "figure": {
+            "show": ["block"]
+          }
+        },
+        {
+          "say": "種類が text なら、テキストのブロックです。",
+          "speech": "種類がテキストなら、テキストのブロックです。",
+          "part": {
+            "line": 1,
+            "text": "type: \"text\"",
+            "note": "種類はテキスト"
+          },
+          "figure": {
+            "show": ["kind"],
+            "tag": {
+              "kind": "text"
+            }
+          }
+        },
+        {
+          "say": "文字そのものは、text という項目に入ります。",
+          "speech": "文字そのものは、テキストという項目に入ります。",
+          "part": {
+            "line": 1,
+            "text": "text: \"集合は\"",
+            "note": "文字の入る項目"
+          },
+          "figure": {
+            "show": ["body"]
+          }
+        },
+        {
+          "say": "この例で取り出したい文字は、「集合は」です。",
+          "part": {
+            "line": 1,
+            "text": "\"集合は\""
+          },
+          "figure": {
+            "pulse": ["body"]
+          }
+        },
+        {
+          "say": "種類を確かめてから、文字の項目を読みましょう。",
+          "part": {
+            "line": 1,
+            "text": "type"
+          },
+          "figure": {
+            "pulse": ["kind"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "extract-text",
+      "kind": "code",
+      "role": "apply",
+      "title": "種類で選んで文字をつなぐ",
+      "code": [
+        "// 応答のブロックを読み、結果に名前を付ける",
+        "const text = response.content",
+        "  // 種類がテキストのブロックだけを選ぶ",
+        "  .filter((block) => block.type === \"text\")",
+        "  // 選んだブロックから文字を取り出す",
+        "  .map((block) => block.text)",
+        "  // 取り出した文字を区切りなしでつなぐ",
+        "  .join(\"\");"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "extract"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "この例では、応答に response と名前を付けています。",
+          "speech": "この例では、応答にレスポンスと名前を付けています。",
+          "part": {
+            "line": 1,
+            "text": "response",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["all"]
+          }
+        },
+        {
+          "say": "結果を置く text も、自分で決める名前です。",
+          "speech": "結果を置くテキストも、自分で決める名前です。",
+          "part": {
+            "line": 1,
+            "text": "text",
+            "note": "文字"
+          }
+        },
+        {
+          "say": "各要素を指す block も、自分で付けた名前と読みましょう。",
+          "speech": "各要素を指すブロックも、自分で付けた名前と読みましょう。",
+          "part": {
+            "line": 3,
+            "text": "block",
+            "note": "ブロック"
+          }
+        },
+        {
+          "say": "filter で、種類が text のものだけを選びます。",
+          "speech": "フィルターで、種類がテキストのものだけを選びます。",
+          "part": {
+            "line": 3,
+            "text": ".filter((block) => block.type === \"text\")",
+            "note": "条件で選ぶ"
+          },
+          "figure": {
+            "show": ["selected", "select"],
+            "travel": {
+              "along": ["select"]
+            }
+          }
+        },
+        {
+          "say": "map で取り出すのは、各ブロックの text です。",
+          "speech": "マップで取り出すのは、各ブロックのテキストです。",
+          "part": {
+            "line": 5,
+            "text": ".map((block) => block.text)",
+            "note": "文字を取り出す"
+          },
+          "figure": {
+            "show": ["pieces", "read"],
+            "travel": {
+              "along": ["read"]
+            }
+          }
+        },
+        {
+          "say": "join でつなぐと、集合場所までの文字がそろいます。",
+          "speech": "ジョインでつなぐと、集合場所までの文字がそろいます。",
+          "part": {
+            "line": 7,
+            "text": ".join(\"\")",
+            "note": "区切りなしで結合"
+          },
+          "figure": {
+            "show": ["joined", "join"],
+            "travel": {
+              "along": ["join"]
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "first-only",
+      "kind": "board",
+      "role": "apply",
+      "title": "先頭だけでは足りない",
+      "board": "firstOnly",
+      "beats": [
+        {
+          "say": "テキストのブロックが、二つに分かれて返ることがあります。",
+          "show": ["first", "second"],
+          "tag": {
+            "first": "text",
+            "second": "text"
+          }
+        },
+        {
+          "say": "先頭だけを読むと、残るのは「集合は」だけです。",
+          "pulse": ["first"]
+        },
+        {
+          "say": "それでは、後ろにある集合場所を取りこぼします。",
+          "pulse": ["second"],
+          "mark": [
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "さらに、文字以外のブロックが先頭に来るかもしれません。",
+          "show": ["other"],
+          "pulse": ["other"]
+        },
+        {
+          "say": "位置で決めず、配列全体から種類で選びましょう。",
+          "pulse": ["other", "first", "second"],
+          "unmark": ["second"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "cinema-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "座席案内の本文はどれ",
+      "board": "cinema",
+      "think": 8,
+      "beats": [
+        {
+          "say": "映画館の座席を知らせる応答を、読んでみましょう。",
+          "show": ["other"],
+          "tag": {
+            "other": "先頭"
+          }
+        },
+        {
+          "say": "先頭は、テキスト以外のブロックです。",
+          "pulse": ["other"]
+        },
+        {
+          "say": "次のテキストには「座席は」という文字が入っています。",
+          "show": ["first"],
+          "tag": {
+            "first": "text"
+          }
+        },
+        {
+          "say": "最後のテキストに入っているのは、「中央です」という文字です。",
+          "show": ["second"],
+          "tag": {
+            "second": "text"
+          }
+        },
+        {
+          "say": "種類で選んで文字をつなぐと、本文はどうなるでしょうか。",
+          "pulse": ["other", "first", "second"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinema-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つの文字をつなぐ",
+      "board": "cinema",
+      "beats": [
+        {
+          "say": "答えは、「座席は中央です」という本文です。",
+          "show": ["joined"],
+          "mark": [
+            {
+              "on": "joined",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        },
+        {
+          "say": "先頭を除き、後ろの二つから文字を取り出します。",
+          "pulse": ["first", "second"],
+          "unmark": ["first", "second"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            },
+            {
+              "on": "second",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinema-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "種類から順にたどる",
+      "board": "cinema",
+      "reset": true,
+      "beats": [
+        {
+          "say": "先頭のブロックは、テキストを選ぶ条件に当てはまりません。",
+          "show": ["other"],
+          "tag": {
+            "other": "選ばない"
+          }
+        },
+        {
+          "say": "次のブロックは種類が text なので、選びます。",
+          "speech": "次のブロックは種類がテキストなので、選びます。",
+          "show": ["first"],
+          "tag": {
+            "first": "text"
+          },
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "最後も、文字を取り出す対象です。",
+          "show": ["second"],
+          "tag": {
+            "second": "text"
+          },
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "二つから取り出した文字を、並んだ順につなぎましょう。",
+          "show": ["next", "joined", "join"],
+          "travel": {
+            "along": ["next", "join"]
+          }
+        },
+        {
+          "say": "すべての要素を見るので、後ろの文字も本文に入ります。",
+          "pulse": ["joined"],
+          "mark": [
+            {
+              "on": "joined",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "案内を表示する前に",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "応答から案内を画面に出すときに、この手順を使います。",
+          "show": ["reply"]
+        },
+        {
+          "say": "表示に使うのは、種類で選んでつないだ文字です。",
+          "show": ["text", "extract"],
+          "travel": {
+            "along": ["extract"]
+          }
+        },
+        {
+          "say": "案内を読む人へ、取り出した本文を届けましょう。",
+          "show": ["reader", "display"],
+          "travel": {
+            "along": ["display"]
+          }
+        },
+        {
+          "say": "表示する前に、先頭だけを読んでいないか確かめます。",
+          "pulse": ["reply", "text"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "17e864929dac289a7e10218848100dd502e50fba20633e587bbe635f92ec1479"
+  }
+}

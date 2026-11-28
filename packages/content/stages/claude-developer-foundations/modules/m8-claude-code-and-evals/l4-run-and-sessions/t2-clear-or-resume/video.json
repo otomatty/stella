@@ -1,0 +1,818 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "次の作業に前の会話が必要かを判断し、会話の消去と適切なセッションの再開を選べる。",
+    "stuck": "仕事が変わっても同じ会話を使い続けたり、以前の仕事に戻るときに直近の会話を開いたりしてしまう。",
+    "points": ["関係のない作業に移るときは会話を消し、同じ作業の続きはセッションを再開します。"],
+    "leaveOut": [
+      "対話なしの実行とツールの許可",
+      "設定が届く環境の違い",
+      "セッションを分岐して別案を試す方法",
+      "修正のずれが残るときの指示の書き直し",
+      "チェックポイントで戻せるコード変更の範囲とGitでの確認手順"
+    ]
+  },
+  "art": {
+    "picnic-basket": {
+      "prompt": "A blue picnic basket with a folded violet picnic blanket and a closed white lunch container, representing plans for a picnic. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "grocery-bag": {
+      "prompt": "A light grey reusable shopping bag containing naturally colored green vegetables and red apples, representing household grocery shopping. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "route-notes": {
+      "prompt": "A small stack of white planning notes with blue paper clips beside a folded white route map with simple blue winding paths and no symbols or writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fresh-sheet": {
+      "prompt": "A single fresh white sheet of paper with a light grey edge beside a violet pencil, ready for a new task. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "session-folder": {
+      "prompt": "An open blue document folder containing a tidy stack of white conversation notes with violet tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "short-note": {
+      "prompt": "A small white note secured by a violet clip beside a larger stack of light grey sheets, representing a shorter summary of the same conversation. All papers are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "checkpoint-book": {
+      "prompt": "An open white notebook with a blue cover and a violet ribbon bookmark resting on a specific blank page, representing a recorded point to return to. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "moving-estimate": {
+      "prompt": "Two light grey cardboard moving boxes sealed with blue tape beside a blank white estimate clipboard and a small blue calculator with blank keys. The boxes are light grey, not brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "opening": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "picnic",
+          "label": "遠足の相談",
+          "art": "picnic-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "shopping",
+          "label": "食材の買い物",
+          "art": "grocery-bag",
+          "at": [3, 1]
+        },
+        {
+          "id": "notes",
+          "label": "遠足の記録",
+          "art": "route-notes",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "paper": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "route",
+          "label": "遠足のメモ",
+          "art": "route-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "買い物の紙",
+          "art": "fresh-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "basket",
+          "label": "遠足の続き",
+          "art": "picnic-basket",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "clear": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "history",
+          "label": "前の会話",
+          "art": "session-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "clear",
+          "label": "/clear",
+          "art": "fresh-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "新しい会話",
+          "art": "grocery-bag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "divide",
+          "from": "history",
+          "to": "clear",
+          "label": "区切る"
+        },
+        {
+          "id": "begin",
+          "from": "clear",
+          "to": "new",
+          "label": "始める"
+        }
+      ]
+    },
+    "resume": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recent",
+          "label": "起動時の-c",
+          "art": "session-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "choose",
+          "label": "起動時の-r",
+          "art": "route-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "inside",
+          "label": "/resume",
+          "art": "session-folder",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "switch": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "picnic",
+          "label": "遠足の相談",
+          "art": "picnic-basket",
+          "at": [1, 1]
+        },
+        {
+          "id": "clear",
+          "label": "/clear",
+          "art": "fresh-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "shopping",
+          "label": "食材の買い物",
+          "art": "grocery-bag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "end",
+          "from": "picnic",
+          "to": "clear",
+          "label": "区切る"
+        },
+        {
+          "id": "start",
+          "from": "clear",
+          "to": "shopping",
+          "label": "別の作業"
+        }
+      ]
+    },
+    "return": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shopping",
+          "label": "直近は買い物",
+          "art": "grocery-bag",
+          "at": [1, 1]
+        },
+        {
+          "id": "choose",
+          "label": "/resume",
+          "art": "session-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "picnic",
+          "label": "遠足の相談",
+          "art": "picnic-basket",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "select",
+          "from": "choose",
+          "to": "picnic",
+          "label": "選んで再開"
+        }
+      ]
+    },
+    "compact": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "long",
+          "label": "長い会話",
+          "art": "session-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "context",
+          "label": "使用量を確認",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "compact",
+          "label": "会話を要約",
+          "art": "short-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "long",
+          "to": "context",
+          "label": "使用量"
+        },
+        {
+          "id": "shorten",
+          "from": "context",
+          "to": "compact",
+          "label": "要約する"
+        }
+      ]
+    },
+    "checkpoint": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "prompt",
+          "label": "プロンプト",
+          "art": "fresh-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "復元用の記録",
+          "art": "checkpoint-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "rewind",
+          "label": "/rewind",
+          "art": "checkpoint-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "recorded",
+          "from": "prompt",
+          "to": "record",
+          "label": "その都度"
+        },
+        {
+          "id": "restore",
+          "from": "record",
+          "to": "rewind",
+          "label": "時点を選ぶ"
+        }
+      ]
+    },
+    "moving": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "estimate",
+          "label": "引越しの相談",
+          "art": "moving-estimate",
+          "at": [1, 1]
+        },
+        {
+          "id": "shopping",
+          "label": "直近は買い物",
+          "art": "grocery-bag",
+          "at": [3, 1]
+        },
+        {
+          "id": "return",
+          "label": "見積もりの続き",
+          "art": "moving-estimate",
+          "at": [5, 1]
+        },
+        {
+          "id": "clear",
+          "label": "/clear",
+          "art": "fresh-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "recent",
+          "label": "直近を再開",
+          "art": "session-folder",
+          "at": [3, 2]
+        },
+        {
+          "id": "choose",
+          "label": "/resume",
+          "art": "session-folder",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "estimate",
+          "label": "前に決めた条件",
+          "art": "moving-estimate",
+          "at": [1, 1]
+        },
+        {
+          "id": "select",
+          "label": "以前の会話",
+          "art": "session-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "continue",
+          "label": "見積もりの続き",
+          "art": "moving-estimate",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "estimate",
+          "to": "select",
+          "label": "選び直す"
+        },
+        {
+          "id": "use",
+          "from": "select",
+          "to": "continue",
+          "label": "再開する"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "new",
+          "label": "別の仕事",
+          "art": "fresh-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "same",
+          "label": "同じ仕事",
+          "art": "session-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "long",
+          "label": "会話が長い",
+          "art": "short-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "次の作業に必要な会話",
+      "board": "opening",
+      "beats": [
+        {
+          "say": "遠足の計画を相談し、行き先を決めました。",
+          "show": ["picnic"]
+        },
+        {
+          "say": "次に考えたいのは、家で使う食材の買い物です。",
+          "show": ["shopping"]
+        },
+        {
+          "say": "遠足の続きを相談するときには、前の話を使います。",
+          "show": ["notes"]
+        },
+        {
+          "say": "別の仕事なら会話を消し、同じ仕事の続きは再開しましょう。",
+          "pulse": ["shopping", "notes"]
+        }
+      ]
+    },
+    {
+      "id": "paper-example",
+      "kind": "board",
+      "role": "example",
+      "title": "紙を替えるか読み直すか",
+      "board": "paper",
+      "beats": [
+        {
+          "say": "遠足の相談を、紙に書いていたとしましょう。",
+          "show": ["route"]
+        },
+        {
+          "say": "食材の買い物は、別の紙に書き始めます。",
+          "show": ["fresh"]
+        },
+        {
+          "say": "買い物に、遠足の行き先の話は必要ありません。",
+          "pulse": ["fresh"],
+          "tag": {
+            "fresh": "別の用件"
+          }
+        },
+        {
+          "say": "遠足の続きなら、前のメモを読み直すのが自然です。",
+          "show": ["basket"],
+          "pulse": ["route", "basket"]
+        }
+      ]
+    },
+    {
+      "id": "clear-rule",
+      "kind": "board",
+      "role": "syntax",
+      "title": "新しい会話を始める",
+      "board": "clear",
+      "beats": [
+        {
+          "say": "作業で交わした会話を記録する単位が、セッションです。",
+          "show": ["history"],
+          "term": {
+            "text": "セッション",
+            "note": "その作業の会話を記録"
+          }
+        },
+        {
+          "say": "別の仕事では、スラッシュクリアで会話を区切ります。",
+          "show": ["clear", "divide"],
+          "travel": {
+            "along": ["divide"]
+          }
+        },
+        {
+          "say": "現在の会話を消しても、前のセッションは失われません。",
+          "tag": {
+            "history": "保存される"
+          },
+          "pulse": ["history"]
+        },
+        {
+          "say": "前の話を持ち込まず、新しい会話で始めましょう。",
+          "show": ["new", "begin"],
+          "travel": {
+            "along": ["begin"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "resume-rule",
+      "kind": "board",
+      "role": "syntax",
+      "title": "どの会話を再開するか",
+      "board": "resume",
+      "beats": [
+        {
+          "say": "前のセッションを再開する操作を、resume と呼びます。",
+          "speech": "前のセッションを再開する操作を、リジュームと呼びます。",
+          "term": {
+            "text": "resume",
+            "note": "前のセッションを再開"
+          }
+        },
+        {
+          "say": "直近の仕事を続ける指定は、claude -c です。",
+          "show": ["recent"],
+          "speech": "直近の仕事を続ける指定は、クロード、ハイフンシーです。"
+        },
+        {
+          "say": "以前の仕事を選ぶときは、claude -r を使います。",
+          "show": ["choose"],
+          "speech": "以前の仕事を選ぶときは、クロード、ハイフンアールを使います。"
+        },
+        {
+          "say": "会話中に選び直す操作は、スラッシュリジュームです。",
+          "show": ["inside"]
+        }
+      ]
+    },
+    {
+      "id": "switch-task",
+      "kind": "board",
+      "role": "apply",
+      "title": "遠足から買い物へ",
+      "board": "switch",
+      "beats": [
+        {
+          "say": "遠足の計画から、食材の買い物へ移る場面です。",
+          "show": ["picnic", "shopping"]
+        },
+        {
+          "say": "遠足で決めた行き先は、今回の買い物には使いません。",
+          "pulse": ["picnic"],
+          "tag": {
+            "picnic": "今回は不要"
+          }
+        },
+        {
+          "say": "そこで、スラッシュクリアで会話を区切ります。",
+          "show": ["clear", "end"],
+          "travel": {
+            "along": ["end"]
+          }
+        },
+        {
+          "say": "新しい会話では、買いたい食材について頼みましょう。",
+          "show": ["start"],
+          "travel": {
+            "along": ["start"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "return-task",
+      "kind": "board",
+      "role": "apply",
+      "title": "買い物から遠足へ戻る",
+      "board": "return",
+      "beats": [
+        {
+          "say": "買い物の相談のあとで、遠足の計画に戻るとします。",
+          "show": ["shopping", "picnic"]
+        },
+        {
+          "say": "直近は買い物なので、続けたい遠足の会話ではありません。",
+          "pulse": ["shopping"],
+          "mark": [
+            {
+              "on": "shopping",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "会話中なら、スラッシュリジュームで遠足の記録を選びましょう。",
+          "show": ["choose", "select"],
+          "travel": {
+            "along": ["select"]
+          }
+        },
+        {
+          "say": "前に決めた行き先を使い、同じ計画の続きに戻れます。",
+          "pulse": ["picnic"],
+          "mark": [
+            {
+              "on": "picnic",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shorten-session",
+      "kind": "board",
+      "role": "note",
+      "title": "同じ仕事で会話が長い",
+      "board": "compact",
+      "beats": [
+        {
+          "say": "同じ仕事の会話を要約して短くするのが、圧縮です。",
+          "show": ["long"],
+          "term": {
+            "text": "圧縮",
+            "ruby": "あっしゅく",
+            "note": "同じ仕事の会話を要約"
+          }
+        },
+        {
+          "say": "まず、スラッシュコンテキストで使用量を確かめます。",
+          "show": ["context", "check"],
+          "travel": {
+            "along": ["check"]
+          }
+        },
+        {
+          "say": "スラッシュコンパクトは、会話を要約して続ける操作です。",
+          "show": ["compact", "shorten"],
+          "travel": {
+            "along": ["shorten"]
+          }
+        },
+        {
+          "say": "仕事が変わったか、話が長くなっただけかを見分けましょう。",
+          "pulse": ["long", "compact"],
+          "tag": {
+            "compact": "同じ仕事"
+          }
+        }
+      ]
+    },
+    {
+      "id": "checkpoint-note",
+      "kind": "board",
+      "role": "note",
+      "title": "前の時点へ戻す記録",
+      "board": "checkpoint",
+      "beats": [
+        {
+          "say": "チェックポイントは、プロンプトごとの復元用の記録です。",
+          "show": ["prompt"],
+          "term": {
+            "text": "チェックポイント",
+            "note": "プロンプトごとの復元用記録"
+          }
+        },
+        {
+          "say": "指示を出した時点に戻るための記録が作られます。",
+          "show": ["record", "recorded"],
+          "travel": {
+            "along": ["recorded"]
+          }
+        },
+        {
+          "say": "スラッシュリワインドは、選んだ時点へ戻す操作です。",
+          "show": ["rewind", "restore"],
+          "travel": {
+            "along": ["restore"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "見積もりの相談に戻る",
+      "board": "moving",
+      "think": 8,
+      "beats": [
+        {
+          "say": "引っ越しの見積もりについて、荷物の量を相談しました。",
+          "show": ["estimate"]
+        },
+        {
+          "say": "いま開いているのは、その後に相談した買い物の会話です。",
+          "show": ["shopping"]
+        },
+        {
+          "say": "いまは、前に決めた荷物の条件で見積もりを続けたいとします。",
+          "show": ["return"]
+        },
+        {
+          "say": "会話を消す、直近を開く、以前の会話を選ぶならどれでしょうか。",
+          "show": ["clear", "recent", "choose"],
+          "mark": [
+            {
+              "on": "clear",
+              "kind": "question"
+            },
+            {
+              "on": "recent",
+              "kind": "question"
+            },
+            {
+              "on": "choose",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moving-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "以前の会話を選ぶ",
+      "board": "moving",
+      "beats": [
+        {
+          "say": "答えは、以前の会話を選んで再開する方法です。",
+          "mark": [
+            {
+              "on": "choose",
+              "kind": "check"
+            },
+            {
+              "on": "clear",
+              "kind": "cross"
+            },
+            {
+              "on": "recent",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["choose"]
+        },
+        {
+          "say": "スラッシュリジュームで、引っ越しの相談を選びます。",
+          "pulse": ["estimate"],
+          "tag": {
+            "estimate": "この会話"
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "必要な条件がある会話へ",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "見積もりの続きには、前に決めた荷物の条件が必要です。",
+          "show": ["estimate"]
+        },
+        {
+          "say": "直近の買い物の会話では、荷物の量を相談していません。",
+          "pulse": ["estimate"],
+          "tag": {
+            "estimate": "引越しで相談"
+          }
+        },
+        {
+          "say": "条件を決めた以前の会話を、選び直します。",
+          "show": ["select", "find"],
+          "travel": {
+            "along": ["find"]
+          }
+        },
+        {
+          "say": "同じ仕事の続きを頼むので、そのセッションを再開しましょう。",
+          "show": ["continue", "use"],
+          "travel": {
+            "along": ["use"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-at-boundary",
+      "kind": "board",
+      "role": "usage",
+      "title": "次の作業で履歴を使うか",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "関係のない仕事へ移るときは、会話を消して始めます。",
+          "show": ["new"],
+          "tag": {
+            "new": "/clear"
+          }
+        },
+        {
+          "say": "同じ仕事の続きなら、そのセッションを再開する場面です。",
+          "show": ["same"],
+          "tag": {
+            "same": "再開"
+          }
+        },
+        {
+          "say": "同じ仕事で話が長いだけなら、使用量を見て圧縮します。",
+          "show": ["long"],
+          "tag": {
+            "long": "要約して続行"
+          }
+        },
+        {
+          "say": "作業の区切りでは、次に前の会話を使うか確かめましょう。",
+          "pulse": ["new", "same", "long"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "dafac97eea4cea8a832de7aa1a953af80ee5e4621a64c936b90181ea3efbd50c"
+  }
+}

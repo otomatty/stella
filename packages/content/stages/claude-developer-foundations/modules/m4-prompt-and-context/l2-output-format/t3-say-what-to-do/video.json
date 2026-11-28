@@ -1,0 +1,672 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "文章の書き方を禁止する依頼を、してほしい形が伝わる依頼に書き換えられる。",
+    "stuck": "避けたい書き方だけを並べ、代わりにどんな文章がほしいかを伝えない。",
+    "points": ["出力の書き方は、禁止ではなく、してほしい形で指示します。"],
+    "leaveOut": [
+      "構造化出力とJSONスキーマ",
+      "応答が止まった理由の確認",
+      "出力をタグで包む具体的な書き方",
+      "残った前置きをアプリで取り除く実装",
+      "課題の答え"
+    ]
+  },
+  "art": {
+    "excursion-pack": {
+      "prompt": "A blue day-trip backpack with a violet water bottle and a small rolled white picnic cloth beside it, representing memories of a school excursion. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white draft sheet and a violet pencil, considering how to write an excursion essay. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a blue pen above a single white request note held by a light grey paper clip. The note is blank and represents the instructions for the excursion essay. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "paragraph-sheet": {
+      "prompt": "A white excursion essay sheet with two broad light grey blocks and a small violet paper clip. The blocks suggest connected paragraphs without readable marks. A physical sheet of paper, not an app screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "list-sheet": {
+      "prompt": "A white excursion draft sheet with several separated short light grey strips arranged vertically, held by a blue clip. The separated strips suggest a list without any writing or punctuation. A physical sheet of paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white excursion essay sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-puppets": {
+      "prompt": "Two large hand puppets for a school festival puppet play, one blue cloth rabbit and one violet cloth cat, with soft rounded ears and simple faces. Objects only, with no stage, curtain, or scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mail-letter": {
+      "prompt": "An open blue envelope with a white letter partly tucked inside and a violet fountain pen alongside it, representing an email draft. The letter has two broad light grey blocks suggesting paragraphs without readable marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "trip",
+          "label": "遠足の思い出",
+          "art": "excursion-pack",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "箇条書きの文",
+          "art": "list-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "essay",
+          "label": "つながる文章",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "friend": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "writer",
+          "label": "友人",
+          "art": "learner",
+          "at": [3, 1]
+        },
+        {
+          "id": "request",
+          "label": "箇条書き禁止",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "essay",
+          "label": "ほしい感想文",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "request",
+          "to": "writer",
+          "label": "頼む"
+        },
+        {
+          "id": "missing",
+          "from": "writer",
+          "to": "essay",
+          "label": "代わりは"
+        }
+      ]
+    },
+    "writing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "箇条書き禁止",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "paragraph",
+          "label": "段落で書く",
+          "art": "paragraph-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "essay",
+          "label": "段落をつなぐ",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "rewrite",
+          "from": "request",
+          "to": "paragraph",
+          "label": "書き換え"
+        },
+        {
+          "id": "connect",
+          "from": "paragraph",
+          "to": "essay",
+          "label": "つなぐ"
+        }
+      ]
+    },
+    "prompt": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "送る依頼文",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "箇条書きの文",
+          "art": "list-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "essay",
+          "label": "望む感想文",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "apply": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "送る依頼",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "essay",
+          "label": "感想文の形",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "指定する"
+        },
+        {
+          "id": "write",
+          "from": "claude",
+          "to": "essay",
+          "label": "書く形"
+        }
+      ]
+    },
+    "opening": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "preface",
+          "label": "本文前の言葉",
+          "art": "paragraph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "書き始めの指定",
+          "art": "request-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "本題から開始",
+          "art": "paragraph-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "revise",
+          "from": "preface",
+          "to": "request",
+          "label": "書き換え"
+        },
+        {
+          "id": "start",
+          "from": "request",
+          "to": "body",
+          "label": "指定する"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "play",
+          "label": "人形劇の紹介",
+          "art": "festival-puppets",
+          "at": [1, 1]
+        },
+        {
+          "id": "ban",
+          "label": "箇条書き禁止",
+          "art": "festival-puppets",
+          "at": [3, 1]
+        },
+        {
+          "id": "desired",
+          "label": "段落をつなぐ",
+          "art": "festival-puppets",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "essay",
+          "label": "感想文",
+          "art": "paragraph-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "introduction",
+          "label": "紹介文",
+          "art": "festival-puppets",
+          "at": [3, 1]
+        },
+        {
+          "id": "mail",
+          "label": "メールの下書き",
+          "art": "mail-letter",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "ほしい感想文の形",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "遠足の思い出を、感想文にまとめたい場面です。",
+          "show": ["trip"]
+        },
+        {
+          "say": "友人に下書きを頼むと、箇条書きで返ってきました。",
+          "show": ["list"]
+        },
+        {
+          "say": "ほしかったのは、話がつながる文章です。",
+          "show": ["essay"]
+        },
+        {
+          "say": "出力の書き方は、してほしい形で指示します。",
+          "pulse": ["essay"]
+        }
+      ]
+    },
+    {
+      "id": "friend-request",
+      "kind": "board",
+      "role": "example",
+      "title": "禁止だけでは迷う",
+      "board": "friend",
+      "beats": [
+        {
+          "say": "友人には「箇条書きにしないで」と頼みました。",
+          "show": ["writer", "request", "ask"]
+        },
+        {
+          "say": "ただ、この言葉だけでは、代わりの書き方が分かりません。",
+          "mark": [
+            {
+              "on": "request",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "短い一文か、まとまった感想文か、迷ってしまいます。",
+          "show": ["essay", "missing"],
+          "tag": {
+            "essay": "どんな文章"
+          }
+        },
+        {
+          "say": "ほしい文章の形まで、言葉にして伝えましょう。",
+          "pulse": ["essay"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "name-the-form",
+      "kind": "board",
+      "role": "syntax",
+      "title": "段落で書くと伝える",
+      "board": "writing",
+      "beats": [
+        {
+          "say": "返す文章をどう整えるかが、出力の書き方です。",
+          "term": {
+            "text": "出力の書き方",
+            "ruby": "しゅつりょくのかきかた",
+            "note": "返す文章の形の指定"
+          }
+        },
+        {
+          "say": "この例では、箇条書きを避けるよう指示しています。",
+          "show": ["request"]
+        },
+        {
+          "say": "話題ごとに文をまとめた部分が、段落です。",
+          "term": {
+            "text": "段落",
+            "ruby": "だんらく",
+            "note": "話題ごとに文をまとめた部分"
+          }
+        },
+        {
+          "say": "感想を段落で書いてほしいと、形を指定しましょう。",
+          "show": ["paragraph", "rewrite"],
+          "travel": {
+            "along": ["rewrite"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "段落どうしがなめらかにつながる文章を求めます。",
+          "show": ["essay", "connect"],
+          "pulse": ["essay"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "match-the-prompt",
+      "kind": "board",
+      "role": "syntax",
+      "title": "依頼の書き方もそろえる",
+      "board": "prompt",
+      "beats": [
+        {
+          "say": "依頼文そのものの書き方も、出力に影響します。",
+          "show": ["request"]
+        },
+        {
+          "say": "ほしいのは段落の文章なのに、依頼は箇条書きだけでした。",
+          "show": ["list", "essay"],
+          "tag": {
+            "request": "箇条書き"
+          }
+        },
+        {
+          "say": "依頼も、ほしい文章に似た書き方にしてみましょう。",
+          "tag": {
+            "request": "段落の文章"
+          },
+          "pulse": ["request", "essay"]
+        },
+        {
+          "say": "依頼のマークダウンを減らすと、出力も減りやすくなります。",
+          "hide": ["list"],
+          "pulse": ["essay"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "rewrite-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "感想文の依頼を直す",
+      "board": "apply",
+      "beats": [
+        {
+          "say": "Claude に送る依頼を、書き直してみましょう。",
+          "speech": "クロードに送る依頼を、書き直してみましょう。",
+          "show": ["request", "claude"]
+        },
+        {
+          "say": "まず、求める形は「段落がつながる文章」です。",
+          "show": ["essay"],
+          "tag": {
+            "essay": "段落をつなぐ"
+          }
+        },
+        {
+          "say": "その形で感想文を書くように、Claude に頼みます。",
+          "speech": "その形で感想文を書くように、クロードに頼みます。",
+          "show": ["send", "write"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "見出しを使う条件まで決めたい場合もあるでしょう。",
+          "tag": {
+            "request": "見出しの条件"
+          },
+          "pulse": ["request"]
+        },
+        {
+          "say": "その場合は、どんなときに使ってよいかも指定します。",
+          "pulse": ["essay"],
+          "tag": {
+            "essay": "条件も指定"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "start-with-body",
+      "kind": "board",
+      "role": "apply",
+      "title": "本文の始め方を指定する",
+      "board": "opening",
+      "beats": [
+        {
+          "say": "本文の前に添える導入の言葉を、前置きと呼びます。",
+          "term": {
+            "text": "前置き",
+            "ruby": "まえおき",
+            "note": "本題に入る前の導入の言葉"
+          }
+        },
+        {
+          "say": "この感想文では、前置きを省きたいところです。",
+          "show": ["preface"],
+          "tag": {
+            "preface": "導入の言葉"
+          }
+        },
+        {
+          "say": "依頼には「すぐに本題から答えて」と加えましょう。",
+          "show": ["request", "revise", "body", "start"],
+          "tag": {
+            "request": "本題から"
+          },
+          "travel": {
+            "along": ["start"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "完成した依頼には、本文の書き始め方も書いてあります。",
+          "pulse": ["request", "body"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "紹介文の依頼を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "文化祭で行う人形劇を、来場者に紹介する場面です。",
+          "show": ["play"]
+        },
+        {
+          "say": "紹介は、読み物のようにつながる文章にしたいとします。",
+          "tag": {
+            "play": "読み物の形"
+          }
+        },
+        {
+          "say": "一つ目では、箇条書きを使わないように頼みました。",
+          "show": ["ban"],
+          "tag": {
+            "ban": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目は、段落がつながる文章で紹介する依頼です。",
+          "show": ["desired"],
+          "tag": {
+            "desired": "二つ目"
+          }
+        },
+        {
+          "say": "ほしい書き方を伝えているのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "ban",
+              "kind": "question"
+            },
+            {
+              "on": "desired",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "段落をつなぐ依頼",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、段落で紹介するよう頼んだ二つ目です。",
+          "mark": [
+            {
+              "on": "desired",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["desired"]
+        },
+        {
+          "say": "この依頼は、してほしい形を直接伝えています。",
+          "tag": {
+            "desired": "望む形"
+          }
+        },
+        {
+          "say": "箇条書きの禁止だけでは、代わりの形が決まりません。",
+          "mark": [
+            {
+              "on": "ban",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["ban"]
+        }
+      ]
+    },
+    {
+      "id": "why-this-request",
+      "kind": "board",
+      "role": "explain",
+      "title": "代わりの形があるか",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "一つ目の指示が示すのは、避けたい書き方です。",
+          "pulse": ["ban"],
+          "tag": {
+            "ban": "避ける形"
+          }
+        },
+        {
+          "say": "見出し中心か段落の文章か、まだ決まりません。",
+          "tag": {
+            "ban": "代わりは未定"
+          }
+        },
+        {
+          "say": "二つ目には、段落をつなげるという指定がありました。",
+          "pulse": ["desired"],
+          "tag": {
+            "desired": "段落をつなぐ"
+          }
+        },
+        {
+          "say": "人形劇の紹介を、どう書いてほしいかが分かります。",
+          "pulse": ["play", "desired"],
+          "mark": [
+            {
+              "on": "play",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "題材が変わっても、望む文章の形を先に伝えましょう。",
+          "pulse": ["desired"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "文章を頼むときに使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "感想文や紹介文を頼むときは、ほしい文章の形を書きます。",
+          "show": ["essay", "introduction"]
+        },
+        {
+          "say": "メールの下書きも、書き方を指定する場面です。",
+          "show": ["mail"]
+        },
+        {
+          "say": "前置きを省くなら、本題から始めるように頼みましょう。",
+          "tag": {
+            "mail": "本題から"
+          },
+          "pulse": ["mail"]
+        },
+        {
+          "say": "禁止を並べる前に、代わりにどう書くかを伝えます。",
+          "pulse": ["essay", "introduction", "mail"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "cb3f8d85bb61780c53bb48204310a07eeec69281377e57a7bdb8fcf1478b54fe"
+  }
+}

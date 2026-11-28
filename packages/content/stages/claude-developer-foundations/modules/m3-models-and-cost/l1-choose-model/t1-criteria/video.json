@@ -1,0 +1,623 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "用途に合わせて性能・速度・費用の優先順位を決め、最初に試すモデルとその理由を説明できる。",
+    "stuck": "いちばん賢いモデルを選べばどんな用途にも合うと思い、待ち時間や予算を後回しにしてしまう。",
+    "points": ["モデルは、性能・速度・費用のどれを優先するかを決めてから選びます。"],
+    "leaveOut": [
+      "評価のセットの作り方と比較の詳しい手順",
+      "effort の設定方法と値",
+      "モデルを組み合わせる方法",
+      "具体的な料金・コンテキストウィンドウ・出力の上限",
+      "API を呼び出すコード"
+    ]
+  },
+  "art": {
+    "inquiry-slips": {
+      "prompt": "Several blank white inquiry slips being sorted into two light grey document trays with blue and violet tabs, representing a simple inquiry classification task. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white request slip. No other characters. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "budget-wallet": {
+      "prompt": "An open violet wallet with a few plain light grey coins beside one blank white receipt, representing the available budget and a bill. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-prints": {
+      "prompt": "A small fan of identical unframed white photographic prints, each showing the same simple blue teapot silhouette, representing an ordinary photo printing order. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "damaged-photo": {
+      "prompt": "One unframed white photograph of a blue teapot, torn diagonally into two pieces, with a small violet retouching brush beside it, representing careful restoration of a damaged photo. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-stopwatch": {
+      "prompt": "A large blue handheld stopwatch with a plain white dial and two simple hands, with a thumb in a warm neutral skin tone pressing the top button, representing time spent waiting for a response. The dial has no tick labels or numerals. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reasoning-puzzle": {
+      "prompt": "A partly assembled physical jigsaw puzzle with blue and violet pieces and several loose light grey pieces beside it, representing a difficult reasoning task with several constraints to fit together. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "table-tennis-booking": {
+      "prompt": "Two blue and violet table tennis paddles, one white ball, and a short stack of blank white booking slips held by a blue clip, representing booking inquiries at a table tennis venue. No sports table. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "問い合わせ",
+          "art": "inquiry-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "賢さだけで選ぶ",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "budget",
+          "label": "予算を超える",
+          "art": "budget-wallet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "photo-shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "prints",
+          "label": "写真の印刷",
+          "art": "photo-prints",
+          "at": [1, 1]
+        },
+        {
+          "id": "repair",
+          "label": "写真の修復",
+          "art": "damaged-photo",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "ability-speed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ability",
+          "label": "性能",
+          "art": "reasoning-puzzle",
+          "at": [1, 1]
+        },
+        {
+          "id": "speed",
+          "label": "速度",
+          "art": "response-stopwatch",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cost": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "budget",
+          "label": "費用と予算",
+          "art": "budget-wallet",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルを選ぶ",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "speed-first": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "speed",
+          "label": "速度を優先",
+          "art": "response-stopwatch",
+          "at": [1, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用を優先",
+          "art": "budget-wallet",
+          "at": [3, 1]
+        },
+        {
+          "id": "haiku",
+          "label": "ハイク",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "ability-first": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "hard",
+          "label": "難しい推論",
+          "art": "reasoning-puzzle",
+          "at": [1, 1]
+        },
+        {
+          "id": "opus",
+          "label": "Opus5.5",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "あとで効率化",
+          "art": "budget-wallet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "hard",
+          "to": "opus",
+          "label": "性能から"
+        },
+        {
+          "id": "improve",
+          "from": "opus",
+          "to": "cost",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "classification": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "問い合わせ",
+          "art": "inquiry-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "haiku",
+          "label": "ハイク",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "try",
+          "from": "inquiries",
+          "to": "haiku",
+          "label": "速さと安さ"
+        }
+      ]
+    },
+    "booking": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "task",
+          "label": "日時を取り出す",
+          "art": "table-tennis-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "speed",
+          "label": "待たせられない",
+          "art": "response-stopwatch",
+          "at": [3, 1]
+        },
+        {
+          "id": "budget",
+          "label": "限られた予算",
+          "art": "budget-wallet",
+          "at": [5, 1]
+        },
+        {
+          "id": "opus",
+          "label": "Opus5.5",
+          "art": "model-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "haiku",
+          "label": "ハイク",
+          "art": "model-robot",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "speed",
+          "label": "待てる時間",
+          "art": "response-stopwatch",
+          "at": [1, 1]
+        },
+        {
+          "id": "ability",
+          "label": "課題の難しさ",
+          "art": "reasoning-puzzle",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "使える予算",
+          "art": "budget-wallet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "賢さだけで選ぶと",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "問い合わせを種類ごとに分ける仕事を考えます。",
+          "show": ["inquiries"]
+        },
+        {
+          "say": "使っていたのは、いちばん賢いモデルです。",
+          "show": ["model"]
+        },
+        {
+          "say": "ところが、月末の請求が予算を超えました。",
+          "show": ["budget"]
+        },
+        {
+          "say": "性能や速度、費用の優先順位を決めて、モデルを選びます。",
+          "pulse": ["model", "budget"]
+        }
+      ]
+    },
+    {
+      "id": "photo-shop",
+      "kind": "board",
+      "role": "example",
+      "title": "写真店で何を頼むか",
+      "board": "photo-shop",
+      "beats": [
+        {
+          "say": "写真店で、写真を印刷する場面を考えましょう。",
+          "show": ["prints"]
+        },
+        {
+          "say": "何枚も急いで印刷するなら、速さと安さが選ぶ基準です。",
+          "tag": {
+            "prints": "速さと安さ"
+          }
+        },
+        {
+          "say": "傷んだ写真の修復なら、仕上がりを優先したくなります。",
+          "show": ["repair"],
+          "tag": {
+            "repair": "仕上がり"
+          }
+        },
+        {
+          "say": "モデルも、頼む仕事から選ぶ基準を考えましょう。",
+          "pulse": ["prints", "repair"]
+        }
+      ]
+    },
+    {
+      "id": "ability-speed",
+      "kind": "board",
+      "role": "syntax",
+      "title": "性能と速度を分ける",
+      "board": "ability-speed",
+      "beats": [
+        {
+          "say": "解ける課題の難しさを表すのが、性能です。",
+          "term": {
+            "text": "性能",
+            "ruby": "せいのう",
+            "note": "解ける課題の難しさ"
+          }
+        },
+        {
+          "say": "難しい推論が要る仕事では、ここを重視します。",
+          "show": ["ability"]
+        },
+        {
+          "say": "速度は、応答までの時間です。",
+          "term": {
+            "text": "速度",
+            "ruby": "そくど",
+            "note": "応答までの時間"
+          }
+        },
+        {
+          "say": "画面で待てる時間に合わせて、確かめましょう。",
+          "show": ["speed"]
+        },
+        {
+          "say": "速さと課題の難しさを分けて考えます。",
+          "pulse": ["ability", "speed"]
+        }
+      ]
+    },
+    {
+      "id": "cost-budget",
+      "kind": "board",
+      "role": "syntax",
+      "title": "費用と予算を見る",
+      "board": "cost",
+      "beats": [
+        {
+          "say": "トークンあたりの料金が、費用の目安です。",
+          "term": {
+            "text": "費用",
+            "ruby": "ひよう",
+            "note": "トークンあたりの料金"
+          }
+        },
+        {
+          "say": "開発と本番で使える予算も、合わせて確かめます。",
+          "show": ["budget"]
+        },
+        {
+          "say": "多くの処理を任せるなら、予算内に収まるかが大切です。",
+          "tag": {
+            "budget": "予算内か"
+          }
+        },
+        {
+          "say": "モデルの賢さだけで、決めないようにしましょう。",
+          "show": ["model"],
+          "mark": [
+            {
+              "on": "model",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "speed-first",
+      "kind": "board",
+      "role": "syntax",
+      "title": "速さと安さから始める",
+      "board": "speed-first",
+      "beats": [
+        {
+          "say": "速度と費用を優先するなら、速くて安いモデルから始めます。",
+          "show": ["speed", "cost"]
+        },
+        {
+          "say": "最初の候補は、Haiku 5.5 です。",
+          "speech": "最初の候補は、ハイクごてんごです。",
+          "show": ["haiku"]
+        },
+        {
+          "say": "自分の課題で十分に試してみましょう。",
+          "tag": {
+            "haiku": "課題で試す"
+          }
+        },
+        {
+          "say": "足りないところがあるときだけ、上のモデルに上げます。",
+          "tag": {
+            "haiku": "不足なら変更"
+          },
+          "pulse": ["haiku"]
+        }
+      ]
+    },
+    {
+      "id": "ability-first",
+      "kind": "board",
+      "role": "syntax",
+      "title": "性能から始める",
+      "board": "ability-first",
+      "beats": [
+        {
+          "say": "難しい推論では、性能を優先して始めます。",
+          "show": ["hard"]
+        },
+        {
+          "say": "最初の候補は、Opus 5.5 です。",
+          "speech": "最初の候補は、オーパスごてんごです。",
+          "show": ["opus", "choose"]
+        },
+        {
+          "say": "まずは、プロンプトを整えてみましょう。",
+          "tag": {
+            "opus": "依頼を整える"
+          }
+        },
+        {
+          "say": "そのうえで、小さいモデルへの変更などで効率を上げます。",
+          "show": ["cost", "improve"],
+          "travel": {
+            "along": ["improve"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-classification",
+      "kind": "board",
+      "role": "apply",
+      "title": "分類に基準を当てはめる",
+      "board": "classification",
+      "beats": [
+        {
+          "say": "問い合わせの分類に、選ぶ基準を当てはめます。",
+          "show": ["inquiries"]
+        },
+        {
+          "say": "この例は、量が多く単純な処理です。",
+          "tag": {
+            "inquiries": "大量で単純"
+          }
+        },
+        {
+          "say": "速さと安さを優先し、Haiku 5.5 から試しましょう。",
+          "speech": "速さと安さを優先し、ハイクごてんごから試しましょう。",
+          "show": ["haiku", "try"],
+          "travel": {
+            "along": ["try"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "試して足りないときだけ、上のモデルに上げます。",
+          "tag": {
+            "haiku": "不足なら変更"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "卓球場の予約なら",
+      "board": "booking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "卓球場で、予約の文章から日時を取り出す場面です。",
+          "show": ["task"]
+        },
+        {
+          "say": "単純な処理が大量にあり、利用者を待たせられません。",
+          "show": ["speed"],
+          "tag": {
+            "task": "大量で単純"
+          }
+        },
+        {
+          "say": "予算も限られているので、費用を抑えたいとします。",
+          "show": ["budget"]
+        },
+        {
+          "say": "候補は、Haiku 5.5 と Opus 5.5 です。",
+          "speech": "候補は、ハイクごてんごとオーパスごてんごです。",
+          "show": ["opus", "haiku"]
+        },
+        {
+          "say": "何を優先し、どちらのモデルから試すとよいでしょうか。",
+          "mark": [
+            {
+              "on": "haiku",
+              "kind": "question"
+            },
+            {
+              "on": "opus",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "速度と費用から選ぶ",
+      "board": "booking",
+      "beats": [
+        {
+          "say": "速度と費用を優先して、Haiku 5.5 から試します。",
+          "speech": "速度と費用を優先して、ハイクごてんごから試します。",
+          "mark": [
+            {
+              "on": "haiku",
+              "kind": "check"
+            }
+          ],
+          "unmark": ["opus"],
+          "pulse": ["haiku"]
+        },
+        {
+          "say": "日時を正しく取り出せるかは、確認が必要です。",
+          "tag": {
+            "haiku": "課題で確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "booking-reasons",
+      "kind": "board",
+      "role": "explain",
+      "title": "予約の条件をたどる",
+      "board": "booking",
+      "beats": [
+        {
+          "say": "この予約の例は、単純な情報の取り出しでした。",
+          "pulse": ["task"]
+        },
+        {
+          "say": "待たせられないので、応答の速さを重視します。",
+          "pulse": ["speed"]
+        },
+        {
+          "say": "予算にも限りがあるので、費用も選ぶ基準です。",
+          "pulse": ["budget"]
+        },
+        {
+          "say": "試して足りなければ、上のモデルに上げましょう。",
+          "pulse": ["haiku"],
+          "tag": {
+            "haiku": "不足なら変更"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "用途から優先順位を決める",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "待たせられない画面を作るときは、速度を優先します。",
+          "show": ["speed"]
+        },
+        {
+          "say": "難しい推論を任せるときは、性能から考えましょう。",
+          "show": ["ability"]
+        },
+        {
+          "say": "開発と本番の予算も、選ぶときの基準です。",
+          "show": ["cost"]
+        },
+        {
+          "say": "優先順位を決めてから、候補を実際に比べます。",
+          "pulse": ["speed", "ability", "cost"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ceb234071358c27c2eb8a0a408aadb1c32b350e597ba9aab7fa623d845474fdb"
+  }
+}

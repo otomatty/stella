@@ -1,0 +1,763 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "作業の段階と人が確認したい範囲から、適切な権限モードを選んで理由を説明できる。",
+    "stuck": "調査から実装まで同じモードで進め、方針の承認と各編集の確認を区別していない。",
+    "points": ["権限モードは、作業の危険度に合わせて選びます。"],
+    "leaveOut": [
+      "起動時のオプションと既定のモードの設定方法",
+      "bypassPermissions と隔離環境の使い方",
+      "権限ルールの記法と判定順の詳細",
+      "フックの実装方法",
+      "指示ファイルの読み込み順"
+    ]
+  },
+  "art": {
+    "bicycle-check": {
+      "prompt": "A blue bicycle with a loose chain, with a large violet magnifying glass beside the chain, representing inspecting a bicycle before repairs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-estimate": {
+      "prompt": "A white repair estimate sheet with a blue paper clip and a small pictorial bicycle wheel, held by a young adult with short dark hair and a plain violet sweater. Simple facial features. The sheet is otherwise blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bicycle-repair": {
+      "prompt": "A repair worker in a plain blue shirt holding a wrench beside a large bicycle wheel and a replacement chain. Simple face and simple hands. The bicycle parts are blue and light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-inspection": {
+      "prompt": "An open violet laptop with a completely blank dark screen, a magnifying glass and an open white notebook with blank pages, representing examining source files and preparing a plan. No application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-review": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater carefully inspecting a white sheet held out by a worker in a blue shirt, representing human approval before an action. Simple facial features, no furniture. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-editing": {
+      "prompt": "An open violet laptop with a completely blank dark screen, a large violet pencil and two white file sheets, representing editing source files. No application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-review": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, examining a blank white operation card through a large magnifying glass. This represents a model reviewing an operation. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "permission-rule": {
+      "prompt": "A light grey file folder secured by a large closed blue padlock, with one blank white rule sheet tucked inside, representing a fixed restriction on operations. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dental-calendar": {
+      "prompt": "A blue appointment calendar booklet with blank white pages beside a large white tooth model and a violet pencil, representing dental appointment scheduling. No calendar grid, no application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inspect",
+          "label": "自転車の点検",
+          "art": "bicycle-check",
+          "at": [1, 1]
+        },
+        {
+          "id": "estimate",
+          "label": "見積もり確認",
+          "art": "repair-estimate",
+          "at": [3, 1]
+        },
+        {
+          "id": "repair",
+          "label": "修理を任せる",
+          "art": "bicycle-repair",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect-estimate",
+          "from": "inspect",
+          "to": "estimate",
+          "label": "結果を見る"
+        },
+        {
+          "id": "estimate-repair",
+          "from": "estimate",
+          "to": "repair",
+          "label": "了承してから"
+        }
+      ]
+    },
+    "planning": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "investigate",
+          "label": "調査と計画",
+          "art": "source-inspection",
+          "at": [1, 1]
+        },
+        {
+          "id": "confirm",
+          "label": "人の確認",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "ソースの編集",
+          "art": "source-editing",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "editing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "manual",
+          "label": "default",
+          "art": "human-review",
+          "at": [1, 1]
+        },
+        {
+          "id": "approved",
+          "label": "確認済み方針",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "編集を任せる",
+          "art": "source-editing",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "approved-edit",
+          "from": "approved",
+          "to": "edit",
+          "label": "繰り返す"
+        }
+      ]
+    },
+    "unattended": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "auto",
+          "label": "auto",
+          "art": "model-review",
+          "at": [1, 1]
+        },
+        {
+          "id": "ask",
+          "label": "確認が必要",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "dont-ask",
+          "label": "dontAsk",
+          "art": "permission-rule",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reject",
+          "from": "ask",
+          "to": "dont-ask",
+          "label": "拒否する"
+        }
+      ]
+    },
+    "repair-project": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "investigate",
+          "label": "受付の調査",
+          "art": "source-inspection",
+          "at": [1, 1]
+        },
+        {
+          "id": "approve",
+          "label": "方針の確認",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "受付の修正",
+          "art": "source-editing",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "investigate-approve",
+          "from": "investigate",
+          "to": "approve",
+          "label": "計画を出す"
+        },
+        {
+          "id": "approve-edit",
+          "from": "approve",
+          "to": "edit",
+          "label": "方針に沿う"
+        }
+      ]
+    },
+    "guard": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "review",
+          "label": "モデルの審査",
+          "art": "model-review",
+          "at": [1, 1]
+        },
+        {
+          "id": "operation",
+          "label": "止めたい編集",
+          "art": "source-editing",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "拒否のルール",
+          "art": "permission-rule",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "dental": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "booking",
+          "label": "歯科の予約",
+          "art": "dental-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "approved",
+          "label": "方針は承認済",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "each",
+          "label": "編集前に確認",
+          "art": "human-review",
+          "at": [5, 1]
+        },
+        {
+          "id": "manual",
+          "label": "default",
+          "art": "human-review",
+          "at": [5, 2]
+        },
+        {
+          "id": "accept",
+          "label": "編集を任せる",
+          "art": "source-editing",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "dental-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "方針への承認",
+          "art": "human-review",
+          "at": [1, 1]
+        },
+        {
+          "id": "edit",
+          "label": "個々の編集",
+          "art": "source-editing",
+          "at": [3, 1]
+        },
+        {
+          "id": "check",
+          "label": "編集前の確認",
+          "art": "human-review",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "edit-check",
+          "from": "edit",
+          "to": "check",
+          "label": "人に求める"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "任せる範囲を選ぶ",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "自転車の調子が悪く、店に点検を頼む場面です。",
+          "show": ["inspect"]
+        },
+        {
+          "say": "修理の前に、見積もりを見たいと伝えました。",
+          "show": ["estimate"]
+        },
+        {
+          "say": "了承したあとで、修理を任せましょう。",
+          "show": ["repair"]
+        },
+        {
+          "say": "権限モードも、作業の危険度に合わせて選びます。",
+          "pulse": ["inspect", "estimate", "repair"]
+        }
+      ]
+    },
+    {
+      "id": "repair-example",
+      "kind": "board",
+      "role": "example",
+      "title": "点検と修理を分ける",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "点検の段階では、部品を替えてほしくありません。",
+          "pulse": ["inspect"],
+          "tag": {
+            "inspect": "調べるだけ"
+          }
+        },
+        {
+          "say": "まずは、必要な修理を見積もりで確かめます。",
+          "show": ["inspect-estimate"],
+          "travel": {
+            "along": ["inspect-estimate"]
+          }
+        },
+        {
+          "say": "修理を始めてよいか決めるのは、頼んだ人です。",
+          "pulse": ["estimate"]
+        },
+        {
+          "say": "作業の段階ごとに、任せる範囲を分けましょう。",
+          "show": ["estimate-repair"],
+          "travel": {
+            "along": ["estimate-repair"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "plan-mode",
+      "kind": "board",
+      "role": "syntax",
+      "title": "調査には plan",
+      "board": "planning",
+      "beats": [
+        {
+          "say": "人の確認を求める基本方針が、権限モードです。",
+          "term": {
+            "text": "権限モード",
+            "ruby": "けんげんモード",
+            "note": "人の確認を求める基本方針"
+          },
+          "pause": 1
+        },
+        {
+          "say": "調査と編集で、確認したい範囲を分けて考えます。",
+          "show": ["investigate", "confirm", "edit"]
+        },
+        {
+          "say": "調査して計画を作るモードが、plan です。",
+          "speech": "調査して計画を作るモードが、プランです。",
+          "term": {
+            "text": "plan",
+            "ruby": "プラン",
+            "note": "調査して計画を作る"
+          },
+          "pause": 1
+        },
+        {
+          "say": "ソースを編集せずに、影響を調べて計画を出します。",
+          "pulse": ["investigate"],
+          "tag": {
+            "investigate": "plan"
+          },
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "editing-modes",
+      "kind": "board",
+      "role": "syntax",
+      "title": "編集前の確認を選ぶ",
+      "board": "editing",
+      "beats": [
+        {
+          "say": "編集前に人が確認するなら、default です。",
+          "speech": "編集前に人が確認するなら、デフォルトです。",
+          "term": {
+            "text": "default",
+            "ruby": "デフォルト",
+            "note": "編集前に人が確認する"
+          },
+          "pause": 1
+        },
+        {
+          "say": "編集や多くのコマンドの前に、確認を求めます。",
+          "show": ["manual"],
+          "tag": {
+            "manual": "人が確認"
+          }
+        },
+        {
+          "say": "確認した方針で編集を任せるなら、acceptEdits です。",
+          "speech": "確認した方針で編集を任せるなら、アクセプトエディッツです。",
+          "show": ["approved", "edit", "approved-edit"]
+        },
+        {
+          "say": "編集や一部のファイル操作は、確認なしで進みます。",
+          "pulse": ["edit"],
+          "tag": {
+            "edit": "確認なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unattended-modes",
+      "kind": "board",
+      "role": "syntax",
+      "title": "人に確認を求めない場合",
+      "board": "unattended",
+      "beats": [
+        {
+          "say": "auto では、別のモデルが操作を審査します。",
+          "speech": "オートでは、別のモデルが操作を審査します。",
+          "show": ["auto"]
+        },
+        {
+          "say": "人の確認を減らしても、操作の審査は続く仕組みです。",
+          "tag": {
+            "auto": "モデルが審査"
+          },
+          "pulse": ["auto"]
+        },
+        {
+          "say": "dontAsk は、確認が必要な操作を拒否します。",
+          "speech": "ドントアスクは、確認が必要な操作を拒否します。",
+          "show": ["ask", "dont-ask", "reject"],
+          "mark": [
+            {
+              "on": "ask",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "人が見ていない検査で、許した操作に絞るモードです。",
+          "pulse": ["dont-ask"],
+          "tag": {
+            "dont-ask": "事前の許可"
+          }
+        }
+      ]
+    },
+    {
+      "id": "investigate-first",
+      "kind": "board",
+      "role": "apply",
+      "title": "受付の仕組みを調べる",
+      "board": "repair-project",
+      "beats": [
+        {
+          "say": "今度は、自転車修理の受付プログラムを直す場面です。",
+          "show": ["investigate"]
+        },
+        {
+          "say": "担当者は、まず変更の影響だけ調べるよう頼みました。",
+          "tag": {
+            "investigate": "影響を調べる"
+          }
+        },
+        {
+          "say": "ここでは plan を選び、調査と計画を任せます。",
+          "speech": "ここではプランを選び、調査と計画を任せます。",
+          "tag": {
+            "investigate": "plan"
+          },
+          "show": ["approve", "investigate-approve"]
+        },
+        {
+          "say": "方針を見る前は、まだソースを編集しません。",
+          "show": ["edit"],
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edit-after-review",
+      "kind": "board",
+      "role": "apply",
+      "title": "方針を確認したあとの編集",
+      "board": "repair-project",
+      "beats": [
+        {
+          "say": "担当者は計画を読み、直す方針を確認しました。",
+          "mark": [
+            {
+              "on": "approve",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["approve"]
+        },
+        {
+          "say": "今回は、その方針で編集を繰り返し任せる予定です。",
+          "show": ["approve-edit"],
+          "unmark": ["edit"],
+          "pulse": ["edit"]
+        },
+        {
+          "say": "acceptEdits を選び、編集の確認を減らします。",
+          "speech": "アクセプトエディッツを選び、編集の確認を減らします。",
+          "tag": {
+            "edit": "確認なし"
+          }
+        },
+        {
+          "say": "個々の編集も先に見たいなら、default を選びましょう。",
+          "speech": "個々の編集も先に見たいなら、デフォルトを選びましょう。",
+          "tag": {
+            "edit": "default"
+          },
+          "pulse": ["approve"]
+        }
+      ]
+    },
+    {
+      "id": "keep-denials",
+      "kind": "board",
+      "role": "note",
+      "title": "必ず止めたい操作は別に定める",
+      "board": "guard",
+      "beats": [
+        {
+          "say": "auto を選ぶと、操作の審査をモデルに任せます。",
+          "speech": "オートを選ぶと、操作の審査をモデルに任せます。",
+          "show": ["review"]
+        },
+        {
+          "say": "必ず止めたい操作は、審査だけに任せてはいけません。",
+          "show": ["operation"],
+          "mark": [
+            {
+              "on": "operation",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "拒否のルールか、実行前のフックで制限します。",
+          "show": ["rules"],
+          "mark": [
+            {
+              "on": "operation",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "ツールごとの拒否は、どのモードでも有効です。",
+          "pulse": ["rules"],
+          "tag": {
+            "rules": "常に有効"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dental-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "承認後のモードを選ぶ",
+      "board": "dental",
+      "think": 8,
+      "beats": [
+        {
+          "say": "歯科の予約プログラムで、予約枠の表示を直します。",
+          "show": ["booking"]
+        },
+        {
+          "say": "修正方針は、担当者がすでに承認した状態です。",
+          "show": ["approved"]
+        },
+        {
+          "say": "ただし、個々の編集の前にも人が確認すると決めました。",
+          "show": ["each"]
+        },
+        {
+          "say": "default と acceptEdits を比べます。",
+          "speech": "デフォルトとアクセプトエディッツを比べます。",
+          "show": ["manual", "accept"]
+        },
+        {
+          "say": "この確認を残すには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "question"
+            },
+            {
+              "on": "accept",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["manual", "accept"]
+        }
+      ]
+    },
+    {
+      "id": "dental-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "default を選ぶ",
+      "board": "dental",
+      "beats": [
+        {
+          "say": "答えは、default です。",
+          "speech": "答えは、デフォルトです。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "check"
+            },
+            {
+              "on": "accept",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["manual"]
+        },
+        {
+          "say": "方針は承認済みでも、編集前の確認は残します。",
+          "pulse": ["each"],
+          "mark": [
+            {
+              "on": "each",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dental-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "何への承認かを分ける",
+      "board": "dental-reason",
+      "beats": [
+        {
+          "say": "承認したのは、予約枠の表示を直す方針です。",
+          "show": ["policy"],
+          "mark": [
+            {
+              "on": "policy",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "個々の編集まで確認なしで進めるとは決めていません。",
+          "show": ["edit"],
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "acceptEdits では、編集前の確認を省きます。",
+          "speech": "アクセプトエディッツでは、編集前の確認を省きます。",
+          "tag": {
+            "edit": "確認なし"
+          }
+        },
+        {
+          "say": "今回残したい確認に合うのは、default です。",
+          "speech": "今回残したい確認に合うのは、デフォルトです。",
+          "show": ["check", "edit-check"],
+          "tag": {
+            "check": "default"
+          },
+          "pulse": ["check"]
+        }
+      ]
+    },
+    {
+      "id": "choose-for-work",
+      "kind": "board",
+      "role": "usage",
+      "title": "作業前に確認範囲を決める",
+      "board": "planning",
+      "reset": true,
+      "beats": [
+        {
+          "say": "実装前の影響調査なら、plan が選択肢です。",
+          "speech": "実装前の影響調査なら、プランが選択肢です。",
+          "show": ["investigate"],
+          "tag": {
+            "investigate": "plan"
+          }
+        },
+        {
+          "say": "初めて触る作業では、編集前の確認を残すか考えます。",
+          "show": ["confirm"],
+          "tag": {
+            "confirm": "default"
+          }
+        },
+        {
+          "say": "確認済みの方針で編集を任せるかも、決めておきましょう。",
+          "show": ["edit"],
+          "tag": {
+            "edit": "任せる範囲"
+          }
+        },
+        {
+          "say": "権限モードは、作業の危険度に合わせて選びます。",
+          "pulse": ["investigate", "confirm", "edit"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4cbe15012559b8c36ed5217547d68d7ad1ffa8e8147ef7388d697a5248f7d2de"
+  }
+}

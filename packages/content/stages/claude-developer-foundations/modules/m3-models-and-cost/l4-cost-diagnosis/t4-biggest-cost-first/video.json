@@ -1,0 +1,736 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "使用量を費用に換算し、最大の項目に合う改善策を選べる。",
+    "stuck": "トークン数だけで費用の大小を決め、どの項目に効くかを見ずに改善策を選んでしまう。",
+    "points": ["使用量の内訳でいちばん大きい項目を見つけ、その項目に効く手段を選びます。"],
+    "leaveOut": [
+      "キャッシュの区切りの具体的な置き方と外れた原因の診断",
+      "一時間のキャッシュとの費用比較",
+      "モデルごとの実際の料金と測定例",
+      "バッチの実装と割引率の計算",
+      "出力の上限の仕組みと読み込み率の監視"
+    ]
+  },
+  "art": {
+    "inquiry-slips": {
+      "prompt": "A fan of white inquiry slips with blue paper clips and a blue telephone handset, representing a collection of customer inquiries. Each slip is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cost-ledger": {
+      "prompt": "An open white accounting notebook with four different-sized solid blue and violet tabs, beside a small pile of plain grey coins without markings. Pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "calculator": {
+      "prompt": "A large blue handheld calculator with a blank dark display and plain round keys without markings, beside a violet pencil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "apples": {
+      "prompt": "A small group of several ripe red apples with natural green leaves, representing many inexpensive items in a grocery purchase. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "melon": {
+      "prompt": "One large ripe green melon with a short natural stem, representing a single expensive item in a grocery purchase. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cache-folder": {
+      "prompt": "A blue open document folder holding a thick stack of identical white reference sheets, with one sheet being taken out by a hand. The sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-pages": {
+      "prompt": "A long strip of white answer paper folded into several loose sections beside a violet pencil, representing a long written response. The paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "travel-booklet": {
+      "prompt": "A small white travel itinerary booklet with blue binding beside a compact violet suitcase and a blue compass without markings. The booklet pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "batch-stack": {
+      "prompt": "Several thick stacks of white documents bundled with blue bands beside a small blue analog clock with hands but no markings, representing a large job whose result can wait. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "問い合わせ",
+          "art": "inquiry-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "costs",
+          "label": "費用の内訳",
+          "art": "cost-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "choice",
+          "label": "改善を選ぶ",
+          "art": "calculator",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "groceries": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "apples",
+          "label": "りんご",
+          "art": "apples",
+          "at": [1, 1]
+        },
+        {
+          "id": "melon",
+          "label": "メロン",
+          "art": "melon",
+          "at": [3, 1]
+        },
+        {
+          "id": "receipt",
+          "label": "支払う金額",
+          "art": "cost-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "prices": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "unit",
+          "label": "仮の単価",
+          "art": "calculator",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "通常入力",
+          "art": "inquiry-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力",
+          "art": "answer-pages",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "breakdown": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "通常入力",
+          "art": "inquiry-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "五分の書込",
+          "art": "cache-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "cache-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力",
+          "art": "answer-pages",
+          "at": [5, 2]
+        },
+        {
+          "id": "total",
+          "label": "千件の合計",
+          "art": "cost-ledger",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "repeated": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "通常入力",
+          "art": "inquiry-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "繰り返す資料",
+          "art": "cache-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "cache",
+          "label": "キャッシュ",
+          "art": "cache-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "part",
+          "from": "input",
+          "to": "source",
+          "label": "うち"
+        },
+        {
+          "id": "reuse",
+          "from": "source",
+          "to": "cache",
+          "label": "区切る"
+        }
+      ]
+    },
+    "savings": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "資料600万",
+          "art": "cache-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "書込60万",
+          "art": "cache-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "read",
+          "label": "読込540万",
+          "art": "cache-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "subtotal",
+          "label": "資料の費用",
+          "art": "cost-ledger",
+          "at": [5, 2]
+        },
+        {
+          "id": "total",
+          "label": "全体の費用",
+          "art": "calculator",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "methods": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "effort",
+          "label": "effort",
+          "art": "answer-pages",
+          "at": [1, 1]
+        },
+        {
+          "id": "length",
+          "label": "答えの長さ",
+          "art": "answer-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "quality",
+          "label": "必要な情報",
+          "art": "answer-pages",
+          "at": [5, 1]
+        },
+        {
+          "id": "batch",
+          "label": "待てる処理",
+          "art": "batch-stack",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "travel": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "trip",
+          "label": "旅行のしおり",
+          "art": "travel-booklet",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "通常入力",
+          "art": "travel-booklet",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力",
+          "art": "answer-pages",
+          "at": [5, 1]
+        },
+        {
+          "id": "cache",
+          "label": "書込と読込",
+          "art": "cache-folder",
+          "at": [5, 2]
+        },
+        {
+          "id": "length",
+          "label": "答えの長さ",
+          "art": "answer-pages",
+          "at": [3, 2]
+        },
+        {
+          "id": "quality",
+          "label": "必要な案内",
+          "art": "travel-booklet",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "review",
+          "from": "length",
+          "to": "quality",
+          "label": "確認"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repeated",
+          "label": "繰り返す資料",
+          "art": "cache-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "output",
+          "label": "長い答え",
+          "art": "answer-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "batch",
+          "label": "待てる大量処理",
+          "art": "batch-stack",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "どの費用から直すか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "問い合わせ千件の処理費用を、抑えたいとします。",
+          "show": ["inquiries"]
+        },
+        {
+          "say": "手がかりは、何にいくら使ったかという内訳です。",
+          "show": ["costs"]
+        },
+        {
+          "say": "どの項目を直すとよいか、金額から考えましょう。",
+          "show": ["choice"]
+        },
+        {
+          "say": "最大の費用を見つけ、その項目に効く手段を選びます。",
+          "pulse": ["costs", "choice"]
+        }
+      ]
+    },
+    {
+      "id": "grocery-receipt",
+      "kind": "board",
+      "role": "example",
+      "title": "個数と金額を分ける",
+      "board": "groceries",
+      "beats": [
+        {
+          "say": "買い物で、りんごを何個も買ったとしましょう。",
+          "show": ["apples"]
+        },
+        {
+          "say": "メロンは一個でも、りんご全部より高い場合があります。",
+          "show": ["melon"]
+        },
+        {
+          "say": "数だけでは、いちばんお金を使った品は分かりません。",
+          "pulse": ["apples", "melon"]
+        },
+        {
+          "say": "節約するなら、品ごとの支払額を比べるのが先です。",
+          "show": ["receipt"],
+          "pulse": ["receipt"]
+        }
+      ]
+    },
+    {
+      "id": "unit-prices",
+      "kind": "board",
+      "role": "syntax",
+      "title": "仮の単価をそろえる",
+      "board": "prices",
+      "beats": [
+        {
+          "say": "ここからは、教材の仮の単価で計算します。",
+          "show": ["unit"],
+          "term": {
+            "text": "単価",
+            "ruby": "たんか",
+            "note": "一定の量あたりの価格"
+          }
+        },
+        {
+          "say": "通常入力は、キャッシュを使わない入力です。",
+          "show": ["input"],
+          "term": {
+            "text": "通常入力",
+            "ruby": "つうじょうにゅうりょく",
+            "note": "キャッシュを使わない入力"
+          }
+        },
+        {
+          "say": "今回は百万トークンを一ドルとして扱いましょう。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "$1/100万"
+          }
+        },
+        {
+          "say": "出力の単価は、その五倍とします。",
+          "show": ["output"],
+          "tag": {
+            "output": "$5/100万"
+          }
+        },
+        {
+          "say": "同じ量でも、入力と出力では費用が違う計算です。",
+          "pulse": ["input", "output"]
+        }
+      ]
+    },
+    {
+      "id": "cost-breakdown",
+      "kind": "board",
+      "role": "syntax",
+      "title": "千件分を費用に直す",
+      "board": "breakdown",
+      "beats": [
+        {
+          "say": "問い合わせ千件の費用の内訳を見てみましょう。",
+          "show": ["total"],
+          "tag": {
+            "total": "11.10ドル"
+          },
+          "term": {
+            "text": "費用の内訳",
+            "ruby": "ひようのうちわけ",
+            "note": "項目ごとに分けた金額"
+          }
+        },
+        {
+          "say": "通常入力は八百万トークンで、八ドルです。",
+          "show": ["input"],
+          "tag": {
+            "input": "8ドル"
+          }
+        },
+        {
+          "say": "五分の書き込み八十万は、一ドルになります。",
+          "show": ["write"],
+          "tag": {
+            "write": "1ドル"
+          }
+        },
+        {
+          "say": "読み込み百万は、〇点一ドルです。",
+          "speech": "読み込みひゃくまんは、れいてんいちドルです。",
+          "show": ["read"],
+          "tag": {
+            "read": "0.10ドル"
+          }
+        },
+        {
+          "say": "出力四十万の費用は、二ドルになります。",
+          "show": ["output"],
+          "tag": {
+            "output": "2ドル"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "find-repeated",
+      "kind": "board",
+      "role": "apply",
+      "title": "最大の通常入力を見る",
+      "board": "repeated",
+      "beats": [
+        {
+          "say": "最大の八ドルを使っているのは、通常入力です。",
+          "show": ["input"],
+          "tag": {
+            "input": "8ドル"
+          }
+        },
+        {
+          "say": "そのうち六百万トークンは、繰り返し送る資料でした。",
+          "show": ["source", "part"],
+          "tag": {
+            "source": "600万"
+          }
+        },
+        {
+          "say": "この資料の区切りを直し、キャッシュを使います。",
+          "show": ["cache", "reuse"],
+          "travel": {
+            "along": ["reuse"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "まず手を入れるのは、六ドルかかる資料の部分です。",
+          "pulse": ["source"],
+          "tag": {
+            "source": "6ドル"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cache-savings",
+      "kind": "board",
+      "role": "apply",
+      "title": "資料の費用を計算し直す",
+      "board": "savings",
+      "beats": [
+        {
+          "say": "六ドルだった資料の費用を、計算し直します。",
+          "show": ["before"],
+          "tag": {
+            "before": "6ドル"
+          }
+        },
+        {
+          "say": "六十万の書き込みは、〇点七五ドルです。",
+          "speech": "ろくじゅうまんの書き込みは、れいてんななごドルです。",
+          "show": ["write"],
+          "tag": {
+            "write": "0.75ドル"
+          }
+        },
+        {
+          "say": "五百四十万の読み込みは、〇点五四ドルになります。",
+          "speech": "ごひゃくよんじゅうまんの読み込みは、れいてんごよんドルになります。",
+          "show": ["read"],
+          "tag": {
+            "read": "0.54ドル"
+          }
+        },
+        {
+          "say": "資料の費用は、合わせて一点二九ドルです。",
+          "speech": "資料の費用は、合わせていってんにきゅうドルです。",
+          "show": ["subtotal"],
+          "tag": {
+            "subtotal": "1.29ドル"
+          },
+          "pause": 1
+        },
+        {
+          "say": "全体も十一点一ドルから六点三九ドルに下がります。",
+          "speech": "全体もじゅういってんいちドルからろくてんさんきゅうドルに下がります。",
+          "show": ["total"],
+          "tag": {
+            "total": "6.39ドル"
+          },
+          "pulse": ["total"]
+        }
+      ]
+    },
+    {
+      "id": "match-method",
+      "kind": "board",
+      "role": "apply",
+      "title": "項目と条件に合う手段",
+      "board": "methods",
+      "beats": [
+        {
+          "say": "出力が最大なら、effort を下げて試します。",
+          "speech": "出力が最大なら、エフォートを下げて試します。",
+          "show": ["effort"]
+        },
+        {
+          "say": "答えの長さを指定する方法も候補です。",
+          "show": ["length"]
+        },
+        {
+          "say": "必要な情報が残るか、合わせて確かめましょう。",
+          "show": ["quality"],
+          "pulse": ["quality"]
+        },
+        {
+          "say": "待てる大量処理なら、バッチの割引も比べます。",
+          "show": ["batch"],
+          "pulse": ["batch"]
+        }
+      ]
+    },
+    {
+      "id": "travel-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "しおり作りはどこを直す",
+      "board": "travel",
+      "think": 8,
+      "beats": [
+        {
+          "say": "旅行のしおり作りを、同じ仮の単価で計算します。",
+          "show": ["trip"]
+        },
+        {
+          "say": "通常入力の合計は、二百万トークンです。",
+          "show": ["input"],
+          "tag": {
+            "input": "200万"
+          }
+        },
+        {
+          "say": "出力は、百万トークンを使いました。",
+          "show": ["output"],
+          "tag": {
+            "output": "100万"
+          }
+        },
+        {
+          "say": "書き込みと読み込みは、どちらもゼロです。",
+          "show": ["cache"],
+          "tag": {
+            "cache": "どちらも0"
+          }
+        },
+        {
+          "say": "最大の費用を抑えるには、どこを見直すとよいでしょうか。",
+          "pulse": ["input", "output"],
+          "pause": 0.5
+        }
+      ]
+    },
+    {
+      "id": "travel-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "出力の長さを見直す",
+      "board": "travel",
+      "beats": [
+        {
+          "say": "最大は五ドルの出力なので、答えの長さを見直します。",
+          "tag": {
+            "output": "5ドル"
+          },
+          "show": ["length"],
+          "mark": [
+            {
+              "on": "output",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["output", "length"]
+        },
+        {
+          "say": "通常入力の費用は、二ドルです。",
+          "tag": {
+            "input": "2ドル"
+          },
+          "pulse": ["input"]
+        }
+      ]
+    },
+    {
+      "id": "travel-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "量より金額で判断する",
+      "board": "travel",
+      "beats": [
+        {
+          "say": "出力は百万トークンでも、単価が五倍だからです。",
+          "pulse": ["output"],
+          "tag": {
+            "output": "100万×5"
+          }
+        },
+        {
+          "say": "通常入力は倍の量でも、費用は二ドルにとどまります。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "200万×1"
+          }
+        },
+        {
+          "say": "この場合、先に見直すのは出力の長さです。",
+          "pulse": ["length"],
+          "tag": {
+            "output": "5ドル",
+            "input": "2ドル"
+          }
+        },
+        {
+          "say": "短くしたあとも、必要な案内が残るか確かめましょう。",
+          "show": ["quality", "review"],
+          "travel": {
+            "along": ["review"],
+            "icon": "check"
+          },
+          "pulse": ["quality"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "処理ごとの内訳から選ぶ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "同じ資料を繰り返し送るなら、通常入力の費用を調べます。",
+          "show": ["repeated"]
+        },
+        {
+          "say": "長い答えを返す処理は、出力の費用を見るのが先です。",
+          "show": ["output"]
+        },
+        {
+          "say": "待てる大量処理なら、バッチ後の実際の内訳も測りましょう。",
+          "show": ["batch"]
+        },
+        {
+          "say": "いちばん大きい費用を見つけ、その項目に効く手段を選びます。",
+          "pulse": ["repeated", "output", "batch"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "ff2f97c26468baee0c0469bf9ef124e2f670823541a31bec7abd576c7f36b5b1"
+  }
+}

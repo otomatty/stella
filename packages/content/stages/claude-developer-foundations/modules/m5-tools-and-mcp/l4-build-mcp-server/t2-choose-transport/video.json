@@ -1,0 +1,773 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "サーバーを動かす場所と使うアプリの範囲から、stdio と HTTP のどちらでつなぐかを選べる。",
+    "stuck": "手元で起動するサーバーと、離れた場所から共有するサーバーを、同じ登録の仕方で使えると思ってしまう。",
+    "points": [
+      "手元の 1 つのアプリ向けなら stdio、離れた場所から複数で使うなら HTTP でつなぎます。"
+    ],
+    "leaveOut": [
+      "サーバーが提供するツール・リソース・プロンプトの違い",
+      "HTTP の認可とトークンの検証",
+      "POST と JSON と SSE による送受信の詳細",
+      "Origin の検査と localhost の設定",
+      "登録の範囲と Agent SDK の設定",
+      "MCP コネクターで使える機能の範囲",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "learner-laptop": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding an open laptop with a blank violet screen. Simple facial features. The laptop represents a developer trying a local server. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reception-terminal": {
+      "prompt": "A staff member in a plain blue shirt holding an open laptop with a blank blue screen. Simple facial features. The laptop represents a reception terminal accessing a shared server. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-server": {
+      "prompt": "A single compact light grey server tower with blue ventilation slots and a violet network cable plugged into its side. A concrete physical machine, no cloud symbol. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "home-tutor": {
+      "prompt": "A tutor in a plain blue shirt holding an open white exercise book toward a young adult with short dark hair and a plain violet sweater. Both have simple facial features. The book is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "phone-help": {
+      "prompt": "A staff member in a plain blue shirt wearing a telephone headset, with a blue telephone handset beside them. Simple facial features. This represents a remote study advice service. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "message-slip": {
+      "prompt": "Two separate white message slips beside a blue paper clip. Both slips are blank and clearly separated, representing individual messages. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "log-notebook": {
+      "prompt": "A light grey notebook with blank white pages and a violet pencil beside it. This represents a record of startup activity. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choir-calendar": {
+      "prompt": "Two singers in plain blue shirts holding open white songbooks beside a large white calendar with blank square cells. Simple facial features. No musical notation or calendar numbers. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "developer",
+          "label": "手元で試作",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "reception",
+          "label": "受付でも使う",
+          "art": "reception-terminal",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "共有サーバー",
+          "art": "shared-server",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "analogy": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tutor",
+          "label": "家に呼ぶ先生",
+          "art": "home-tutor",
+          "at": [1, 1]
+        },
+        {
+          "id": "phone",
+          "label": "学習相談窓口",
+          "art": "phone-help",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "local": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "client",
+          "label": "クライアント",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "子プロセス",
+          "art": "shared-server",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "client",
+          "to": "server",
+          "label": "起動"
+        }
+      ]
+    },
+    "remote": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "developer",
+          "label": "開発端末",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "共有サーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "reception",
+          "label": "受付の端末",
+          "art": "reception-terminal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "dev-connect",
+          "from": "developer",
+          "to": "server",
+          "label": "HTTP"
+        },
+        {
+          "id": "desk-connect",
+          "from": "reception",
+          "to": "server",
+          "label": "HTTP"
+        }
+      ]
+    },
+    "localCode": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "client",
+          "label": "ClaudeCode",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "手元のサーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "start",
+          "from": "client",
+          "to": "server",
+          "label": "起動"
+        }
+      ]
+    },
+    "remoteCode": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "client",
+          "label": "ClaudeCode",
+          "art": "reception-terminal",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "共有の入口",
+          "art": "shared-server",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "connect",
+          "from": "client",
+          "to": "server",
+          "label": "HTTP"
+        }
+      ]
+    },
+    "logging": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "messages",
+          "label": "標準出力",
+          "art": "message-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "手元のサーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "logs",
+          "label": "標準エラー",
+          "art": "log-notebook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "protocol",
+          "from": "server",
+          "to": "messages",
+          "label": "送る"
+        },
+        {
+          "id": "diagnostic",
+          "from": "server",
+          "to": "logs",
+          "label": "ログ"
+        }
+      ]
+    },
+    "choir": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "home",
+          "label": "自宅のアプリ",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "schedule",
+          "label": "練習日サーバー",
+          "art": "choir-calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "hall",
+          "label": "会場のアプリ",
+          "art": "reception-terminal",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "home-connect",
+          "from": "home",
+          "to": "schedule"
+        },
+        {
+          "id": "hall-connect",
+          "from": "hall",
+          "to": "schedule"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "local",
+          "label": "手元の試作",
+          "art": "learner-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "複数部署で共有",
+          "art": "shared-server",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "どこから使うサーバーか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "会議室のサーバーを、手元の端末で試しています。",
+          "show": ["developer"]
+        },
+        {
+          "say": "今度は、受付の端末からも使いたい場面です。",
+          "show": ["reception"]
+        },
+        {
+          "say": "同じサーバーをどこで動かすか、考えましょう。",
+          "show": ["server"]
+        },
+        {
+          "say": "手元か共有かに合わせて、つなぎ方を選びます。",
+          "pulse": ["developer", "server"]
+        }
+      ]
+    },
+    {
+      "id": "study-help",
+      "kind": "board",
+      "role": "example",
+      "title": "家に呼ぶか電話するか",
+      "board": "analogy",
+      "beats": [
+        {
+          "say": "勉強を教わるために、自宅へ先生を呼びました。",
+          "show": ["tutor"]
+        },
+        {
+          "say": "家に来た先生に、その場で質問する形です。",
+          "tag": {
+            "tutor": "そばで質問"
+          }
+        },
+        {
+          "say": "離れた場所から相談するなら、窓口へ電話します。",
+          "show": ["phone"]
+        },
+        {
+          "say": "手元に呼ぶか、離れた窓口へつなぐかを比べましょう。",
+          "pulse": ["tutor", "phone"]
+        }
+      ]
+    },
+    {
+      "id": "local-transport",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手元で起動するつなぎ方",
+      "board": "local",
+      "beats": [
+        {
+          "say": "サーバーへのつなぎ方を、トランスポートと呼びます。",
+          "term": {
+            "text": "トランスポート",
+            "note": "サーバーへのつなぎ方"
+          },
+          "show": ["client", "server", "start"]
+        },
+        {
+          "say": "手元の一つのアプリ向けに使うのが、stdio です。",
+          "speech": "手元の一つのアプリ向けに使うのが、エスティーディーアイオーです。",
+          "term": {
+            "text": "stdio",
+            "note": "手元の標準入出力で接続"
+          },
+          "pulse": ["start"]
+        },
+        {
+          "say": "クライアントが、サーバーを子プロセスとして起動します。",
+          "pulse": ["client"],
+          "travel": {
+            "along": ["start"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "標準入出力を使い、改行で区切ってやり取りする形です。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "改行で区切る"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shared-transport",
+      "kind": "board",
+      "role": "syntax",
+      "title": "離れた場所から共有する",
+      "board": "remote",
+      "beats": [
+        {
+          "say": "離れたサーバーへは、HTTP でつなぎます。",
+          "speech": "離れたサーバーへは、エイチティーティーピーでつなぎます。",
+          "term": {
+            "text": "HTTP",
+            "note": "離れたサーバーへの接続"
+          },
+          "show": ["developer", "server", "dev-connect"]
+        },
+        {
+          "say": "新しく作る場合は、Streamable HTTP です。",
+          "speech": "新しく作る場合は、ストリーマブルエイチティーティーピーです。",
+          "pulse": ["dev-connect"]
+        },
+        {
+          "say": "共有するサーバーは、アプリとは別に動かします。",
+          "pulse": ["server"],
+          "tag": {
+            "server": "別に動かす"
+          }
+        },
+        {
+          "say": "それぞれのアプリが、同じ入口につなぐ形を見てください。",
+          "show": ["reception", "desk-connect"],
+          "travel": {
+            "along": ["desk-connect"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "register-local",
+      "kind": "code",
+      "role": "apply",
+      "title": "手元の試作を登録する",
+      "code": [
+        "# 手元の会議室サーバーを登録する",
+        "claude mcp add --transport stdio rooms -- node ./rooms.mjs"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "localCode"
+      },
+      "beats": [
+        {
+          "say": "会議室の試作を、Claude Code に登録します。",
+          "speech": "会議室の試作を、クロードコードに登録します。",
+          "part": {
+            "line": 1,
+            "text": "claude mcp add",
+            "note": "接続を登録"
+          },
+          "figure": {
+            "show": ["client"]
+          }
+        },
+        {
+          "say": "手元で起動する例の指定は、stdio です。",
+          "speech": "手元で起動する例の指定は、エスティーディーアイオーです。",
+          "part": {
+            "line": 1,
+            "text": "--transport stdio",
+            "note": "つなぎ方"
+          },
+          "figure": {
+            "show": ["server", "start"]
+          }
+        },
+        {
+          "say": "rooms は、この接続に付けた名前を表します。",
+          "speech": "ルームズは、この接続に付けた名前を表します。",
+          "part": {
+            "line": 1,
+            "text": "rooms",
+            "note": "部屋という名前"
+          },
+          "figure": {
+            "tag": {
+              "server": "rooms"
+            }
+          }
+        },
+        {
+          "say": "末尾にあるのは、サーバーを起動するコマンドです。",
+          "part": {
+            "line": 1,
+            "text": "node ./rooms.mjs",
+            "note": "起動する命令"
+          },
+          "figure": {
+            "pulse": ["server"]
+          }
+        },
+        {
+          "say": "登録した命令で、クライアントがサーバーを起動します。",
+          "focus": [1],
+          "figure": {
+            "travel": {
+              "along": ["start"],
+              "icon": "send"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "register-shared",
+      "kind": "code",
+      "role": "apply",
+      "title": "共有する入口を登録する",
+      "code": [
+        "# 共有する会議室サーバーを登録する",
+        "claude mcp add --transport http rooms https://rooms.example.com/mcp"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "remoteCode"
+      },
+      "beats": [
+        {
+          "say": "受付から共有する場合の、別の登録例を見てみましょう。",
+          "focus": [1],
+          "figure": {
+            "show": ["client", "server"]
+          }
+        },
+        {
+          "say": "この例では、つなぎ方に http を指定します。",
+          "speech": "この例では、つなぎ方にエイチティーティーピーを指定します。",
+          "part": {
+            "line": 1,
+            "text": "--transport http",
+            "note": "つなぎ方"
+          },
+          "figure": {
+            "show": ["connect"]
+          }
+        },
+        {
+          "say": "末尾に書くのは、共有サーバーの入口の URL です。",
+          "speech": "末尾に書くのは、共有サーバーの入口のユーアールエルです。",
+          "part": {
+            "line": 1,
+            "text": "https://rooms.example.com/mcp",
+            "note": "共有する入口"
+          },
+          "figure": {
+            "pulse": ["server"]
+          }
+        },
+        {
+          "say": "クライアントは、その入口へ接続します。",
+          "focus": [1],
+          "figure": {
+            "travel": {
+              "along": ["connect"],
+              "icon": "send"
+            }
+          }
+        },
+        {
+          "say": "二つの登録例から、使う方だけを選んでください。",
+          "part": {
+            "line": 1,
+            "text": "http",
+            "note": "共有ならこちら"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "server",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "separate-logs",
+      "kind": "board",
+      "role": "note",
+      "title": "手元の通信とログを分ける",
+      "board": "logging",
+      "beats": [
+        {
+          "say": "stdio では、標準出力を通信専用にします。",
+          "speech": "エスティーディーアイオーでは、標準出力を通信専用にします。",
+          "show": ["server", "messages", "protocol"]
+        },
+        {
+          "say": "ここへ出すのは、改行で区切った MCP のメッセージだけです。",
+          "speech": "ここへ出すのは、改行で区切ったエムシーピーのメッセージだけです。",
+          "pulse": ["messages"],
+          "tag": {
+            "messages": "通信だけ"
+          }
+        },
+        {
+          "say": "起動時のログは、標準エラーへ出しましょう。",
+          "term": {
+            "text": "標準エラー",
+            "ruby": "ひょうじゅんえらー",
+            "note": "ログの出力先"
+          },
+          "show": ["logs", "diagnostic"]
+        },
+        {
+          "say": "ログを標準出力に混ぜると、接続に失敗することがあります。",
+          "pulse": ["logs"],
+          "travel": {
+            "along": ["diagnostic"],
+            "icon": "file"
+          },
+          "tag": {
+            "logs": "ログはこちら"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choir-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "合唱の練習日を共有する",
+      "board": "choir",
+      "think": 8,
+      "beats": [
+        {
+          "say": "合唱の練習日を調べるサーバーを、団員が作りました。",
+          "show": ["schedule"]
+        },
+        {
+          "say": "使うのは、自宅と会場にいる人の別々のアプリです。",
+          "show": ["home", "hall"]
+        },
+        {
+          "say": "サーバーは別に動かし、同じ入口を両方から使います。",
+          "show": ["home-connect", "hall-connect"]
+        },
+        {
+          "say": "stdio と HTTP の、どちらでつなぐのでしょうか。",
+          "speech": "エスティーディーアイオーとエイチティーティーピーの、どちらでつなぐのでしょうか。",
+          "pulse": ["home", "hall"],
+          "mark": [
+            {
+              "on": "schedule",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choir-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "共有するならHTTP",
+      "board": "choir",
+      "beats": [
+        {
+          "say": "答えは、HTTP でつなぐ方法です。",
+          "speech": "答えは、エイチティーティーピーでつなぐ方法です。",
+          "mark": [
+            {
+              "on": "schedule",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "schedule": "HTTP"
+          }
+        },
+        {
+          "say": "新しく作るので、Streamable HTTP を選びます。",
+          "speech": "新しく作るので、ストリーマブルエイチティーティーピーを選びます。",
+          "pulse": ["schedule"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "choir-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "場所と使うアプリをたどる",
+      "board": "choir",
+      "beats": [
+        {
+          "say": "自宅のアプリだけで、手元のサーバーを使う話ではありません。",
+          "pulse": ["home"],
+          "tag": {
+            "home": "自宅"
+          }
+        },
+        {
+          "say": "会場の人も、別のアプリから練習日を調べます。",
+          "pulse": ["hall"],
+          "tag": {
+            "hall": "会場"
+          }
+        },
+        {
+          "say": "二つのアプリが使うのは、別に動かした同じサーバーです。",
+          "pulse": ["schedule"],
+          "travel": {
+            "along": ["home-connect"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "離れた場所から共有するので、HTTP でつなぎましょう。",
+          "speech": "離れた場所から共有するので、エイチティーティーピーでつなぎましょう。",
+          "pulse": ["hall-connect"],
+          "travel": {
+            "along": ["hall-connect"],
+            "icon": "send"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "choose-for-use",
+      "kind": "board",
+      "role": "usage",
+      "title": "使う場所から選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "一つのアプリで手元の試作を試すなら、stdio を使います。",
+          "speech": "一つのアプリで手元の試作を試すなら、エスティーディーアイオーを使います。",
+          "show": ["local"],
+          "tag": {
+            "local": "stdio"
+          }
+        },
+        {
+          "say": "複数部署から共有する場合は、HTTP での接続です。",
+          "speech": "複数部署から共有する場合は、エイチティーティーピーでの接続です。",
+          "show": ["shared"],
+          "tag": {
+            "shared": "HTTP"
+          }
+        },
+        {
+          "say": "登録の前に、サーバーを動かす場所を確かめましょう。",
+          "pulse": ["local", "shared"]
+        },
+        {
+          "say": "使うアプリと共有の範囲に合わせて、つなぎ方を選びます。",
+          "mark": [
+            {
+              "on": "local",
+              "kind": "check"
+            },
+            {
+              "on": "shared",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "70e42c7ac5f2282f19605c7a2465763504c96639d26b3856dfff46d2f52c9151"
+  }
+}

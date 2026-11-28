@@ -1,0 +1,790 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "チームで使う設定をプロジェクトの .claude/settings.json に置き、リポジトリに入れると説明できる。",
+    "stuck": "自分のホームフォルダーで動いた設定は、同じプロジェクトのほかの人にも効くと思ってしまう。",
+    "points": [
+      "チームで共有する設定は、プロジェクトの .claude/settings.json に置いてリポジトリに入れます。"
+    ],
+    "leaveOut": [
+      "フックのイベントとコマンドの書き方",
+      "CLAUDE.md、スキル、プラグインの使い分け",
+      "コマンドラインを含む設定の優先順位の全体",
+      "許可の一覧を足し合わせる細かな仕様",
+      "組織の設定を配る手順とOSごとの配置",
+      "Gitでファイルを登録する操作"
+    ]
+  },
+  "art": {
+    "sewing-kit": {
+      "prompt": "A pair of blue dressmaking scissors beside two violet thread spools and a folded white fabric square, representing a sewing workshop. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "personal-notebook": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a small open white notebook close to their chest, simple facial features, representing a private memo. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-binder": {
+      "prompt": "An open light grey ring binder with blank white pages and blue divider tabs, held open by two hands so coworkers can consult it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "project-team": {
+      "prompt": "Two friendly coworkers with simple facial features, one young adult with short dark hair and a plain violet sweater and one person in a plain blue shirt, each holding a blank white document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "settings-file": {
+      "prompt": "A single white document with a folded upper corner beside a large blue mechanical cog, representing a configuration file. The document has no marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "project-folder": {
+      "prompt": "An open light grey file folder with a violet tab and a few blank white documents inside, representing the folder of one project. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repository-box": {
+      "prompt": "A light grey document archive box with an open lid containing neatly arranged white file folders with blue tabs, representing a project's shared repository. The box is light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "managed-policy": {
+      "prompt": "A staff member in a plain blue shirt holding a white policy binder and offering a blank white policy sheet, simple facial features, representing an organization distributing its rules. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-appliance": {
+      "prompt": "A small blue and white electric fan with a stopped propeller beside a violet screwdriver and a blank white repair intake slip, representing household appliance repair intake. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "workshop",
+          "label": "裁縫の教室",
+          "art": "sewing-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "private",
+          "label": "自分のメモ",
+          "art": "personal-notebook",
+          "at": [3, 1]
+        },
+        {
+          "id": "shared",
+          "label": "共有ファイル",
+          "art": "shared-binder",
+          "at": [5, 1]
+        },
+        {
+          "id": "team",
+          "label": "担当者全員",
+          "art": "project-team",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "sewing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "private",
+          "label": "自分のメモ",
+          "art": "personal-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "共有ファイル",
+          "art": "shared-binder",
+          "at": [3, 1]
+        },
+        {
+          "id": "team",
+          "label": "教室の担当者",
+          "art": "project-team",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "consult",
+          "from": "shared",
+          "to": "team",
+          "label": "全員が読む"
+        }
+      ]
+    },
+    "settings": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "file",
+          "label": "設定ファイル",
+          "art": "settings-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "folder",
+          "label": "置く場所",
+          "art": "project-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "people",
+          "label": "効く相手",
+          "art": "project-team",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "place",
+          "from": "file",
+          "to": "folder",
+          "label": "どこに置く"
+        },
+        {
+          "id": "scope",
+          "from": "folder",
+          "to": "people",
+          "label": "範囲が違う"
+        }
+      ]
+    },
+    "personal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "home",
+          "label": "ホーム",
+          "art": "personal-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "local",
+          "label": "ローカル",
+          "art": "settings-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "repo",
+          "label": "共有する場所",
+          "art": "repository-box",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "managed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "組織の設定",
+          "art": "managed-policy",
+          "at": [1, 1]
+        },
+        {
+          "id": "people",
+          "label": "配られた全員",
+          "art": "project-team",
+          "at": [3, 1]
+        },
+        {
+          "id": "personal",
+          "label": "個人の設定",
+          "art": "personal-notebook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "distribute",
+          "from": "policy",
+          "to": "people",
+          "label": "組織が配る"
+        }
+      ]
+    },
+    "path": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "project",
+          "label": "プロジェクト",
+          "art": "project-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "directory",
+          "label": ".claude",
+          "art": "project-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "file",
+          "label": "共有の設定",
+          "art": "settings-file",
+          "at": [5, 1]
+        },
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "repository-box",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "inside",
+          "from": "project",
+          "to": "directory",
+          "label": "この中"
+        },
+        {
+          "id": "contains",
+          "from": "directory",
+          "to": "file",
+          "label": "この中"
+        },
+        {
+          "id": "track",
+          "from": "file",
+          "to": "repo",
+          "label": "入れる"
+        }
+      ]
+    },
+    "distribution": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "file",
+          "label": "共有の設定",
+          "art": "settings-file",
+          "at": [1, 1]
+        },
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "repository-box",
+          "at": [3, 1]
+        },
+        {
+          "id": "team",
+          "label": "チーム全員",
+          "art": "project-team",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "include",
+          "from": "file",
+          "to": "repo",
+          "label": "入れる"
+        },
+        {
+          "id": "share",
+          "from": "repo",
+          "to": "team",
+          "label": "共有する"
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "家電の修理",
+          "art": "repair-appliance",
+          "at": [1, 1]
+        },
+        {
+          "id": "hook",
+          "label": "共通のフック",
+          "art": "settings-file",
+          "at": [3, 1]
+        },
+        {
+          "id": "home",
+          "label": "ホーム",
+          "art": "personal-notebook",
+          "at": [5, 1]
+        },
+        {
+          "id": "project",
+          "label": "プロジェクト",
+          "art": "project-folder",
+          "at": [5, 2]
+        },
+        {
+          "id": "repo",
+          "label": "リポジトリ",
+          "art": "repository-box",
+          "at": [3, 2]
+        },
+        {
+          "id": "team",
+          "label": "開発者全員",
+          "art": "project-team",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "include",
+          "from": "project",
+          "to": "repo",
+          "label": "入れる"
+        },
+        {
+          "id": "share",
+          "from": "repo",
+          "to": "team",
+          "label": "共有する"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "team",
+          "label": "チーム共通",
+          "art": "project-team",
+          "at": [1, 1]
+        },
+        {
+          "id": "private",
+          "label": "自分の試し",
+          "art": "personal-notebook",
+          "at": [3, 1]
+        },
+        {
+          "id": "repo",
+          "label": "共有する設定",
+          "art": "repository-box",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "shared-place-goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "みんなに渡す置き場所",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "裁縫教室で、担当者の手順をそろえたいとします。",
+          "show": ["workshop"]
+        },
+        {
+          "say": "自分の手帳だけに書くと、ほかの人には届きません。",
+          "show": ["private"]
+        },
+        {
+          "say": "全員が読むファイルへ移す、という考え方です。",
+          "show": ["shared"]
+        },
+        {
+          "say": "共有する設定も、プロジェクトに置いてリポジトリに入れます。",
+          "show": ["team"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "sewing-memo",
+      "kind": "board",
+      "role": "example",
+      "title": "手帳から共有ファイルへ",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "教室の受付手順を、担当者が自分の手帳に書きました。",
+          "show": ["private"]
+        },
+        {
+          "say": "手帳を持たない担当者は、同じ手順を読めません。",
+          "show": ["team"],
+          "mark": [
+            {
+              "on": "team",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "共有のファイルに置けば、担当者全員が読めます。",
+          "show": ["shared", "consult"],
+          "travel": {
+            "along": ["consult"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "置く場所を選ぶ基準は、だれに使ってほしいかです。",
+          "pulse": ["team"],
+          "mark": [
+            {
+              "on": "team",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settings-scope",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ファイルの場所と効く範囲",
+      "board": "settings",
+      "beats": [
+        {
+          "say": "フックや権限の決まりを書くのが、設定ファイルです。",
+          "term": {
+            "text": "設定ファイル",
+            "ruby": "せっていファイル",
+            "note": "フックや権限の決まりを書く"
+          }
+        },
+        {
+          "say": "このファイルに、プロジェクトに要る環境変数も書けます。",
+          "show": ["file"]
+        },
+        {
+          "say": "設定を置く場所によって、効く範囲が違う仕組みです。",
+          "show": ["folder", "place"]
+        },
+        {
+          "say": "共有したい相手に合わせて、置き場所を選びましょう。",
+          "show": ["people", "scope"],
+          "travel": {
+            "along": ["place", "scope"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "personal-files",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ホームにある自分の設定",
+      "board": "personal",
+      "beats": [
+        {
+          "say": "ホームの .claude に、自分用の設定を置きます。",
+          "speech": "ホームのドットクロードに、自分用の設定を置きます。",
+          "show": ["home"]
+        },
+        {
+          "say": "ファイル名は settings.json です。",
+          "speech": "ファイル名はセッティングスドットジェイソンです。",
+          "pulse": ["home"]
+        },
+        {
+          "say": "このマシンの全プロジェクトで、自分に効きます。",
+          "tag": {
+            "home": "自分に効く"
+          }
+        }
+      ]
+    },
+    {
+      "id": "local-file",
+      "kind": "board",
+      "role": "syntax",
+      "title": "このプロジェクトの自分用",
+      "board": "personal",
+      "beats": [
+        {
+          "say": "プロジェクトの .claude にも、自分用を置けます。",
+          "speech": "プロジェクトのドットクロードにも、自分用を置けます。",
+          "show": ["local"]
+        },
+        {
+          "say": "その名前は settings.local.json です。",
+          "speech": "その名前はセッティングスドットローカルドットジェイソンです。",
+          "pulse": ["local"]
+        },
+        {
+          "say": "このプロジェクトの自分だけに効きます。",
+          "tag": {
+            "local": "自分だけ"
+          }
+        },
+        {
+          "say": "このローカルの設定は、Gitには入れないでください。",
+          "speech": "このローカルの設定は、ギットには入れないでください。",
+          "show": ["repo"],
+          "mark": [
+            {
+              "on": "repo",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "organization-settings",
+      "kind": "board",
+      "role": "syntax",
+      "title": "組織が配る設定",
+      "board": "managed",
+      "beats": [
+        {
+          "say": "組織が配るものを、管理された設定と呼びます。",
+          "term": {
+            "text": "管理された設定",
+            "ruby": "かんりされたせってい",
+            "note": "組織が配る設定"
+          }
+        },
+        {
+          "say": "セキュリティの方針や、守るべき決まりを置く場所です。",
+          "show": ["policy"]
+        },
+        {
+          "say": "組織が設定を配った全員に効きます。",
+          "show": ["people", "distribute"],
+          "travel": {
+            "along": ["distribute"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "管理された設定は、個人の設定から上書きできません。",
+          "show": ["personal"],
+          "tag": {
+            "personal": "上書き不可"
+          },
+          "pulse": ["policy"]
+        }
+      ]
+    },
+    {
+      "id": "project-path",
+      "kind": "board",
+      "role": "apply",
+      "title": "チームの設定を置く",
+      "board": "path",
+      "beats": [
+        {
+          "say": "共有したいフックを、プロジェクトの設定に書きます。",
+          "show": ["project"]
+        },
+        {
+          "say": "その中の .claude が、設定を置くフォルダーです。",
+          "speech": "その中のドットクロードが、設定を置くフォルダーです。",
+          "show": ["directory", "inside"]
+        },
+        {
+          "say": "共有する設定は settings.json に書きましょう。",
+          "speech": "共有する設定はセッティングスドットジェイソンに書きましょう。",
+          "show": ["file", "contains"],
+          "pause": 1
+        },
+        {
+          "say": "ホームではなく、プロジェクトの中にあるかを確かめます。",
+          "pulse": ["project", "directory", "file"]
+        },
+        {
+          "say": "さらに、このファイルをリポジトリに入れて共有しましょう。",
+          "show": ["repo", "track"],
+          "travel": {
+            "along": ["track"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "share-repository",
+      "kind": "board",
+      "role": "apply",
+      "title": "リポジトリで共有する",
+      "board": "distribution",
+      "beats": [
+        {
+          "say": "共有するファイルの保管先が、リポジトリです。",
+          "term": {
+            "text": "リポジトリ",
+            "note": "プロジェクトのファイルの保管先"
+          }
+        },
+        {
+          "say": "プロジェクトの設定ファイルも、ここに入れます。",
+          "show": ["file", "repo", "include"],
+          "travel": {
+            "along": ["include"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "共有する相手は、そのプロジェクトで作業する全員です。",
+          "show": ["team", "share"]
+        },
+        {
+          "say": "手帳を共有ファイルに移した例と、同じ流れになります。",
+          "travel": {
+            "along": ["include", "share"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "repair-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "修理受付の開発で共有する",
+      "board": "repair",
+      "think": 8,
+      "beats": [
+        {
+          "say": "家電の修理受付アプリを、チームで開発しています。",
+          "show": ["repair"]
+        },
+        {
+          "say": "用意したフックを、開発者全員で使いたい場面です。",
+          "show": ["hook"]
+        },
+        {
+          "say": "候補は、自分のホームとプロジェクトの設定でした。",
+          "show": ["home", "project"]
+        },
+        {
+          "say": "どこに書いて、どうやって共有すればよいでしょうか。",
+          "mark": [
+            {
+              "on": "home",
+              "kind": "question"
+            },
+            {
+              "on": "project",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["home", "project"]
+        }
+      ]
+    },
+    {
+      "id": "repair-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "プロジェクトから共有する",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "置くのは、プロジェクトの .claude の中です。",
+          "speech": "置くのは、プロジェクトのドットクロードの中です。",
+          "mark": [
+            {
+              "on": "project",
+              "kind": "check"
+            },
+            {
+              "on": "home",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["project"]
+        },
+        {
+          "say": "settings.json に、共通のフックを書きます。",
+          "speech": "セッティングスドットジェイソンに、共通のフックを書きます。",
+          "pulse": ["hook", "project"]
+        },
+        {
+          "say": "そのファイルを、リポジトリに入れて共有しましょう。",
+          "show": ["repo", "team", "include", "share"],
+          "travel": {
+            "along": ["include", "share"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-project",
+      "kind": "board",
+      "role": "explain",
+      "title": "自分用では届かない理由",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "ホームの設定は、自分の全プロジェクトに効くものです。",
+          "pulse": ["home"],
+          "tag": {
+            "home": "自分に効く"
+          }
+        },
+        {
+          "say": "これでは、ほかの開発者には届きません。",
+          "pulse": ["team"],
+          "tag": {
+            "team": "全員に必要"
+          }
+        },
+        {
+          "say": "プロジェクトの設定なら、開発者全員に届きます。",
+          "pulse": ["project", "team"]
+        },
+        {
+          "say": "置き場所とリポジトリに入れたかを、合わせて確かめましょう。",
+          "pulse": ["project", "repo"],
+          "travel": {
+            "along": ["include", "share"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-before-writing",
+      "kind": "board",
+      "role": "usage",
+      "title": "設定を書く前に相手を決める",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "チーム共通の権限やフックは、プロジェクトの設定に置きます。",
+          "show": ["team"]
+        },
+        {
+          "say": "このプロジェクトで自分だけが試すなら、ローカルの設定です。",
+          "show": ["private"]
+        },
+        {
+          "say": "共有する前に、だれに効かせたいのかを確かめましょう。",
+          "pulse": ["team", "private"]
+        },
+        {
+          "say": "全員で使う設定ファイルは、リポジトリに入れて共有します。",
+          "show": ["repo"],
+          "mark": [
+            {
+              "on": "repo",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "bddbd765e05fa63a322295fa4b7884ce961756a544a40f04665e8fc5a7882f9c"
+  }
+}

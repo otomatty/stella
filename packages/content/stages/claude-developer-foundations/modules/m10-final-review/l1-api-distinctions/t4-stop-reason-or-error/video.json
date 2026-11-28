@@ -1,0 +1,697 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "上限で切れた応答、拒否、HTTPエラーを見分け、それぞれの処理を分けて説明できる。",
+    "stuck": "必要な答えが得られない場合をすべてエラーと考え、同じ設定で送り直してしまう。",
+    "points": ["stop_reason は成功した応答が止まった理由で、HTTP のエラーとは分けて扱います。"],
+    "leaveOut": [
+      "停止理由の全種類と個別の詳しい処理",
+      "HTTPステータスごとの詳しい原因",
+      "送り直す間隔と回数",
+      "ストリーミングとバッチの使い分け",
+      "キャッシュと構造化出力",
+      "例外処理や課題の答えのコード"
+    ]
+  },
+  "art": {
+    "bicycle-care": {
+      "prompt": "A blue bicycle wheel beside a violet cleaning brush and a folded light grey cloth, representing a request for bicycle care instructions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "limited-note": {
+      "prompt": "A small white paper slip held by a hand with a blue sleeve, with a violet pencil tip reaching the very bottom edge of the paper. The paper is blank, suggesting that space for an explanation has run out. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "disconnected-phone": {
+      "prompt": "A blue telephone handset beside its visibly unplugged violet cable, with the plug and socket separated, representing a call that cannot connect. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-envelope": {
+      "prompt": "An open blue envelope containing a large white reply sheet, with a small violet paper clip attached to the sheet. Objects only, representing a received response containing an explanation. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-slip": {
+      "prompt": "A white notice slip clipped to a small blue clipboard beside a violet repair wrench, representing a notice that processing failed. All paper is white or light grey. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "refusal-reply": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, raising one open palm while offering a white reply sheet with its other hand, representing a refusal delivered as a reply. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-duty": {
+      "prompt": "A blue school lunch tray holding a white bowl of rice and a white bowl of vegetable soup, with a violet serving ladle beside it, representing school lunch serving duties. Food has natural appetizing colours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "more-paper": {
+      "prompt": "A fresh large white sheet of paper beside a smaller white slip and a violet pencil, representing making more room or continuing an explanation on another sheet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "care",
+          "label": "手入れの説明",
+          "art": "bicycle-care",
+          "at": [1, 1]
+        },
+        {
+          "id": "partial",
+          "label": "途中まで届く",
+          "art": "limited-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "failure",
+          "label": "処理の失敗",
+          "art": "error-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "analogy": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "care",
+          "label": "手入れを聞く",
+          "art": "bicycle-care",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "紙が足りない",
+          "art": "limited-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "phone",
+          "label": "電話が不通",
+          "art": "disconnected-phone",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "success": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "成功した応答",
+          "art": "reply-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reply-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "応答終了",
+          "art": "reply-envelope",
+          "at": [5, 1]
+        },
+        {
+          "id": "limit",
+          "label": "上限で停止",
+          "art": "limited-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "refusal",
+          "label": "refusal",
+          "art": "refusal-reply",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "reason",
+          "label": "値を見る"
+        }
+      ]
+    },
+    "errors": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "failure",
+          "label": "処理の失敗",
+          "art": "error-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "status",
+          "label": "4xx・5xx",
+          "art": "error-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "retry",
+          "label": "送り直し",
+          "art": "reply-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reported",
+          "from": "failure",
+          "to": "status",
+          "label": "エラー内容"
+        },
+        {
+          "id": "temporary",
+          "from": "status",
+          "to": "retry",
+          "label": "一時的なら"
+        }
+      ]
+    },
+    "cutoff": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "care",
+          "label": "手入れの説明",
+          "art": "bicycle-care",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "上限で停止",
+          "art": "limited-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "continue",
+          "label": "上限か続き",
+          "art": "more-paper",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "arrive",
+          "from": "care",
+          "to": "limit",
+          "label": "途中まで"
+        },
+        {
+          "id": "adjust",
+          "from": "limit",
+          "to": "continue",
+          "label": "対応を変える"
+        }
+      ]
+    },
+    "refusal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "refusal",
+          "label": "refusal",
+          "art": "refusal-reply",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "HTTP200",
+          "art": "reply-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "branch",
+          "label": "停止理由で分岐",
+          "art": "refusal-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "received",
+          "from": "refusal",
+          "to": "reply",
+          "label": "応答が届く"
+        },
+        {
+          "id": "handle",
+          "from": "reply",
+          "to": "branch",
+          "label": "値を見る"
+        }
+      ]
+    },
+    "lunch": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "duty",
+          "label": "給食当番の案内",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "partial",
+          "label": "上限で停止",
+          "art": "limited-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "failure",
+          "label": "HTTP529",
+          "art": "error-slip",
+          "at": [5, 1]
+        },
+        {
+          "id": "retry",
+          "label": "送り直し",
+          "art": "reply-envelope",
+          "at": [5, 2]
+        },
+        {
+          "id": "adjust",
+          "label": "上限か続き",
+          "art": "more-paper",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "retry-error",
+          "from": "failure",
+          "to": "retry"
+        },
+        {
+          "id": "adjust-reply",
+          "from": "partial",
+          "to": "adjust"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "care",
+          "label": "案内を返す処理",
+          "art": "bicycle-care",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "停止理由の分岐",
+          "art": "reply-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "エラーの処理",
+          "art": "error-slip",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "届いた結果を見分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "自転車の手入れの説明を、アプリで頼む場面です。",
+          "show": ["care"]
+        },
+        {
+          "say": "説明が途中まで届いたら、止まった理由を確かめます。",
+          "show": ["partial"]
+        },
+        {
+          "say": "処理そのものが失敗した場合も、見分けましょう。",
+          "show": ["failure"]
+        },
+        {
+          "say": "成功した応答の停止理由と、HTTPエラーは分けて扱います。",
+          "speech": "成功した応答の停止理由と、エイチティーティーピーエラーは分けて扱います。",
+          "pulse": ["partial", "failure"]
+        }
+      ]
+    },
+    {
+      "id": "paper-or-phone",
+      "kind": "board",
+      "role": "example",
+      "title": "説明の紙と電話の不通",
+      "board": "analogy",
+      "beats": [
+        {
+          "say": "自転車に詳しい人へ、手入れの仕方を尋ねました。",
+          "show": ["care"]
+        },
+        {
+          "say": "小さな紙では、説明が途中で書き切れなくなります。",
+          "show": ["note"]
+        },
+        {
+          "say": "電話がつながらず、説明を頼めない場合もあるでしょう。",
+          "show": ["phone"]
+        },
+        {
+          "say": "書けた説明がある場合と、依頼が通らない場合の違いです。",
+          "pulse": ["note", "phone"]
+        }
+      ]
+    },
+    {
+      "id": "read-stop-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "成功した応答の停止理由",
+      "board": "success",
+      "beats": [
+        {
+          "say": "成功した応答の停止理由が、ストップリーズンです。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "stop_reason"
+          }
+        },
+        {
+          "say": "成功した応答には、Claudeの本文が入っています。",
+          "speech": "成功した応答には、クロードの本文が入っています。",
+          "show": ["reply", "reason", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "図に並べた値は、停止理由の例です。",
+          "show": ["end", "limit", "refusal"]
+        },
+        {
+          "say": "どの値かで、応答を受け取ったあとの処理を分けます。",
+          "pulse": ["end", "limit", "refusal"]
+        },
+        {
+          "say": "本文が届いても、必要な内容が全部あるとは限りません。",
+          "pulse": ["limit"],
+          "tag": {
+            "limit": "途中で切れる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-http-error",
+      "kind": "board",
+      "role": "syntax",
+      "title": "リクエストの処理の失敗",
+      "board": "errors",
+      "beats": [
+        {
+          "say": "HTTPエラーは、リクエストの処理の失敗を表します。",
+          "speech": "エイチティーティーピーエラーは、リクエストの処理の失敗を表します。",
+          "term": {
+            "text": "HTTPエラー",
+            "note": "リクエストの処理の失敗"
+          }
+        },
+        {
+          "say": "返るのは、四百番台か五百番台の番号とエラーの内容です。",
+          "show": ["failure", "status", "reported"],
+          "travel": {
+            "along": ["reported"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ここでは、成功した応答の停止理由を読めません。",
+          "pulse": ["failure"],
+          "tag": {
+            "failure": "生成本文なし"
+          }
+        },
+        {
+          "say": "429や529など、一時的なエラーだけを送り直します。",
+          "speech": "よんにーきゅうやごーにーきゅうなど、一時的なエラーだけを送り直します。",
+          "show": ["retry", "temporary"],
+          "travel": {
+            "along": ["temporary"],
+            "icon": "repeat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "handle-cutoff",
+      "kind": "board",
+      "role": "apply",
+      "title": "途中で切れた説明への対応",
+      "board": "cutoff",
+      "beats": [
+        {
+          "say": "自転車の手入れを説明するアプリで、結果を受け取ります。",
+          "show": ["care"]
+        },
+        {
+          "say": "停止理由は、上限で切れたことを示すマックストークンズです。",
+          "show": ["limit", "arrive"],
+          "travel": {
+            "along": ["arrive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "同じ設定で送り直せば、また同じ上限で切れます。",
+          "tag": {
+            "limit": "同じ上限"
+          },
+          "mark": [
+            {
+              "on": "limit",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "この場合は、出力の上限を上げる方法があるでしょう。",
+          "show": ["continue", "adjust"],
+          "tag": {
+            "continue": "上限を上げる"
+          }
+        },
+        {
+          "say": "続きを書かせる方法でも対応できます。",
+          "tag": {
+            "continue": "続きを頼む"
+          },
+          "pulse": ["continue"]
+        }
+      ]
+    },
+    {
+      "id": "handle-refusal",
+      "kind": "board",
+      "role": "apply",
+      "title": "拒否も応答として届く",
+      "board": "refusal",
+      "beats": [
+        {
+          "say": "拒否を表す停止理由は、refusalです。",
+          "speech": "拒否を表す停止理由は、リフューザルです。",
+          "term": {
+            "text": "refusal",
+            "note": "拒否を表す停止理由"
+          }
+        },
+        {
+          "say": "拒否も、HTTP200の応答として届きます。",
+          "speech": "拒否も、エイチティーティーピーにーまるまるの応答として届きます。",
+          "show": ["refusal", "reply", "received"],
+          "travel": {
+            "along": ["received"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "例外の処理で拾おうとしても、拒否は例外になりません。",
+          "tag": {
+            "reply": "例外ではない"
+          },
+          "pulse": ["reply"]
+        },
+        {
+          "say": "応答が届いた側で、停止理由の値を見て分けます。",
+          "show": ["branch", "handle"],
+          "travel": {
+            "along": ["handle"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lunch-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "給食当番の案内が届かない",
+      "board": "lunch",
+      "think": 8,
+      "beats": [
+        {
+          "say": "給食当番の仕事を説明する文章を、アプリから頼みました。",
+          "show": ["duty"]
+        },
+        {
+          "say": "一つ目は、マックストークンズで切れた応答です。",
+          "show": ["partial"],
+          "tag": {
+            "partial": "案内は途中"
+          }
+        },
+        {
+          "say": "二つ目では、HTTP529のエラーが返りました。",
+          "speech": "二つ目では、エイチティーティーピーごーにーきゅうのエラーが返りました。",
+          "show": ["failure"],
+          "tag": {
+            "failure": "エラー内容"
+          }
+        },
+        {
+          "say": "一時的なエラーとして送り直すのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "failure",
+              "kind": "question"
+            },
+            {
+              "on": "partial",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "もう一方への対応も、合わせて考えてください。",
+          "pulse": ["partial", "failure"]
+        }
+      ]
+    },
+    {
+      "id": "lunch-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "送り直す側を見分ける",
+      "board": "lunch",
+      "beats": [
+        {
+          "say": "一時的なエラーとして送り直すのは、二つ目の529です。",
+          "speech": "一時的なエラーとして送り直すのは、二つ目のごーにーきゅうです。",
+          "show": ["retry", "retry-error"],
+          "unmark": ["failure"],
+          "travel": {
+            "along": ["retry-error"],
+            "icon": "repeat"
+          }
+        },
+        {
+          "say": "途中で切れた一つ目は、上限を上げるか続きを書かせます。",
+          "show": ["adjust", "adjust-reply"],
+          "unmark": ["partial"],
+          "travel": {
+            "along": ["adjust-reply"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "どちらも同じ設定で送り直す、という答えにはなりません。",
+          "pulse": ["retry", "adjust"]
+        }
+      ]
+    },
+    {
+      "id": "lunch-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "届いた中身から理由をたどる",
+      "board": "lunch",
+      "beats": [
+        {
+          "say": "一つ目には、途中まで書かれた給食当番の案内があります。",
+          "pulse": ["partial"]
+        },
+        {
+          "say": "成功した応答の停止理由が、上限で切れた印です。",
+          "tag": {
+            "partial": "上限に達した"
+          }
+        },
+        {
+          "say": "同じ上限で送り直すだけでは、途中で切れる理由が残ります。",
+          "pulse": ["adjust"],
+          "tag": {
+            "adjust": "上限か続き"
+          }
+        },
+        {
+          "say": "一方、529で届くのは、案内の本文ではありません。",
+          "speech": "一方、ごーにーきゅうで届くのは、案内の本文ではありません。",
+          "pulse": ["failure"]
+        },
+        {
+          "say": "処理が失敗したので、エラーの側で送り直しを扱います。",
+          "pulse": ["retry"],
+          "travel": {
+            "along": ["retry-error"],
+            "icon": "repeat"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-separate-handlers",
+      "kind": "board",
+      "role": "usage",
+      "title": "案内を返す処理で使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "案内を返すアプリで、答えが足りないときの考え方です。",
+          "show": ["care"]
+        },
+        {
+          "say": "成功した応答なら、停止理由の値ごとに対応を分けます。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "上限や拒否"
+          }
+        },
+        {
+          "say": "エラーなら、一時的なものかを確かめましょう。",
+          "show": ["error"],
+          "tag": {
+            "error": "一時的か確認"
+          }
+        },
+        {
+          "say": "停止理由の分岐とエラーの扱いを、別々に用意します。",
+          "pulse": ["reply", "error"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "7e8513cf0611e5c227db706bafe2ada593e7b298c22e0dac6774cc086d5b0e76"
+  }
+}

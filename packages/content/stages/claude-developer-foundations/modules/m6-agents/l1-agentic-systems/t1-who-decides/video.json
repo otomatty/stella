@@ -1,0 +1,720 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "手順を決める側を根拠に、ワークフローとエージェントを見分けられる。",
+    "stuck": "Claude が文章を作ったりツールを使ったりすれば、すべてエージェントだと思ってしまう。",
+    "points": [
+      "手順をコードで決める仕組みがワークフローで、手順を Claude に任せる仕組みがエージェントです。"
+    ],
+    "leaveOut": [
+      "一回の呼び出しから始める設計の選び方",
+      "ワークフローの個別のパターン",
+      "ループを実装するコードや終了条件",
+      "フレームワークや実行環境の選択",
+      "費用と安全対策の詳細"
+    ]
+  },
+  "art": {
+    "shipping-parcel": {
+      "prompt": "An open light grey cardboard shipping box with white packing paper and a blue tape dispenser beside it. One flap has a small visible tear. The box is light grey, never brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "packing-instructions": {
+      "prompt": "A white clipboard holding a white sheet with a small pictorial drawing of an open light grey parcel above a drawing of a closed light grey parcel. Blue clips hold the sheet. The drawings suggest checking and packing a parcel without writing or symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-worker": {
+      "prompt": "A service worker in a plain blue shirt, with simple facial features, inspecting a light grey shipping parcel with a torn flap while holding its edge. The parcel is light grey, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one hand up as if choosing its next action. No other characters. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "record-search": {
+      "prompt": "A large blue magnifying glass over an open light grey file folder holding several blank white record sheets with blue tabs. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "result-slip": {
+      "prompt": "A single blank white report sheet held by a large blue paper clip, with one small violet tab at its top edge. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-umbrella": {
+      "prompt": "A closed violet umbrella with a curved blue handle and a plain light grey luggage tag tied around its strap, representing an umbrella reported lost. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "program-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen, beside a small stack of blank white instruction cards held by a blue clip. A conceptual object illustration, with no application interface or readable code. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "発送する荷物",
+          "art": "shipping-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "code",
+          "label": "決めた手順",
+          "art": "program-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "次の手順を選ぶ",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "packing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instructions",
+          "label": "手順の紙",
+          "art": "packing-instructions",
+          "at": [1, 1]
+        },
+        {
+          "id": "worker",
+          "label": "店員",
+          "art": "shop-worker",
+          "at": [3, 1]
+        },
+        {
+          "id": "parcel",
+          "label": "用意する荷物",
+          "art": "shipping-parcel",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "instructions",
+          "to": "worker",
+          "label": "読む"
+        },
+        {
+          "id": "prepare",
+          "from": "worker",
+          "to": "parcel",
+          "label": "準備"
+        }
+      ]
+    },
+    "workflow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "program-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツール",
+          "art": "record-search",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call-claude",
+          "from": "code",
+          "to": "claude",
+          "label": "決めた順"
+        },
+        {
+          "id": "call-tool",
+          "from": "claude",
+          "to": "tool",
+          "label": "決めた順"
+        }
+      ]
+    },
+    "agent-loop": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "choose",
+          "label": "次を決める",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツールを使う",
+          "art": "record-search",
+          "at": [5, 1]
+        },
+        {
+          "id": "result",
+          "label": "返った結果",
+          "art": "result-slip",
+          "at": [5, 2]
+        },
+        {
+          "id": "read",
+          "label": "結果を見る",
+          "art": "claude-robot",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "choose",
+          "to": "tool",
+          "label": "選ぶ"
+        },
+        {
+          "id": "receive",
+          "from": "tool",
+          "to": "result",
+          "label": "結果"
+        },
+        {
+          "id": "inspect",
+          "from": "result",
+          "to": "read",
+          "label": "確かめる"
+        },
+        {
+          "id": "repeat",
+          "from": "read",
+          "to": "choose",
+          "label": "次の判断"
+        }
+      ]
+    },
+    "fixed-shipping": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "発送記録を検索",
+          "art": "record-search",
+          "at": [1, 1]
+        },
+        {
+          "id": "write",
+          "label": "返信文を作る",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "返信案",
+          "art": "result-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "search-write",
+          "from": "search",
+          "to": "write",
+          "label": "決めた順"
+        },
+        {
+          "id": "write-reply",
+          "from": "write",
+          "to": "reply",
+          "label": "文章"
+        }
+      ]
+    },
+    "lost-inquiry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "umbrella",
+          "label": "忘れた傘",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "program-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "search",
+          "label": "記録を検索",
+          "art": "record-search",
+          "at": [5, 1]
+        },
+        {
+          "id": "write",
+          "label": "返信文を作る",
+          "art": "claude-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "reply",
+          "label": "返信案",
+          "art": "result-slip",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "umbrella",
+          "to": "code",
+          "label": "問い合わせ"
+        },
+        {
+          "id": "search-step",
+          "from": "code",
+          "to": "search",
+          "label": "最初"
+        },
+        {
+          "id": "write-step",
+          "from": "search",
+          "to": "write",
+          "label": "その後"
+        },
+        {
+          "id": "reply-step",
+          "from": "write",
+          "to": "reply",
+          "label": "文章"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "workflow",
+          "label": "ワークフロー",
+          "art": "program-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "手順を決める側を見る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "店から荷物を発送する場面を考えます。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "一方は、コードで決めた手順をたどる仕組みです。",
+          "show": ["code"]
+        },
+        {
+          "say": "もう一方では、Claude が次の手順を決めます。",
+          "speech": "もう一方では、クロードが次の手順を決めます。",
+          "show": ["claude"]
+        },
+        {
+          "say": "違いを見分ける手がかりは、手順を決める側です。",
+          "pulse": ["code", "claude"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "packing",
+      "kind": "board",
+      "role": "example",
+      "title": "店員に荷物の準備を頼む",
+      "board": "packing",
+      "beats": [
+        {
+          "say": "荷物を用意する店員に、手順を書いた紙を渡しました。",
+          "show": ["instructions", "worker", "read"]
+        },
+        {
+          "say": "紙には、中身を確かめてから包むと書いてあります。",
+          "pulse": ["instructions"],
+          "tag": {
+            "instructions": "確認して包む"
+          }
+        },
+        {
+          "say": "店員は、書かれた順番に従って進める役です。",
+          "show": ["parcel", "prepare"],
+          "travel": {
+            "along": ["read", "prepare"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "箱の傷みを見て、作業の順番を店員が選ぶ場合もあります。",
+          "pulse": ["worker"],
+          "tag": {
+            "worker": "順番を選ぶ"
+          }
+        },
+        {
+          "say": "同じ荷物でも、順番を決める役が違う点に注目しましょう。",
+          "pulse": ["instructions", "worker"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "workflow",
+      "kind": "board",
+      "role": "syntax",
+      "title": "コードが順番を決める",
+      "board": "workflow",
+      "beats": [
+        {
+          "say": "この進め方を、Claude を使う仕組みに当てはめます。",
+          "speech": "この進め方を、クロードを使う仕組みに当てはめます。",
+          "show": ["code"]
+        },
+        {
+          "say": "手順をコードで決める仕組みが、ワークフローです。",
+          "term": {
+            "text": "ワークフロー",
+            "note": "コードで決めた手順をたどる"
+          }
+        },
+        {
+          "say": "図のコードが、呼び出す順番を前もって決めています。",
+          "pulse": ["code"],
+          "tag": {
+            "code": "順番を決める"
+          }
+        },
+        {
+          "say": "Claude も、その順番で呼ばれる部品です。",
+          "speech": "クロードも、その順番で呼ばれる部品です。",
+          "show": ["claude", "call-claude"],
+          "pulse": ["claude"]
+        },
+        {
+          "say": "ツールも、コードで決めた手順に沿って呼び出します。",
+          "show": ["tool", "call-tool"],
+          "travel": {
+            "along": ["call-claude", "call-tool"],
+            "icon": "flag"
+          },
+          "pulse": ["tool"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "kind": "board",
+      "role": "syntax",
+      "title": "結果を見て次を決める",
+      "board": "agent-loop",
+      "beats": [
+        {
+          "say": "手順を Claude に任せる仕組みを、エージェントと呼びます。",
+          "speech": "手順をクロードに任せる仕組みを、エージェントと呼びます。",
+          "term": {
+            "text": "エージェント",
+            "note": "Claudeが手順を選ぶ仕組み"
+          }
+        },
+        {
+          "say": "何をどの順に行うか、決めるのは Claude 自身です。",
+          "speech": "何をどの順に行うか、決めるのはクロード自身です。",
+          "show": ["choose"],
+          "tag": {
+            "choose": "Claude"
+          }
+        },
+        {
+          "say": "使うツールも、Claude が選びます。",
+          "speech": "使うツールも、クロードが選びます。",
+          "show": ["tool", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "結果を見て次へ進む繰り返しが、ここでいうループです。",
+          "term": {
+            "text": "ループ",
+            "note": "結果を見て次の手順へ進む"
+          },
+          "show": ["result", "read", "receive", "inspect"]
+        },
+        {
+          "say": "結果を受け取り、次に使うツールをまた選びます。",
+          "show": ["repeat"],
+          "travel": {
+            "along": ["inspect", "repeat", "use"],
+            "icon": "file"
+          },
+          "pulse": ["read", "choose"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "fixed-shipping",
+      "kind": "board",
+      "role": "apply",
+      "title": "発送記録から返信を作る",
+      "board": "fixed-shipping",
+      "beats": [
+        {
+          "say": "発送状況への返信を、決まった手順で作ってみましょう。",
+          "show": ["search"]
+        },
+        {
+          "say": "最初にツールで発送記録を調べる、とコードに書きました。",
+          "tag": {
+            "search": "コードの指示"
+          }
+        },
+        {
+          "say": "次は、Claude がその記録から返信文を作る番です。",
+          "speech": "次は、クロードがその記録から返信文を作る番です。",
+          "show": ["write", "search-write"],
+          "travel": {
+            "along": ["search-write"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この順番をコードで決めたので、ワークフローと分かります。",
+          "show": ["reply", "write-reply"],
+          "pulse": ["search-write"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "investigate-shipping",
+      "kind": "board",
+      "role": "apply",
+      "title": "発送できない理由を調べる",
+      "board": "agent-loop",
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、発送できない理由を調べるよう Claude に頼みます。",
+          "speech": "今度は、発送できない理由を調べるようクロードに頼みます。",
+          "show": ["choose"],
+          "tag": {
+            "choose": "理由を調べる"
+          }
+        },
+        {
+          "say": "この例で最初に選んだのは、在庫を調べるツールです。",
+          "show": ["tool", "use"],
+          "tag": {
+            "tool": "在庫を調べる"
+          }
+        },
+        {
+          "say": "ツールから、在庫はあるという結果が返ってきました。",
+          "show": ["result", "receive"],
+          "tag": {
+            "result": "在庫あり"
+          },
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "Claude は結果を見て、次は発送記録を調べると決めます。",
+          "speech": "クロードは結果を見て、次は発送記録を調べると決めます。",
+          "show": ["read", "inspect", "repeat"],
+          "hide": ["receive"],
+          "tag": {
+            "tool": "発送記録",
+            "result": "前回在庫あり"
+          },
+          "travel": {
+            "along": ["inspect", "repeat", "use"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "結果に応じて次の手順を選ぶ、この作りがエージェントです。",
+          "pulse": ["read", "choose"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "忘れ物の問い合わせ",
+      "board": "lost-inquiry",
+      "think": 8,
+      "beats": [
+        {
+          "say": "忘れた傘を問い合わせる仕組みを考えます。",
+          "show": ["umbrella", "code", "request"]
+        },
+        {
+          "say": "最初に、コードが届け出の記録を検索する決まりです。",
+          "show": ["search", "search-step"]
+        },
+        {
+          "say": "その後で、Claude が返信文を作ります。",
+          "speech": "その後で、クロードが返信文を作ります。",
+          "show": ["write", "reply", "write-step", "reply-step"]
+        },
+        {
+          "say": "検索してから返信する順番も、コードで決めました。",
+          "pulse": ["code"],
+          "tag": {
+            "code": "順番を決める"
+          }
+        },
+        {
+          "say": "この仕組みは、ワークフローとエージェントのどちらでしょうか。",
+          "mark": [
+            {
+              "on": "code",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "決まった順ならワークフロー",
+      "board": "lost-inquiry",
+      "beats": [
+        {
+          "say": "答えは、ワークフローです。",
+          "mark": [
+            {
+              "on": "code",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "code": "ワークフロー"
+          },
+          "pulse": ["code"],
+          "pause": 1
+        },
+        {
+          "say": "記録を検索してから返信する順番を、コードで決めています。",
+          "travel": {
+            "along": ["search-step", "write-step"],
+            "icon": "flag"
+          },
+          "pulse": ["search", "write"]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "返信の担当と手順の決定役",
+      "board": "lost-inquiry",
+      "beats": [
+        {
+          "say": "記録を探すのは、ツールの役目です。",
+          "pulse": ["search"]
+        },
+        {
+          "say": "返信文は、Claude が作ります。",
+          "speech": "返信文は、クロードが作ります。",
+          "pulse": ["write"]
+        },
+        {
+          "say": "それでも、次の手順を Claude が決めているわけではありません。",
+          "speech": "それでも、次の手順をクロードが決めているわけではありません。",
+          "tag": {
+            "write": "返信を担当"
+          }
+        },
+        {
+          "say": "検索の後に返信を作る順番は、コードに書かれています。",
+          "pulse": ["code"],
+          "travel": {
+            "along": ["search-step", "write-step"],
+            "icon": "flag"
+          }
+        },
+        {
+          "say": "この例では、手順を決めるコードが見分ける手がかりです。",
+          "tag": {
+            "code": "手順の決定役"
+          },
+          "pulse": ["code", "search-step", "write-step"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "仕事の手順に合わせる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "毎回の手順が決まった仕事には、ワークフローが向きます。",
+          "show": ["workflow"]
+        },
+        {
+          "say": "動きを予想しやすく、手順がそろう作りです。",
+          "tag": {
+            "workflow": "決まった手順"
+          }
+        },
+        {
+          "say": "調べながら必要な手順を決める仕事には、エージェントを使います。",
+          "show": ["agent"],
+          "tag": {
+            "agent": "結果から判断"
+          }
+        },
+        {
+          "say": "仕事を整理するときは、手順を誰が決めるか確かめましょう。",
+          "pulse": ["workflow", "agent"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "208d2e47e6a99594ce8928c4846485961686cc5ba0a05837c7b0f60fc76ac718"
+  }
+}

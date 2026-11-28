@@ -1,0 +1,648 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "長い資料を渡す依頼で、資料・例と指示・質問を適切な順に並べられる。",
+    "stuck": "先に質問を書いてから長い資料を貼り、質問の位置が答えに影響することに気づかない。",
+    "points": ["長い資料はプロンプトの先頭に置き、質問は最後に書きます。"],
+    "leaveOut": [
+      "具体的な指示の作り方と例の選び方",
+      "XMLタグ全般の構文",
+      "引用させてから答えさせる方法",
+      "回答の質の改善率と評価方法",
+      "プロンプトキャッシュの仕組み",
+      "検索で資料を絞る方法",
+      "APIでの送信と課題の答えのコード"
+    ]
+  },
+  "art": {
+    "school-handbook": {
+      "prompt": "A thick school handbook made of white and light grey paper with blue binding, many visible page edges and a small violet bookmark. The cover has a simple school building pictogram. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a thick white school handbook open in both hands, with a thoughtful expression and simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "deadline-question": {
+      "prompt": "A white paper question note beside a violet pencil and a small blue calendar with completely blank cells. The note represents a question about a school form submission deadline. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instruction-note": {
+      "prompt": "Two small white paper slips clipped together with a blue paper clip, one showing a broad violet band and the other two short blue bands, representing a sample answer and a writing instruction without readable marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "document-folder": {
+      "prompt": "An open light grey paper folder holding a single thick white school handbook with blue binding, making the boundaries of this one document easy to see. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-cover": {
+      "prompt": "The white cover of a school handbook with a small blue school building pictogram and a violet binder clip, representing the identity of the source document. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-timetable": {
+      "prompt": "A thick stack of white bus timetable sheets with blue grid lines and completely empty cells, beside a small blue city bus. The stack represents timetables for many routes. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bus-question": {
+      "prompt": "A white paper note held by a violet clip beside a small blue city bus and a simple blue analog clock with hands but no numerals, representing a question about the first departure. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "handbook",
+          "label": "学校の手引き",
+          "art": "school-handbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "learner",
+          "label": "提出する人",
+          "art": "learner",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "提出期限は",
+          "art": "deadline-question",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "question-first": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "question",
+          "label": "提出期限は",
+          "art": "deadline-question",
+          "at": [1, 1]
+        },
+        {
+          "id": "handbook",
+          "label": "長い手引き",
+          "art": "school-handbook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "then",
+          "from": "question",
+          "to": "handbook",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "documents",
+          "label": "長い資料",
+          "art": "school-handbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "instructions",
+          "label": "例と指示",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "質問",
+          "art": "deadline-question",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-instructions",
+          "from": "documents",
+          "to": "instructions",
+          "label": "次"
+        },
+        {
+          "id": "to-question",
+          "from": "instructions",
+          "to": "question",
+          "label": "最後"
+        }
+      ]
+    },
+    "document-parts": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "document",
+          "label": "資料のまとまり",
+          "art": "document-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "source",
+          "art": "source-cover",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "本文",
+          "art": "school-handbook",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "school-order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "handbook",
+          "label": "学校の手引き",
+          "art": "school-handbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "instructions",
+          "label": "例と指示",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "提出期限は",
+          "art": "deadline-question",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-instructions",
+          "from": "handbook",
+          "to": "instructions",
+          "label": "次"
+        },
+        {
+          "id": "to-question",
+          "from": "instructions",
+          "to": "question",
+          "label": "最後"
+        }
+      ]
+    },
+    "bus-before": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "question",
+          "label": "市役所行き始発",
+          "art": "bus-question",
+          "at": [1, 1]
+        },
+        {
+          "id": "timetable",
+          "label": "全路線の時刻表",
+          "art": "bus-timetable",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "then",
+          "from": "question",
+          "to": "timetable",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "bus-after": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "timetable",
+          "label": "全路線の時刻表",
+          "art": "bus-timetable",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "市役所行き始発",
+          "art": "bus-question",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "then",
+          "from": "timetable",
+          "to": "question",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "handbook",
+          "label": "学校の手引き",
+          "art": "school-handbook",
+          "at": [1, 1]
+        },
+        {
+          "id": "timetable",
+          "label": "全路線の時刻表",
+          "art": "bus-timetable",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "手引きから期限を尋ねる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "学校の長い手引きから、提出期限を調べたいとします。",
+          "show": ["handbook"]
+        },
+        {
+          "say": "知りたいのは、申込書をいつまでに出せるかです。",
+          "show": ["learner"]
+        },
+        {
+          "say": "資料と質問を、どの順に置くか確かめましょう。",
+          "show": ["question"]
+        },
+        {
+          "say": "長い資料は先頭に置き、質問は最後に書きます。",
+          "pulse": ["handbook", "question"]
+        }
+      ]
+    },
+    {
+      "id": "question-first",
+      "kind": "board",
+      "role": "example",
+      "title": "質問のあとに長い手引き",
+      "board": "question-first",
+      "beats": [
+        {
+          "say": "学校の手引きを使って、申込書の期限を尋ねる場面です。",
+          "show": ["question"]
+        },
+        {
+          "say": "利用者は、まず提出期限を尋ねる質問を書きました。",
+          "tag": {
+            "question": "先頭"
+          }
+        },
+        {
+          "say": "そのあとに、長い手引きの本文を貼り付けます。",
+          "show": ["handbook", "then"],
+          "travel": {
+            "along": ["then"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "長い資料の前の質問は、効きが弱くなりがちです。",
+          "pulse": ["question"],
+          "mark": [
+            {
+              "on": "question",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "資料の大事な箇所を外さないよう、並びを見直しましょう。",
+          "pulse": ["question", "handbook"]
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "先頭から最後までの並び",
+      "board": "order",
+      "beats": [
+        {
+          "say": "二万トークンを超えるような文章が、ここでいう長い資料です。",
+          "term": {
+            "text": "長い資料",
+            "ruby": "ながいしりょう",
+            "note": "二万トークンを超えるような文"
+          }
+        },
+        {
+          "say": "こうした資料は、プロンプトの先頭にまとめます。",
+          "show": ["documents"],
+          "tag": {
+            "documents": "先頭"
+          }
+        },
+        {
+          "say": "例と指示を書く位置は、資料のあとです。",
+          "show": ["instructions", "to-instructions"]
+        },
+        {
+          "say": "最後に、今回知りたいことを質問として書きましょう。",
+          "show": ["question", "to-question"],
+          "tag": {
+            "question": "最後"
+          }
+        },
+        {
+          "say": "資料から質問へ、この順で一つの依頼に並べます。",
+          "travel": {
+            "along": ["to-instructions", "to-question"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "document-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "資料のまとまりと出どころ",
+      "board": "document-parts",
+      "beats": [
+        {
+          "say": "資料を一つずつ包むタグが document です。",
+          "speech": "資料を一つずつ包むタグがドキュメントです。",
+          "term": {
+            "text": "document",
+            "note": "一つの資料を包むタグ"
+          }
+        },
+        {
+          "say": "このまとまりの中に、一つの資料を入れます。",
+          "show": ["document"]
+        },
+        {
+          "say": "出どころを添えるタグは source です。",
+          "speech": "出どころを添えるタグはソースです。",
+          "term": {
+            "text": "source",
+            "note": "資料の出どころを添えるタグ"
+          }
+        },
+        {
+          "say": "ここには、資料の名前などの出どころを書きます。",
+          "show": ["source"],
+          "pulse": ["source"]
+        },
+        {
+          "say": "資料の本文は、出どころと分けて入れましょう。",
+          "show": ["body"],
+          "pulse": ["body"]
+        }
+      ]
+    },
+    {
+      "id": "pack-handbook",
+      "kind": "board",
+      "role": "apply",
+      "title": "手引きを一つの資料にする",
+      "board": "document-parts",
+      "reset": true,
+      "beats": [
+        {
+          "say": "学校の手引きを、一つの資料としてまとめましょう。",
+          "show": ["document"]
+        },
+        {
+          "say": "全体を包むのは、document のタグです。",
+          "speech": "全体を包むのは、ドキュメントのタグです。",
+          "pulse": ["document"]
+        },
+        {
+          "say": "source の中には、学校の手引きの名前を書きます。",
+          "speech": "ソースの中には、学校の手引きの名前を書きます。",
+          "show": ["source"],
+          "tag": {
+            "source": "学校の手引き"
+          }
+        },
+        {
+          "say": "その隣に示したのが、質問の材料になる本文です。",
+          "show": ["body"]
+        },
+        {
+          "say": "出どころだけでなく、本文も入れたか確かめてください。",
+          "pulse": ["source", "body"],
+          "mark": [
+            {
+              "on": "body",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "place-question",
+      "kind": "board",
+      "role": "apply",
+      "title": "質問を最後に置き直す",
+      "board": "school-order",
+      "beats": [
+        {
+          "say": "まとめた手引きを、依頼の先頭に置きます。",
+          "show": ["handbook"],
+          "tag": {
+            "handbook": "先頭"
+          }
+        },
+        {
+          "say": "答え方の例と指示を続ける場所は、そのあとです。",
+          "show": ["instructions", "to-instructions"]
+        },
+        {
+          "say": "利用者は、最後に申込書の提出期限を尋ねました。",
+          "show": ["question", "to-question"],
+          "tag": {
+            "question": "最後"
+          }
+        },
+        {
+          "say": "質問のあとに長い本文が続かない並びに直します。",
+          "pulse": ["question"],
+          "mark": [
+            {
+              "on": "question",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "送る前に、先頭の資料から最後の質問までたどりましょう。",
+          "travel": {
+            "along": ["to-instructions", "to-question"],
+            "icon": "file"
+          },
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "時刻表の並びを直す",
+      "board": "bus-before",
+      "think": 8,
+      "beats": [
+        {
+          "say": "今度は、バスの始発の時刻を尋ねる依頼です。",
+          "show": ["question"]
+        },
+        {
+          "say": "駅前発で市役所行きの始発を、先頭で尋ねました。",
+          "tag": {
+            "question": "駅前発・先頭"
+          }
+        },
+        {
+          "say": "そのあとに、全路線をまとめた長い時刻表を貼ります。",
+          "show": ["timetable", "then"],
+          "travel": {
+            "along": ["then"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "直すのは、質問と資料を置く順番です。",
+          "pulse": ["question", "timetable"]
+        },
+        {
+          "say": "時刻表と質問を、それぞれどこに置けばよいでしょうか。",
+          "mark": [
+            {
+              "on": "question",
+              "kind": "question"
+            },
+            {
+              "on": "timetable",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "時刻表を先に質問を最後に",
+      "board": "bus-after",
+      "beats": [
+        {
+          "say": "先頭に置くのは、全路線をまとめた長い時刻表です。",
+          "show": ["timetable"],
+          "tag": {
+            "timetable": "先頭"
+          },
+          "mark": [
+            {
+              "on": "timetable",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "駅前発で市役所行きの始発を尋ねる質問は、最後に書きます。",
+          "show": ["question", "then"],
+          "tag": {
+            "question": "駅前発・最後"
+          },
+          "mark": [
+            {
+              "on": "question",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "質問の位置をたどる",
+      "board": "bus-after",
+      "beats": [
+        {
+          "say": "時刻表には、質問する路線以外の情報も含まれます。",
+          "pulse": ["timetable"]
+        },
+        {
+          "say": "長い資料の前では、質問の効きが弱くなりがちでした。",
+          "pulse": ["question"]
+        },
+        {
+          "say": "そこで、時刻表の本文を先に置く並びに直します。",
+          "travel": {
+            "along": ["then"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "最後に尋ねるのは、駅前発で市役所行きの始発です。",
+          "tag": {
+            "question": "駅前発"
+          },
+          "pulse": ["question"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "長い資料を送る前に",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "学校の長い手引きから期限を尋ねるときに使います。",
+          "show": ["handbook"]
+        },
+        {
+          "say": "全路線の時刻表から、使う便を調べるときも同じです。",
+          "show": ["timetable"]
+        },
+        {
+          "say": "送る前に、長い資料を先頭に置いたか確かめましょう。",
+          "tag": {
+            "handbook": "資料が先",
+            "timetable": "資料が先"
+          }
+        },
+        {
+          "say": "今回答えてほしい質問は、どちらも最後に書きます。",
+          "tag": {
+            "handbook": "質問が最後",
+            "timetable": "質問が最後"
+          },
+          "pulse": ["handbook", "timetable"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c44f65bafdef8b8de08b2b8c83f335eb14a3a4e86d161ca33efdb304c0aa9177"
+  }
+}

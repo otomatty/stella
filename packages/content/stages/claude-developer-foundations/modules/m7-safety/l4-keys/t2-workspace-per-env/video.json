@@ -1,0 +1,775 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "開発・検証・本番ごとにワークスペースとキーを分け、使用量と費用を確認する単位を説明できる。",
+    "stuck": "サーバーやキーだけを分ければ十分だと思い、同じワークスペースで開発と本番の使用量をまとめてしまう。",
+    "points": ["開発と本番はワークスペースを分け、キーも使用量も別にします。"],
+    "leaveOut": [
+      "画面へのキーの埋め込みと秘密の保管方法",
+      "管理用のキー、期限、入れ替えの手順",
+      "ファイル、バッチ、プロンプトキャッシュの分離の詳細",
+      "個人のキーと以前からのワークスペースのキーの比較",
+      "ワークロードID連携と具体的な上限の数値"
+    ]
+  },
+  "art": {
+    "inspection-notes": {
+      "prompt": "A thick stack of white inspection memo sheets held by a blue clip, with a small violet magnifying glass resting beside the stack. The sheets have no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "server-unit": {
+      "prompt": "A compact upright light grey server tower with blue ventilation slots and a single violet indicator light. A physical computer case, not an application screen. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "key-ring": {
+      "prompt": "A large blue key on a violet ring beside an open light grey file folder containing white sheets, representing keys and resources kept together. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "usage-ledger": {
+      "prompt": "An open white accounting notebook with a blue spine beside a small violet calculator with blank keys and a blank display. All paper is white or light grey. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "practice-stitches": {
+      "prompt": "A violet fabric scrap with a short row of simple blue stitches, a needle and a small spool of blue thread, representing sewing practice. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "finished-shirt": {
+      "prompt": "A neatly folded blue shirt with a simple collar and one violet button, representing a customer's completed sewing order. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-badge": {
+      "prompt": "A light grey identity badge on a blue lanyard beside a violet mechanical gear, representing an identity assigned to automated work. The badge has a simple blue gear pictogram and no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "spending-purse": {
+      "prompt": "A small open violet coin purse containing a few plain light grey round coins with no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mail-inquiry": {
+      "prompt": "A postal service employee in a plain blue shirt, with simple facial features, holding a white envelope and a blank white inquiry sheet beside a small light grey parcel sealed with blue tape. Upper body only. No counter. No uniform insignia or brand marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "notes",
+          "label": "大量の点検メモ",
+          "art": "inspection-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "検証サーバー",
+          "art": "server-unit",
+          "at": [3, 1]
+        },
+        {
+          "id": "live",
+          "label": "本番サーバー",
+          "art": "server-unit",
+          "at": [5, 1]
+        },
+        {
+          "id": "cost",
+          "label": "使用量と費用",
+          "art": "usage-ledger",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "sewing": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "practice",
+          "label": "縫い方の練習",
+          "art": "practice-stitches",
+          "at": [1, 1]
+        },
+        {
+          "id": "practice-cost",
+          "label": "練習の費用",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "order",
+          "label": "注文のシャツ",
+          "art": "finished-shirt",
+          "at": [5, 2]
+        },
+        {
+          "id": "order-cost",
+          "label": "注文の費用",
+          "art": "usage-ledger",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "practice-record",
+          "from": "practice",
+          "to": "practice-cost",
+          "label": "記録"
+        },
+        {
+          "id": "order-record",
+          "from": "order",
+          "to": "order-cost",
+          "label": "記録"
+        }
+      ]
+    },
+    "workspaces": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "dev",
+          "label": "開発",
+          "art": "key-ring",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "検証",
+          "art": "key-ring",
+          "at": [3, 1]
+        },
+        {
+          "id": "live",
+          "label": "本番",
+          "art": "key-ring",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "identity": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "identity",
+          "label": "自動処理の身元",
+          "art": "service-badge",
+          "at": [1, 1]
+        },
+        {
+          "id": "key",
+          "label": "本番用キー",
+          "art": "key-ring",
+          "at": [3, 1]
+        },
+        {
+          "id": "server",
+          "label": "本番サーバー",
+          "art": "server-unit",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "owns",
+          "from": "identity",
+          "to": "key",
+          "label": "ひも付く"
+        },
+        {
+          "id": "provide",
+          "from": "key",
+          "to": "server",
+          "label": "配る"
+        }
+      ]
+    },
+    "distribution": {
+      "cols": 5,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "test-space",
+          "label": "検証ワークスペース",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        },
+        {
+          "id": "live-space",
+          "label": "本番ワークスペース",
+          "tone": "violet",
+          "cells": [1, 2, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "test-key",
+          "label": "検証用キー",
+          "art": "key-ring",
+          "at": [1, 1]
+        },
+        {
+          "id": "test-server",
+          "label": "検証サーバー",
+          "art": "server-unit",
+          "at": [3, 1]
+        },
+        {
+          "id": "test-cost",
+          "label": "検証の使用量",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "live-key",
+          "label": "本番用キー",
+          "art": "key-ring",
+          "at": [5, 2]
+        },
+        {
+          "id": "live-server",
+          "label": "本番サーバー",
+          "art": "server-unit",
+          "at": [3, 2]
+        },
+        {
+          "id": "live-cost",
+          "label": "本番の使用量",
+          "art": "usage-ledger",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "test-provide",
+          "from": "test-key",
+          "to": "test-server",
+          "label": "配る"
+        },
+        {
+          "id": "test-record",
+          "from": "test-server",
+          "to": "test-cost",
+          "label": "集計"
+        },
+        {
+          "id": "live-provide",
+          "from": "live-key",
+          "to": "live-server",
+          "label": "配る"
+        },
+        {
+          "id": "live-record",
+          "from": "live-server",
+          "to": "live-cost",
+          "label": "集計"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "spending",
+          "label": "検証の支出",
+          "art": "spending-purse",
+          "at": [1, 1]
+        },
+        {
+          "id": "rate",
+          "label": "検証のレート",
+          "art": "server-unit",
+          "at": [3, 1]
+        },
+        {
+          "id": "organization",
+          "label": "組織全体の上限",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "inquiries",
+          "label": "郵便局の窓口",
+          "art": "mail-inquiry",
+          "at": [1, 1]
+        },
+        {
+          "id": "shared",
+          "label": "キーだけ分ける",
+          "art": "key-ring",
+          "at": [3, 1]
+        },
+        {
+          "id": "separate",
+          "label": "環境別に分ける",
+          "art": "key-ring",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reasons": {
+      "cols": 5,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "test-space",
+          "label": "問い合わせの検証",
+          "tone": "blue",
+          "cells": [1, 1, 5, 1]
+        },
+        {
+          "id": "live-space",
+          "label": "窓口で使う本番",
+          "tone": "violet",
+          "cells": [1, 2, 5, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "test-key",
+          "label": "検証用キー",
+          "art": "key-ring",
+          "at": [1, 1]
+        },
+        {
+          "id": "test-cost",
+          "label": "検証の費用",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "live-key",
+          "label": "本番用キー",
+          "art": "key-ring",
+          "at": [5, 2]
+        },
+        {
+          "id": "live-cost",
+          "label": "本番の費用",
+          "art": "usage-ledger",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "test-record",
+          "from": "test-key",
+          "to": "test-cost",
+          "label": "集計"
+        },
+        {
+          "id": "live-record",
+          "from": "live-key",
+          "to": "live-cost",
+          "label": "集計"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "key",
+          "label": "環境ごとのキー",
+          "art": "key-ring",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "配るサーバー",
+          "art": "server-unit",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "使用量と費用",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "provide",
+          "from": "key",
+          "to": "server",
+          "label": "配る"
+        },
+        {
+          "id": "record",
+          "from": "server",
+          "to": "cost",
+          "label": "集計"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "費用が増えた環境はどこ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "点検メモの要約を、大量のメモで試すことになりました。",
+          "show": ["notes"]
+        },
+        {
+          "say": "試す場所は、検証用のサーバーです。",
+          "show": ["test"]
+        },
+        {
+          "say": "本番のサービスも、同じ組織で動いています。",
+          "show": ["live"]
+        },
+        {
+          "say": "一緒に集計すると、費用が増えた環境を追いにくいでしょう。",
+          "show": ["cost"]
+        },
+        {
+          "say": "開発と本番はワークスペースを分け、キーも使用量も別にします。",
+          "pulse": ["test", "live", "cost"]
+        }
+      ]
+    },
+    {
+      "id": "sewing-example",
+      "kind": "board",
+      "role": "example",
+      "title": "練習と注文の費用",
+      "board": "sewing",
+      "beats": [
+        {
+          "say": "裁縫で、縫い方の練習をする場面を考えましょう。",
+          "show": ["practice"]
+        },
+        {
+          "say": "練習に使った材料の費用を、帳面に残します。",
+          "show": ["practice-cost", "practice-record"],
+          "travel": {
+            "along": ["practice-record"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "一方、こちらはお客さんが注文したシャツです。",
+          "show": ["order"]
+        },
+        {
+          "say": "注文に使った材料の費用は、別の帳面に記録しました。",
+          "show": ["order-cost", "order-record"],
+          "travel": {
+            "along": ["order-record"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "帳面が別なら、練習で増えた費用を分けて追えます。",
+          "pulse": ["practice-cost", "order-cost"]
+        }
+      ]
+    },
+    {
+      "id": "workspace-unit",
+      "kind": "board",
+      "role": "syntax",
+      "title": "キーをまとめる単位",
+      "board": "workspaces",
+      "beats": [
+        {
+          "say": "組織の中でキーや資源をまとめる単位が、ワークスペースです。",
+          "term": {
+            "text": "ワークスペース",
+            "note": "組織内でキーや資源をまとめる"
+          }
+        },
+        {
+          "say": "開発用に、一つのワークスペースを用意します。",
+          "show": ["dev"]
+        },
+        {
+          "say": "試すための検証用は、それとは別のワークスペースです。",
+          "show": ["test"]
+        },
+        {
+          "say": "本番用にも、専用のワークスペースを用意しましょう。",
+          "show": ["live"]
+        },
+        {
+          "say": "この区切りごとに、使うキーを分けます。",
+          "pulse": ["dev", "test", "live"],
+          "tag": {
+            "dev": "開発用キー",
+            "test": "検証用キー",
+            "live": "本番用キー"
+          }
+        }
+      ]
+    },
+    {
+      "id": "service-identity",
+      "kind": "board",
+      "role": "syntax",
+      "title": "本番のキーの持ち主",
+      "board": "identity",
+      "beats": [
+        {
+          "say": "自動処理のための身元を、サービスアカウントと呼びます。",
+          "term": {
+            "text": "サービスアカウント",
+            "note": "自動処理のために作る身元"
+          }
+        },
+        {
+          "say": "本番サービスに向くキーの持ち主です。",
+          "show": ["identity"]
+        },
+        {
+          "say": "この身元にひも付くキーを選びましょう。",
+          "show": ["key", "owns"],
+          "pulse": ["key"]
+        },
+        {
+          "say": "本番のワークスペースに合うキーを配ります。",
+          "show": ["server", "provide"],
+          "travel": {
+            "along": ["provide"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "assign-keys",
+      "kind": "board",
+      "role": "apply",
+      "title": "環境に合うキーを配る",
+      "board": "distribution",
+      "beats": [
+        {
+          "say": "点検メモを試すサーバーに、検証用のキーを配ります。",
+          "show": ["test-space", "test-key", "test-server", "test-provide"],
+          "travel": {
+            "along": ["test-provide"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "大量に試した日の使用量は、検証側の集計です。",
+          "show": ["test-cost", "test-record"],
+          "pulse": ["test-cost"]
+        },
+        {
+          "say": "本番のサーバーには、本番用のキーを配りましょう。",
+          "show": ["live-space", "live-key", "live-server", "live-provide"],
+          "travel": {
+            "along": ["live-provide"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "本番側の使用量も、検証と分けて追えます。",
+          "show": ["live-cost", "live-record"],
+          "pulse": ["test-cost", "live-cost"]
+        }
+      ]
+    },
+    {
+      "id": "set-limits",
+      "kind": "board",
+      "role": "apply",
+      "title": "検証の上限を抑える",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "ひと月に使う金額が、月間支出です。",
+          "term": {
+            "text": "月間支出",
+            "ruby": "げっかんししゅつ",
+            "note": "ひと月に使う金額"
+          },
+          "show": ["spending"]
+        },
+        {
+          "say": "検証では、この支出に低い上限を設けます。",
+          "tag": {
+            "spending": "低い上限"
+          },
+          "pulse": ["spending"]
+        },
+        {
+          "say": "レートにも、検証用の低い上限を設けましょう。",
+          "show": ["rate"],
+          "tag": {
+            "rate": "低い上限"
+          },
+          "pulse": ["rate"]
+        },
+        {
+          "say": "環境を分けても、組織全体の上限は引き続き有効です。",
+          "show": ["organization"],
+          "pulse": ["organization"]
+        },
+        {
+          "say": "個別に設定しても、組織の上限を超えては使えません。",
+          "tag": {
+            "organization": "超えられない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "postal-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "郵便局の検証を分ける",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "郵便局の問い合わせを要約する仕組みを考えます。",
+          "show": ["inquiries"]
+        },
+        {
+          "say": "公開前に、大量の問い合わせで検証する予定です。",
+          "tag": {
+            "inquiries": "大量に検証"
+          }
+        },
+        {
+          "say": "一つ目では、同じワークスペースでキーだけ分けました。",
+          "show": ["shared"],
+          "tag": {
+            "shared": "同じ区切り"
+          }
+        },
+        {
+          "say": "二つ目では、ワークスペースとキーを環境ごとに分けます。",
+          "show": ["separate"],
+          "tag": {
+            "separate": "別々の区切り"
+          }
+        },
+        {
+          "say": "環境別の上限と使用量を管理するなら、どちらでしょうか。",
+          "pulse": ["shared", "separate"],
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "question"
+            },
+            {
+              "on": "separate",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postal-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "環境ごとに区切る",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、ワークスペースも分ける二つ目の案です。",
+          "mark": [
+            {
+              "on": "shared",
+              "kind": "cross"
+            },
+            {
+              "on": "separate",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["separate"]
+        },
+        {
+          "say": "キーだけを分けても、ワークスペースは別になりません。",
+          "pulse": ["shared"]
+        },
+        {
+          "say": "検証と本番で、キーをまとめる単位から分けましょう。",
+          "pulse": ["separate"]
+        }
+      ]
+    },
+    {
+      "id": "follow-costs",
+      "kind": "board",
+      "role": "explain",
+      "title": "費用を環境ごとに追う",
+      "board": "reasons",
+      "beats": [
+        {
+          "say": "大量の問い合わせを試すときは、検証用のキーを使います。",
+          "show": ["test-space", "test-key"]
+        },
+        {
+          "say": "その費用を分けて見る単位が、検証のワークスペースです。",
+          "show": ["test-cost", "test-record"],
+          "travel": {
+            "along": ["test-record"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "実際の窓口で使う本番には、別のキーを配りましょう。",
+          "show": ["live-space", "live-key"]
+        },
+        {
+          "say": "本番の費用と比べれば、検証で増えた分を追えます。",
+          "show": ["live-cost", "live-record"],
+          "pulse": ["test-cost", "live-cost"]
+        }
+      ]
+    },
+    {
+      "id": "use-before-testing",
+      "kind": "board",
+      "role": "usage",
+      "title": "大量に試す前の確認",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "検証を増やす前に、環境ごとの区切りを確かめます。",
+          "show": ["key"]
+        },
+        {
+          "say": "配るキーは、その環境のワークスペースに合うものです。",
+          "show": ["server", "provide"],
+          "travel": {
+            "along": ["provide"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "検証の支出とレートの上限も、低く設定しましょう。",
+          "tag": {
+            "server": "検証は低め"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "費用が増えた日は、環境ごとの使用量を見ます。",
+          "show": ["cost", "record"],
+          "pulse": ["cost"]
+        },
+        {
+          "say": "キーを配る先と、費用を見る単位をそろえるのが基本です。",
+          "pulse": ["key", "server", "cost"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "58759b681b18d311bc88a451cfcdc1484333325ed64219ba72d1971ca2aea05e"
+  }
+}

@@ -1,0 +1,802 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ入力への複数回の応答を、必要な条件を満たすかで判定し、一回の成功だけで判断できない理由を説明できる。",
+    "stuck": "一回正しく答えれば次も正しいと思い、言い換えと必要な案内の抜けを区別せずに比べてしまう。",
+    "points": ["同じ入力でも出力は毎回同じとは限らないので、複数回の結果で判断します。"],
+    "leaveOut": [
+      "モデルの廃止予告と移行の日程",
+      "回帰評価での品質・速度・費用の比較",
+      "構造化出力の指定方法",
+      "モデルを動かす基盤と重みの詳細",
+      "モデルごとの温度指定の対応範囲とほかの設定項目"
+    ]
+  },
+  "art": {
+    "booking-slip": {
+      "prompt": "A white reservation slip held by a blue clip beside a small violet appointment booklet, both blank, representing a request to change a reservation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "deadline-calendar": {
+      "prompt": "A small white tear-off calendar with blue binding and a violet clock beside it. The calendar pages and clock face are blank, without markings, representing a deadline that must be communicated. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-card": {
+      "prompt": "A single white reply note with a folded corner held by a violet paper clip, with one empty blue speech bubble beside it. The paper is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shoe-bag": {
+      "prompt": "A pair of blue shoes beside a white paper pickup bag and a blank light grey claim ticket attached with a violet clip, representing collecting repaired shoes. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rule-clipboard": {
+      "prompt": "A blue clipboard holding a blank white sheet with two small violet tabs at its edge and a blue pencil beside it, representing the requirements used to judge an answer. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "results-stack": {
+      "prompt": "Three separate blank white result sheets slightly fanned out, with blue binder clips and a small violet magnifying glass over the sheets, representing comparing repeated attempts. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-tools": {
+      "prompt": "A blue litter picker, a violet dustpan and a pair of light grey work gloves gathered beside a white rubbish bag, representing a neighborhood cleanup duty. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white reply note in one hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "opening": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "予約変更",
+          "art": "booking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "一回目の案内",
+          "art": "reply-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "二回目の案内",
+          "art": "reply-card",
+          "at": [5, 1]
+        },
+        {
+          "id": "repeat",
+          "label": "繰り返し確認",
+          "art": "results-stack",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shoe-pickup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shoes",
+          "label": "靴の受け取り",
+          "art": "shoe-bag",
+          "at": [1, 1]
+        },
+        {
+          "id": "wording",
+          "label": "違う言い方",
+          "art": "reply-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "deadline",
+          "label": "受取期限",
+          "art": "deadline-calendar",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "variation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "同じ質問",
+          "art": "booking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "outputs",
+          "label": "複数回の応答",
+          "art": "results-stack",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "input",
+          "to": "model",
+          "label": "繰り返す"
+        },
+        {
+          "id": "receive",
+          "from": "model",
+          "to": "outputs",
+          "label": "比べる"
+        }
+      ]
+    },
+    "criteria": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "合格条件",
+          "art": "rule-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "deadline",
+          "label": "正しい締切",
+          "art": "deadline-calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "steps",
+          "label": "正しい手順",
+          "art": "reply-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reservation-runs": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "一回目",
+          "art": "reply-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "second",
+          "label": "二回目",
+          "art": "reply-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "third",
+          "label": "三回目",
+          "art": "reply-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reliability": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "一回目の成功",
+          "art": "reply-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "second",
+          "label": "二回目の成功",
+          "art": "reply-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "third",
+          "label": "三回目の成功",
+          "art": "reply-card",
+          "at": [5, 1]
+        },
+        {
+          "id": "all",
+          "label": "三回とも成功",
+          "art": "results-stack",
+          "at": [5, 2]
+        },
+        {
+          "id": "cases",
+          "label": "全回成功の割合",
+          "art": "rule-clipboard",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "one-two",
+          "from": "first",
+          "to": "second",
+          "label": "掛ける"
+        },
+        {
+          "id": "two-three",
+          "from": "second",
+          "to": "third",
+          "label": "掛ける"
+        },
+        {
+          "id": "product",
+          "from": "third",
+          "to": "all"
+        }
+      ]
+    },
+    "temperature": {
+      "cols": 1,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "setting",
+          "label": "温度ゼロの案",
+          "art": "rule-clipboard",
+          "at": [1, 1]
+        },
+        {
+          "id": "outputs",
+          "label": "応答の固定",
+          "art": "results-stack",
+          "at": [1, 2]
+        },
+        {
+          "id": "repeat",
+          "label": "複数回で確認",
+          "art": "results-stack",
+          "at": [1, 3]
+        }
+      ]
+    },
+    "cleaning": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "duty",
+          "label": "清掃当番の質問",
+          "art": "cleaning-tools",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "集合時刻と場所",
+          "art": "rule-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "first",
+          "label": "一回目",
+          "art": "reply-card",
+          "at": [5, 1]
+        },
+        {
+          "id": "second",
+          "label": "二回目",
+          "art": "reply-card",
+          "at": [5, 2]
+        },
+        {
+          "id": "third",
+          "label": "三回目",
+          "art": "reply-card",
+          "at": [3, 2]
+        },
+        {
+          "id": "decision",
+          "label": "毎回任せるか",
+          "art": "results-stack",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "use-check": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "予約変更の質問",
+          "art": "booking-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "条件と回数",
+          "art": "rule-clipboard",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "複数回の結果",
+          "art": "results-stack",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "prepare",
+          "from": "request",
+          "to": "rule",
+          "label": "決める"
+        },
+        {
+          "id": "judge",
+          "from": "rule",
+          "to": "results",
+          "label": "確かめる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "一度の成功で決めない",
+      "board": "opening",
+      "beats": [
+        {
+          "say": "予約変更の質問に、正しく案内できるか確かめます。",
+          "show": ["request"]
+        },
+        {
+          "say": "一回目の応答には、変更できる締切もありました。",
+          "show": ["first"],
+          "tag": {
+            "first": "締切あり"
+          }
+        },
+        {
+          "say": "同じ質問でも、二回目は締切が抜けた例です。",
+          "show": ["second"],
+          "tag": {
+            "second": "締切なし"
+          }
+        },
+        {
+          "say": "同じ入力でも出力は揺れるので、複数回の結果で判断します。",
+          "show": ["repeat"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "pickup-example",
+      "kind": "board",
+      "role": "example",
+      "title": "受取案内で残したいこと",
+      "board": "shoe-pickup",
+      "beats": [
+        {
+          "say": "靴の修理店で、受け取り方を案内する場面です。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "担当者は、同じ内容を違う言い方で伝えることもあります。",
+          "show": ["wording"]
+        },
+        {
+          "say": "ただし、この店では受取期限を必ず伝える決まりです。",
+          "show": ["deadline"]
+        },
+        {
+          "say": "言葉が変わっても、必要な案内が残るかを見ましょう。",
+          "pulse": ["deadline"],
+          "mark": [
+            {
+              "on": "deadline",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "name-variation",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ入力でも揺れる",
+      "board": "variation",
+      "beats": [
+        {
+          "say": "同じ入力で結果が変わることを、出力の揺れと呼びます。",
+          "term": {
+            "text": "出力の揺れ",
+            "ruby": "しゅつりょくのゆれ",
+            "note": "同じ入力でも結果が変わる"
+          }
+        },
+        {
+          "say": "図の左側は、繰り返し送る同じ予約変更の質問です。",
+          "show": ["input"]
+        },
+        {
+          "say": "毎回同じ会話履歴から始め、Claude に同じ質問を送ります。",
+          "speech": "毎回同じ会話履歴から始め、クロードに同じ質問を送ります。",
+          "show": ["model", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "右側に集めた応答は、毎回同じとは限りません。",
+          "show": ["outputs", "receive"],
+          "tag": {
+            "outputs": "内容を比べる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-criteria",
+      "kind": "board",
+      "role": "syntax",
+      "title": "必要な条件を決める",
+      "board": "criteria",
+      "beats": [
+        {
+          "say": "応答に必要な内容を、合格条件として決めます。",
+          "term": {
+            "text": "合格条件",
+            "ruby": "ごうかくじょうけん",
+            "note": "応答が満たす必要のある条件"
+          }
+        },
+        {
+          "say": "予約変更なら、締切と手順が正しいことです。",
+          "show": ["rule", "deadline", "steps"]
+        },
+        {
+          "say": "言い方が違うだけで、失敗にはしません。",
+          "pulse": ["steps"],
+          "tag": {
+            "steps": "言い換え可"
+          }
+        },
+        {
+          "say": "締切と手順が正しいかを、一回ずつ確かめましょう。",
+          "pulse": ["deadline", "steps"],
+          "tag": {
+            "deadline": "毎回確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeat-reservation",
+      "kind": "board",
+      "role": "apply",
+      "title": "三回の結果を並べる",
+      "board": "reservation-runs",
+      "beats": [
+        {
+          "say": "同じ予約変更の質問を、三回送った結果です。",
+          "show": ["first", "second", "third"]
+        },
+        {
+          "say": "一回目は、締切も手順も正しく案内していました。",
+          "pulse": ["first"],
+          "tag": {
+            "first": "両方正しい"
+          },
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "二回目は、必要な締切が抜けています。",
+          "pulse": ["second"],
+          "tag": {
+            "second": "締切なし"
+          },
+          "mark": [
+            {
+              "on": "second",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "三回目も、締切と手順が正しく案内されていました。",
+          "pulse": ["third"],
+          "tag": {
+            "third": "両方正しい"
+          },
+          "mark": [
+            {
+              "on": "third",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "一回目だけでは、途中の抜けを見つけられません。",
+          "pulse": ["second"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "all-runs-pass",
+      "kind": "board",
+      "role": "apply",
+      "title": "全回成功の確率を見る",
+      "board": "reliability",
+      "beats": [
+        {
+          "say": "試した結果のうち、成功した割合が成功率です。",
+          "term": {
+            "text": "成功率",
+            "ruby": "せいこうりつ",
+            "note": "試した結果のうち成功の割合"
+          }
+        },
+        {
+          "say": "一回の成功率を75パーセントとして考えます。",
+          "speech": "一回の成功率を七十五パーセントとして考えます。",
+          "show": ["first"],
+          "tag": {
+            "first": "75%"
+          }
+        },
+        {
+          "say": "ここでは、各回の成功が前の回に影響されない場合です。",
+          "show": ["second", "third"],
+          "tag": {
+            "second": "75%",
+            "third": "75%"
+          }
+        },
+        {
+          "say": "三回とも成功する確率は、掛け合わせて約42パーセントになります。",
+          "speech": "三回とも成功する確率は、掛け合わせて約四十二パーセントになります。",
+          "show": ["one-two", "two-three", "product", "all"],
+          "tag": {
+            "all": "約42%"
+          },
+          "travel": {
+            "along": ["one-two", "two-three", "product"]
+          },
+          "pause": 1
+        },
+        {
+          "say": "毎回正しく案内したいなら、全回通ったケースの割合を見ましょう。",
+          "show": ["cases"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "zero-temperature",
+      "kind": "code",
+      "role": "apply",
+      "title": "温度ゼロでも固定しない",
+      "code": ["// 温度をゼロにする設定案を見直す", "temperature: 0"],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "temperature"
+      },
+      "beats": [
+        {
+          "say": "temperature をゼロにする案も考えられます。",
+          "speech": "テンパラチャーをゼロにする案も考えられます。",
+          "part": {
+            "line": 1,
+            "text": "temperature",
+            "note": "温度の項目"
+          },
+          "figure": {
+            "show": ["setting"]
+          }
+        },
+        {
+          "say": "指定できるモデルでも、応答が固定される保証はありません。",
+          "part": {
+            "line": 1,
+            "text": "0"
+          },
+          "figure": {
+            "show": ["outputs"],
+            "mark": [
+              {
+                "on": "outputs",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "API 版2026-10-21では、この指定で400になります。",
+          "speech": "エーピーアイ版、二千二十六年十月二十一日では、この指定で四百になります。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "tag": {
+              "setting": "指定を外す"
+            }
+          }
+        },
+        {
+          "say": "設定で固定できると考えず、複数回の結果を確かめましょう。",
+          "figure": {
+            "show": ["repeat"],
+            "mark": [
+              {
+                "on": "repeat",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "清掃当番の案内を判定する",
+      "board": "cleaning",
+      "think": 8,
+      "beats": [
+        {
+          "say": "町内の清掃当番について、同じ質問を三回送ります。",
+          "show": ["duty"]
+        },
+        {
+          "say": "合格条件は、集合時刻と場所を正しく伝えることです。",
+          "show": ["rule"]
+        },
+        {
+          "say": "一回目と三回目には、どちらも正しく書かれていました。",
+          "show": ["first", "third"],
+          "tag": {
+            "first": "両方あり",
+            "third": "両方あり"
+          }
+        },
+        {
+          "say": "二回目だけは、集合場所が抜けています。",
+          "show": ["second"],
+          "tag": {
+            "second": "場所なし"
+          }
+        },
+        {
+          "say": "この結果で、三回とも成功したと判断してよいでしょうか。",
+          "show": ["decision"],
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "全回成功には数えない",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "このケースを、三回とも成功したとは判断できません。",
+          "mark": [
+            {
+              "on": "decision",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["decision"]
+        },
+        {
+          "say": "二回目が、集合場所を伝える条件を満たしていないためです。",
+          "pulse": ["second"],
+          "mark": [
+            {
+              "on": "second",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-missing-matters",
+      "kind": "board",
+      "role": "explain",
+      "title": "必要な内容でたどる",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "この案内では、集合時刻と場所を両方残す必要があります。",
+          "pulse": ["rule"]
+        },
+        {
+          "say": "一回目と三回目は、どちらも条件を満たした応答です。",
+          "pulse": ["first", "third"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            },
+            {
+              "on": "third",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "二回目の抜けは、単なる言い換えではありません。",
+          "pulse": ["second"],
+          "tag": {
+            "second": "必要事項抜け"
+          }
+        },
+        {
+          "say": "同じ入力を繰り返したから、この失敗が見つかりました。",
+          "pulse": ["duty", "second"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-repeated-results",
+      "kind": "board",
+      "role": "usage",
+      "title": "案内を任せる前の確認",
+      "board": "use-check",
+      "beats": [
+        {
+          "say": "予約変更の案内を任せる前にも、この確かめ方を使います。",
+          "show": ["request"]
+        },
+        {
+          "say": "先に決めるのは、必要な条件と同じ入力を試す回数です。",
+          "show": ["rule", "prepare"]
+        },
+        {
+          "say": "集めた応答が、条件を毎回満たすか確かめましょう。",
+          "show": ["results", "judge"],
+          "travel": {
+            "along": ["judge"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "同じ入力でも出力は毎回同じとは限らないので、複数回の結果で判断します。",
+          "pulse": ["results"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "02c05094a6405e15ed8bbfd98e2438e4ee308ff3f0d9a39c4e0d278a92dddf7c"
+  }
+}

@@ -1,0 +1,765 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "出題範囲と配点を確かめる資料として試験ガイドを選び、学習時間の目安に使える。",
+    "stuck": "受験記で多く見かけた話から配点を推測し、学習時間を決めてしまう。",
+    "points": ["出題の範囲と配点は、Partner Academy の試験ガイドで確かめます。"],
+    "leaveOut": [
+      "八領域すべての配点の列挙",
+      "公式ドキュメントや Agent SDK の仕様の調べ方",
+      "本番の問題を写した教材の扱い",
+      "スキルごとの自己評価の細かな手順",
+      "バッチ処理の実装と課題の解答"
+    ]
+  },
+  "art": {
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a closed violet notebook, with simple facial features and a thoughtful expression. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-memo": {
+      "prompt": "A small white spiral notebook opened to blank pages, with a violet pen tucked into the spiral, representing one person's exam experience notes. No readable marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-kit": {
+      "prompt": "A blue kitchen mixing bowl with a white whisk beside a folded violet cooking apron, arranged as a compact kit of supplies for a cooking class. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-list": {
+      "prompt": "A white cooking class supply leaflet with a large simple pictorial mixing bowl and apron on it, held by a blue-shirted staff member's hand. No writing or marks resembling letters. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-guide": {
+      "prompt": "An open white exam guide booklet with a blue cover and violet page tabs. A hand points at one of the blank pages. No charts, numbers or written marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "academy": {
+      "prompt": "A small open blue laptop with a completely blank white display, beside two closed white study booklets with blue spines. This is a conceptual illustration of a learning site, not a real application screen. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "study-plan": {
+      "prompt": "An open white weekly planning notebook with blue binding and several blank violet page tabs, beside a small blue analogue clock without numerals or ticks. No written marks. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "diagnostic-sheet": {
+      "prompt": "A white practice worksheet held on a blue clipboard, with a violet pencil beside it and one magenta circular spot on the blank paper to indicate a mistake. No writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "delivery-parcel": {
+      "prompt": "A closed light grey cardboard delivery parcel sealed with blue tape, beside a blank white redelivery slip and a small blue delivery van. The parcel is light grey, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "学習の準備",
+          "art": "learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "受験記",
+          "art": "exam-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "plan",
+          "label": "時間の配分",
+          "art": "study-plan",
+          "at": [5, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "cooking": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "料理の持ち物",
+          "art": "cooking-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "教室の案内",
+          "art": "cooking-list",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "confirm",
+          "from": "list",
+          "to": "kit",
+          "label": "照らす"
+        }
+      ]
+    },
+    "guide": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "site",
+          "label": "学習サイト",
+          "art": "academy",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "open",
+          "from": "site",
+          "to": "guide",
+          "label": "開く"
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "plan",
+          "label": "時間の目安",
+          "art": "study-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "allocate",
+          "from": "guide",
+          "to": "plan",
+          "label": "配点を使う"
+        }
+      ]
+    },
+    "plan": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "plan",
+          "label": "仮の学習時間",
+          "art": "study-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "diagnosis",
+          "label": "診断の記録",
+          "art": "diagnostic-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "allocate",
+          "from": "guide",
+          "to": "plan",
+          "label": "時間を配る"
+        },
+        {
+          "id": "review",
+          "from": "diagnosis",
+          "to": "plan",
+          "label": "復習を足す"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "parcel",
+          "label": "再配達アプリ",
+          "art": "delivery-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "memo",
+          "label": "受験記",
+          "art": "exam-memo",
+          "at": [3, 1]
+        },
+        {
+          "id": "guess",
+          "label": "話の数で推測",
+          "art": "study-plan",
+          "at": [5, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [5, 2]
+        },
+        {
+          "id": "official",
+          "label": "配点を確認",
+          "art": "study-plan",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "guess-from",
+          "from": "memo",
+          "to": "guess",
+          "label": "推測する"
+        },
+        {
+          "id": "read-from",
+          "from": "guide",
+          "to": "official",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "evidence": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "diagnosis",
+          "label": "診断の記録",
+          "art": "diagnostic-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "plan",
+          "label": "復習の予定",
+          "art": "study-plan",
+          "at": [3, 1]
+        },
+        {
+          "id": "check",
+          "label": "再確認の記録",
+          "art": "diagnostic-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "diagnosis",
+          "to": "plan",
+          "label": "課題を選ぶ"
+        },
+        {
+          "id": "retry",
+          "from": "plan",
+          "to": "check",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "学習の準備",
+          "art": "learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "試験ガイド",
+          "art": "exam-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "plan",
+          "label": "時間の配分",
+          "art": "study-plan",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "consult",
+          "from": "learner",
+          "to": "guide",
+          "label": "確かめる"
+        },
+        {
+          "id": "plan-time",
+          "from": "guide",
+          "to": "plan",
+          "label": "配点を使う"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "学習時間を決める前に",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "試験の勉強を始める前に、時間の配り方を考えます。",
+          "show": ["learner"]
+        },
+        {
+          "say": "受験記によって、よく出る話が違うようです。",
+          "show": ["memo"]
+        },
+        {
+          "say": "どの領域に時間をかけるか、迷ってしまいました。",
+          "show": ["plan"],
+          "mark": [
+            {
+              "on": "plan",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "出題の範囲と配点は、試験ガイドで確かめます。",
+          "show": ["guide"],
+          "pulse": ["guide"]
+        }
+      ]
+    },
+    {
+      "id": "cooking",
+      "kind": "board",
+      "role": "example",
+      "title": "持ち物を何で確かめるか",
+      "board": "cooking",
+      "beats": [
+        {
+          "say": "料理教室の持ち物をそろえる場面を考えましょう。",
+          "show": ["kit"]
+        },
+        {
+          "say": "友人は、前回はエプロンを使ったと話しました。",
+          "tag": {
+            "kit": "エプロン"
+          }
+        },
+        {
+          "say": "その話だけでは、今回必要な物は分かりません。",
+          "mark": [
+            {
+              "on": "kit",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "教室の案内で、ボウルも必要だと確かめます。",
+          "show": ["list", "confirm"],
+          "tag": {
+            "list": "ボウルも必要"
+          },
+          "travel": {
+            "along": ["confirm"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-guide",
+      "kind": "board",
+      "role": "syntax",
+      "title": "試験ガイドの置き場所",
+      "board": "guide",
+      "beats": [
+        {
+          "say": "Partner Academy は、試験の準備に使う学習サイトです。",
+          "speech": "パートナーアカデミーは、試験の準備に使う学習サイトです。",
+          "show": ["site"]
+        },
+        {
+          "say": "範囲と配点を確かめる資料を、試験ガイドと呼びます。",
+          "term": {
+            "text": "試験ガイド",
+            "ruby": "しけんガイド",
+            "note": "範囲と配点を確かめる資料"
+          }
+        },
+        {
+          "say": "サイトにあるのが、試験ガイドです。",
+          "show": ["guide", "open"],
+          "travel": {
+            "along": ["open"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "ガイドの中の、出題範囲の節を開きましょう。",
+          "tag": {
+            "guide": "出題範囲の節"
+          },
+          "pulse": ["guide"]
+        },
+        {
+          "say": "各領域で求められる判断も、ここで確かめます。",
+          "tag": {
+            "guide": "判断の内容"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scope-weight",
+      "kind": "board",
+      "role": "syntax",
+      "title": "範囲と割合を読み分ける",
+      "board": "scope",
+      "beats": [
+        {
+          "say": "試験で問われる領域のまとまりが、出題範囲です。",
+          "term": {
+            "text": "出題範囲",
+            "ruby": "しゅつだいはんい",
+            "note": "試験で問われる領域"
+          }
+        },
+        {
+          "say": "ガイドを開き、どんな領域があるか確かめます。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "領域の一覧"
+          }
+        },
+        {
+          "say": "採点される問題のうち、各領域のおおよその割合が配点です。",
+          "term": {
+            "text": "配点",
+            "ruby": "はいてん",
+            "note": "各領域の出題のおおよその割合"
+          }
+        },
+        {
+          "say": "ガイドにある割合を、学習時間の目安に使いましょう。",
+          "tag": {
+            "guide": "配点"
+          },
+          "show": ["plan", "allocate"],
+          "travel": {
+            "along": ["allocate"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "記事の話の数で、割合は決めません。",
+          "pulse": ["guide"],
+          "mark": [
+            {
+              "on": "guide",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "allocate-time",
+      "kind": "board",
+      "role": "apply",
+      "title": "配点から時間を仮に決める",
+      "board": "plan",
+      "beats": [
+        {
+          "say": "アプリへの組み込みは、配点が二十パーセントです。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "組み込み20%"
+          }
+        },
+        {
+          "say": "この配点をもとに、学習時間を仮に決めます。",
+          "show": ["plan", "allocate"],
+          "travel": {
+            "along": ["allocate"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "ここで決めた時間は、計画の出発点です。",
+          "pulse": ["plan"],
+          "tag": {
+            "plan": "仮の時間"
+          }
+        },
+        {
+          "say": "次に診断を解き、判断を間違えた領域を確かめましょう。",
+          "show": ["diagnosis"],
+          "pulse": ["diagnosis"]
+        }
+      ]
+    },
+    {
+      "id": "adjust-time",
+      "kind": "board",
+      "role": "apply",
+      "title": "間違えた領域を復習する",
+      "board": "plan",
+      "beats": [
+        {
+          "say": "診断で、処理の結果を別の依頼に結び付けてしまいました。",
+          "pulse": ["diagnosis"],
+          "tag": {
+            "diagnosis": "依頼を混同"
+          },
+          "mark": [
+            {
+              "on": "diagnosis",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "やり直すのは、依頼と結果の対応付けです。",
+          "tag": {
+            "diagnosis": "対応付け"
+          }
+        },
+        {
+          "say": "この練習をする時間を、復習として足します。",
+          "show": ["review"],
+          "travel": {
+            "along": ["review"],
+            "icon": "clock"
+          },
+          "tag": {
+            "plan": "復習を足す"
+          }
+        },
+        {
+          "say": "配点に加え、自分が間違えた判断も計画に残しましょう。",
+          "pulse": ["plan"],
+          "mark": [
+            {
+              "on": "plan",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "配点を確かめる資料を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "再配達アプリを題材に、試験の勉強をするとします。",
+          "show": ["parcel"]
+        },
+        {
+          "say": "受験記では、依頼の処理を扱う話を多く見かけました。",
+          "show": ["memo"]
+        },
+        {
+          "say": "一つ目は、その話の数から配点を推測する案です。",
+          "show": ["guess", "guess-from"]
+        },
+        {
+          "say": "二つ目では、試験ガイドで配点を確かめます。",
+          "show": ["guide", "official", "read-from"]
+        },
+        {
+          "say": "学習時間の目安に使う配点は、どちらで確かめるでしょうか。",
+          "pulse": ["guess", "official"],
+          "mark": [
+            {
+              "on": "guess",
+              "kind": "question"
+            },
+            {
+              "on": "official",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "試験ガイドを選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、試験ガイドで配点を確かめる二つ目の案です。",
+          "mark": [
+            {
+              "on": "official",
+              "kind": "check"
+            },
+            {
+              "on": "guess",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["official"]
+        },
+        {
+          "say": "その配点を、領域ごとの時間の目安に使います。",
+          "pulse": ["guide"],
+          "travel": {
+            "along": ["read-from"],
+            "icon": "clock"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-guide",
+      "kind": "board",
+      "role": "explain",
+      "title": "受験記の話の数との違い",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "受験記で多く見かけたのは、依頼の処理を扱う話でした。",
+          "pulse": ["memo"]
+        },
+        {
+          "say": "話の数だけでは、試験全体の配点は確かめられません。",
+          "pulse": ["guess"],
+          "tag": {
+            "guess": "割合は不明"
+          }
+        },
+        {
+          "say": "各領域の配点を確かめる資料は、試験ガイドです。",
+          "pulse": ["guide"],
+          "tag": {
+            "guide": "領域別の割合"
+          }
+        },
+        {
+          "say": "題材が再配達でも、配点はガイドから読み取りましょう。",
+          "pulse": ["parcel", "guide"],
+          "travel": {
+            "along": ["read-from"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-progress",
+      "kind": "board",
+      "role": "explain",
+      "title": "復習後の確かめ方を残す",
+      "board": "evidence",
+      "beats": [
+        {
+          "say": "配点で時間を決めても、苦手な判断は残ることがあります。",
+          "show": ["diagnosis"],
+          "tag": {
+            "diagnosis": "対応付け"
+          }
+        },
+        {
+          "say": "先ほど間違えたのは、依頼と結果の対応付けでした。",
+          "pulse": ["diagnosis"],
+          "mark": [
+            {
+              "on": "diagnosis",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "結果が逆順でも正しく結べるか、復習後に確かめます。",
+          "show": ["plan", "check", "choose", "retry"],
+          "travel": {
+            "along": ["choose", "retry"],
+            "icon": "repeat"
+          }
+        },
+        {
+          "say": "できたと判断する証拠も、計画に書いておきましょう。",
+          "tag": {
+            "check": "逆順でも一致"
+          },
+          "mark": [
+            {
+              "on": "check",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-guide",
+      "kind": "board",
+      "role": "usage",
+      "title": "計画を立てるときに使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "勉強を始める前は、範囲を確かめる場面です。",
+          "show": ["learner"]
+        },
+        {
+          "say": "Partner Academy の試験ガイドを開きます。",
+          "speech": "パートナーアカデミーの試験ガイドを開きます。",
+          "show": ["guide", "consult"],
+          "travel": {
+            "along": ["consult"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "時間を配るときの目安は、ガイドにある配点です。",
+          "show": ["plan", "plan-time"],
+          "travel": {
+            "along": ["plan-time"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "診断の間違いも見て、復習の時間を足しましょう。",
+          "pulse": ["plan"],
+          "tag": {
+            "plan": "復習を足す"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b23b7da2eba49064277ab8959b06f9a6835f9fbec50ac9a07267b4606415a649"
+  }
+}

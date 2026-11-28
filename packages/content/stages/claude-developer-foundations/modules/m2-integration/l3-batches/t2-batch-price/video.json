@@ -1,0 +1,694 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "入力と出力の料金が通常の半額になることを説明し、結果を待てる大量の処理でバッチを選べる。",
+    "stuck": "半額になるのは入力だけだと思ったり、安さだけで即時の回答にもバッチを選んだりする。",
+    "points": ["Message Batches API の料金は、通常の半額です。"],
+    "leaveOut": [
+      "リクエストの束の組み立て方と件数の上限",
+      "結果を受け取るまでの具体的な時間と保存期限",
+      "結果の種類ごとの課金と識別子の照合",
+      "モデルごとの単価とほかの費用削減方法"
+    ]
+  },
+  "art": {
+    "night-papers": {
+      "prompt": "A large stack of white report sheets gathered with a blue binder clip, with a small violet crescent moon beside the stack to suggest nightly summarization. The sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cost-wallet": {
+      "prompt": "An open violet wallet beside two small piles of light grey coins with completely blank faces, representing the cost of processing documents. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-prints": {
+      "prompt": "A fan of white photographic prints held by a blue clip, each showing a simple green tree and a blue sky as solid shapes. These are physical photographs waiting to be printed in a fictional shop example. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-clock": {
+      "prompt": "A large blue analog alarm clock with a white dial and two plain violet hands, without tick marks or numerals, representing time available to wait for a result. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "processing-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a neat bundle of blank white papers. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-pages": {
+      "prompt": "A hand holding out several large blank white document sheets secured with a violet paper clip, representing the source material sent for summarization. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "output-page": {
+      "prompt": "A single compact blank white summary sheet held upright by a blue binder clip, with a violet pencil beside it, representing the returned summary. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "swim-surveys": {
+      "prompt": "A thick stack of blank white survey sheets next to blue swimming goggles and a violet swimming cap, representing feedback gathered at swimming lessons. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-user": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a smartphone with a completely blank blue screen, looking at it while waiting for an answer, with one empty speech bubble beside the phone. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "night": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "papers",
+          "label": "夜間の要約",
+          "art": "night-papers",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "結果を待てる",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "処理の費用",
+          "art": "cost-wallet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "prints": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "photos",
+          "label": "写真の印刷",
+          "art": "photo-prints",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "急がない依頼",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "料金を比べる",
+          "art": "cost-wallet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "price": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "normal",
+          "label": "通常の料金",
+          "art": "cost-wallet",
+          "at": [1, 1]
+        },
+        {
+          "id": "batch",
+          "label": "バッチの料金",
+          "art": "cost-wallet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "half",
+          "from": "normal",
+          "to": "batch",
+          "label": "半額"
+        }
+      ]
+    },
+    "tokens": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "入力トークン",
+          "art": "input-pages",
+          "at": [1, 1]
+        },
+        {
+          "id": "robot",
+          "label": "バッチ処理",
+          "art": "processing-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力トークン",
+          "art": "output-page",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "input",
+          "to": "robot",
+          "label": "送る"
+        },
+        {
+          "id": "receive",
+          "from": "robot",
+          "to": "output",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "immediate": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "画面で待つ人",
+          "art": "waiting-user",
+          "at": [1, 1]
+        },
+        {
+          "id": "normal",
+          "label": "通常のAPI",
+          "art": "processing-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "price",
+          "label": "バッチの半額",
+          "art": "cost-wallet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "swim": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "surveys",
+          "label": "教室の感想",
+          "art": "swim-surveys",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "入力の料金",
+          "art": "input-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "出力の料金",
+          "art": "output-page",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "swim-choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "surveys",
+          "label": "大量の感想",
+          "art": "swim-surveys",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "結果を待てる",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "batch",
+          "label": "バッチを選ぶ",
+          "art": "processing-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check-time",
+          "from": "surveys",
+          "to": "wait",
+          "label": "用途を確認"
+        },
+        {
+          "id": "choose",
+          "from": "wait",
+          "to": "batch",
+          "label": "まとめる"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "night",
+          "label": "夜間の要約",
+          "art": "night-papers",
+          "at": [1, 1]
+        },
+        {
+          "id": "swim",
+          "label": "感想の要約",
+          "art": "swim-surveys",
+          "at": [3, 1]
+        },
+        {
+          "id": "person",
+          "label": "その場の回答",
+          "art": "waiting-user",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "夜間の要約の費用",
+      "board": "night",
+      "beats": [
+        {
+          "say": "毎晩、たまった文章をまとめて要約するとします。",
+          "show": ["papers"]
+        },
+        {
+          "say": "結果を、その場ですぐに読む必要はありません。",
+          "show": ["wait"]
+        },
+        {
+          "say": "急がない処理に使う費用を、見直してみましょう。",
+          "show": ["cost"]
+        },
+        {
+          "say": "Message Batches API の料金は、通常の半額です。",
+          "speech": "メッセージバッチズエーピーアイの料金は、通常の半額です。",
+          "pulse": ["cost"],
+          "tag": {
+            "cost": "バッチは半額"
+          }
+        }
+      ]
+    },
+    {
+      "id": "photo-shop",
+      "kind": "board",
+      "role": "example",
+      "title": "写真の印刷を頼むなら",
+      "board": "prints",
+      "beats": [
+        {
+          "say": "たとえとして、写真の印刷を頼む場面を考えましょう。",
+          "show": ["photos"]
+        },
+        {
+          "say": "この店では、急がない依頼の料金が安くなります。",
+          "show": ["wait", "cost"]
+        },
+        {
+          "say": "ただし、写真を今すぐ使いたい人には不向きです。",
+          "pulse": ["wait"],
+          "tag": {
+            "wait": "待てるか確認"
+          }
+        },
+        {
+          "say": "バッチも、料金と結果を待てるかを合わせて比べます。",
+          "pulse": ["wait", "cost"]
+        }
+      ]
+    },
+    {
+      "id": "half-price",
+      "kind": "board",
+      "role": "syntax",
+      "title": "通常の半額を図で見る",
+      "board": "price",
+      "beats": [
+        {
+          "say": "ここからは、バッチの料金を確かめます。",
+          "term": {
+            "text": "バッチの料金",
+            "ruby": "ばっちのりょうきん",
+            "note": "通常の料金の半額"
+          }
+        },
+        {
+          "say": "比較の基準は、通常の Messages API の料金です。",
+          "speech": "比較の基準は、通常のメッセージズエーピーアイの料金です。",
+          "show": ["normal"],
+          "tag": {
+            "normal": "100%"
+          }
+        },
+        {
+          "say": "バッチでは、その料金の半分になります。",
+          "show": ["batch", "half"],
+          "tag": {
+            "batch": "50%"
+          },
+          "travel": {
+            "along": ["half"]
+          }
+        },
+        {
+          "say": "半額は、通常の料金の五十パーセントという意味です。",
+          "pulse": ["batch"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "both-directions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力も出力も半額",
+      "board": "tokens",
+      "beats": [
+        {
+          "say": "送る文章には、入力トークンの料金がかかります。",
+          "term": {
+            "text": "入力トークン",
+            "ruby": "にゅうりょくとーくん",
+            "note": "送る文章の側"
+          }
+        },
+        {
+          "say": "要約の材料を送る料金が、半額です。",
+          "show": ["input", "robot", "send"],
+          "tag": {
+            "input": "料金は半額"
+          },
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "返ってくる文章には、出力トークンの料金がかかります。",
+          "term": {
+            "text": "出力トークン",
+            "ruby": "しゅつりょくとーくん",
+            "note": "返る文章の側"
+          }
+        },
+        {
+          "say": "できた要約を受け取る料金も、半額です。",
+          "show": ["output", "receive"],
+          "tag": {
+            "output": "料金は半額"
+          },
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "入力だけでなく、出力の料金も合わせて確かめましょう。",
+          "pulse": ["input", "output"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "night-choice",
+      "kind": "board",
+      "role": "apply",
+      "title": "夜間の要約に当てはめる",
+      "board": "night",
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の例では、毎晩たくさんの文章を要約していました。",
+          "show": ["papers"],
+          "tag": {
+            "papers": "量が多い"
+          }
+        },
+        {
+          "say": "結果をすぐに使わないので、待てる処理です。",
+          "show": ["wait"],
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "そこで、通常の処理からバッチへの変更を考えます。",
+          "show": ["cost"],
+          "tag": {
+            "cost": "バッチを検討"
+          }
+        },
+        {
+          "say": "入力と出力の料金が、どちらも通常の半額です。",
+          "pulse": ["cost"],
+          "tag": {
+            "cost": "両方とも半額"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "urgent-choice",
+      "kind": "board",
+      "role": "apply",
+      "title": "その場で答えが要るなら",
+      "board": "immediate",
+      "beats": [
+        {
+          "say": "一方、画面を見ている人が、その場で答えを求めています。",
+          "show": ["person"]
+        },
+        {
+          "say": "こちらは、結果をすぐ使いたい処理です。",
+          "tag": {
+            "person": "今すぐ使う"
+          },
+          "pulse": ["person"]
+        },
+        {
+          "say": "この用途では、通常の Messages API を選びます。",
+          "speech": "この用途では、通常のメッセージズエーピーアイを選びます。",
+          "show": ["normal"],
+          "mark": [
+            {
+              "on": "normal",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "料金が半額でも、待てない用途にバッチは選びません。",
+          "show": ["price"],
+          "tag": {
+            "price": "安さだけ不可"
+          },
+          "pulse": ["price"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "水泳教室の感想を要約",
+      "board": "swim",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水泳教室で集めた、大量の感想を要約します。",
+          "show": ["surveys"]
+        },
+        {
+          "say": "担当者が読むのは後日で、結果を待てる仕事です。",
+          "tag": {
+            "surveys": "後日読む"
+          },
+          "pulse": ["surveys"]
+        },
+        {
+          "say": "担当者は、費用を下げるためにバッチを選びました。",
+          "tag": {
+            "surveys": "バッチを選択"
+          }
+        },
+        {
+          "say": "入力と出力の料金を、通常の処理と比べます。",
+          "show": ["input", "output"],
+          "pulse": []
+        },
+        {
+          "say": "半額になるのは、入力だけか、両方か、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "input",
+              "kind": "question"
+            },
+            {
+              "on": "output",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "入力と出力の両方",
+      "board": "swim",
+      "beats": [
+        {
+          "say": "答えは、入力と出力の両方です。",
+          "mark": [
+            {
+              "on": "input",
+              "kind": "check"
+            },
+            {
+              "on": "output",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["input", "output"]
+        },
+        {
+          "say": "それぞれ、通常の料金の五十パーセントになります。",
+          "tag": {
+            "input": "50%",
+            "output": "50%"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "trace-charges",
+      "kind": "board",
+      "role": "explain",
+      "title": "感想と要約の料金をたどる",
+      "board": "swim",
+      "beats": [
+        {
+          "say": "送る感想の文章は、入力にあたります。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "感想を送る"
+          }
+        },
+        {
+          "say": "その入力トークンの料金が、通常の半額です。",
+          "tag": {
+            "input": "料金は半額"
+          }
+        },
+        {
+          "say": "返ってくる要約には、出力トークンの料金がかかります。",
+          "pulse": ["output"],
+          "tag": {
+            "output": "要約を受信"
+          }
+        },
+        {
+          "say": "出力も半額なので、入力だけという答えは誤りです。",
+          "tag": {
+            "output": "料金は半額"
+          },
+          "pulse": ["input", "output"]
+        }
+      ]
+    },
+    {
+      "id": "trace-choice",
+      "kind": "board",
+      "role": "explain",
+      "title": "バッチが合う理由",
+      "board": "swim-choice",
+      "beats": [
+        {
+          "say": "この仕事には、まとめて要約する大量の感想がありました。",
+          "show": ["surveys"]
+        },
+        {
+          "say": "担当者が結果を読むのは、後日です。",
+          "show": ["wait", "check-time"],
+          "travel": {
+            "along": ["check-time"]
+          }
+        },
+        {
+          "say": "結果を待てるので、バッチを使う条件に合っています。",
+          "show": ["batch", "choose"],
+          "travel": {
+            "along": ["choose"]
+          },
+          "mark": [
+            {
+              "on": "batch",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "待てるかを確かめて、半額のバッチを選びました。",
+          "pulse": ["wait", "batch"],
+          "tag": {
+            "batch": "通常の半額"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "費用と待ち時間で選ぶ",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "夜間の一括要約なら、待てるかを確かめてバッチを選びます。",
+          "show": ["night"],
+          "tag": {
+            "night": "バッチ"
+          }
+        },
+        {
+          "say": "後日読む大量の感想も、同じ選び方ができる例です。",
+          "show": ["swim"],
+          "tag": {
+            "swim": "バッチ"
+          }
+        },
+        {
+          "say": "その場で結果を使うなら、通常の処理を選びましょう。",
+          "show": ["person"],
+          "tag": {
+            "person": "通常のAPI"
+          }
+        },
+        {
+          "say": "待てる大量の処理では、入力も出力も半額にできます。",
+          "pulse": ["night", "swim"],
+          "tag": {
+            "night": "両方とも半額",
+            "swim": "両方とも半額"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b224ef4d7ff02a315ab303572fd4dbe9dc364f9f11505dae56c7bb5e5566ce8a"
+  }
+}

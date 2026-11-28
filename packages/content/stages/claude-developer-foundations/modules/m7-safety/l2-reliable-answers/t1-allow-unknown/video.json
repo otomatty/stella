@@ -1,0 +1,751 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "資料にない情報を尋ねる依頼に、分からないと答えてよいという指示を書ける。",
+    "stuck": "資料に答えがなくても、それらしく具体的な回答なら正しいと思ってしまう。",
+    "points": ["分からないときは分からないと答えてよい、と指示に書きます。"],
+    "leaveOut": [
+      "長い資料から先に引用を抜き出させる方法",
+      "回答の出典を検証する仕組み",
+      "秘密をエージェントから隠す設計",
+      "API の呼び出し方やモデルごとの仕様"
+    ]
+  },
+  "art": {
+    "cake-recipe": {
+      "prompt": "An open white recipe booklet with small pictorial drawings of an egg, flour in a white bowl, and a golden slice of cake. The rest of the pages are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cake-oven": {
+      "prompt": "A compact blue countertop oven containing a golden cake in a light grey baking tin, with a small round kitchen timer beside it. The timer face is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding an open white recipe booklet and looking thoughtfully at its blank pages. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white response card. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-note": {
+      "prompt": "A single white paper reply note held upright by a blue paper clip, with a small violet pencil beside it. The paper is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instruction-note": {
+      "prompt": "A hand holding a blue pen poised above a white instruction sheet with a violet folded corner. The paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "craft-materials": {
+      "prompt": "A white school craft supply note beside a small stack of white drawing paper and a pair of rounded blue scissors. The note is entirely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-check": {
+      "prompt": "A staff member in a plain blue shirt comparing two blank white documents held side by side, looking carefully between them. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "材料のレシピ",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "time",
+          "label": "焼く時間",
+          "art": "cake-oven",
+          "at": [3, 1]
+        },
+        {
+          "id": "instruction",
+          "label": "不明でもよい",
+          "art": "instruction-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "材料だけ",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "読む人",
+          "art": "recipe-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "time",
+          "label": "焼く時間",
+          "art": "cake-oven",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "recipe",
+          "to": "reader",
+          "label": "読む"
+        }
+      ]
+    },
+    "made-up-answer": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "時間は未記載",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "それらしい答え",
+          "art": "reply-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "recipe",
+          "to": "claude",
+          "label": "渡す"
+        },
+        {
+          "id": "reply-to",
+          "from": "claude",
+          "to": "reply",
+          "label": "回答例"
+        }
+      ]
+    },
+    "source-rule": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "渡した資料",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "rule",
+          "label": "資料だけ使う",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "資料から答える",
+          "art": "reply-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "limit",
+          "from": "recipe",
+          "to": "rule",
+          "label": "範囲を指定"
+        },
+        {
+          "id": "answer-from",
+          "from": "rule",
+          "to": "reply",
+          "label": "指示"
+        }
+      ]
+    },
+    "unknown-rule": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "missing",
+          "label": "時間は未記載",
+          "art": "cake-oven",
+          "at": [1, 1]
+        },
+        {
+          "id": "guess",
+          "label": "推測で補う",
+          "art": "reply-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "allow",
+          "label": "不明でもよい",
+          "art": "instruction-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "write-request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "このレシピだけ",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "instruction",
+          "label": "不明でもよい",
+          "art": "instruction-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "attach",
+          "from": "recipe",
+          "to": "instruction",
+          "label": "添える"
+        },
+        {
+          "id": "send",
+          "from": "instruction",
+          "to": "claude",
+          "label": "送る"
+        }
+      ]
+    },
+    "answer-boundary": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "材料だけ",
+          "art": "cake-recipe",
+          "at": [1, 1]
+        },
+        {
+          "id": "ingredients",
+          "label": "材料の答え",
+          "art": "reply-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "time",
+          "label": "時間の答え",
+          "art": "cake-oven",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "craft-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "note",
+          "label": "図工の連絡",
+          "art": "craft-materials",
+          "at": [1, 1]
+        },
+        {
+          "id": "quantity",
+          "label": "必要な枚数",
+          "art": "reply-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "どちらの指示",
+          "art": "instruction-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "first",
+          "label": "一つ目は推測可",
+          "art": "instruction-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "second",
+          "label": "二つ目は不明可",
+          "art": "instruction-note",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "craft-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "note",
+          "label": "画用紙を持参",
+          "art": "craft-materials",
+          "at": [1, 1]
+        },
+        {
+          "id": "guess",
+          "label": "枚数を推測",
+          "art": "reply-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "unknown",
+          "label": "枚数は不明",
+          "art": "instruction-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "use-and-check": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "不明を許す指示",
+          "art": "instruction-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "返ってきた答え",
+          "art": "reply-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "person",
+          "label": "人が確かめる",
+          "art": "human-check",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "request",
+          "to": "reply",
+          "label": "回答"
+        },
+        {
+          "id": "check",
+          "from": "reply",
+          "to": "person",
+          "label": "確認"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "書かれていない時間",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "材料だけが載った、架空のケーキのレシピを使います。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "知りたいのは、そこにない焼く時間です。",
+          "show": ["time"]
+        },
+        {
+          "say": "答えが載っていないときの指示を考えましょう。",
+          "show": ["instruction"]
+        },
+        {
+          "say": "分からないときは分からないと答えてよい、と指示に書きます。",
+          "pulse": ["instruction"]
+        }
+      ]
+    },
+    {
+      "id": "read-recipe",
+      "kind": "board",
+      "role": "example",
+      "title": "レシピを渡して尋ねる",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "料理を手伝う人に、レシピを渡した場面です。",
+          "show": ["recipe", "reader", "read"]
+        },
+        {
+          "say": "材料には、小麦粉と卵が載っています。",
+          "pulse": ["recipe"],
+          "tag": {
+            "recipe": "小麦粉と卵"
+          }
+        },
+        {
+          "say": "その人に、何分焼くのかを尋ねました。",
+          "show": ["time"],
+          "pulse": ["time"]
+        },
+        {
+          "say": "このレシピだけでは、焼く時間は分かりません。",
+          "mark": [
+            {
+              "on": "time",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "name-the-error",
+      "kind": "board",
+      "role": "syntax",
+      "title": "それらしい答えの問題",
+      "board": "made-up-answer",
+      "beats": [
+        {
+          "say": "Claude にも、同じレシピを渡して尋ねます。",
+          "speech": "クロードにも、同じレシピを渡して尋ねます。",
+          "show": ["recipe", "claude", "send"]
+        },
+        {
+          "say": "資料にない時間を、もっともらしく答えました。",
+          "show": ["reply", "reply-to"],
+          "tag": {
+            "reply": "二十分"
+          },
+          "pulse": ["reply"]
+        },
+        {
+          "say": "事実や資料と違う内容を作るのが、ハルシネーションです。",
+          "term": {
+            "text": "ハルシネーション",
+            "note": "事実や資料と違う内容を作る"
+          }
+        },
+        {
+          "say": "具体的な時間でも、資料から確かめられるとは限りません。",
+          "pulse": ["recipe", "reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "limit-the-source",
+      "kind": "board",
+      "role": "syntax",
+      "title": "答えに使う情報を決める",
+      "board": "source-rule",
+      "beats": [
+        {
+          "say": "答えを支える情報が、根拠です。",
+          "term": {
+            "text": "根拠",
+            "ruby": "こんきょ",
+            "note": "答えを支える情報"
+          }
+        },
+        {
+          "say": "今回は、渡したレシピを根拠にします。",
+          "show": ["recipe"],
+          "tag": {
+            "recipe": "小麦粉と卵"
+          }
+        },
+        {
+          "say": "指示には、この資料だけを使うと書きましょう。",
+          "show": ["rule", "limit"]
+        },
+        {
+          "say": "一般の知識で補わないことも、合わせて伝えます。",
+          "show": ["reply", "answer-from"],
+          "tag": {
+            "rule": "補わない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "allow-unknown",
+      "kind": "board",
+      "role": "syntax",
+      "title": "不明と答えることを許す",
+      "board": "unknown-rule",
+      "beats": [
+        {
+          "say": "資料にない時間は、まだ分からないままです。",
+          "show": ["missing"]
+        },
+        {
+          "say": "ここで時間を見当で補うのは、推測になります。",
+          "show": ["guess"],
+          "term": {
+            "text": "推測",
+            "ruby": "すいそく",
+            "note": "見当を付けて考えること"
+          }
+        },
+        {
+          "say": "この推測を、資料に書かれた答えとしては使いません。",
+          "pulse": ["guess"],
+          "mark": [
+            {
+              "on": "guess",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "分からないと答えてよいと、はっきり伝えましょう。",
+          "show": ["allow"],
+          "pulse": ["allow"]
+        }
+      ]
+    },
+    {
+      "id": "write-the-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "レシピへの依頼を書く",
+      "board": "write-request",
+      "beats": [
+        {
+          "say": "依頼では、このレシピだけを使うよう伝えます。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "次に加えるのは、不明と答えてよいという指示です。",
+          "show": ["instruction", "attach"]
+        },
+        {
+          "say": "不明なら、資料からは分かりませんと答えるよう頼みます。",
+          "tag": {
+            "instruction": "不明と答える"
+          },
+          "pulse": ["instruction"]
+        },
+        {
+          "say": "焼く時間の質問と一緒に、この指示を送りましょう。",
+          "show": ["claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "separate-answers",
+      "kind": "board",
+      "role": "apply",
+      "title": "資料にあるかで答え分ける",
+      "board": "answer-boundary",
+      "beats": [
+        {
+          "say": "同じレシピで、材料と焼く時間を分けて考えます。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "材料なら、小麦粉と卵という記載が根拠です。",
+          "show": ["ingredients"],
+          "tag": {
+            "ingredients": "小麦粉と卵"
+          }
+        },
+        {
+          "say": "焼く時間は、資料からは分かりません。",
+          "show": ["time"],
+          "tag": {
+            "time": "分からない"
+          }
+        },
+        {
+          "say": "資料にあることまで、不明にしなくて大丈夫です。",
+          "pulse": ["ingredients"],
+          "mark": [
+            {
+              "on": "ingredients",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "図工の材料を尋ねる指示",
+      "board": "craft-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "図工の連絡には、画用紙を持参とだけ書いてあります。",
+          "show": ["note"],
+          "tag": {
+            "note": "画用紙を持参"
+          }
+        },
+        {
+          "say": "必要な枚数を尋ねるとき、加える指示の比較です。",
+          "show": ["quantity", "question"],
+          "tag": {
+            "quantity": "記載なし"
+          }
+        },
+        {
+          "say": "一つ目では、枚数が不明なら推測して答えるよう頼みました。",
+          "show": ["first"]
+        },
+        {
+          "say": "二つ目では、資料だけを使い、不明ならそう答えるよう頼みます。",
+          "show": ["second"]
+        },
+        {
+          "say": "資料にない枚数を作らせないためには、どちらでしょうか。",
+          "pulse": ["first", "second"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つ目の指示を選ぶ",
+      "board": "craft-quiz",
+      "beats": [
+        {
+          "say": "答えは、不明ならそう答えてよいとした二つ目の指示です。",
+          "pulse": ["second"],
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "枚数が書かれていないことを、そのまま答えられます。",
+          "pulse": ["quantity"],
+          "tag": {
+            "quantity": "分からない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-the-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "枚数の根拠がない",
+      "board": "craft-reason",
+      "beats": [
+        {
+          "say": "連絡から分かるのは、画用紙が必要だということです。",
+          "show": ["note"]
+        },
+        {
+          "say": "何枚必要かまでは、書いてありません。",
+          "tag": {
+            "note": "枚数は未記載"
+          },
+          "pulse": ["note"]
+        },
+        {
+          "say": "一つ目の指示では、書かれていない枚数を推測させます。",
+          "show": ["guess"],
+          "mark": [
+            {
+              "on": "guess",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "二つ目では、その枚数は分からないと答えて構いません。",
+          "show": ["unknown"],
+          "mark": [
+            {
+              "on": "unknown",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "情報が足りないときの答え方まで、指示に入れましょう。",
+          "pulse": ["unknown"],
+          "tag": {
+            "unknown": "推測しない"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-and-check",
+      "kind": "board",
+      "role": "usage",
+      "title": "資料から答えてもらうとき",
+      "board": "use-and-check",
+      "beats": [
+        {
+          "say": "報告書から答えてもらうときも、不明でよいと伝えます。",
+          "show": ["request"]
+        },
+        {
+          "say": "こうした指示は、誤った情報を減らす手軽な方法です。",
+          "show": ["reply", "receive"]
+        },
+        {
+          "say": "それでも、間違いがなくなるわけではありません。",
+          "pulse": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "大事な判断に使う情報は、人が確かめます。",
+          "show": ["person", "check"],
+          "travel": {
+            "along": ["check"],
+            "icon": "file"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e2937ed62d71ed8eeab70708bd1d579149089ecf53b380cfdede3e3ceb5666b3"
+  }
+}

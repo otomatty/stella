@@ -1,0 +1,808 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "実行の記録から、終了の分岐と繰り返しの上限の不足を見つけ、止め方を説明できる。",
+    "stuck": "同じ失敗が続いても待ち時間だけを変え、入力の修正やループを抜ける条件を考えない。",
+    "points": ["終わらないループには、止まる条件と回数の上限を足します。"],
+    "leaveOut": [
+      "途中で返るサーバーツールの応答の扱い",
+      "呼び出しと結果の対応の直し方",
+      "文脈の整理とセッションの引き継ぎ",
+      "Agent SDK の設定値や予算の細かな指定",
+      "ループの実装コード"
+    ]
+  },
+  "art": {
+    "product-tag": {
+      "prompt": "A discontinued blue replacement knob beside a blank light grey paper product tag attached with a short string. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-clerk": {
+      "prompt": "A shop clerk in a plain blue shirt with simple facial features holding a blank white catalogue open and looking at a small blue replacement knob. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lookup-device": {
+      "prompt": "A blue laptop with a completely blank screen beside a magnifying glass and a white index card. A conceptual tool lookup, without any real application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-slip": {
+      "prompt": "A blank white receipt with a torn lower edge, held beside a closed light grey catalogue by a hand in a blue sleeve. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stop-clerk": {
+      "prompt": "A shop clerk in a plain blue shirt with simple facial features raising one open palm and closing a white catalogue with the other hand. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "count-beads": {
+      "prompt": "A short upright violet counting rack with large blue beads on one rod and a solid end cap. A tangible aid for counting repeated attempts, without printed markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "used-books": {
+      "prompt": "A small stack of used books with blue and violet covers and light grey pages, beside one open book showing a blank white identification label inside its cover. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "run-notebook": {
+      "prompt": "An open white notebook with blue binding and several light grey page tabs, beside a violet pencil. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "廃番の品番",
+          "art": "product-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "品番が無効",
+          "art": "error-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "増える照会",
+          "art": "run-notebook",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "同じ品番",
+          "art": "product-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "店の担当者",
+          "art": "shop-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "品番を確認",
+          "art": "stop-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "product",
+          "to": "clerk",
+          "label": "照会"
+        },
+        {
+          "id": "correct",
+          "from": "clerk",
+          "to": "stop",
+          "label": "確認へ"
+        }
+      ]
+    },
+    "exit": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "run-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "ツール要求",
+          "art": "lookup-device",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "結果を返す",
+          "art": "run-notebook",
+          "at": [5, 1]
+        },
+        {
+          "id": "ended",
+          "label": "ターン終了",
+          "art": "run-notebook",
+          "at": [5, 2]
+        },
+        {
+          "id": "stop",
+          "label": "ループを抜ける",
+          "art": "stop-clerk",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "execute",
+          "from": "reason",
+          "to": "tool",
+          "label": "実行要求"
+        },
+        {
+          "id": "return",
+          "from": "tool",
+          "to": "result",
+          "label": "実行後"
+        },
+        {
+          "id": "finish",
+          "from": "ended",
+          "to": "stop",
+          "label": "終了"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "retry",
+          "label": "再試行",
+          "art": "lookup-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "count",
+          "label": "回数の上限",
+          "art": "count-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "whole",
+          "label": "ループ全体",
+          "art": "run-notebook",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "invalid": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "同じ品番",
+          "art": "product-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "エラーの印",
+          "art": "error-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "入力を確認",
+          "art": "stop-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fail",
+          "from": "product",
+          "to": "failure",
+          "label": "照会"
+        },
+        {
+          "id": "halt",
+          "from": "failure",
+          "to": "stop",
+          "label": "打ち切る"
+        }
+      ]
+    },
+    "temporary": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "failure",
+          "label": "一時的な失敗",
+          "art": "error-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "count",
+          "label": "再試行の回数",
+          "art": "count-beads",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "打ち切る",
+          "art": "stop-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "retry",
+          "from": "failure",
+          "to": "count",
+          "label": "再試行"
+        },
+        {
+          "id": "limit",
+          "from": "count",
+          "to": "stop",
+          "label": "上限に到達"
+        }
+      ]
+    },
+    "verify": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "normal",
+          "label": "回答で終了",
+          "art": "run-notebook",
+          "at": [1, 1]
+        },
+        {
+          "id": "repeat",
+          "label": "失敗が続く",
+          "art": "run-notebook",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "止めた条件",
+          "art": "run-notebook",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "books": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "古本の番号",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "番号が無効",
+          "art": "error-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "same",
+          "label": "同じ番号",
+          "art": "used-books",
+          "at": [5, 1]
+        },
+        {
+          "id": "again",
+          "label": "待って再照会",
+          "art": "lookup-device",
+          "at": [5, 2]
+        },
+        {
+          "id": "fix",
+          "label": "止めて確認",
+          "art": "stop-clerk",
+          "at": [3, 2]
+        },
+        {
+          "id": "cap",
+          "label": "全体にも上限",
+          "art": "count-beads",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "lookup",
+          "from": "book",
+          "to": "failure",
+          "label": "照会"
+        },
+        {
+          "id": "repeat",
+          "from": "failure",
+          "to": "same",
+          "label": "変えずに"
+        }
+      ]
+    },
+    "book-reasons": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "無効な番号",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待ち時間",
+          "art": "lookup-device",
+          "at": [3, 1]
+        },
+        {
+          "id": "correct",
+          "label": "番号の確認",
+          "art": "stop-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask-correct",
+          "from": "wait",
+          "to": "correct",
+          "label": "入力を直す"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shop",
+          "label": "商品の照会",
+          "art": "product-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "books",
+          "label": "古本の査定",
+          "art": "used-books",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "停止の記録",
+          "art": "run-notebook",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "増え続ける照会を止める",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "廃番になった商品の品番を、何度も照会しています。",
+          "show": ["product"]
+        },
+        {
+          "say": "毎回返るのは、品番が無効という同じ失敗です。",
+          "show": ["failure"]
+        },
+        {
+          "say": "記録を読むと、照会の回数だけが増えていました。",
+          "show": ["record"]
+        },
+        {
+          "say": "終わらないループには、止まる条件と回数の上限を足します。",
+          "pulse": ["failure", "record"]
+        }
+      ]
+    },
+    {
+      "id": "shop-example",
+      "kind": "board",
+      "role": "example",
+      "title": "同じ品番で尋ね続ける",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "店の担当者に、古い部品の品番を伝えました。",
+          "show": ["product", "clerk", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "担当者は、その品番では扱えないと答えます。",
+          "tag": {
+            "clerk": "品番が無効"
+          }
+        },
+        {
+          "say": "少し待って同じ品番を伝えても、品番は変わりません。",
+          "pulse": ["product"],
+          "mark": [
+            {
+              "on": "product",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "そこで照会を止め、品番の確認を頼みましょう。",
+          "show": ["stop", "correct"],
+          "travel": {
+            "along": ["correct"],
+            "icon": "person"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-stop-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "停止理由で出口を選ぶ",
+      "board": "exit",
+      "beats": [
+        {
+          "say": "応答が止まった理由を表す項目が、停止理由です。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "応答が止まった理由"
+          }
+        },
+        {
+          "say": "ツールを使うループでは、この項目を読みます。",
+          "show": ["reason"]
+        },
+        {
+          "say": "ツールの実行要求がある間だけ、実行を続ける決まりです。",
+          "show": ["tool", "execute"],
+          "travel": {
+            "along": ["execute"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "実行した結果を返して、次の応答を受け取ります。",
+          "show": ["result", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "回答でターンが終わったら、ループを抜けましょう。",
+          "show": ["ended", "stop", "finish"],
+          "travel": {
+            "along": ["finish"],
+            "icon": "flag"
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-limits",
+      "kind": "board",
+      "role": "syntax",
+      "title": "再試行と全体の上限",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "失敗した処理をもう一度試すことを、再試行と呼びます。",
+          "term": {
+            "text": "再試行",
+            "ruby": "さいしこう",
+            "note": "失敗した処理をもう一度試す"
+          }
+        },
+        {
+          "say": "一時的な障害の後で、同じ処理を試す場合です。",
+          "show": ["retry"]
+        },
+        {
+          "say": "繰り返しを打ち切るために、回数の上限を設けます。",
+          "term": {
+            "text": "回数の上限",
+            "ruby": "かいすうのじょうげん",
+            "note": "決めた回数で打ち切る"
+          }
+        },
+        {
+          "say": "ツールが成功しても繰り返すので、ループ全体にも必要です。",
+          "show": ["count", "whole"],
+          "pulse": ["whole"]
+        }
+      ]
+    },
+    {
+      "id": "stop-invalid-input",
+      "kind": "board",
+      "role": "apply",
+      "title": "無効な品番を送り直さない",
+      "board": "invalid",
+      "beats": [
+        {
+          "say": "廃番の商品では、送った品番と失敗の中身を見比べます。",
+          "show": ["product", "failure", "fail"],
+          "tag": {
+            "failure": "true"
+          }
+        },
+        {
+          "say": "ここに付いているのは、ツールのエラーを示す印です。",
+          "pulse": ["failure"]
+        },
+        {
+          "say": "同じ品番が無効なら、その品番での照会を打ち切ります。",
+          "show": ["stop", "halt"],
+          "travel": {
+            "along": ["halt"],
+            "icon": "flag"
+          }
+        },
+        {
+          "say": "利用者に品番を確認してもらう分岐を加えましょう。",
+          "pulse": ["stop"],
+          "tag": {
+            "stop": "修正を求める"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bound-retries",
+      "kind": "board",
+      "role": "apply",
+      "title": "一時的な失敗も数える",
+      "board": "temporary",
+      "beats": [
+        {
+          "say": "一時的な障害で失敗した場合は、再試行も考えます。",
+          "show": ["failure"]
+        },
+        {
+          "say": "このとき必要なのは、何回まで試すかという決まりです。",
+          "show": ["count", "retry"]
+        },
+        {
+          "say": "決めた回数に達したら、再試行を打ち切りましょう。",
+          "show": ["stop", "limit"],
+          "travel": {
+            "along": ["limit"],
+            "icon": "flag"
+          }
+        },
+        {
+          "say": "待ち時間を変えるだけでは、回数の上限にはなりません。",
+          "pulse": ["count"],
+          "tag": {
+            "count": "回数で止める"
+          }
+        }
+      ]
+    },
+    {
+      "id": "verify-records",
+      "kind": "board",
+      "role": "apply",
+      "title": "修正後の記録を比べる",
+      "board": "verify",
+      "beats": [
+        {
+          "say": "直した後は、回答で終わる記録と失敗が続く記録を比べます。",
+          "show": ["normal", "repeat"]
+        },
+        {
+          "say": "回答で終わる場合は、終了後の呼び出しがないことが条件です。",
+          "pulse": ["normal"],
+          "mark": [
+            {
+              "on": "normal",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "失敗が続く場合も、決めた上限を超えていないか確かめます。",
+          "pulse": ["repeat"],
+          "mark": [
+            {
+              "on": "repeat",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "どの条件で止めたかも、記録に残しましょう。",
+          "show": ["reason"],
+          "tag": {
+            "reason": "止めた理由"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "古本の買い取りを直す",
+      "board": "books",
+      "think": 8,
+      "beats": [
+        {
+          "say": "古本の買い取りで、本の番号から査定情報を調べます。",
+          "show": ["book"]
+        },
+        {
+          "say": "ツールの返事は、番号が無効というエラーでした。",
+          "show": ["failure", "lookup"]
+        },
+        {
+          "say": "番号を変えずに照会し続け、全体の上限もありません。",
+          "show": ["same", "repeat"],
+          "tag": {
+            "same": "上限なし"
+          }
+        },
+        {
+          "say": "候補は、待ち時間を延ばす方法と、止めて番号を確認する方法です。",
+          "show": ["again", "fix"]
+        },
+        {
+          "say": "どちらを選び、ループ全体には何を足せばよいでしょうか。",
+          "show": ["cap"],
+          "mark": [
+            {
+              "on": "again",
+              "kind": "question"
+            },
+            {
+              "on": "fix",
+              "kind": "question"
+            },
+            {
+              "on": "cap",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "番号を確認し上限も付ける",
+      "board": "books",
+      "beats": [
+        {
+          "say": "選ぶのは、照会を止めて番号を確認する方法です。",
+          "mark": [
+            {
+              "on": "again",
+              "kind": "cross"
+            },
+            {
+              "on": "fix",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["fix"]
+        },
+        {
+          "say": "利用者に、本の番号の修正を求めます。",
+          "tag": {
+            "fix": "番号の修正"
+          }
+        },
+        {
+          "say": "ループ全体にも、回数の上限を設けましょう。",
+          "mark": [
+            {
+              "on": "cap",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["cap"],
+          "untag": ["same"]
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "kind": "board",
+      "role": "explain",
+      "title": "待つだけで直らない理由",
+      "board": "book-reasons",
+      "beats": [
+        {
+          "say": "この記録で失敗の原因を示すのは、無効という返事です。",
+          "show": ["input"],
+          "tag": {
+            "input": "番号が無効"
+          }
+        },
+        {
+          "say": "待ち時間を延ばしても、送る番号は変わりません。",
+          "show": ["wait"],
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "入力を確認する分岐が、同じ失敗の繰り返しを止めます。",
+          "show": ["correct", "ask-correct"],
+          "travel": {
+            "along": ["ask-correct"],
+            "icon": "person"
+          }
+        },
+        {
+          "say": "別の理由で繰り返す場合にも備え、全体の上限が必要です。",
+          "pulse": ["correct"],
+          "tag": {
+            "correct": "上限も付ける"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "照会処理を見直すとき",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "商品の照会が終わらないときは、入力と失敗を比べます。",
+          "show": ["shop"]
+        },
+        {
+          "say": "古本の査定でも、確認するのは終了の分岐と回数の上限です。",
+          "show": ["books"]
+        },
+        {
+          "say": "直した後は、どの条件で止まったかを記録で確かめましょう。",
+          "show": ["record"]
+        },
+        {
+          "say": "終わらないループには、止まる条件と回数の上限を足します。",
+          "pulse": ["shop", "books", "record"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "247931ee927b086bc2b04539d0f18701dcb295ba73bc03be38406b23bd64780a"
+  }
+}

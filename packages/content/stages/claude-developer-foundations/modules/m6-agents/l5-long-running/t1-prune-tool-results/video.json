@@ -1,0 +1,719 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "古い検索結果で文脈が埋まる例を見て、直近の結果を残すコンテキストの編集を選べる。",
+    "stuck": "短い会話なら枠は埋まらないと思い、検索結果の増加や、編集と要約の違いを見落とす。",
+    "points": ["古いツール結果が溜まったら、コンテキストの編集で古い結果から外します。"],
+    "leaveOut": [
+      "編集を指定するコードや細かい設定項目",
+      "ツール検索と圧縮の実装手順",
+      "サブエージェントへの調査の分担",
+      "セッションの切り替えとメモリーの保存方法"
+    ]
+  },
+  "art": {
+    "product-mug": {
+      "prompt": "One plain blue ceramic mug beside a white product information slip with a tiny mug pictogram, representing the product currently being compared. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "search-stack": {
+      "prompt": "A thick uneven stack of white search-result sheets with light grey edges and small blue mug pictograms, representing old product search results. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recent-results": {
+      "prompt": "Exactly three separate white search-result sheets arranged in a neat fan, each with a small blue mug pictogram and a violet corner tab, representing the three most recent product searches. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-stack": {
+      "prompt": "Several white recipe sheets with small pictorial drawings of carrots and tomatoes in their natural colours, clipped together with a blue clip, representing recipes for dishes already cooked. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-card": {
+      "prompt": "A single white recipe sheet with a small pictorial drawing of a saucepan holding orange soup, representing the recipe currently being followed. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "server-rules": {
+      "prompt": "A small blue server tower beside a white clipboard with three empty circular checkboxes, representing a server applying configured rules. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "saved-history": {
+      "prompt": "An open light grey archival folder holding a complete thick stack of white sheets with small blue mug pictograms, representing the app's saved original product-search history. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-coat": {
+      "prompt": "A freshly cleaned violet coat on a blue hanger with a blank white pickup slip beside it, representing a garment waiting to be collected. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-results": {
+      "prompt": "A thick stack of white lookup slips with small coat pictograms and blue corner tabs, representing old search results for completed dry-cleaning pickups. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "商品を照合",
+          "art": "product-mug",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "溜まった結果",
+          "art": "search-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近の結果",
+          "art": "recent-results",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "finished",
+          "label": "作り終えた分",
+          "art": "recipe-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "current",
+          "label": "今使う手順",
+          "art": "recipe-card",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "editing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "古い結果",
+          "art": "search-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "編集の規則",
+          "art": "server-rules",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "残す結果",
+          "art": "recent-results",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "apply-rule",
+          "from": "server",
+          "to": "old",
+          "label": "対象を外す"
+        }
+      ]
+    },
+    "retention": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "それより前",
+          "art": "search-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近三回",
+          "art": "recent-results",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "methods": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "results",
+          "label": "古い結果",
+          "art": "search-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "definitions",
+          "label": "多数の定義",
+          "icon": "extension",
+          "at": [3, 1]
+        },
+        {
+          "id": "conversation",
+          "label": "長い会話",
+          "icon": "read",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "product": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "検索結果",
+          "art": "search-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "最初の条件",
+          "icon": "write",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近三回",
+          "art": "recent-results",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "history": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "外す結果",
+          "art": "search-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "short",
+          "label": "結果の要約",
+          "icon": "file",
+          "at": [3, 1]
+        },
+        {
+          "id": "saved",
+          "label": "アプリの履歴",
+          "art": "saved-history",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "laundry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "受け取り確認",
+          "art": "cleaning-coat",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "済んだ検索",
+          "art": "cleaning-results",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近三回",
+          "icon": "result",
+          "at": [5, 1]
+        },
+        {
+          "id": "edit",
+          "label": "古い結果を外す",
+          "icon": "repeat",
+          "at": [5, 2]
+        },
+        {
+          "id": "all",
+          "label": "結果を全削除",
+          "icon": "file",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "済んだ検索",
+          "art": "cleaning-results",
+          "at": [1, 1]
+        },
+        {
+          "id": "coat",
+          "label": "いま確認中",
+          "art": "cleaning-coat",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近三回",
+          "icon": "result",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "recent",
+          "to": "coat",
+          "label": "照合に使う"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "product",
+          "label": "商品の照合",
+          "art": "product-mug",
+          "at": [1, 1]
+        },
+        {
+          "id": "old",
+          "label": "古い検索結果",
+          "art": "search-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "recent",
+          "label": "直近の確認",
+          "art": "recent-results",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "古い結果を減らす",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "商品を一件ずつ照合する仕事を考えます。",
+          "show": ["product"]
+        },
+        {
+          "say": "検索を重ねると、古い結果が溜まる状況です。",
+          "show": ["old"]
+        },
+        {
+          "say": "いま確認するための結果は残しましょう。",
+          "show": ["recent"]
+        },
+        {
+          "say": "古いツール結果は、コンテキストの編集で外します。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "古い分を外す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recipe-papers",
+      "kind": "board",
+      "role": "example",
+      "title": "使う手順を手元に残す",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "台所で、作り終えた料理の手順も広げていました。",
+          "show": ["finished"]
+        },
+        {
+          "say": "いま見たいのは、次に作るスープの手順です。",
+          "show": ["current"]
+        },
+        {
+          "say": "終わった料理の紙は、読む場所から外します。",
+          "hide": ["finished"],
+          "pulse": ["current"]
+        },
+        {
+          "say": "必要な手順を残して、続きを進めましょう。",
+          "mark": [
+            {
+              "on": "current",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "editing-rule",
+      "kind": "board",
+      "role": "syntax",
+      "title": "規則に沿って外す",
+      "board": "editing",
+      "beats": [
+        {
+          "say": "古い結果を外す手段が、コンテキストの編集です。",
+          "term": {
+            "text": "コンテキストの編集",
+            "ruby": "こんてきすとのへんしゅう",
+            "note": "規則に沿って古い結果を外す"
+          }
+        },
+        {
+          "say": "サーバー側が、決めた規則に従って結果を外します。",
+          "show": ["server", "old", "apply-rule"],
+          "travel": {
+            "along": ["apply-rule"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "この図で対象になるのは、古い検索結果です。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "外す対象"
+          }
+        },
+        {
+          "say": "直近の確認に使う結果は残しましょう。",
+          "show": ["recent"],
+          "hide": ["old", "apply-rule"],
+          "pulse": ["recent"]
+        }
+      ]
+    },
+    {
+      "id": "keep-recent",
+      "kind": "board",
+      "role": "syntax",
+      "title": "残す範囲を決める",
+      "board": "retention",
+      "beats": [
+        {
+          "say": "たとえば、直近三回のツール使用を残すように設定します。",
+          "speech": "たとえば、直近さんかいのツール使用を残すように設定します。",
+          "show": ["recent"],
+          "tag": {
+            "recent": "残す範囲"
+          }
+        },
+        {
+          "say": "その場合、外す対象はそれより古い検索結果です。",
+          "show": ["old"],
+          "tag": {
+            "old": "外す対象"
+          }
+        },
+        {
+          "say": "三回という数は、この例で選んだ設定にすぎません。",
+          "speech": "さんかいという数は、この例で選んだ設定にすぎません。",
+          "pulse": ["recent"],
+          "tag": {
+            "recent": "設定の例"
+          }
+        },
+        {
+          "say": "何を残す設定なのか、確認して使いましょう。",
+          "mark": [
+            {
+              "on": "recent",
+              "kind": "check"
+            }
+          ],
+          "hide": ["old"]
+        }
+      ]
+    },
+    {
+      "id": "choose-method",
+      "kind": "board",
+      "role": "syntax",
+      "title": "枠を使う中身を見る",
+      "board": "methods",
+      "beats": [
+        {
+          "say": "多数のツール定義には、ツール検索を使います。",
+          "term": {
+            "text": "ツール検索",
+            "ruby": "つーるけんさく",
+            "note": "必要な定義を後から読む"
+          }
+        },
+        {
+          "say": "必要な定義を後から読むための手段です。",
+          "show": ["definitions"],
+          "tag": {
+            "definitions": "後で読む"
+          }
+        },
+        {
+          "say": "長い会話は、圧縮で古いやり取りを要約します。",
+          "term": {
+            "text": "圧縮",
+            "ruby": "あっしゅく",
+            "note": "古いやり取りを要約する"
+          }
+        },
+        {
+          "say": "この場合の対象は、会話のやり取りです。",
+          "show": ["conversation"],
+          "tag": {
+            "conversation": "要約する"
+          }
+        },
+        {
+          "say": "古いツール結果には、編集を選びましょう。",
+          "show": ["results"],
+          "tag": {
+            "results": "古い分を外す"
+          },
+          "pulse": ["results"]
+        }
+      ]
+    },
+    {
+      "id": "product-search",
+      "kind": "board",
+      "role": "apply",
+      "title": "短い会話でも結果が増える",
+      "board": "product",
+      "beats": [
+        {
+          "say": "商品を調べるたびに、候補が五十件ずつ返ってきます。",
+          "speech": "商品を調べるたびに、候補がごじゅっけんずつ返ってきます。",
+          "show": ["old"],
+          "tag": {
+            "old": "候補五十件"
+          }
+        },
+        {
+          "say": "会話が短くても、古い候補が枠を使い続ける例です。",
+          "pulse": ["old"],
+          "tag": {
+            "old": "枠を使う"
+          }
+        },
+        {
+          "say": "結果が増えると、最初の照合条件を見落とすことがあります。",
+          "show": ["condition"],
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "編集で古い結果を外し、直近三回を残しましょう。",
+          "speech": "編集で古い結果を外し、直近さんかいを残しましょう。",
+          "show": ["recent"],
+          "hide": ["old"],
+          "pulse": ["recent"]
+        }
+      ]
+    },
+    {
+      "id": "original-history",
+      "kind": "board",
+      "role": "apply",
+      "title": "外した結果と元の履歴",
+      "board": "history",
+      "beats": [
+        {
+          "say": "外した検索結果は、短い要約にはなりません。",
+          "show": ["old", "short"],
+          "mark": [
+            {
+              "on": "short",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "要約するのは、先ほど比べた圧縮の方法です。",
+          "pulse": ["short"]
+        },
+        {
+          "say": "編集しても、アプリが保存した元の履歴は残ります。",
+          "show": ["saved"],
+          "hide": ["old", "short"]
+        },
+        {
+          "say": "外す対象は、文脈の中にある結果だけです。",
+          "pulse": ["saved"],
+          "tag": {
+            "saved": "元の結果"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pickup-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受け取り確認の結果を選ぶ",
+      "board": "laundry",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニングの受け取りを、検索ツールだけで確認しています。",
+          "show": ["coat"],
+          "tag": {
+            "coat": "検索だけ使用"
+          }
+        },
+        {
+          "say": "文脈を埋めているのは、確認が済んだ古い検索結果です。",
+          "show": ["old"]
+        },
+        {
+          "say": "今回は、直近三回の結果を確認に使うと決めました。",
+          "speech": "今回は、直近さんかいの結果を確認に使うと決めました。",
+          "show": ["recent"]
+        },
+        {
+          "say": "古い結果を外す方法と、結果を全部消す方法を比べます。",
+          "show": ["edit", "all"]
+        },
+        {
+          "say": "直近の確認を続けるには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "question"
+            },
+            {
+              "on": "all",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pickup-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "直近を残して古い分を外す",
+      "board": "laundry",
+      "beats": [
+        {
+          "say": "答えは、編集で古い結果から外す方法です。",
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "check"
+            },
+            {
+              "on": "all",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["edit"]
+        },
+        {
+          "say": "検索ツールだけを使うので、直近三回の検索結果を残せます。",
+          "speech": "検索ツールだけを使うので、直近さんかいの検索結果を残せます。",
+          "hide": ["old"],
+          "pulse": ["recent"]
+        },
+        {
+          "say": "使う予定の結果まで消す必要はありません。",
+          "pulse": ["all"]
+        }
+      ]
+    },
+    {
+      "id": "pickup-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "確認に使う情報をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "今回減らしたいのは、確認が済んだ検索結果です。",
+          "show": ["old"],
+          "tag": {
+            "old": "古い分"
+          }
+        },
+        {
+          "say": "いまの受け取り確認では、直近の結果を使います。",
+          "show": ["coat", "recent", "use"],
+          "travel": {
+            "along": ["use"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "結果を全部消すと、確認用の候補も残りません。",
+          "mark": [
+            {
+              "on": "recent",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["recent"]
+        },
+        {
+          "say": "古い結果だけを外せば、使う候補を残して進められます。",
+          "hide": ["old"],
+          "mark": [
+            {
+              "on": "recent",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-in-work",
+      "kind": "board",
+      "role": "usage",
+      "title": "検索を繰り返す仕事で使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "商品の照合のように、何度も検索する仕事で使います。",
+          "show": ["product"]
+        },
+        {
+          "say": "見るべきなのは、枠を使っている中身です。",
+          "show": ["old"],
+          "pulse": ["old"]
+        },
+        {
+          "say": "キャッシュを使った入力も、枠の使用量には数えます。",
+          "tag": {
+            "old": "枠は使う"
+          }
+        },
+        {
+          "say": "古い結果が溜まったら、編集で外して直近の確認を続けましょう。",
+          "show": ["recent"],
+          "hide": ["old"],
+          "pulse": ["recent"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6a83cf3c8dac73648277a45d61fe2633976d2fd440b9178513b0addacb40f90b"
+  }
+}

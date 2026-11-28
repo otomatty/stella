@@ -1,0 +1,759 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "案内の下書きを繰り返し作る場面で、Claude API を選び、アプリが送る材料と受け取る文章を説明できる。",
+    "stuck": "ウェブで試した会話が、そのまま自分のアプリにも伝わると思ってしまう。",
+    "points": ["手作業で試した依頼は、Claude API を通じて自分のアプリから送れます。"],
+    "leaveOut": [
+      "回答を原文と照合する詳しい手順",
+      "API を呼ぶコードや項目名",
+      "認証や料金、モデルの選び方",
+      "会話が長くなったときの扱い"
+    ]
+  },
+  "art": {
+    "town-notice": {
+      "prompt": "A large white community notice sheet held by a blue clip beside a small blue handheld megaphone, suggesting an announcement for local residents. The sheet is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "staff": {
+      "prompt": "A community organizer in a plain blue shirt holding a white notice sheet and looking at it attentively, simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open blue laptop with a completely blank screen and a small white document folder beside it, representing the organizer's own application without depicting any interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding out one hand to receive a white paper sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "draft-sheet": {
+      "prompt": "A single white draft sheet with a violet pencil placed diagonally beside it and a small blue paper clip at its upper corner. The sheet is completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a violet pen over a small blank white note, representing a written request to shorten an announcement. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "conversation-stack": {
+      "prompt": "A clipped stack of three blank white conversation sheets with alternating blue and violet tabs, fanned slightly to make their order visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bicycle-notice": {
+      "prompt": "A large blue city bicycle beside a blank white notice sheet attached to a light grey clipboard, representing information about bicycle parking. No road or scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "町内会の案内",
+          "art": "town-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "手で試す",
+          "art": "staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリから送る",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "notice-draft": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "町内会の案内",
+          "art": "town-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "draft",
+          "label": "下書き",
+          "art": "draft-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "staff",
+          "label": "確認する人",
+          "art": "staff",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "make",
+          "from": "notice",
+          "to": "draft",
+          "label": "短くする"
+        },
+        {
+          "id": "read",
+          "from": "draft",
+          "to": "staff",
+          "label": "読む"
+        }
+      ]
+    },
+    "exchange": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "自分のアプリ",
+          "art": "app-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "api",
+          "label": "依頼の窓口",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "staff",
+          "label": "担当者",
+          "art": "staff",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "app",
+          "to": "api",
+          "label": "依頼と案内"
+        },
+        {
+          "id": "receive",
+          "from": "api",
+          "to": "app",
+          "label": "回答",
+          "route": "under"
+        }
+      ]
+    },
+    "context": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "それまでの話",
+          "art": "conversation-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "もっと短く",
+          "art": "request-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "api",
+          "label": "依頼の窓口",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "web-trial": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "依頼と案内",
+          "art": "town-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "ウェブで試す",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "draft",
+          "label": "回答",
+          "art": "draft-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "notice",
+          "to": "claude",
+          "label": "人が入力"
+        },
+        {
+          "id": "receive",
+          "from": "claude",
+          "to": "draft",
+          "label": "読む"
+        }
+      ]
+    },
+    "follow-up": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "前の依頼と案内",
+          "art": "town-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "直前の回答",
+          "art": "draft-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "今回の追加依頼",
+          "art": "request-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "app",
+          "label": "自分のアプリ",
+          "art": "app-laptop",
+          "at": [5, 2]
+        },
+        {
+          "id": "api",
+          "label": "依頼の窓口",
+          "art": "claude-robot",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "source-reply",
+          "from": "source",
+          "to": "reply"
+        },
+        {
+          "id": "reply-new",
+          "from": "reply",
+          "to": "new"
+        },
+        {
+          "id": "new-app",
+          "from": "new",
+          "to": "app"
+        },
+        {
+          "id": "send",
+          "from": "app",
+          "to": "api",
+          "label": "順に送る"
+        }
+      ]
+    },
+    "parking-quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "駐輪場の案内",
+          "art": "bicycle-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "毎回手で入力",
+          "art": "staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリから送る",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "parking-flow": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "駐輪場の案内",
+          "art": "bicycle-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "自分のアプリ",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "api",
+          "label": "依頼の窓口",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "draft",
+          "label": "回答の下書き",
+          "art": "draft-sheet",
+          "at": [5, 2]
+        },
+        {
+          "id": "staff",
+          "label": "担当者に表示",
+          "art": "staff",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "register",
+          "from": "notice",
+          "to": "app",
+          "label": "登録"
+        },
+        {
+          "id": "send",
+          "from": "app",
+          "to": "api",
+          "label": "依頼と案内"
+        },
+        {
+          "id": "receive",
+          "from": "api",
+          "to": "draft"
+        },
+        {
+          "id": "display",
+          "from": "draft",
+          "to": "staff",
+          "label": "アプリで表示"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "trial",
+          "label": "依頼を試す",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "繰り返し作る",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "context",
+          "label": "続きの材料",
+          "art": "conversation-stack",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "試した依頼をアプリへ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "町内会の案内を、短いお知らせにまとめます。",
+          "show": ["notice"]
+        },
+        {
+          "say": "まずは、担当者が手で依頼を試す場面です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "案内の登録に合わせて、下書きを作りたいとしましょう。",
+          "show": ["app"]
+        },
+        {
+          "say": "試した依頼は、Claude API でアプリから送れます。",
+          "speech": "試した依頼は、クロードエーピーアイでアプリから送れます。",
+          "pulse": ["staff", "app"]
+        }
+      ]
+    },
+    {
+      "id": "community-example",
+      "kind": "board",
+      "role": "example",
+      "title": "お知らせを用意する",
+      "board": "notice-draft",
+      "beats": [
+        {
+          "say": "町内会の担当者が、新しい案内を受け取りました。",
+          "show": ["notice"]
+        },
+        {
+          "say": "配る前に直すための文章が、下書きです。",
+          "term": {
+            "text": "下書き",
+            "ruby": "したがき",
+            "note": "配る前に直すための文章"
+          }
+        },
+        {
+          "say": "ここでは、案内を短くした下書きを用意します。",
+          "show": ["draft", "make"]
+        },
+        {
+          "say": "担当者が読めるよう、できた文章を渡しましょう。",
+          "show": ["staff", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "api-window",
+      "kind": "board",
+      "role": "syntax",
+      "title": "プログラムから送る窓口",
+      "board": "exchange",
+      "beats": [
+        {
+          "say": "Claude API は、プログラムから依頼を送る窓口です。",
+          "speech": "クロードエーピーアイは、プログラムから依頼を送る窓口です。",
+          "term": {
+            "text": "Claude API",
+            "ruby": "クロードエーピーアイ",
+            "note": "依頼を送り回答を受け取る窓口"
+          }
+        },
+        {
+          "say": "自分のアプリが、この窓口に依頼と案内を送ります。",
+          "show": ["app", "api", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "反対向きに返ってくるのが、回答の文章です。",
+          "show": ["receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "アプリで受け取り、担当者が読める形で表示しましょう。",
+          "show": ["staff"],
+          "pulse": ["app", "staff"]
+        }
+      ]
+    },
+    {
+      "id": "context-material",
+      "kind": "board",
+      "role": "syntax",
+      "title": "続きの依頼の材料",
+      "board": "context",
+      "beats": [
+        {
+          "say": "続きの言葉を理解する手がかりが、文脈です。",
+          "term": {
+            "text": "文脈",
+            "ruby": "ぶんみゃく",
+            "note": "続きの言葉を理解する手がかり"
+          }
+        },
+        {
+          "say": "この例では、前の依頼や回答が手がかりになります。",
+          "show": ["past"]
+        },
+        {
+          "say": "「もっと短く」だけでは、縮める文章が分かりません。",
+          "show": ["new"],
+          "mark": [
+            {
+              "on": "new",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "通常の Messages API には、前の話も含めましょう。",
+          "speech": "通常のメッセージズエーピーアイには、前の話も含めましょう。",
+          "show": ["api"],
+          "pulse": ["past", "new"]
+        }
+      ]
+    },
+    {
+      "id": "try-on-web",
+      "kind": "board",
+      "role": "apply",
+      "title": "一件を手で試す",
+      "board": "web-trial",
+      "beats": [
+        {
+          "say": "担当者が、町内会の案内と依頼をチャットに入力します。",
+          "show": ["notice", "claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "返ってきた文章を、その場で読める形です。",
+          "show": ["draft", "receive"]
+        },
+        {
+          "say": "長ければ、担当者が「一文に縮めて」と頼みましょう。",
+          "tag": {
+            "claude": "一文に縮めて"
+          },
+          "pulse": ["claude"]
+        },
+        {
+          "say": "人が依頼を書き換えて、欲しい文章の形を試せます。",
+          "pulse": ["notice"],
+          "tag": {
+            "notice": "依頼を調整"
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-from-app",
+      "kind": "board",
+      "role": "apply",
+      "title": "登録のたびに作る",
+      "board": "exchange",
+      "reset": true,
+      "beats": [
+        {
+          "say": "今度は、案内を登録するアプリに組み込みます。",
+          "show": ["app"],
+          "tag": {
+            "app": "案内を登録"
+          }
+        },
+        {
+          "say": "登録のたびに送りたいのは、試した依頼と案内です。",
+          "show": ["api", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "アプリは、返ってきた回答を受け取ります。",
+          "show": ["receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "担当者が確認する下書きとして、表示しましょう。",
+          "show": ["staff"],
+          "pulse": ["staff"]
+        },
+        {
+          "say": "送る材料を用意するのも、アプリの担当です。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "材料を用意"
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-follow-up",
+      "kind": "board",
+      "role": "apply",
+      "title": "短くし直すときに送る物",
+      "board": "follow-up",
+      "beats": [
+        {
+          "say": "アプリで短くし直すなら、前の依頼と案内も送ります。",
+          "show": ["source"]
+        },
+        {
+          "say": "続いて入れるのは、直前に受け取った回答です。",
+          "show": ["reply", "source-reply"]
+        },
+        {
+          "say": "最後に「もっと短く」という追加の依頼を置きましょう。",
+          "show": ["new", "reply-new"]
+        },
+        {
+          "say": "ウェブで試した会話は、アプリには自動で入りません。",
+          "show": ["app", "new-app"],
+          "tag": {
+            "app": "自分で用意"
+          }
+        },
+        {
+          "say": "この順にまとめて送ると、何を短くするのか伝わります。",
+          "show": ["api", "send"],
+          "travel": {
+            "along": ["source-reply", "reply-new", "new-app", "send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "parking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "登録に合わせて作るには",
+      "board": "parking-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駐輪場の利用案内を、アプリに登録する場面です。",
+          "show": ["notice"]
+        },
+        {
+          "say": "案内の登録のたびに、短い下書きを作りたいとします。",
+          "tag": {
+            "notice": "登録のたび"
+          }
+        },
+        {
+          "say": "一つ目は、担当者が毎回チャットに手で入力する方法です。",
+          "show": ["manual"]
+        },
+        {
+          "say": "二つ目では、アプリから Claude API に送ります。",
+          "speech": "二つ目では、アプリからクロードエーピーアイに送ります。",
+          "show": ["app"]
+        },
+        {
+          "say": "登録に合わせて下書きを作るには、どちらを選ぶでしょうか。",
+          "mark": [
+            {
+              "on": "manual",
+              "kind": "question"
+            },
+            {
+              "on": "app",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "アプリから送る方法",
+      "board": "parking-quiz",
+      "beats": [
+        {
+          "say": "答えは、アプリから Claude API に送る方法です。",
+          "speech": "答えは、アプリからクロードエーピーアイに送る方法です。",
+          "unmark": ["manual"],
+          "mark": [
+            {
+              "on": "app",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["app"]
+        },
+        {
+          "say": "案内の登録に合わせて、依頼を送る処理を組み込みます。",
+          "pulse": ["notice", "app"],
+          "tag": {
+            "app": "登録時に送る"
+          }
+        }
+      ]
+    },
+    {
+      "id": "parking-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "アプリの担当をたどる",
+      "board": "parking-flow",
+      "beats": [
+        {
+          "say": "登録された利用案内は、下書きの材料です。",
+          "show": ["notice", "app", "register"]
+        },
+        {
+          "say": "アプリが、短くする依頼と利用案内を送ります。",
+          "show": ["api", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "返ってきた文章を、確認用の下書きとして受け取りましょう。",
+          "show": ["draft", "receive"]
+        },
+        {
+          "say": "担当者への表示まで、アプリに組み込む流れです。",
+          "show": ["staff", "display"],
+          "travel": {
+            "along": ["display"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "試してから組み込む",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "依頼の言葉や文章の長さを試すなら、ウェブのチャットです。",
+          "show": ["trial"]
+        },
+        {
+          "say": "登録のたびに作るなら、Claude API を使います。",
+          "speech": "登録のたびに作るなら、クロードエーピーアイを使います。",
+          "show": ["app"]
+        },
+        {
+          "say": "続けて頼むときは、前のやり取りも材料に入れましょう。",
+          "show": ["context"]
+        },
+        {
+          "say": "手で試した依頼を、送る材料とともにアプリへ組み込めます。",
+          "pulse": ["trial", "app", "context"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "2d108734de3decbeb30bc34fe9cf788c1cae401cfdb15f8189f67d7d93afb9ab"
+  }
+}

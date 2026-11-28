@@ -1,0 +1,730 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ループを運用する担当とツールを動かす場所を区別し、案件の条件に合う実行環境を選べる。",
+    "stuck": "社内でツールを動かしたいという条件だけで、ループも自社で運用しなければならないと思ってしまう。",
+    "points": [
+      "自分で運用するなら Agent SDK、長時間の作業を任せるなら Managed Agents を選びます。"
+    ],
+    "leaveOut": [
+      "回数や費用の上限と終了結果の種別",
+      "監査のために手順を固定する方法",
+      "Agent と Environment などの設定項目とイベントの詳細",
+      "ツールの許可の方針と移行時の手順",
+      "データ保持の契約や医療情報保護の要件"
+    ]
+  },
+  "art": {
+    "night-ledger": {
+      "prompt": "An open white accounting ledger with blank pages, a blue calculator with unmarked keys, and a small violet crescent moon beside them, representing an overnight tally of internal records. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "closed-laptop": {
+      "prompt": "A closed blue laptop with a simple blue clock beside it; the clock has plain hands and no numerals, representing work continuing after the user closes the screen. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "runtime-operator": {
+      "prompt": "A staff member in a plain blue shirt tending a single upright light grey computer tower, with one hand near its blue power button. Short dark hair and simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "state-disk": {
+      "prompt": "A compact blue external hard drive beside a small stack of blank white paper records, representing the saved state of one running job. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "managed-service": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile beside a tall blue server tower with simple unmarked indicator dots. This represents a remotely operated agent service. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-computer": {
+      "prompt": "A small light grey computer tower with a blue wrench and a white document beside it, representing tools running in a separate execution environment. No enclosure or surrounding box. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "music-class": {
+      "prompt": "A small blue electronic keyboard with plain black and white keys beside a white lesson attendance booklet with entirely blank pages. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-worker": {
+      "prompt": "A staff member in a plain blue shirt holding a blue mop upright and a small light grey bucket, representing a cleaning service worker. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-kit": {
+      "prompt": "A blue mop, a light grey bucket and a violet cleaning brush arranged together, representing cleaning equipment managed by its owner. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ledger",
+          "label": "夜間の集計",
+          "art": "night-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "closed",
+          "label": "画面を閉じる",
+          "art": "closed-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "operator",
+          "label": "運用する人",
+          "art": "runtime-operator",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cleaning": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "kit",
+          "label": "自分で管理",
+          "art": "cleaning-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "worker",
+          "label": "業者に任せる",
+          "art": "cleaning-worker",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "manual": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "operator",
+          "label": "アプリの担当",
+          "art": "runtime-operator",
+          "at": [1, 1]
+        },
+        {
+          "id": "loop",
+          "label": "自作のループ",
+          "art": "tool-computer",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "履歴を管理",
+          "art": "state-disk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "operator",
+          "to": "loop",
+          "label": "書く"
+        },
+        {
+          "id": "keep",
+          "from": "loop",
+          "to": "history",
+          "label": "管理"
+        }
+      ]
+    },
+    "sdk": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "operator",
+          "label": "自社の担当",
+          "art": "runtime-operator",
+          "at": [1, 1]
+        },
+        {
+          "id": "process",
+          "label": "SDK",
+          "art": "tool-computer",
+          "at": [3, 1]
+        },
+        {
+          "id": "disk",
+          "label": "状態の保存先",
+          "art": "state-disk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "operate",
+          "from": "operator",
+          "to": "process",
+          "label": "運用"
+        },
+        {
+          "id": "save",
+          "from": "process",
+          "to": "disk",
+          "label": "保存"
+        }
+      ]
+    },
+    "managed": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "job",
+          "label": "長時間の作業",
+          "art": "night-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "service",
+          "label": "サービス",
+          "art": "managed-service",
+          "at": [3, 1]
+        },
+        {
+          "id": "session",
+          "label": "セッション",
+          "art": "state-disk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "delegate",
+          "from": "job",
+          "to": "service",
+          "label": "任せる"
+        },
+        {
+          "id": "maintain",
+          "from": "service",
+          "to": "session",
+          "label": "運用"
+        }
+      ]
+    },
+    "placement": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "ツール",
+          "art": "tool-computer",
+          "at": [1, 1]
+        },
+        {
+          "id": "service",
+          "label": "ループ",
+          "art": "managed-service",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "results",
+          "from": "tools",
+          "to": "service",
+          "label": "結果を送る"
+        }
+      ],
+      "zones": [
+        {
+          "id": "own",
+          "label": "自社基盤",
+          "tone": "violet",
+          "cells": [1, 1, 2, 1]
+        },
+        {
+          "id": "provider",
+          "label": "Anthropic",
+          "tone": "blue",
+          "cells": [4, 1, 2, 1]
+        }
+      ]
+    },
+    "night": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "ledger",
+          "label": "社内の台帳",
+          "art": "night-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "tools",
+          "label": "ツール",
+          "art": "tool-computer",
+          "at": [3, 1]
+        },
+        {
+          "id": "service",
+          "label": "ループ",
+          "art": "managed-service",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "ledger",
+          "to": "tools",
+          "label": "読む"
+        },
+        {
+          "id": "send",
+          "from": "tools",
+          "to": "service",
+          "label": "結果を送る"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "music",
+          "label": "楽器の教室",
+          "art": "music-class",
+          "at": [1, 1]
+        },
+        {
+          "id": "closed",
+          "label": "夜間も続ける",
+          "art": "closed-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "records",
+          "label": "内部の記録",
+          "art": "state-disk",
+          "at": [5, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "tool-computer",
+          "at": [5, 2]
+        },
+        {
+          "id": "managed",
+          "label": "サービス",
+          "art": "managed-service",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "記録を読む",
+          "art": "tool-computer",
+          "at": [1, 1]
+        },
+        {
+          "id": "service",
+          "label": "ループ",
+          "art": "managed-service",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "tools",
+          "to": "service",
+          "label": "結果を送る"
+        }
+      ],
+      "zones": [
+        {
+          "id": "school",
+          "label": "教室側の基盤",
+          "tone": "violet",
+          "cells": [1, 1, 2, 1]
+        },
+        {
+          "id": "provider",
+          "label": "Anthropic",
+          "tone": "blue",
+          "cells": [4, 1, 2, 1]
+        }
+      ]
+    },
+    "choices": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "tool-computer",
+          "at": [1, 1]
+        },
+        {
+          "id": "managed",
+          "label": "サービス",
+          "art": "managed-service",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "夜間の仕事をどこで動かす",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "社内の台帳を使い、夜間に集計する場面です。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "画面を閉じたあとも、集計を続けたいとします。",
+          "show": ["closed"]
+        },
+        {
+          "say": "その処理を動かし続ける担当を、考えてみましょう。",
+          "show": ["operator"]
+        },
+        {
+          "say": "自分で運用するか、長時間の作業を任せるかで選びます。",
+          "pulse": ["operator", "ledger"]
+        }
+      ]
+    },
+    {
+      "id": "cleaning",
+      "kind": "board",
+      "role": "example",
+      "title": "道具を持つか作業を頼むか",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "掃除道具を持ち、自分で手入れする場合を考えます。",
+          "show": ["kit"]
+        },
+        {
+          "say": "道具を使える状態に保つのも、自分の仕事です。",
+          "tag": {
+            "kit": "手入れも担当"
+          }
+        },
+        {
+          "say": "掃除の業者に、作業を続けてもらう場合もあります。",
+          "show": ["worker"]
+        },
+        {
+          "say": "だれが道具や作業を管理するかに、注目しましょう。",
+          "pulse": ["kit", "worker"]
+        }
+      ]
+    },
+    {
+      "id": "manual-loop",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一手ずつ制御する場合",
+      "board": "manual",
+      "beats": [
+        {
+          "say": "Messages API では、アプリがループを書きます。",
+          "speech": "メッセージズエーピーアイでは、アプリがループを書きます。",
+          "show": ["operator", "loop", "write"]
+        },
+        {
+          "say": "呼び出しごとの細かな制御が必要なときの選択肢です。",
+          "pulse": ["loop"]
+        },
+        {
+          "say": "やり取りの履歴も、アプリで管理しましょう。",
+          "show": ["history", "keep"]
+        },
+        {
+          "say": "ループを書く担当と履歴の管理先を、自分で持ちます。",
+          "pulse": ["operator", "history"]
+        }
+      ]
+    },
+    {
+      "id": "sdk-runtime",
+      "kind": "board",
+      "role": "syntax",
+      "title": "自分で運用する仕組み",
+      "board": "sdk",
+      "beats": [
+        {
+          "say": "Agent SDK なら、用意されたループを使います。",
+          "speech": "エージェントエスディーケーなら、用意されたループを使います。",
+          "term": {
+            "text": "Agent SDK",
+            "ruby": "エージェントエスディーケー",
+            "note": "自分で運用するループ"
+          }
+        },
+        {
+          "say": "これは、自社の担当者が動かす仕組みです。",
+          "show": ["operator", "process", "operate"]
+        },
+        {
+          "say": "動いているプログラムを、プロセスと呼びます。",
+          "term": {
+            "text": "プロセス",
+            "note": "動いているプログラム"
+          }
+        },
+        {
+          "say": "実行中のセッションごとに、一つのプロセスが動く仕組みです。",
+          "pulse": ["process"],
+          "tag": {
+            "process": "セッション毎"
+          }
+        },
+        {
+          "say": "状態の保存先も、自社で管理します。",
+          "show": ["disk", "save"],
+          "pulse": ["disk"]
+        }
+      ]
+    },
+    {
+      "id": "managed-runtime",
+      "kind": "board",
+      "role": "syntax",
+      "title": "長時間の作業を任せる",
+      "board": "managed",
+      "beats": [
+        {
+          "say": "Managed Agents は、長時間の作業を任せる選択肢です。",
+          "speech": "マネージドエージェンツは、長時間の作業を任せる選択肢です。",
+          "show": ["job", "service", "delegate"]
+        },
+        {
+          "say": "Anthropic が、ループの基盤を運用します。",
+          "speech": "アンソロピックが、ループの基盤を運用します。",
+          "pulse": ["service"]
+        },
+        {
+          "say": "セッションの基盤も、サービス側の担当です。",
+          "show": ["session", "maintain"]
+        },
+        {
+          "say": "夜間の集計なら、その作業をサービスに任せられます。",
+          "travel": {
+            "along": ["delegate"],
+            "icon": "file"
+          },
+          "pulse": ["job", "service"]
+        }
+      ]
+    },
+    {
+      "id": "tool-location",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ツールを動かす場所",
+      "board": "placement",
+      "beats": [
+        {
+          "say": "ツールを分けて動かす環境を、サンドボックスと呼びます。",
+          "term": {
+            "text": "サンドボックス",
+            "note": "ツールを動かす隔離環境"
+          }
+        },
+        {
+          "say": "Managed Agents では、自社基盤にも置ける環境です。",
+          "speech": "マネージドエージェンツでは、自社基盤にも置ける環境です。",
+          "show": ["own", "tools"]
+        },
+        {
+          "say": "その場合も、ループは Anthropic 側で動きます。",
+          "speech": "その場合も、ループはアンソロピック側で動きます。",
+          "show": ["provider", "service"]
+        },
+        {
+          "say": "ツールの場所とループの場所を、分けて見てください。",
+          "pulse": ["tools", "service"]
+        }
+      ]
+    },
+    {
+      "id": "night-job",
+      "kind": "board",
+      "role": "apply",
+      "title": "台帳を読む場所を決める",
+      "board": "night",
+      "beats": [
+        {
+          "say": "社内の台帳を読む、夜間の集計に戻りましょう。",
+          "show": ["ledger"]
+        },
+        {
+          "say": "長時間の作業を、サービスに任せたい場面です。",
+          "show": ["service"]
+        },
+        {
+          "say": "台帳を読むツールは、自社のサンドボックスで動かします。",
+          "show": ["tools", "read"],
+          "tag": {
+            "tools": "自社基盤"
+          }
+        },
+        {
+          "say": "会話とツール結果の送り先は、Anthropic です。",
+          "speech": "会話とツール結果の送り先は、アンソロピックです。",
+          "show": ["send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "社内のツールが返す内容も、確かめておきましょう。",
+          "pulse": ["tools", "send"]
+        }
+      ]
+    },
+    {
+      "id": "music-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "楽器の教室ならどう選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "楽器の教室で、受講記録の集計を続けたいとします。",
+          "show": ["music"]
+        },
+        {
+          "say": "夜間の長い作業を、サービスに任せたい場面です。",
+          "show": ["closed"]
+        },
+        {
+          "say": "記録を読むツールは、教室側の基盤で動かすと決めました。",
+          "show": ["records"]
+        },
+        {
+          "say": "候補は、Agent SDK と Managed Agents です。",
+          "speech": "候補は、エージェントエスディーケーとマネージドエージェンツです。",
+          "show": ["sdk", "managed"]
+        },
+        {
+          "say": "どちらを選び、ツールをどこで動かすとよいでしょうか。",
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "question"
+            },
+            {
+              "on": "managed",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "music-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "運用を任せてツールを置く",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "この条件では、Managed Agents を選びます。",
+          "speech": "この条件では、マネージドエージェンツを選びます。",
+          "mark": [
+            {
+              "on": "managed",
+              "kind": "check"
+            }
+          ],
+          "unmark": ["sdk"],
+          "pulse": ["managed"]
+        },
+        {
+          "say": "サンドボックスを置くのは、教室側の基盤です。",
+          "pulse": ["records"],
+          "tag": {
+            "records": "ツールを置く"
+          }
+        }
+      ]
+    },
+    {
+      "id": "music-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの場所をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "長時間の作業を任せる先は、サービス側です。",
+          "show": ["provider", "service"]
+        },
+        {
+          "say": "教室側には、記録を読むツールの実行環境を置きます。",
+          "show": ["school", "tools"]
+        },
+        {
+          "say": "ツールを教室側に置いても、ループの運用先は変わりません。",
+          "pulse": ["service"]
+        },
+        {
+          "say": "会話とツール結果は、Anthropic に届きます。",
+          "speech": "会話とツール結果は、アンソロピックに届きます。",
+          "show": ["send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-by-operation",
+      "kind": "board",
+      "role": "usage",
+      "title": "案件の条件から選ぶ",
+      "board": "choices",
+      "beats": [
+        {
+          "say": "実行基盤や状態の保存先を、自分で管理したい場合です。",
+          "show": ["sdk"]
+        },
+        {
+          "say": "その条件なら、Agent SDK を選びます。",
+          "speech": "その条件なら、エージェントエスディーケーを選びます。",
+          "pulse": ["sdk"],
+          "tag": {
+            "sdk": "自社で運用"
+          }
+        },
+        {
+          "say": "画面を閉じたあとも、長い集計を任せたい場合です。",
+          "show": ["managed"]
+        },
+        {
+          "say": "その条件なら、Managed Agents を選びます。",
+          "speech": "その条件なら、マネージドエージェンツを選びます。",
+          "pulse": ["managed"],
+          "tag": {
+            "managed": "運用を任せる"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c25284db3ffb17036e8d742ac8770a49b32dd91544207cab5d48f3215887d2ac"
+  }
+}

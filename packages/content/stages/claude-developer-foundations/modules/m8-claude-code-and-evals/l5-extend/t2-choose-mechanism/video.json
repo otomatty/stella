@@ -1,0 +1,726 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "チームの希望から、共通の指示、再利用する手順、実行前に必ず行う判定に合う仕組みを選べる。",
+    "stuck": "約束も必須の検査も同じ指示に書き、読むことと実行を止めることを混同してしまう。",
+    "points": [
+      "常に効かせるなら CLAUDE.md、繰り返すなら Skill、必ず実行するならフックを選びます。"
+    ],
+    "leaveOut": [
+      "Skillの配置や呼び出し設定",
+      "ルールファイルとサブエージェントの使い分け",
+      "MCPサーバーとプラグインの構成",
+      "フックの設定コードと終了コード",
+      "プロンプト型とエージェント型の詳細"
+    ]
+  },
+  "art": {
+    "date-calendar": {
+      "prompt": "A white calendar with a blue binding beside a white note and a violet pencil, representing a shared date format. The calendar contains only empty cells. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stock-report": {
+      "prompt": "A white report booklet held by a blue binder clip beside two small light grey cardboard warehouse parcels sealed with violet tape. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "protected-original": {
+      "prompt": "An approved original white document held in a closed transparent document sleeve with a large blue padlock, representing a file protected from editing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pottery-apron": {
+      "prompt": "A plain violet pottery apron hanging freely beside a pair of blue protective gloves, representing a workshop rule everyone reads. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cup-procedure": {
+      "prompt": "An open white instruction booklet beside an unfinished light grey clay cup and a blue pottery shaping tool, representing a reusable cup making procedure. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "kiln-check": {
+      "prompt": "A compact blue pottery kiln with its door closed and a blue shirt attendant checking the door latch before reaching for the switch. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleanup-roster": {
+      "prompt": "A blue broom and dustpan beside a white neighborhood duty roster held by a violet clip. The roster has empty cells only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding an empty white instruction sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "wishes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "date",
+          "label": "日付の書式",
+          "art": "date-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "報告の手順",
+          "art": "stock-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "original",
+          "label": "承認済み原本",
+          "art": "protected-original",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pottery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "apron",
+          "label": "共通の約束",
+          "art": "pottery-apron",
+          "at": [1, 1]
+        },
+        {
+          "id": "recipe",
+          "label": "カップの手順",
+          "art": "cup-procedure",
+          "at": [3, 1]
+        },
+        {
+          "id": "kiln",
+          "label": "開始前の検査",
+          "art": "kiln-check",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "common": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "common",
+          "label": "共通指示",
+          "art": "date-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "common",
+          "to": "model",
+          "label": "起動時"
+        }
+      ]
+    },
+    "procedure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "skill",
+          "label": "Skill",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "load",
+          "from": "skill",
+          "to": "model",
+          "label": "使うとき"
+        }
+      ]
+    },
+    "guard": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "hook",
+          "label": "フック",
+          "art": "protected-original",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルの判断",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "choices": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "common",
+          "label": "共通指示",
+          "art": "date-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "skill",
+          "label": "Skill",
+          "art": "stock-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "hook",
+          "label": "フック",
+          "art": "protected-original",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "timing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "実行前",
+          "art": "protected-original",
+          "at": [1, 1]
+        },
+        {
+          "id": "edit",
+          "label": "編集の実行",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "実行後",
+          "art": "protected-original",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-edit",
+          "from": "before",
+          "to": "edit",
+          "label": "許可なら"
+        },
+        {
+          "id": "to-after",
+          "from": "edit",
+          "to": "after",
+          "label": "実行済み"
+        }
+      ]
+    },
+    "cleanup": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "roster",
+          "label": "清掃当番表",
+          "art": "cleanup-roster",
+          "at": [1, 1]
+        },
+        {
+          "id": "before",
+          "label": "実行前",
+          "art": "protected-original",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "実行後",
+          "art": "protected-original",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "roster",
+          "label": "確定した当番",
+          "art": "cleanup-roster",
+          "at": [1, 1]
+        },
+        {
+          "id": "check",
+          "label": "条件の判定",
+          "art": "protected-original",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "編集を拒否",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "roster",
+          "to": "check",
+          "label": "編集対象"
+        },
+        {
+          "id": "reject",
+          "from": "check",
+          "to": "stop",
+          "label": "一致したら"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "希望に合う仕組みを選ぶ",
+      "board": "wishes",
+      "beats": [
+        {
+          "say": "チームでは、日付の書き方を毎回そろえたいとします。",
+          "show": ["date"]
+        },
+        {
+          "say": "報告には、繰り返し使いたい手順がある場面です。",
+          "show": ["report"]
+        },
+        {
+          "say": "承認済みの原本は、編集される前に守りましょう。",
+          "show": ["original"]
+        },
+        {
+          "say": "約束をいつ効かせるかで、置く仕組みを選びます。",
+          "pulse": ["date", "report", "original"]
+        }
+      ]
+    },
+    {
+      "id": "pottery-example",
+      "kind": "board",
+      "role": "example",
+      "title": "陶芸教室の約束と検査",
+      "board": "pottery",
+      "beats": [
+        {
+          "say": "陶芸教室では、全員にエプロンの着用を伝えます。",
+          "show": ["apron"]
+        },
+        {
+          "say": "カップの作り方は、作るときに開く手順書です。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "窯の扉は、運転を始める前に毎回検査しましょう。",
+          "show": ["kiln"]
+        },
+        {
+          "say": "約束と手順と検査では、いつ使うかが違います。",
+          "tag": {
+            "apron": "毎回伝える",
+            "recipe": "必要なとき",
+            "kiln": "開始前"
+          }
+        }
+      ]
+    },
+    {
+      "id": "common-instruction",
+      "kind": "board",
+      "role": "syntax",
+      "title": "毎回読む共通の約束",
+      "board": "common",
+      "beats": [
+        {
+          "say": "共通の約束を書く場所が、CLAUDE.mdです。",
+          "speech": "共通の約束を書く場所が、クロードエムディーです。",
+          "term": {
+            "text": "CLAUDE.md",
+            "note": "起動時に読む共通の約束"
+          }
+        },
+        {
+          "say": "日付の書式のような指示を、ここに書きます。",
+          "show": ["common"]
+        },
+        {
+          "say": "起動時に全文を読み、モデルへの指示として使う仕組みです。",
+          "show": ["model", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "必須の検査は、ここに書くだけでは守られません。",
+          "pulse": ["common"],
+          "mark": [
+            {
+              "on": "common",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reusable-procedure",
+      "kind": "board",
+      "role": "syntax",
+      "title": "使うときに読む手順",
+      "board": "procedure",
+      "beats": [
+        {
+          "say": "繰り返す手順や知識は、Skillにまとめます。",
+          "speech": "繰り返す手順や知識は、スキルにまとめます。",
+          "term": {
+            "text": "Skill",
+            "note": "必要なときに読む手順"
+          }
+        },
+        {
+          "say": "在庫レポートなら、報告の手順がその中身です。",
+          "show": ["skill"]
+        },
+        {
+          "say": "説明で見つけ、使うときに本文を読み込みます。",
+          "show": ["model", "load"],
+          "travel": {
+            "along": ["load"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "毎回必ず行う検査を、手順に書くだけでは足りません。",
+          "pulse": ["skill"],
+          "mark": [
+            {
+              "on": "skill",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "command-hook",
+      "kind": "board",
+      "role": "syntax",
+      "title": "固定の条件で判定する",
+      "board": "guard",
+      "beats": [
+        {
+          "say": "決まったイベントで処理を動かす仕組みが、フックです。",
+          "term": {
+            "text": "フック",
+            "note": "イベントに応じて処理を実行"
+          }
+        },
+        {
+          "say": "固定の条件で毎回判定するなら、コマンド型を選びます。",
+          "show": ["hook"],
+          "tag": {
+            "hook": "コマンド型"
+          }
+        },
+        {
+          "say": "原本かどうかの判定条件は、コマンドに書く内容です。",
+          "pulse": ["hook"]
+        },
+        {
+          "say": "プロンプト型やエージェント型は、判定にモデルを使います。",
+          "show": ["model"],
+          "pulse": ["model"]
+        }
+      ]
+    },
+    {
+      "id": "match-wishes",
+      "kind": "board",
+      "role": "apply",
+      "title": "チームの希望を振り分ける",
+      "board": "choices",
+      "beats": [
+        {
+          "say": "日付の書式を毎回伝えるなら、CLAUDE.mdを選びます。",
+          "speech": "日付の書式を毎回伝えるなら、クロードエムディーを選びます。",
+          "show": ["common"],
+          "tag": {
+            "common": "毎回伝える"
+          }
+        },
+        {
+          "say": "必要なときに使う在庫報告の手順は、Skillです。",
+          "speech": "必要なときに使う在庫報告の手順は、スキルです。",
+          "show": ["skill"],
+          "tag": {
+            "skill": "手順を再利用"
+          }
+        },
+        {
+          "say": "原本を守る判定は、コマンド型のフックに書きましょう。",
+          "show": ["hook"],
+          "tag": {
+            "hook": "必須の判定"
+          }
+        },
+        {
+          "say": "指示を読み飛ばせば、そこに書いた検査も抜けてしまいます。",
+          "pulse": ["common", "skill"],
+          "mark": [
+            {
+              "on": "common",
+              "kind": "question"
+            },
+            {
+              "on": "skill",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "実行を必ず止める条件は、フックで判定しましょう。",
+          "pulse": ["hook"],
+          "mark": [
+            {
+              "on": "hook",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "before-execution",
+      "kind": "board",
+      "role": "apply",
+      "title": "止めるなら実行の前",
+      "board": "timing",
+      "beats": [
+        {
+          "say": "編集前に止めるなら、PreToolUseを選びます。",
+          "speech": "編集前に止めるなら、プリツールユースを選びます。",
+          "show": ["before"],
+          "tag": {
+            "before": "コマンド型"
+          }
+        },
+        {
+          "say": "ここで条件に合えば、ツールの実行を拒否できる仕組みです。",
+          "pulse": ["before"],
+          "mark": [
+            {
+              "on": "before",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "許可された操作は、そのあとに実行されます。",
+          "show": ["edit", "to-edit"],
+          "travel": {
+            "along": ["to-edit"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "PostToolUseの時点では、操作は実行済みです。",
+          "speech": "ポストツールユースの時点では、操作は実行済みです。",
+          "show": ["after", "to-after"],
+          "travel": {
+            "along": ["to-after"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "実行前に止める条件を、実行後に置かないでください。",
+          "pulse": ["after"],
+          "mark": [
+            {
+              "on": "after",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cleanup-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "清掃当番表を守るには",
+      "board": "cleanup",
+      "think": 8,
+      "beats": [
+        {
+          "say": "町内の清掃当番表を扱うプロジェクトで考えます。",
+          "show": ["roster"]
+        },
+        {
+          "say": "守りたいのは、確定した当番表のファイルです。",
+          "tag": {
+            "roster": "確定済み"
+          }
+        },
+        {
+          "say": "このファイルへの編集は、実行前に必ず止めると決めました。",
+          "pulse": ["roster"],
+          "mark": [
+            {
+              "on": "roster",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "判定条件は固定で、対象への編集なら拒否します。",
+          "show": ["before", "after"]
+        },
+        {
+          "say": "どの仕組みを選び、判定をいつすればよいでしょうか。",
+          "mark": [
+            {
+              "on": "before",
+              "kind": "question"
+            },
+            {
+              "on": "after",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["before", "after"]
+        }
+      ]
+    },
+    {
+      "id": "cleanup-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実行前のコマンド型を選ぶ",
+      "board": "cleanup",
+      "beats": [
+        {
+          "say": "答えは、コマンド型のPreToolUseフックです。",
+          "speech": "答えは、コマンド型のプリツールユースフックです。",
+          "unmark": ["roster"],
+          "mark": [
+            {
+              "on": "before",
+              "kind": "check"
+            },
+            {
+              "on": "after",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["before"]
+        },
+        {
+          "say": "確定した当番表への編集かを、実行前に判定します。",
+          "pulse": ["roster"],
+          "tag": {
+            "before": "条件で拒否"
+          }
+        },
+        {
+          "say": "実行後では、書き換えそのものを防げません。",
+          "pulse": ["after"]
+        }
+      ]
+    },
+    {
+      "id": "trace-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "条件と実行の順をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "今回の条件は、確定した当番表への編集かどうかです。",
+          "show": ["roster"]
+        },
+        {
+          "say": "判定条件をコマンドに書き、実行前に確かめます。",
+          "show": ["check", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "条件に合えば、その編集を実行前に拒否する仕組みです。",
+          "show": ["stop", "reject"],
+          "travel": {
+            "along": ["reject"],
+            "icon": "check"
+          }
+        },
+        {
+          "say": "手順を読むかどうかに、必須の判定を任せないようにしましょう。",
+          "pulse": ["check", "stop"],
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "choose-at-work",
+      "kind": "board",
+      "role": "usage",
+      "title": "希望を読んで置き場所を選ぶ",
+      "board": "choices",
+      "beats": [
+        {
+          "say": "毎回そろえる日付の書式は、CLAUDE.mdに書きます。",
+          "speech": "毎回そろえる日付の書式は、クロードエムディーに書きます。",
+          "show": ["common"],
+          "tag": {
+            "common": "共通の約束"
+          }
+        },
+        {
+          "say": "何度も使う報告の手順を置く先は、Skillです。",
+          "speech": "何度も使う報告の手順を置く先は、スキルです。",
+          "show": ["skill"],
+          "tag": {
+            "skill": "手順を再利用"
+          }
+        },
+        {
+          "say": "原本への編集を必ず止める判定は、フックに任せましょう。",
+          "show": ["hook"],
+          "tag": {
+            "hook": "実行前に判定"
+          }
+        },
+        {
+          "say": "いつ効かせるかと、判断を任せられるかで選びます。",
+          "pulse": ["common", "skill", "hook"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "790013ca1f124b6c20a17e9b5b44620a8e053a9ba0c5a502b0fb57c13a505e68"
+  }
+}

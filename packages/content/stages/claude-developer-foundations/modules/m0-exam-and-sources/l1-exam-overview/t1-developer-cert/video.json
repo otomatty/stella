@@ -1,0 +1,737 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "担当する仕事を見て、Developer: Foundations の対象になるエンジニアを選び、その理由を説明できる。",
+    "stuck": "Claude を使う仕事を一括りにして、アプリを使う人と作る人で資格の対象が違うことに気付かない。",
+    "points": ["Developer: Foundations は、Claude でアプリを作るエンジニアの資格です。"],
+    "leaveOut": [
+      "試験の問題数、制限時間、採点と合格基準",
+      "試験問題の選択肢を外す方法",
+      "ほかの資格の詳しい比較と受験条件",
+      "API、ツール使用、エージェントの実装方法"
+    ]
+  },
+  "art": {
+    "flower-bouquet": {
+      "prompt": "A bouquet of fresh pink and yellow flowers with green leaves, wrapped in light grey paper and tied with a blue ribbon. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-builder": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding an open laptop with a completely blank violet screen. Simple facial features. The laptop represents building an application without showing any interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-clerk": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features, holding a small blank white order slip and looking thoughtfully at it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. The robot stands alone with one hand raised. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stock-ledger": {
+      "prompt": "An open white stock ledger with small pictorial flower thumbnails on its pages, beside a large blue magnifying glass. The flowers have natural pink petals and green leaves. No writing or numerical markings on the pages. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "work-plan": {
+      "prompt": "A white clipboard with three blank light grey paper slips clipped to it and a violet pencil held by a hand poised to arrange the slips. A concrete illustration of planning the order of work. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "meal-tray": {
+      "prompt": "A light grey cafeteria tray holding a white bowl of rice, a plate of grilled fish and a small bowl of green vegetables. Food uses natural appetizing colours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "exam-paper": {
+      "prompt": "A blank white examination sheet held by a blue clip, with a violet pencil placed diagonally beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-app": {
+      "prompt": "An open laptop with a completely blank blue screen beside a small pink flower in a light grey pot with green leaves. This is a conceptual illustration of an application for a flower shop, with no interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "flowers",
+          "label": "花を探す",
+          "art": "flower-bouquet",
+          "at": [1, 1]
+        },
+        {
+          "id": "builder",
+          "label": "作る人",
+          "art": "app-builder",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "exam",
+          "label": "開発者の資格",
+          "art": "exam-paper",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "clerk",
+          "label": "店員",
+          "art": "shop-clerk",
+          "at": [1, 1]
+        },
+        {
+          "id": "flowers",
+          "label": "注文に合う花",
+          "art": "flower-bouquet",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "花の一覧",
+          "art": "stock-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "qualification": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "exam",
+          "label": "認定試験",
+          "art": "exam-paper",
+          "at": [1, 1]
+        },
+        {
+          "id": "developer",
+          "label": "開発者",
+          "art": "app-builder",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリを作る",
+          "art": "flower-app",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "targets",
+          "from": "exam",
+          "to": "developer",
+          "label": "対象"
+        },
+        {
+          "id": "builds",
+          "from": "developer",
+          "to": "app",
+          "label": "作る"
+        }
+      ]
+    },
+    "api": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "花屋のアプリ",
+          "art": "flower-app",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "app",
+          "to": "claude",
+          "label": "API"
+        }
+      ]
+    },
+    "tools": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "search",
+          "label": "検索処理",
+          "art": "stock-ledger",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "claude",
+          "to": "search",
+          "label": "呼び出す"
+        }
+      ]
+    },
+    "agent": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "plan",
+          "label": "手順を考える",
+          "art": "work-plan",
+          "at": [1, 1]
+        },
+        {
+          "id": "flowers",
+          "label": "花を探す作業",
+          "art": "flower-bouquet",
+          "at": [3, 1]
+        },
+        {
+          "id": "builder",
+          "label": "作る人",
+          "art": "app-builder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "proceed",
+          "from": "plan",
+          "to": "flowers",
+          "label": "進める"
+        }
+      ]
+    },
+    "development": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "builder",
+          "label": "作る人",
+          "art": "app-builder",
+          "at": [1, 1]
+        },
+        {
+          "id": "api",
+          "label": "APIで呼ぶ",
+          "art": "flower-app",
+          "at": [3, 1]
+        },
+        {
+          "id": "tools",
+          "label": "処理とつなぐ",
+          "art": "stock-ledger",
+          "at": [5, 1]
+        },
+        {
+          "id": "agent",
+          "label": "手順を任せる",
+          "art": "work-plan",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "build",
+          "from": "builder",
+          "to": "api"
+        },
+        {
+          "id": "connect",
+          "from": "api",
+          "to": "tools"
+        },
+        {
+          "id": "delegate",
+          "from": "tools",
+          "to": "agent"
+        }
+      ]
+    },
+    "cafeteria": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "meal",
+          "label": "社員食堂の献立",
+          "art": "meal-tray",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "献立を読む人",
+          "art": "shop-clerk",
+          "at": [1, 2]
+        },
+        {
+          "id": "builder",
+          "label": "アプリを作る人",
+          "art": "app-builder",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "builder",
+          "label": "担当する仕事",
+          "art": "app-builder",
+          "at": [1, 1]
+        },
+        {
+          "id": "exam",
+          "label": "開発者の資格",
+          "art": "exam-paper",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "呼び出しと接続",
+          "art": "flower-app",
+          "at": [5, 1]
+        },
+        {
+          "id": "agent",
+          "label": "手順を任せる",
+          "art": "work-plan",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "builder",
+          "to": "exam",
+          "label": "選ぶ"
+        },
+        {
+          "id": "learn",
+          "from": "exam",
+          "to": "app",
+          "label": "学ぶ"
+        },
+        {
+          "id": "include",
+          "from": "app",
+          "to": "agent"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "花屋のアプリを作る",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "花屋で、花を探すアプリを作る場面を考えます。",
+          "show": ["flowers"]
+        },
+        {
+          "say": "開発を担当するのは、ここにいるエンジニアです。",
+          "show": ["builder"]
+        },
+        {
+          "say": "アプリから Claude を呼ぶ仕組みを作りましょう。",
+          "speech": "アプリからクロードを呼ぶ仕組みを作りましょう。",
+          "show": ["claude"]
+        },
+        {
+          "say": "Developer: Foundations が、この仕事を扱います。",
+          "speech": "デベロッパー、ファウンデーションズが、この仕事を扱います。",
+          "show": ["exam"]
+        },
+        {
+          "say": "Claude でアプリを作るエンジニアの資格です。",
+          "speech": "クロードでアプリを作るエンジニアの資格です。",
+          "pulse": ["builder", "exam"]
+        }
+      ]
+    },
+    {
+      "id": "flower-shop",
+      "kind": "board",
+      "role": "example",
+      "title": "店員が花を探す仕事",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "花屋の店員が、注文に合う花を探す場面です。",
+          "show": ["clerk"]
+        },
+        {
+          "say": "まず、客に渡す花を選びます。",
+          "show": ["flowers"]
+        },
+        {
+          "say": "在庫を調べるには、花の一覧が欠かせません。",
+          "show": ["stock"]
+        },
+        {
+          "say": "調べる順番も、店員が考えるとしましょう。",
+          "pulse": ["clerk"],
+          "tag": {
+            "clerk": "順番を考える"
+          }
+        }
+      ]
+    },
+    {
+      "id": "target-role",
+      "kind": "board",
+      "role": "syntax",
+      "title": "資格の対象を確かめる",
+      "board": "qualification",
+      "beats": [
+        {
+          "say": "Claude の認定試験は、仕事と水準で対象が分かれます。",
+          "speech": "クロードの認定試験は、仕事と水準で対象が分かれます。",
+          "term": {
+            "text": "認定試験",
+            "ruby": "にんていしけん",
+            "note": "仕事と水準で対象が分かれる"
+          }
+        },
+        {
+          "say": "担当する仕事に合う力を確かめる試験です。",
+          "show": ["exam"],
+          "tag": {
+            "exam": "仕事と水準"
+          }
+        },
+        {
+          "say": "ここでは Developer: Foundations に注目しましょう。",
+          "speech": "ここではデベロッパー、ファウンデーションズに注目しましょう。",
+          "term": {
+            "text": "Developer",
+            "ruby": "デベロッパー",
+            "note": "アプリを作る人向けの資格"
+          }
+        },
+        {
+          "say": "対象は、Claude でアプリを作るエンジニアです。",
+          "speech": "対象は、クロードでアプリを作るエンジニアです。",
+          "show": ["developer", "targets"],
+          "pulse": ["developer"]
+        },
+        {
+          "say": "花屋の例なら、アプリを作る仕事に当たります。",
+          "show": ["app", "builds"],
+          "travel": {
+            "along": ["builds"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "api-call",
+      "kind": "board",
+      "role": "syntax",
+      "title": "アプリから呼び出す",
+      "board": "api",
+      "beats": [
+        {
+          "say": "Claude API は、Claude を呼び出す仕組みです。",
+          "speech": "クロードエーピーアイは、クロードを呼び出す仕組みです。",
+          "show": ["claude"]
+        },
+        {
+          "say": "呼び出す側を、花屋のアプリだとしましょう。",
+          "show": ["app"]
+        },
+        {
+          "say": "アプリから、このように Claude を呼び出します。",
+          "show": ["call"],
+          "travel": {
+            "along": ["call"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "この呼び出しを作るのも、エンジニアの仕事です。",
+          "pulse": ["app", "call"]
+        }
+      ]
+    },
+    {
+      "id": "tool-use",
+      "kind": "board",
+      "role": "syntax",
+      "title": "検索の処理とつなぐ",
+      "board": "tools",
+      "beats": [
+        {
+          "say": "ツール使用は、Claude とアプリの処理をつなぎます。",
+          "speech": "ツール使用は、クロードとアプリの処理をつなぎます。",
+          "term": {
+            "text": "ツール使用",
+            "ruby": "ツールしよう",
+            "note": "アプリの検索や計算を呼ぶ"
+          }
+        },
+        {
+          "say": "検索や計算を呼び出せるようにする仕組みです。",
+          "show": ["claude", "search", "use"]
+        },
+        {
+          "say": "花の在庫を検索する処理を、例にしましょう。",
+          "pulse": ["search"],
+          "tag": {
+            "search": "在庫検索"
+          }
+        },
+        {
+          "say": "この処理を Claude から呼べるように作ります。",
+          "speech": "この処理をクロードから呼べるように作ります。",
+          "travel": {
+            "along": ["use"],
+            "icon": "search"
+          },
+          "pulse": ["use"]
+        }
+      ]
+    },
+    {
+      "id": "agent-work",
+      "kind": "board",
+      "role": "syntax",
+      "title": "手順を考えて進める",
+      "board": "agent",
+      "beats": [
+        {
+          "say": "手順を自分で考えて進める仕組みが、エージェントです。",
+          "term": {
+            "text": "エージェント",
+            "note": "手順を考えて作業を進める"
+          }
+        },
+        {
+          "say": "花を探す作業に当てはめてみましょう。",
+          "show": ["plan", "flowers"]
+        },
+        {
+          "say": "何から調べるかを考えながら、作業を進めます。",
+          "show": ["proceed"],
+          "travel": {
+            "along": ["proceed"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "こうした作業を任せる開発も、資格が扱う範囲です。",
+          "show": ["builder"],
+          "pulse": ["builder"]
+        }
+      ]
+    },
+    {
+      "id": "build-flower-app",
+      "kind": "board",
+      "role": "apply",
+      "title": "花屋の仕事をアプリにする",
+      "board": "development",
+      "beats": [
+        {
+          "say": "花屋の例を、開発する側から見直しましょう。",
+          "show": ["builder"]
+        },
+        {
+          "say": "アプリから呼ぶ部分には、Claude API を使います。",
+          "speech": "アプリから呼ぶ部分には、クロードエーピーアイを使います。",
+          "show": ["api", "build"]
+        },
+        {
+          "say": "花の検索処理とつなぐ部分は、ツール使用です。",
+          "show": ["tools", "connect"]
+        },
+        {
+          "say": "手順を考えて進める部分も、アプリに組み込みます。",
+          "show": ["agent", "delegate"]
+        },
+        {
+          "say": "これらを作るエンジニアが、この資格の対象です。",
+          "pulse": ["builder"],
+          "mark": [
+            {
+              "on": "builder",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cafeteria-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "資格の対象はどちらか",
+      "board": "cafeteria",
+      "think": 8,
+      "beats": [
+        {
+          "say": "社員食堂で、献立を案内するアプリを考えます。",
+          "show": ["meal"]
+        },
+        {
+          "say": "一人目は、できたアプリで献立を読む担当です。",
+          "show": ["reader"],
+          "tag": {
+            "reader": "一人目"
+          }
+        },
+        {
+          "say": "二人目は、Claude API でアプリを作ります。",
+          "speech": "二人目は、クロードエーピーアイでアプリを作ります。",
+          "show": ["builder"],
+          "tag": {
+            "builder": "二人目"
+          }
+        },
+        {
+          "say": "献立の検索処理とつなぐ仕事も、この人の役割です。",
+          "tag": {
+            "builder": "検索と接続"
+          },
+          "pulse": ["builder"]
+        },
+        {
+          "say": "この資格の対象に合う担当は、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "reader",
+              "kind": "question"
+            },
+            {
+              "on": "builder",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["reader", "builder"]
+        }
+      ]
+    },
+    {
+      "id": "cafeteria-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "アプリを作る担当",
+      "board": "cafeteria",
+      "beats": [
+        {
+          "say": "答えは、アプリを作る二人目の担当です。",
+          "mark": [
+            {
+              "on": "builder",
+              "kind": "check"
+            },
+            {
+              "on": "reader",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["builder"]
+        },
+        {
+          "say": "Claude をアプリに組み込む仕事をしています。",
+          "speech": "クロードをアプリに組み込む仕事をしています。",
+          "tag": {
+            "builder": "アプリの開発"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-developer",
+      "kind": "board",
+      "role": "explain",
+      "title": "題材より担当する仕事",
+      "board": "cafeteria",
+      "beats": [
+        {
+          "say": "判断の手がかりは、食堂という題材ではありません。",
+          "pulse": ["meal"],
+          "tag": {
+            "meal": "業務の題材"
+          }
+        },
+        {
+          "say": "二人目が担当する、アプリの開発に注目しましょう。",
+          "pulse": ["builder"]
+        },
+        {
+          "say": "API で呼び出し、検索処理とつなぐ仕事です。",
+          "speech": "エーピーアイで呼び出し、検索処理とつなぐ仕事です。",
+          "tag": {
+            "builder": "APIと検索"
+          }
+        },
+        {
+          "say": "献立を読む人とは、担当する仕事が違います。",
+          "pulse": ["reader"],
+          "tag": {
+            "reader": "利用する役割"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choose-by-work",
+      "kind": "board",
+      "role": "usage",
+      "title": "自分の仕事に結び付ける",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "資格を選ぶときは、担当する仕事を確かめます。",
+          "show": ["builder"]
+        },
+        {
+          "say": "Claude でアプリを作るなら、この資格が対象です。",
+          "speech": "クロードでアプリを作るなら、この資格が対象です。",
+          "show": ["exam", "choose"]
+        },
+        {
+          "say": "呼び出しや処理との接続を、学ぶ内容に結び付けましょう。",
+          "show": ["app", "learn"],
+          "travel": {
+            "along": ["learn"],
+            "icon": "read"
+          }
+        },
+        {
+          "say": "手順のある作業を任せる開発も、合わせて扱います。",
+          "show": ["agent", "include"],
+          "pulse": ["agent"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "aa57b84532235c7613c7ae8442c02dc18ceeb10785b5721ab9ae7724f6cfa89d"
+  }
+}

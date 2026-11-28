@@ -1,0 +1,745 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "キャッシュが読まれない例から区切りより前の変化を見つけ、値の移動と使用量の再確認を説明できる。",
+    "stuck": "短い間隔で書き込みが続いているのに、読み込みがない原因を期限だけで考えてしまう。",
+    "points": ["キャッシュが読まれないときは、区切りより前に毎回変わる値がないかを先に調べます。"],
+    "leaveOut": [
+      "診断を有効にするコードと細かい項目名",
+      "設定変更ごとに無効になる範囲の一覧",
+      "最低の長さや探索範囲の細かい数値",
+      "キャッシュの料金計算",
+      "複数の区切りと伸びる会話の扱い"
+    ]
+  },
+  "art": {
+    "inspection-guide": {
+      "prompt": "A white inspection clipboard with a small blue wrench and a blue valve wheel beside it, representing a repeated equipment inspection guide. The paper is white and otherwise blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "time-note": {
+      "prompt": "A small blue analog clock without numerals attached to a blank white paper slip with a violet clip, representing a changing current time. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "compare-sheets": {
+      "prompt": "Two large white paper sheets side by side, with matching blue tabs and a violet pencil pointing at their upper edges, representing a comparison of two documents. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "usage-ledger": {
+      "prompt": "An open white record book with blue binding beside a small violet tally counter with a blank face, representing a record of quantities used. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "section-divider": {
+      "prompt": "A white document folder with one large violet divider tab protruding from the middle, representing a boundary between sections. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "diagnostic-lens": {
+      "prompt": "A large blue magnifying glass held above two overlapping white paper sheets, with a violet paper clip on the top sheet, representing locating a difference. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cinema-guide": {
+      "prompt": "A blue film reel beside a pair of blank white cinema tickets with perforated edges, representing a cinema information service. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-note": {
+      "prompt": "A hand holding a violet pencil beside a single blank white memo sheet with a blue clip, representing the input for the current request. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "点検の案内",
+          "art": "inspection-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "usage",
+          "label": "読み込みゼロ",
+          "art": "usage-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "compare",
+          "label": "前回と今回",
+          "art": "compare-sheets",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "paper": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "previous",
+          "label": "前回の点検票",
+          "art": "inspection-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "current",
+          "label": "今回の点検票",
+          "art": "inspection-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "time",
+          "label": "記入した時刻",
+          "art": "time-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "write",
+          "label": "書き込み",
+          "art": "usage-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "usage-ledger",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "prefix": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "time",
+          "label": "現在時刻",
+          "art": "time-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "共通の指示",
+          "art": "inspection-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "boundary",
+          "label": "区切り",
+          "art": "section-divider",
+          "at": [5, 1]
+        },
+        {
+          "id": "input",
+          "label": "今回の入力",
+          "art": "input-note",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "time-system",
+          "from": "time",
+          "to": "system"
+        },
+        {
+          "id": "system-boundary",
+          "from": "system",
+          "to": "boundary"
+        },
+        {
+          "id": "boundary-input",
+          "from": "boundary",
+          "to": "input"
+        }
+      ]
+    },
+    "diagnosis": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "前回の応答",
+          "art": "input-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "diagnosis",
+          "label": "差を調べる",
+          "art": "diagnostic-lens",
+          "at": [3, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "inspection-guide",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "response",
+          "to": "diagnosis",
+          "label": "応答のID"
+        },
+        {
+          "id": "locate",
+          "from": "diagnosis",
+          "to": "system",
+          "label": "調べる場所"
+        }
+      ]
+    },
+    "fixed": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "system",
+          "label": "共通の指示",
+          "art": "inspection-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "boundary",
+          "label": "区切り",
+          "art": "section-divider",
+          "at": [3, 1]
+        },
+        {
+          "id": "time",
+          "label": "現在時刻",
+          "art": "time-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "input",
+          "label": "今回の入力",
+          "art": "input-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "read",
+          "label": "読み込み",
+          "art": "usage-ledger",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "stable",
+          "from": "system",
+          "to": "boundary"
+        },
+        {
+          "id": "after",
+          "from": "boundary",
+          "to": "time"
+        },
+        {
+          "id": "attach",
+          "from": "time",
+          "to": "input"
+        },
+        {
+          "id": "measure",
+          "from": "input",
+          "to": "read"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "time",
+          "label": "現在時刻",
+          "art": "time-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "映画館の案内",
+          "art": "cinema-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "boundary",
+          "label": "区切り",
+          "art": "section-divider",
+          "at": [5, 1]
+        },
+        {
+          "id": "extend",
+          "label": "期限を延ばす",
+          "art": "time-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "move",
+          "label": "時刻を後ろへ",
+          "art": "input-note",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "time-guide",
+          "from": "time",
+          "to": "guide"
+        },
+        {
+          "id": "guide-boundary",
+          "from": "guide",
+          "to": "boundary"
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "time",
+          "label": "毎回違う時刻",
+          "art": "time-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "compare",
+          "label": "前半を比較",
+          "art": "compare-sheets",
+          "at": [3, 1]
+        },
+        {
+          "id": "boundary",
+          "label": "区切り",
+          "art": "section-divider",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "difference",
+          "from": "time",
+          "to": "compare",
+          "label": "違いが残る"
+        },
+        {
+          "id": "until",
+          "from": "compare",
+          "to": "boundary",
+          "label": "ここまで"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "time",
+          "label": "時刻を追加",
+          "art": "time-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "発言を追加",
+          "art": "input-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "compare",
+          "label": "前半を比較",
+          "art": "compare-sheets",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "読まれなくなった原因",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "点検の案内を、十秒おきに送るアプリを考えます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "書き込みがあるのに、読み込みはゼロのままです。",
+          "show": ["usage"]
+        },
+        {
+          "say": "前回と今回の入力を、並べて比べてみましょう。",
+          "show": ["compare"]
+        },
+        {
+          "say": "まず、区切りより前に毎回変わる値がないかを調べます。",
+          "pulse": ["compare"]
+        }
+      ]
+    },
+    {
+      "id": "paper-comparison",
+      "kind": "board",
+      "role": "example",
+      "title": "点検票を見比べる",
+      "board": "paper",
+      "beats": [
+        {
+          "say": "紙の点検票を二枚、見比べる場面を考えましょう。",
+          "show": ["previous", "current"]
+        },
+        {
+          "say": "点検の手順は、どちらにも同じ内容が書かれています。",
+          "pulse": ["previous", "current"]
+        },
+        {
+          "say": "違うのは、先頭に記入した時刻です。",
+          "show": ["time"]
+        },
+        {
+          "say": "手順が同じでも、時刻を含めた全体は一致しません。",
+          "pulse": ["time"],
+          "mark": [
+            {
+              "on": "time",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "read-usage",
+      "kind": "board",
+      "role": "syntax",
+      "title": "読み込みの有無を見る",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "使用量の内訳を示すのが、usage です。",
+          "speech": "使用量の内訳を示すのが、ユーセージです。",
+          "term": {
+            "text": "usage",
+            "ruby": "ユーセージ",
+            "note": "実際に使った量の内訳"
+          }
+        },
+        {
+          "say": "点検の例では、毎回書き込みがあると分かります。",
+          "show": ["write"],
+          "tag": {
+            "write": "毎回あり"
+          }
+        },
+        {
+          "say": "一方、読み込みの量はゼロでした。",
+          "show": ["read"],
+          "tag": {
+            "read": "ゼロ"
+          }
+        },
+        {
+          "say": "書き込めているので、この例では長さは足りています。",
+          "pulse": ["write"],
+          "mark": [
+            {
+              "on": "write",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "compare-prefix",
+      "kind": "board",
+      "role": "syntax",
+      "title": "比べる範囲を決める",
+      "board": "prefix",
+      "beats": [
+        {
+          "say": "比べる範囲の終わりは、キャッシュの区切りです。",
+          "term": {
+            "text": "キャッシュの区切り",
+            "ruby": "キャッシュのくぎり",
+            "note": "再利用したい前半の終わり"
+          }
+        },
+        {
+          "say": "区切りまでを、前回の内容と比べましょう。",
+          "show": ["time", "system", "boundary", "time-system", "system-boundary"]
+        },
+        {
+          "say": "この範囲に、毎回違う値が混ざっていないかを調べます。",
+          "pulse": ["time", "system"]
+        },
+        {
+          "say": "区切りより後ろの今回の入力とは、分けて見るためです。",
+          "show": ["input", "boundary-input"],
+          "pulse": ["input"]
+        }
+      ]
+    },
+    {
+      "id": "use-diagnostics",
+      "kind": "board",
+      "role": "apply",
+      "title": "診断で場所を絞る",
+      "board": "diagnosis",
+      "beats": [
+        {
+          "say": "比較する場所を絞る機能が、キャッシュの診断です。",
+          "term": {
+            "text": "キャッシュの診断",
+            "ruby": "キャッシュのしんだん",
+            "note": "リクエストの差を調べる"
+          }
+        },
+        {
+          "say": "診断を有効にした前回の応答を使います。",
+          "show": ["response"]
+        },
+        {
+          "say": "比較に渡すのは、その応答の ID です。",
+          "speech": "比較に渡すのは、その応答のアイディーです。",
+          "show": ["diagnosis", "compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この例では、指示が変わったという結果が返りました。",
+          "show": ["system", "locate"],
+          "tag": {
+            "system": "指示の変更"
+          }
+        },
+        {
+          "say": "そこで、system の内容を見比べます。",
+          "speech": "そこで、システムの内容を見比べます。",
+          "pulse": ["system"]
+        }
+      ]
+    },
+    {
+      "id": "find-time",
+      "kind": "board",
+      "role": "apply",
+      "title": "指示の先頭を確かめる",
+      "board": "prefix",
+      "beats": [
+        {
+          "say": "点検アプリでは、指示の先頭に時刻が追加されていました。",
+          "show": ["time", "system", "time-system"],
+          "tag": {
+            "time": "現在時刻"
+          }
+        },
+        {
+          "say": "その後ろにある共通の指示は、同じ内容です。",
+          "pulse": ["system"]
+        },
+        {
+          "say": "十秒後に送ると、先頭の時刻が変わります。",
+          "pulse": ["time"],
+          "tag": {
+            "time": "十秒後"
+          }
+        },
+        {
+          "say": "この時刻が区切りより前なので、前半が一致しません。",
+          "show": ["boundary", "system-boundary"],
+          "mark": [
+            {
+              "on": "time",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "move-and-measure",
+      "kind": "board",
+      "role": "apply",
+      "title": "時刻を後ろへ移す",
+      "board": "fixed",
+      "beats": [
+        {
+          "say": "共通の指示までを、同じ前半として残します。",
+          "show": ["system", "boundary", "stable"]
+        },
+        {
+          "say": "現在時刻を置くのは、区切りより後ろの今回の入力です。",
+          "show": ["time", "input", "after", "attach"]
+        },
+        {
+          "say": "同じ前半なら、十秒おきの入力で五分のキャッシュを読めます。",
+          "pulse": ["system"],
+          "mark": [
+            {
+              "on": "system",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "修正後も送り直し、usage で読み込みの増加を確かめましょう。",
+          "speech": "修正後も送り直し、ユーセージで読み込みの増加を確かめましょう。",
+          "show": ["read", "measure"],
+          "pulse": ["read"],
+          "tag": {
+            "read": "測り直す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cinema-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "映画館の案内を直す",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "映画館の案内でも、十秒おきに入力を送るとします。",
+          "show": ["guide"]
+        },
+        {
+          "say": "書き込みはありますが、読み込みはゼロの状態です。",
+          "tag": {
+            "guide": "読込ゼロ"
+          }
+        },
+        {
+          "say": "共通の指示の先頭に、毎回変わる現在時刻を入れました。",
+          "show": ["time", "boundary", "time-guide", "guide-boundary"]
+        },
+        {
+          "say": "修正案は、期限の延長と、時刻を区切りの後ろへ移す方法です。",
+          "show": ["extend", "move"]
+        },
+        {
+          "say": "この原因に合うのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "extend",
+              "kind": "question"
+            },
+            {
+              "on": "move",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinema-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "時刻の位置を直す",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、時刻を区切りの後ろへ移す方法です。",
+          "mark": [
+            {
+              "on": "move",
+              "kind": "check"
+            },
+            {
+              "on": "extend",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["move"]
+        },
+        {
+          "say": "今回の入力に時刻を移し、読み込みの量を測り直します。",
+          "pulse": ["time"],
+          "tag": {
+            "time": "後ろへ移す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-move",
+      "kind": "board",
+      "role": "explain",
+      "title": "期限では差が消えない",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "映画館の例で変わっていたのは、先頭の時刻でした。",
+          "show": ["time"]
+        },
+        {
+          "say": "保存する期限を延ばしても、その時刻の違いは残ります。",
+          "show": ["compare", "difference"]
+        },
+        {
+          "say": "区切りまでを比べると、前半が違うままです。",
+          "show": ["boundary", "until"],
+          "mark": [
+            {
+              "on": "compare",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "時刻を後ろに移して、同じ前半に戻しましょう。",
+          "hide": ["time", "difference"],
+          "unmark": ["compare"],
+          "tag": {
+            "compare": "同じ前半"
+          }
+        }
+      ]
+    },
+    {
+      "id": "when-to-check",
+      "kind": "board",
+      "role": "usage",
+      "title": "入力を変えたあとに使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "時刻を追加したあとに読み込みが減ったら、前半を調べます。",
+          "show": ["time"]
+        },
+        {
+          "say": "その回だけの発言を前半に足した場合も、同じ調べ方です。",
+          "show": ["input"]
+        },
+        {
+          "say": "まず、区切りより前で変わった場所を見つけましょう。",
+          "show": ["compare"]
+        },
+        {
+          "say": "場所を直したら、実際の読み込み量を確かめます。",
+          "pulse": ["compare"],
+          "tag": {
+            "compare": "修正後も測る"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "800ecb56711b1d7d7eecaf6cc54c7e8793124310a66e437e3fe23f9aba2070c0"
+  }
+}

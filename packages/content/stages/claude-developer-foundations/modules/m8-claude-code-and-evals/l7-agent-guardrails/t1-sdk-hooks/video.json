@@ -1,0 +1,893 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "帳票の編集を止めるために、PreToolUse の対象と拒否の返り値を説明できる。",
+    "stuck": "編集禁止と文章で伝えたり実行後に記録したりすれば、編集そのものを防げると思ってしまう。",
+    "points": ["Agent SDK でも、必ず止めたい呼び出しは PreToolUse のフックで拒否します。"],
+    "leaveOut": [
+      "許可ルールや権限モードとの判定順序",
+      "フックが失敗した場合の設定",
+      "拒否以外の返り値と引数の変更",
+      "設定の読み込み元とメッセージを読む処理",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "audit-report": {
+      "prompt": "A small stack of white audit report sheets held by a blue binder clip, with blank pale grey rectangular cells and a violet magnifying glass beside them. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "review-agent": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a white document and looking closely at it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "editing-pencil": {
+      "prompt": "A large violet pencil with its tip approaching a blank white report sheet held by a blue paper clip, before touching the paper. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "guard-hand": {
+      "prompt": "A staff member in a plain blue shirt with simple facial features, raising an open palm to halt a pending action, with the palm clearly visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-album": {
+      "prompt": "An open blue family photo album with white pages holding two simple pictorial photos of people in blue and violet clothes with short dark hair and simple faces. No scenery behind the album. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-scissors": {
+      "prompt": "A pair of blue handled scissors poised beside a loose white photo print showing a simple person in a violet sweater, with a clear gap between the blades and the untouched print. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "audit-notebook": {
+      "prompt": "An open violet bound audit notebook with white pages, a blue pen and a small blue page marker, representing a record of completed actions. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaned-coat": {
+      "prompt": "A freshly cleaned blue coat on a light grey hanger with a small blank white pickup tag tied to one sleeve. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pickup-record": {
+      "prompt": "A white dry cleaning pickup record sheet with a small pictorial blue coat near the top and a blue binder clip, beside a violet pencil. The rest of the sheet is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "review-goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "監査用の帳票",
+          "art": "audit-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "agent",
+          "label": "確認を任せる",
+          "art": "review-agent",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "編集の試み",
+          "art": "editing-pencil",
+          "at": [5, 1]
+        },
+        {
+          "id": "guard",
+          "label": "実行前の拒否",
+          "art": "guard-hand",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "report",
+          "to": "agent"
+        },
+        {
+          "id": "attempt",
+          "from": "agent",
+          "to": "edit"
+        },
+        {
+          "id": "stop",
+          "from": "edit",
+          "to": "guard"
+        }
+      ]
+    },
+    "album": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "album",
+          "label": "借りた写真",
+          "art": "photo-album",
+          "at": [1, 1]
+        },
+        {
+          "id": "scissors",
+          "label": "切ろうとする",
+          "art": "photo-scissors",
+          "at": [3, 1]
+        },
+        {
+          "id": "guard",
+          "label": "切る前に止める",
+          "art": "guard-hand",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "try-cut",
+          "from": "album",
+          "to": "scissors",
+          "label": "手を伸ばす"
+        },
+        {
+          "id": "halt",
+          "from": "scissors",
+          "to": "guard",
+          "label": "実行前"
+        }
+      ]
+    },
+    "harness": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "agent",
+          "label": "エージェント",
+          "art": "review-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "harness",
+          "label": "ハーネス",
+          "art": "guard-hand",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "ツールの実行",
+          "art": "editing-pencil",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "agent",
+          "to": "harness",
+          "label": "呼び出し"
+        },
+        {
+          "id": "execute",
+          "from": "harness",
+          "to": "edit",
+          "label": "実行"
+        }
+      ]
+    },
+    "hook-code": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "call",
+          "label": "書込と編集",
+          "art": "editing-pencil",
+          "at": [1, 1]
+        },
+        {
+          "id": "hook",
+          "label": "実行前フック",
+          "art": "guard-hand",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "確認中の帳票",
+          "art": "audit-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "inspect",
+          "from": "call",
+          "to": "hook"
+        },
+        {
+          "id": "to-report",
+          "from": "hook",
+          "to": "report"
+        }
+      ]
+    },
+    "after-action": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "edit",
+          "label": "編集の実行",
+          "art": "editing-pencil",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "変更済み帳票",
+          "art": "audit-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "監査記録",
+          "art": "audit-notebook",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "change",
+          "from": "edit",
+          "to": "report",
+          "label": "変更"
+        },
+        {
+          "id": "log",
+          "from": "report",
+          "to": "record",
+          "label": "実行後"
+        }
+      ]
+    },
+    "scope": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "named",
+          "label": "書込と編集",
+          "art": "editing-pencil",
+          "at": [1, 1]
+        },
+        {
+          "id": "other",
+          "label": "別の経路",
+          "icon": "terminal",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "守りたい帳票",
+          "art": "audit-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "other-write",
+          "from": "other",
+          "to": "report",
+          "label": "書き込み"
+        }
+      ]
+    },
+    "pickup-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "衣類の受け取り",
+          "art": "cleaned-coat",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "受け取り記録",
+          "art": "pickup-record",
+          "at": [3, 1]
+        },
+        {
+          "id": "edit",
+          "label": "Editの試み",
+          "art": "editing-pencil",
+          "at": [5, 1]
+        },
+        {
+          "id": "before",
+          "label": "実行前に拒否",
+          "art": "guard-hand",
+          "at": [5, 2]
+        },
+        {
+          "id": "after",
+          "label": "実行後に記録",
+          "art": "audit-notebook",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "pickup-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "edit",
+          "label": "Editの試み",
+          "art": "editing-pencil",
+          "at": [1, 1]
+        },
+        {
+          "id": "guard",
+          "label": "実行前の判定",
+          "art": "guard-hand",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "受け取り記録",
+          "art": "pickup-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "edit",
+          "to": "guard",
+          "label": "対象に一致"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "帳票の確認",
+          "art": "audit-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "guard",
+          "label": "実行前の拒否",
+          "art": "guard-hand",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "実行後の記録",
+          "art": "audit-notebook",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "protect-report",
+      "kind": "board",
+      "role": "goal",
+      "title": "帳票を変えずに確認する",
+      "board": "review-goal",
+      "beats": [
+        {
+          "say": "監査用の帳票を、変えずに確認したいとします。",
+          "show": ["report"]
+        },
+        {
+          "say": "エージェントには、編集しないよう伝えました。",
+          "show": ["agent", "request"]
+        },
+        {
+          "say": "それでも編集を試みたら、どこで止めるべきでしょうか。",
+          "show": ["edit", "attempt"],
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "SDK でも、実行前のフックで呼び出しを拒否します。",
+          "speech": "エスディーケーでも、実行前のフックで呼び出しを拒否します。",
+          "show": ["guard", "stop"],
+          "pulse": ["guard"]
+        }
+      ]
+    },
+    {
+      "id": "stop-scissors",
+      "kind": "board",
+      "role": "example",
+      "title": "写真を切る前に止める",
+      "board": "album",
+      "beats": [
+        {
+          "say": "借りたアルバムの写真を、眺める場面です。",
+          "show": ["album"]
+        },
+        {
+          "say": "見るだけのはずが、写真を切ろうとしました。",
+          "show": ["scissors", "try-cut"]
+        },
+        {
+          "say": "切ったあとで記録しても、切る前の写真には戻りません。",
+          "pulse": ["scissors"],
+          "mark": [
+            {
+              "on": "scissors",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "写真を守るなら、はさみを使う前に止めましょう。",
+          "show": ["guard", "halt"],
+          "pulse": ["guard"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "name-harness",
+      "kind": "board",
+      "role": "syntax",
+      "title": "規則を置く場所",
+      "board": "harness",
+      "beats": [
+        {
+          "say": "プロンプトは、モデルに作業の進め方を伝えます。",
+          "show": ["agent"]
+        },
+        {
+          "say": "ハーネスは、エージェントを動かす側の仕組みです。",
+          "term": {
+            "text": "ハーネス",
+            "note": "エージェントを動かす仕組み"
+          }
+        },
+        {
+          "say": "必ず守る規則は、この動かす側に置きましょう。",
+          "show": ["harness", "call"],
+          "pulse": ["harness"]
+        },
+        {
+          "say": "フックなら、ツールを実行する前に拒否できます。",
+          "show": ["edit", "execute"],
+          "tag": {
+            "harness": "実行前に拒否"
+          },
+          "mark": [
+            {
+              "on": "harness",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "register-hook",
+      "kind": "code",
+      "role": "syntax",
+      "title": "対象と時点を指定する",
+      "code": [
+        "// 帳票の確認を頼み、フックを登録する",
+        "query({ prompt: \"帳票を確認\", options: { hooks: {",
+        "  // 編集する二つのツールを実行前に調べる",
+        "  PreToolUse: [{ matcher: \"Write|Edit\",",
+        "    // 呼び出された関数から判定を返す",
+        "    hooks: [async () => ({ hookSpecificOutput: {",
+        "      // 実行前のイベントへの返り値",
+        "      hookEventName: \"PreToolUse\",",
+        "      // 対象の呼び出しを拒否する",
+        "      permissionDecision: \"deny\",",
+        "      // 拒否する理由を伝える",
+        "      permissionDecisionReason: \"確認中は編集できません\",",
+        "    // 返り値と登録と依頼を閉じる",
+        "    } })] }], } } });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "hook-code"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "query の options にフックを登録します。",
+          "speech": "クエリーのオプションズにフックを登録します。",
+          "part": {
+            "line": 1,
+            "text": "hooks",
+            "note": "フックの登録"
+          },
+          "figure": {
+            "show": ["hook", "report"]
+          }
+        },
+        {
+          "say": "PreToolUse は、実行前に調べる指定です。",
+          "speech": "プリツールユースは、実行前に調べる指定です。",
+          "part": {
+            "line": 3,
+            "text": "PreToolUse",
+            "note": "実行前"
+          },
+          "figure": {
+            "pulse": ["hook"]
+          }
+        },
+        {
+          "say": "対象を絞る条件を、matcher に書きます。",
+          "speech": "対象を絞る条件を、マッチャーに書きます。",
+          "term": {
+            "text": "matcher",
+            "note": "イベントの対象を絞る条件"
+          },
+          "part": {
+            "line": 3,
+            "text": "matcher",
+            "note": "対象の条件"
+          }
+        },
+        {
+          "say": "この例の対象は、Write と Edit の二つです。",
+          "speech": "この例の対象は、ライトとエディットの二つです。",
+          "part": {
+            "line": 3,
+            "text": "\"Write|Edit\"",
+            "note": "対象のツール"
+          },
+          "figure": {
+            "show": ["call", "inspect"],
+            "pulse": ["call"]
+          }
+        },
+        {
+          "say": "帳票を確認する依頼と、実行前の検査を分けましょう。",
+          "focus": [1, 3],
+          "figure": {
+            "pulse": ["hook", "report"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "return-denial",
+      "kind": "code",
+      "role": "apply",
+      "title": "拒否と理由を返す",
+      "code": [
+        "// 帳票の確認を頼み、フックを登録する",
+        "query({ prompt: \"帳票を確認\", options: { hooks: {",
+        "  // 編集する二つのツールを実行前に調べる",
+        "  PreToolUse: [{ matcher: \"Write|Edit\",",
+        "    // 呼び出された関数から判定を返す",
+        "    hooks: [async () => ({ hookSpecificOutput: {",
+        "      // 実行前のイベントへの返り値",
+        "      hookEventName: \"PreToolUse\",",
+        "      // 対象の呼び出しを拒否する",
+        "      permissionDecision: \"deny\",",
+        "      // 拒否する理由を伝える",
+        "      permissionDecisionReason: \"確認中は編集できません\",",
+        "    // 返り値と登録と依頼を閉じる",
+        "    } })] }], } } });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "hook-code"
+      },
+      "beats": [
+        {
+          "say": "編集の呼び出しが来ると、この関数が判定を返します。",
+          "part": {
+            "line": 5,
+            "text": "async () =>",
+            "note": "判定を返す関数"
+          },
+          "figure": {
+            "travel": {
+              "along": ["inspect"],
+              "icon": "write"
+            }
+          }
+        },
+        {
+          "say": "この返り値も、PreToolUse 向けの指定です。",
+          "speech": "この返り値も、プリツールユース向けの指定です。",
+          "part": {
+            "line": 7,
+            "text": "\"PreToolUse\"",
+            "note": "実行前の判定"
+          },
+          "figure": {
+            "pulse": ["hook"]
+          }
+        },
+        {
+          "say": "permissionDecision に deny を指定します。",
+          "speech": "パーミッションディシジョンにデナイを指定します。",
+          "part": {
+            "line": 9,
+            "text": "\"deny\"",
+            "note": "呼び出しを拒否"
+          },
+          "figure": {
+            "tag": {
+              "hook": "拒否"
+            },
+            "mark": [
+              {
+                "on": "call",
+                "kind": "cross"
+              }
+            ]
+          }
+        },
+        {
+          "say": "ここが、拒否する理由を書く場所です。",
+          "part": {
+            "line": 11,
+            "text": "permissionDecisionReason",
+            "note": "拒否する理由"
+          },
+          "figure": {
+            "tag": {
+              "report": "確認中"
+            }
+          }
+        },
+        {
+          "say": "対象の編集は、帳票を書き換える前に止まります。",
+          "focus": [3, 9],
+          "figure": {
+            "pulse": ["report"],
+            "tag": {
+              "report": "変更なし"
+            },
+            "mark": [
+              {
+                "on": "report",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "record-afterward",
+      "kind": "board",
+      "role": "apply",
+      "title": "記録を残すのは実行後",
+      "board": "after-action",
+      "beats": [
+        {
+          "say": "今度は、編集が実行された場合を見てみましょう。",
+          "show": ["edit", "report", "change"],
+          "travel": {
+            "along": ["change"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "操作のあとに残す確認用の記録が、監査記録です。",
+          "term": {
+            "text": "監査記録",
+            "ruby": "かんさきろく",
+            "note": "実行された操作を残す記録"
+          }
+        },
+        {
+          "say": "PostToolUse で、実行された操作を記録します。",
+          "speech": "ポストツールユースで、実行された操作を記録します。",
+          "show": ["record", "log"],
+          "pulse": ["record"]
+        },
+        {
+          "say": "記録を残す時点では、帳票の変更は防げません。",
+          "pulse": ["report"],
+          "tag": {
+            "report": "変更済み"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "check-other-paths",
+      "kind": "board",
+      "role": "note",
+      "title": "対象の名前だけを調べる",
+      "board": "scope",
+      "beats": [
+        {
+          "say": "この条件が調べるのは、指定した名前のツールだけです。",
+          "show": ["named"],
+          "mark": [
+            {
+              "on": "named",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "Bash など、別の書き込み経路も確かめます。",
+          "speech": "バッシュなど、別の書き込み経路も確かめます。",
+          "show": ["other", "report", "other-write"],
+          "tag": {
+            "other": "Bashなど"
+          }
+        },
+        {
+          "say": "帳票を守るために、使えるツールも絞りましょう。",
+          "pulse": ["other", "report"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "pickup-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受け取り記録を守るには",
+      "board": "pickup-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニング店で、衣類の受け取りを確認します。",
+          "show": ["coat"]
+        },
+        {
+          "say": "受け取り記録を調べるだけの依頼です。",
+          "show": ["record"]
+        },
+        {
+          "say": "ところが、エージェントは Edit で変更を試みました。",
+          "speech": "ところが、エージェントはエディットで変更を試みました。",
+          "show": ["edit"]
+        },
+        {
+          "say": "実行前に拒否する案と、実行後に記録する案を比べます。",
+          "show": ["before", "after"]
+        },
+        {
+          "say": "この編集を防ぐには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "before",
+              "kind": "question"
+            },
+            {
+              "on": "after",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pickup-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実行前に拒否する",
+      "board": "pickup-quiz",
+      "beats": [
+        {
+          "say": "答えは、実行前に呼び出しを拒否する案です。",
+          "mark": [
+            {
+              "on": "before",
+              "kind": "check"
+            },
+            {
+              "on": "after",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["before"]
+        },
+        {
+          "say": "PreToolUse のフックで、この編集を止めます。",
+          "speech": "プリツールユースのフックで、この編集を止めます。",
+          "pulse": ["edit"],
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "trace-rejection",
+      "kind": "board",
+      "role": "explain",
+      "title": "変更する前に判定する",
+      "board": "pickup-reason",
+      "beats": [
+        {
+          "say": "まず、Edit を matcher の対象に含めます。",
+          "speech": "まず、エディットをマッチャーの対象に含めます。",
+          "show": ["edit"]
+        },
+        {
+          "say": "呼び出しが来たときは、まだ編集を実行する前です。",
+          "show": ["guard", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "ここで拒否を返せば、その編集は実行されません。",
+          "pulse": ["guard"],
+          "tag": {
+            "guard": "拒否"
+          },
+          "mark": [
+            {
+              "on": "edit",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "記録を変えないために、判定を実行前に置きましょう。",
+          "show": ["record"],
+          "tag": {
+            "record": "変更なし"
+          },
+          "mark": [
+            {
+              "on": "record",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-before-review",
+      "kind": "board",
+      "role": "usage",
+      "title": "確認だけを任せるとき",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "帳票の不足を報告してもらうときに使えます。",
+          "show": ["report"]
+        },
+        {
+          "say": "編集を止める条件の置き場所は、実行前のフックです。",
+          "show": ["guard"]
+        },
+        {
+          "say": "実行後の記録とは、役割を分けて設計しましょう。",
+          "show": ["record"]
+        },
+        {
+          "say": "SDK でも、必ず止めたい呼び出しは実行前に拒否します。",
+          "speech": "エスディーケーでも、必ず止めたい呼び出しは実行前に拒否します。",
+          "pulse": ["guard"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "6be4f4e7367b31cf7107da8dfe46ffaa76e17318cbd54a7d3de68970c6301355"
+  }
+}

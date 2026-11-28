@@ -1,0 +1,769 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ評価のセットで変更前後を採点し、合格率と悪化した例を確かめる手順を説明できる。",
+    "stuck": "試す入力を変更前後で替えたり、合格率の上昇だけで改善したと判断したりする。",
+    "points": ["プロンプトを変えたら、同じ評価のセットを自動で採点して前と比べます。"],
+    "leaveOut": [
+      "成功の基準を作る詳しい手順",
+      "ツールの誤用の直し方",
+      "採点器の見逃しを調べる詳しい演習",
+      "採点処理の実装と課題の答え"
+    ]
+  },
+  "art": {
+    "pool-guide": {
+      "prompt": "A blue swimming cap and goggles beside a folded white public swimming pool information leaflet. The leaflet is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-pairs": {
+      "prompt": "A small open blue file folder holding pairs of white question and answer cards, joined with violet paper clips. The cards are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "prompt-note": {
+      "prompt": "A violet pencil beside two overlapping white instruction sheets, with a blue paper clip on the top sheet. Both sheets are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "auto-grader": {
+      "prompt": "A compact blue automatic rubber stamping machine with a blank white answer sheet entering its slot and a second blank sheet emerging. No symbols on the stamps. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-grader": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white answer sheet and a violet pencil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-review": {
+      "prompt": "A staff member wearing a plain blue shirt comparing two blank white answer sheets held side by side. Simple facial features and short dark hair. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "score-sheet": {
+      "prompt": "A white clipboard with a blue clip, a blank sheet and a violet magnifying glass beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-guide": {
+      "prompt": "A small blue museum admission ticket beside a violet classical ceramic vase and a folded white visitor leaflet. Ticket and leaflet are blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pool",
+          "label": "プールの案内",
+          "art": "pool-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "依頼文の変更",
+          "art": "prompt-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "set",
+          "label": "同じ評価",
+          "art": "question-pairs",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "practice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "変更前の質問",
+          "art": "question-pairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "案内の練習",
+          "art": "human-review",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後の質問",
+          "art": "question-pairs",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "grading": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "answer",
+          "label": "回答",
+          "art": "pool-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "grader",
+          "label": "コードで採点",
+          "art": "auto-grader",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "判定",
+          "art": "score-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "grade",
+          "from": "answer",
+          "to": "grader",
+          "label": "照合"
+        },
+        {
+          "id": "decide",
+          "from": "grader",
+          "to": "result",
+          "label": "判定"
+        }
+      ]
+    },
+    "model": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "採点の基準",
+          "art": "prompt-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "LLMの採点",
+          "art": "model-grader",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "決まった形",
+          "art": "score-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give",
+          "from": "rule",
+          "to": "model",
+          "label": "渡す"
+        },
+        {
+          "id": "judge",
+          "from": "model",
+          "to": "result",
+          "label": "返す"
+        }
+      ]
+    },
+    "align": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "human",
+          "label": "人の判定",
+          "art": "human-review",
+          "at": [1, 1]
+        },
+        {
+          "id": "answer",
+          "label": "同じ回答",
+          "art": "pool-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "model",
+          "label": "LLMの判定",
+          "art": "model-grader",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "run": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "set",
+          "label": "評価のセット",
+          "art": "question-pairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "prompt",
+          "label": "プロンプト",
+          "art": "prompt-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "採点結果",
+          "art": "score-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "set",
+          "to": "prompt",
+          "label": "入力"
+        },
+        {
+          "id": "score",
+          "from": "prompt",
+          "to": "result",
+          "label": "自動採点"
+        }
+      ]
+    },
+    "regression": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rate",
+          "label": "全体の結果",
+          "art": "score-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "before",
+          "label": "休館日の回答",
+          "art": "pool-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "同じ質問の回答",
+          "art": "pool-guide",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "change",
+          "from": "before",
+          "to": "after",
+          "label": "変更後"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "博物館の案内",
+          "art": "museum-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "different",
+          "label": "新しい質問",
+          "art": "question-pairs",
+          "at": [3, 1]
+        },
+        {
+          "id": "same",
+          "label": "同じ質問",
+          "art": "question-pairs",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "set",
+          "label": "同じ評価",
+          "art": "question-pairs",
+          "at": [1, 1]
+        },
+        {
+          "id": "rate",
+          "label": "全体の結果",
+          "art": "score-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "closed",
+          "label": "休館日の回答",
+          "art": "museum-guide",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "prompt",
+          "label": "依頼文の修正",
+          "art": "prompt-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "set",
+          "label": "保存した評価",
+          "art": "question-pairs",
+          "at": [3, 1]
+        },
+        {
+          "id": "results",
+          "label": "前後の結果",
+          "art": "score-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "reuse",
+          "from": "prompt",
+          "to": "set",
+          "label": "再実行"
+        },
+        {
+          "id": "compare",
+          "from": "set",
+          "to": "results",
+          "label": "比較"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "変更を同じ条件で比べる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "プールの利用案内に答えるアプリを考えます。",
+          "show": ["pool"]
+        },
+        {
+          "say": "変えるのは、回答を頼むプロンプトです。",
+          "show": ["prompt"]
+        },
+        {
+          "say": "変更の前後を試す、同じ質問を用意しましょう。",
+          "show": ["set"]
+        },
+        {
+          "say": "同じ評価のセットを自動で採点して、前と比べます。",
+          "pulse": ["prompt", "set"]
+        }
+      ]
+    },
+    {
+      "id": "different-questions",
+      "kind": "board",
+      "role": "example",
+      "title": "練習の質問を替えたら",
+      "board": "practice",
+      "beats": [
+        {
+          "say": "プールの係が、新しい案内の仕方を練習しています。",
+          "show": ["staff"]
+        },
+        {
+          "say": "前の練習で尋ねたのは、開館時刻です。",
+          "show": ["before"],
+          "tag": {
+            "before": "開館時刻"
+          }
+        },
+        {
+          "say": "次は貸出品だけを尋ね、答えが良くなったと感じました。",
+          "show": ["after"],
+          "tag": {
+            "after": "貸出品"
+          }
+        },
+        {
+          "say": "質問が違うので、案内の仕方が良くなったとは言えません。",
+          "mark": [
+            {
+              "on": "after",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["before", "after"]
+        }
+      ]
+    },
+    {
+      "id": "code-grading",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一致をコードで採点する",
+      "board": "grading",
+      "beats": [
+        {
+          "say": "回答を基準に照らして判定することを、採点と呼びます。",
+          "term": {
+            "text": "採点",
+            "ruby": "さいてん",
+            "note": "回答を基準に照らして判定"
+          }
+        },
+        {
+          "say": "たとえば、回答に開館時刻を含むかの確認です。",
+          "show": ["answer"],
+          "tag": {
+            "answer": "時刻を含む"
+          }
+        },
+        {
+          "say": "文字の一致は、コードで速く確かめましょう。",
+          "show": ["grader", "grade"],
+          "travel": {
+            "along": ["grade"]
+          }
+        },
+        {
+          "say": "完全一致や、必要な文字を含むかを自動で採点します。",
+          "show": ["result", "decide"],
+          "travel": {
+            "along": ["decide"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "model-grading",
+      "kind": "board",
+      "role": "syntax",
+      "title": "細かな判断の基準を書く",
+      "board": "model",
+      "beats": [
+        {
+          "say": "細かな判断を任せる方法が、LLM による採点です。",
+          "speech": "細かな判断を任せる方法が、エルエルエムによる採点です。",
+          "term": {
+            "text": "LLMによる採点",
+            "ruby": "エルエルエムによるさいてん",
+            "note": "基準を渡して回答を判定"
+          }
+        },
+        {
+          "say": "利用案内と回答の意味が合うかを、モデルが判断します。",
+          "show": ["model"]
+        },
+        {
+          "say": "その判断に必要なのは、はっきり書いた基準です。",
+          "show": ["rule", "give"],
+          "tag": {
+            "rule": "案内と一致"
+          }
+        },
+        {
+          "say": "正解か不正解かなど、答える形も決めましょう。",
+          "show": ["result", "judge"],
+          "tag": {
+            "result": "正解か不正解"
+          }
+        },
+        {
+          "say": "判断するときは、考える過程も使わせます。",
+          "pulse": ["model"]
+        }
+      ]
+    },
+    {
+      "id": "align-grading",
+      "kind": "board",
+      "role": "syntax",
+      "title": "人の判定と照らす",
+      "board": "align",
+      "beats": [
+        {
+          "say": "人が判定を付けた回答の例を、残しておきます。",
+          "show": ["human", "answer"]
+        },
+        {
+          "say": "採点の確かさを試すときに、比較の相手になる例です。",
+          "pulse": ["human"]
+        },
+        {
+          "say": "同じ回答をモデルでも採点し、判定を比べましょう。",
+          "show": ["model"],
+          "pulse": ["answer", "model"]
+        },
+        {
+          "say": "人と判断がそろうか確かめてから、例を増やします。",
+          "pulse": ["human", "model"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "run-same-set",
+      "kind": "board",
+      "role": "apply",
+      "title": "同じセットを再実行する",
+      "board": "run",
+      "beats": [
+        {
+          "say": "プールで実際に尋ねられる質問と、期待する答えを集めます。",
+          "show": ["set"]
+        },
+        {
+          "say": "関係のない質問なども入れた、評価のセットです。",
+          "tag": {
+            "set": "例外も含む"
+          }
+        },
+        {
+          "say": "まず、変更前のプロンプトで回答を作りましょう。",
+          "show": ["prompt", "ask"],
+          "tag": {
+            "prompt": "変更前"
+          },
+          "travel": {
+            "along": ["ask"]
+          }
+        },
+        {
+          "say": "回答を自動で採点して、結果を残します。",
+          "show": ["result", "score"],
+          "tag": {
+            "result": "前の結果"
+          }
+        },
+        {
+          "say": "変更後も、同じ入力と採点の基準で試してください。",
+          "tag": {
+            "prompt": "変更後",
+            "result": "後の結果"
+          },
+          "pulse": ["set"],
+          "travel": {
+            "along": ["ask", "score"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "inspect-regressions",
+      "kind": "board",
+      "role": "apply",
+      "title": "合格率だけで決めない",
+      "board": "regression",
+      "beats": [
+        {
+          "say": "試した例のうち、合格した割合が合格率です。",
+          "term": {
+            "text": "合格率",
+            "ruby": "ごうかくりつ",
+            "note": "試した例のうち合格した割合"
+          }
+        },
+        {
+          "say": "全体の合格率が上がっても、一件ずつ結果を確かめます。",
+          "show": ["rate"],
+          "tag": {
+            "rate": "全体は上昇"
+          }
+        },
+        {
+          "say": "たとえば、休館日の回答は以前は合格でした。",
+          "show": ["before"],
+          "mark": [
+            {
+              "on": "before",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "変更後に落ちたなら、悪化した例として調べましょう。",
+          "show": ["after", "change"],
+          "mark": [
+            {
+              "on": "after",
+              "kind": "cross"
+            }
+          ],
+          "travel": {
+            "along": ["change"]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "museum-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "どの質問で比べるか",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "博物館の案内アプリで、プロンプトを直しました。",
+          "show": ["guide"]
+        },
+        {
+          "say": "一つ目は、変更後だけ新しい質問で試す案です。",
+          "show": ["different"],
+          "tag": {
+            "different": "変更後だけ"
+          }
+        },
+        {
+          "say": "二つ目では、変更前後に同じ質問を使います。",
+          "show": ["same"],
+          "tag": {
+            "same": "前後で共通"
+          }
+        },
+        {
+          "say": "どちらも採点の基準は同じで、自動で採点する前提です。",
+          "pulse": ["different", "same"]
+        },
+        {
+          "say": "変更の効果を比べられるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "different",
+              "kind": "question"
+            },
+            {
+              "on": "same",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "museum-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "同じ質問を使う案",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、同じ質問を使う二つ目の案です。",
+          "mark": [
+            {
+              "on": "same",
+              "kind": "check"
+            },
+            {
+              "on": "different",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["same"]
+        },
+        {
+          "say": "入力も採点の基準もそろえて、変更前後を比べます。",
+          "tag": {
+            "same": "同じ条件"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "museum-reasons",
+      "kind": "board",
+      "role": "explain",
+      "title": "比較してから悪化を探す",
+      "board": "museum",
+      "beats": [
+        {
+          "say": "質問を替えると、難しさの違いも混ざるためです。",
+          "show": ["set"],
+          "tag": {
+            "set": "質問を固定"
+          }
+        },
+        {
+          "say": "同じ十件で、合格が六件から八件に増えたとします。",
+          "show": ["rate"],
+          "tag": {
+            "rate": "六件から八件"
+          },
+          "speech": "同じじゅっけんで、合格がろっけんからはっけんに増えたとします。"
+        },
+        {
+          "say": "ただし、この数だけではすべて良くなったか分かりません。",
+          "mark": [
+            {
+              "on": "rate",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "前は通った休館日の回答が落ちていないか、確かめましょう。",
+          "show": ["closed"],
+          "tag": {
+            "closed": "前後を照合"
+          }
+        },
+        {
+          "say": "大事な回答の悪化も見て、変更の効果を判断します。",
+          "pulse": ["rate", "closed"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "reuse-evaluations",
+      "kind": "board",
+      "role": "usage",
+      "title": "修正のたびに比べる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "案内の言い方を直したら、評価をもう一度実行します。",
+          "show": ["prompt"]
+        },
+        {
+          "say": "使うのは、保存しておいた同じ評価のセットです。",
+          "show": ["set", "reuse"],
+          "travel": {
+            "along": ["reuse"]
+          }
+        },
+        {
+          "say": "自動で採点して、前後の合格率を比べましょう。",
+          "show": ["results", "compare"],
+          "travel": {
+            "along": ["compare"]
+          }
+        },
+        {
+          "say": "前は通って後で落ちた例も、合わせて確かめます。",
+          "tag": {
+            "results": "悪化も確認"
+          },
+          "pulse": ["results"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "738083540da9444ca64c7ab03b6eb0a05b3e5e0d252769b251f91149ebdec96c"
+  }
+}

@@ -1,0 +1,748 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "プロンプトの変更前後を比較するとき、完全なモデル ID を指定し、実際に使った ID を記録する理由を説明できる。",
+    "stuck": "設定に同じ別名が書いてあれば、前回と同じ版のモデルで比較できると思ってしまう。",
+    "points": ["再現性が要る実行では、別名ではなく完全なモデル ID で固定します。"],
+    "leaveOut": [
+      "別名の指す先を環境変数で固定する方法",
+      "提供元ごとのモデル ID の一覧",
+      "CI の認証情報とツールの許可",
+      "プロンプトや設定の版を Git で管理する方法",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-report": {
+      "prompt": "A white clipboard beside two small light grey inventory parcels sealed with blue tape, representing a stock report. The paper is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "coffee-beans": {
+      "prompt": "One open white coffee bean pouch with a blue clip and several naturally brown roasted coffee beans beside it. The pouch is white, not brown, and has no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "coffee-cup": {
+      "prompt": "A white ceramic coffee dripper above a blue mug containing naturally dark brown coffee, with a small violet pouring kettle beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white identification tag by its blue string. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-tag": {
+      "prompt": "A large blank white identification tag with a blue string, held in place by a violet pushpin, representing a recorded model identity. The tag is white with no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-record": {
+      "prompt": "Two blank white evaluation sheets clipped together with a blue binder clip and a violet pencil beside them, representing saved comparison results. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "gym-kit": {
+      "prompt": "A blue gym bag with a rolled white towel, a violet dumbbell and a blank white membership application sheet beside it, representing joining a sports gym. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "launch-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a hand poised near its keyboard, representing starting a program. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "在庫レポート",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "使ったモデル",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "前後の結果",
+          "art": "evaluation-record",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "coffee": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "brew",
+          "label": "いれ方を変更",
+          "art": "coffee-cup",
+          "at": [1, 1]
+        },
+        {
+          "id": "beans",
+          "label": "使う豆",
+          "art": "coffee-beans",
+          "at": [3, 1]
+        },
+        {
+          "id": "taste",
+          "label": "味を比較",
+          "art": "coffee-cup",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "beans",
+          "to": "taste",
+          "label": "そろえる"
+        }
+      ]
+    },
+    "alias": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "alias",
+          "label": "opus",
+          "art": "model-tag",
+          "at": [1, 1]
+        },
+        {
+          "id": "version",
+          "label": "指している版",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "完全なID",
+          "art": "model-tag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "points-to",
+          "from": "alias",
+          "to": "version",
+          "label": "指す"
+        }
+      ]
+    },
+    "command": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "在庫の項目",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "指定した版",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "固定の版",
+          "art": "model-tag",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "comparison": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "変更前",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "同じモデルID",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "after",
+          "label": "変更後",
+          "art": "stock-report",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "priority": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "conversation",
+          "label": "/model",
+          "art": "model-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "launch",
+          "label": "--model",
+          "art": "launch-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "environment",
+          "label": "環境変数",
+          "art": "model-tag",
+          "at": [5, 1]
+        },
+        {
+          "id": "settings",
+          "label": "設定model",
+          "art": "model-tag",
+          "at": [5, 2]
+        },
+        {
+          "id": "record",
+          "label": "実際のID",
+          "art": "evaluation-record",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "first",
+          "from": "conversation",
+          "to": "launch"
+        },
+        {
+          "id": "second",
+          "from": "launch",
+          "to": "environment"
+        },
+        {
+          "id": "third",
+          "from": "environment",
+          "to": "settings"
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "ジムの入会案内",
+          "art": "gym-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "alias",
+          "label": "別名を指定",
+          "art": "model-tag",
+          "at": [3, 1]
+        },
+        {
+          "id": "fixed",
+          "label": "前回の完全ID",
+          "art": "model-tag",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "gym-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "案内の指示",
+          "art": "gym-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルの版",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "比べる結果",
+          "art": "evaluation-record",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-result",
+          "from": "model",
+          "to": "result",
+          "label": "版をそろえる"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "report",
+          "label": "在庫の確認",
+          "art": "stock-report",
+          "at": [1, 1]
+        },
+        {
+          "id": "gym",
+          "label": "入会の案内",
+          "art": "gym-kit",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "識別子を記録",
+          "art": "evaluation-record",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じモデルで比べる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫レポートを確認する指示を、書き直しました。",
+          "show": ["report"]
+        },
+        {
+          "say": "モデルの版も変わると、結果の違いを切り分けにくくなります。",
+          "show": ["model"]
+        },
+        {
+          "say": "比べたいのは、指示を変えた前後の結果です。",
+          "show": ["result"]
+        },
+        {
+          "say": "再現性が要る実行では、完全なモデル ID で固定します。",
+          "speech": "再現性が要る実行では、完全なモデルアイディーで固定します。",
+          "pulse": ["model"],
+          "tag": {
+            "model": "版を固定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "coffee",
+      "kind": "board",
+      "role": "example",
+      "title": "コーヒーのいれ方を比べる",
+      "board": "coffee",
+      "beats": [
+        {
+          "say": "コーヒーのいれ方を変え、味を比べるとします。",
+          "show": ["brew"]
+        },
+        {
+          "say": "ところが、買ってきた豆の銘柄も変わっていました。",
+          "show": ["beans"],
+          "tag": {
+            "beans": "銘柄も変更"
+          }
+        },
+        {
+          "say": "これでは、いれ方だけが味に影響したとは言えません。",
+          "show": ["taste"],
+          "mark": [
+            {
+              "on": "taste",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "いれ方を比べたいなら、使う豆の銘柄をそろえましょう。",
+          "tag": {
+            "beans": "同じ銘柄"
+          },
+          "show": ["compare"],
+          "travel": {
+            "along": ["compare"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "alias-and-id",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ別名でも版は変わる",
+      "board": "alias",
+      "beats": [
+        {
+          "say": "opus のような短い呼び名を、モデルの別名と呼びます。",
+          "speech": "オーパスのような短い呼び名を、モデルの別名と呼びます。",
+          "term": {
+            "text": "モデルの別名",
+            "ruby": "モデルのべつめい",
+            "note": "モデルを指定する短い呼び名"
+          }
+        },
+        {
+          "say": "設定に書いた、この短い名前のことです。",
+          "show": ["alias"]
+        },
+        {
+          "say": "同じ別名でも、指すモデルの版が変わることがあります。",
+          "show": ["version", "points-to"],
+          "tag": {
+            "version": "変わりうる"
+          }
+        },
+        {
+          "say": "版を指定するための名前が、完全なモデル ID です。",
+          "speech": "版を指定するための名前が、完全なモデルアイディーです。",
+          "term": {
+            "text": "モデルID",
+            "ruby": "モデルアイディー",
+            "note": "完全なIDで版を指定する"
+          }
+        },
+        {
+          "say": "比べる実行では、その完全な名前を指定しましょう。",
+          "show": ["fixed"],
+          "mark": [
+            {
+              "on": "fixed",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "model-command",
+      "kind": "code",
+      "role": "syntax",
+      "title": "起動時に完全なIDを渡す",
+      "code": [
+        "# 完全なモデルIDを指定して在庫の項目を確認する",
+        "claude -p \"在庫の項目を確認\" --model claude-opus-5-5"
+      ],
+      "panel": {
+        "kind": "figure",
+        "board": "command"
+      },
+      "beats": [
+        {
+          "say": "これは、Anthropic の API を使う例です。",
+          "speech": "これは、アンソロピックのエーピーアイを使う例です。",
+          "type": [0, 1],
+          "figure": {
+            "show": ["report"]
+          }
+        },
+        {
+          "say": "在庫の項目を確認するよう、Claude Code に頼みます。",
+          "speech": "在庫の項目を確認するよう、クロードコードに頼みます。",
+          "part": {
+            "line": 1,
+            "text": "在庫の項目を確認"
+          },
+          "figure": {
+            "pulse": ["report"]
+          }
+        },
+        {
+          "say": "起動引数は、起動するときに渡す指定です。",
+          "term": {
+            "text": "起動引数",
+            "ruby": "きどうひきすう",
+            "note": "起動するときに渡す指定"
+          },
+          "focus": [1]
+        },
+        {
+          "say": "モデルの指定には、--model を使います。",
+          "speech": "モデルの指定には、ハイフンハイフンモデルを使います。",
+          "part": {
+            "line": 1,
+            "text": "--model",
+            "note": "モデルの指定"
+          },
+          "figure": {
+            "show": ["model"]
+          }
+        },
+        {
+          "say": "そのあとに書くのが、完全なモデル ID です。",
+          "speech": "そのあとに書くのが、完全なモデルアイディーです。",
+          "part": {
+            "line": 1,
+            "text": "claude-opus-5-5",
+            "note": "固定の版"
+          },
+          "figure": {
+            "show": ["fixed"]
+          }
+        },
+        {
+          "say": "この ID は、日付なしでも決まった版を指します。",
+          "speech": "このアイディーは、日付なしでも決まった版を指します。",
+          "figure": {
+            "pulse": ["fixed"],
+            "mark": [
+              {
+                "on": "fixed",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-versions",
+      "kind": "board",
+      "role": "apply",
+      "title": "指示だけを変えて比べる",
+      "board": "comparison",
+      "beats": [
+        {
+          "say": "まず、前の指示で在庫レポートを確認した結果を使います。",
+          "show": ["before"]
+        },
+        {
+          "say": "書き直した指示で使うのも、前回と同じモデル ID です。",
+          "speech": "書き直した指示で使うのも、前回と同じモデルアイディーです。",
+          "show": ["model", "after"]
+        },
+        {
+          "say": "入力と採点方法も、前回とそろえましょう。",
+          "tag": {
+            "before": "入力と採点",
+            "after": "同じ条件"
+          },
+          "pulse": ["before", "after"]
+        },
+        {
+          "say": "モデルの版をそろえて、指示の変更による違いを調べます。",
+          "pulse": ["model"],
+          "mark": [
+            {
+              "on": "model",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "actual-model",
+      "kind": "board",
+      "role": "apply",
+      "title": "実際に選ばれたIDを控える",
+      "board": "priority",
+      "beats": [
+        {
+          "say": "会話中のモデル指定が、最も優先されます。",
+          "show": ["conversation"],
+          "tag": {
+            "conversation": "最優先"
+          }
+        },
+        {
+          "say": "その次は、先ほどコードで渡した起動引数です。",
+          "show": ["launch", "first"],
+          "tag": {
+            "launch": "二番目"
+          }
+        },
+        {
+          "say": "続いて、環境変数の指定を使います。",
+          "show": ["environment", "second"],
+          "tag": {
+            "environment": "三番目"
+          }
+        },
+        {
+          "say": "設定ファイルの指定は、この中で最後です。",
+          "show": ["settings", "third"],
+          "tag": {
+            "settings": "四番目"
+          }
+        },
+        {
+          "say": "評価の結果には、実際に使ったモデル ID を控えましょう。",
+          "speech": "評価の結果には、実際に使ったモデルアイディーを控えましょう。",
+          "show": ["record"],
+          "pulse": ["record"]
+        }
+      ]
+    },
+    {
+      "id": "gym-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "入会案内の指示を比べる",
+      "board": "gym",
+      "think": 8,
+      "beats": [
+        {
+          "say": "スポーツジムの入会案内を作る指示を、書き直しました。",
+          "show": ["guide"]
+        },
+        {
+          "say": "同じ入力と採点方法で、指示の変更前後を比べます。",
+          "tag": {
+            "guide": "同じ条件"
+          }
+        },
+        {
+          "say": "一つ目は、前回と同じ別名を指定する案です。",
+          "show": ["alias"],
+          "tag": {
+            "alias": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目では、前回使った完全なモデル ID を指定します。",
+          "speech": "二つ目では、前回使った完全なモデルアイディーを指定します。",
+          "show": ["fixed"],
+          "tag": {
+            "fixed": "二つ目"
+          }
+        },
+        {
+          "say": "モデルの版をそろえて比べるには、どちらを選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "alias",
+              "kind": "question"
+            },
+            {
+              "on": "fixed",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gym-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "前回の完全なIDを指定する",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "答えは、前回使った完全なモデル ID を指定する二つ目です。",
+          "speech": "答えは、前回使った完全なモデルアイディーを指定する二つ目です。",
+          "mark": [
+            {
+              "on": "alias",
+              "kind": "cross"
+            },
+            {
+              "on": "fixed",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "同じ別名を書くだけでは、同じ版とは限りません。",
+          "pulse": ["alias"],
+          "tag": {
+            "alias": "版は変わる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gym-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "何が結果を変えたのか",
+      "board": "gym-reason",
+      "beats": [
+        {
+          "say": "今回、変えて確かめたいのは、入会案内を作る指示です。",
+          "show": ["guide"],
+          "tag": {
+            "guide": "変更する"
+          }
+        },
+        {
+          "say": "モデルの版まで変わると、二つの条件が同時に変わります。",
+          "show": ["model"],
+          "tag": {
+            "model": "変更する"
+          }
+        },
+        {
+          "say": "その結果だけでは、指示が原因だと切り分けられません。",
+          "show": ["result"],
+          "mark": [
+            {
+              "on": "result",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "同じ版を指定して、指示を変えた影響を調べましょう。",
+          "tag": {
+            "model": "同じ版"
+          },
+          "show": ["to-result"],
+          "travel": {
+            "along": ["to-result"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "比較する実行で使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "在庫の確認を自動で試すときも、モデルの版をそろえます。",
+          "show": ["report"]
+        },
+        {
+          "say": "入会案内の改善を、前回の結果と比べるときも同じです。",
+          "show": ["gym"]
+        },
+        {
+          "say": "完全なモデル ID を指定し、実際に使った ID を残しましょう。",
+          "speech": "完全なモデルアイディーを指定し、実際に使ったアイディーを残しましょう。",
+          "show": ["record"]
+        },
+        {
+          "say": "比べる前に、記録したモデルの版が同じかを確かめます。",
+          "pulse": ["record"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "1c5db4aee32be8037925ed79e6cee07f3bf2be28a7634f6a44dd0b0f2649cd4e"
+  }
+}

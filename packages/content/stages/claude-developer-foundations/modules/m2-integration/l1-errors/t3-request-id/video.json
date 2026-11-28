@@ -1,0 +1,881 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "応答から request ID を読み、成功とエラーのログに残して問い合わせに添える流れを説明できる。",
+    "stuck": "時刻とエラーという言葉だけを記録し、どのリクエストで起きたことか特定できない。",
+    "points": ["調査と問い合わせのために、応答の request ID を記録します。"],
+    "leaveOut": [
+      "エラーの種類と送り直しの判断",
+      "指数バックオフと回数の上限",
+      "レート制限のヘッダー",
+      "ログ保存の仕組みとライブラリーの設定",
+      "例外処理の実装と課題の答えのコード"
+    ]
+  },
+  "art": {
+    "repair-umbrella": {
+      "prompt": "A closed violet umbrella with a slightly bent blue handle beside a small blue repair wrench, representing an umbrella left for repair. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claim-ticket": {
+      "prompt": "A single large white perforated claim ticket with a blue circular hole and a short violet ribbon. The ticket is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "record-book": {
+      "prompt": "An open light grey record book with white blank pages, a blue page tab and a violet pen placed alongside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-envelope": {
+      "prompt": "An open blue envelope with a large blank white reply sheet protruding from it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "header-slip": {
+      "prompt": "A large white paper slip clipped to the top edge of a light grey envelope with a blue paper clip, representing information attached to a reply. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "body-sheet": {
+      "prompt": "A large unfolded white letter with one violet paper clip at the bottom corner, representing the body of a reply. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "support-person": {
+      "prompt": "A friendly service agent wearing a plain blue shirt and a blue headset, holding one blank white claim ticket at chest height. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "used-books": {
+      "prompt": "A small stack of used books with blue and violet covers, light grey page edges and slightly worn corners, beside a blank white purchase slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "傘の修理",
+          "art": "repair-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "残した記録",
+          "art": "record-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "support",
+          "label": "問い合わせ",
+          "art": "support-person",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "receipt": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "預けた傘",
+          "art": "repair-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "ticket",
+          "label": "受付の控え",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "record",
+          "label": "受付の記録",
+          "art": "record-book",
+          "at": [5, 1]
+        },
+        {
+          "id": "support",
+          "label": "修理の担当者",
+          "art": "support-person",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "issue",
+          "from": "repair",
+          "to": "ticket",
+          "label": "受け取る"
+        },
+        {
+          "id": "match",
+          "from": "ticket",
+          "to": "record",
+          "label": "照合"
+        },
+        {
+          "id": "find",
+          "from": "record",
+          "to": "support",
+          "label": "調べる"
+        }
+      ]
+    },
+    "identity": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "一回の応答",
+          "art": "response-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "識別用の値",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "log",
+          "label": "ログ",
+          "art": "record-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "response",
+          "to": "id",
+          "label": "読む"
+        },
+        {
+          "id": "save",
+          "from": "id",
+          "to": "log",
+          "label": "残す"
+        }
+      ]
+    },
+    "locations": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "header",
+          "label": "ヘッダーの値",
+          "art": "header-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "エラーの応答",
+          "art": "response-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "body",
+          "label": "本文の値",
+          "art": "body-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "has-header",
+          "from": "response",
+          "to": "header",
+          "label": "ヘッダー"
+        },
+        {
+          "id": "has-body",
+          "from": "response",
+          "to": "body",
+          "label": "本文"
+        }
+      ]
+    },
+    "sdk": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "SDKの応答",
+          "art": "response-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "識別用の値",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "log",
+          "label": "ログ",
+          "art": "record-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "response",
+          "to": "id",
+          "label": "読む"
+        },
+        {
+          "id": "save",
+          "from": "id",
+          "to": "log",
+          "label": "記録"
+        }
+      ]
+    },
+    "outcomes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "success",
+          "label": "成功の応答",
+          "art": "response-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "log",
+          "label": "ログ",
+          "art": "record-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "エラーの応答",
+          "art": "response-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "save-success",
+          "from": "success",
+          "to": "log",
+          "label": "記録"
+        },
+        {
+          "id": "save-error",
+          "from": "error",
+          "to": "log",
+          "label": "記録"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "古本の買い取り",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "残したログ",
+          "art": "record-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "追加する情報",
+          "art": "claim-ticket",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "keep",
+          "from": "books",
+          "to": "record",
+          "label": "記録"
+        },
+        {
+          "id": "add",
+          "from": "id",
+          "to": "record",
+          "label": "追加"
+        }
+      ]
+    },
+    "inquiry": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "買い取りの失敗",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "id",
+          "label": "識別用の値",
+          "art": "claim-ticket",
+          "at": [3, 1]
+        },
+        {
+          "id": "support",
+          "label": "サポート",
+          "art": "support-person",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "books",
+          "to": "id",
+          "label": "特定"
+        },
+        {
+          "id": "send",
+          "from": "id",
+          "to": "support",
+          "label": "添える"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "受け取った応答",
+          "art": "response-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "log",
+          "label": "調査用のログ",
+          "art": "record-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "support",
+          "label": "問い合わせ先",
+          "art": "support-person",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record",
+          "from": "response",
+          "to": "log",
+          "label": "記録"
+        },
+        {
+          "id": "attach",
+          "from": "log",
+          "to": "support",
+          "label": "添える"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べる手がかりを残す",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "傘の修理を受け付けるアプリで、エラーが出ました。",
+          "show": ["repair"]
+        },
+        {
+          "say": "時刻とエラーという記録だけでは、特定できません。",
+          "show": ["record"],
+          "tag": {
+            "record": "時刻とエラー"
+          }
+        },
+        {
+          "say": "問い合わせには、どのリクエストかを示す手がかりが必要です。",
+          "show": ["support"]
+        },
+        {
+          "say": "調査と問い合わせのために、応答の request ID を記録します。",
+          "speech": "調査と問い合わせのために、応答のリクエストアイディーを記録します。",
+          "pulse": ["record", "support"]
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "kind": "board",
+      "role": "example",
+      "title": "修理の受付の控え",
+      "board": "receipt",
+      "beats": [
+        {
+          "say": "まず、店で傘の修理を頼む場面を考えましょう。",
+          "show": ["repair"]
+        },
+        {
+          "say": "受付でもらった控えには、番号が書いてありました。",
+          "show": ["ticket", "issue"],
+          "tag": {
+            "ticket": "受付番号"
+          }
+        },
+        {
+          "say": "番号を照らし合わせると、その受付の記録を探せます。",
+          "show": ["record", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "問い合わせるときの手がかりは、この控えの番号です。",
+          "show": ["support", "find"],
+          "pulse": ["ticket"]
+        }
+      ]
+    },
+    {
+      "id": "identify-request",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一回を特定する値",
+      "board": "identity",
+      "beats": [
+        {
+          "say": "リクエストごとに付く一意の値を、request ID と呼びます。",
+          "speech": "リクエストごとに付く一意の値を、リクエストアイディーと呼びます。",
+          "term": {
+            "text": "request ID",
+            "ruby": "リクエストアイディー",
+            "note": "リクエストごとに一意の値"
+          }
+        },
+        {
+          "say": "応答から読める、その一回を特定する手がかりです。",
+          "show": ["response", "id", "read"],
+          "pulse": ["id"]
+        },
+        {
+          "say": "アプリで起きたことを残す記録を、ログと呼びます。",
+          "term": {
+            "text": "ログ",
+            "note": "アプリで起きたことの記録"
+          }
+        },
+        {
+          "say": "この図では、読み取った値の保存先がログです。",
+          "show": ["log", "save"],
+          "travel": {
+            "along": ["save"],
+            "icon": "save"
+          }
+        }
+      ]
+    },
+    {
+      "id": "id-locations",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答のどこにあるか",
+      "board": "locations",
+      "beats": [
+        {
+          "say": "応答には、本文とは別にヘッダーという情報が付きます。",
+          "term": {
+            "text": "ヘッダー",
+            "note": "応答の本文とは別に付く情報"
+          }
+        },
+        {
+          "say": "すべての応答で、この欄から ID を読める仕組みです。",
+          "speech": "すべての応答で、この欄からアイディーを読める仕組みです。",
+          "show": ["header"],
+          "tag": {
+            "header": "すべての応答"
+          }
+        },
+        {
+          "say": "項目名は、単語をハイフンでつないだ形になっています。",
+          "pulse": ["header"]
+        },
+        {
+          "say": "エラーの応答では、本文にも同じ ID が入る決まりです。",
+          "speech": "エラーの応答では、本文にも同じアイディーが入る決まりです。",
+          "show": ["response", "body", "has-header", "has-body"],
+          "tag": {
+            "header": "同じID",
+            "body": "同じID"
+          }
+        },
+        {
+          "say": "本文の項目名は、単語の間が下線になっています。",
+          "pulse": ["body"]
+        }
+      ]
+    },
+    {
+      "id": "read-sdk",
+      "kind": "code",
+      "role": "syntax",
+      "title": "応答から値を読む",
+      "code": [
+        "// リクエストを送り、応答を受け取る",
+        "const response = await client.messages.create(request);",
+        "// 応答の識別用の値をログに残す",
+        "logger.info({ requestId: response._request_id });"
+      ],
+      "show": [0, 1],
+      "panel": {
+        "kind": "figure",
+        "board": "sdk"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "このコードでは、受け取った応答に response と名前を付けます。",
+          "speech": "このコードでは、受け取った応答にレスポンスと名前を付けます。",
+          "part": {
+            "line": 1,
+            "text": "response",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["response"]
+          }
+        },
+        {
+          "say": "応答を入れる変数の名前は、書く人が決めるものです。",
+          "part": {
+            "line": 1,
+            "text": "response",
+            "note": "自分で決める名"
+          },
+          "figure": {
+            "pulse": ["response"]
+          }
+        },
+        {
+          "say": "続く行では、応答から識別用の値を読み取ります。",
+          "type": [2, 3],
+          "figure": {
+            "show": ["id", "read"]
+          }
+        },
+        {
+          "say": "その読み取り先は、下線から始まる項目です。",
+          "part": {
+            "line": 3,
+            "text": "_request_id",
+            "note": "識別用の値"
+          },
+          "figure": {
+            "pulse": ["id"]
+          }
+        },
+        {
+          "say": "TypeScript と Python の SDK で、この項目から読めます。",
+          "speech": "タイプスクリプトとパイソンのエスディーケーで、この項目から読めます。",
+          "part": {
+            "line": 3,
+            "text": "response._request_id"
+          },
+          "figure": {
+            "travel": {
+              "along": ["read"],
+              "icon": "read"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-log",
+      "kind": "code",
+      "role": "apply",
+      "title": "読み取った値を記録する",
+      "code": [
+        "// リクエストを送り、応答を受け取る",
+        "const response = await client.messages.create(request);",
+        "// 応答の識別用の値をログに残す",
+        "logger.info({ requestId: response._request_id });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "sdk"
+      },
+      "beats": [
+        {
+          "say": "傘の修理を受け付けるアプリでも、応答から値を読みます。",
+          "part": {
+            "line": 3,
+            "text": "response._request_id"
+          },
+          "figure": {
+            "pulse": ["response", "id"]
+          }
+        },
+        {
+          "say": "ここでログに残すのは、読み取った識別用の値です。",
+          "part": {
+            "line": 3,
+            "text": "logger.info",
+            "note": "ログに記録"
+          },
+          "figure": {
+            "show": ["log", "save"]
+          }
+        },
+        {
+          "say": "この例では、ログの requestId という欄に記録します。",
+          "speech": "この例では、ログのリクエストアイディーという欄に記録します。",
+          "part": {
+            "line": 3,
+            "text": "requestId",
+            "note": "ログ側の項目名"
+          },
+          "figure": {
+            "travel": {
+              "along": ["save"],
+              "icon": "save"
+            }
+          }
+        },
+        {
+          "say": "記録を調べるときに使える、受付の控えに当たる値です。",
+          "focus": [3],
+          "figure": {
+            "mark": [
+              {
+                "on": "log",
+                "kind": "check"
+              }
+            ],
+            "pulse": ["log"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "both-outcomes",
+      "kind": "board",
+      "role": "apply",
+      "title": "成功とエラーで残す",
+      "board": "outcomes",
+      "beats": [
+        {
+          "say": "成功した応答でも、request ID をログに残します。",
+          "speech": "成功した応答でも、リクエストアイディーをログに残します。",
+          "show": ["success", "log", "save-success"],
+          "travel": {
+            "along": ["save-success"],
+            "icon": "save"
+          }
+        },
+        {
+          "say": "あとでそのリクエストを調べるための手がかりです。",
+          "pulse": ["log"],
+          "tag": {
+            "log": "調査用"
+          }
+        },
+        {
+          "say": "エラーの応答から読んだ ID も、忘れずに記録しましょう。",
+          "speech": "エラーの応答から読んだアイディーも、忘れずに記録しましょう。",
+          "show": ["error", "save-error"],
+          "travel": {
+            "along": ["save-error"],
+            "icon": "save"
+          }
+        },
+        {
+          "say": "成功とエラーの両方で、手がかりを残します。",
+          "mark": [
+            {
+              "on": "success",
+              "kind": "check"
+            },
+            {
+              "on": "error",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["success", "error"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "古本の買い取りの記録",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "古本の買い取り案内を作るアプリで、呼び出しが失敗しました。",
+          "show": ["books"]
+        },
+        {
+          "say": "残したログは、時刻とエラーという言葉だけです。",
+          "show": ["record", "keep"],
+          "tag": {
+            "record": "時刻とエラー"
+          }
+        },
+        {
+          "say": "担当者は、どのリクエストか分からず困っています。",
+          "mark": [
+            {
+              "on": "record",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["record"]
+        },
+        {
+          "say": "調査できるようにするには、応答から何を追加で残すべきでしょうか。",
+          "show": ["id", "add"],
+          "mark": [
+            {
+              "on": "id",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["id"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "応答の識別用の値",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "追加するのは、応答の request ID です。",
+          "speech": "追加するのは、応答のリクエストアイディーです。",
+          "mark": [
+            {
+              "on": "id",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "id": "応答のID"
+          },
+          "pulse": ["id"]
+        },
+        {
+          "say": "その値を、失敗した呼び出しのログに残します。",
+          "travel": {
+            "along": ["add"],
+            "icon": "save"
+          },
+          "unmark": ["record"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "問い合わせにも添えられる、調査の手がかりです。",
+          "pulse": ["record"],
+          "tag": {
+            "record": "IDも記録"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-id",
+      "kind": "board",
+      "role": "explain",
+      "title": "失敗した一回をたどる",
+      "board": "inquiry",
+      "beats": [
+        {
+          "say": "古本の買い取りの例では、失敗した一回を調べたい場面でした。",
+          "show": ["books"]
+        },
+        {
+          "say": "エラーという言葉だけでは、その一回を特定できません。",
+          "mark": [
+            {
+              "on": "books",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "request ID は一意なので、どのリクエストかを示せます。",
+          "speech": "リクエストアイディーは一意なので、どのリクエストかを示せます。",
+          "show": ["id", "identify"],
+          "unmark": ["books"],
+          "pulse": ["id"]
+        },
+        {
+          "say": "サポートに問い合わせるときも、同じ値を添えましょう。",
+          "show": ["support", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-records",
+      "kind": "board",
+      "role": "usage",
+      "title": "調査と問い合わせで使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "呼び出しの処理を書くときに、応答から値を記録しましょう。",
+          "show": ["response", "log", "record"],
+          "travel": {
+            "along": ["record"],
+            "icon": "save"
+          }
+        },
+        {
+          "say": "あとで調査するときの手がかりが、そのログに残ります。",
+          "pulse": ["log"]
+        },
+        {
+          "say": "サポートに問い合わせるときにも、添えるべき情報です。",
+          "show": ["support", "attach"],
+          "travel": {
+            "along": ["attach"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "成功とエラーの両方で、request ID を残してください。",
+          "speech": "成功とエラーの両方で、リクエストアイディーを残してください。",
+          "pulse": ["response", "log"],
+          "tag": {
+            "log": "両方を記録"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "a8ea5cb88582f0f808d26695817b534a87fe63f11029c5ad6af519182e6ecda6"
+  }
+}

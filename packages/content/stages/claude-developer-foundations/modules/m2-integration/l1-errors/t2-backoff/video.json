@@ -1,0 +1,875 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "送り直す間隔と回数の上限を説明し、応答に待つ秒数があればそれに従う判断ができる。",
+    "stuck": "混雑のエラーなら何度でもすぐ送り直せばよいと思い、待ち時間や終了する条件を決めない。",
+    "points": ["送り直しは、間隔を広げながら回数の上限を決めて行います。"],
+    "leaveOut": [
+      "エラーの種類ごとの送り直し可否",
+      "request ID の記録と調査",
+      "レート制限の残量の読み方",
+      "送信とエラー判定を含む課題の完成コード",
+      "SDK の細かな実装と設定方法"
+    ]
+  },
+  "art": {
+    "equipment-request": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white equipment request slip beside a basketball and a volleyball. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "busy-staff": {
+      "prompt": "A staff member in a plain blue shirt holding a basketball and a volleyball, with several blank white request slips tucked under one arm. Both hands are occupied. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-timer": {
+      "prompt": "A large blue mechanical kitchen timer with a plain white face and one violet pointer, without tick marks, beside a small violet hourglass. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "stop-retry": {
+      "prompt": "A hand in a blue sleeve gently closing a light grey clipboard over a small stack of white request slips, representing ending repeated attempts. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-envelope": {
+      "prompt": "A large blue open envelope containing a single blank white request sheet, with a violet paper clip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "response-slip": {
+      "prompt": "A blank white response slip with a small blue mechanical timer attached by a violet clip, its plain face has no markings. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-play": {
+      "prompt": "Two large theatrical masks, one blue and one violet, beside a rolled blank white script tied with blue ribbon, representing a school festival play. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sdk-tools": {
+      "prompt": "An open blue toolbox containing a violet wrench and a small blue mechanical timer with a plain white face, representing tools that manage repeated sending. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "equipment": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "用具の申込",
+          "art": "equipment-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "対応中の係",
+          "art": "busy-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って頼む",
+          "art": "waiting-timer",
+          "at": [5, 1]
+        },
+        {
+          "id": "stop",
+          "label": "回数を決める",
+          "art": "stop-retry",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "request",
+          "to": "staff",
+          "label": "頼む"
+        },
+        {
+          "id": "wait-next",
+          "from": "staff",
+          "to": "wait",
+          "label": "間を空ける"
+        },
+        {
+          "id": "finish",
+          "from": "wait",
+          "to": "stop",
+          "label": "上限まで"
+        }
+      ]
+    },
+    "interval": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "one",
+          "label": "最初の待機",
+          "art": "waiting-timer",
+          "at": [1, 1]
+        },
+        {
+          "id": "two",
+          "label": "次の待機",
+          "art": "waiting-timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "four",
+          "label": "さらに待機",
+          "art": "waiting-timer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "double-one",
+          "from": "one",
+          "to": "two",
+          "label": "倍にする"
+        },
+        {
+          "id": "double-two",
+          "from": "two",
+          "to": "four",
+          "label": "倍にする"
+        }
+      ]
+    },
+    "formula": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "base",
+          "label": "基準の時間",
+          "art": "waiting-timer",
+          "at": [1, 1]
+        },
+        {
+          "id": "attempt",
+          "label": "試行の番号",
+          "art": "request-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待つ時間",
+          "art": "waiting-timer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use-base",
+          "from": "base",
+          "to": "attempt"
+        },
+        {
+          "id": "calculate",
+          "from": "attempt",
+          "to": "wait"
+        }
+      ]
+    },
+    "header": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "response",
+          "label": "応答の指定",
+          "art": "response-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "指定分を待つ",
+          "art": "waiting-timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "send",
+          "label": "送り直す",
+          "art": "request-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-seconds",
+          "from": "response",
+          "to": "wait",
+          "label": "秒数を読む"
+        },
+        {
+          "id": "after-wait",
+          "from": "wait",
+          "to": "send",
+          "label": "待ったあと"
+        }
+      ]
+    },
+    "limit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "retry",
+          "label": "送り直し",
+          "art": "request-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "limit",
+          "label": "再試行上限",
+          "art": "stop-retry",
+          "at": [3, 1]
+        },
+        {
+          "id": "error",
+          "label": "エラーで終了",
+          "art": "stop-retry",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "count",
+          "from": "retry",
+          "to": "limit",
+          "label": "回数を確認"
+        },
+        {
+          "id": "end",
+          "from": "limit",
+          "to": "error",
+          "label": "通らない"
+        }
+      ]
+    },
+    "festival": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "play",
+          "label": "文化祭の劇",
+          "art": "festival-play",
+          "at": [1, 1]
+        },
+        {
+          "id": "one",
+          "label": "一回目の再送",
+          "art": "waiting-timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "two",
+          "label": "二回目の再送",
+          "art": "waiting-timer",
+          "at": [5, 1]
+        },
+        {
+          "id": "stop",
+          "label": "上限で終了",
+          "art": "stop-retry",
+          "at": [5, 2]
+        },
+        {
+          "id": "again",
+          "label": "さらに再送",
+          "art": "request-envelope",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "first",
+          "from": "play",
+          "to": "one"
+        },
+        {
+          "id": "second",
+          "from": "one",
+          "to": "two"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "SDKの設定",
+          "art": "sdk-tools",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "間隔の設定",
+          "art": "waiting-timer",
+          "at": [3, 1]
+        },
+        {
+          "id": "stop",
+          "label": "上限の設定",
+          "art": "stop-retry",
+          "at": [5, 1]
+        },
+        {
+          "id": "play",
+          "label": "文化祭の案内",
+          "art": "festival-play",
+          "at": [5, 2]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "待ち方と止め方",
+      "board": "equipment",
+      "beats": [
+        {
+          "say": "体育の用具を借りようと、係に申込用紙を渡します。",
+          "show": ["request"]
+        },
+        {
+          "say": "係は、ほかの人への貸し出しで手いっぱいです。",
+          "show": ["staff", "ask"]
+        },
+        {
+          "say": "何度も声をかける前に、待ち方を考えましょう。",
+          "show": ["wait", "wait-next"]
+        },
+        {
+          "say": "送り直しは、間隔を広げながら回数の上限を決めて行います。",
+          "show": ["stop", "finish"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "kind": "board",
+      "role": "example",
+      "title": "係が忙しいとき",
+      "board": "equipment",
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ用具の申し込みで、係を繰り返し呼んだとします。",
+          "show": ["request", "staff", "ask"]
+        },
+        {
+          "say": "対応中の係は、呼ばれるたびに手を止める状態です。",
+          "pulse": ["staff"],
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "そこで、呼び直すまでの間隔を広げましょう。",
+          "show": ["wait", "wait-next"],
+          "pulse": ["wait"]
+        },
+        {
+          "say": "いつまでも呼び続けないよう、回数も決めます。",
+          "show": ["stop", "finish"],
+          "pulse": ["stop"]
+        }
+      ]
+    },
+    {
+      "id": "backoff",
+      "kind": "board",
+      "role": "syntax",
+      "title": "待つ時間を倍にする",
+      "board": "interval",
+      "beats": [
+        {
+          "say": "待つ間隔を倍々に広げる方法を、指数バックオフと呼びます。",
+          "term": {
+            "text": "指数バックオフ",
+            "ruby": "しすうバックオフ",
+            "note": "待つ間隔を倍々に広げる"
+          },
+          "pause": 1
+        },
+        {
+          "say": "最初に一秒待つなら、これが基準です。",
+          "show": ["one"],
+          "tag": {
+            "one": "一秒"
+          }
+        },
+        {
+          "say": "次に待つ時間は、倍の二秒に延ばします。",
+          "show": ["two", "double-one"],
+          "tag": {
+            "two": "二秒"
+          },
+          "travel": {
+            "along": ["double-one"]
+          }
+        },
+        {
+          "say": "さらに失敗したら、四秒待って送り直しましょう。",
+          "show": ["four", "double-two"],
+          "tag": {
+            "four": "四秒"
+          },
+          "travel": {
+            "along": ["double-two"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "待つ時間の式を読む",
+      "code": [
+        "// 初回の試行から、上限まで番号を進める",
+        "for (let attempt = 0; attempt <= maxRetries; attempt++) {",
+        "  // 送って、送り直せるエラーなら待つ",
+        "  await sleep(baseDelayMs * 2 ** attempt);",
+        "// 繰り返しの範囲を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "formula"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "教材のコードで、待つ時間の式を見てみましょう。",
+          "focus": [3],
+          "figure": {
+            "show": ["base", "attempt", "wait"]
+          }
+        },
+        {
+          "say": "送信とエラー判定は、コメントで省いた例です。",
+          "focus": [2]
+        },
+        {
+          "say": "この例の変数名や関数名は、書く人が決めます。",
+          "part": {
+            "line": 3,
+            "text": "sleep",
+            "note": "待つ"
+          }
+        },
+        {
+          "say": "baseDelayMs は、基準となる待ち時間です。",
+          "speech": "ベースディレイエムエスは、基準となる待ち時間です。",
+          "part": {
+            "line": 3,
+            "text": "baseDelayMs",
+            "note": "基準の待ち時間"
+          },
+          "figure": {
+            "pulse": ["base"]
+          }
+        },
+        {
+          "say": "attempt は試行の番号として使います。",
+          "speech": "アテンプトは試行の番号として使います。",
+          "part": {
+            "line": 1,
+            "text": "attempt",
+            "note": "試行"
+          },
+          "figure": {
+            "pulse": ["attempt"]
+          }
+        },
+        {
+          "say": "二の累乗を掛けて、番号ごとに待ち時間を倍にする計算です。",
+          "part": {
+            "line": 3,
+            "text": "2 ** attempt",
+            "note": "二の累乗"
+          },
+          "figure": {
+            "show": ["use-base", "calculate"],
+            "pulse": ["wait"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "retry-after",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答が秒数を示す場合",
+      "board": "header",
+      "beats": [
+        {
+          "say": "応答に retry-after があれば、待機秒数に従います。",
+          "speech": "応答にリトライアフターがあれば、たいきびょうすうに従います。",
+          "term": {
+            "text": "待機秒数",
+            "ruby": "たいきびょうすう",
+            "note": "retry-after の値"
+          }
+        },
+        {
+          "say": "このヘッダーが示すのは、送り直すまでに待つ秒数です。",
+          "show": ["response"],
+          "tag": {
+            "response": "秒数の指定"
+          }
+        },
+        {
+          "say": "指定より早く送り直しても、通りません。",
+          "show": ["send"],
+          "mark": [
+            {
+              "on": "send",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "その秒数だけ待ってから、送り直しましょう。",
+          "show": ["wait", "read-seconds", "after-wait"],
+          "unmark": ["send"],
+          "travel": {
+            "along": ["read-seconds", "after-wait"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-delay",
+      "kind": "code",
+      "role": "apply",
+      "title": "一秒から二秒へ",
+      "code": [
+        "// 初回の試行から、上限まで番号を進める",
+        "for (let attempt = 0; attempt <= maxRetries; attempt++) {",
+        "  // 送って、送り直せるエラーなら待つ",
+        "  await sleep(baseDelayMs * 2 ** attempt);",
+        "// 繰り返しの範囲を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "formula"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "秒数の指定がない例で、最初の待ち時間を一秒にします。",
+          "part": {
+            "line": 3,
+            "text": "baseDelayMs",
+            "note": "基準の待ち時間"
+          },
+          "figure": {
+            "show": ["base"],
+            "tag": {
+              "base": "一秒"
+            }
+          }
+        },
+        {
+          "say": "最初の試行では、番号はゼロです。",
+          "part": {
+            "line": 1,
+            "text": "attempt = 0",
+            "note": "ゼロから始める"
+          },
+          "figure": {
+            "show": ["attempt", "use-base"],
+            "tag": {
+              "attempt": "ゼロ"
+            }
+          }
+        },
+        {
+          "say": "二のゼロ乗は一なので、待ち時間は一秒になります。",
+          "part": {
+            "line": 3,
+            "text": "2 ** attempt",
+            "note": "二のゼロ乗"
+          },
+          "figure": {
+            "show": ["wait", "calculate"],
+            "tag": {
+              "wait": "一秒"
+            }
+          }
+        },
+        {
+          "say": "次の試行の番号が一になると、待つ時間は二秒です。",
+          "part": {
+            "line": 1,
+            "text": "attempt++",
+            "note": "一ずつ増やす"
+          },
+          "figure": {
+            "tag": {
+              "attempt": "一",
+              "wait": "二秒"
+            }
+          }
+        },
+        {
+          "say": "番号が二になったら、四秒待って送り直しましょう。",
+          "part": {
+            "line": 3,
+            "text": "2 ** attempt",
+            "note": "二の二乗"
+          },
+          "figure": {
+            "tag": {
+              "attempt": "二",
+              "wait": "四秒"
+            }
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "retry-limit",
+      "kind": "code",
+      "role": "apply",
+      "title": "上限までで止める",
+      "beats": [
+        {
+          "say": "送り直してよい回数の上限を、再試行上限と呼びます。",
+          "term": {
+            "text": "再試行上限",
+            "ruby": "さいしこうじょうげん",
+            "note": "送り直してよい回数"
+          }
+        },
+        {
+          "say": "maxRetries は、再試行上限を表す名前です。",
+          "speech": "マックスリトライズは、再試行上限を表す名前です。",
+          "part": {
+            "line": 1,
+            "text": "maxRetries",
+            "note": "最大再試行回数"
+          },
+          "figure": {
+            "show": ["retry", "limit"]
+          }
+        },
+        {
+          "say": "ここで、試行の番号が上限以下かを確かめます。",
+          "part": {
+            "line": 1,
+            "text": "attempt <= maxRetries",
+            "note": "上限以下か"
+          },
+          "figure": {
+            "show": ["count"],
+            "pulse": ["limit"]
+          }
+        },
+        {
+          "say": "上限まで試しても通らなければ、エラーとして終了です。",
+          "figure": {
+            "show": ["error", "end"],
+            "pulse": ["error"],
+            "tag": {
+              "error": "ここで終了"
+            }
+          }
+        }
+      ],
+      "code": [
+        "// 初回の試行から、上限まで番号を進める",
+        "for (let attempt = 0; attempt <= maxRetries; attempt++) {",
+        "  // 送って、送り直せるエラーなら待つ",
+        "  await sleep(baseDelayMs * 2 ** attempt);",
+        "// 繰り返しの範囲を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "limit"
+      },
+      "reset": true
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "文化祭の案内を作る",
+      "board": "festival",
+      "think": 8,
+      "beats": [
+        {
+          "say": "文化祭の劇の案内文を作る依頼が、混雑で失敗しました。",
+          "show": ["play"]
+        },
+        {
+          "say": "送り直しの上限は二回で、秒数の指定はありません。",
+          "show": ["stop"],
+          "tag": {
+            "stop": "上限二回"
+          }
+        },
+        {
+          "say": "一回目は一秒待って送り直します。",
+          "show": ["one", "first"],
+          "tag": {
+            "one": "一秒"
+          }
+        },
+        {
+          "say": "二回目は二秒待ちましたが、また失敗しました。",
+          "show": ["two", "second"],
+          "tag": {
+            "two": "二秒"
+          },
+          "mark": [
+            {
+              "on": "two",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "四秒待って再送するか、終了するか、どちらでしょうか。",
+          "show": ["again"],
+          "tag": {
+            "again": "四秒待つ"
+          },
+          "mark": [
+            {
+              "on": "again",
+              "kind": "question"
+            },
+            {
+              "on": "stop",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二回で終了する",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "答えは、エラーとして終了する方です。",
+          "mark": [
+            {
+              "on": "stop",
+              "kind": "check"
+            },
+            {
+              "on": "again",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["stop"]
+        },
+        {
+          "say": "上限の二回まで送り直したので、ここで止めます。",
+          "pulse": ["one", "two"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-stop",
+      "kind": "board",
+      "role": "explain",
+      "title": "間隔と上限を分けて見る",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "一秒から二秒へと、待つ間隔は広げています。",
+          "pulse": ["one", "two"],
+          "travel": {
+            "along": ["second"]
+          }
+        },
+        {
+          "say": "それでも、二回の送り直しはどちらも失敗でした。",
+          "mark": [
+            {
+              "on": "one",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["two"]
+        },
+        {
+          "say": "次を四秒に延ばしても、回数の上限は変わりません。",
+          "pulse": ["again"],
+          "tag": {
+            "again": "三回目"
+          }
+        },
+        {
+          "say": "今回の送り直しは、二回までという条件で終了します。",
+          "pulse": ["stop"],
+          "tag": {
+            "stop": "二回で終了"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "自分で書く前に確かめる",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "文化祭の案内を作るアプリでも、送り直しには上限が必要です。",
+          "show": ["play"]
+        },
+        {
+          "say": "公式の SDK は、既定で二回まで送り直します。",
+          "speech": "公式のエスディーケーは、既定で二回まで送り直します。",
+          "show": ["tools"],
+          "tag": {
+            "tools": "既定二回"
+          }
+        },
+        {
+          "say": "待ち方は、秒数の指定に従う指数バックオフです。",
+          "show": ["wait"],
+          "pulse": ["wait"]
+        },
+        {
+          "say": "自分で書く前に、SDK の maxRetries を確かめましょう。",
+          "speech": "自分で書く前に、エスディーケーのマックスリトライズを確かめましょう。",
+          "pulse": ["tools"],
+          "tag": {
+            "tools": "上限の設定"
+          }
+        },
+        {
+          "say": "間隔を広げることと、上限で止めることを組み合わせます。",
+          "show": ["stop"],
+          "pulse": ["wait", "stop"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "72565cdf65e3447d7ccc7b7bf87a055d5902c498a753b514c38f8791c62c3480"
+  }
+}

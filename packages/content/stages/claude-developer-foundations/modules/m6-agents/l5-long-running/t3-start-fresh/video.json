@@ -1,0 +1,743 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "新しく始める場合と再開する場合を選び、確認した条件と完了の基準を次の依頼に書ける。",
+    "stuck": "同じ誤りを直す指示を足し続け、失敗した方法と確認した条件が混ざった会話を引き継いでしまう。",
+    "points": [
+      "2 回直しても直らないときと、関係のない作業に移るときは、新しいセッションで始めます。"
+    ],
+    "leaveOut": [
+      "古いツール結果を外す設定",
+      "サブエージェントへの調査の分担",
+      "セッションを再開するコードと操作",
+      "メモリーツールの実装",
+      "圧縮の細かい仕様"
+    ]
+  },
+  "art": {
+    "tally-sheet": {
+      "prompt": "A white daily tally sheet with several blank light grey horizontal strips, one loose strip beside it, and a blue binder clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "holiday-calendar": {
+      "prompt": "A small white spiral calendar with blank day cells, one violet day cell, and a blue binding. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "checked-notes": {
+      "prompt": "A hand holding a violet pencil over a fresh white note, beside a blue magnifying glass. The note is entirely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fresh-chat": {
+      "prompt": "A blue conceptual chat window with two large empty speech bubbles. No controls and no imitation of any real application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "progress-log": {
+      "prompt": "An open white paper notebook with blue page tabs and a small closed light grey folder beside it. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "apron": {
+      "prompt": "A neatly unfolded violet cooking apron with a blue neck strap and a large light grey pocket. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "class-leaflet": {
+      "prompt": "A white cooking class leaflet with a simple picture of a violet apron and a blue whisk, held by a blue paper clip. No written marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mail-envelope": {
+      "prompt": "An open blue envelope containing a blank white letter, with a violet pen beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "packing-list": {
+      "prompt": "A small white packing list held by a blue clip beside an open violet fabric tote bag, with one folded white towel visible inside the bag. The paper has no written marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "calendar",
+          "label": "営業日",
+          "art": "holiday-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "同じ集計ミス",
+          "art": "tally-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "新しい会話",
+          "art": "fresh-chat",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "calendar",
+          "label": "店の休業日",
+          "art": "holiday-calendar",
+          "at": [1, 1]
+        },
+        {
+          "id": "result",
+          "label": "日別の集計",
+          "art": "tally-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "notes",
+          "label": "確かめた条件",
+          "art": "checked-notes",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "retry",
+          "label": "二回でも未解決",
+          "art": "tally-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "other",
+          "label": "別の仕事",
+          "art": "mail-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "新しく始める",
+          "art": "fresh-chat",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "condition",
+          "label": "確認済みの条件",
+          "art": "checked-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "finish",
+          "label": "完了の基準",
+          "art": "tally-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "新しい依頼",
+          "art": "fresh-chat",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "combine",
+          "from": "condition",
+          "to": "finish",
+          "label": "そろえる"
+        },
+        {
+          "id": "send",
+          "from": "finish",
+          "to": "fresh",
+          "label": "伝える"
+        }
+      ]
+    },
+    "records": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "進捗メモ",
+          "art": "progress-log",
+          "at": [1, 1]
+        },
+        {
+          "id": "test",
+          "label": "テスト結果",
+          "art": "tally-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "calendar",
+          "label": "営業日",
+          "art": "holiday-calendar",
+          "at": [5, 1]
+        },
+        {
+          "id": "condition",
+          "label": "休日を除く",
+          "art": "checked-notes",
+          "at": [5, 2]
+        },
+        {
+          "id": "finish",
+          "label": "休日の行なし",
+          "art": "tally-sheet",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read-test",
+          "from": "memo",
+          "to": "test"
+        },
+        {
+          "id": "read-calendar",
+          "from": "test",
+          "to": "calendar"
+        },
+        {
+          "id": "find-condition",
+          "from": "calendar",
+          "to": "condition"
+        },
+        {
+          "id": "set-finish",
+          "from": "condition",
+          "to": "finish"
+        }
+      ]
+    },
+    "compression": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notes",
+          "label": "会話の要約",
+          "art": "progress-log",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "必要な条件",
+          "art": "checked-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "source",
+          "label": "元の資料",
+          "art": "holiday-calendar",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "leaflet",
+          "label": "教室の案内",
+          "art": "class-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "apron",
+          "label": "エプロン必須",
+          "art": "apron",
+          "at": [3, 1]
+        },
+        {
+          "id": "list",
+          "label": "持ち物一覧",
+          "art": "packing-list",
+          "at": [5, 1]
+        },
+        {
+          "id": "continue",
+          "label": "修正を足す",
+          "art": "progress-log",
+          "at": [5, 2]
+        },
+        {
+          "id": "fresh",
+          "label": "新しく頼む",
+          "art": "fresh-chat",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "leaflet",
+          "label": "教室の案内",
+          "art": "class-leaflet",
+          "at": [1, 1]
+        },
+        {
+          "id": "apron",
+          "label": "エプロン必須",
+          "art": "apron",
+          "at": [3, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "新しい依頼",
+          "art": "fresh-chat",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "leaflet",
+          "to": "apron",
+          "label": "確認"
+        },
+        {
+          "id": "send",
+          "from": "apron",
+          "to": "fresh",
+          "label": "伝える"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "retry",
+          "label": "同じ誤り",
+          "art": "tally-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "other",
+          "label": "別の仕事",
+          "art": "mail-envelope",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "続きの仕事",
+          "art": "progress-log",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "会話を切り替える目安",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "営業日だけを数える集計を、頼んだ場面です。",
+          "show": ["calendar"]
+        },
+        {
+          "say": "二回直しても、同じ休日の行が残りました。",
+          "show": ["result"]
+        },
+        {
+          "say": "ここでは、新しい会話へ切り替える判断を学びます。",
+          "show": ["fresh"]
+        },
+        {
+          "say": "直らないときや別の仕事に移るときは、新しく始めましょう。",
+          "pulse": ["fresh"]
+        }
+      ]
+    },
+    {
+      "id": "shop-example",
+      "kind": "board",
+      "role": "example",
+      "title": "休業日の行が残る",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "店の件数を、営業日だけで集計したいとします。",
+          "show": ["calendar"]
+        },
+        {
+          "say": "休業日を除くよう、二回修正を頼みました。",
+          "show": ["result"],
+          "tag": {
+            "result": "二回修正"
+          }
+        },
+        {
+          "say": "それでも、集計には休業日の行が残ったままです。",
+          "mark": [
+            {
+              "on": "result",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "もう一度頼む前に、確かめた条件を整理しましょう。",
+          "show": ["notes"]
+        }
+      ]
+    },
+    {
+      "id": "choose-fresh",
+      "kind": "board",
+      "role": "syntax",
+      "title": "新しく始める二つの目安",
+      "board": "choice",
+      "beats": [
+        {
+          "say": "同じ誤りが二回の修正でも直らなければ、切り替えます。",
+          "show": ["retry"]
+        },
+        {
+          "say": "もう一つの目安は、関係のない仕事へ移るときです。",
+          "show": ["other"]
+        },
+        {
+          "say": "どちらも、新しいセッションで始めましょう。",
+          "show": ["fresh"],
+          "mark": [
+            {
+              "on": "fresh",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "次の依頼は、いま分かっている条件で組み立てます。",
+          "tag": {
+            "fresh": "条件を整理"
+          },
+          "pulse": ["fresh"]
+        }
+      ]
+    },
+    {
+      "id": "request-parts",
+      "kind": "board",
+      "role": "syntax",
+      "title": "条件と完了の基準",
+      "board": "request",
+      "beats": [
+        {
+          "say": "記録で確かめたことを、確認済みの条件として使います。",
+          "term": {
+            "text": "確認済みの条件",
+            "ruby": "かくにんずみのじょうけん",
+            "note": "記録で確かめた仕事の条件"
+          }
+        },
+        {
+          "say": "この集計なら、休日を除くという条件です。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "休日を除く"
+          }
+        },
+        {
+          "say": "何を確かめたら終わるかを、完了の基準と呼びます。",
+          "term": {
+            "text": "完了の基準",
+            "ruby": "かんりょうのきじゅん",
+            "note": "終わったと判断する条件"
+          }
+        },
+        {
+          "say": "休日の行が出ないことを、テストで確かめる基準です。",
+          "show": ["finish", "combine"],
+          "tag": {
+            "finish": "休日の行なし"
+          }
+        },
+        {
+          "say": "条件と完了の基準を、新しい依頼に書きましょう。",
+          "show": ["fresh", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-records",
+      "kind": "board",
+      "role": "apply",
+      "title": "最新の記録を読み直す",
+      "board": "records",
+      "beats": [
+        {
+          "say": "集計を頼み直す前に、進捗メモを読み直します。",
+          "show": ["memo"]
+        },
+        {
+          "say": "次に見るのは、最新のテスト結果です。",
+          "show": ["test", "read-test"]
+        },
+        {
+          "say": "営業日カレンダーでは、五月六日が休日でした。",
+          "show": ["calendar", "read-calendar"],
+          "tag": {
+            "calendar": "五月六日"
+          }
+        },
+        {
+          "say": "この日を例に、同じ誤りが戻らないか確かめます。",
+          "show": ["condition", "find-condition"],
+          "tag": {
+            "condition": "五月六日"
+          }
+        },
+        {
+          "say": "完了の基準は、カレンダーの休日が一件も出ないことにしましょう。",
+          "show": ["finish", "set-finish"],
+          "travel": {
+            "along": ["set-finish"],
+            "icon": "check"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rebuild-request",
+      "kind": "board",
+      "role": "apply",
+      "title": "確かめた条件で頼み直す",
+      "board": "request",
+      "beats": [
+        {
+          "say": "新しい依頼では、カレンダーの休日を除くよう伝えます。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "休日を除く"
+          }
+        },
+        {
+          "say": "日別の件数を集計してほしい、という依頼です。",
+          "show": ["fresh"],
+          "tag": {
+            "fresh": "日別に集計"
+          }
+        },
+        {
+          "say": "休日が一件も出ず、五月六日の誤りも戻らないか確かめましょう。",
+          "show": ["finish", "combine", "send"],
+          "tag": {
+            "finish": "休日の行なし"
+          }
+        },
+        {
+          "say": "確かめた条件をそろえてから、新しい会話で頼み直します。",
+          "pulse": ["condition", "finish", "fresh"]
+        }
+      ]
+    },
+    {
+      "id": "check-compression",
+      "kind": "board",
+      "role": "note",
+      "title": "要約に残った条件を確認",
+      "board": "compression",
+      "beats": [
+        {
+          "say": "会話を要約して続ける方法が、圧縮です。",
+          "term": {
+            "text": "圧縮",
+            "ruby": "あっしゅく",
+            "note": "会話を要約して続ける"
+          }
+        },
+        {
+          "say": "続ける前に、この要約に何が残ったかを確かめます。",
+          "show": ["notes"]
+        },
+        {
+          "say": "途中で伝えた細かい条件は、残っていないかもしれません。",
+          "show": ["condition"],
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "必要な条件を言い直し、資料ももう一度渡しましょう。",
+          "show": ["source"],
+          "mark": [
+            {
+              "on": "condition",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "source": "もう一度渡す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "料理教室の持ち物",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "料理教室の持ち物一覧を、作ってもらう場面です。",
+          "show": ["leaflet", "list"]
+        },
+        {
+          "say": "案内には、エプロンが必須と書いてあります。",
+          "show": ["apron"]
+        },
+        {
+          "say": "二回修正を頼んでも、一覧からエプロンが抜けていました。",
+          "mark": [
+            {
+              "on": "list",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "list": "二回でも抜け"
+          }
+        },
+        {
+          "say": "候補は、修正を足す方法と、新しく頼む方法です。",
+          "show": ["continue", "fresh"]
+        },
+        {
+          "say": "どちらを選び、何を確かめてから頼み直すとよいでしょうか。",
+          "mark": [
+            {
+              "on": "continue",
+              "kind": "question"
+            },
+            {
+              "on": "fresh",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "案内を確かめて新しく頼む",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "案内の持ち物を確かめ、新しいセッションで頼み直します。",
+          "mark": [
+            {
+              "on": "fresh",
+              "kind": "check"
+            },
+            {
+              "on": "continue",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["fresh"]
+        },
+        {
+          "say": "エプロンを含む一覧になったかが、確かめる基準です。",
+          "pulse": ["apron", "list"],
+          "tag": {
+            "list": "含まれるか"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-fresh",
+      "kind": "board",
+      "role": "explain",
+      "title": "依頼に戻す条件をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "二回直しても抜けるので、新しく始める目安に当たります。",
+          "show": ["fresh"]
+        },
+        {
+          "say": "まず読み直すのは、持ち物が書かれた教室の案内です。",
+          "show": ["leaflet"]
+        },
+        {
+          "say": "そこで確かめた、エプロンが必須という条件を伝えましょう。",
+          "show": ["apron", "read", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "一覧にエプロンが含まれるか、確認するようにも頼みます。",
+          "tag": {
+            "fresh": "掲載を確認"
+          },
+          "pulse": ["fresh"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "次の仕事で選び分ける",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "同じ誤りが二回の修正でも直らないときは、新しく始めます。",
+          "show": ["retry"],
+          "tag": {
+            "retry": "新しく始める"
+          }
+        },
+        {
+          "say": "集計から無関係な案内文へ移るときも、切り替える場面です。",
+          "show": ["other"],
+          "tag": {
+            "other": "新しく始める"
+          }
+        },
+        {
+          "say": "同じ仕事の判断を引き継ぐなら、再開を選びましょう。",
+          "show": ["history"],
+          "tag": {
+            "history": "再開する"
+          }
+        },
+        {
+          "say": "次の仕事に使う情報を確かめて、会話の続け方を選びます。",
+          "pulse": ["retry", "other", "history"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "48b714a3f1036e30f219689adf5ca800884a0167ca2cf8bbd91988890cd9e9e5"
+  }
+}

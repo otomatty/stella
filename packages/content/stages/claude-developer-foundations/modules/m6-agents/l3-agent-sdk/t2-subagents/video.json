@@ -1,0 +1,850 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "サブエージェントに任せるとき、親だけが知るファイルの場所や決定事項を呼び出し時のプロンプトに書ける。",
+    "stuck": "担当を定義すれば親の会話も伝わると思い、呼び出すときに必要な情報を書き忘れる。",
+    "points": ["サブエージェントは自分の会話で動くので、要る情報をプロンプトに書いて渡します。"],
+    "leaveOut": [
+      "親の会話を写す fork の例外",
+      "セッションの保存と再開",
+      "ループの終了条件と費用の上限",
+      "同時に動かすための実装",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "seedling-pot": {
+      "prompt": "A small seedling with natural green leaves in a violet flowerpot, beside a blue watering can. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "garden-helper": {
+      "prompt": "A helpful person with simple facial features, short dark hair and a plain blue shirt holding a blue watering can. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "handoff-note": {
+      "prompt": "A hand holding a violet pencil over a blank white paper note attached to a light grey clipboard, ready to write instructions. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "parent-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a closed violet notebook. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reviewer-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a magnifying glass over a blank white document. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-folder": {
+      "prompt": "An open light grey file folder holding blank white sheets with blue tabs, one sheet partly pulled out. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "final-report": {
+      "prompt": "A single neatly clipped white report sheet with a blue clip, beside a closed light grey notebook of working notes. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cleaning-kit": {
+      "prompt": "A blue dustpan, a violet handled broom with light grey bristles, and a pair of blue cleaning gloves arranged together. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "garden": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "plant",
+          "label": "水やり",
+          "art": "seedling-pot",
+          "at": [1, 1]
+        },
+        {
+          "id": "helper",
+          "label": "手伝う人",
+          "art": "garden-helper",
+          "at": [3, 1]
+        },
+        {
+          "id": "note",
+          "label": "引き継ぎメモ",
+          "art": "handoff-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "boundary": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親の会話",
+          "art": "parent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "呼び出す依頼",
+          "art": "handoff-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "child",
+          "label": "別の会話",
+          "art": "reviewer-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "parent",
+          "to": "request",
+          "label": "書く"
+        },
+        {
+          "id": "send",
+          "from": "request",
+          "to": "child",
+          "label": "渡す"
+        }
+      ]
+    },
+    "definition": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親",
+          "art": "parent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "definition",
+          "label": "担当の定義",
+          "art": "handoff-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reviewer",
+          "label": "確認担当",
+          "art": "reviewer-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "choose",
+          "from": "parent",
+          "to": "definition",
+          "label": "読む"
+        },
+        {
+          "id": "assign",
+          "from": "definition",
+          "to": "reviewer",
+          "label": "選ぶ"
+        }
+      ]
+    },
+    "tools": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親",
+          "art": "parent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "reviewer",
+          "label": "確認担当",
+          "art": "reviewer-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "file",
+          "label": "対象ファイル",
+          "art": "source-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "call",
+          "from": "parent",
+          "to": "reviewer",
+          "label": "呼ぶ"
+        },
+        {
+          "id": "read",
+          "from": "reviewer",
+          "to": "file",
+          "label": "調べる"
+        }
+      ]
+    },
+    "details": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "file",
+          "label": "ファイルの場所",
+          "art": "source-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "error",
+          "label": "エラーの内容",
+          "art": "final-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "policy",
+          "label": "決めた方針",
+          "art": "handoff-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "request",
+          "label": "今回の依頼",
+          "art": "handoff-note",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "report": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親",
+          "art": "parent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "child",
+          "label": "確認担当",
+          "art": "reviewer-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "最後の報告",
+          "art": "final-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "delegate",
+          "from": "parent",
+          "to": "child",
+          "label": "依頼"
+        },
+        {
+          "id": "finish",
+          "from": "child",
+          "to": "report",
+          "label": "まとめる"
+        },
+        {
+          "id": "return",
+          "from": "report",
+          "to": "parent",
+          "label": "返す",
+          "route": "under"
+        }
+      ]
+    },
+    "cleaning": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "job",
+          "label": "清掃当番",
+          "art": "cleaning-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "table",
+          "label": "当番表の場所",
+          "art": "source-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "rule",
+          "label": "雨なら中止",
+          "art": "handoff-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "vague",
+          "label": "さっきの条件",
+          "art": "handoff-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "complete",
+          "label": "情報を添える",
+          "art": "handoff-note",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "cleaningReason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "parent",
+          "label": "親の会話",
+          "art": "parent-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "当番表と条件",
+          "art": "handoff-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "child",
+          "label": "確認担当",
+          "art": "reviewer-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "parent",
+          "to": "request",
+          "label": "書く"
+        },
+        {
+          "id": "send",
+          "from": "request",
+          "to": "child",
+          "label": "渡す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "review",
+          "label": "コードの確認",
+          "art": "reviewer-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "file",
+          "label": "対象とエラー",
+          "art": "source-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "policy",
+          "label": "決めた方針",
+          "art": "handoff-note",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "水やりを引き継ぐ",
+      "board": "garden",
+      "beats": [
+        {
+          "say": "留守の間、鉢植えの水やりを頼むとします。",
+          "show": ["plant"]
+        },
+        {
+          "say": "頼む相手は、前の相談にいなかった人です。",
+          "show": ["helper"]
+        },
+        {
+          "say": "決めた条件は、メモに書いて渡しましょう。",
+          "show": ["note"]
+        },
+        {
+          "say": "別のエージェントにも、要る情報を書いて渡します。",
+          "pulse": ["note", "helper"]
+        }
+      ]
+    },
+    {
+      "id": "garden-handoff",
+      "kind": "board",
+      "role": "example",
+      "title": "前の相談は知らない",
+      "board": "garden",
+      "reset": true,
+      "beats": [
+        {
+          "say": "手伝う人には、苗だけに水をやってほしい場面です。",
+          "show": ["plant", "helper"]
+        },
+        {
+          "say": "依頼した人は、「さっきの決まりで」と伝えました。",
+          "tag": {
+            "helper": "前の決まり"
+          }
+        },
+        {
+          "say": "相談にいなかった相手には、その決まりが分かりません。",
+          "mark": [
+            {
+              "on": "helper",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "苗だけに水をやるとメモに書き、条件を伝えます。",
+          "show": ["note"],
+          "tag": {
+            "note": "苗だけに水"
+          },
+          "pulse": ["note"],
+          "unmark": ["helper"]
+        }
+      ]
+    },
+    {
+      "id": "separate-context",
+      "kind": "board",
+      "role": "syntax",
+      "title": "別の会話へ渡す",
+      "board": "boundary",
+      "beats": [
+        {
+          "say": "仕事の一部を任せる相手を、サブエージェントと呼びます。",
+          "term": {
+            "text": "サブエージェント",
+            "note": "仕事の一部を任せる相手"
+          }
+        },
+        {
+          "say": "この相手は、自分の会話で動く別のエージェントです。",
+          "show": ["parent", "child"],
+          "pulse": ["child"]
+        },
+        {
+          "say": "呼び出す依頼の文を、プロンプトと呼びます。",
+          "term": {
+            "text": "プロンプト",
+            "note": "呼び出すときに渡す依頼文"
+          }
+        },
+        {
+          "say": "親の会話は渡らないので、要る情報をここへ書きましょう。",
+          "show": ["request", "write", "send"],
+          "travel": {
+            "along": ["write", "send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "define-reviewer",
+      "kind": "code",
+      "role": "syntax",
+      "title": "担当と専用の指示",
+      "code": [
+        "// 任せる担当を名前付きで定義する",
+        "agents: { \"code-reviewer\": {",
+        "  // どんなときに使う担当かを書く",
+        "  description: \"コードを確かめるときに使う\",",
+        "  // この担当だけの指示を指定する",
+        "  prompt,",
+        "  // この担当が使うツールを絞る",
+        "  tools: [\"Read\", \"Grep\"]",
+        "// 担当の定義を閉じる",
+        "} },",
+        "// 親に担当を呼び出すツールを許可する",
+        "allowedTools: [\"Read\", \"Grep\", \"Agent\"],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "definition"
+      },
+      "beats": [
+        {
+          "say": "agents に、任せる担当を定義します。",
+          "speech": "エージェンツに、任せる担当を定義します。",
+          "part": {
+            "line": 1,
+            "text": "agents",
+            "note": "担当の定義"
+          },
+          "figure": {
+            "show": ["definition", "reviewer"]
+          }
+        },
+        {
+          "say": "担当の名前は、書く人が決めるものです。",
+          "part": {
+            "line": 1,
+            "text": "\"code-reviewer\"",
+            "note": "コードの確認役"
+          },
+          "figure": {
+            "pulse": ["reviewer"]
+          }
+        },
+        {
+          "say": "description には、いつ使う担当かを書きます。",
+          "speech": "ディスクリプションには、いつ使う担当かを書きます。",
+          "part": {
+            "line": 3,
+            "text": "description",
+            "note": "使う場面"
+          },
+          "figure": {
+            "pulse": ["definition"]
+          }
+        },
+        {
+          "say": "親の Claude は、この説明を見て任せる相手を選ぶ仕組みです。",
+          "speech": "親のクロードは、この説明を見て任せる相手を選ぶ仕組みです。",
+          "part": {
+            "line": 3,
+            "text": "コードを確かめるときに使う"
+          },
+          "figure": {
+            "show": ["parent", "choose", "assign"],
+            "travel": {
+              "along": ["choose", "assign"],
+              "icon": "send"
+            }
+          }
+        },
+        {
+          "say": "担当だけに持たせる指示を、専用の指示と呼びます。",
+          "term": {
+            "text": "専用の指示",
+            "ruby": "せんようのしじ",
+            "note": "担当に合わせた指示"
+          },
+          "part": {
+            "line": 5,
+            "text": "prompt",
+            "note": "専用の指示"
+          },
+          "figure": {
+            "tag": {
+              "reviewer": "専用の指示"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tools-and-call",
+      "kind": "code",
+      "role": "syntax",
+      "title": "使える道具と呼び出し",
+      "code": [
+        "// 任せる担当を名前付きで定義する",
+        "agents: { \"code-reviewer\": {",
+        "  // どんなときに使う担当かを書く",
+        "  description: \"コードを確かめるときに使う\",",
+        "  // この担当だけの指示を指定する",
+        "  prompt,",
+        "  // この担当が使うツールを絞る",
+        "  tools: [\"Read\", \"Grep\"]",
+        "// 担当の定義を閉じる",
+        "} },",
+        "// 親に担当を呼び出すツールを許可する",
+        "allowedTools: [\"Read\", \"Grep\", \"Agent\"],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "tools"
+      },
+      "beats": [
+        {
+          "say": "定義の prompt は、その担当の専用の指示です。",
+          "speech": "定義のプロンプトは、その担当の専用の指示です。",
+          "part": {
+            "line": 5,
+            "text": "prompt",
+            "note": "専用の指示"
+          },
+          "figure": {
+            "show": ["reviewer"]
+          }
+        },
+        {
+          "say": "tools には、読む道具と検索する道具を指定します。",
+          "speech": "ツールズには、読む道具と検索する道具を指定します。",
+          "part": {
+            "line": 7,
+            "text": "[\"Read\", \"Grep\"]",
+            "note": "読む・検索する"
+          },
+          "figure": {
+            "show": ["file", "read"]
+          }
+        },
+        {
+          "say": "これで、確認担当が使う道具を絞りました。",
+          "focus": [7],
+          "figure": {
+            "pulse": ["reviewer", "file"],
+            "tag": {
+              "reviewer": "読むだけ"
+            }
+          }
+        },
+        {
+          "say": "親は、許可した Agent のツールで担当を呼び出します。",
+          "speech": "親は、許可したエージェントのツールで担当を呼び出します。",
+          "part": {
+            "line": 11,
+            "text": "\"Agent\"",
+            "note": "担当を呼び出す"
+          },
+          "figure": {
+            "show": ["parent", "call"],
+            "travel": {
+              "along": ["call"],
+              "icon": "send"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-details",
+      "kind": "board",
+      "role": "apply",
+      "title": "呼ぶときに情報を書く",
+      "board": "details",
+      "beats": [
+        {
+          "say": "コードの確認を頼むときは、対象ファイルの場所を書きます。",
+          "show": ["file"]
+        },
+        {
+          "say": "見つかったエラーの内容も、相手に要る情報です。",
+          "show": ["error"]
+        },
+        {
+          "say": "親との会話で決めた方針も、依頼に入れましょう。",
+          "show": ["policy"]
+        },
+        {
+          "say": "担当を呼び出すときのプロンプトに、これらをまとめます。",
+          "show": ["request"],
+          "pulse": ["file", "error", "policy", "request"]
+        }
+      ]
+    },
+    {
+      "id": "return-report",
+      "kind": "board",
+      "role": "apply",
+      "title": "途中の作業と最後の報告",
+      "board": "report",
+      "beats": [
+        {
+          "say": "親は、要る情報を書いた依頼を確認担当に渡します。",
+          "show": ["parent", "child", "delegate"],
+          "travel": {
+            "along": ["delegate"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "途中のツールの結果は、確認担当の会話の中です。",
+          "pulse": ["child"],
+          "tag": {
+            "child": "途中の結果"
+          }
+        },
+        {
+          "say": "親に返るのは、最後の報告だけだと覚えましょう。",
+          "show": ["report", "finish", "return"],
+          "travel": {
+            "along": ["finish", "return"],
+            "icon": "result"
+          }
+        },
+        {
+          "say": "途中の結果が親の会話にたまるのを防げます。",
+          "pulse": ["parent"],
+          "tag": {
+            "parent": "最後の報告"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cleaning-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "清掃当番の条件を渡す",
+      "board": "cleaning",
+      "think": 8,
+      "beats": [
+        {
+          "say": "町内の清掃当番表を、別の担当に確認させます。",
+          "show": ["job"]
+        },
+        {
+          "say": "親との会話で、当番表は共有フォルダーにあると伝えました。",
+          "show": ["table"],
+          "tag": {
+            "table": "共有の場所"
+          }
+        },
+        {
+          "say": "雨なら清掃を中止するという決まりも、親だけが知る情報です。",
+          "show": ["rule"]
+        },
+        {
+          "say": "親は担当に、「さっきの条件で当番表を確認して」と頼みます。",
+          "show": ["vague"]
+        },
+        {
+          "say": "呼び出す依頼には、どの情報を足すとよいでしょうか。",
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["table", "rule"]
+        }
+      ]
+    },
+    {
+      "id": "cleaning-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "表の場所と雨の日の条件",
+      "board": "cleaning",
+      "beats": [
+        {
+          "say": "足すのは、当番表の場所と、雨なら中止する決まりです。",
+          "mark": [
+            {
+              "on": "table",
+              "kind": "check"
+            },
+            {
+              "on": "rule",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["table", "rule"]
+        },
+        {
+          "say": "共有フォルダーのどのファイルか、場所を書いて渡します。",
+          "tag": {
+            "table": "ファイル指定"
+          },
+          "pulse": ["table"]
+        },
+        {
+          "say": "雨なら中止という条件も、同じ依頼に書きましょう。",
+          "show": ["complete"],
+          "tag": {
+            "complete": "場所と条件"
+          },
+          "mark": [
+            {
+              "on": "vague",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["complete"]
+        }
+      ]
+    },
+    {
+      "id": "why-write",
+      "kind": "board",
+      "role": "explain",
+      "title": "親が知る情報を書き移す",
+      "board": "cleaningReason",
+      "beats": [
+        {
+          "say": "当番表の場所や雨の日の決まりは、親の会話にありました。",
+          "show": ["parent"]
+        },
+        {
+          "say": "確認担当は、その会話を自動では受け取りません。",
+          "show": ["child"],
+          "mark": [
+            {
+              "on": "child",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、呼び出すプロンプトに場所と条件を書きます。",
+          "show": ["request", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "その文が届けば、確認に要る情報を使えるはずです。",
+          "show": ["send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          },
+          "unmark": ["child"],
+          "mark": [
+            {
+              "on": "child",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-with-context",
+      "kind": "board",
+      "role": "usage",
+      "title": "任せる前に依頼を確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "コードの確認を別の担当に任せるときに使う考え方です。",
+          "show": ["review"]
+        },
+        {
+          "say": "呼び出す前に、対象とエラーを書いたか確かめましょう。",
+          "show": ["file"]
+        },
+        {
+          "say": "決めた方針も、相手に渡すプロンプトへ入れます。",
+          "show": ["policy"]
+        },
+        {
+          "say": "相手の会話でも作業を始められる依頼にするのが要点です。",
+          "pulse": ["review", "file", "policy"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "d15300cb1a1c689ef594e51f6f1ec2226c456d9f2e7d50ec315c5d31386ca422"
+  }
+}

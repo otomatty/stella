@@ -1,0 +1,667 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "モデルの廃止予告を受けて、利用箇所の確認から評価と切り替えまでを廃止日前に終える手順を説明できる。",
+    "stuck": "固定したモデル ID はずっと使えると思い、呼び出せなくなるまで評価と切り替えを待ってしまう。",
+    "points": ["モデルは予告のあとに廃止されるので、廃止日より前に次のモデルで評価します。"],
+    "leaveOut": [
+      "同じ入力を複数回試す評価の集計方法",
+      "回帰評価で比べる品質・速度・費用の細かな基準",
+      "個別のモデル名と実際の廃止日",
+      "提供先ごとの移行操作やコード",
+      "サンプリングの設定と API の版"
+    ]
+  },
+  "art": {
+    "report-trays": {
+      "prompt": "Two blue document sorting trays with white and light grey report sheets, one sheet being placed into a tray by a hand. Objects only, representing a report sorting service. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "deadline-notice": {
+      "prompt": "A freestanding white tear-off calendar with blue binding and one magenta circular date marker, next to an open blue envelope holding a blank white notice. No calendar grid or writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pool-lane": {
+      "prompt": "An isolated miniature swimming pool basin with solid blue water, two violet lane ropes and a small light grey ladder. No swimmers and no surrounding scenery. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pool-bag": {
+      "prompt": "An open violet swimming bag containing a blue swim cap, light grey swimming goggles and a folded white towel, ready for a trial visit to another swimming pool. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile. Full body visible, standing alone, with no props. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "case-pair": {
+      "prompt": "Two white clipboards with matching stacks of light grey report sheets and blue clips, placed side by side for comparing results on the same cases. A violet magnifying glass rests beside one clipboard. All paper is blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "night-batch": {
+      "prompt": "A violet analog alarm clock with plain hands and no dial markings beside a neatly clipped stack of white report sheets and a small blue crescent moon ornament, representing nightly report processing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "aquarium-guide": {
+      "prompt": "A blue-shirted aquarium guide holding a blank white leaflet next to a small freestanding blue fish tank with two orange fish and natural green aquatic plants. Simple friendly facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reports",
+          "label": "帳票の仕分け",
+          "art": "report-trays",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "廃止の予告",
+          "art": "deadline-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluate",
+          "label": "次のモデル",
+          "art": "case-pair",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "pool": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "pool",
+          "label": "いつものプール",
+          "art": "pool-lane",
+          "at": [1, 1]
+        },
+        {
+          "id": "notice",
+          "label": "閉鎖の予告",
+          "art": "deadline-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "trial",
+          "label": "別の場所を試す",
+          "art": "pool-bag",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "prepare",
+          "from": "notice",
+          "to": "trial",
+          "label": "閉鎖前に"
+        }
+      ]
+    },
+    "states": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "active",
+          "label": "現行",
+          "art": "model-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "legacy",
+          "label": "レガシー",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "deprecated",
+          "label": "非推奨",
+          "art": "model-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "retired",
+          "label": "廃止",
+          "art": "model-robot",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-legacy",
+          "from": "active",
+          "to": "legacy"
+        },
+        {
+          "id": "to-deprecated",
+          "from": "legacy",
+          "to": "deprecated"
+        },
+        {
+          "id": "to-retired",
+          "from": "deprecated",
+          "to": "retired"
+        }
+      ]
+    },
+    "inventory": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "notice",
+          "label": "提供先の予告",
+          "art": "deadline-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "対象のID",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "画面の仕分け",
+          "art": "report-trays",
+          "at": [5, 1]
+        },
+        {
+          "id": "night",
+          "label": "夜間の集計",
+          "art": "night-batch",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "schedule": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "current",
+          "label": "現行の結果",
+          "art": "report-trays",
+          "at": [1, 1]
+        },
+        {
+          "id": "candidate",
+          "label": "候補の評価",
+          "art": "case-pair",
+          "at": [3, 1]
+        },
+        {
+          "id": "partial",
+          "label": "一部で確認",
+          "art": "model-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "switch",
+          "label": "切り替え完了",
+          "art": "model-robot",
+          "at": [5, 2]
+        },
+        {
+          "id": "deadline",
+          "label": "廃止日",
+          "art": "deadline-notice",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "current",
+          "to": "candidate",
+          "label": "同じケース"
+        },
+        {
+          "id": "try",
+          "from": "candidate",
+          "to": "partial"
+        },
+        {
+          "id": "finish",
+          "from": "partial",
+          "to": "switch"
+        },
+        {
+          "id": "before",
+          "from": "switch",
+          "to": "deadline",
+          "label": "この日より前"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "水族館の案内",
+          "art": "aquarium-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "非推奨のID",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "notice",
+          "label": "廃止の予告",
+          "art": "deadline-notice",
+          "at": [5, 1]
+        },
+        {
+          "id": "wait",
+          "label": "廃止後に評価",
+          "art": "case-pair",
+          "at": [5, 2]
+        },
+        {
+          "id": "early",
+          "label": "廃止前に移行",
+          "art": "case-pair",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "current",
+          "label": "今の案内",
+          "art": "aquarium-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "compare",
+          "label": "同じ質問で評価",
+          "art": "case-pair",
+          "at": [3, 1]
+        },
+        {
+          "id": "finish",
+          "label": "廃止前に完了",
+          "art": "deadline-notice",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "evaluate",
+          "from": "current",
+          "to": "compare",
+          "label": "呼べるうちに"
+        },
+        {
+          "id": "migrate",
+          "from": "compare",
+          "to": "finish",
+          "label": "段階的に"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "予告が来たら何をするか",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "帳票を仕分けるサービスを動かしています。",
+          "show": ["reports"]
+        },
+        {
+          "say": "届いたのは、利用中のモデルを廃止する予告です。",
+          "show": ["notice"]
+        },
+        {
+          "say": "今のうちに、次のモデルを試す予定を立てましょう。",
+          "show": ["evaluate"]
+        },
+        {
+          "say": "モデルは予告のあとに廃止されるので、廃止前に次のモデルで評価します。",
+          "pulse": ["notice", "evaluate"]
+        }
+      ]
+    },
+    {
+      "id": "pool-example",
+      "kind": "board",
+      "role": "example",
+      "title": "プールの閉鎖に備える",
+      "board": "pool",
+      "beats": [
+        {
+          "say": "いつものプールが、閉鎖を予告したとしましょう。",
+          "show": ["pool", "notice"]
+        },
+        {
+          "say": "今は泳げても、その場所をずっと使えるわけではありません。",
+          "tag": {
+            "pool": "今は利用可"
+          }
+        },
+        {
+          "say": "閉鎖前に別のプールを試し、通う場所を決めます。",
+          "show": ["trial", "prepare"],
+          "travel": {
+            "along": ["prepare"],
+            "icon": "person"
+          }
+        },
+        {
+          "say": "モデルも、使える間に次を確かめるという考え方です。",
+          "mark": [
+            {
+              "on": "trial",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "model-states",
+      "kind": "board",
+      "role": "syntax",
+      "title": "廃止までの状態を読む",
+      "board": "states",
+      "beats": [
+        {
+          "say": "現行は、サポートされ、利用が勧められている状態です。",
+          "show": ["active"]
+        },
+        {
+          "say": "更新が終わった状態を、レガシーと呼びます。",
+          "term": {
+            "text": "レガシー",
+            "note": "更新が終わった状態"
+          },
+          "show": ["legacy", "to-legacy"]
+        },
+        {
+          "say": "レガシーの段階では、まだ廃止にはなっていません。",
+          "pulse": ["legacy"]
+        },
+        {
+          "say": "非推奨は、廃止日と移行先の候補が案内される状態です。",
+          "term": {
+            "text": "非推奨",
+            "ruby": "ひすいしょう",
+            "note": "まだ呼び出せる状態"
+          },
+          "show": ["deprecated", "to-deprecated"]
+        },
+        {
+          "say": "非推奨の間は、まだ呼び出せます。",
+          "tag": {
+            "deprecated": "呼び出せる"
+          },
+          "pulse": ["deprecated"]
+        }
+      ]
+    },
+    {
+      "id": "retirement-boundary",
+      "kind": "board",
+      "role": "syntax",
+      "title": "呼び出せなくなる境目",
+      "board": "states",
+      "beats": [
+        {
+          "say": "そのモデルが使えなくなることを、モデルの廃止と呼びます。",
+          "term": {
+            "text": "モデルの廃止",
+            "ruby": "モデルのはいし",
+            "note": "そのモデルを使えなくなる"
+          },
+          "show": ["retired", "to-retired"]
+        },
+        {
+          "say": "廃止した ID への Messages API の応答は404です。",
+          "speech": "廃止したアイディーへのメッセージズエーピーアイの応答は、よんまるよんです。",
+          "tag": {
+            "retired": "404"
+          },
+          "pulse": ["retired"]
+        },
+        {
+          "say": "固定した ID は、次のモデルへ自動で切り替わりません。",
+          "speech": "固定したアイディーは、次のモデルへ自動で切り替わりません。",
+          "mark": [
+            {
+              "on": "retired",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "まだ呼べる非推奨の間に、移行を進めましょう。",
+          "pulse": ["deprecated"]
+        }
+      ]
+    },
+    {
+      "id": "find-callers",
+      "kind": "board",
+      "role": "apply",
+      "title": "使っている場所を探す",
+      "board": "inventory",
+      "beats": [
+        {
+          "say": "帳票の例で、使っている提供先の廃止日を確かめます。",
+          "show": ["notice"]
+        },
+        {
+          "say": "公開モデルの予告は、利用中の顧客へ少なくとも60日前です。",
+          "speech": "公開モデルの予告は、利用中の顧客へ少なくともろくじゅうにちまえです。",
+          "tag": {
+            "notice": "60日以上前"
+          }
+        },
+        {
+          "say": "設定と実際の使用量を、モデル ID ごとに調べましょう。",
+          "speech": "設定と実際の使用量を、モデルアイディーごとに調べましょう。",
+          "show": ["model"]
+        },
+        {
+          "say": "画面での仕分けが、この ID を使っていました。",
+          "speech": "画面での仕分けが、このアイディーを使っていました。",
+          "show": ["screen"],
+          "tag": {
+            "screen": "対象のID"
+          }
+        },
+        {
+          "say": "夜間の集計にも、同じ ID の呼び出しが残っています。",
+          "speech": "夜間の集計にも、同じアイディーの呼び出しが残っています。",
+          "show": ["night"],
+          "tag": {
+            "night": "対象のID"
+          }
+        }
+      ]
+    },
+    {
+      "id": "plan-switch",
+      "kind": "board",
+      "role": "apply",
+      "title": "廃止前に終える日程",
+      "board": "schedule",
+      "beats": [
+        {
+          "say": "現行モデルを呼べるうちに、評価結果を取っておきます。",
+          "show": ["current"]
+        },
+        {
+          "say": "次のモデルを試す材料も、同じケースです。",
+          "show": ["candidate", "compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "候補の評価に加えて、一部の通信でも確認しましょう。",
+          "show": ["partial", "try"]
+        },
+        {
+          "say": "その確認を含めて、段階的な切り替えを進めます。",
+          "show": ["switch", "finish"]
+        },
+        {
+          "say": "廃止日より前に、切り替えまで終える日程が必要です。",
+          "show": ["deadline", "before"],
+          "mark": [
+            {
+              "on": "switch",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "水族館の案内を続ける",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水族館の質問に答えるサービスを運用しています。",
+          "show": ["guide"]
+        },
+        {
+          "say": "固定したモデル ID は非推奨ですが、まだ呼べる状態です。",
+          "speech": "固定したモデルアイディーは非推奨ですが、まだ呼べる状態です。",
+          "show": ["model", "notice"]
+        },
+        {
+          "say": "担当者は、廃止後に候補の評価を始める案を出しました。",
+          "show": ["wait"]
+        },
+        {
+          "say": "もう一つは、評価と切り替えを廃止前に終える案です。",
+          "show": ["early"]
+        },
+        {
+          "say": "案内を続けるには、どちらの日程を選ぶとよいでしょうか。",
+          "pulse": ["wait", "early"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "廃止前に移行を終える",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、評価と切り替えを廃止前に終える案です。",
+          "mark": [
+            {
+              "on": "early",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "廃止後に評価を始める日程では、間に合いません。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "why-before",
+      "kind": "board",
+      "role": "explain",
+      "title": "呼べる時間を評価に使う",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "今は、現行モデルで案内した結果を確かめられます。",
+          "show": ["current"]
+        },
+        {
+          "say": "比較に使うのは、水族館で受けた同じ質問です。",
+          "show": ["compare", "evaluate"]
+        },
+        {
+          "say": "次のモデルでも、その質問に答えさせて評価しましょう。",
+          "travel": {
+            "along": ["evaluate"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "廃止後まで待つと、固定した ID は呼び出せません。",
+          "speech": "廃止後まで待つと、固定したアイディーは呼び出せません。",
+          "tag": {
+            "current": "廃止後404"
+          }
+        },
+        {
+          "say": "だから、確認と切り替えを廃止前に終える必要があります。",
+          "show": ["finish", "migrate"],
+          "mark": [
+            {
+              "on": "finish",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "運用中に予告を受けたら",
+      "board": "inventory",
+      "reset": true,
+      "beats": [
+        {
+          "say": "運用中に予告が来たら、提供先の廃止日を確認します。",
+          "show": ["notice"]
+        },
+        {
+          "say": "調べる対象は、設定と実際に呼び出しているモデル ID です。",
+          "speech": "調べる対象は、設定と実際に呼び出しているモデルアイディーです。",
+          "show": ["model"]
+        },
+        {
+          "say": "画面で動く処理に加え、夜間の処理も探しましょう。",
+          "show": ["screen", "night"]
+        },
+        {
+          "say": "廃止日から逆算し、次のモデルの評価と切り替えを進めます。",
+          "pulse": ["notice", "model"],
+          "tag": {
+            "notice": "移行を終える"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f6415b4232acf8c5d7a617592c21ce28e6409e8fdc27b44bba2bfc2f1b5307b3"
+  }
+}

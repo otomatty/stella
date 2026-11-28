@@ -1,0 +1,772 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "伸びる会話の区切りから、前回の読み込み範囲と追加の書き込み範囲を説明できる。",
+    "stuck": "会話の末尾が動くと前の記録を読めなくなると思い、区切りから前回の位置を探す仕組みを結び付けられない。",
+    "points": [
+      "伸びていく会話では、最後のブロックに区切りを置いて、前のターンまでを読み込みます。"
+    ],
+    "leaveOut": [
+      "更新頻度に応じた複数の区切りの設計",
+      "キャッシュが外れる原因の診断",
+      "モデル別の最低トークン数と具体的な有効期間",
+      "使用量からの費用計算",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "repair-device": {
+      "prompt": "A small blue portable radio with a blank tuning area and a simple speaker grille, beside a white repair slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "symptom-note": {
+      "prompt": "A white repair note with a pictorial blue radio and a detached blue power plug, showing the reported symptom without written marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-stack": {
+      "prompt": "A neat stack of blank white conversation cards held together with a blue binder clip, with light grey edges clearly separating the cards. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "added-notes": {
+      "prompt": "Several new blank white conversation slips fanned out beside a violet pencil, representing newly added exchanges. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "end-bookmark": {
+      "prompt": "A thick stack of blank white cards with a magenta page clip attached to the very last card, showing the current end of a growing record. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "search-pages": {
+      "prompt": "A large blue magnifying glass held over the final portion of a fanned stack of blank white cards. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "moving-boxes": {
+      "prompt": "Two light grey cardboard moving boxes with blue sealing tape beside a small folded violet blanket and a blank white quotation slip. The boxes are light grey, not brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "practice-diary": {
+      "prompt": "An open white practice diary with a violet page clip, beside a small blue piano keyboard. The diary pages are entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "device",
+          "label": "修理する機器",
+          "art": "repair-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "symptom",
+          "label": "症状の聞き取り",
+          "art": "symptom-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "会話の末尾",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "diary": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "前回の記録",
+          "art": "practice-diary",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "追加の記録",
+          "art": "added-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "新しい末尾",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "past",
+          "to": "new",
+          "label": "足す"
+        },
+        {
+          "id": "move",
+          "from": "new",
+          "to": "end",
+          "label": "印を移す"
+        }
+      ]
+    },
+    "rolling": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "前のやり取り",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "応答と次の発言",
+          "art": "added-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "最後のブロック",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "past",
+          "to": "new",
+          "label": "後ろに足す"
+        },
+        {
+          "id": "move",
+          "from": "new",
+          "to": "end",
+          "label": "区切る"
+        }
+      ]
+    },
+    "automatic": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "前回の末尾",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "end",
+          "label": "今回の末尾",
+          "art": "end-bookmark",
+          "at": [3, 1]
+        },
+        {
+          "id": "slots",
+          "label": "区切りの枠",
+          "art": "search-pages",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "advance",
+          "from": "past",
+          "to": "end"
+        }
+      ]
+    },
+    "reuse": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "past",
+          "label": "1〜8番",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "9〜13番",
+          "art": "added-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "今回13番",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "look-back",
+          "from": "end",
+          "to": "new",
+          "label": "さかのぼる"
+        },
+        {
+          "id": "find",
+          "from": "new",
+          "to": "past",
+          "label": "記録を探す"
+        }
+      ]
+    },
+    "range": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "old",
+          "label": "前回13番",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "lower",
+          "label": "下限15番",
+          "art": "search-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "今回34番",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "search",
+          "from": "end",
+          "to": "lower",
+          "label": "20か所"
+        }
+      ]
+    },
+    "moving": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "move",
+          "label": "引っ越し相談",
+          "art": "moving-boxes",
+          "at": [1, 1]
+        },
+        {
+          "id": "past",
+          "label": "1〜6番",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "7〜11番",
+          "art": "added-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "append",
+          "from": "past",
+          "to": "new",
+          "label": "後ろに足す"
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "end",
+          "label": "今回11番",
+          "art": "end-bookmark",
+          "at": [1, 1]
+        },
+        {
+          "id": "past",
+          "label": "前回6番",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "new",
+          "label": "7〜11番",
+          "art": "added-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "end",
+          "to": "past",
+          "label": "記録を探す"
+        },
+        {
+          "id": "write",
+          "from": "past",
+          "to": "new",
+          "label": "追加で書く"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "修理の聞き取り",
+          "art": "repair-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "move",
+          "label": "引っ越し相談",
+          "art": "moving-boxes",
+          "at": [3, 1]
+        },
+        {
+          "id": "end",
+          "label": "今回の末尾",
+          "art": "end-bookmark",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "会話が伸びたら",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "修理の受付で、利用者に機種を尋ねます。",
+          "show": ["device"]
+        },
+        {
+          "say": "そのあとに聞くのは、故障の症状です。",
+          "show": ["symptom"]
+        },
+        {
+          "say": "やり取りが続くと、履歴の後ろに発言が増えていきます。",
+          "show": ["end"]
+        },
+        {
+          "say": "最後に区切りを置き、前のターンまでを読み込みましょう。",
+          "pulse": ["end"],
+          "tag": {
+            "end": "前回分を読む"
+          }
+        }
+      ]
+    },
+    {
+      "id": "practice-diary",
+      "kind": "board",
+      "role": "example",
+      "title": "日誌の最後へ印を移す",
+      "board": "diary",
+      "beats": [
+        {
+          "say": "ピアノの練習日誌に、前回までの記録が残っています。",
+          "show": ["past"]
+        },
+        {
+          "say": "今日の練習を書き足す場所は、その後ろです。",
+          "show": ["new", "append"]
+        },
+        {
+          "say": "書き足したら、しおりを新しい末尾に移しましょう。",
+          "show": ["end", "move"],
+          "travel": {
+            "along": ["move"]
+          }
+        },
+        {
+          "say": "会話でも前の記録を残して、末尾の区切りを進めます。",
+          "pulse": ["past", "end"]
+        }
+      ]
+    },
+    {
+      "id": "rolling-boundary",
+      "kind": "board",
+      "role": "syntax",
+      "title": "履歴を残して末尾へ進む",
+      "board": "rolling",
+      "beats": [
+        {
+          "say": "末尾を追う印を、ローリングの区切りと呼びます。",
+          "term": {
+            "text": "ローリングの区切り",
+            "ruby": "ローリングのくぎり",
+            "note": "会話の末尾へ区切りを進める"
+          }
+        },
+        {
+          "say": "前のやり取りは、書き換えずに残す部分です。",
+          "show": ["past"]
+        },
+        {
+          "say": "応答と次の発言を、その後ろに足します。",
+          "show": ["new", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "図の最後のブロックへ、区切りを進めましょう。",
+          "show": ["end", "move"],
+          "tag": {
+            "end": "今回の区切り"
+          },
+          "pulse": ["end"]
+        }
+      ]
+    },
+    {
+      "id": "automatic-cache",
+      "kind": "code",
+      "role": "syntax",
+      "title": "末尾への移動を自動にする",
+      "code": ["// リクエストの最上位に置く設定", "cache_control: { type: \"ephemeral\" }"],
+      "panel": {
+        "kind": "figure",
+        "board": "automatic"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "末尾への移動を任せる仕組みが、自動キャッシュです。",
+          "term": {
+            "text": "自動キャッシュ",
+            "ruby": "じどうキャッシュ",
+            "note": "キャッシュできる末尾へ進む"
+          }
+        },
+        {
+          "say": "この設定を、リクエストの最上位に置きます。",
+          "type": [0, 1],
+          "figure": {
+            "show": ["past"]
+          }
+        },
+        {
+          "say": "type の値は ephemeral です。",
+          "speech": "タイプの値はエフェメラルです。",
+          "part": {
+            "line": 1,
+            "text": "type: \"ephemeral\"",
+            "note": "この値を指定"
+          }
+        },
+        {
+          "say": "キャッシュできる最後のブロックへ、区切りが進みます。",
+          "figure": {
+            "show": ["end", "advance"],
+            "travel": {
+              "along": ["advance"]
+            },
+            "tag": {
+              "end": "自動で進む"
+            }
+          }
+        },
+        {
+          "say": "使う区切りの枠は、四つのうち一つです。",
+          "figure": {
+            "show": ["slots"],
+            "tag": {
+              "slots": "4枠中1枠"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-and-append",
+      "kind": "board",
+      "role": "apply",
+      "title": "前回分を読み追加分を書く",
+      "board": "reuse",
+      "beats": [
+        {
+          "say": "修理の聞き取りでは、前回は8番までを書き込みました。",
+          "speech": "修理の聞き取りでは、前回は八番までを書き込みました。",
+          "show": ["past"],
+          "tag": {
+            "past": "書き込み済み"
+          }
+        },
+        {
+          "say": "今回は有効期間内で、区切りまでの長さも足りています。",
+          "pulse": ["past"],
+          "tag": {
+            "past": "長さと期限可"
+          }
+        },
+        {
+          "say": "前の8ブロックは同じで、今回の末尾は13番です。",
+          "speech": "前の八ブロックは同じで、今回の末尾は十三番です。",
+          "show": ["new", "end"],
+          "tag": {
+            "end": "区切り"
+          }
+        },
+        {
+          "say": "13番からさかのぼり、8番までを読み込みます。",
+          "speech": "十三番からさかのぼり、八番までを読み込みます。",
+          "show": ["look-back", "find"],
+          "travel": {
+            "along": ["look-back", "find"]
+          },
+          "tag": {
+            "past": "読み込み"
+          }
+        },
+        {
+          "say": "追加で書き込むのは、9番から13番までです。",
+          "speech": "追加で書き込むのは、九番から十三番までです。",
+          "pulse": ["new"],
+          "tag": {
+            "new": "書き込み"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "search-window",
+      "kind": "board",
+      "role": "apply",
+      "title": "前回の位置に届くか",
+      "board": "range",
+      "beats": [
+        {
+          "say": "前の書き込み位置を調べる範囲を、探索範囲と呼びます。",
+          "term": {
+            "text": "探索範囲",
+            "ruby": "たんさくはんい",
+            "note": "区切り自身を含む最大20か所"
+          }
+        },
+        {
+          "say": "今回は34番なので、調べる範囲は15番までです。",
+          "speech": "今回は三十四番なので、調べる範囲は十五番までです。",
+          "show": ["end", "lower", "search"],
+          "travel": {
+            "along": ["search"]
+          }
+        },
+        {
+          "say": "この区切りを含めて二十か所まで、さかのぼって探します。",
+          "pulse": ["search"],
+          "tag": {
+            "end": "ここも数える"
+          }
+        },
+        {
+          "say": "前回の13番は、この探索範囲に入りません。",
+          "speech": "前回の十三番は、この探索範囲に入りません。",
+          "show": ["old"],
+          "mark": [
+            {
+              "on": "old",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "13番にも区切りを残すと、そこから読み込めます。",
+          "speech": "十三番にも区切りを残すと、そこから読み込めます。",
+          "tag": {
+            "old": "区切りを残す"
+          },
+          "mark": [
+            {
+              "on": "old",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["old"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "moving-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "見積もり相談の続き",
+      "board": "moving",
+      "think": 8,
+      "beats": [
+        {
+          "say": "引っ越しの見積もりで、荷物を順に聞き取ります。",
+          "show": ["move"]
+        },
+        {
+          "say": "前回は6番まで、書き込み済みです。",
+          "speech": "前回は六番まで、書き込み済みです。",
+          "show": ["past"],
+          "tag": {
+            "past": "書き込み済み"
+          }
+        },
+        {
+          "say": "今回は発言を足し、11番に区切りを置きました。",
+          "speech": "今回は発言を足し、十一番に区切りを置きました。",
+          "show": ["new", "append"],
+          "tag": {
+            "new": "末尾に区切り"
+          }
+        },
+        {
+          "say": "前半は同じで、有効期間内で長さも足りています。",
+          "pulse": ["past"],
+          "tag": {
+            "past": "長さと期限可"
+          }
+        },
+        {
+          "say": "どこまでを読み込み、どこを追加で書き込むでしょうか。",
+          "pulse": ["past", "new"],
+          "mark": [
+            {
+              "on": "past",
+              "kind": "question"
+            },
+            {
+              "on": "new",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "moving-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "読み込みと書き込みの境目",
+      "board": "moving",
+      "beats": [
+        {
+          "say": "読み込むのは、前回の6番までです。",
+          "speech": "読み込むのは、前回の六番までです。",
+          "pulse": ["past"],
+          "tag": {
+            "past": "読み込み"
+          },
+          "mark": [
+            {
+              "on": "past",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "7番から11番までは、追加で書き込みます。",
+          "speech": "七番から十一番までは、追加で書き込みます。",
+          "pulse": ["new"],
+          "tag": {
+            "new": "書き込み"
+          },
+          "mark": [
+            {
+              "on": "new",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-reuse",
+      "kind": "board",
+      "role": "explain",
+      "title": "前回の記録をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "探索は、今回の区切りである11番から始めます。",
+          "speech": "探索は、今回の区切りである十一番から始めます。",
+          "show": ["end"]
+        },
+        {
+          "say": "前回の6番は、さかのぼって探せる範囲内です。",
+          "speech": "前回の六番は、さかのぼって探せる範囲内です。",
+          "show": ["past", "find"],
+          "travel": {
+            "along": ["find"]
+          }
+        },
+        {
+          "say": "6番までの内容も同じなので、前の記録を読み込みます。",
+          "speech": "六番までの内容も同じなので、前の記録を読み込みます。",
+          "pulse": ["past"],
+          "tag": {
+            "past": "内容が一致"
+          },
+          "mark": [
+            {
+              "on": "past",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "その後ろに足した分が、今回の書き込みです。",
+          "show": ["new", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "file"
+          },
+          "tag": {
+            "new": "新しい記録"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-rolling",
+      "kind": "board",
+      "role": "usage",
+      "title": "続きの会話を送る前に",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "修理の聞き取りのように、発言を足す会話で使います。",
+          "show": ["repair"]
+        },
+        {
+          "say": "引っ越しの相談でも、前の質問が履歴に残る形です。",
+          "show": ["move"]
+        },
+        {
+          "say": "末尾へ進める前に、前の内容が同じか確かめましょう。",
+          "pulse": ["repair", "move"]
+        },
+        {
+          "say": "自動でも探索範囲は同じなので、前回の位置も確かめます。",
+          "show": ["end"],
+          "tag": {
+            "end": "前回に届くか"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f63925ad90a81b03ed81e7f5e015525c1cc90cdec333fec24f3340863ec6a599"
+  }
+}

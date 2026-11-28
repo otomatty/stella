@@ -1,0 +1,698 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "自分の課題の入力と期待する答えをそろえ、同じ評価のセットで候補のモデルを比べる手順を説明できる。",
+    "stuck": "新しいモデルの評判だけで切り替え、自分の課題で答えが良くなったかを確かめない。",
+    "points": ["候補のモデルは、自分の課題で作った評価のセットで比べます。"],
+    "leaveOut": [
+      "最初に試すモデルの選び方と具体的なモデル名",
+      "effort の指定方法とモデルの組み合わせ",
+      "評価の自動化や採点方法の詳細",
+      "実際の料金と費用の計算式"
+    ]
+  },
+  "art": {
+    "bread-order": {
+      "prompt": "Two loaves of bread with natural golden crusts beside a blank white bakery order slip held by a blue paper clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bakery-clerk": {
+      "prompt": "A bakery clerk in a plain blue shirt holding a blank white order slip and looking carefully at two loaves of bread with natural golden crusts. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a violet pencil above one blank white paper request note, with a blue paper clip attached to its top corner. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-note": {
+      "prompt": "One blank white answer card held upright by a blue clip, with a small violet magnifying glass beside it to suggest checking the answer. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-bundle": {
+      "prompt": "Three pairs of blank white paper slips, each pair held together with a blue clip, neatly fanned inside an open light grey document folder. Each pair represents an input and its expected answer. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "model-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white answer card. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cost-purse": {
+      "prompt": "An open blue coin purse beside a small stack of plain light grey coins with completely blank faces. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-order": {
+      "prompt": "A small white and blue electric fan with its power cord loosely coiled beside a blank white repair intake slip and a violet wrench. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "パンの注文",
+          "art": "bread-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデルの候補",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "set",
+          "label": "評価のセット",
+          "art": "evaluation-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "bakery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "注文のメモ",
+          "art": "bread-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "担当者",
+          "art": "bakery-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "書き出した数",
+          "art": "answer-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "order",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "write",
+          "from": "clerk",
+          "to": "answer",
+          "label": "書く"
+        }
+      ]
+    },
+    "evaluation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "actual",
+          "label": "返った答え",
+          "art": "answer-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "expected",
+          "label": "期待する答え",
+          "art": "answer-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "set",
+          "label": "評価のセット",
+          "art": "evaluation-bundle",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "actual",
+          "to": "expected",
+          "label": "照合"
+        }
+      ]
+    },
+    "set-parts": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "プロンプト",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "実際のデータ",
+          "art": "bread-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "expected",
+          "label": "期待する答え",
+          "art": "answer-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "set",
+          "label": "例の集まり",
+          "art": "evaluation-bundle",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "criteria": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "correct",
+          "label": "正しさ",
+          "art": "answer-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "quality",
+          "label": "答えの質",
+          "art": "answer-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "unusual",
+          "label": "例外的な入力",
+          "art": "bread-order",
+          "at": [5, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用",
+          "art": "cost-purse",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "order-case": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "数量を抜き出す",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "食パンを二斤",
+          "art": "bread-order",
+          "at": [3, 1]
+        },
+        {
+          "id": "expected",
+          "label": "期待する答え",
+          "art": "answer-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "comparison": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "first",
+          "label": "候補の甲",
+          "art": "model-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "set",
+          "label": "同じ例の集まり",
+          "art": "evaluation-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "second",
+          "label": "候補の乙",
+          "art": "model-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "to-first",
+          "from": "set",
+          "to": "first",
+          "label": "試す"
+        },
+        {
+          "id": "to-second",
+          "from": "set",
+          "to": "second",
+          "label": "試す"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "repair",
+          "label": "家電の修理受付",
+          "art": "repair-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "reputation",
+          "label": "評判だけで選ぶ",
+          "art": "model-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "set",
+          "label": "同じ例で試す",
+          "art": "evaluation-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "repair-reasons": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "data",
+          "label": "受付の入力",
+          "art": "repair-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "expected",
+          "label": "期待する答え",
+          "art": "answer-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "unusual",
+          "label": "症状が未記入",
+          "art": "repair-order",
+          "at": [5, 1]
+        },
+        {
+          "id": "cost",
+          "label": "費用との比較",
+          "art": "cost-purse",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "切替前の候補",
+          "art": "model-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "set",
+          "label": "同じ評価の例",
+          "art": "evaluation-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "cost",
+          "label": "性能と費用",
+          "art": "cost-purse",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "注文でモデルを比べる",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "パンの注文から、数量を取り出す仕事を考えます。",
+          "show": ["order"]
+        },
+        {
+          "say": "選びたいのは、この仕事に合うモデルです。",
+          "show": ["model"]
+        },
+        {
+          "say": "比べるための入力と答えを、先にそろえましょう。",
+          "show": ["set"]
+        },
+        {
+          "say": "候補のモデルは、自分の課題で作った評価のセットで比べます。",
+          "pulse": ["order", "set"]
+        }
+      ]
+    },
+    {
+      "id": "bakery-example",
+      "kind": "board",
+      "role": "example",
+      "title": "担当者の仕事を確かめる",
+      "board": "bakery",
+      "beats": [
+        {
+          "say": "パン屋の担当者に、注文の数を書き出してもらいます。",
+          "show": ["order", "clerk", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "仕事が得意だという評判だけでは、まだ判断できません。",
+          "mark": [
+            {
+              "on": "clerk",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "実際の注文を渡して、書き出した数を見てみましょう。",
+          "show": ["answer", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "確かめる材料は、この店の注文と、その正しい数量です。",
+          "pulse": ["order", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "evaluation-meaning",
+      "kind": "board",
+      "role": "syntax",
+      "title": "比べるための言葉",
+      "board": "evaluation",
+      "beats": [
+        {
+          "say": "自分の課題で答えを確かめることを、評価と呼びます。",
+          "term": {
+            "text": "評価",
+            "ruby": "ひょうか",
+            "note": "自分の課題で答えを確かめる"
+          }
+        },
+        {
+          "say": "ここで調べる対象は、モデルから返った答えです。",
+          "show": ["actual"]
+        },
+        {
+          "say": "期待する答えは、入力に対して返してほしい内容を指します。",
+          "term": {
+            "text": "期待する答え",
+            "ruby": "きたいするこたえ",
+            "note": "入力に対して返してほしい内容"
+          }
+        },
+        {
+          "say": "返った答えを、この内容と照らしてみましょう。",
+          "show": ["expected", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "入力と期待する答えを集めたものが、評価のセットです。",
+          "term": {
+            "text": "評価のセット",
+            "ruby": "ひょうかのせっと",
+            "note": "実際の入力と期待する答えの例"
+          },
+          "show": ["set"]
+        }
+      ]
+    },
+    {
+      "id": "build-set",
+      "kind": "board",
+      "role": "syntax",
+      "title": "評価のセットの中身",
+      "board": "set-parts",
+      "beats": [
+        {
+          "say": "評価のセットには、実際に使うプロンプトを入れます。",
+          "show": ["request"]
+        },
+        {
+          "say": "合わせるのは、自分の仕事で扱うデータです。",
+          "show": ["data"]
+        },
+        {
+          "say": "それぞれの入力に、期待する答えも添えましょう。",
+          "show": ["expected"]
+        },
+        {
+          "say": "こうした例を集め、候補を試すための一組にします。",
+          "show": ["set"],
+          "pulse": ["set"]
+        }
+      ]
+    },
+    {
+      "id": "comparison-criteria",
+      "kind": "board",
+      "role": "syntax",
+      "title": "答えの何を比べるか",
+      "board": "criteria",
+      "beats": [
+        {
+          "say": "比べるときは、答えの正しさと質を確かめます。",
+          "show": ["correct", "quality"]
+        },
+        {
+          "say": "いつもと違う条件の入力が、例外的な入力です。",
+          "term": {
+            "text": "例外的な入力",
+            "ruby": "れいがいてきなにゅうりょく",
+            "note": "いつもと違う条件の入力"
+          }
+        },
+        {
+          "say": "数量が書かれていない注文なども、試してみましょう。",
+          "show": ["unusual"],
+          "tag": {
+            "unusual": "数量がない"
+          }
+        },
+        {
+          "say": "その結果を見て、性能と費用の釣り合いを考えます。",
+          "show": ["cost"],
+          "pulse": ["cost"]
+        }
+      ]
+    },
+    {
+      "id": "apply-order",
+      "kind": "board",
+      "role": "apply",
+      "title": "パンの注文を例にする",
+      "board": "order-case",
+      "beats": [
+        {
+          "say": "例として、注文から数量だけを抜き出すよう頼みます。",
+          "show": ["request"]
+        },
+        {
+          "say": "渡すデータは、お客さんの食パンを二斤という注文です。",
+          "show": ["data"]
+        },
+        {
+          "say": "期待する答えとして、二斤と書いておきましょう。",
+          "show": ["expected"],
+          "tag": {
+            "expected": "二斤"
+          }
+        },
+        {
+          "say": "この組を使えば、返った数量が合うかを確かめられます。",
+          "pulse": ["data", "expected"]
+        }
+      ]
+    },
+    {
+      "id": "compare-models",
+      "kind": "board",
+      "role": "apply",
+      "title": "同じ例を候補に渡す",
+      "board": "comparison",
+      "beats": [
+        {
+          "say": "ここからは架空の結果で、候補の甲と乙を比べます。",
+          "show": ["first", "set", "second"]
+        },
+        {
+          "say": "両方に渡すのは、同じプロンプトとデータです。",
+          "show": ["to-first", "to-second"],
+          "pulse": ["set"]
+        },
+        {
+          "say": "甲が二斤、乙が三斤と返したら、期待する答えと照合しましょう。",
+          "tag": {
+            "first": "二斤",
+            "second": "三斤"
+          },
+          "pulse": ["first", "second"]
+        },
+        {
+          "say": "この例では甲が正しく、残りの例も同じように確かめます。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "check"
+            },
+            {
+              "on": "second",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "修理受付での比べ方",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "家電の修理受付で、症状を整理するモデルを選びます。",
+          "show": ["repair"]
+        },
+        {
+          "say": "一つ目の案は、新しいモデルの評判だけで選ぶ方法です。",
+          "show": ["reputation"]
+        },
+        {
+          "say": "二つ目では、実際の入力と期待する答えで候補を試します。",
+          "show": ["set"]
+        },
+        {
+          "say": "自分の仕事に合うかを確かめられるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "reputation",
+              "kind": "question"
+            },
+            {
+              "on": "set",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実際の入力で試す",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、同じ入力と期待する答えで試す二つ目の案です。",
+          "mark": [
+            {
+              "on": "set",
+              "kind": "check"
+            },
+            {
+              "on": "reputation",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["set"]
+        },
+        {
+          "say": "修理受付で返してほしい内容と、結果を比べられます。",
+          "pulse": ["repair", "set"]
+        },
+        {
+          "say": "ほかの用途での評判が、この仕事に当てはまるとは限りません。",
+          "pulse": ["reputation"]
+        }
+      ]
+    },
+    {
+      "id": "why-same-set",
+      "kind": "board",
+      "role": "explain",
+      "title": "受付の仕事に照らす",
+      "board": "repair-reasons",
+      "beats": [
+        {
+          "say": "修理受付で使う依頼とデータをそろえ、候補に渡します。",
+          "show": ["data"]
+        },
+        {
+          "say": "答えを見るときの基準は、先に添えた期待する内容です。",
+          "show": ["expected"]
+        },
+        {
+          "say": "症状が未記入の例も加え、その扱いを確かめましょう。",
+          "show": ["unusual"],
+          "tag": {
+            "unusual": "例外も試す"
+          }
+        },
+        {
+          "say": "答えの正しさや質を比べたうえで、費用との釣り合いを考えます。",
+          "show": ["cost"],
+          "pulse": ["cost"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "切り替える前に使う",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "モデルを切り替える前に、この比べ方を使います。",
+          "show": ["model"]
+        },
+        {
+          "say": "使うのは、切り替え前後で同じ評価のセットです。",
+          "show": ["set"]
+        },
+        {
+          "say": "良くなったか悪くなったかを、実際の結果で確かめましょう。",
+          "pulse": ["model", "set"]
+        },
+        {
+          "say": "自分の課題での結果をもとに、性能と費用を比べて選びます。",
+          "show": ["cost"],
+          "pulse": ["cost"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "25b6a2ffd06834a0e538082bcb95ccc7a25611cf39dfb474ee5176b413c3d37d"
+  }
+}

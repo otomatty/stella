@@ -1,0 +1,749 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "API キーをコードに直書きする問題を説明し、環境変数から SDK に読ませる書き方を選べる。",
+    "stuck": "動かすためにキーをコードへ書き、そのままコミットして秘密の文字列を履歴に残してしまう。",
+    "points": ["API キーはコードに書かず、環境変数 ANTHROPIC_API_KEY から SDK に読ませます。"],
+    "leaveOut": [
+      "SDK のインストールと送り直しの設定",
+      "環境変数を設定する OS ごとのコマンド",
+      "モデル ID とリクエストの組み立て",
+      "キーの発行画面と履歴の修正手順",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "secret-key": {
+      "prompt": "A single blue metal key with a violet rounded bow and two simple teeth, representing a secret credential. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "code-laptop": {
+      "prompt": "An open violet laptop with a completely blank dark screen and a small blue key resting beside its keyboard. A conceptual object, no application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-pages": {
+      "prompt": "Three overlapping white paper sheets held by a violet binder clip, with a small blue key visible on the oldest sheet. The sheets are white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "env-pouch": {
+      "prompt": "An open blue fabric pouch holding a small blue key, clearly separate from a closed violet notebook. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sdk-toolkit": {
+      "prompt": "An open violet tool case containing a blue wrench and a small white gear, representing a programming library. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "storage-locker": {
+      "prompt": "A freestanding light grey equipment locker with one open door and a blue padlock beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-guide": {
+      "prompt": "A white instruction leaflet held out by a staff member in a plain blue shirt, with simple facial features and short dark hair. The leaflet is blank white paper. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "music-school": {
+      "prompt": "A violet violin beside a blue metronome and an open white lesson notebook. Objects only; the notebook pages are blank white. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "試し書き",
+          "art": "code-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "コミット履歴",
+          "art": "history-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "env",
+          "label": "環境変数",
+          "art": "env-pouch",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "locker": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "locker",
+          "label": "備品のロッカー",
+          "art": "storage-locker",
+          "at": [1, 1]
+        },
+        {
+          "id": "guide",
+          "label": "配る手引き",
+          "art": "shared-guide",
+          "at": [3, 1]
+        },
+        {
+          "id": "key",
+          "label": "別に保管",
+          "art": "secret-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "secret": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "key",
+          "label": "APIキー",
+          "art": "secret-key",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "履歴",
+          "art": "history-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "code",
+          "label": "コード",
+          "art": "code-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "read-env": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "env",
+          "label": "環境変数",
+          "art": "env-pouch",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "sdk-toolkit",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "env",
+          "to": "sdk",
+          "label": "自動で読む"
+        }
+      ]
+    },
+    "leak": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "キーの直書き",
+          "art": "code-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "履歴に残る",
+          "art": "history-pages",
+          "at": [3, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "commit",
+          "from": "code",
+          "to": "history",
+          "label": "コミット"
+        }
+      ]
+    },
+    "music": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "school",
+          "label": "楽器の教室",
+          "art": "music-school",
+          "at": [1, 1]
+        },
+        {
+          "id": "direct",
+          "label": "コードに書く",
+          "art": "code-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "env",
+          "label": "環境変数",
+          "art": "env-pouch",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "env",
+          "label": "環境変数",
+          "art": "env-pouch",
+          "at": [1, 1]
+        },
+        {
+          "id": "sdk",
+          "label": "SDK",
+          "art": "sdk-toolkit",
+          "at": [3, 1]
+        },
+        {
+          "id": "history",
+          "label": "コミット履歴",
+          "art": "history-pages",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "env",
+          "to": "sdk",
+          "label": "自動で読む"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "code",
+          "label": "試すコード",
+          "art": "code-laptop",
+          "at": [1, 1]
+        },
+        {
+          "id": "history",
+          "label": "共有する履歴",
+          "art": "history-pages",
+          "at": [3, 1]
+        },
+        {
+          "id": "key",
+          "label": "漏れたキー",
+          "art": "secret-key",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "キーの置き場所を選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "試しに動かすため、キーをコードへ書いたとします。",
+          "show": ["code"]
+        },
+        {
+          "say": "そのままコミットすると、キーも記録に残るのです。",
+          "show": ["history"]
+        },
+        {
+          "say": "キーを別に渡す方法を、ここで確かめましょう。",
+          "show": ["env"]
+        },
+        {
+          "say": "コードにキーを書かず、環境変数から SDK に読ませます。",
+          "speech": "コードにキーを書かず、環境変数からエスディーケーに読ませます。",
+          "pulse": ["env"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "locker-key",
+      "kind": "board",
+      "role": "example",
+      "title": "手引きと鍵を分ける",
+      "board": "locker",
+      "beats": [
+        {
+          "say": "備品のロッカーを開ける鍵を、思い浮かべてください。",
+          "show": ["locker"]
+        },
+        {
+          "say": "使い方の手引きは、みんなに配るものです。",
+          "show": ["guide"]
+        },
+        {
+          "say": "そこに鍵まで付けて配ると、受け取った人が開けられます。",
+          "show": ["key"],
+          "pulse": ["guide"],
+          "tag": {
+            "key": "配らない"
+          }
+        },
+        {
+          "say": "手引きと鍵は、分けて扱うと考えましょう。",
+          "pulse": ["key"],
+          "mark": [
+            {
+              "on": "key",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "secret-and-history",
+      "kind": "board",
+      "role": "syntax",
+      "title": "秘密の文字列と履歴",
+      "board": "secret",
+      "beats": [
+        {
+          "say": "API キーは、API を使う権限を示す秘密の文字列です。",
+          "speech": "エーピーアイキーは、エーピーアイを使う権限を示す秘密の文字列です。",
+          "term": {
+            "text": "APIキー",
+            "note": "使う権限を示す秘密の文字列"
+          },
+          "show": ["key"]
+        },
+        {
+          "say": "さきほどの鍵と同じように、分けて扱います。",
+          "pulse": ["key"]
+        },
+        {
+          "say": "コミットに残した過去の記録が、ここでいう履歴です。",
+          "term": {
+            "text": "履歴",
+            "ruby": "りれき",
+            "note": "コミットに残した記録"
+          },
+          "show": ["history"]
+        },
+        {
+          "say": "コードに書いたキーは、この履歴から読まれてしまいます。",
+          "show": ["code"],
+          "pulse": ["history"],
+          "mark": [
+            {
+              "on": "history",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "キーの文字列を、共有するコードに入れないでください。",
+          "pulse": ["code"],
+          "tag": {
+            "code": "直書きしない"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "environment-name",
+      "kind": "code",
+      "role": "syntax",
+      "title": "環境変数を読み込む",
+      "code": [
+        "// 環境変数 ANTHROPIC_API_KEY にキーを入れておく",
+        "// SDK が環境変数から読む",
+        "const client = new Anthropic();"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "read-env"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "コードの外から値を渡すため、環境変数を使います。",
+          "term": {
+            "text": "環境変数",
+            "ruby": "かんきょうへんすう",
+            "note": "コードの外から渡す値"
+          },
+          "figure": {
+            "show": ["env"]
+          }
+        },
+        {
+          "say": "キーを入れる環境変数は、この名前です。",
+          "part": {
+            "line": 0,
+            "text": "ANTHROPIC_API_KEY",
+            "note": "キーの入れ先"
+          },
+          "figure": {
+            "pulse": ["env"]
+          }
+        },
+        {
+          "say": "この名前の環境変数に、使うキーを入れておきましょう。",
+          "focus": [0],
+          "figure": {
+            "tag": {
+              "env": "キーを入れる"
+            }
+          }
+        },
+        {
+          "say": "SDK は、その環境変数を自動で読みます。",
+          "speech": "エスディーケーは、その環境変数を自動で読みます。",
+          "part": {
+            "line": 1,
+            "text": "SDK"
+          },
+          "figure": {
+            "show": ["sdk", "read"],
+            "travel": {
+              "along": ["read"]
+            }
+          }
+        },
+        {
+          "say": "コードにキーを渡さない、この書き方でよいのです。",
+          "part": {
+            "line": 2,
+            "text": "new Anthropic()"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "sdk",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "direct-key",
+      "kind": "code",
+      "role": "apply",
+      "title": "直書きすると履歴に残る",
+      "code": [
+        "// やってはいけない例：キーをコードに直書きする",
+        "new Anthropic({ apiKey: \"sk-ant-...\" });"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "leak"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "試し書きの例では、この位置へキーを入れていました。",
+          "part": {
+            "line": 1,
+            "text": "\"sk-ant-...\"",
+            "note": "秘密の文字列"
+          },
+          "figure": {
+            "show": ["code"]
+          }
+        },
+        {
+          "say": "apiKey の値として、キーを直接書いた形です。",
+          "speech": "エーピーアイキーの値として、キーを直接書いた形です。",
+          "part": {
+            "line": 1,
+            "text": "apiKey"
+          },
+          "figure": {
+            "pulse": ["code"]
+          }
+        },
+        {
+          "say": "このコードをコミットすると、キーも履歴に残ります。",
+          "focus": [1],
+          "figure": {
+            "show": ["history", "commit"],
+            "travel": {
+              "along": ["commit"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "履歴からほかの人に読まれるので、直書きは避けましょう。",
+          "mark": [
+            {
+              "line": 1,
+              "kind": "cross"
+            }
+          ],
+          "figure": {
+            "mark": [
+              {
+                "on": "history",
+                "kind": "cross"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "read-without-key",
+      "kind": "code",
+      "role": "apply",
+      "title": "キーを書かずに作る",
+      "code": [
+        "// 環境変数 ANTHROPIC_API_KEY にキーを入れておく",
+        "// SDK が環境変数から読む",
+        "const client = new Anthropic();"
+      ],
+      "show": [0, 1],
+      "panel": {
+        "kind": "figure",
+        "board": "read-env"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ呼び出しで、キーの渡し方を変えましょう。",
+          "figure": {
+            "show": ["env"]
+          }
+        },
+        {
+          "say": "先に、この環境変数へキーを入れておきます。",
+          "part": {
+            "line": 0,
+            "text": "ANTHROPIC_API_KEY"
+          },
+          "figure": {
+            "tag": {
+              "env": "キーを用意"
+            }
+          }
+        },
+        {
+          "say": "作るときのかっこの中は、何も指定しない形です。",
+          "type": [2],
+          "part": {
+            "line": 2,
+            "text": "new Anthropic()"
+          },
+          "figure": {
+            "show": ["sdk"]
+          }
+        },
+        {
+          "say": "キーは、SDK が環境変数から読みます。",
+          "speech": "キーは、エスディーケーが環境変数から読みます。",
+          "figure": {
+            "show": ["read"],
+            "travel": {
+              "along": ["read"]
+            }
+          }
+        },
+        {
+          "say": "キーをコードに書かずに渡せることを、確かめてください。",
+          "focus": [2],
+          "figure": {
+            "mark": [
+              {
+                "on": "sdk",
+                "kind": "check"
+              }
+            ]
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "music-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "教室のアプリで選ぶ",
+      "board": "music",
+      "beats": [
+        {
+          "say": "楽器の教室で、案内文を作るアプリを用意しました。",
+          "show": ["school"]
+        },
+        {
+          "say": "このアプリも、API を使うためのキーが必要です。",
+          "speech": "このアプリも、エーピーアイを使うためのキーが必要です。",
+          "pulse": ["school"]
+        },
+        {
+          "say": "担当者は、キーをコードに書いて渡そうとしています。",
+          "show": ["direct"],
+          "tag": {
+            "direct": "一つ目"
+          }
+        },
+        {
+          "say": "もう一つの案は、環境変数から読ませる方法です。",
+          "show": ["env"],
+          "tag": {
+            "env": "二つ目"
+          }
+        },
+        {
+          "say": "キーをコードに残さず渡すには、どちらを選ぶでしょうか。",
+          "pulse": ["direct", "env"],
+          "mark": [
+            {
+              "on": "direct",
+              "kind": "question"
+            },
+            {
+              "on": "env",
+              "kind": "question"
+            }
+          ]
+        }
+      ],
+      "think": 8
+    },
+    {
+      "id": "music-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "環境変数から渡す",
+      "board": "music",
+      "beats": [
+        {
+          "say": "答えは、環境変数から読ませる二つ目の案です。",
+          "mark": [
+            {
+              "on": "direct",
+              "kind": "cross"
+            },
+            {
+              "on": "env",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["env"]
+        },
+        {
+          "say": "教室のアプリでも、キーをコードへ直接書くのは避けましょう。",
+          "pulse": ["direct"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "music-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "キーが通る場所をたどる",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "二つ目の案では、キーを環境変数に用意します。",
+          "show": ["env"],
+          "tag": {
+            "env": "キーの入れ先"
+          }
+        },
+        {
+          "say": "そこからキーを読むのが、SDK です。",
+          "speech": "そこからキーを読むのが、エスディーケーです。",
+          "show": ["sdk", "read"],
+          "travel": {
+            "along": ["read"]
+          }
+        },
+        {
+          "say": "自動で読むので、作るコードへキーを書く必要はありません。",
+          "pulse": ["sdk"],
+          "mark": [
+            {
+              "on": "sdk",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "一つ目の案では、コミットした履歴にもキーが残ります。",
+          "show": ["history"],
+          "mark": [
+            {
+              "on": "history",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "使うアプリが変わっても、秘密の文字列の扱いは同じです。",
+          "pulse": ["env", "sdk"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-safely",
+      "kind": "board",
+      "role": "usage",
+      "title": "試すときも共有するときも",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "手元で API を試すときから、環境変数でキーを渡します。",
+          "speech": "手元でエーピーアイを試すときから、環境変数でキーを渡します。",
+          "show": ["code"]
+        },
+        {
+          "say": "コードを共有する前も、直書きしたキーがないか確認しましょう。",
+          "show": ["history"]
+        },
+        {
+          "say": "すでに漏れたキーは、すぐに無効にして作り直します。",
+          "show": ["key"],
+          "mark": [
+            {
+              "on": "key",
+              "kind": "cross"
+            }
+          ],
+          "tag": {
+            "key": "無効にする"
+          }
+        },
+        {
+          "say": "これから書くコードには、キーを直接残さないでください。",
+          "pulse": ["code"],
+          "tag": {
+            "code": "環境変数から"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "4a29e42d2e14a68e3d600f642375624d6498e35205c3c1f6c3a7cb75877a7302"
+  }
+}

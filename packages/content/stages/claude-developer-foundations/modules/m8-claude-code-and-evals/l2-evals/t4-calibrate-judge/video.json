@@ -1,0 +1,815 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "同じ回答に付けた人と採点器の判定を照合し、誤合格の回答を特定できる。",
+    "stuck": "合格件数が一致すれば採点器は正しいと考え、通した回答の内訳や食い違いの向きを見ない。",
+    "points": ["人の判定と採点器の判定を同じ回答で照合し、誤って通した回答を特定します。"],
+    "leaveOut": [
+      "成功の基準全般の設計",
+      "採点方法の比較やツールの誤用への対処",
+      "採用を見送る条件のコード",
+      "統計指標や採用のしきい値",
+      "採点器を呼び出す実装"
+    ]
+  },
+  "art": {
+    "return-parcel": {
+      "prompt": "An open light grey cardboard parcel with a folded blue shirt and a blank white return slip beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-reviewer": {
+      "prompt": "A staff member in a plain blue shirt holding a blank white answer sheet and a violet pencil, carefully comparing two sheets, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot-judge": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white answer sheet and a blue rubber stamp. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "judged-records": {
+      "prompt": "A fan of four white answer sheets held together by a blue binder clip, each with a small violet tab and an attached blank white assessment slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "hours-citation": {
+      "prompt": "An upright white shop information leaflet beside a small blue analog clock with plain hands and no markings, representing a citation about opening hours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "held-answer": {
+      "prompt": "A staff member in a plain blue shirt holding a telephone receiver and a white paper slip, waiting to confirm missing details, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cafeteria-menu": {
+      "prompt": "A white cafeteria menu leaflet with a small pictorial bowl of brown curry and white rice, beside a blue spoon. The paper is otherwise blank. Food uses natural appetizing colours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "meal-answer": {
+      "prompt": "A white plate of golden grilled fish with green vegetables and a separate blank white answer card clipped with a blue paper clip. Food uses natural appetizing colours. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "fresh-records": {
+      "prompt": "A closed blue document folder with a white paper tab and a small sealed white envelope tucked inside, representing examples set aside for later checking. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "returns",
+          "label": "返品の回答",
+          "art": "return-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "human",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器の判定",
+          "art": "robot-judge",
+          "at": [5, 1]
+        },
+        {
+          "id": "pairs",
+          "label": "回答ごとに照合",
+          "art": "judged-records",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "counts": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "returns",
+          "label": "四件の回答",
+          "art": "return-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "human",
+          "label": "担当者",
+          "art": "human-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "robot-judge",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "calibration": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "human",
+          "label": "担当者",
+          "art": "human-reviewer",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "校正用データ",
+          "art": "judged-records",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "robot-judge",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "prepare",
+          "from": "human",
+          "to": "data",
+          "label": "判定を付ける"
+        },
+        {
+          "id": "compare",
+          "from": "data",
+          "to": "judge",
+          "label": "同じ回答"
+        }
+      ]
+    },
+    "directions": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "human-no",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [1, 1]
+        },
+        {
+          "id": "bad",
+          "label": "誤った回答",
+          "art": "hours-citation",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge-yes",
+          "label": "採点器の判定",
+          "art": "robot-judge",
+          "at": [5, 1]
+        },
+        {
+          "id": "human-yes",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [5, 2]
+        },
+        {
+          "id": "good",
+          "label": "妥当な回答",
+          "art": "held-answer",
+          "at": [3, 2]
+        },
+        {
+          "id": "judge-no",
+          "label": "採点器の判定",
+          "art": "robot-judge",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "return-b": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "営業時間",
+          "art": "hours-citation",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答B",
+          "art": "return-parcel",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器",
+          "art": "robot-judge",
+          "at": [5, 1]
+        },
+        {
+          "id": "human",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [5, 2]
+        },
+        {
+          "id": "error",
+          "label": "誤合格",
+          "art": "judged-records",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "cite",
+          "from": "source",
+          "to": "reply",
+          "label": "引用"
+        },
+        {
+          "id": "grade",
+          "from": "reply",
+          "to": "judge",
+          "label": "採点"
+        },
+        {
+          "id": "review",
+          "from": "human",
+          "to": "error",
+          "label": "照合"
+        }
+      ]
+    },
+    "return-c": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "回答C",
+          "art": "held-answer",
+          "at": [1, 1]
+        },
+        {
+          "id": "human",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器の判定",
+          "art": "robot-judge",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "lunch-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "one-human",
+          "label": "回答一の人",
+          "art": "cafeteria-menu",
+          "at": [1, 1]
+        },
+        {
+          "id": "two-human",
+          "label": "回答二の人",
+          "art": "meal-answer",
+          "at": [3, 1]
+        },
+        {
+          "id": "three-human",
+          "label": "回答三の人",
+          "art": "held-answer",
+          "at": [5, 1]
+        },
+        {
+          "id": "three-judge",
+          "label": "回答三の採点器",
+          "art": "robot-judge",
+          "at": [5, 2]
+        },
+        {
+          "id": "two-judge",
+          "label": "回答二の採点器",
+          "art": "robot-judge",
+          "at": [3, 2]
+        },
+        {
+          "id": "one-judge",
+          "label": "回答一の採点器",
+          "art": "robot-judge",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "lunch-reason": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "献立表",
+          "art": "cafeteria-menu",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答二",
+          "art": "meal-answer",
+          "at": [3, 1]
+        },
+        {
+          "id": "human",
+          "label": "人の判定",
+          "art": "human-reviewer",
+          "at": [5, 1]
+        },
+        {
+          "id": "judge",
+          "label": "採点器の判定",
+          "art": "robot-judge",
+          "at": [5, 2]
+        },
+        {
+          "id": "error",
+          "label": "誤合格",
+          "art": "judged-records",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "cite",
+          "from": "source",
+          "to": "reply",
+          "label": "引用"
+        },
+        {
+          "id": "read",
+          "from": "reply",
+          "to": "human",
+          "label": "照合"
+        },
+        {
+          "id": "find",
+          "from": "judge",
+          "to": "error",
+          "label": "見逃し"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "criteria",
+          "label": "採点の基準",
+          "art": "judged-records",
+          "at": [1, 1]
+        },
+        {
+          "id": "hold",
+          "label": "確認を案内",
+          "art": "held-answer",
+          "at": [3, 1]
+        },
+        {
+          "id": "fresh",
+          "label": "別の規定と回答",
+          "art": "fresh-records",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "件数だけでは分からない",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "返品の案内で、誤った回答を通していないか調べます。",
+          "show": ["returns"]
+        },
+        {
+          "say": "比べる基準は、人が付けた判定です。",
+          "show": ["human"]
+        },
+        {
+          "say": "採点器も同じ件数を通しました。",
+          "show": ["judge"],
+          "tag": {
+            "human": "同じ合格数",
+            "judge": "同じ合格数"
+          }
+        },
+        {
+          "say": "回答ごとに判定を照合し、誤って通した回答を見つけます。",
+          "show": ["pairs"],
+          "pulse": ["pairs"]
+        }
+      ]
+    },
+    {
+      "id": "shop-records",
+      "kind": "board",
+      "role": "example",
+      "title": "通した二件は同じか",
+      "board": "counts",
+      "beats": [
+        {
+          "say": "店で、返品についての回答を四件確認する場面です。",
+          "show": ["returns"]
+        },
+        {
+          "say": "担当者は、根拠があるか確かめて二件を通しました。",
+          "show": ["human"],
+          "tag": {
+            "human": "二件合格"
+          }
+        },
+        {
+          "say": "採点器も二件を通しましたが、内訳はまだ分かりません。",
+          "show": ["judge"],
+          "tag": {
+            "judge": "二件合格"
+          }
+        },
+        {
+          "say": "通した回答を、一件ずつ並べてみましょう。",
+          "pulse": ["human", "judge"],
+          "mark": [
+            {
+              "on": "returns",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "calibration-data",
+      "kind": "board",
+      "role": "syntax",
+      "title": "同じ回答を採点する",
+      "board": "calibration",
+      "beats": [
+        {
+          "say": "人が判定を付けた例を、校正用データと呼びます。",
+          "term": {
+            "text": "校正用データ",
+            "ruby": "こうせいようデータ",
+            "note": "人が判定を付けた回答の例"
+          }
+        },
+        {
+          "say": "この例では、担当者が判断をそろえた回答の集まりです。",
+          "show": ["human", "data", "prepare"]
+        },
+        {
+          "say": "同じ回答を採点器にも渡して、判定を比べます。",
+          "show": ["judge", "compare"],
+          "travel": {
+            "along": ["compare"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "記録の並び順が違っても、別の回答と組にはしません。",
+          "pulse": ["data"],
+          "tag": {
+            "data": "同じ回答"
+          }
+        },
+        {
+          "say": "回答の ID を手がかりに、同じ回答の判定を並べましょう。",
+          "speech": "回答のアイディーを手がかりに、同じ回答の判定を並べましょう。",
+          "pulse": ["human", "judge"],
+          "tag": {
+            "data": "IDで照合"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "error-directions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "間違いの向きを見る",
+      "board": "directions",
+      "beats": [
+        {
+          "say": "人が落とした回答を採点器が通すことを、誤合格と呼びます。",
+          "term": {
+            "text": "誤合格",
+            "ruby": "ごごうかく",
+            "note": "落とすべき回答を通す"
+          }
+        },
+        {
+          "say": "この上の段は、人が不合格で採点器が合格の組です。",
+          "show": ["human-no", "bad", "judge-yes"],
+          "tag": {
+            "human-no": "不合格",
+            "judge-yes": "合格"
+          },
+          "pulse": ["human-no", "judge-yes"]
+        },
+        {
+          "say": "人が通した回答を採点器が落とすことを、誤不合格と呼びます。",
+          "term": {
+            "text": "誤不合格",
+            "ruby": "ごふごうかく",
+            "note": "通すべき回答を落とす"
+          }
+        },
+        {
+          "say": "下の段は、人が合格で採点器が不合格の組です。",
+          "show": ["human-yes", "good", "judge-no"],
+          "tag": {
+            "human-yes": "合格",
+            "judge-no": "不合格"
+          },
+          "pulse": ["human-yes", "judge-no"]
+        },
+        {
+          "say": "誤合格を残すと、誤った回答が利用者に届きます。",
+          "pulse": ["bad"],
+          "tag": {
+            "bad": "利用者へ"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "unsupported-deadline",
+      "kind": "board",
+      "role": "apply",
+      "title": "引用があっても誤合格",
+      "board": "return-b",
+      "beats": [
+        {
+          "say": "回答Bは、営業時間の記載を引用しています。",
+          "speech": "回答ビーは、営業時間の記載を引用しています。",
+          "show": ["source", "reply", "cite"],
+          "travel": {
+            "along": ["cite"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "ところが、答えた返品期限は十四日でした。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "返品十四日"
+          }
+        },
+        {
+          "say": "営業時間の記載は、返品期限の根拠にはなりません。",
+          "pulse": ["source"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "引用があるかだけを見た採点器は、この回答を通します。",
+          "show": ["judge", "grade"],
+          "tag": {
+            "judge": "合格"
+          }
+        },
+        {
+          "say": "人の不合格と照合すると、これが誤合格です。",
+          "show": ["human", "error", "review"],
+          "tag": {
+            "human": "不合格"
+          },
+          "pulse": ["error"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "held-response",
+      "kind": "board",
+      "role": "apply",
+      "title": "確認を案内した回答",
+      "board": "return-c",
+      "beats": [
+        {
+          "say": "回答Cは、対象商品の記載がないため確認を案内しました。",
+          "speech": "回答シーは、対象商品の記載がないため確認を案内しました。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "担当者に確認"
+          }
+        },
+        {
+          "say": "人は、このような保留の回答を合格にしています。",
+          "show": ["human"],
+          "tag": {
+            "human": "合格"
+          }
+        },
+        {
+          "say": "採点器は不合格としたので、これは誤不合格です。",
+          "show": ["judge"],
+          "tag": {
+            "judge": "不合格"
+          },
+          "pulse": ["human", "judge"]
+        },
+        {
+          "say": "合格の件数が同じでも、判定の食い違いは残ります。",
+          "pulse": ["reply"],
+          "mark": [
+            {
+              "on": "judge",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lunch-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "献立の回答を照合する",
+      "board": "lunch-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "社員食堂の献立を案内する、三つの回答を比べます。",
+          "show": ["one-human", "two-human", "three-human", "one-judge", "two-judge", "three-judge"]
+        },
+        {
+          "say": "回答一は、人も採点器も合格としました。",
+          "tag": {
+            "one-human": "合格",
+            "one-judge": "合格"
+          },
+          "pulse": ["one-human", "one-judge"]
+        },
+        {
+          "say": "回答二は、人が不合格としたのに採点器は合格です。",
+          "tag": {
+            "two-human": "不合格",
+            "two-judge": "合格"
+          },
+          "pulse": ["two-human", "two-judge"]
+        },
+        {
+          "say": "回答三は、人が合格としたのに採点器は落としています。",
+          "tag": {
+            "three-human": "合格",
+            "three-judge": "不合格"
+          },
+          "pulse": ["three-human", "three-judge"]
+        },
+        {
+          "say": "誤った回答を通したのは、どの回答でしょうか。",
+          "pulse": [
+            "one-human",
+            "two-human",
+            "three-human",
+            "one-judge",
+            "two-judge",
+            "three-judge"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lunch-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "回答二が誤合格",
+      "board": "lunch-quiz",
+      "beats": [
+        {
+          "say": "誤合格は、人が落としたのに採点器が通した回答二です。",
+          "pulse": ["two-human", "two-judge"],
+          "mark": [
+            {
+              "on": "two-judge",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "回答三は反対の向きなので、誤不合格と区別します。",
+          "pulse": ["three-human", "three-judge"],
+          "mark": [
+            {
+              "on": "three-judge",
+              "kind": "question"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "lunch-evidence",
+      "kind": "board",
+      "role": "explain",
+      "title": "献立と答えの食い違い",
+      "board": "lunch-reason",
+      "beats": [
+        {
+          "say": "この問題では、献立表の料理名はカレーでした。",
+          "show": ["source"],
+          "tag": {
+            "source": "カレー"
+          }
+        },
+        {
+          "say": "回答二は、営業時間を引用して焼き魚と答えています。",
+          "show": ["reply", "cite"],
+          "tag": {
+            "reply": "焼き魚"
+          },
+          "travel": {
+            "along": ["cite"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "営業時間は料理名の根拠にならないため、人の判定は不合格です。",
+          "show": ["human", "read"],
+          "tag": {
+            "human": "不合格"
+          },
+          "pulse": ["source", "reply"]
+        },
+        {
+          "say": "採点器は、その誤った回答を合格として通しました。",
+          "show": ["judge"],
+          "tag": {
+            "judge": "合格"
+          }
+        },
+        {
+          "say": "同じ回答でこの二つの判定を照合すると、見逃しが分かります。",
+          "show": ["error", "find"],
+          "pulse": ["human", "judge"],
+          "mark": [
+            {
+              "on": "error",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "use-before-release",
+      "kind": "board",
+      "role": "usage",
+      "title": "基準を直して確かめる",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "返品などの案内を任せる前に、採点器の見逃しを調べます。",
+          "show": ["criteria"]
+        },
+        {
+          "say": "根拠と回答が対応しているかが、採点の基準です。",
+          "pulse": ["criteria"],
+          "tag": {
+            "criteria": "根拠と回答"
+          }
+        },
+        {
+          "say": "資料に記載がなければ、保留を認めると書きましょう。",
+          "show": ["hold"],
+          "tag": {
+            "hold": "保留を認める"
+          }
+        },
+        {
+          "say": "調整に使わず取っておいた、別の規定と回答でも採点します。",
+          "show": ["fresh"]
+        },
+        {
+          "say": "新しい例でも人の判定と照合し、残った見逃しを確かめましょう。",
+          "pulse": ["fresh"],
+          "tag": {
+            "fresh": "再び照合"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b289c9ec6d6dd3e75660854f25baa38d8969c55c1a5e00408640afca00b73db2"
+  }
+}

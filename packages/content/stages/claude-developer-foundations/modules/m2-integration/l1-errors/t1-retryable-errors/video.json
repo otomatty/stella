@@ -1,0 +1,792 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "エラーの理由を読み、時間を置いて送り直す場合と、先に誤りを直す場合を選べる。",
+    "stuck": "すべてのエラーを同じ失敗と捉え、内容を見ずに同じリクエストを送り直してしまう。",
+    "points": ["429 と 529 は、時間を置いて送り直すと通ることがあるエラーです。"],
+    "leaveOut": [
+      "送り直す間隔の計算と回数の上限の実装",
+      "SDK の設定と既定の送り直し回数",
+      "500 の内部エラーの詳細",
+      "待つ秒数を示すヘッダーの読み方",
+      "request ID の記録と制限の残りの確認",
+      "413 と入力の大きさの制限",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "shop-agent": {
+      "prompt": "A shop reception worker in a plain blue shirt holding up one open palm to ask a visitor to wait, with two blank white application slips tucked under the other arm. Simple facial features. No counter. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-sheet": {
+      "prompt": "A single white application sheet held by one hand, with a violet pencil pointing at an empty area of the sheet. The paper has no writing or symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-clock": {
+      "prompt": "A blue mechanical alarm clock with a plain white dial and two simple hands, without numerals or tick marks, beside a folded white request slip. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "organization-tray": {
+      "prompt": "A small violet document tray filled to its rim with neatly stacked white request slips, representing one organization's full allowance. All papers are white or light grey. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding several white request slips in both arms. No surrounding interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "access-key": {
+      "prompt": "A single large blue key beside a small violet padlock with a closed shackle, clearly separated so both objects are visible. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "spending-purse": {
+      "prompt": "An open violet coin purse with an empty interior beside a small stack of blank white billing slips. No currency symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "watering-plants": {
+      "prompt": "A green leafy houseplant in a light grey flowerpot beside a blue watering can and a blank white duty roster held with a violet clip. Natural green leaves and natural dark soil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "shop",
+          "label": "混雑した受付",
+          "art": "shop-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "用紙の不備",
+          "art": "request-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "api",
+          "label": "エラーの理由",
+          "art": "service-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って再送",
+          "art": "waiting-clock",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "shop": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "busy",
+          "label": "受付の混雑",
+          "art": "shop-agent",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "時間を置く",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "form",
+          "label": "記入漏れ",
+          "art": "request-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "later",
+          "from": "busy",
+          "to": "wait",
+          "label": "空くまで"
+        }
+      ]
+    },
+    "status": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "リクエスト",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "api",
+          "label": "API",
+          "art": "service-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "response",
+          "label": "応答の番号",
+          "art": "request-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "api",
+          "label": "送る"
+        },
+        {
+          "id": "reply",
+          "from": "api",
+          "to": "response",
+          "label": "応答"
+        }
+      ]
+    },
+    "types": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rate",
+          "label": "組織の制限",
+          "art": "organization-tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "overload",
+          "label": "全体の混雑",
+          "art": "service-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "retry": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "rate",
+          "label": "429",
+          "art": "organization-tray",
+          "at": [1, 1]
+        },
+        {
+          "id": "overload",
+          "label": "529",
+          "art": "service-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "時間を置く",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "resend",
+          "label": "送り直す",
+          "art": "request-sheet",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "wait-send",
+          "from": "wait",
+          "to": "resend",
+          "label": "待ってから"
+        }
+      ]
+    },
+    "correction": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bad-request",
+          "label": "400",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "bad-key",
+          "label": "401",
+          "art": "access-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cap": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cap",
+          "label": "月の利用額",
+          "art": "spending-purse",
+          "at": [1, 1]
+        },
+        {
+          "id": "retry",
+          "label": "同じ依頼",
+          "art": "request-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "上限の回復",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "again",
+          "from": "cap",
+          "to": "retry",
+          "label": "送り直す"
+        },
+        {
+          "id": "reset",
+          "from": "retry",
+          "to": "wait",
+          "label": "必要な条件"
+        }
+      ]
+    },
+    "plants": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "task",
+          "label": "水やり当番",
+          "art": "watering-plants",
+          "at": [1, 1]
+        },
+        {
+          "id": "busy",
+          "label": "全体の混雑",
+          "art": "service-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "bad",
+          "label": "形の誤り",
+          "art": "request-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "plant-reason": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "busy",
+          "label": "529",
+          "art": "service-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って再送",
+          "art": "waiting-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "bad",
+          "label": "400",
+          "art": "request-sheet",
+          "at": [3, 2]
+        },
+        {
+          "id": "fix",
+          "label": "形を直す",
+          "art": "request-sheet",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "busy-wait",
+          "from": "busy",
+          "to": "wait",
+          "label": "時間を置く"
+        },
+        {
+          "id": "bad-fix",
+          "from": "bad",
+          "to": "fix",
+          "label": "修正する"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "送った依頼",
+          "art": "request-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "response",
+          "label": "エラーの理由",
+          "art": "service-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "wait",
+          "label": "待って再送",
+          "art": "waiting-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "fix",
+          "label": "誤りの修正",
+          "art": "request-sheet",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "request",
+          "to": "response",
+          "label": "確かめる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "断られた理由で選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "お店で、受け付けを断られる場面を考えます。",
+          "show": ["shop"]
+        },
+        {
+          "say": "断られた理由は、混雑や用紙の記入漏れです。",
+          "show": ["form"]
+        },
+        {
+          "say": "エラーも、送り直す前に理由を確かめましょう。",
+          "show": ["api"]
+        },
+        {
+          "say": "429 と 529 は、待って送り直すと通ることがあります。",
+          "speech": "よんにーきゅうとごーにーきゅうは、待って送り直すと通ることがあります。",
+          "show": ["wait"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "shop-example",
+      "kind": "board",
+      "role": "example",
+      "title": "混雑と記入漏れ",
+      "board": "shop",
+      "beats": [
+        {
+          "say": "受付が混んでいて、今は用紙を渡せないとします。",
+          "show": ["busy"]
+        },
+        {
+          "say": "少し待てば、受け付けてもらえるかもしれません。",
+          "show": ["wait", "later"],
+          "travel": {
+            "along": ["later"],
+            "icon": "clock"
+          }
+        },
+        {
+          "say": "一方、用紙の記入漏れで断られた場合です。",
+          "show": ["form"]
+        },
+        {
+          "say": "待っても空欄は埋まらないので、書き直しましょう。",
+          "pulse": ["form"],
+          "tag": {
+            "form": "先に修正"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-status",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答の番号を見る",
+      "board": "status",
+      "beats": [
+        {
+          "say": "API にリクエストを送った場面に戻ります。",
+          "speech": "エーピーアイにリクエストを送った場面に戻ります。",
+          "show": ["request", "api", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "応答の結果を表す番号が、HTTP ステータスです。",
+          "speech": "応答の結果を表す番号が、エイチティーティーピーステータスです。",
+          "term": {
+            "text": "HTTPステータス",
+            "note": "応答の結果を表す番号"
+          },
+          "pause": 1
+        },
+        {
+          "say": "返ってきた応答の、三けたの番号を読みます。",
+          "show": ["response", "reply"],
+          "travel": {
+            "along": ["reply"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この番号から、どんな種類のエラーか確かめましょう。",
+          "pulse": ["response"],
+          "tag": {
+            "response": "種類を確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "two-errors",
+      "kind": "board",
+      "role": "syntax",
+      "title": "制限と混雑を分ける",
+      "board": "types",
+      "beats": [
+        {
+          "say": "429 は、組織の回数や量の制限に届いたエラーです。",
+          "speech": "よんにーきゅうは、組織の回数や量の制限に届いたエラーです。",
+          "term": {
+            "text": "429",
+            "note": "組織の回数や量の制限"
+          },
+          "pause": 1
+        },
+        {
+          "say": "その組織が使える枠がいっぱいになっています。",
+          "show": ["rate"],
+          "tag": {
+            "rate": "429"
+          }
+        },
+        {
+          "say": "529 は、API 全体が一時的に混み合ったエラーです。",
+          "speech": "ごーにーきゅうは、エーピーアイ全体が一時的に混み合ったエラーです。",
+          "term": {
+            "text": "529",
+            "note": "API全体の一時的な混雑"
+          },
+          "pause": 1
+        },
+        {
+          "say": "こちらは、一つの組織ではなく全体の混雑を表します。",
+          "show": ["overload"],
+          "tag": {
+            "overload": "529"
+          }
+        },
+        {
+          "say": "どちらも、時間を置くと通ることがあるエラーです。",
+          "pulse": ["rate", "overload"]
+        }
+      ]
+    },
+    {
+      "id": "retry-choice",
+      "kind": "board",
+      "role": "apply",
+      "title": "待ってから送り直す",
+      "board": "retry",
+      "beats": [
+        {
+          "say": "組織の回数や量の制限による 429 が返りました。",
+          "speech": "組織の回数や量の制限によるよんにーきゅうが返りました。",
+          "show": ["rate"]
+        },
+        {
+          "say": "全体が混んでいる 529 も、送り直す候補です。",
+          "speech": "全体が混んでいるごーにーきゅうも、送り直す候補です。",
+          "show": ["overload"]
+        },
+        {
+          "say": "月の利用額の上限なら、戻るまで再送しても通りません。",
+          "pulse": ["rate"],
+          "tag": {
+            "rate": "利用額は別"
+          }
+        },
+        {
+          "say": "回数や量の制限と混雑なら、待ってから送り直します。",
+          "show": ["wait", "resend", "wait-send"],
+          "travel": {
+            "along": ["wait-send"],
+            "icon": "send"
+          },
+          "pause": 1
+        },
+        {
+          "say": "送り直せば必ず通る、という意味ではありません。",
+          "pulse": ["resend"],
+          "mark": [
+            {
+              "on": "resend",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "correct-first",
+      "kind": "board",
+      "role": "apply",
+      "title": "送り直す前に直す",
+      "board": "correction",
+      "beats": [
+        {
+          "say": "400 は、リクエストの形や中身の誤りです。",
+          "speech": "よんゼロゼロは、リクエストの形や中身の誤りです。",
+          "show": ["bad-request"]
+        },
+        {
+          "say": "受付用紙の記入漏れのように、内容を直してから送ります。",
+          "pulse": ["bad-request"],
+          "tag": {
+            "bad-request": "内容を修正"
+          }
+        },
+        {
+          "say": "401 が示すのは、API キーの誤りです。",
+          "speech": "よんゼロいちが示すのは、エーピーアイキーの誤りです。",
+          "show": ["bad-key"]
+        },
+        {
+          "say": "待つだけでは直らないので、キーを直してから送りましょう。",
+          "pulse": ["bad-key"],
+          "tag": {
+            "bad-key": "キーを修正"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spending-cap",
+      "kind": "board",
+      "role": "apply",
+      "title": "429でも通らない場合",
+      "board": "cap",
+      "beats": [
+        {
+          "say": "429 には、月の利用額の上限に届いた場合もあります。",
+          "speech": "よんにーきゅうには、月の利用額の上限に届いた場合もあります。",
+          "show": ["cap"],
+          "tag": {
+            "cap": "429"
+          }
+        },
+        {
+          "say": "この場合、同じ依頼を送り直しても通りません。",
+          "show": ["retry", "again"],
+          "mark": [
+            {
+              "on": "retry",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "通るには、利用額の上限が戻る必要があります。",
+          "show": ["wait", "reset"],
+          "pulse": ["wait"]
+        },
+        {
+          "say": "429 は、どの上限に届いたかも確認しましょう。",
+          "speech": "よんにーきゅうは、どの上限に届いたかも確認しましょう。",
+          "pulse": ["cap"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "watering-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "待って再送するのは",
+      "board": "plants",
+      "think": 8,
+      "beats": [
+        {
+          "say": "植物の水やり当番を作るアプリで、依頼に失敗しました。",
+          "show": ["task"]
+        },
+        {
+          "say": "一つ目の応答は、全体の混雑を示す 529 です。",
+          "speech": "一つ目の応答は、全体の混雑を示すごーにーきゅうです。",
+          "show": ["busy"],
+          "tag": {
+            "busy": "529"
+          }
+        },
+        {
+          "say": "二つ目には、形の誤りを示す 400 が返っています。",
+          "speech": "二つ目には、形の誤りを示すよんゼロゼロが返っています。",
+          "show": ["bad"],
+          "tag": {
+            "bad": "400"
+          }
+        },
+        {
+          "say": "どちらも、送ったのは当番表を作るための依頼でした。",
+          "pulse": ["task"]
+        },
+        {
+          "say": "時間を置いて送り直す候補は、どちらでしょうか。",
+          "pulse": ["busy", "bad"],
+          "mark": [
+            {
+              "on": "busy",
+              "kind": "question"
+            },
+            {
+              "on": "bad",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "watering-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "529を選ぶ",
+      "board": "plants",
+      "beats": [
+        {
+          "say": "答えは、全体の混雑を示す 529 です。",
+          "speech": "答えは、全体の混雑を示すごーにーきゅうです。",
+          "mark": [
+            {
+              "on": "busy",
+              "kind": "check"
+            },
+            {
+              "on": "bad",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["busy"],
+          "pause": 1
+        },
+        {
+          "say": "形の誤りを示す 400 は、直してから送ります。",
+          "speech": "形の誤りを示すよんゼロゼロは、直してから送ります。",
+          "pulse": ["bad"],
+          "tag": {
+            "bad": "先に修正"
+          }
+        }
+      ]
+    },
+    {
+      "id": "watering-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "失敗した理由をたどる",
+      "board": "plant-reason",
+      "beats": [
+        {
+          "say": "一つ目の失敗は、全体が一時的に混んでいたためです。",
+          "show": ["busy"]
+        },
+        {
+          "say": "時間を置いて、同じ依頼を送り直す意味があります。",
+          "show": ["wait", "busy-wait"],
+          "travel": {
+            "along": ["busy-wait"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "二つ目は、送ったリクエストの形に誤りがありました。",
+          "show": ["bad"]
+        },
+        {
+          "say": "同じ形のまま待っていても、誤りは直りません。",
+          "pulse": ["bad"],
+          "mark": [
+            {
+              "on": "bad",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "当番表を作る依頼の形を直してから、送りましょう。",
+          "show": ["fix", "bad-fix"],
+          "travel": {
+            "along": ["bad-fix"],
+            "icon": "write"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-in-app",
+      "kind": "board",
+      "role": "usage",
+      "title": "エラーの理由で対応を選ぶ",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "アプリで依頼に失敗したら、応答の番号を読みます。",
+          "show": ["request", "response", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "組織の回数や量の制限と、一時的な混雑は再送の候補です。",
+          "show": ["wait"],
+          "tag": {
+            "wait": "429・529"
+          }
+        },
+        {
+          "say": "形や中身、キーの誤りなら、直してから送りましょう。",
+          "show": ["fix"],
+          "tag": {
+            "fix": "400・401"
+          }
+        },
+        {
+          "say": "送り直す前に、エラーの理由から対応を選びます。",
+          "pulse": ["response"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "f308ea58706c6671f9bb190f4300895d53b12d982b3ee9aa79526407745ace65"
+  }
+}

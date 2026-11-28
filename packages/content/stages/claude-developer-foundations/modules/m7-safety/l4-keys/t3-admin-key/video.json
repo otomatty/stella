@@ -1,0 +1,710 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "要約の呼び出しと組織のキー管理で、使うキーを選び分けられる。",
+    "stuck": "管理用のキーなら要約にも使えて、失くしたキーの値も取得できると思ってしまう。",
+    "points": ["Admin キーは組織の管理のためのキーで、Claude の呼び出しには使いません。"],
+    "leaveOut": [
+      "キーを画面に埋め込まないための実装",
+      "環境ごとのワークスペースとキーの種類",
+      "キーの期限と定期的な入れ替え",
+      "Admin キーの接頭辞と発行画面の操作",
+      "使用量と費用のレポート取得"
+    ]
+  },
+  "art": {
+    "inspection-note": {
+      "prompt": "A white inspection notebook with a blue clip and a small violet wrench beside it, representing the inspection notes being summarized. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-notes": {
+      "prompt": "A small pile of white school trip reflection sheets held together with a violet binder clip, beside a blue school backpack. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-roster": {
+      "prompt": "A white school duty roster clipboard with several simple person silhouettes and a violet pencil beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "service-key": {
+      "prompt": "One blue physical key with a round bow, representing the ordinary API key used for the summarization service. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "admin-key": {
+      "prompt": "One violet physical key with a square bow, representing the separate key for organization management. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "summary-server": {
+      "prompt": "A compact blue server tower with a white inspection notebook tucked beside it. The tower has plain geometric vents and no display or interface. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "key-register": {
+      "prompt": "A white inventory clipboard beside a small ring holding blue keys, representing the organization's API key list. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "aquarium-ticket": {
+      "prompt": "A pair of white admission tickets with scalloped edges beside a blue dolphin figurine, representing aquarium admission tickets and their visitor guide. No aquarium tank or scenery. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "点検メモ",
+          "art": "inspection-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "list",
+          "label": "キーの一覧",
+          "art": "key-register",
+          "at": [3, 1]
+        },
+        {
+          "id": "admin",
+          "label": "管理用キー",
+          "art": "admin-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "school": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "notes",
+          "label": "感想をまとめる",
+          "art": "school-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "roster",
+          "label": "係の名簿管理",
+          "art": "school-roster",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "keys": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "normal",
+          "label": "通常のキー",
+          "art": "service-key",
+          "at": [1, 1]
+        },
+        {
+          "id": "admin",
+          "label": "Adminキー",
+          "art": "admin-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "list",
+          "label": "組織の管理",
+          "art": "key-register",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "manage",
+          "from": "admin",
+          "to": "list",
+          "label": "管理用"
+        }
+      ]
+    },
+    "management": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "admin",
+          "label": "Adminキー",
+          "art": "admin-key",
+          "at": [1, 1]
+        },
+        {
+          "id": "api",
+          "label": "管理窓口",
+          "art": "key-register",
+          "at": [3, 1]
+        },
+        {
+          "id": "list",
+          "label": "キーの一覧",
+          "art": "key-register",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "admin",
+          "to": "api",
+          "label": "使う"
+        },
+        {
+          "id": "get",
+          "from": "api",
+          "to": "list",
+          "label": "調べる"
+        }
+      ]
+    },
+    "summarize": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "memo",
+          "label": "点検メモ",
+          "art": "inspection-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "要約サーバー",
+          "art": "summary-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "normal",
+          "label": "通常のキー",
+          "art": "service-key",
+          "at": [3, 2]
+        },
+        {
+          "id": "admin",
+          "label": "Adminキー",
+          "art": "admin-key",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "memo",
+          "to": "server",
+          "label": "渡す"
+        },
+        {
+          "id": "request",
+          "from": "server",
+          "to": "claude",
+          "label": "要約を頼む"
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "api",
+          "label": "管理窓口",
+          "art": "key-register",
+          "at": [1, 1]
+        },
+        {
+          "id": "new",
+          "label": "新規発行",
+          "art": "service-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "secret",
+          "label": "秘密の値",
+          "art": "service-key",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "aquarium": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "チケット案内",
+          "art": "aquarium-ticket",
+          "at": [1, 1]
+        },
+        {
+          "id": "normal",
+          "label": "通常のキー",
+          "art": "service-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        },
+        {
+          "id": "list",
+          "label": "キーの一覧",
+          "art": "key-register",
+          "at": [1, 2]
+        },
+        {
+          "id": "admin",
+          "label": "Adminキー",
+          "art": "admin-key",
+          "at": [3, 2]
+        },
+        {
+          "id": "audit",
+          "label": "運用の点検",
+          "art": "key-register",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "summarize",
+          "from": "guide",
+          "to": "normal",
+          "label": "要約"
+        },
+        {
+          "id": "call",
+          "from": "normal",
+          "to": "claude",
+          "label": "呼び出す"
+        },
+        {
+          "id": "audit-use",
+          "from": "audit",
+          "to": "admin",
+          "label": "使う"
+        },
+        {
+          "id": "inventory",
+          "from": "admin",
+          "to": "list",
+          "label": "取得"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "server",
+          "label": "要約の処理",
+          "art": "summary-server",
+          "at": [1, 1]
+        },
+        {
+          "id": "normal",
+          "label": "通常のキー",
+          "art": "service-key",
+          "at": [3, 1]
+        },
+        {
+          "id": "admin",
+          "label": "管理の処理",
+          "art": "admin-key",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "要約とキー管理を分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "点検メモを要約するサービスを考えます。",
+          "show": ["memo"]
+        },
+        {
+          "say": "毎月、使っているキーの一覧を調べる運用です。",
+          "show": ["list"]
+        },
+        {
+          "say": "管理用のキーもあるので、用件ごとに選びましょう。",
+          "show": ["admin"]
+        },
+        {
+          "say": "Admin キーは組織の管理用で、Claude の呼び出しには使いません。",
+          "speech": "アドミンキーは組織の管理用で、クロードの呼び出しには使いません。",
+          "pulse": ["admin", "list"]
+        }
+      ]
+    },
+    {
+      "id": "school-example",
+      "kind": "board",
+      "role": "example",
+      "title": "学校で二つの仕事を分ける",
+      "board": "school",
+      "beats": [
+        {
+          "say": "学校で、校外学習の感想をまとめる係を考えます。",
+          "show": ["notes"]
+        },
+        {
+          "say": "別の係が受け持つのは、係の名簿管理です。",
+          "show": ["roster"]
+        },
+        {
+          "say": "感想をまとめる係には、集めた感想を渡しましょう。",
+          "pulse": ["notes"]
+        },
+        {
+          "say": "名簿を変える仕事は、名簿を管理する係に任せます。",
+          "pulse": ["roster"]
+        }
+      ]
+    },
+    {
+      "id": "two-keys",
+      "kind": "board",
+      "role": "syntax",
+      "title": "管理用キーの役割",
+      "board": "keys",
+      "beats": [
+        {
+          "say": "Claude を呼ぶときは、通常の API キーを使います。",
+          "speech": "クロードを呼ぶときは、通常のエーピーアイキーを使います。",
+          "show": ["normal"]
+        },
+        {
+          "say": "Admin キーは、組織を管理するためのキーです。",
+          "speech": "アドミンキーは、組織を管理するためのキーです。",
+          "term": {
+            "text": "Admin キー",
+            "note": "組織を管理するためのキー"
+          }
+        },
+        {
+          "say": "このキーは、組織の管理者だけが発行できます。",
+          "show": ["admin"],
+          "tag": {
+            "admin": "管理者が発行"
+          }
+        },
+        {
+          "say": "用途は、この図の組織の管理です。",
+          "show": ["list", "manage"],
+          "travel": {
+            "along": ["manage"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "admin-api",
+      "kind": "board",
+      "role": "syntax",
+      "title": "一覧と変更を扱う",
+      "board": "management",
+      "beats": [
+        {
+          "say": "Admin API は、組織を管理する API です。",
+          "speech": "アドミンエーピーアイは、組織を管理するエーピーアイです。",
+          "term": {
+            "text": "Admin API",
+            "note": "組織として管理するAPI"
+          }
+        },
+        {
+          "say": "管理用の処理では、Admin キーを使います。",
+          "speech": "管理用の処理では、アドミンキーを使います。",
+          "show": ["admin", "api", "use"],
+          "travel": {
+            "along": ["use"]
+          }
+        },
+        {
+          "say": "組織のキー一覧を調べるのも、その用途です。",
+          "show": ["list", "get"],
+          "travel": {
+            "along": ["get"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "キーを使えない状態にする操作を、無効化と呼びます。",
+          "term": {
+            "text": "無効化",
+            "ruby": "むこうか",
+            "note": "キーを使えない状態にする"
+          }
+        },
+        {
+          "say": "一覧にあるキーは、無効化や名前の変更の対象です。",
+          "tag": {
+            "list": "無効化"
+          },
+          "pulse": ["list"]
+        }
+      ]
+    },
+    {
+      "id": "apply-summary",
+      "kind": "board",
+      "role": "apply",
+      "title": "要約サーバーに渡すキー",
+      "board": "summarize",
+      "beats": [
+        {
+          "say": "点検メモを要約する流れに、当てはめてみましょう。",
+          "show": ["memo"]
+        },
+        {
+          "say": "要約を処理するのは、自分のサーバーです。",
+          "show": ["server", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "サーバーには、要約に使う通常のキーだけを渡します。",
+          "show": ["normal"],
+          "pulse": ["normal"]
+        },
+        {
+          "say": "そのキーで呼ぶ先が、Messages API です。",
+          "speech": "そのキーで呼ぶ先が、メッセージズエーピーアイです。",
+          "show": ["claude", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "この呼び出しに、Admin キーは使いません。",
+          "speech": "この呼び出しに、アドミンキーは使いません。",
+          "show": ["admin"],
+          "mark": [
+            {
+              "on": "admin",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["admin"]
+        }
+      ]
+    },
+    {
+      "id": "apply-limits",
+      "kind": "board",
+      "role": "apply",
+      "title": "一覧から秘密は戻せない",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "運用担当者は、Admin API でキーの一覧を調べます。",
+          "speech": "運用担当者は、アドミンエーピーアイでキーの一覧を調べます。",
+          "show": ["api"]
+        },
+        {
+          "say": "ただし、一覧の取得は新しいキーの発行とは別です。",
+          "show": ["new"],
+          "pulse": ["new"]
+        },
+        {
+          "say": "通常のキーを新規発行する機能はありません。",
+          "mark": [
+            {
+              "on": "new",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "発行したキーの秘密の値も、取り出せない仕組みです。",
+          "show": ["secret"],
+          "mark": [
+            {
+              "on": "secret",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["secret"]
+        },
+        {
+          "say": "失くした値を、一覧から取り戻そうとしないでください。",
+          "pulse": ["api", "secret"]
+        }
+      ]
+    },
+    {
+      "id": "aquarium-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "二つの処理にどのキーを使う",
+      "board": "aquarium",
+      "think": 8,
+      "beats": [
+        {
+          "say": "水族館のチケット案内を、Claude で要約します。",
+          "speech": "水族館のチケット案内を、クロードで要約します。",
+          "show": ["guide", "claude"]
+        },
+        {
+          "say": "運用担当者の仕事は、組織のキー一覧を調べることです。",
+          "show": ["audit", "list"]
+        },
+        {
+          "say": "通常のキーと Admin キーから選びます。",
+          "speech": "通常のキーとアドミンキーから選びます。",
+          "show": ["normal", "admin"]
+        },
+        {
+          "say": "同じキーを両方に渡してよいか、考えましょう。",
+          "mark": [
+            {
+              "on": "normal",
+              "kind": "question"
+            },
+            {
+              "on": "admin",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "要約と一覧の取得には、それぞれどちらを使いますか。",
+          "pulse": ["guide", "audit"]
+        }
+      ]
+    },
+    {
+      "id": "aquarium-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "用途に合うキーを選ぶ",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "案内の要約に使うのは、通常のキーです。",
+          "show": ["summarize", "call"],
+          "mark": [
+            {
+              "on": "normal",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["normal"]
+        },
+        {
+          "say": "一覧の取得には、Admin キーを使います。",
+          "speech": "一覧の取得には、アドミンキーを使います。",
+          "show": ["audit-use", "inventory"],
+          "mark": [
+            {
+              "on": "admin",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["admin"]
+        },
+        {
+          "say": "二つの処理で、使うキーを分けた形です。",
+          "pulse": ["normal", "admin"]
+        }
+      ]
+    },
+    {
+      "id": "aquarium-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "処理の目的からたどる",
+      "board": "aquarium",
+      "beats": [
+        {
+          "say": "案内を要約する仕事は、文章を処理するための呼び出しです。",
+          "pulse": ["guide"]
+        },
+        {
+          "say": "通常のキーを使う流れを、左からたどります。",
+          "travel": {
+            "along": ["summarize", "call"],
+            "icon": "send"
+          },
+          "pulse": []
+        },
+        {
+          "say": "一方、一覧を調べる仕事は、組織の管理です。",
+          "pulse": ["audit", "list"]
+        },
+        {
+          "say": "管理用の処理から、Admin キーで一覧を取得します。",
+          "speech": "管理用の処理から、アドミンキーで一覧を取得します。",
+          "travel": {
+            "along": ["audit-use", "inventory"],
+            "icon": "search"
+          },
+          "pulse": []
+        },
+        {
+          "say": "管理用キーを、要約用のキーの代わりにはできません。",
+          "pulse": ["admin"],
+          "tag": {
+            "admin": "管理のため"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "処理に渡す前に確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "要約の処理を用意するときは、使うキーを確かめましょう。",
+          "show": ["server"]
+        },
+        {
+          "say": "サーバーに渡すのは、要約に使う通常のキーです。",
+          "show": ["normal"],
+          "pulse": ["normal"]
+        },
+        {
+          "say": "一覧の取得や無効化は、管理用の処理に分けます。",
+          "show": ["admin"],
+          "pulse": ["admin"]
+        },
+        {
+          "say": "キーを失くしたら、必要なのは新しいキーの発行です。",
+          "tag": {
+            "normal": "失くしたとき"
+          },
+          "pulse": ["normal"]
+        },
+        {
+          "say": "権限のある人が、管理画面から用途に合うキーを発行します。",
+          "tag": {
+            "normal": "新しく発行"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "63f419af415bb095ee0f3e29c598c32ae99080e689e688d07d2635e63ff69259"
+  }
+}

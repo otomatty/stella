@@ -1,0 +1,751 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールが失敗したときに、失敗の印と状況と次の行動を含む結果の返し方を説明できる。",
+    "stuck": "ツールの例外で全体を止めたり、「失敗」とだけ返したりして、説明や呼び直しの手がかりを渡せない。",
+    "points": ["ツールが失敗したら、is_error を付けた結果で、何が起きたかを返します。"],
+    "leaveOut": [
+      "ツールの定義と実行の実装",
+      "会話の履歴へ結果を追加する順序",
+      "複数のツールの結果をまとめる方法",
+      "呼び直す回数と strict の指定",
+      "サーバーツールの失敗の扱い",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-parcels": {
+      "prompt": "Three light grey cardboard parcels with blue sealing tape, one open with a blank white inventory slip tucked inside. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "failed-connection": {
+      "prompt": "A small violet laptop with a completely blank screen beside two separated ends of a blue network cable, clearly disconnected. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a phone with a completely blank screen, waiting for a reply. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "error-report": {
+      "prompt": "A white paper report held by a large magenta paper clip, with a blue pencil resting beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "print-staff": {
+      "prompt": "A staff member in a plain blue shirt holding a blank white sheet in one hand and gesturing with the other hand while explaining a problem. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "broken-printer": {
+      "prompt": "A compact light grey printer with a visibly crumpled white sheet caught in its paper slot. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, attentively holding a blank white report. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "craft-supplies": {
+      "prompt": "A pair of blue safety scissors, a violet glue stick and a small fan of white and light grey craft paper sheets. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "incomplete-form": {
+      "prompt": "A white form on a light grey clipboard with a blue pen poised above a conspicuously empty outlined entry box, without any writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の確認",
+          "art": "stock-parcels",
+          "at": [1, 1]
+        },
+        {
+          "id": "failure",
+          "label": "接続できない",
+          "art": "failed-connection",
+          "at": [3, 1]
+        },
+        {
+          "id": "learner",
+          "label": "説明がない",
+          "art": "waiting-learner",
+          "at": [5, 1]
+        },
+        {
+          "id": "report",
+          "label": "失敗を返す",
+          "art": "error-report",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "printing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "printer",
+          "label": "止まった印刷機",
+          "art": "broken-printer",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "印刷の担当者",
+          "art": "print-staff",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "状況と次の手",
+          "art": "error-report",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "notice",
+          "from": "printer",
+          "to": "staff",
+          "label": "気づく"
+        },
+        {
+          "id": "explain",
+          "from": "staff",
+          "to": "report",
+          "label": "伝える"
+        }
+      ]
+    },
+    "failure": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "connection",
+          "label": "ツールの失敗",
+          "art": "failed-connection",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "失敗の結果",
+          "art": "error-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "record",
+          "from": "connection",
+          "to": "report",
+          "label": "結果にする"
+        },
+        {
+          "id": "return",
+          "from": "report",
+          "to": "claude",
+          "label": "返す"
+        }
+      ]
+    },
+    "contents": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "connection",
+          "label": "何が起きたか",
+          "art": "failed-connection",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "次にすること",
+          "art": "error-report",
+          "at": [3, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "materials",
+          "label": "図工の材料",
+          "art": "craft-supplies",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "材料名が空欄",
+          "art": "incomplete-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "short",
+          "label": "失敗の一言",
+          "art": "error-report",
+          "at": [5, 1]
+        },
+        {
+          "id": "detailed",
+          "label": "不足と直し方",
+          "art": "error-report",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "form",
+          "label": "材料名が不足",
+          "art": "incomplete-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "report",
+          "label": "材料名を補う",
+          "art": "error-report",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "呼び直す",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "identify",
+          "from": "form",
+          "to": "report",
+          "label": "伝える"
+        },
+        {
+          "id": "retry",
+          "from": "report",
+          "to": "claude",
+          "label": "失敗を返す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "connection",
+          "label": "接続の失敗",
+          "art": "failed-connection",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "入力の不足",
+          "art": "incomplete-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "report",
+          "label": "失敗の結果",
+          "art": "error-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "在庫を調べられないとき",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "在庫を調べるツールが、途中で失敗したとします。",
+          "show": ["stock"]
+        },
+        {
+          "say": "原因は、在庫の API に接続できないことです。",
+          "speech": "原因は、在庫のエーピーアイに接続できないことです。",
+          "show": ["failure"]
+        },
+        {
+          "say": "全体が止まると、利用者には何も返りません。",
+          "show": ["learner"]
+        },
+        {
+          "say": "失敗の印を付けた結果で、何が起きたかを返します。",
+          "show": ["report"],
+          "pulse": ["report"]
+        }
+      ]
+    },
+    {
+      "id": "printing",
+      "kind": "board",
+      "role": "example",
+      "title": "印刷係からの知らせ",
+      "board": "printing",
+      "beats": [
+        {
+          "say": "学校で、印刷係に配布物を頼んだ場面です。",
+          "show": ["staff"]
+        },
+        {
+          "say": "ところが、印刷機が紙詰まりで止まりました。",
+          "show": ["printer", "notice"]
+        },
+        {
+          "say": "担当者が黙っていると、頼んだ人には状況が伝わりません。",
+          "mark": [
+            {
+              "on": "staff",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、紙が詰まったことを伝えます。",
+          "show": ["report", "explain"],
+          "travel": {
+            "along": ["explain"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "直るまで待ってほしいと、次の行動も添えましょう。",
+          "tag": {
+            "report": "直るまで待つ"
+          },
+          "pulse": ["report"]
+        }
+      ]
+    },
+    {
+      "id": "failure-result",
+      "kind": "board",
+      "role": "syntax",
+      "title": "失敗を結果にする",
+      "board": "failure",
+      "beats": [
+        {
+          "say": "ツールの実行中に起きたエラーが、ここでいう例外です。",
+          "term": {
+            "text": "例外",
+            "ruby": "れいがい",
+            "note": "実行中に起きたエラー"
+          }
+        },
+        {
+          "say": "接続の失敗をそのまま投げると、ループ全体が止まります。",
+          "show": ["connection"],
+          "mark": [
+            {
+              "on": "connection",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "失敗の印を付ける項目が、イズエラーです。",
+          "term": {
+            "text": "is_error",
+            "ruby": "イズエラー",
+            "note": "失敗した結果であること"
+          }
+        },
+        {
+          "say": "失敗したときは、この項目を true にします。",
+          "speech": "失敗したときは、この項目をトゥルーにします。",
+          "show": ["report", "record"],
+          "tag": {
+            "report": "失敗の印"
+          }
+        },
+        {
+          "say": "その結果を受け取り、Claude が説明や別の手を考える形です。",
+          "speech": "その結果を受け取り、クロードが説明や別の手を考える形です。",
+          "show": ["claude", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "error-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "失敗の印を書く",
+      "code": [
+        "// 失敗の結果をまとめる",
+        "{",
+        "  // ツールの結果として返す",
+        "  type: \"tool_result\",",
+        "  // この呼び出しに対応させる",
+        "  tool_use_id: block.id,",
+        "  // 実行の失敗を示す",
+        "  is_error: true,",
+        "  // 起きたことと次の行動を書く",
+        "  content:",
+        "    // 接続の失敗と待つ案内",
+        "    \"在庫の API に接続できません。少し待ってから試してください\"",
+        "// 結果を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "failure"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "教材のコードで、失敗の結果の形を見てみましょう。",
+          "focus": [3, 7],
+          "figure": {
+            "show": ["connection", "report", "record"]
+          }
+        },
+        {
+          "say": "結果の種類は、ツールリザルトのままです。",
+          "part": {
+            "line": 3,
+            "text": "\"tool_result\"",
+            "note": "ツールの結果"
+          },
+          "figure": {
+            "pulse": ["report"]
+          }
+        },
+        {
+          "say": "実行に失敗したので、イズエラーに true を指定します。",
+          "speech": "実行に失敗したので、イズエラーにトゥルーを指定します。",
+          "part": {
+            "line": 7,
+            "text": "is_error: true",
+            "note": "失敗した結果"
+          },
+          "figure": {
+            "tag": {
+              "report": "失敗の印"
+            }
+          }
+        },
+        {
+          "say": "この印が、結果に添える失敗の知らせです。",
+          "part": {
+            "line": 7,
+            "text": "true"
+          },
+          "figure": {
+            "pulse": ["connection"]
+          }
+        },
+        {
+          "say": "印と説明をまとめて、Claude に返しましょう。",
+          "speech": "印と説明をまとめて、クロードに返しましょう。",
+          "focus": [7, 9, 11],
+          "figure": {
+            "show": ["claude", "return"],
+            "travel": {
+              "along": ["return"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "describe-error",
+      "kind": "code",
+      "role": "apply",
+      "title": "何が起きたかを書く",
+      "code": [
+        "// 失敗の結果をまとめる",
+        "{",
+        "  // ツールの結果として返す",
+        "  type: \"tool_result\",",
+        "  // この呼び出しに対応させる",
+        "  tool_use_id: block.id,",
+        "  // 実行の失敗を示す",
+        "  is_error: true,",
+        "  // 起きたことと次の行動を書く",
+        "  content:",
+        "    // 接続の失敗と待つ案内",
+        "    \"在庫の API に接続できません。少し待ってから試してください\"",
+        "// 結果を閉じる",
+        "}"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "contents"
+      },
+      "beats": [
+        {
+          "say": "結果の本文を入れる項目が、content です。",
+          "speech": "結果の本文を入れる項目が、コンテントです。",
+          "term": {
+            "text": "content",
+            "ruby": "コンテント",
+            "note": "結果の本文"
+          }
+        },
+        {
+          "say": "この欄に、失敗についての説明を書きます。",
+          "part": {
+            "line": 9,
+            "text": "content",
+            "note": "結果の本文"
+          },
+          "figure": {
+            "show": ["connection", "report"]
+          }
+        },
+        {
+          "say": "この例で起きたのは、在庫の API への接続の失敗です。",
+          "speech": "この例で起きたのは、在庫のエーピーアイへの接続の失敗です。",
+          "part": {
+            "line": 11,
+            "text": "在庫の API に接続できません"
+          },
+          "figure": {
+            "pulse": ["connection"]
+          }
+        },
+        {
+          "say": "次にすることとして、少し待って試すように案内します。",
+          "part": {
+            "line": 11,
+            "text": "少し待ってから試してください"
+          },
+          "figure": {
+            "pulse": ["report"]
+          }
+        },
+        {
+          "say": "「失敗」の一言で終えず、状況と次の行動を書きましょう。",
+          "focus": [9, 11],
+          "figure": {
+            "mark": [
+              {
+                "on": "connection",
+                "kind": "check"
+              },
+              {
+                "on": "report",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "return-flow",
+      "kind": "board",
+      "role": "apply",
+      "title": "返した先で考えられる",
+      "board": "failure",
+      "reset": true,
+      "beats": [
+        {
+          "say": "在庫を調べられなかった事実は、そのまま残ります。",
+          "show": ["connection"],
+          "mark": [
+            {
+              "on": "connection",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "返すのは、その失敗を説明した結果です。",
+          "show": ["report", "record"],
+          "tag": {
+            "report": "接続できない"
+          }
+        },
+        {
+          "say": "その結果を、Claude に渡しましょう。",
+          "speech": "その結果を、クロードに渡しましょう。",
+          "show": ["claude", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "利用者への説明や、別のやり方を考えられます。",
+          "pulse": ["claude"],
+          "tag": {
+            "claude": "説明を考える"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "材料名が抜けていたら",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "図工の材料を調べるツールで、入力が不足した場面です。",
+          "show": ["materials"]
+        },
+        {
+          "say": "呼び出しには、調べたい材料の名前がありません。",
+          "show": ["form"],
+          "mark": [
+            {
+              "on": "form",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "どちらも失敗の印を付け、片方は「失敗」とだけ返します。",
+          "show": ["short"],
+          "tag": {
+            "short": "失敗の印"
+          }
+        },
+        {
+          "say": "もう片方は、材料名がないので補ってほしいという説明です。",
+          "show": ["detailed"],
+          "tag": {
+            "detailed": "失敗の印"
+          }
+        },
+        {
+          "say": "呼び直す手がかりが伝わるのは、どちらでしょうか。",
+          "pulse": ["short", "detailed"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "不足と直し方を伝える",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、材料名の不足と補い方を伝えた方です。",
+          "mark": [
+            {
+              "on": "detailed",
+              "kind": "check"
+            },
+            {
+              "on": "short",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["detailed"]
+        },
+        {
+          "say": "何を直せばよいかまで、結果の文で伝えます。",
+          "tag": {
+            "detailed": "材料名を補う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-detail",
+      "kind": "board",
+      "role": "explain",
+      "title": "呼び直しの手がかり",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "失敗の印だけでは、足りない入力の説明にはなりません。",
+          "show": ["form"],
+          "mark": [
+            {
+              "on": "form",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "材料名がないと書けば、不足している項目が分かります。",
+          "tag": {
+            "form": "不足を特定"
+          },
+          "pulse": ["form"]
+        },
+        {
+          "say": "名前を補うという案内が、今回の直し方です。",
+          "show": ["report", "identify"],
+          "travel": {
+            "along": ["identify"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "Claude は、足りない情報を補って呼び直します。",
+          "speech": "クロードは、足りない情報を補って呼び直します。",
+          "show": ["claude", "retry"],
+          "travel": {
+            "along": ["retry"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "失敗の返し方を確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "外の API につながらないときに、この返し方を使います。",
+          "speech": "外のエーピーアイにつながらないときに、この返し方を使います。",
+          "show": ["connection"]
+        },
+        {
+          "say": "呼び出しの入力が足りないときも、失敗を返す場面です。",
+          "show": ["form"]
+        },
+        {
+          "say": "結果には、失敗の印と具体的な説明を添えましょう。",
+          "show": ["report"],
+          "tag": {
+            "report": "印と説明"
+          }
+        },
+        {
+          "say": "何が起き、次に何をするかを、返す前に確かめます。",
+          "pulse": ["report"],
+          "mark": [
+            {
+              "on": "report",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "adbab204ef8daf5046c1b951d66907b7f326ffed632de634575be3d734f0a1a5"
+  }
+}

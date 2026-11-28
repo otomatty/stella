@@ -1,0 +1,760 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "自分で定義したツールの呼び出し要求を受けて、アプリがどの関数に何を渡して実行するか説明できる。",
+    "stuck": "ツールの定義を送ると、Claude 自身が関数を実行して自社のデータを調べると思ってしまう。",
+    "points": ["自分で定義したツールは、Claude が呼び出しを求め、アプリが実行します。"],
+    "leaveOut": [
+      "tool_result を使った結果の返し方",
+      "ツール使用のループと終了条件",
+      "失敗の返し方",
+      "サーバーツールとの比較",
+      "入力を厳密に制限する指定",
+      "ツール名の文字数など細かな仕様",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "stock-parcels": {
+      "prompt": "Three light grey cardboard product parcels with blue sealing tape, beside a small white stock tally clipboard with blank rows. All boxes and paper are light grey or white, never brown. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white request slip out in front of its body. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-laptop": {
+      "prompt": "An open laptop with a completely blank blue display and a large violet gear attached beside the keyboard, representing an application running a function. A conceptual object illustration with no interface controls. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-ledger": {
+      "prompt": "A closed violet library book beside an open white lending ledger with blank rows and a blue bookmark. The book and ledger are the main subjects. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-clerk": {
+      "prompt": "A library staff member in a plain blue shirt, with short dark hair and a simple face, holding a white lending ledger open and pointing at a blank row. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-sheet": {
+      "prompt": "One upright white paper specification sheet held by a blue clip, with three large empty pale grey fields and a small violet pencil beside it. No writing or pseudo lettering. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "vet-visitor": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blue pet carrier, with a small light grey cat visible inside. Simple facial features and a calm pose. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "clinic-calendar": {
+      "prompt": "An upright white appointment planner with large empty blue outlined cells beside a violet stethoscope, representing a veterinary clinic appointment schedule. No marks inside the cells. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "library-note": {
+      "prompt": "A white paper request slip tucked partly into a closed violet library book, with a large blue bookmark protruding from the book. The request slip is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "商品の在庫",
+          "art": "stock-parcels",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "library": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "book",
+          "label": "貸出の確認",
+          "art": "library-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "request",
+          "label": "確認の依頼",
+          "art": "library-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "図書室の係員",
+          "art": "library-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "request",
+          "to": "clerk",
+          "label": "頼む"
+        }
+      ]
+    },
+    "stock-flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [3, 1]
+        },
+        {
+          "id": "stock",
+          "label": "在庫の関数",
+          "art": "stock-parcels",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "claude",
+          "to": "app",
+          "label": "呼出し要求"
+        },
+        {
+          "id": "run",
+          "from": "app",
+          "to": "stock",
+          "label": "実行"
+        }
+      ]
+    },
+    "definition": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "ツールの定義",
+          "art": "tool-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "stock",
+          "label": "get_stock",
+          "art": "stock-parcels",
+          "at": [3, 1]
+        },
+        {
+          "id": "input",
+          "label": "商品コード",
+          "art": "tool-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "response": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "tool-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "block",
+          "label": "呼出し要求",
+          "art": "tool-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "id",
+          "label": "id",
+          "art": "tool-sheet",
+          "at": [5, 1]
+        },
+        {
+          "id": "name",
+          "label": "name",
+          "art": "stock-parcels",
+          "at": [5, 2]
+        },
+        {
+          "id": "input",
+          "label": "input",
+          "art": "tool-sheet",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "clinic": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "visitor",
+          "label": "動物病院の受付",
+          "art": "vet-visitor",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリ",
+          "art": "app-laptop",
+          "at": [5, 1]
+        },
+        {
+          "id": "slots",
+          "label": "空き枠の関数",
+          "art": "clinic-calendar",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "claude",
+          "to": "app",
+          "label": "呼出し要求"
+        },
+        {
+          "id": "check-slots",
+          "from": "app",
+          "to": "slots",
+          "label": "実行"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "stock",
+          "label": "在庫の確認",
+          "art": "stock-parcels",
+          "at": [1, 1]
+        },
+        {
+          "id": "clinic",
+          "label": "予約枠の案内",
+          "art": "clinic-calendar",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "アプリで実行",
+          "art": "app-laptop",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "在庫を調べるのはだれ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "利用者が、商品の在庫を知りたいと頼みました。",
+          "show": ["stock"]
+        },
+        {
+          "say": "Claude は、自社の在庫を知りません。",
+          "speech": "クロードは、自社の在庫を知りません。",
+          "show": ["claude"],
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "在庫を調べる関数は、アプリに用意します。",
+          "show": ["app"]
+        },
+        {
+          "say": "自作ツールは、Claude が呼び出しを求め、アプリが実行する仕組みです。",
+          "speech": "自作ツールは、クロードが呼び出しを求め、アプリが実行する仕組みです。",
+          "pulse": ["claude", "app"]
+        }
+      ]
+    },
+    {
+      "id": "library-request",
+      "kind": "board",
+      "role": "example",
+      "title": "図書室で確認を頼む",
+      "board": "library",
+      "beats": [
+        {
+          "say": "図書室で、この本が貸出中か確かめたい場面です。",
+          "show": ["book"]
+        },
+        {
+          "say": "本を借りたい人が、本の名前を紙に書いて渡しました。",
+          "show": ["request", "clerk", "pass"],
+          "travel": {
+            "along": ["pass"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "貸出の記録を調べるのは、紙を受け取った係員です。",
+          "pulse": ["clerk"],
+          "tag": {
+            "clerk": "記録を調べる"
+          }
+        },
+        {
+          "say": "確認を頼む側と、調べる側を分けて考えましょう。",
+          "pulse": ["request", "clerk"]
+        }
+      ]
+    },
+    {
+      "id": "tool-roles",
+      "kind": "board",
+      "role": "syntax",
+      "title": "ツールを使う二つの役割",
+      "board": "stock-flow",
+      "beats": [
+        {
+          "say": "アプリが Claude に使わせる関数を、ツールと呼びます。",
+          "speech": "アプリがクロードに使わせる関数を、ツールと呼びます。",
+          "term": {
+            "text": "ツール",
+            "note": "アプリが使わせる関数"
+          }
+        },
+        {
+          "say": "この例のツールは、在庫を調べる関数です。",
+          "show": ["stock"]
+        },
+        {
+          "say": "Claude は、その関数の呼び出しを求めます。",
+          "speech": "クロードは、その関数の呼び出しを求めます。",
+          "show": ["claude", "app", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "実際に関数を動かす担当は、アプリです。",
+          "show": ["run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "search"
+          },
+          "pulse": ["app"]
+        }
+      ]
+    },
+    {
+      "id": "define-tool",
+      "kind": "code",
+      "role": "syntax",
+      "title": "ツールの名前と説明",
+      "code": [
+        "// 利用できるツールを並べる",
+        "tools: [{",
+        "  // 呼び出す名前を決める",
+        "  name: \"get_stock\",",
+        "  // 何をするツールか説明する",
+        "  description: \"商品の在庫数を調べる\",",
+        "  // 入力全体をオブジェクトにする",
+        "  input_schema: { type: \"object\",",
+        "    // 商品コードを文字列として受け取る",
+        "    properties: { sku: { type: \"string\" } }",
+        "  // 入力の定義を閉じる",
+        "  },",
+        "// ツールの定義を閉じる",
+        "}],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "definition"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "リクエストの tools に、ツールを定義します。",
+          "speech": "リクエストのツールズに、ツールを定義します。",
+          "term": {
+            "text": "tools",
+            "note": "使わせるツールの定義"
+          },
+          "part": {
+            "line": 1,
+            "text": "tools"
+          }
+        },
+        {
+          "say": "この配列に入れるのが、在庫を調べるツールの定義です。",
+          "focus": [1, 3, 5],
+          "figure": {
+            "show": ["tools"]
+          }
+        },
+        {
+          "say": "name には、呼び出すときの名前を書きます。",
+          "speech": "ネームには、呼び出すときの名前を書きます。",
+          "part": {
+            "line": 3,
+            "text": "name",
+            "note": "呼び出す名前"
+          },
+          "figure": {
+            "show": ["stock"]
+          }
+        },
+        {
+          "say": "ツールの名前は、英数字などの決まりの中で決めてください。",
+          "part": {
+            "line": 3,
+            "text": "get_stock",
+            "note": "在庫を取得する"
+          },
+          "figure": {
+            "pulse": ["stock"]
+          }
+        },
+        {
+          "say": "description で、何をするツールか説明します。",
+          "speech": "ディスクリプションで、何をするツールか説明します。",
+          "part": {
+            "line": 5,
+            "text": "description",
+            "note": "役割の説明"
+          },
+          "figure": {
+            "tag": {
+              "stock": "在庫を調べる"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "define-input",
+      "kind": "code",
+      "role": "syntax",
+      "title": "受け取る入力の形",
+      "code": [
+        "// 利用できるツールを並べる",
+        "tools: [{",
+        "  // 呼び出す名前を決める",
+        "  name: \"get_stock\",",
+        "  // 何をするツールか説明する",
+        "  description: \"商品の在庫数を調べる\",",
+        "  // 入力全体をオブジェクトにする",
+        "  input_schema: { type: \"object\",",
+        "    // 商品コードを文字列として受け取る",
+        "    properties: { sku: { type: \"string\" } }",
+        "  // 入力の定義を閉じる",
+        "  },",
+        "// ツールの定義を閉じる",
+        "}],"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "definition"
+      },
+      "beats": [
+        {
+          "say": "渡す入力の形は、入力スキーマで定義します。",
+          "term": {
+            "text": "入力スキーマ",
+            "ruby": "にゅうりょくすきーま",
+            "note": "input_schema"
+          },
+          "part": {
+            "line": 7,
+            "text": "input_schema"
+          }
+        },
+        {
+          "say": "ここには、入力の JSON スキーマを書く決まりです。",
+          "speech": "ここには、入力のジェイソンスキーマを書く決まりです。",
+          "focus": [7, 9],
+          "figure": {
+            "show": ["input"]
+          }
+        },
+        {
+          "say": "この例では、sku という商品コードを受け取ります。",
+          "speech": "この例では、エスケーユーという商品コードを受け取ります。",
+          "part": {
+            "line": 9,
+            "text": "sku",
+            "note": "商品コード"
+          },
+          "figure": {
+            "pulse": ["input"]
+          }
+        },
+        {
+          "say": "その値の形は、string が表す文字列です。",
+          "speech": "その値の形は、ストリングが表す文字列です。",
+          "part": {
+            "line": 9,
+            "text": "\"string\"",
+            "note": "文字列"
+          },
+          "figure": {
+            "tag": {
+              "input": "文字列"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-call",
+      "kind": "board",
+      "role": "apply",
+      "title": "呼び出し要求の中身",
+      "board": "response",
+      "beats": [
+        {
+          "say": "ツールを使うと決めると、停止理由はツール使用になります。",
+          "show": ["reason"],
+          "tag": {
+            "reason": "tool_use"
+          }
+        },
+        {
+          "say": "ツールユースは、呼び出しを求めるブロックです。",
+          "term": {
+            "text": "tool_use",
+            "ruby": "ツールユース",
+            "note": "呼び出しを求めるブロック"
+          },
+          "show": ["block"]
+        },
+        {
+          "say": "id は、今回の呼び出しを識別するために使います。",
+          "speech": "アイディーは、今回の呼び出しを識別するために使います。",
+          "show": ["id"],
+          "pulse": ["block"],
+          "tag": {
+            "id": "呼出しの識別"
+          }
+        },
+        {
+          "say": "name は、呼び出してほしいツールの名前です。",
+          "speech": "ネームは、呼び出してほしいツールの名前です。",
+          "show": ["name"],
+          "pulse": ["name"]
+        },
+        {
+          "say": "input には、その関数に渡す入力が入ります。",
+          "speech": "インプットには、その関数に渡す入力が入ります。",
+          "show": ["input"],
+          "pulse": ["input"]
+        }
+      ]
+    },
+    {
+      "id": "run-stock",
+      "kind": "board",
+      "role": "apply",
+      "title": "在庫の関数を動かす",
+      "board": "stock-flow",
+      "reset": true,
+      "beats": [
+        {
+          "say": "商品コードを指定して、在庫を尋ねた場面に戻りましょう。",
+          "show": ["stock"],
+          "tag": {
+            "stock": "A-100"
+          }
+        },
+        {
+          "say": "Claude が、在庫の関数の呼び出しを求めます。",
+          "speech": "クロードが、在庫の関数の呼び出しを求めます。",
+          "show": ["claude", "app", "ask"],
+          "travel": {
+            "along": ["ask"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "アプリが選ぶのは、name に合う関数です。",
+          "speech": "アプリが選ぶのは、ネームに合う関数です。",
+          "pulse": ["app", "stock"]
+        },
+        {
+          "say": "アプリは、input の商品コードを渡して実行します。",
+          "speech": "アプリは、インプットの商品コードを渡して実行します。",
+          "show": ["run"],
+          "travel": {
+            "along": ["run"],
+            "icon": "search"
+          },
+          "tag": {
+            "app": "実行する"
+          }
+        }
+      ]
+    },
+    {
+      "id": "clinic-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "空き枠を調べる担当",
+      "board": "clinic",
+      "think": 8,
+      "beats": [
+        {
+          "say": "動物病院の受付で、飼い主が明日の空き枠を尋ねました。",
+          "show": ["visitor"]
+        },
+        {
+          "say": "アプリには、予約の空き枠を調べる自作ツールがあります。",
+          "show": ["app", "slots"]
+        },
+        {
+          "say": "Claude から届いたのは、その呼び出し要求です。",
+          "speech": "クロードから届いたのは、その呼び出し要求です。",
+          "show": ["claude", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          },
+          "tag": {
+            "slots": "明日"
+          }
+        },
+        {
+          "say": "このあと、空き枠を調べる関数を実行するのはどちらでしょうか。",
+          "pulse": ["claude", "app"],
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "question"
+            },
+            {
+              "on": "app",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clinic-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "実行するのはアプリ",
+      "board": "clinic",
+      "beats": [
+        {
+          "say": "答えは、呼び出し要求を受け取ったアプリです。",
+          "unmark": ["claude"],
+          "mark": [
+            {
+              "on": "app",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["app"]
+        },
+        {
+          "say": "アプリが、空き枠を調べる関数を実行します。",
+          "show": ["check-slots"],
+          "travel": {
+            "along": ["check-slots"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "clinic-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "要求と実行をたどる",
+      "board": "clinic",
+      "beats": [
+        {
+          "say": "Claude の担当は、呼び出しを求めるところまでです。",
+          "speech": "クロードの担当は、呼び出しを求めるところまでです。",
+          "pulse": ["claude", "request"]
+        },
+        {
+          "say": "アプリは、指定された名前に合う関数を選びます。",
+          "pulse": ["app", "slots"]
+        },
+        {
+          "say": "この例で関数に渡すのは、明日という入力です。",
+          "pulse": ["slots"],
+          "tag": {
+            "app": "入力を渡す"
+          }
+        },
+        {
+          "say": "要求を受け取るだけで終わらず、関数を実行しましょう。",
+          "pulse": ["check-slots"],
+          "travel": {
+            "along": ["check-slots"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "自社の情報を調べるとき",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "商品の在庫を答えるなら、在庫を調べるツールを用意します。",
+          "show": ["stock"]
+        },
+        {
+          "say": "予約の案内でも、空き枠を調べるツールが便利です。",
+          "show": ["clinic"]
+        },
+        {
+          "say": "どちらも、アプリが関数を実行して情報を調べます。",
+          "show": ["app"]
+        },
+        {
+          "say": "自作ツールでは、要求を受けたあとの実行処理も確かめましょう。",
+          "pulse": ["app"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "89c8b549db3bf0ad14285a97a82f144b0a747e7b323eb36d41d00bd6d57f29ae"
+  }
+}

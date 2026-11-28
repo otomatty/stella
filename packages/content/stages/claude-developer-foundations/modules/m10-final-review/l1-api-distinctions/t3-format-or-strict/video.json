@@ -1,0 +1,676 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "形を決めたい対象から構造化出力と strict を選び、両方を同じリクエストで使う設定箇所を説明できる。",
+    "stuck": "本文の形式を指定すればツールの入力もそろうと考え、output_config.format と strict を取り違える。",
+    "points": [
+      "応答の形は構造化出力で、ツールの入力の形は strict で決め、両方を同じリクエストで使えます。"
+    ],
+    "leaveOut": [
+      "ストリーミングとバッチの選び方",
+      "キャッシュとバッチの割引",
+      "stop_reason と HTTP エラーの区別",
+      "引用との併用制限",
+      "JSON スキーマ自体の詳しい書き方",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "order-parcel": {
+      "prompt": "A small closed light grey cardboard delivery parcel sealed with blue tape, beside a blank white order card. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-slip": {
+      "prompt": "A narrow white lookup slip held by a blue clip, with two empty light grey entry boxes. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-slip": {
+      "prompt": "A broad white reply sheet with a violet clip and two empty light grey fields, clearly distinct from a narrow lookup slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "order-clerk": {
+      "prompt": "A service clerk in a plain blue shirt holding a blank white inquiry slip in one hand and a broad white reply sheet in the other. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "schema-template": {
+      "prompt": "A white reusable paper stencil with two rectangular openings, beside a violet pencil. A concrete illustration of a template that determines the shape of a paper form. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "craft-supplies": {
+      "prompt": "A pair of blue safety scissors, a violet glue stick and a small stack of white craft paper. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "craft-request": {
+      "prompt": "A narrow white materials lookup slip with an empty entry box and a small pictorial drawing of blue safety scissors. A blue clip holds the slip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "craft-report": {
+      "prompt": "A broad white materials report sheet with a violet clip and pictorial drawings of blue scissors and a violet glue stick, each beside an empty light grey field. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "注文の照会",
+          "art": "order-parcel",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "ツールの入力",
+          "art": "input-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "答えの本文",
+          "art": "reply-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "paper": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "照会用の伝票",
+          "art": "input-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "担当者",
+          "art": "order-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答用紙",
+          "art": "reply-slip",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "input",
+          "to": "clerk",
+          "label": "渡す"
+        },
+        {
+          "id": "return",
+          "from": "clerk",
+          "to": "reply",
+          "label": "回答"
+        }
+      ]
+    },
+    "shapes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schema",
+          "label": "形の指定",
+          "art": "schema-template",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "ツールの入力",
+          "art": "input-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "答えの本文",
+          "art": "reply-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "targets": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "input",
+          "label": "ツールの入力",
+          "art": "input-slip",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "答えの本文",
+          "art": "reply-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "craft": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "materials",
+          "label": "図工の材料",
+          "art": "craft-supplies",
+          "at": [1, 1]
+        },
+        {
+          "id": "input",
+          "label": "材料名の入力",
+          "art": "craft-request",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "在庫の回答",
+          "art": "craft-report",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "形を決める相手を選ぶ",
+      "board": "order",
+      "beats": [
+        {
+          "say": "注文を調べて、決まった形で答える処理を考えます。",
+          "show": ["order"]
+        },
+        {
+          "say": "調べる途中で渡すのは、ツールへの入力です。",
+          "show": ["input"]
+        },
+        {
+          "say": "最後の答えにも、本文として形を指定しておきましょう。",
+          "show": ["reply"]
+        },
+        {
+          "say": "本文と入力の形は別々に決め、両方の設定を一緒に使えます。",
+          "pulse": ["input", "reply"]
+        }
+      ]
+    },
+    {
+      "id": "paper-example",
+      "kind": "board",
+      "role": "example",
+      "title": "伝票と回答用紙",
+      "board": "paper",
+      "beats": [
+        {
+          "say": "注文を調べる担当者に、照会用の伝票を渡しましょう。",
+          "show": ["input", "clerk", "pass"],
+          "travel": {
+            "along": ["pass"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "調べたあとに受け取るのは、別の回答用紙です。",
+          "show": ["reply", "return"]
+        },
+        {
+          "say": "回答用紙の欄を決めても、照会用の伝票の欄は変わりません。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "回答の欄"
+          }
+        },
+        {
+          "say": "渡す伝票と返す用紙は、それぞれの書式を決めます。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "入力の欄"
+          }
+        }
+      ]
+    },
+    {
+      "id": "two-targets",
+      "kind": "board",
+      "role": "syntax",
+      "title": "形と設定の対象",
+      "board": "shapes",
+      "beats": [
+        {
+          "say": "形を決める指定には、JSON スキーマを使います。",
+          "speech": "形を決める指定には、ジェイソンスキーマを使います。",
+          "term": {
+            "text": "JSONスキーマ",
+            "ruby": "ジェイソンスキーマ",
+            "note": "データの形を決める指定"
+          },
+          "show": ["schema"]
+        },
+        {
+          "say": "対象になるのは、二つのデータです。",
+          "show": ["input", "reply"]
+        },
+        {
+          "say": "ツールを呼ぶときの入力と、最後に答える本文を分けましょう。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "呼ぶとき"
+          }
+        },
+        {
+          "say": "同じスキーマの話でも、どちらを決めるかが違います。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "答えるとき"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tool-setting",
+      "kind": "code",
+      "role": "syntax",
+      "title": "ツールの定義に書く",
+      "code": [
+        "// 注文照会の依頼をまとめる",
+        "const request = {",
+        "  // モデルと出力上限と会話を指定する",
+        "  model, max_tokens: 1024, messages,",
+        "  // 注文を調べるツールに厳密な入力を指定する",
+        "  tools: [{ name: \"lookup_order\", strict: true,",
+        "    // ツールの入力の形を渡す",
+        "    input_schema: orderInput }],",
+        "  // 最後の答えの形式を指定する",
+        "  output_config: { format: {",
+        "    // 答えの本文の形を渡す",
+        "    type: \"json_schema\", schema: replySchema } },",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "targets"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "ツールの入力を形に合わせる設定が strict です。",
+          "speech": "ツールの入力を形に合わせる設定がストリクトです。",
+          "term": {
+            "text": "strict",
+            "ruby": "ストリクト",
+            "note": "ツールの入力の形を守る"
+          },
+          "figure": {
+            "show": ["input", "reply"]
+          }
+        },
+        {
+          "say": "ツールの定義で、strict を true にします。",
+          "speech": "ツールの定義で、ストリクトをトゥルーにします。",
+          "part": {
+            "line": 5,
+            "text": "strict: true"
+          },
+          "figure": {
+            "pulse": ["input"]
+          }
+        },
+        {
+          "say": "入力の形を書くのは、この項目です。",
+          "part": {
+            "line": 7,
+            "text": "input_schema",
+            "note": "入力のスキーマ"
+          },
+          "figure": {
+            "tag": {
+              "input": "形を指定"
+            }
+          }
+        },
+        {
+          "say": "この例では、注文の入力を表す名前を自分で付けています。",
+          "part": {
+            "line": 7,
+            "text": "orderInput",
+            "note": "注文の入力"
+          }
+        },
+        {
+          "say": "この設定だけでは、最後の答えの形は決まりません。",
+          "focus": [5, 7],
+          "figure": {
+            "pulse": ["reply"],
+            "mark": [
+              {
+                "on": "reply",
+                "kind": "question"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reply-setting",
+      "kind": "code",
+      "role": "syntax",
+      "title": "本文の形式に書く",
+      "code": [
+        "// 注文照会の依頼をまとめる",
+        "const request = {",
+        "  // モデルと出力上限と会話を指定する",
+        "  model, max_tokens: 1024, messages,",
+        "  // 注文を調べるツールに厳密な入力を指定する",
+        "  tools: [{ name: \"lookup_order\", strict: true,",
+        "    // ツールの入力の形を渡す",
+        "    input_schema: orderInput }],",
+        "  // 最後の答えの形式を指定する",
+        "  output_config: { format: {",
+        "    // 答えの本文の形を渡す",
+        "    type: \"json_schema\", schema: replySchema } },",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "targets"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "答えの本文の形を決める機能が、構造化出力です。",
+          "term": {
+            "text": "構造化出力",
+            "ruby": "こうぞうかしゅつりょく",
+            "note": "答えの本文の形を決める"
+          },
+          "figure": {
+            "show": ["input", "reply"]
+          }
+        },
+        {
+          "say": "本文の形式は、出力設定の format に指定します。",
+          "speech": "本文の形式は、出力設定のフォーマットに指定します。",
+          "part": {
+            "line": 9,
+            "text": "format",
+            "note": "本文の形式"
+          },
+          "figure": {
+            "pulse": ["reply"]
+          }
+        },
+        {
+          "say": "この schema に渡すのが、本文の形の指定です。",
+          "speech": "このスキーマに渡すのが、本文の形の指定です。",
+          "part": {
+            "line": 11,
+            "text": "schema: replySchema",
+            "note": "応答のスキーマ"
+          },
+          "figure": {
+            "tag": {
+              "reply": "形を指定"
+            }
+          }
+        },
+        {
+          "say": "応答のスキーマを表す名前も、書く人が自分で付けます。",
+          "part": {
+            "line": 11,
+            "text": "replySchema",
+            "note": "応答のスキーマ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-both",
+      "kind": "code",
+      "role": "apply",
+      "title": "一つの依頼に両方を入れる",
+      "code": [
+        "// 注文照会の依頼をまとめる",
+        "const request = {",
+        "  // モデルと出力上限と会話を指定する",
+        "  model, max_tokens: 1024, messages,",
+        "  // 注文を調べるツールに厳密な入力を指定する",
+        "  tools: [{ name: \"lookup_order\", strict: true,",
+        "    // ツールの入力の形を渡す",
+        "    input_schema: orderInput }],",
+        "  // 最後の答えの形式を指定する",
+        "  output_config: { format: {",
+        "    // 答えの本文の形を渡す",
+        "    type: \"json_schema\", schema: replySchema } },",
+        "// 依頼を閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "targets"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "注文を調べる例で、二つの設定の位置を確かめましょう。",
+          "focus": [5, 7, 9, 11],
+          "figure": {
+            "show": ["input", "reply"]
+          }
+        },
+        {
+          "say": "ここには、注文を調べるツールの名前が入っています。",
+          "part": {
+            "line": 5,
+            "text": "lookup_order",
+            "note": "注文を調べる"
+          },
+          "figure": {
+            "pulse": ["input"]
+          }
+        },
+        {
+          "say": "strict が形を決めるのは、ツールに渡す入力です。",
+          "speech": "ストリクトが形を決めるのは、ツールに渡す入力です。",
+          "part": {
+            "line": 5,
+            "text": "strict: true"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "input",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "構造化出力では、最後の本文を指定の形に合わせます。",
+          "focus": [9, 11],
+          "figure": {
+            "pulse": ["reply"],
+            "mark": [
+              {
+                "on": "reply",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "両方の形を決めたいので、同じリクエストに入れました。",
+          "focus": [1, 5, 7, 9, 11, 13],
+          "figure": {
+            "pulse": ["input", "reply"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "craft-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "図工の材料を調べる",
+      "board": "craft",
+      "think": 8,
+      "beats": [
+        {
+          "say": "図工で使う材料の在庫を調べる処理を考えます。",
+          "show": ["materials"]
+        },
+        {
+          "say": "材料名をツールへ渡す入力が、指定の形に合わない状態です。",
+          "show": ["input"],
+          "mark": [
+            {
+              "on": "input",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "最後に返す在庫の回答も、決まった形にそろえましょう。",
+          "show": ["reply"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "入力と答えの本文には、それぞれどの設定を使いますか。",
+          "pulse": ["input", "reply"]
+        }
+      ]
+    },
+    {
+      "id": "craft-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "入力と本文に別々の設定",
+      "board": "craft",
+      "beats": [
+        {
+          "say": "ツールの入力には、strict を使います。",
+          "speech": "ツールの入力には、ストリクトを使います。",
+          "mark": [
+            {
+              "on": "input",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "input": "strict"
+          },
+          "pulse": ["input"]
+        },
+        {
+          "say": "答えの本文には、構造化出力を使う組み合わせです。",
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "reply": "構造化出力"
+          },
+          "pulse": ["reply"]
+        }
+      ]
+    },
+    {
+      "id": "craft-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "どのデータを直すか",
+      "board": "craft",
+      "beats": [
+        {
+          "say": "最初に形が崩れたのは、材料名を渡すツールの入力でした。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "直す対象"
+          }
+        },
+        {
+          "say": "本文の形式を指定しても、この入力の形には効きません。",
+          "pulse": ["reply"]
+        },
+        {
+          "say": "入力の形は、ツールの定義にあるスキーマで決めます。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "入力の形"
+          }
+        },
+        {
+          "say": "その形に合わせるための設定が strict です。",
+          "speech": "その形に合わせるための設定がストリクトです。",
+          "tag": {
+            "input": "strict"
+          },
+          "mark": [
+            {
+              "on": "input",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "最後の在庫の回答には、構造化出力の指定も加えましょう。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "本文の形"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "設定を選ぶときの確認",
+      "board": "order",
+      "reset": true,
+      "beats": [
+        {
+          "say": "注文を調べて決まった形で答えるなら、両方の設定を使います。",
+          "show": ["order", "input", "reply"]
+        },
+        {
+          "say": "直したいものがツールの入力なら、見るのはツールの定義です。",
+          "pulse": ["input"],
+          "tag": {
+            "input": "strict"
+          }
+        },
+        {
+          "say": "答えの本文をそろえるなら、構造化出力の設定を確かめましょう。",
+          "pulse": ["reply"],
+          "tag": {
+            "reply": "構造化出力"
+          }
+        },
+        {
+          "say": "両方が必要なときは、一つのリクエストで指定できます。",
+          "pulse": ["input", "reply"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "8a607ff023deb3fb9ed2bbf8fbd5ff2fc6a2641945211ca84d134a3fa0573cb9"
+  }
+}

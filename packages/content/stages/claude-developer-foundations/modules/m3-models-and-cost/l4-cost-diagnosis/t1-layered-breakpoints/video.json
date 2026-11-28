@@ -1,0 +1,643 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "更新頻度の異なる指示と資料に区切りを置き、資料の更新直後と次の質問で読み込める範囲を説明できる。",
+    "stuck": "毎回変わる質問の末尾だけに区切りを置き、保存する期限を延ばせば資料を再利用できると思ってしまう。",
+    "points": ["変わる頻度の違う部分は、それぞれの終わりにキャッシュの区切りを置きます。"],
+    "leaveOut": [
+      "伸びる会話の末尾を追う区切りと自動キャッシュ",
+      "区切りをさかのぼる探索範囲",
+      "キャッシュの診断と使用量の項目",
+      "区切りの上限数と料金の計算",
+      "モデル別の最低の長さや保存期限の数値",
+      "API の設定コード"
+    ]
+  },
+  "art": {
+    "tool-kit": {
+      "prompt": "A small open blue tool pouch holding a violet wrench and a light grey screwdriver, representing the shared tool definitions used by a facility rental inquiry app. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instruction-book": {
+      "prompt": "An open white instruction booklet with a blue binding and one violet ribbon bookmark, representing the shared instructions for answering facility rental inquiries. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "contract-folder": {
+      "prompt": "A light grey document folder with blank white contract sheets and a large blue facility key beside it, representing a client's facility rental conditions. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "question-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white inquiry slip and a blue facility key, with a single empty speech bubble. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-binder": {
+      "prompt": "An open light grey ring binder with blank white pages and a blue apron beside it, representing the common procedures in a cooking class booklet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cooking-recipe": {
+      "prompt": "A removable white recipe sheet with a violet binder clip beside a natural red tomato and a small natural green lettuce, representing the changing menu pages of the same cooking class booklet. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-guide": {
+      "prompt": "A white instruction booklet with a violet binding beside a neatly folded blue shirt, representing a dry cleaning shop's shared answering instructions. All pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-tariff": {
+      "prompt": "A thick stack of blank white service information sheets held by a blue clip beside two violet clothes hangers, representing a dry cleaning shop's periodically revised service details. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "laundry-question": {
+      "prompt": "A customer hand holding a blank white inquiry slip beside a blue garment bag, with one empty violet speech bubble, representing a new question to a dry cleaning shop. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "document",
+          "label": "契約先の資料",
+          "art": "contract-folder",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "instructions",
+          "label": "共通の指示",
+          "art": "instruction-book",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "booklet": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "procedures",
+          "label": "共通の手順",
+          "art": "cooking-binder",
+          "at": [1, 1]
+        },
+        {
+          "id": "recipe",
+          "label": "今日のレシピ",
+          "art": "cooking-recipe",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "procedures-recipe",
+          "from": "procedures",
+          "to": "recipe",
+          "label": "後ろに綴じる"
+        }
+      ]
+    },
+    "flow": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "tools",
+          "label": "ツールの定義",
+          "art": "tool-kit",
+          "at": [1, 1]
+        },
+        {
+          "id": "instructions",
+          "label": "共通の指示",
+          "art": "instruction-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "document",
+          "label": "契約先の資料",
+          "art": "contract-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "question-note",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "tools-instructions",
+          "from": "tools",
+          "to": "instructions"
+        },
+        {
+          "id": "instructions-document",
+          "from": "instructions",
+          "to": "document"
+        },
+        {
+          "id": "document-question",
+          "from": "document",
+          "to": "question"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "instructions",
+          "label": "共通の指示",
+          "art": "laundry-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "document",
+          "label": "サービス資料",
+          "art": "laundry-tariff",
+          "at": [3, 1]
+        },
+        {
+          "id": "question",
+          "label": "今回の質問",
+          "art": "laundry-question",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "instructions-document",
+          "from": "instructions",
+          "to": "document",
+          "label": "次に"
+        },
+        {
+          "id": "document-question",
+          "from": "document",
+          "to": "question",
+          "label": "最後に"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "変わる頻度で分ける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "施設の貸出窓口で、契約先の資料を使います。",
+          "show": ["document"]
+        },
+        {
+          "say": "同じ資料にも、毎回違う質問が届く場面です。",
+          "show": ["question"]
+        },
+        {
+          "say": "答え方の指示は、どの質問にも共通にしましょう。",
+          "show": ["instructions"]
+        },
+        {
+          "say": "変わる頻度の違う部分は、それぞれの終わりに区切りを置きます。",
+          "pulse": ["instructions", "document"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "booklet",
+      "kind": "board",
+      "role": "example",
+      "title": "冊子を分けて綴じる",
+      "board": "booklet",
+      "beats": [
+        {
+          "say": "料理教室の冊子では、共通の手順を前に綴じます。",
+          "show": ["procedures"]
+        },
+        {
+          "say": "後ろに綴じるのは、今日のレシピです。",
+          "show": ["recipe", "procedures-recipe"]
+        },
+        {
+          "say": "献立が変わったら、レシピのページを差し替えましょう。",
+          "pulse": ["recipe"],
+          "tag": {
+            "recipe": "差し替える"
+          }
+        },
+        {
+          "say": "前にある共通の手順は、そのまま使えます。",
+          "pulse": ["procedures"],
+          "tag": {
+            "procedures": "そのまま"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrong-end",
+      "kind": "board",
+      "role": "syntax",
+      "title": "質問まで含めた区切り",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "保存する前半の終わりが、キャッシュの区切りです。",
+          "term": {
+            "text": "キャッシュの区切り",
+            "ruby": "キャッシュのくぎり",
+            "note": "保存する前半の終わり"
+          },
+          "show": [
+            "tools",
+            "instructions",
+            "document",
+            "question",
+            "tools-instructions",
+            "instructions-document",
+            "document-question"
+          ]
+        },
+        {
+          "say": "窓口のアプリでは、質問の末尾だけに置いていました。",
+          "tag": {
+            "question": "末尾に区切り"
+          },
+          "pulse": ["question"]
+        },
+        {
+          "say": "次の質問が違うと、その末尾までの内容は一致しません。",
+          "tag": {
+            "question": "質問が違う"
+          },
+          "mark": [
+            {
+              "on": "question",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "資料まで同じでも、その末尾に読み込める記録がない状態です。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "記録なし"
+          }
+        },
+        {
+          "say": "保存期限を延ばしても、質問の違いは残ります。",
+          "pulse": ["question"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "layered",
+      "kind": "board",
+      "role": "syntax",
+      "title": "頻度ごとに末尾を選ぶ",
+      "board": "flow",
+      "reset": true,
+      "beats": [
+        {
+          "say": "頻度の違う部分に分ける方法を、階層型の区切りと呼びます。",
+          "term": {
+            "text": "階層型の区切り",
+            "ruby": "かいそうがたのくぎり",
+            "note": "変わる頻度ごとに末尾を選ぶ"
+          },
+          "show": [
+            "tools",
+            "instructions",
+            "document",
+            "question",
+            "tools-instructions",
+            "instructions-document",
+            "document-question"
+          ]
+        },
+        {
+          "say": "ほぼ変わらない指示の末尾が、一つ目の位置です。",
+          "pulse": ["tools", "instructions"],
+          "tag": {
+            "instructions": "末尾に区切り"
+          }
+        },
+        {
+          "say": "日に数回変わる資料の末尾にも、区切りを置きます。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "末尾に区切り"
+          }
+        },
+        {
+          "say": "毎回変わる質問には、この例では置きません。",
+          "pulse": ["question"],
+          "tag": {
+            "question": "区切りなし"
+          }
+        },
+        {
+          "say": "今回は、両方とも保存に必要な長さを満たす例です。",
+          "pulse": ["instructions", "document"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "two-prefixes",
+      "kind": "board",
+      "role": "apply",
+      "title": "先頭からの範囲を比べる",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "二つの区切りが指す範囲を、先頭からたどります。",
+          "pulse": ["tools"]
+        },
+        {
+          "say": "一つ目は、ツールの定義から指示の末尾までです。",
+          "travel": {
+            "along": ["tools-instructions"],
+            "icon": "file"
+          },
+          "pulse": ["tools", "instructions"]
+        },
+        {
+          "say": "二つ目は、先頭から資料の末尾までを含みます。",
+          "travel": {
+            "along": ["tools-instructions", "instructions-document"],
+            "icon": "file"
+          },
+          "pulse": ["tools", "instructions", "document"]
+        },
+        {
+          "say": "資料の部分だけを、別に保存する区切りではありません。",
+          "tag": {
+            "document": "先頭から"
+          },
+          "pulse": ["document"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "updated",
+      "kind": "board",
+      "role": "apply",
+      "title": "資料を更新した直後",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "資料を更新したあと、最初の質問を送ります。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "更新した資料",
+            "question": "新しい質問"
+          }
+        },
+        {
+          "say": "保存済みの前半を使うのが、キャッシュの読み込みです。",
+          "term": {
+            "text": "キャッシュの読み込み",
+            "ruby": "キャッシュのよみこみ",
+            "note": "保存済みの同じ前半を使う"
+          }
+        },
+        {
+          "say": "このときは、指示の末尾までを読み込みます。",
+          "pulse": ["tools", "instructions"],
+          "tag": {
+            "instructions": "読み込み"
+          },
+          "travel": {
+            "along": ["tools-instructions"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "新しい資料の分は、書き込みの対象です。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "書き込み"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "next-question",
+      "kind": "board",
+      "role": "apply",
+      "title": "同じ資料に次の質問",
+      "board": "flow",
+      "beats": [
+        {
+          "say": "続いて、同じ資料に別の質問が届きました。",
+          "pulse": ["question"],
+          "tag": {
+            "question": "別の質問"
+          }
+        },
+        {
+          "say": "資料までの内容は、前回と同じです。",
+          "pulse": ["tools", "instructions", "document"]
+        },
+        {
+          "say": "今度は、資料の末尾まで読み込めます。",
+          "tag": {
+            "document": "読み込み"
+          },
+          "travel": {
+            "along": ["tools-instructions", "instructions-document"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "変わった質問の位置は、二つの区切りより後ろです。",
+          "pulse": ["question"],
+          "tag": {
+            "question": "区切りの後"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "店の資料を更新したら",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "クリーニング店で、指示までの前半は保存済みです。",
+          "show": ["instructions"]
+        },
+        {
+          "say": "サービス資料は日に数回、質問は毎回変わります。",
+          "show": ["document", "question", "instructions-document", "document-question"],
+          "tag": {
+            "document": "日に数回",
+            "question": "毎回"
+          }
+        },
+        {
+          "say": "指示と資料の末尾に、区切りを置きました。",
+          "tag": {
+            "instructions": "末尾に区切り",
+            "document": "末尾に区切り"
+          }
+        },
+        {
+          "say": "今回は資料だけを更新して、質問を送ります。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "更新"
+          }
+        },
+        {
+          "say": "このとき、どこまで読み込めるでしょうか。",
+          "pulse": ["instructions", "document"],
+          "mark": [
+            {
+              "on": "instructions",
+              "kind": "question"
+            },
+            {
+              "on": "document",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "指示の末尾まで読む",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "読み込めるのは、共通の指示の末尾までです。",
+          "pulse": ["instructions"],
+          "mark": [
+            {
+              "on": "instructions",
+              "kind": "check"
+            }
+          ],
+          "tag": {
+            "instructions": "読み込み"
+          }
+        },
+        {
+          "say": "更新した資料の分は、新しく書き込みます。",
+          "pulse": ["document"],
+          "unmark": ["document"],
+          "tag": {
+            "document": "書き込み"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "一致する範囲をたどる",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "指示までの前半は変わらず、保存した内容と一致します。",
+          "pulse": ["instructions"]
+        },
+        {
+          "say": "資料の末尾まで含めると、更新した内容が違う状態です。",
+          "pulse": ["instructions", "document"],
+          "tag": {
+            "document": "前回と違う"
+          }
+        },
+        {
+          "say": "同じ資料への次の質問では、資料の末尾まで読めます。",
+          "pulse": ["document"],
+          "tag": {
+            "document": "次は読み込み",
+            "question": "次の質問"
+          }
+        },
+        {
+          "say": "もし指示が変われば、資料までの区切りも一致しません。",
+          "pulse": ["instructions", "document"],
+          "tag": {
+            "instructions": "指示を変更",
+            "document": "先頭が違う"
+          },
+          "mark": [
+            {
+              "on": "instructions",
+              "kind": "cross"
+            },
+            {
+              "on": "document",
+              "kind": "cross"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "同じ資料に質問が続くなら",
+      "board": "flow",
+      "reset": true,
+      "beats": [
+        {
+          "say": "同じ契約先の資料に何度も質問が来る場面で使います。",
+          "show": [
+            "tools",
+            "instructions",
+            "document",
+            "question",
+            "tools-instructions",
+            "instructions-document",
+            "document-question"
+          ]
+        },
+        {
+          "say": "ほぼ変わらない指示と、更新する資料が分けどころです。",
+          "pulse": ["instructions", "document"],
+          "tag": {
+            "instructions": "ほぼ固定",
+            "document": "日に数回"
+          }
+        },
+        {
+          "say": "送る内容を保ったまま、それぞれの末尾に区切りを置きます。",
+          "tag": {
+            "instructions": "末尾に区切り",
+            "document": "末尾に区切り"
+          }
+        },
+        {
+          "say": "置く前に、どこまでが次も同じかを確かめましょう。",
+          "pulse": ["tools", "instructions", "document"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "98985ef9bbc2920ab4d4f2d745354fb77ac7e1144aea467d7dd93f5f2f1c0112"
+  }
+}

@@ -1,0 +1,736 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "実際の用途に近く、例外を含む種類の違う三つから五つの例を選び、期待する出力の形を示せる。",
+    "stuck": "同じ種類の例を数だけそろえ、例外的な入力に対して期待する出力を見せていない。",
+    "points": ["期待する出力の形は、実際の用途に近く種類の違う例を 3〜5 個示します。"],
+    "leaveOut": [
+      "理由を添えた具体的な指示の書き方",
+      "タグの具体的な構文と入れ子",
+      "長い資料を渡す順序",
+      "API の呼び出し方",
+      "例による改善の数値的な保証"
+    ]
+  },
+  "art": {
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white meal planning memo and a violet pencil, simple attentive facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "curry": {
+      "prompt": "A white plate containing golden brown curry with orange carrot pieces beside white rice, viewed slightly from above. Natural food colours, objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "udon": {
+      "prompt": "A white bowl of pale udon noodles in light brown broth with naturally green scallions, objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "sandwich": {
+      "prompt": "Two triangular sandwiches with golden bread, green lettuce and red tomato on a white plate, natural food colours, objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "meal-note": {
+      "prompt": "A white meal planning note with two blank writing areas indicated only by a small blue bowl pictogram and a small violet person pictogram, with a blue clip at the top. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "example-bundle": {
+      "prompt": "Exactly three white meal planning notes fanned out, each with a small blue bowl pictogram and a small violet person pictogram in matching positions and otherwise blank writing areas, held together by a violet clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white meal planning note. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-film": {
+      "prompt": "A blue photographic film canister with a short dark film strip curling beside it, with light grey empty exposure rectangles. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-note": {
+      "prompt": "A white photographic processing order slip held by a blue clip, with a small blue film canister pictogram and two empty writing areas, one for processing type and one for print quantity. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "meal",
+          "label": "献立のメモ",
+          "art": "curry",
+          "at": [1, 1]
+        },
+        {
+          "id": "writer",
+          "label": "書く人",
+          "art": "learner",
+          "at": [3, 1]
+        },
+        {
+          "id": "samples",
+          "label": "種類の違う例",
+          "art": "example-bundle",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "example": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "カレー三人分",
+          "art": "curry",
+          "at": [1, 1]
+        },
+        {
+          "id": "dish",
+          "label": "料理名",
+          "art": "meal-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "people",
+          "label": "人数",
+          "art": "meal-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "method": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "samples",
+          "label": "例",
+          "art": "example-bundle",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "output",
+          "label": "期待する記録",
+          "art": "meal-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "give",
+          "from": "samples",
+          "to": "claude",
+          "label": "示す"
+        },
+        {
+          "id": "form",
+          "from": "claude",
+          "to": "output",
+          "label": "形を伝える"
+        }
+      ]
+    },
+    "variety": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "curry",
+          "label": "カレー三人分",
+          "art": "curry",
+          "at": [1, 1]
+        },
+        {
+          "id": "udon",
+          "label": "うどん二人分",
+          "art": "udon",
+          "at": [3, 1]
+        },
+        {
+          "id": "missing",
+          "label": "人数の記載なし",
+          "art": "sandwich",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "records": {
+      "cols": 5,
+      "rows": 3,
+      "nodes": [
+        {
+          "id": "curry",
+          "label": "料理名",
+          "art": "curry",
+          "at": [1, 1]
+        },
+        {
+          "id": "three",
+          "label": "人数",
+          "art": "meal-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "udon",
+          "label": "料理名",
+          "art": "udon",
+          "at": [1, 2]
+        },
+        {
+          "id": "two",
+          "label": "人数",
+          "art": "meal-note",
+          "at": [5, 2]
+        },
+        {
+          "id": "sandwich",
+          "label": "料理名",
+          "art": "sandwich",
+          "at": [1, 3]
+        },
+        {
+          "id": "missing",
+          "label": "人数",
+          "art": "meal-note",
+          "at": [5, 3]
+        }
+      ]
+    },
+    "separate": {
+      "cols": 5,
+      "rows": 1,
+      "zones": [
+        {
+          "id": "examples",
+          "label": "例を包むタグ",
+          "tone": "violet",
+          "cells": [3, 1, 3, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "instruction",
+          "label": "指示",
+          "art": "meal-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "samples",
+          "label": "三つの例",
+          "art": "example-bundle",
+          "at": [4, 1]
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "color-one",
+          "label": "①カラー十枚",
+          "art": "photo-film",
+          "at": [1, 1]
+        },
+        {
+          "id": "color-two",
+          "label": "①カラー二十枚",
+          "art": "photo-film",
+          "at": [3, 1]
+        },
+        {
+          "id": "color-three",
+          "label": "①カラー三十枚",
+          "art": "photo-film",
+          "at": [5, 1]
+        },
+        {
+          "id": "missing",
+          "label": "②枚数未記入",
+          "art": "photo-note",
+          "at": [1, 2]
+        },
+        {
+          "id": "mono",
+          "label": "②白黒十枚",
+          "art": "photo-film",
+          "at": [3, 2]
+        },
+        {
+          "id": "color",
+          "label": "②カラー十枚",
+          "art": "photo-film",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "photoRecord": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "カラーの注文",
+          "art": "photo-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "type",
+          "label": "種類",
+          "art": "photo-film",
+          "at": [3, 1]
+        },
+        {
+          "id": "count",
+          "label": "枚数",
+          "art": "photo-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "meal",
+          "label": "献立の記録",
+          "art": "meal-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "photo",
+          "label": "現像の記録",
+          "art": "photo-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "samples",
+          "label": "例の選び方",
+          "art": "example-bundle",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "記録の形を例で伝える",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "献立のメモを、同じ形で書きたい場面です。",
+          "show": ["meal"]
+        },
+        {
+          "say": "書く人に、料理名と人数をそろえるよう頼みます。",
+          "show": ["writer"]
+        },
+        {
+          "say": "完成したメモを、見本として添えてみましょう。",
+          "show": ["samples"]
+        },
+        {
+          "say": "用途に近く種類の違う例を、三つから五つ示します。",
+          "pulse": ["samples"]
+        }
+      ]
+    },
+    {
+      "id": "meal-note",
+      "kind": "board",
+      "role": "example",
+      "title": "完成したメモを見せる",
+      "board": "example",
+      "beats": [
+        {
+          "say": "家族に、カレー三人分の予定を記録してもらいます。",
+          "show": ["request"]
+        },
+        {
+          "say": "見本の最初の欄は、料理名の「カレー」です。",
+          "show": ["dish"],
+          "tag": {
+            "dish": "カレー"
+          }
+        },
+        {
+          "say": "次の欄に、人数の「三人」を書きました。",
+          "show": ["people"],
+          "tag": {
+            "people": "三人"
+          }
+        },
+        {
+          "say": "何を書くかと並び方を、この完成形で伝えます。",
+          "pulse": ["dish", "people"]
+        }
+      ]
+    },
+    {
+      "id": "few-shot",
+      "kind": "board",
+      "role": "syntax",
+      "title": "例をまとめて示す",
+      "board": "method",
+      "beats": [
+        {
+          "say": "期待する出力を具体的に見せるものを、例と呼びます。",
+          "term": {
+            "text": "例",
+            "ruby": "れい",
+            "note": "期待する出力を具体的に示す"
+          }
+        },
+        {
+          "say": "今回は、料理名と人数を書いたメモが例です。",
+          "show": ["samples"]
+        },
+        {
+          "say": "複数の例を示す方法を、few-shot と呼びます。",
+          "speech": "複数の例を示す方法を、フューショットと呼びます。",
+          "term": {
+            "text": "few-shot",
+            "ruby": "フューショット",
+            "note": "いくつかの例を示す方法"
+          }
+        },
+        {
+          "say": "Claude に渡す、三つのメモがその例です。",
+          "speech": "クロードに渡す、三つのメモがその例です。",
+          "show": ["claude", "give"],
+          "travel": {
+            "along": ["give"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "例で、出力の形や調子や構成を伝えます。",
+          "show": ["output", "form"],
+          "pulse": ["output"]
+        }
+      ]
+    },
+    {
+      "id": "choose-examples",
+      "kind": "board",
+      "role": "syntax",
+      "title": "種類の違う例を選ぶ",
+      "board": "variety",
+      "beats": [
+        {
+          "say": "例の入力と出力は、実際の用途に近づけましょう。",
+          "show": ["curry"],
+          "tag": {
+            "curry": "献立の記録"
+          }
+        },
+        {
+          "say": "料理が違う例も加えて、同じ料理への偏りを減らします。",
+          "show": ["udon"]
+        },
+        {
+          "say": "いつもと違う場合が、ここでいう例外です。",
+          "term": {
+            "text": "例外",
+            "ruby": "れいがい",
+            "note": "通常とは違う場合"
+          },
+          "pulse": []
+        },
+        {
+          "say": "人数が書かれていない献立を、例外として加えます。",
+          "show": ["missing"],
+          "tag": {
+            "missing": "人数なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-examples",
+      "kind": "board",
+      "role": "apply",
+      "title": "三つの記録を並べる",
+      "board": "records",
+      "beats": [
+        {
+          "say": "最初は、カレー三人分のメモから作る例です。",
+          "show": ["curry", "three"],
+          "tag": {
+            "curry": "カレー",
+            "three": "三人"
+          }
+        },
+        {
+          "say": "うどん二人分も、同じ欄の並びで記録します。",
+          "show": ["udon", "two"],
+          "tag": {
+            "udon": "うどん",
+            "two": "二人"
+          }
+        },
+        {
+          "say": "三つ目のサンドイッチには、人数が書かれていません。",
+          "show": ["sandwich", "missing"],
+          "tag": {
+            "sandwich": "サンドイッチ"
+          },
+          "mark": [
+            {
+              "on": "missing",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "この見本では、人数の欄を「未記入」としました。",
+          "tag": {
+            "missing": "未記入"
+          },
+          "unmark": ["missing"]
+        },
+        {
+          "say": "通常の記録と、情報が足りない記録の形を示せます。",
+          "pulse": ["three", "two", "missing"]
+        }
+      ]
+    },
+    {
+      "id": "separate-examples",
+      "kind": "board",
+      "role": "apply",
+      "title": "指示と例を分ける",
+      "board": "separate",
+      "beats": [
+        {
+          "say": "指示には、料理名と人数をこの順に書くよう指定します。",
+          "show": ["instruction"],
+          "tag": {
+            "instruction": "料理名と人数"
+          }
+        },
+        {
+          "say": "添えるのは、いま作った三つの記録の例です。",
+          "show": ["samples"]
+        },
+        {
+          "say": "例はタグで包み、指示との区切りを見せましょう。",
+          "show": ["examples"]
+        },
+        {
+          "say": "どこが指示でどこが見本かを、区別して渡します。",
+          "pulse": ["instruction", "examples"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "現像注文の例を選ぶ",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "写真の現像注文を、同じ形で記録したい場面です。",
+          "show": ["color-one"],
+          "tag": {
+            "color-one": "カラー十枚"
+          }
+        },
+        {
+          "say": "一つ目には、枚数だけが違うカラー注文を三つ並べました。",
+          "show": ["color-two", "color-three"],
+          "tag": {
+            "color-two": "カラー二十枚",
+            "color-three": "カラー三十枚"
+          }
+        },
+        {
+          "say": "二つ目には、カラーと白黒と枚数未記入の注文を入れます。",
+          "show": ["color", "mono", "missing"],
+          "tag": {
+            "color": "カラー十枚",
+            "mono": "白黒十枚",
+            "missing": "カラー未記入"
+          }
+        },
+        {
+          "say": "札は期待する記録で、どれも種類と枚数の順です。",
+          "pulse": ["color-one", "color-two", "color-three", "color", "mono", "missing"]
+        },
+        {
+          "say": "実際に使う例として、どちらの組を選ぶとよいでしょうか。",
+          "mark": [
+            {
+              "on": "color-one",
+              "kind": "question"
+            },
+            {
+              "on": "color-two",
+              "kind": "question"
+            },
+            {
+              "on": "color-three",
+              "kind": "question"
+            },
+            {
+              "on": "color",
+              "kind": "question"
+            },
+            {
+              "on": "mono",
+              "kind": "question"
+            },
+            {
+              "on": "missing",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つ目の組を選ぶ",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "選ぶのは、種類の違う注文を含む二つ目の組です。",
+          "mark": [
+            {
+              "on": "color",
+              "kind": "check"
+            },
+            {
+              "on": "mono",
+              "kind": "check"
+            },
+            {
+              "on": "missing",
+              "kind": "check"
+            },
+            {
+              "on": "color-one",
+              "kind": "cross"
+            },
+            {
+              "on": "color-two",
+              "kind": "cross"
+            },
+            {
+              "on": "color-three",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["color", "mono", "missing"]
+        },
+        {
+          "say": "枚数の記入がない場合の記録も、例に含めています。",
+          "pulse": ["missing"]
+        }
+      ]
+    },
+    {
+      "id": "why-variety",
+      "kind": "board",
+      "role": "explain",
+      "title": "枚数の違いだけでは偏る",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "一つ目も、例の数は三つで目安に収まっています。",
+          "pulse": ["color-one", "color-two", "color-three"]
+        },
+        {
+          "say": "ただし、記録する注文はカラーに偏ったままです。",
+          "pulse": ["color-one"]
+        },
+        {
+          "say": "似た例だけでは、意図しない癖まで真似されるかもしれません。",
+          "mark": [
+            {
+              "on": "color-two",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "二つ目には白黒もあり、違う種類の記録を示せます。",
+          "pulse": ["mono"]
+        }
+      ]
+    },
+    {
+      "id": "why-missing",
+      "kind": "board",
+      "role": "explain",
+      "title": "記入がない場合も見せる",
+      "board": "photoRecord",
+      "beats": [
+        {
+          "say": "枚数が書かれていないカラー注文を、例にしたとします。",
+          "show": ["order"],
+          "tag": {
+            "order": "枚数なし"
+          }
+        },
+        {
+          "say": "この見本でも、最初の欄は現像の種類です。",
+          "show": ["type"],
+          "tag": {
+            "type": "カラー"
+          }
+        },
+        {
+          "say": "枚数の欄には「未記入」と書く形を見せましょう。",
+          "show": ["count"],
+          "tag": {
+            "count": "未記入"
+          }
+        },
+        {
+          "say": "例外の決まりを並べるより、代表的な例で示します。",
+          "pulse": ["type", "count"]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "記録の形をそろえるとき",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "献立の記録では、書く欄と順番を例で伝えます。",
+          "show": ["meal"]
+        },
+        {
+          "say": "現像の記録でも、出力の形をそろえたいときに便利です。",
+          "show": ["photo"]
+        },
+        {
+          "say": "例を選ぶときは、実際の入力と出力に似せましょう。",
+          "show": ["samples"]
+        },
+        {
+          "say": "例外も含めた、種類の違う三つから五つの例を示します。",
+          "pulse": ["samples"],
+          "tag": {
+            "samples": "三つから五つ"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "af417a9f8d04102fa51694f30e5276dd827b94d8f597d1c59ce09a096c7f2c49"
+  }
+}

@@ -1,0 +1,794 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "長い資料への質問で、関係する文の引用を先に求め、根拠のない主張を取り下げる指示を書ける。",
+    "stuck": "もっともらしい答えをそのまま使い、資料のどの文が根拠なのか確かめられない。",
+    "points": ["長い資料の事実は、先に引用を抜き出させてから答えさせます。"],
+    "leaveOut": [
+      "分からないと答えるための指示",
+      "同じ質問を何回かして答えを比べる方法",
+      "考える過程の要約や続けて確かめる方法",
+      "秘密をエージェントに渡さない仕組み",
+      "トークン数の細かな目安"
+    ]
+  },
+  "art": {
+    "gym-guide": {
+      "prompt": "An open thick white sports hall guide booklet with a blue binding and a small pictorial basketball on its cover, several light grey pages fanned out. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "indoor-shoes": {
+      "prompt": "A pair of plain white indoor sports shoes with blue soles, neatly aligned beside a violet fabric shoe bag. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "quote-slip": {
+      "prompt": "A hand holding a narrow white paper excerpt with a blue paper clip, next to an open light grey booklet with one violet page tab. The excerpt is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "source-tab": {
+      "prompt": "A close view of an open white guide booklet with a large blue bookmark inserted at one page and a violet tab on the page edge. Pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-note": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a white answer note and pointing at it, with a simple attentive face. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lunch-duty": {
+      "prompt": "A white school lunch duty booklet with a small pictorial ladle on the cover, next to a blue apron, a white serving bowl and a light grey ladle. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "work-handbook": {
+      "prompt": "A thick white workplace handbook with a violet binding beside a blue clipboard holding a blank white sheet and a blue pen. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "体育館の案内",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "shoes",
+          "label": "必要な靴",
+          "art": "indoor-shoes",
+          "at": [3, 1]
+        },
+        {
+          "id": "quote",
+          "label": "先に引用",
+          "art": "quote-slip",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "gym": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "持ち物の節",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "shoes",
+          "label": "内履きを持参",
+          "art": "indoor-shoes",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "白色が必須",
+          "art": "answer-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "written",
+          "from": "guide",
+          "to": "shoes",
+          "label": "記載あり"
+        },
+        {
+          "id": "added",
+          "from": "shoes",
+          "to": "answer",
+          "label": "言い足す"
+        }
+      ]
+    },
+    "order": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "長い資料",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "quote",
+          "label": "根拠の引用",
+          "art": "quote-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "引用から回答",
+          "art": "answer-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "source",
+          "to": "quote",
+          "label": "抜き出す"
+        },
+        {
+          "id": "base",
+          "from": "quote",
+          "to": "answer",
+          "label": "もとにする"
+        }
+      ]
+    },
+    "trace": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claim",
+          "label": "主張",
+          "art": "answer-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "quote",
+          "label": "根拠の引用",
+          "art": "quote-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "where",
+          "label": "出どころ",
+          "art": "source-tab",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "support",
+          "from": "claim",
+          "to": "quote",
+          "label": "根拠"
+        },
+        {
+          "id": "locate",
+          "from": "quote",
+          "to": "where",
+          "label": "場所"
+        }
+      ]
+    },
+    "gymAnswer": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "持ち物の節",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "quote",
+          "label": "内履きを持参",
+          "art": "quote-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "内履きが必要",
+          "art": "answer-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "source",
+          "to": "quote",
+          "label": "そのまま"
+        },
+        {
+          "id": "answer-from",
+          "from": "quote",
+          "to": "answer",
+          "label": "答える"
+        }
+      ]
+    },
+    "gymReview": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "利用案内",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "quoted",
+          "label": "内履きを持参",
+          "art": "quote-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "supported",
+          "label": "内履きが必要",
+          "art": "indoor-shoes",
+          "at": [5, 1]
+        },
+        {
+          "id": "unsupported",
+          "label": "白色が必須",
+          "art": "answer-note",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "find",
+          "from": "source",
+          "to": "quoted"
+        },
+        {
+          "id": "supports",
+          "from": "quoted",
+          "to": "supported"
+        }
+      ]
+    },
+    "lunchQuiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "給食当番の手引",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "question",
+          "label": "当番の交代日",
+          "art": "lunch-duty",
+          "at": [3, 1]
+        },
+        {
+          "id": "first",
+          "label": "すぐに答える",
+          "art": "answer-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "second",
+          "label": "先に引用する",
+          "art": "lunch-duty",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "lunchReason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "交代の節",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "quote",
+          "label": "月曜に交代",
+          "art": "lunch-duty",
+          "at": [3, 1]
+        },
+        {
+          "id": "answer",
+          "label": "交代日は月曜",
+          "art": "lunch-duty",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "extract",
+          "from": "source",
+          "to": "quote",
+          "label": "抜き出す"
+        },
+        {
+          "id": "base",
+          "from": "quote",
+          "to": "answer",
+          "label": "根拠にする"
+        }
+      ]
+    },
+    "lunchReview": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "quote",
+          "label": "月曜に交代",
+          "art": "lunch-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "answer",
+          "label": "交代日は月曜",
+          "art": "lunch-duty",
+          "at": [3, 1]
+        },
+        {
+          "id": "extra",
+          "label": "欠席なら翌日",
+          "art": "lunch-duty",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "supports",
+          "from": "quote",
+          "to": "answer",
+          "label": "支える"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "gym",
+          "label": "施設の利用案内",
+          "art": "gym-guide",
+          "at": [1, 1]
+        },
+        {
+          "id": "work",
+          "label": "職場の手引",
+          "art": "work-handbook",
+          "at": [3, 1]
+        },
+        {
+          "id": "quote",
+          "label": "引用から回答",
+          "art": "quote-slip",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "答えを資料に結びつける",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "体育館の長い利用案内から、持ち物を調べます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "知りたいのは、どんな靴を用意するかです。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "まず、答えの根拠になる文を抜き出してもらいましょう。",
+          "show": ["quote"]
+        },
+        {
+          "say": "長い資料の事実は、先に引用を抜き出させてから答えさせます。",
+          "pulse": ["guide", "quote"]
+        }
+      ]
+    },
+    {
+      "id": "gym-example",
+      "kind": "board",
+      "role": "example",
+      "title": "案内にない色の指定",
+      "board": "gym",
+      "beats": [
+        {
+          "say": "架空の利用案内で、持ち物の節を読んでみましょう。",
+          "show": ["guide"]
+        },
+        {
+          "say": "そこには、内履きを持参と書いてあります。",
+          "show": ["shoes", "written"]
+        },
+        {
+          "say": "ところが回答には、白い靴が必要だと書かれていました。",
+          "show": ["answer", "added"]
+        },
+        {
+          "say": "案内にない色の指定は、この文からは確かめられません。",
+          "pulse": ["answer"],
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quote-order",
+      "kind": "board",
+      "role": "syntax",
+      "title": "引用を先に求める",
+      "board": "order",
+      "beats": [
+        {
+          "say": "答えを支える資料の文を示すことが、根拠の引用です。",
+          "term": {
+            "text": "根拠の引用",
+            "ruby": "こんきょのいんよう",
+            "note": "答えを支える資料の文"
+          },
+          "pause": 1
+        },
+        {
+          "say": "この図では、資料から抜き出す文に当たります。",
+          "show": ["source", "quote", "extract"],
+          "travel": {
+            "along": ["extract"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "抜き出すときは、関係する箇所を一字一句残してください。",
+          "pulse": ["quote"],
+          "tag": {
+            "quote": "一字一句"
+          }
+        },
+        {
+          "say": "その引用をもとに答える、という順番です。",
+          "show": ["answer", "base"],
+          "travel": {
+            "along": ["base"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "答えが資料の文に結びつき、誤りを減らせます。",
+          "pulse": ["quote", "answer"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "claim-source",
+      "kind": "board",
+      "role": "syntax",
+      "title": "何をどこから言えるか",
+      "board": "trace",
+      "beats": [
+        {
+          "say": "答えの中で言っている内容を、主張と呼びます。",
+          "term": {
+            "text": "主張",
+            "ruby": "しゅちょう",
+            "note": "答えで述べている内容"
+          },
+          "show": ["claim"]
+        },
+        {
+          "say": "この例なら、内履きが必要だという部分です。",
+          "tag": {
+            "claim": "内履きが必要"
+          },
+          "pulse": ["claim"]
+        },
+        {
+          "say": "主張ごとに、根拠になる引用を添えさせましょう。",
+          "show": ["quote", "support"],
+          "tag": {
+            "quote": "内履きを持参"
+          }
+        },
+        {
+          "say": "引用した資料や箇所を示すのが、出どころです。",
+          "term": {
+            "text": "出どころ",
+            "ruby": "でどころ",
+            "note": "引用した資料や箇所"
+          },
+          "pause": 1
+        },
+        {
+          "say": "利用案内の持ち物の節、と場所まで示させます。",
+          "show": ["where", "locate"],
+          "tag": {
+            "where": "持ち物の節"
+          },
+          "pulse": ["where"]
+        }
+      ]
+    },
+    {
+      "id": "request-quotes",
+      "kind": "board",
+      "role": "apply",
+      "title": "利用案内への頼み方",
+      "board": "gymAnswer",
+      "beats": [
+        {
+          "say": "利用案内を渡し、必要な靴について尋ねる場面です。",
+          "show": ["source"]
+        },
+        {
+          "say": "最初に、関係する文をそのまま抜き出すよう頼みます。",
+          "show": ["quote", "extract"],
+          "travel": {
+            "along": ["extract"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "抜き出す文は、「内履きを持参」でした。",
+          "pulse": ["quote"]
+        },
+        {
+          "say": "続けて、その引用をもとに答えるよう指示しましょう。",
+          "show": ["answer", "answer-from"],
+          "travel": {
+            "along": ["answer-from"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "内履きが必要という回答に、持ち物の節を添えさせます。",
+          "pulse": ["answer"],
+          "tag": {
+            "answer": "持ち物の節"
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-claims",
+      "kind": "board",
+      "role": "apply",
+      "title": "根拠のない主張を外す",
+      "board": "gymReview",
+      "beats": [
+        {
+          "say": "回答ができたら、主張ごとの根拠を探させましょう。",
+          "show": ["source", "quoted", "supported", "find", "supports"]
+        },
+        {
+          "say": "内履きが必要という主張には、対応する引用があります。",
+          "pulse": ["quoted", "supported"],
+          "mark": [
+            {
+              "on": "supported",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "白色が必須という主張を支える文は、見つかりません。",
+          "show": ["unsupported"],
+          "pulse": ["unsupported"],
+          "mark": [
+            {
+              "on": "unsupported",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "引用がない主張は取り下げる、と指示に加えます。",
+          "hide": ["unsupported"],
+          "pulse": ["supported"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "給食当番の交代日",
+      "board": "lunchQuiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "今度は、給食当番の長い手引を渡した場面です。",
+          "show": ["guide"]
+        },
+        {
+          "say": "当番の交代日を調べるため、二つの頼み方を比べます。",
+          "show": ["question"]
+        },
+        {
+          "say": "一つ目では、交代日だけをすぐ答えるよう頼みました。",
+          "show": ["first"]
+        },
+        {
+          "say": "二つ目では、関係する文を先に引用させてから答えさせます。",
+          "show": ["second"]
+        },
+        {
+          "say": "資料の文と答えを結びつけるのは、どちらでしょうか。",
+          "pulse": ["first", "second"],
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "引用を先にする依頼",
+      "board": "lunchQuiz",
+      "beats": [
+        {
+          "say": "答えは、引用を先に求める二つ目の頼み方です。",
+          "pulse": ["second"],
+          "mark": [
+            {
+              "on": "second",
+              "kind": "check"
+            },
+            {
+              "on": "first",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "引用した文をもとに、交代日を答えさせます。",
+          "tag": {
+            "second": "引用が根拠"
+          },
+          "pulse": ["guide", "second"]
+        }
+      ]
+    },
+    {
+      "id": "trace-answer",
+      "kind": "board",
+      "role": "explain",
+      "title": "手引の文から答えへ",
+      "board": "lunchReason",
+      "beats": [
+        {
+          "say": "手引の交代の節に、「月曜に交代」と書かれていました。",
+          "show": ["source"],
+          "tag": {
+            "source": "月曜に交代"
+          }
+        },
+        {
+          "say": "まず、その文を変えずに抜き出します。",
+          "show": ["quote", "extract"],
+          "travel": {
+            "along": ["extract"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "この引用が、交代日は月曜だと答える根拠です。",
+          "show": ["answer", "base"],
+          "travel": {
+            "along": ["base"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "出どころも付ければ、手引のどこを読んだか確かめられます。",
+          "pulse": ["source"],
+          "tag": {
+            "answer": "交代の節"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "remove-extra",
+      "kind": "board",
+      "role": "explain",
+      "title": "引用で言える範囲",
+      "board": "lunchReview",
+      "beats": [
+        {
+          "say": "「月曜に交代」という文は、交代日の主張を支えます。",
+          "show": ["quote", "answer", "supports"],
+          "mark": [
+            {
+              "on": "answer",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "欠席したら翌日に交代する、という決まりは別の主張です。",
+          "show": ["extra"],
+          "pulse": ["extra"]
+        },
+        {
+          "say": "この手引には、その主張に対応する引用が見つかりません。",
+          "mark": [
+            {
+              "on": "extra",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "その場合は、根拠のない主張を取り下げさせましょう。",
+          "hide": ["extra"],
+          "pulse": ["quote", "answer"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "長い資料を読む依頼で",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "施設の利用案内から、必要な持ち物を調べるときに使います。",
+          "show": ["gym"]
+        },
+        {
+          "say": "職場の長い手引から、決まりを調べるときも同じです。",
+          "show": ["work"]
+        },
+        {
+          "say": "関係する文の引用と出どころを、先に求めましょう。",
+          "show": ["quote"]
+        },
+        {
+          "say": "その引用をもとに答えさせ、根拠のない主張は取り下げさせます。",
+          "pulse": ["quote"],
+          "tag": {
+            "quote": "先に引用"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c84fb532b65f4c9feab58bd88841f772d2f199442e5a0e7c22cb82c1a42419ab"
+  }
+}

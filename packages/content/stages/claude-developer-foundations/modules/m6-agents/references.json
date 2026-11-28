@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
-  "unitId": "claude-developer-foundations/m6-agents@7",
-  "contentHash": "192d8f05072cdff40c2a5d122e3c379f252543ee9f91caff08ed9fa43508dff4",
+  "unitId": "claude-developer-foundations/m6-agents@8",
+  "contentHash": "d44a90ef568e2488d6df39eb2e5f8046e11fac98d8d401922ce9199490635738",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

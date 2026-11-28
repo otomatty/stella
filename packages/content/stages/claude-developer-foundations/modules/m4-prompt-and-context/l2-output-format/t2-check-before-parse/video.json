@@ -1,0 +1,861 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "構造化出力の停止理由を先に確認し、通常終了・途中終了・拒否に応じた扱いを説明できる。",
+    "stuck": "構造化出力なら必ず JSON として読めると思い、途中で切れた本文もそのまま読み取ろうとする。",
+    "points": ["構造化出力の応答は、stop_reason を確かめてから JSON として読みます。"],
+    "leaveOut": [
+      "JSON スキーマの書き方と使える制約",
+      "JSON 以外の文章の形を指定する方法",
+      "拒否された応答の HTTP 状態と課金",
+      "enum の大文字と小文字の扱い",
+      "項目どうしが業務の条件を満たすかの判定",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "menu-sheet": {
+      "prompt": "A white meal-planning sheet clipped with a blue paper clip, with a small pictorial plate of green vegetables and golden bread at the top and a blank lower area. The food has natural colors. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "printer": {
+      "prompt": "A compact light grey printer with a white sheet halfway out of its output slot. The sheet has a tiny pictorial plate of green vegetables near its top and no writing. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "short-sheet": {
+      "prompt": "An incomplete white meal-planning printout with only its upper part visible, a small pictorial plate of green vegetables at the top and an uneven lower edge. A blue paper clip holds it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reason-card": {
+      "prompt": "A large blue magnifying glass inspecting a blank white paper status slip attached with a violet paper clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reader-app": {
+      "prompt": "A violet laptop with a completely blank dark screen and a white meal-planning sheet beside it. A small pictorial plate of green vegetables on the sheet connects it to the meal record. No interface elements. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "resend": {
+      "prompt": "A staff member in a plain blue shirt holding a fresh white paper request sheet in one hand and offering it forward with the other. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "refusal-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, raising one open palm to decline a request. A blank white request sheet is beside it. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "plant-duty": {
+      "prompt": "A green leafy houseplant in a white flowerpot beside a blue watering can and a blank white duty card held by a violet clip. The plant has natural green colors. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "menu",
+          "label": "献立表の情報",
+          "art": "menu-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "short",
+          "label": "途中の本文",
+          "art": "short-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "読み取り処理",
+          "art": "reader-app",
+          "at": [5, 1]
+        },
+        {
+          "id": "reason",
+          "label": "先に理由を見る",
+          "art": "reason-card",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "print": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "printer",
+          "label": "献立表を印刷",
+          "art": "printer",
+          "at": [1, 1]
+        },
+        {
+          "id": "short",
+          "label": "途中までの紙",
+          "art": "short-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "止まった理由",
+          "art": "reason-card",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "print-out",
+          "from": "printer",
+          "to": "short",
+          "label": "出てきた紙"
+        },
+        {
+          "id": "inspect",
+          "from": "short",
+          "to": "reason",
+          "label": "先に確認"
+        }
+      ]
+    },
+    "exception": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "short",
+          "label": "形が合わない",
+          "art": "short-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "本文を読む",
+          "art": "reader-app",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check-first",
+          "from": "short",
+          "to": "reason",
+          "label": "確認"
+        },
+        {
+          "id": "then-read",
+          "from": "reason",
+          "to": "app",
+          "label": "そのあと"
+        }
+      ]
+    },
+    "flow": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "stop",
+          "label": "読まずに返す",
+          "art": "short-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "parse",
+          "label": "JSONを読む",
+          "art": "reader-app",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "truncated": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "limit",
+          "label": "上限到達",
+          "art": "reason-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "short",
+          "label": "途中終了",
+          "art": "short-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "retry",
+          "label": "上限を上げる",
+          "art": "resend",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "cut",
+          "from": "limit",
+          "to": "short",
+          "label": "上限到達"
+        },
+        {
+          "id": "send-again",
+          "from": "short",
+          "to": "retry",
+          "label": "送り直す"
+        }
+      ]
+    },
+    "refusal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "refusal",
+          "art": "reason-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "robot",
+          "label": "拒否",
+          "art": "refusal-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "parse",
+          "label": "JSONを読む",
+          "art": "reader-app",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "declined",
+          "from": "reason",
+          "to": "robot",
+          "label": "拒否として"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "plant",
+          "label": "水やり当番",
+          "art": "plant-duty",
+          "at": [1, 1]
+        },
+        {
+          "id": "reason",
+          "label": "上限到達",
+          "art": "reason-card",
+          "at": [3, 1]
+        },
+        {
+          "id": "partial",
+          "label": "途中の応答",
+          "art": "plant-duty",
+          "at": [5, 1]
+        },
+        {
+          "id": "read",
+          "label": "そのまま読む",
+          "art": "plant-duty",
+          "at": [5, 2]
+        },
+        {
+          "id": "retry",
+          "label": "上限を上げる",
+          "art": "resend",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "why": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reason",
+          "label": "上限到達",
+          "art": "reason-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "partial",
+          "label": "途中の応答",
+          "art": "plant-duty",
+          "at": [3, 1]
+        },
+        {
+          "id": "retry",
+          "label": "上限を上げる",
+          "art": "resend",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "cut",
+          "from": "reason",
+          "to": "partial",
+          "label": "途中終了"
+        },
+        {
+          "id": "send-again",
+          "from": "partial",
+          "to": "retry",
+          "label": "再取得"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "menu",
+          "label": "献立表の情報",
+          "art": "menu-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "plant",
+          "label": "水やり当番",
+          "art": "plant-duty",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "停止理由",
+          "art": "reason-card",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "途中の本文を読む前に",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "献立表の情報を、決まった形で受け取ります。",
+          "show": ["menu"]
+        },
+        {
+          "say": "ところが、返ってきた本文は途中まででした。",
+          "show": ["short"]
+        },
+        {
+          "say": "このまま読むと、例外で処理が止まる場合があります。",
+          "show": ["app"],
+          "mark": [
+            {
+              "on": "app",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "構造化出力は、停止理由を確かめてからJSONとして読みましょう。",
+          "speech": "構造化出力は、停止理由を確かめてからジェイソンとして読みましょう。",
+          "pause": 1,
+          "show": ["reason"],
+          "pulse": ["reason"]
+        }
+      ]
+    },
+    {
+      "id": "printed-menu",
+      "kind": "board",
+      "role": "example",
+      "title": "印刷が止まった献立表",
+      "board": "print",
+      "beats": [
+        {
+          "say": "献立表を印刷している場面を考えましょう。",
+          "show": ["printer"]
+        },
+        {
+          "say": "出てきた紙には、上半分しか印刷されていません。",
+          "show": ["short", "print-out"]
+        },
+        {
+          "say": "紙が出てきたことと、最後まで印刷できたことは別です。",
+          "pulse": ["short"],
+          "mark": [
+            {
+              "on": "short",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "内容を使う前に、印刷が止まった理由を確かめます。",
+          "show": ["reason", "inspect"],
+          "travel": {
+            "along": ["inspect"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-reason",
+      "kind": "board",
+      "role": "syntax",
+      "title": "決まった形から外れる応答",
+      "board": "exception",
+      "beats": [
+        {
+          "say": "構造化出力でも、スキーマに合わない応答は返ります。",
+          "show": ["short"],
+          "mark": [
+            {
+              "on": "short",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "先に見るのは、応答が止まった理由です。",
+          "term": {
+            "text": "停止理由",
+            "ruby": "ていしりゆう",
+            "note": "応答が止まった理由"
+          },
+          "show": ["reason", "check-first"]
+        },
+        {
+          "say": "この項目を調べて、本文を読むかどうかを分けます。",
+          "pulse": ["reason"]
+        },
+        {
+          "say": "本文を読む処理は、そのあとに置きましょう。",
+          "pause": 1,
+          "show": ["app", "then-read"],
+          "travel": {
+            "along": ["then-read"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "guard-code",
+      "kind": "code",
+      "role": "syntax",
+      "title": "先に戻る条件を書く",
+      "code": [
+        "// 通常の終了でなければ先に戻る",
+        "if (message.stop_reason !== \"end_turn\") {",
+        "  // 読まずに停止理由を返す",
+        "  return { ok: false, reason: message.stop_reason };",
+        "// 停止理由を調べる分岐を閉じる",
+        "}",
+        "// 通常の終了なら本文を JSON として読む",
+        "return { ok: true, data: JSON.parse(text) };"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "flow"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "応答の変数名は、自分で決めて message としました。",
+          "speech": "応答の変数名は、自分で決めてメッセージとしました。",
+          "part": {
+            "line": 1,
+            "text": "message",
+            "note": "応答"
+          },
+          "figure": {
+            "show": ["reason"]
+          }
+        },
+        {
+          "say": "停止理由を調べるのが、この項目です。",
+          "part": {
+            "line": 1,
+            "text": "stop_reason",
+            "note": "停止理由"
+          },
+          "figure": {
+            "pulse": ["reason"]
+          }
+        },
+        {
+          "say": "エンドターンと一致しない場合を、この条件で選びます。",
+          "part": {
+            "line": 1,
+            "text": "!== \"end_turn\"",
+            "note": "通常の終了以外"
+          }
+        },
+        {
+          "say": "その場合は、理由を返して処理を終える形です。",
+          "focus": [3],
+          "figure": {
+            "show": ["stop"],
+            "pulse": ["stop"]
+          }
+        },
+        {
+          "say": "一致した場合だけ、JSON を読む行へ進みましょう。",
+          "speech": "一致した場合だけ、ジェイソンを読む行へ進みましょう。",
+          "pause": 1,
+          "focus": [7],
+          "figure": {
+            "show": ["parse"],
+            "pulse": ["parse"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "normal-end",
+      "kind": "code",
+      "role": "apply",
+      "title": "通常の終了なら読む",
+      "code": [
+        "// 通常の終了でなければ先に戻る",
+        "if (message.stop_reason !== \"end_turn\") {",
+        "  // 読まずに停止理由を返す",
+        "  return { ok: false, reason: message.stop_reason };",
+        "// 停止理由を調べる分岐を閉じる",
+        "}",
+        "// 通常の終了なら本文を JSON として読む",
+        "return { ok: true, data: JSON.parse(text) };"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "flow"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "献立表の応答が、通常の終了だった例です。",
+          "part": {
+            "line": 1,
+            "text": "\"end_turn\""
+          },
+          "figure": {
+            "show": ["reason"],
+            "tag": {
+              "reason": "end_turn"
+            }
+          }
+        },
+        {
+          "say": "このとき、先に戻る条件には当てはまりません。",
+          "focus": [1, 3],
+          "figure": {
+            "mark": [
+              {
+                "on": "reason",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "text は、本文に付けた変数名です。",
+          "speech": "テキストは、本文に付けた変数名です。",
+          "part": {
+            "line": 7,
+            "text": "text",
+            "note": "本文"
+          }
+        },
+        {
+          "say": "JSON.parse で、本文を読み取ります。",
+          "speech": "ジェイソンパースで、本文を読み取ります。",
+          "part": {
+            "line": 7,
+            "text": "JSON.parse(text)",
+            "note": "本文を読み取る"
+          },
+          "figure": {
+            "show": ["parse"],
+            "pulse": ["parse"]
+          }
+        },
+        {
+          "say": "読んだ値は、data の項目に入る形です。",
+          "speech": "読んだ値は、データの項目に入る形です。",
+          "pause": 1,
+          "part": {
+            "line": 7,
+            "text": "data",
+            "note": "読んだ値"
+          },
+          "figure": {
+            "mark": [
+              {
+                "on": "parse",
+                "kind": "check"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "token-limit",
+      "kind": "board",
+      "role": "apply",
+      "title": "上限で切れたとき",
+      "board": "truncated",
+      "beats": [
+        {
+          "say": "献立表の応答が、上限に届いて止まる場合もあります。",
+          "show": ["limit"]
+        },
+        {
+          "say": "これは、本文が切れて終わる途中終了です。",
+          "term": {
+            "text": "途中終了",
+            "ruby": "とちゅうしゅうりょう",
+            "note": "上限に届いて途中で切れる"
+          },
+          "show": ["short", "cut"]
+        },
+        {
+          "say": "この停止理由なら、本文をそのまま読もうとしません。",
+          "pulse": ["limit", "short"],
+          "mark": [
+            {
+              "on": "short",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "出力の上限を上げて、送り直します。",
+          "pause": 1,
+          "show": ["retry", "send-again"],
+          "tag": {
+            "retry": "再取得"
+          },
+          "pulse": ["retry"],
+          "travel": {
+            "along": ["send-again"],
+            "icon": "send"
+          }
+        }
+      ]
+    },
+    {
+      "id": "refusal",
+      "kind": "board",
+      "role": "note",
+      "title": "拒否された応答",
+      "board": "refusal",
+      "beats": [
+        {
+          "say": "安全のために応答を断ることを、拒否と呼びます。",
+          "term": {
+            "text": "拒否",
+            "ruby": "きょひ",
+            "note": "安全のために応答を断る"
+          },
+          "show": ["robot"]
+        },
+        {
+          "say": "リフューザルという停止理由が、その印です。",
+          "show": ["reason", "declined"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "この応答も、スキーマどおりとは限りません。",
+          "pulse": ["robot"],
+          "mark": [
+            {
+              "on": "robot",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "JSON を読む処理には進まず、拒否として扱います。",
+          "speech": "ジェイソンを読む処理には進まず、拒否として扱います。",
+          "pause": 1,
+          "show": ["parse"],
+          "mark": [
+            {
+              "on": "parse",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "水やり当番の応答",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "植物の水やり当番を、構造化出力で整理します。",
+          "show": ["plant"]
+        },
+        {
+          "say": "停止理由は、上限到達でした。",
+          "show": ["reason"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "返った本文は、担当者名を書いている途中までです。",
+          "show": ["partial"],
+          "tag": {
+            "partial": "担当者は途中"
+          }
+        },
+        {
+          "say": "そのまま読むか、上限を上げて取り直すかを選びます。",
+          "show": ["read", "retry"],
+          "tag": {
+            "retry": "再取得"
+          }
+        },
+        {
+          "say": "本文を読む前に、どちらの対応を選ぶべきでしょうか。",
+          "mark": [
+            {
+              "on": "read",
+              "kind": "question"
+            },
+            {
+              "on": "retry",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "上限を上げて取り直す",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、上限を上げて送り直す対応です。",
+          "mark": [
+            {
+              "on": "retry",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["retry"]
+        },
+        {
+          "say": "途中の本文を、そのまま読もうとしてはいけません。",
+          "pause": 1,
+          "mark": [
+            {
+              "on": "read",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["read"]
+        }
+      ]
+    },
+    {
+      "id": "why-retry",
+      "kind": "board",
+      "role": "explain",
+      "title": "停止理由から対応を選ぶ",
+      "board": "why",
+      "beats": [
+        {
+          "say": "決め手は、上限に届いたという停止理由です。",
+          "show": ["reason"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "そのため、当番の応答は途中で切れています。",
+          "show": ["partial", "cut"],
+          "travel": {
+            "along": ["cut"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "構造化出力でも、この本文が完成形とは限りません。",
+          "mark": [
+            {
+              "on": "partial",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["partial"]
+        },
+        {
+          "say": "上限を上げて取り直し、停止理由をもう一度確かめましょう。",
+          "pause": 1,
+          "show": ["retry", "send-again"],
+          "travel": {
+            "along": ["send-again"],
+            "icon": "send"
+          },
+          "tag": {
+            "retry": "再び確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "自動で読み取る処理に置く",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "献立表のように、情報を決まった形で受け取る場面です。",
+          "show": ["menu"]
+        },
+        {
+          "say": "水やり当番の整理にも、同じ順番を使います。",
+          "show": ["plant"]
+        },
+        {
+          "say": "本文を読む処理の前に、停止理由を確かめる分岐が必要です。",
+          "show": ["reason"],
+          "pulse": ["reason"]
+        },
+        {
+          "say": "構造化出力でも、理由を確かめてからJSONとして読みましょう。",
+          "speech": "構造化出力でも、理由を確かめてからジェイソンとして読みましょう。",
+          "pause": 1,
+          "tag": {
+            "reason": "読む前に確認"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "e3e82b35446f511c9965d15ceda577195fa37a3999586958eae7731052d24663"
+  }
+}

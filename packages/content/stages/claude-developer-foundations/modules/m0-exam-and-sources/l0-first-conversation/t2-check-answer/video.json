@@ -1,0 +1,728 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "回答に含まれる情報を原文と照合し、直す情報と根拠が見つからない情報を区別できる。",
+    "stuck": "読みやすい回答をそのまま信じ、時刻の取り違えや原文にない持ち物の追加を見落としてしまう。",
+    "points": ["答えに含まれる事実を原文と照らし、根拠が見つからない項目を区別します。"],
+    "leaveOut": [
+      "最初の依頼に資料と目的を添える方法",
+      "API から依頼を送る方法",
+      "回答が誤る仕組みやモデルの仕様",
+      "教材にない情報を外部で調べる方法",
+      "資格試験の出題形式"
+    ]
+  },
+  "art": {
+    "training-notice": {
+      "prompt": "A white training announcement sheet held by a blue binder clip, with a small pictorial vignette of a classroom doorway and a clock without numerals. The rest of the sheet is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-slip": {
+      "prompt": "A short white paper reply slip held by a violet paper clip, with a violet pencil beside it. The paper is completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reception-clock": {
+      "prompt": "A blue reception bell beside a round blue clock with a white face and plain hands but no numerals or tick marks. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "classroom-door": {
+      "prompt": "A freestanding blue classroom door slightly open, with one violet classroom chair visible through the opening. No surrounding building or wall. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "pencil-case": {
+      "prompt": "An open violet pencil case containing a blue pen and a violet pencil, representing writing supplies whose necessity must be checked. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "grocery-note": {
+      "prompt": "A blank white shopping memo held by a blue clip beside a plain white milk carton and one white egg, representing the items being compared in a copied shopping memo. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-bicycle": {
+      "prompt": "One blue rental bicycle beside a blank white information leaflet with a violet clip. The wheels and handlebar are fully visible. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rental-clock": {
+      "prompt": "A round violet clock with a white face and plain hands but no numerals or tick marks, beside a small blue bicycle key attached to a plain light grey key tag. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "careful-reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding two separate white sheets side by side and looking carefully between them. The sheets are blank and the facial features are simple. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "回答の受付",
+          "art": "reception-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "手元の案内",
+          "art": "training-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "supplies",
+          "label": "回答の持ち物",
+          "art": "pencil-case",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "shopping": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reader",
+          "label": "メモを渡す人",
+          "art": "careful-reader",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "元のメモ",
+          "art": "grocery-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "copy",
+          "label": "写したメモ",
+          "art": "grocery-note",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "claims": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "研修の案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答例",
+          "art": "reply-slip",
+          "at": [3, 1]
+        },
+        {
+          "id": "reception",
+          "label": "回答の受付",
+          "art": "reception-clock",
+          "at": [5, 1]
+        },
+        {
+          "id": "venue",
+          "label": "回答の会場",
+          "art": "classroom-door",
+          "at": [5, 2]
+        },
+        {
+          "id": "supplies",
+          "label": "回答の持ち物",
+          "art": "pencil-case",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "evidence": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "原文の会場",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答の会場",
+          "art": "classroom-door",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "source",
+          "to": "reply",
+          "label": "照らす"
+        }
+      ]
+    },
+    "times": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reply",
+          "label": "回答の受付",
+          "art": "reception-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "reception",
+          "label": "原文の受付",
+          "art": "training-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "training",
+          "label": "原文の研修",
+          "art": "classroom-door",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "missing": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "研修の案内",
+          "art": "training-notice",
+          "at": [1, 1]
+        },
+        {
+          "id": "supplies",
+          "label": "持ち物",
+          "art": "pencil-case",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reception",
+          "label": "受付",
+          "art": "reception-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "venue",
+          "label": "会場",
+          "art": "classroom-door",
+          "at": [3, 1]
+        },
+        {
+          "id": "supplies",
+          "label": "持ち物",
+          "art": "pencil-case",
+          "at": [5, 1]
+        },
+        {
+          "id": "source",
+          "label": "手元の案内",
+          "art": "training-notice",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "rental": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "貸出案内",
+          "art": "rental-bicycle",
+          "at": [1, 1]
+        },
+        {
+          "id": "start",
+          "label": "原文の貸出",
+          "art": "rental-clock",
+          "at": [3, 1]
+        },
+        {
+          "id": "return",
+          "label": "原文の返却",
+          "art": "rental-bicycle",
+          "at": [5, 1]
+        },
+        {
+          "id": "reply",
+          "label": "回答の貸出",
+          "art": "rental-clock",
+          "at": [5, 2]
+        },
+        {
+          "id": "fee",
+          "label": "回答の料金",
+          "art": "rental-bicycle",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "reader",
+          "label": "参加者へ渡す前",
+          "art": "careful-reader",
+          "at": [1, 1]
+        },
+        {
+          "id": "source",
+          "label": "原文の受付",
+          "art": "training-notice",
+          "at": [3, 1]
+        },
+        {
+          "id": "venue",
+          "label": "回答の会場",
+          "art": "classroom-door",
+          "at": [5, 1]
+        },
+        {
+          "id": "supplies",
+          "label": "持ち物",
+          "art": "pencil-case",
+          "at": [5, 2]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "回答を渡す前に",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "研修の回答例に、受付は十時からと書かれています。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "十時"
+          }
+        },
+        {
+          "say": "手元の案内では、受付は九時半からです。",
+          "show": ["source"],
+          "tag": {
+            "source": "受付九時半"
+          }
+        },
+        {
+          "say": "持ち物の筆記用具にも、根拠があるか確かめましょう。",
+          "show": ["supplies"],
+          "tag": {
+            "supplies": "筆記用具"
+          }
+        },
+        {
+          "say": "回答の事実を原文と照らし、根拠のない項目を区別します。",
+          "pulse": ["reply", "source", "supplies"]
+        }
+      ]
+    },
+    {
+      "id": "shopping-copy",
+      "kind": "board",
+      "role": "example",
+      "title": "メモの写し間違い",
+      "board": "shopping",
+      "beats": [
+        {
+          "say": "買い物メモを家族に写して渡す場面です。",
+          "show": ["reader"]
+        },
+        {
+          "say": "元のメモには、牛乳を買うと書いてあります。",
+          "show": ["source"],
+          "tag": {
+            "source": "牛乳"
+          }
+        },
+        {
+          "say": "写したメモでは、買う品物が卵になっていました。",
+          "show": ["copy"],
+          "tag": {
+            "copy": "卵"
+          }
+        },
+        {
+          "say": "元のメモと比べると、写し間違いに気づきます。",
+          "pulse": ["source", "copy"],
+          "mark": [
+            {
+              "on": "copy",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "split-claims",
+      "kind": "board",
+      "role": "syntax",
+      "title": "情報を一つずつ分ける",
+      "board": "claims",
+      "beats": [
+        {
+          "say": "回答を元の文章と比べるのが、原文との照合です。",
+          "term": {
+            "text": "原文との照合",
+            "ruby": "げんぶんとのしょうごう",
+            "note": "回答を元の文章と比べる"
+          }
+        },
+        {
+          "say": "ここでは、研修の案内と回答を並べます。",
+          "show": ["source", "reply"]
+        },
+        {
+          "say": "まず、回答から受付の時刻を取り出しましょう。",
+          "show": ["reception"],
+          "tag": {
+            "reception": "十時"
+          }
+        },
+        {
+          "say": "会場も、時刻とは別に確かめる項目です。",
+          "show": ["venue"],
+          "tag": {
+            "venue": "北館2階"
+          }
+        },
+        {
+          "say": "筆記用具が必要という情報も、分けて確認します。",
+          "show": ["supplies"],
+          "tag": {
+            "supplies": "必要"
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-evidence",
+      "kind": "board",
+      "role": "syntax",
+      "title": "根拠の一文を探す",
+      "board": "evidence",
+      "beats": [
+        {
+          "say": "答えを確かめるもとになる文を、根拠と呼びます。",
+          "term": {
+            "text": "根拠",
+            "ruby": "こんきょ",
+            "note": "答えを確かめるもとになる文"
+          }
+        },
+        {
+          "say": "会場なら、原文の「会場は北館2階です」が根拠です。",
+          "speech": "会場なら、原文の「会場は北館二階です」が根拠です。",
+          "show": ["source"],
+          "tag": {
+            "source": "北館2階"
+          }
+        },
+        {
+          "say": "回答の会場と、その一文を並べてみましょう。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "北館2階"
+          }
+        },
+        {
+          "say": "どちらも北館2階なので、会場は一致しています。",
+          "speech": "どちらも北館二階なので、会場は一致しています。",
+          "show": ["compare"],
+          "travel": {
+            "along": ["compare"]
+          },
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "correct-time",
+      "kind": "board",
+      "role": "apply",
+      "title": "何の時刻かを確かめる",
+      "board": "times",
+      "beats": [
+        {
+          "say": "今度は、回答にある受付の十時を確かめます。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "十時"
+          }
+        },
+        {
+          "say": "原文には「受付は9時半からです」とありました。",
+          "speech": "原文には「受付は九時半からです」とありました。",
+          "show": ["reception"],
+          "tag": {
+            "reception": "九時半"
+          }
+        },
+        {
+          "say": "原文にある十時は、研修が始まる時刻です。",
+          "show": ["training"],
+          "tag": {
+            "training": "十時"
+          }
+        },
+        {
+          "say": "数字だけでなく、何の時刻かを合わせて見ましょう。",
+          "pulse": ["reception", "training"],
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "回答の受付を、原文どおり九時半に直します。",
+          "tag": {
+            "reply": "九時半"
+          },
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["reply", "reception"]
+        }
+      ]
+    },
+    {
+      "id": "missing-information",
+      "kind": "board",
+      "role": "apply",
+      "title": "持ち物は分からない",
+      "board": "missing",
+      "beats": [
+        {
+          "say": "原文に書いていない項目は、記載なしと区別します。",
+          "term": {
+            "text": "記載なし",
+            "ruby": "きさいなし",
+            "note": "資料にその情報がない"
+          }
+        },
+        {
+          "say": "この案内には、持ち物についての説明がありません。",
+          "show": ["source", "supplies"],
+          "mark": [
+            {
+              "on": "supplies",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "筆記用具が必要かどうかは、未確認です。",
+          "pulse": ["supplies"],
+          "tag": {
+            "supplies": "未確認"
+          }
+        },
+        {
+          "say": "持ち物は「案内に記載なし」と書きましょう。",
+          "tag": {
+            "supplies": "記載なし"
+          }
+        }
+      ]
+    },
+    {
+      "id": "request-evidence",
+      "kind": "board",
+      "role": "apply",
+      "title": "根拠を添えてもらう",
+      "board": "request",
+      "beats": [
+        {
+          "say": "追加の依頼では、受付などを一行ずつ書くよう頼みます。",
+          "show": ["reception", "venue", "supplies"],
+          "tag": {
+            "reception": "九時半",
+            "venue": "北館2階"
+          }
+        },
+        {
+          "say": "案内にない項目を「記載なし」とする指定です。",
+          "tag": {
+            "supplies": "記載なし"
+          },
+          "pulse": ["supplies"]
+        },
+        {
+          "say": "根拠になる一文も、あれば添えるよう頼みましょう。",
+          "show": ["source"],
+          "pulse": ["source"]
+        },
+        {
+          "say": "引用された文も、手元の案内と照らして確かめます。",
+          "pulse": ["source", "reception", "venue"]
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "貸出案内を確かめる",
+      "board": "rental",
+      "think": 8,
+      "beats": [
+        {
+          "say": "練習用の自転車の案内では、貸出は八時からです。",
+          "show": ["source", "start"],
+          "tag": {
+            "start": "八時から"
+          }
+        },
+        {
+          "say": "原文には、返却は十七時までと書いてあります。",
+          "show": ["return"],
+          "tag": {
+            "return": "十七時まで"
+          }
+        },
+        {
+          "say": "回答例の貸出時刻は、十七時からでした。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "十七時から"
+          }
+        },
+        {
+          "say": "料金は無料という説明も、回答に加わっています。",
+          "show": ["fee"],
+          "tag": {
+            "fee": "無料"
+          }
+        },
+        {
+          "say": "直す時刻と、根拠が見つからない項目はどれでしょうか。",
+          "pulse": ["reply", "fee"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "時刻と料金を分ける",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "貸出時刻は、八時からに直します。",
+          "tag": {
+            "reply": "八時から"
+          },
+          "mark": [
+            {
+              "on": "reply",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "料金は、原文に記載がない項目です。",
+          "tag": {
+            "fee": "記載なし"
+          },
+          "mark": [
+            {
+              "on": "fee",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "無料という内容は、そのまま案内に使わないでください。",
+          "pulse": ["fee"]
+        }
+      ]
+    },
+    {
+      "id": "trace-reasons",
+      "kind": "board",
+      "role": "explain",
+      "title": "根拠があるかをたどる",
+      "board": "rental",
+      "beats": [
+        {
+          "say": "十七時は、原文では返却の期限でした。",
+          "pulse": ["return"]
+        },
+        {
+          "say": "貸出の時刻を調べるなら、見るのは貸出の一文です。",
+          "pulse": ["start"]
+        },
+        {
+          "say": "同じ時刻でも、何の時刻かを取り違えないようにします。",
+          "pulse": ["start", "return"]
+        },
+        {
+          "say": "この原文には、料金を判断する材料がありません。",
+          "pulse": ["source", "fee"]
+        },
+        {
+          "say": "記載なしと無料は、分けて伝えましょう。",
+          "pulse": ["fee"]
+        }
+      ]
+    },
+    {
+      "id": "before-sharing",
+      "kind": "board",
+      "role": "usage",
+      "title": "参加者へ知らせる前に",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "参加者へ研修の案内を渡す前に、回答を見直します。",
+          "show": ["reader"]
+        },
+        {
+          "say": "受付時刻は、原文にある受付の一文で確かめましょう。",
+          "show": ["source"],
+          "tag": {
+            "source": "九時半"
+          }
+        },
+        {
+          "say": "会場の情報にも、たどれる根拠が必要です。",
+          "show": ["venue"],
+          "tag": {
+            "venue": "北館2階"
+          }
+        },
+        {
+          "say": "持ち物のように根拠がない項目は、記載なしと区別します。",
+          "show": ["supplies"],
+          "tag": {
+            "supplies": "記載なし"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "9c21c0fa1dc97bff9e2b1184c99641b4cefb6355cf6a9bac66e8d25e0e2d63f1"
+  }
+}

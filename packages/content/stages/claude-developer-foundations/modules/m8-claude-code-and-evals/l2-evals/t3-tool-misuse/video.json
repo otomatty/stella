@@ -1,0 +1,737 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールの誤用の症状から、説明・スキーマ・strict のどこを見直すかを選べる。",
+    "stuck": "違うツールが呼ばれても入力が間違っていても、system の指示を足して直そうとする。",
+    "points": ["ツールの誤用は、ツールの説明・スキーマ・strict から直します。"],
+    "leaveOut": [
+      "成功の基準の作り方",
+      "評価セットと採点器の設計",
+      "ツール定義のコードと細かな仕様",
+      "課題の解答"
+    ]
+  },
+  "art": {
+    "coat-token": {
+      "prompt": "A violet coat on a blue hanger beside a small white cloakroom claim token with a round hole. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "umbrella-stock": {
+      "prompt": "Three closed blue and violet umbrellas gathered in a light grey cylindrical umbrella holder. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "cloakroom-attendant": {
+      "prompt": "A staff member wearing a plain blue shirt, with simple facial features, holding a white claim token and looking at it carefully. Upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-notes": {
+      "prompt": "An open white instruction booklet with a blue cover and a violet pencil poised beside a blank page. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-form": {
+      "prompt": "One large white paper form with two empty light grey outlined fields, beside two blue square pieces that fit those fields. No writing or symbols. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "input-example": {
+      "prompt": "A white paper sample slip held by a blue clip, with two solid violet rectangular blocks placed neatly inside two light grey fields. No writing or symbols. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "bicycle-rack": {
+      "prompt": "A blue bicycle beside a light grey bicycle parking rack with one visibly empty slot. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "evaluation-stack": {
+      "prompt": "A clipped stack of white evaluation sheets with violet tabs beside a magnifying glass with a blue handle. The sheets have no markings. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "上着を探す",
+          "art": "coat-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "umbrella",
+          "label": "傘を数える",
+          "art": "umbrella-stock",
+          "at": [3, 1]
+        },
+        {
+          "id": "definition",
+          "label": "ツールの定義",
+          "art": "tool-notes",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "cloakroom": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claim",
+          "label": "上着の引換券",
+          "art": "coat-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "預かり所の係",
+          "art": "cloakroom-attendant",
+          "at": [3, 1]
+        },
+        {
+          "id": "umbrella",
+          "label": "傘の本数",
+          "art": "umbrella-stock",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "hand",
+          "from": "claim",
+          "to": "staff",
+          "label": "渡す"
+        },
+        {
+          "id": "wrong",
+          "from": "staff",
+          "to": "umbrella",
+          "label": "調べる"
+        }
+      ]
+    },
+    "definitions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "wrong",
+          "label": "違うツール",
+          "art": "umbrella-stock",
+          "at": [1, 1]
+        },
+        {
+          "id": "description",
+          "label": "ツールの説明",
+          "art": "tool-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "when",
+          "label": "使う場面",
+          "art": "coat-token",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "review",
+          "from": "wrong",
+          "to": "description",
+          "label": "見直す"
+        },
+        {
+          "id": "specify",
+          "from": "description",
+          "to": "when",
+          "label": "書き分ける"
+        }
+      ]
+    },
+    "inputs": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "schema",
+          "label": "スキーマ",
+          "art": "input-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "strict",
+          "label": "strict",
+          "art": "input-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "example",
+          "label": "入力の例",
+          "art": "input-example",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "coat-tools": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "coat",
+          "label": "上着の検索",
+          "art": "coat-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "umbrella",
+          "label": "傘の在庫確認",
+          "art": "umbrella-stock",
+          "at": [3, 1]
+        },
+        {
+          "id": "description",
+          "label": "説明を直す",
+          "art": "tool-notes",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "unused": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "unused",
+          "label": "呼ばれない",
+          "art": "coat-token",
+          "at": [1, 1]
+        },
+        {
+          "id": "name",
+          "label": "名前の重なり",
+          "art": "tool-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "example",
+          "label": "入力の例",
+          "art": "input-example",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "unused",
+          "to": "name",
+          "label": "確かめる"
+        },
+        {
+          "id": "add",
+          "from": "name",
+          "to": "example",
+          "label": "足す"
+        }
+      ]
+    },
+    "choices": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "outside",
+          "label": "選択肢の外",
+          "art": "input-form",
+          "at": [1, 1]
+        },
+        {
+          "id": "reduce",
+          "label": "選択肢を減らす",
+          "art": "input-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "example",
+          "label": "正しい値の例",
+          "art": "input-example",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "parking": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "parking",
+          "label": "駐輪場の空き",
+          "art": "bicycle-rack",
+          "at": [1, 1]
+        },
+        {
+          "id": "called",
+          "label": "利用料金照会",
+          "art": "tool-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "a",
+          "label": "説明を書き分け",
+          "art": "tool-notes",
+          "at": [5, 1]
+        },
+        {
+          "id": "b",
+          "label": "厳格化する",
+          "art": "input-form",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "wrong",
+          "from": "parking",
+          "to": "called",
+          "label": "呼ばれた"
+        }
+      ]
+    },
+    "parking-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "空きを知りたい",
+          "art": "bicycle-rack",
+          "at": [1, 1]
+        },
+        {
+          "id": "description",
+          "label": "使う場面を書く",
+          "art": "tool-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "input",
+          "label": "型や項目の誤り",
+          "art": "input-form",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "review": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "symptom",
+          "label": "症状を確かめる",
+          "art": "tool-notes",
+          "at": [1, 1]
+        },
+        {
+          "id": "definition",
+          "label": "定義を直す",
+          "art": "input-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "eval",
+          "label": "同じ評価セット",
+          "art": "evaluation-stack",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fix",
+          "from": "symptom",
+          "to": "definition",
+          "label": "直す"
+        },
+        {
+          "id": "retry",
+          "from": "definition",
+          "to": "eval",
+          "label": "確かめる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "choose-repair",
+      "kind": "board",
+      "role": "goal",
+      "title": "症状から直す場所を選ぶ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "預けた上着を探してほしいと、利用者が頼みました。",
+          "show": ["coat"]
+        },
+        {
+          "say": "ところが調べたのは、傘の本数です。",
+          "show": ["umbrella"]
+        },
+        {
+          "say": "どこを直せばよいか、症状から選びましょう。",
+          "show": ["definition"]
+        },
+        {
+          "say": "ツールの誤用は、説明・スキーマ・strict から直します。",
+          "speech": "ツールの誤用は、説明、スキーマ、ストリクトから直します。",
+          "pulse": ["definition"]
+        }
+      ]
+    },
+    {
+      "id": "cloakroom-mixup",
+      "kind": "board",
+      "role": "example",
+      "title": "預かり所での取り違え",
+      "board": "cloakroom",
+      "beats": [
+        {
+          "say": "預かり所では、上着の引換券を係に渡します。",
+          "show": ["claim", "staff", "hand"],
+          "travel": {
+            "along": ["hand"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "係は、上着を探す代わりに傘の本数を調べました。",
+          "show": ["umbrella", "wrong"],
+          "travel": {
+            "along": ["wrong"]
+          }
+        },
+        {
+          "say": "これでは、利用者が頼んだ上着は見つかりません。",
+          "mark": [
+            {
+              "on": "umbrella",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "上着を探す仕事と、傘を数える仕事を区別しましょう。",
+          "pulse": ["claim", "umbrella"]
+        }
+      ]
+    },
+    {
+      "id": "read-description",
+      "kind": "board",
+      "role": "syntax",
+      "title": "使う場面で説明する",
+      "board": "definitions",
+      "beats": [
+        {
+          "say": "頼んだ内容に合わない使い方が、ツールの誤用です。",
+          "term": {
+            "text": "ツールの誤用",
+            "ruby": "つーるのごよう",
+            "note": "目的と違うツールや入力"
+          }
+        },
+        {
+          "say": "ここでは、違うツールが選ばれています。",
+          "show": ["wrong"]
+        },
+        {
+          "say": "まず見直す場所は、ツールの説明です。",
+          "show": ["description", "review"],
+          "travel": {
+            "along": ["review"]
+          }
+        },
+        {
+          "say": "何をするかに加え、いつ使うかを書き分けます。",
+          "show": ["when", "specify"],
+          "travel": {
+            "along": ["specify"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "repair-input",
+      "kind": "board",
+      "role": "syntax",
+      "title": "入力の型と項目を直す",
+      "board": "inputs",
+      "beats": [
+        {
+          "say": "入力の型や項目を決めるものが、スキーマです。",
+          "term": {
+            "text": "スキーマ",
+            "note": "入力の型や項目の定義"
+          }
+        },
+        {
+          "say": "入力の型が違うときは、その定義を見直します。",
+          "show": ["schema"]
+        },
+        {
+          "say": "型や項目の誤りで見直す設定が、strict です。",
+          "speech": "型や項目の誤りで見直す設定が、ストリクトです。",
+          "term": {
+            "text": "strict",
+            "ruby": "ストリクト",
+            "note": "型や項目の誤りへの対処"
+          }
+        },
+        {
+          "say": "定義にない項目を作る場合は、strict を付けます。",
+          "speech": "定義にない項目を作る場合は、ストリクトを付けます。",
+          "show": ["strict"],
+          "tag": {
+            "strict": "有効にする"
+          }
+        },
+        {
+          "say": "型の間違いには、正しい入力の例を足すのも有効です。",
+          "show": ["example"]
+        }
+      ]
+    },
+    {
+      "id": "separate-coat-tools",
+      "kind": "board",
+      "role": "apply",
+      "title": "上着と傘を書き分ける",
+      "board": "coat-tools",
+      "beats": [
+        {
+          "say": "上着と傘のツールが、どちらも預かり物を調べる説明でした。",
+          "show": ["coat", "umbrella"]
+        },
+        {
+          "say": "この説明だけでは、使う場面の違いが分かりません。",
+          "show": ["description"],
+          "mark": [
+            {
+              "on": "description",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "上着の説明には、預けた上着を探すときに使うと書きます。",
+          "tag": {
+            "coat": "上着を探す"
+          },
+          "pulse": ["coat"]
+        },
+        {
+          "say": "傘の説明は、傘の本数を確認するときに使うという内容です。",
+          "tag": {
+            "umbrella": "傘を数える"
+          },
+          "pulse": ["umbrella"]
+        }
+      ]
+    },
+    {
+      "id": "make-use-clear",
+      "kind": "board",
+      "role": "apply",
+      "title": "一度も呼ばれない場合",
+      "board": "unused",
+      "beats": [
+        {
+          "say": "上着のツールが、一度も呼ばれない場合も考えます。",
+          "show": ["unused"]
+        },
+        {
+          "say": "名前の重なりや、一般的すぎるスキーマが原因の候補です。",
+          "show": ["name"],
+          "tag": {
+            "unused": "定義を確認"
+          }
+        },
+        {
+          "say": "まず、ほかのツールと名前が重なっていないか確かめましょう。",
+          "show": ["check"],
+          "travel": {
+            "along": ["check"]
+          }
+        },
+        {
+          "say": "入力の例を足して、具体的な使い方を見せます。",
+          "show": ["example", "add"],
+          "travel": {
+            "along": ["add"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "repair-choices",
+      "kind": "board",
+      "role": "apply",
+      "title": "選択肢の外の値が来る場合",
+      "board": "choices",
+      "beats": [
+        {
+          "say": "入力に、enum の選択肢にない値が来る場合です。",
+          "speech": "入力に、イーナムの選択肢にない値が来る場合です。",
+          "show": ["outside"]
+        },
+        {
+          "say": "選択肢が多すぎないかを確かめます。",
+          "tag": {
+            "outside": "多すぎないか"
+          }
+        },
+        {
+          "say": "対処の一つは、選択肢を減らすことです。",
+          "show": ["reduce"]
+        },
+        {
+          "say": "または、入力の例で正しい値を見せましょう。",
+          "show": ["example"]
+        }
+      ]
+    },
+    {
+      "id": "parking-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "空き確認の誤用を直す",
+      "board": "parking",
+      "think": 8,
+      "beats": [
+        {
+          "say": "駐輪場の空きを調べたいと、利用者が頼みました。",
+          "show": ["parking"]
+        },
+        {
+          "say": "呼ばれたのは、利用料金を調べるツールです。",
+          "show": ["called", "wrong"]
+        },
+        {
+          "say": "一つ目の案では、いつ使うかで説明を書き分けます。",
+          "show": ["a"],
+          "tag": {
+            "a": "一つ目"
+          }
+        },
+        {
+          "say": "二つ目の案は、strict を付けるだけです。",
+          "speech": "二つ目の案は、ストリクトを付けるだけです。",
+          "show": ["b"],
+          "tag": {
+            "b": "二つ目"
+          }
+        },
+        {
+          "say": "この症状に合わせて、先に選ぶのはどちらでしょうか。",
+          "mark": [
+            {
+              "on": "a",
+              "kind": "question"
+            },
+            {
+              "on": "b",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parking-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "説明を書き分ける",
+      "board": "parking",
+      "beats": [
+        {
+          "say": "答えは、使う場面で説明を書き分ける一つ目の案です。",
+          "mark": [
+            {
+              "on": "a",
+              "kind": "check"
+            },
+            {
+              "on": "b",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["a"]
+        },
+        {
+          "say": "空きの確認と料金の照会を、説明で区別します。",
+          "pulse": ["parking", "called"]
+        }
+      ]
+    },
+    {
+      "id": "trace-parking-error",
+      "kind": "board",
+      "role": "explain",
+      "title": "選択の誤りをたどる",
+      "board": "parking-reason",
+      "beats": [
+        {
+          "say": "利用者が知りたいのは、止められる場所があるかです。",
+          "show": ["request"]
+        },
+        {
+          "say": "空き確認のツールには、空きを知りたいときに使うと書きます。",
+          "show": ["description"],
+          "tag": {
+            "description": "空き確認"
+          }
+        },
+        {
+          "say": "料金照会には、料金を知りたいときに使うと書きましょう。",
+          "tag": {
+            "description": "料金照会"
+          }
+        },
+        {
+          "say": "strict は、型や項目が違う症状に合わせて付けます。",
+          "speech": "ストリクトは、型や項目が違う症状に合わせて付けます。",
+          "show": ["input"],
+          "tag": {
+            "input": "strict"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-after-repair",
+      "kind": "board",
+      "role": "usage",
+      "title": "直したあとの確かめ方",
+      "board": "review",
+      "beats": [
+        {
+          "say": "ツールの選び間違いか、入力の誤りかを確かめます。",
+          "show": ["symptom"]
+        },
+        {
+          "say": "全体への指示を増やす前に、見直すのはツールの定義です。",
+          "show": ["definition", "fix"],
+          "travel": {
+            "along": ["fix"]
+          }
+        },
+        {
+          "say": "直したら、同じ評価セットでもう一度試しましょう。",
+          "show": ["eval", "retry"],
+          "travel": {
+            "along": ["retry"]
+          }
+        },
+        {
+          "say": "変更の前後で、誤用が減ったかを確かめます。",
+          "pulse": ["eval"],
+          "tag": {
+            "eval": "誤用を比較"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "c0c4ab45f55f093a0591ebb986f61f39df738ea115f5fa7f692429dc48f05350"
+  }
+}

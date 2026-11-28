@@ -1,0 +1,675 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "問題文から場面の条件を拾い、合わない選択肢を外して、選んだ根拠を説明できる。",
+    "stuck": "機能の名前だけで判断し、どれも動きそうな選択肢の違いを場面の条件から説明できない。",
+    "points": [
+      "本番の問題は実際の仕事を映すように作られているので、場面の条件を拾ってから選択肢を比べます。"
+    ],
+    "leaveOut": [
+      "出題範囲の一覧と試験の時間配分",
+      "復習する範囲の決め方",
+      "各機能の実装方法や細かい仕様",
+      "教材の表にある機能すべての説明"
+    ]
+  },
+  "art": {
+    "book-request": {
+      "prompt": "A blue-shirted bookstore clerk holding an open blank white book beside two closed violet books, with one empty speech bubble. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater looking attentively at a handheld phone with a completely blank screen, waiting for a reply. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "condition-note": {
+      "prompt": "A hand using a violet pencil to point at a blank white request sheet with two blue page tabs. The sheet is white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choice-slips": {
+      "prompt": "Two separate white paper proposal slips held by two blue clips, one with a violet tab and the other with a blue tab. The slips are blank, with no drawn symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "later-bundle": {
+      "prompt": "A thick stack of blank white response sheets beside a freestanding blue flip calendar with blank white pages. The papers and calendar pages are white, not brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recovery-folder": {
+      "prompt": "A blue-shirted clerk placing a loose blank white response sheet into an open violet folder containing other white sheets. Show the hands and folder only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "festival-food": {
+      "prompt": "A white paper tray of golden grilled corn beside a white cup of tea and a small stack of blank white customer feedback slips with violet clips. Food and drink have their natural colours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reference-book": {
+      "prompt": "An open white reference book with blue binding, a violet bookmark, and a hand tracing one blank page with a finger. No writing on the pages. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reply-phone": {
+      "prompt": "One large blue handheld phone with two blank rounded speech bubbles on its white screen and a blue-shirted clerk's hand pointing toward the upper bubble. A conceptual illustration of a reply being displayed, without real application controls or branding. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "bookstore": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "本屋への質問",
+          "art": "book-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "返答を待つ客",
+          "art": "waiting-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "choices",
+          "label": "返し方の候補",
+          "art": "choice-slips",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "conditions": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "text",
+          "label": "問題文",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "客が待つ",
+          "art": "waiting-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "priority",
+          "label": "速さを優先",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pick",
+          "from": "text",
+          "to": "wait",
+          "label": "拾う"
+        },
+        {
+          "id": "weigh",
+          "from": "wait",
+          "to": "priority",
+          "label": "優先する"
+        }
+      ]
+    },
+    "compare": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "condition",
+          "label": "客が待つ",
+          "art": "waiting-reader",
+          "at": [1, 1]
+        },
+        {
+          "id": "choices",
+          "label": "選択肢",
+          "art": "choice-slips",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "match",
+          "from": "condition",
+          "to": "choices",
+          "label": "照らす"
+        }
+      ]
+    },
+    "response": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "本屋への質問",
+          "art": "book-request",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "客が待つ",
+          "art": "waiting-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "stream",
+          "label": "ストリーミング",
+          "art": "reply-phone",
+          "at": [5, 1]
+        },
+        {
+          "id": "later",
+          "label": "翌日の返答",
+          "art": "later-bundle",
+          "at": [5, 2]
+        },
+        {
+          "id": "reason",
+          "label": "選んだ根拠",
+          "art": "condition-note",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "request",
+          "to": "wait",
+          "label": "条件"
+        },
+        {
+          "id": "choose",
+          "from": "wait",
+          "to": "stream",
+          "label": "候補"
+        }
+      ]
+    },
+    "festival": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "feedback",
+          "label": "屋台の感想",
+          "art": "festival-food",
+          "at": [1, 1]
+        },
+        {
+          "id": "later",
+          "label": "翌日以降で可",
+          "art": "later-bundle",
+          "at": [3, 1]
+        },
+        {
+          "id": "recover",
+          "label": "期限切れ回収",
+          "art": "recovery-folder",
+          "at": [5, 1]
+        },
+        {
+          "id": "discard",
+          "label": "回収しない案",
+          "art": "choice-slips",
+          "at": [5, 2]
+        },
+        {
+          "id": "collect",
+          "label": "回収する案",
+          "art": "recovery-folder",
+          "at": [3, 2]
+        }
+      ]
+    },
+    "caution": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "option",
+          "label": "選択肢の文",
+          "art": "choice-slips",
+          "at": [1, 1]
+        },
+        {
+          "id": "manual",
+          "label": "仕様に照らす",
+          "art": "reference-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "decision",
+          "label": "条件と比較",
+          "art": "condition-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "option",
+          "to": "manual",
+          "label": "確かめる"
+        },
+        {
+          "id": "return",
+          "from": "manual",
+          "to": "decision",
+          "label": "戻る"
+        }
+      ]
+    },
+    "use": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "question",
+          "label": "問題文を読む",
+          "art": "condition-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "choices",
+          "label": "候補を比べる",
+          "art": "choice-slips",
+          "at": [3, 1]
+        },
+        {
+          "id": "reason",
+          "label": "根拠を説明",
+          "art": "reference-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first",
+          "from": "question",
+          "to": "choices",
+          "label": "条件から"
+        },
+        {
+          "id": "second",
+          "from": "choices",
+          "to": "reason",
+          "label": "選んだ後"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "条件から返し方を選ぶ",
+      "board": "bookstore",
+      "beats": [
+        {
+          "say": "本屋で、本について質問を受けた場面を考えます。",
+          "show": ["request"]
+        },
+        {
+          "say": "質問した客は、その場で返答を待っているところです。",
+          "show": ["wait"]
+        },
+        {
+          "say": "返し方の候補を、客の状況と照らしてみましょう。",
+          "show": ["choices"]
+        },
+        {
+          "say": "場面の条件を拾ってから、選択肢を比べます。",
+          "pulse": ["wait", "choices"]
+        }
+      ]
+    },
+    {
+      "id": "bookstore-example",
+      "kind": "board",
+      "role": "example",
+      "title": "同じ返答でも時が違う",
+      "board": "bookstore",
+      "beats": [
+        {
+          "say": "店員が今答える案と、翌日に知らせる案を比べます。",
+          "pulse": ["choices"],
+          "tag": {
+            "choices": "今か翌日か"
+          }
+        },
+        {
+          "say": "どちらも、本についての返答を届ける案です。",
+          "pulse": ["request"]
+        },
+        {
+          "say": "ただし、客は今その場で返答を待っていました。",
+          "pulse": ["wait"]
+        },
+        {
+          "say": "この条件を読まずに、返し方は決められません。",
+          "mark": [
+            {
+              "on": "choices",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pick-conditions",
+      "kind": "board",
+      "role": "syntax",
+      "title": "判断に使う言葉を拾う",
+      "board": "conditions",
+      "beats": [
+        {
+          "say": "試験の問題は、実際の仕事を映すように作られています。",
+          "show": ["text"]
+        },
+        {
+          "say": "判断の手がかりが、問題文にある場面の条件です。",
+          "term": {
+            "text": "場面の条件",
+            "ruby": "ばめんのじょうけん",
+            "note": "判断の手がかりとなる状況"
+          }
+        },
+        {
+          "say": "本屋の例では、客が待つという言葉を拾いましょう。",
+          "show": ["wait", "pick"],
+          "travel": {
+            "along": ["pick"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "何を先に重く見るかを、優先事項と呼びます。",
+          "term": {
+            "text": "優先事項",
+            "ruby": "ゆうせんじこう",
+            "note": "費用や速さなどの優先"
+          }
+        },
+        {
+          "say": "費用や速さ、確実さのうち、どれを優先するかも条件です。",
+          "show": ["priority", "weigh"],
+          "tag": {
+            "priority": "この例は速さ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-options",
+      "kind": "board",
+      "role": "syntax",
+      "title": "条件に合わない案を外す",
+      "board": "compare",
+      "beats": [
+        {
+          "say": "問題で示された答えの候補を、選択肢と呼びます。",
+          "term": {
+            "text": "選択肢",
+            "ruby": "せんたくし",
+            "note": "問題で示された答えの候補"
+          }
+        },
+        {
+          "say": "比べるのは、ここに並ぶ返し方の候補です。",
+          "show": ["choices"]
+        },
+        {
+          "say": "条件に一つでも合わない候補から外しましょう。",
+          "show": ["condition", "match"],
+          "travel": {
+            "along": ["match"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "機能の名前だけで迷ったら、問題文の条件へ戻ります。",
+          "pulse": ["condition"],
+          "tag": {
+            "choices": "条件と比較"
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-waiting",
+      "kind": "board",
+      "role": "apply",
+      "title": "画面で待つ客に当てはめる",
+      "board": "response",
+      "beats": [
+        {
+          "say": "今度は、本屋の質問に答えるアプリとして考えます。",
+          "show": ["request"]
+        },
+        {
+          "say": "利用者は、画面で返答を待っている状況です。",
+          "show": ["wait", "read"]
+        },
+        {
+          "say": "この条件なら、ストリーミングを候補にしましょう。",
+          "show": ["stream", "choose"],
+          "travel": {
+            "along": ["choose"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "利用者が待っている、という言葉と結び付けます。",
+          "pulse": ["wait", "stream"]
+        }
+      ]
+    },
+    {
+      "id": "apply-elimination",
+      "kind": "board",
+      "role": "apply",
+      "title": "動く案でも条件で外す",
+      "board": "response",
+      "beats": [
+        {
+          "say": "翌日になってから返答を知らせる案も並べます。",
+          "show": ["later"]
+        },
+        {
+          "say": "今画面で待つ利用者には、合わない返し方です。",
+          "mark": [
+            {
+              "on": "later",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["wait", "later"]
+        },
+        {
+          "say": "動きそうな案でも、条件に合わなければ外しましょう。",
+          "pulse": ["later"]
+        },
+        {
+          "say": "残した案についても、選んだ根拠を言葉にします。",
+          "show": ["reason"],
+          "tag": {
+            "reason": "客が待つ"
+          }
+        }
+      ]
+    },
+    {
+      "id": "festival-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "屋台の感想を集計する",
+      "board": "festival",
+      "think": 8,
+      "beats": [
+        {
+          "say": "学園祭の屋台に届いた大量の感想を、まとめて処理します。",
+          "show": ["feedback"]
+        },
+        {
+          "say": "結果の集計は、翌日以降でもよいという条件です。",
+          "show": ["later"]
+        },
+        {
+          "say": "期限切れの結果は、後から回収できるようにしました。",
+          "show": ["recover"]
+        },
+        {
+          "say": "バッチを使う二案で、期限切れを回収するかが違います。",
+          "show": ["discard", "collect"],
+          "tag": {
+            "discard": "バッチ",
+            "collect": "バッチ"
+          }
+        },
+        {
+          "say": "条件に合うのは、回収する案としない案のどちらでしょうか。",
+          "mark": [
+            {
+              "on": "discard",
+              "kind": "question"
+            },
+            {
+              "on": "collect",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "festival-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "回収する案を選ぶ",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "答えは、期限切れの結果も後から回収する案です。",
+          "mark": [
+            {
+              "on": "collect",
+              "kind": "check"
+            },
+            {
+              "on": "discard",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["collect"]
+        },
+        {
+          "say": "翌日以降でよいことと、回収できることを両方拾います。",
+          "pulse": ["later", "recover"]
+        }
+      ]
+    },
+    {
+      "id": "trace-reasons",
+      "kind": "board",
+      "role": "explain",
+      "title": "二つの条件をたどる",
+      "board": "festival",
+      "beats": [
+        {
+          "say": "まず、大量の感想をまとめて処理する場面でした。",
+          "pulse": ["feedback"]
+        },
+        {
+          "say": "翌日以降の集計でよいことが、時間の条件です。",
+          "pulse": ["later"]
+        },
+        {
+          "say": "期限切れも後で回収できることを、合わせて確かめます。",
+          "pulse": ["recover"]
+        },
+        {
+          "say": "回収しない案は、この条件に合いません。",
+          "pulse": ["discard"],
+          "tag": {
+            "discard": "回収が欠ける"
+          }
+        },
+        {
+          "say": "バッチという名前だけでなく、案の中身まで読みましょう。",
+          "pulse": ["collect"],
+          "tag": {
+            "collect": "条件に合う"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-strong-words",
+      "kind": "board",
+      "role": "explain",
+      "title": "強い言い方を確かめる",
+      "board": "caution",
+      "beats": [
+        {
+          "say": "選択肢に「必ず」や「すべて」があれば、立ち止まります。",
+          "show": ["option"],
+          "tag": {
+            "option": "必ず"
+          }
+        },
+        {
+          "say": "たとえば、バッチのキャッシュが必ず当たるという案です。",
+          "pulse": ["option"],
+          "tag": {
+            "option": "必ず当たる"
+          }
+        },
+        {
+          "say": "この言い切りは誤りなので、仕様と照らしましょう。",
+          "show": ["manual", "check"],
+          "mark": [
+            {
+              "on": "option",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "言い方の強さも確かめてから、場面の条件と比べます。",
+          "show": ["decision", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-in-practice",
+      "kind": "board",
+      "role": "usage",
+      "title": "答えを選んだ理由を話す",
+      "board": "use",
+      "beats": [
+        {
+          "say": "似た選択肢で迷う問題では、場面の条件を先に拾います。",
+          "show": ["question"]
+        },
+        {
+          "say": "次に比べるのは、その条件に合う候補です。",
+          "show": ["choices", "first"]
+        },
+        {
+          "say": "練習の後は、選んだ理由を問題文の言葉で説明しましょう。",
+          "show": ["reason", "second"]
+        },
+        {
+          "say": "どの条件に合ったかを示せれば、選び方を確かめられます。",
+          "pulse": ["question", "reason"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "366d95150ac50c5519e298f766c1565929104eeaf6f45a43688e8f04f311395d"
+  }
+}

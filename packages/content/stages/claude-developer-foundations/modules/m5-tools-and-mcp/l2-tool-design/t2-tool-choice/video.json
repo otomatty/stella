@@ -1,0 +1,768 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "調べてから答えてほしい場面で、tool_choice の値と system に書く指示を選べる。",
+    "stuck": "ツールを渡せば必ず使われると思い、使うかどうかの指定と、使う場面を伝える指示を区別できない。",
+    "points": ["ツールを使うかどうかは、tool_choice と system の指示で調整します。"],
+    "leaveOut": [
+      "ツールの説明や入力スキーマの書き方",
+      "ツールの実行と結果の返し方",
+      "strict と構造化出力の設定",
+      "個別のモデル名と対応する設定の一覧",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "recipe-learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blue measuring spoon and looking thoughtfully at it, simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "mixing-bowl": {
+      "prompt": "A large blue mixing bowl containing pale cream batter, with a violet whisk resting inside and a small white flour container beside it. Food has natural colors. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "recipe-book": {
+      "prompt": "An open recipe book with white pages and a blue cover, a simple pictorial illustration of a mixing bowl on one page and a measuring spoon on the other, with a violet bookmark. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one hand open beside a blank speech bubble. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "choice-dial": {
+      "prompt": "A large physical blue rotary selector knob on a small white handheld device, with a violet pointer and several unmarked round stops, seen clearly from the front. A tangible object rather than an application interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "instruction-sheet": {
+      "prompt": "A hand holding a violet pencil above a single white instruction sheet with a blue paper clip, the sheet completely blank. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-visitor": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a folded white museum leaflet bearing a simple blue vase silhouette, simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "museum-hours": {
+      "prompt": "A white museum leaflet with a large blue vase silhouette beside a small blue analog clock with plain hands and no dial markings, representing museum opening hours. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "bowl",
+          "label": "材料の分量",
+          "art": "mixing-bowl",
+          "at": [1, 1]
+        },
+        {
+          "id": "recipe",
+          "label": "レシピを調べる",
+          "art": "recipe-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "instruction",
+          "label": "調べてから回答",
+          "art": "instruction-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "kitchen": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "learner",
+          "label": "料理する人",
+          "art": "recipe-learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "recipe",
+          "label": "レシピの本",
+          "art": "recipe-book",
+          "at": [3, 1]
+        },
+        {
+          "id": "instruction",
+          "label": "先に本を確認",
+          "art": "instruction-sheet",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "learner",
+          "to": "recipe",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "choice": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "choice",
+          "label": "ツールチョイス",
+          "art": "choice-dial",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "lookup",
+          "label": "レシピ検索",
+          "art": "recipe-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "decide",
+          "from": "choice",
+          "to": "claude",
+          "label": "選び方"
+        },
+        {
+          "id": "call",
+          "from": "claude",
+          "to": "lookup",
+          "label": "使うか判断"
+        }
+      ]
+    },
+    "forced": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "any",
+          "label": "any",
+          "art": "choice-dial",
+          "at": [1, 1]
+        },
+        {
+          "id": "tool",
+          "label": "tool",
+          "art": "choice-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "使うモデル",
+          "art": "claude-robot",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "recipe-request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "question",
+          "label": "分量の質問",
+          "art": "mixing-bowl",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "lookup",
+          "label": "レシピ検索",
+          "art": "recipe-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "ask",
+          "from": "question",
+          "to": "claude",
+          "label": "尋ねる"
+        },
+        {
+          "id": "lookup-call",
+          "from": "claude",
+          "to": "lookup",
+          "label": "調べる"
+        }
+      ]
+    },
+    "guidance": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "system",
+          "label": "system",
+          "art": "instruction-sheet",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "lookup",
+          "label": "レシピ検索",
+          "art": "recipe-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "guide",
+          "from": "system",
+          "to": "claude",
+          "label": "指示で導く"
+        },
+        {
+          "id": "use",
+          "from": "claude",
+          "to": "lookup",
+          "label": "答える前に"
+        }
+      ]
+    },
+    "compatible": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "model",
+          "label": "使うモデル",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "auto",
+          "label": "auto",
+          "art": "choice-dial",
+          "at": [3, 1]
+        },
+        {
+          "id": "system",
+          "label": "system",
+          "art": "instruction-sheet",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "museum-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "zones": [
+        {
+          "id": "first",
+          "label": "一つ目",
+          "tone": "blue",
+          "cells": [5, 2, 1, 1]
+        },
+        {
+          "id": "second",
+          "label": "二つ目",
+          "tone": "violet",
+          "cells": [1, 2, 3, 1]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "visitor",
+          "label": "明日の開館時刻",
+          "art": "museum-visitor",
+          "at": [1, 1]
+        },
+        {
+          "id": "hours",
+          "label": "開館時刻検索",
+          "art": "museum-hours",
+          "at": [3, 1]
+        },
+        {
+          "id": "none",
+          "label": "none",
+          "art": "choice-dial",
+          "at": [5, 2]
+        },
+        {
+          "id": "auto",
+          "label": "auto",
+          "art": "choice-dial",
+          "at": [3, 2]
+        },
+        {
+          "id": "system",
+          "label": "先に検索と指示",
+          "art": "instruction-sheet",
+          "at": [1, 2]
+        }
+      ]
+    },
+    "museum-reason": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "auto",
+          "label": "auto",
+          "art": "choice-dial",
+          "at": [1, 1]
+        },
+        {
+          "id": "system",
+          "label": "先に検索と指示",
+          "art": "instruction-sheet",
+          "at": [3, 1]
+        },
+        {
+          "id": "hours",
+          "label": "開館時刻検索",
+          "art": "museum-hours",
+          "at": [5, 1]
+        },
+        {
+          "id": "none",
+          "label": "none",
+          "art": "choice-dial",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "recipe",
+          "label": "材料の分量",
+          "art": "recipe-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "hours",
+          "label": "開館時刻",
+          "art": "museum-hours",
+          "at": [3, 1]
+        },
+        {
+          "id": "system",
+          "label": "使う場面の指示",
+          "art": "instruction-sheet",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "調べてから答えてほしい",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "料理の材料の分量を、調べてから答えてほしいとします。",
+          "show": ["bowl"]
+        },
+        {
+          "say": "そのために用意したのが、レシピを検索するツールです。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "使う場面を、アプリからどう伝えるか考えましょう。",
+          "show": ["instruction"]
+        },
+        {
+          "say": "ツールチョイスと system の指示で調整します。",
+          "speech": "ツールチョイスとシステムの指示で調整します。",
+          "pulse": ["recipe", "instruction"]
+        }
+      ]
+    },
+    {
+      "id": "kitchen-example",
+      "kind": "board",
+      "role": "example",
+      "title": "料理を手伝う人への頼み方",
+      "board": "kitchen",
+      "beats": [
+        {
+          "say": "料理を手伝う人に、材料の分量を尋ねました。",
+          "show": ["learner"]
+        },
+        {
+          "say": "本を渡すだけでは、記憶で答えるかもしれません。",
+          "show": ["recipe"],
+          "mark": [
+            {
+              "on": "learner",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "そこで、答える前に本を確かめてほしいと伝えます。",
+          "show": ["instruction"]
+        },
+        {
+          "say": "調べる場面まで伝えた頼み方です。",
+          "show": ["read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "choice-values",
+      "kind": "board",
+      "role": "syntax",
+      "title": "使うかどうかを指定する",
+      "board": "choice",
+      "beats": [
+        {
+          "say": "使うかどうかの指定が、ツールチョイスです。",
+          "term": {
+            "text": "ツールチョイス",
+            "note": "tool_choice"
+          }
+        },
+        {
+          "say": "リクエストのこの項目に、選び方を指定します。",
+          "show": ["choice"]
+        },
+        {
+          "say": "レシピ検索ツールを渡した場合の既定は、auto です。",
+          "speech": "レシピ検索ツールを渡した場合の既定は、オートです。",
+          "term": {
+            "text": "auto",
+            "note": "使うかをClaudeが決める"
+          }
+        },
+        {
+          "say": "auto では、使うかどうかを Claude が決めます。",
+          "speech": "オートでは、使うかどうかをクロードが決めます。",
+          "show": ["claude", "lookup", "decide", "call"],
+          "tag": {
+            "choice": "auto"
+          }
+        },
+        {
+          "say": "ツールを使わせない値は、none です。",
+          "speech": "ツールを使わせない値は、ナンです。",
+          "tag": {
+            "choice": "none"
+          },
+          "hide": ["call"],
+          "mark": [
+            {
+              "on": "lookup",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forced-values",
+      "kind": "board",
+      "role": "syntax",
+      "title": "必ず使わせる値の違い",
+      "board": "forced",
+      "beats": [
+        {
+          "say": "any は、どれかのツールを必ず使わせる値です。",
+          "speech": "エニーは、どれかのツールを必ず使わせる値です。",
+          "show": ["any"],
+          "tag": {
+            "any": "どれかを使う"
+          }
+        },
+        {
+          "say": "tool では、指定したツールを必ず使わせます。",
+          "speech": "ツールでは、指定したツールを必ず使わせます。",
+          "show": ["tool"],
+          "tag": {
+            "tool": "指定したもの"
+          }
+        },
+        {
+          "say": "ただし、どのモデルや設定でも使えるわけではありません。",
+          "show": ["claude"],
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "必ず使わせたいときも、対応の確認が必要です。",
+          "pulse": ["any", "tool", "claude"]
+        }
+      ]
+    },
+    {
+      "id": "recipe-auto",
+      "kind": "board",
+      "role": "apply",
+      "title": "分量の質問に当てはめる",
+      "board": "recipe-request",
+      "beats": [
+        {
+          "say": "料理の分量を尋ねる例で、auto を選びます。",
+          "speech": "料理の分量を尋ねる例で、オートを選びます。",
+          "show": ["question", "claude", "ask"],
+          "tag": {
+            "claude": "auto"
+          }
+        },
+        {
+          "say": "用意したのは、レシピを調べるツールです。",
+          "show": ["lookup"]
+        },
+        {
+          "say": "頼まれたことが、ツールの説明に当てはまっています。",
+          "pulse": ["question", "lookup"]
+        },
+        {
+          "say": "ここでは、Claude が検索を選んだ場合の動きです。",
+          "speech": "ここでは、クロードが検索を選んだ場合の動きです。",
+          "show": ["lookup-call"],
+          "travel": {
+            "along": ["lookup-call"],
+            "icon": "search"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recipe-system",
+      "kind": "board",
+      "role": "apply",
+      "title": "調べる場面を指示に書く",
+      "board": "guidance",
+      "beats": [
+        {
+          "say": "判断を導く指示は、system に書きます。",
+          "speech": "判断を導く指示は、システムに書きます。",
+          "term": {
+            "text": "system",
+            "note": "判断を導く指示を書く項目"
+          }
+        },
+        {
+          "say": "この例の指示は、答える前にツールで調べることです。",
+          "show": ["system"],
+          "tag": {
+            "system": "先に調べる"
+          }
+        },
+        {
+          "say": "この指示で、ツールを使う場面を増やします。",
+          "show": ["claude", "guide", "lookup", "use"]
+        },
+        {
+          "say": "さらに強く促すなら、必ず呼ぶよう指示しましょう。",
+          "tag": {
+            "system": "必ず呼ぶ"
+          },
+          "pulse": ["system"]
+        },
+        {
+          "say": "控えめにするなら、呼ぶか直接答えるかの判断を任せます。",
+          "tag": {
+            "system": "判断を任せる"
+          },
+          "pulse": ["claude"]
+        }
+      ]
+    },
+    {
+      "id": "model-support",
+      "kind": "board",
+      "role": "note",
+      "title": "強制できないモデルの場合",
+      "board": "compatible",
+      "beats": [
+        {
+          "say": "モデルによって、any と tool は使えません。",
+          "speech": "モデルによって、エニーとツールは使えません。",
+          "show": ["model"],
+          "mark": [
+            {
+              "on": "model",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "それらを指定すると、400 エラーになる場合があります。",
+          "speech": "それらを指定すると、よんひゃくエラーになる場合があります。",
+          "tag": {
+            "model": "400エラー"
+          }
+        },
+        {
+          "say": "その場合に使う選び方は、auto です。",
+          "speech": "その場合に使う選び方は、オートです。",
+          "show": ["auto"]
+        },
+        {
+          "say": "system の指示で、ツールを使うよう導きます。",
+          "speech": "システムの指示で、ツールを使うよう導きます。",
+          "show": ["system"],
+          "tag": {
+            "system": "先に調べる"
+          }
+        }
+      ]
+    },
+    {
+      "id": "museum-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "開館時刻を調べてもらう",
+      "board": "museum-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "見学する人が、博物館の明日の開館時刻を尋ねました。",
+          "show": ["visitor"]
+        },
+        {
+          "say": "会話に答えはなく、検索ツールで調べてほしい場面です。",
+          "show": ["hours"]
+        },
+        {
+          "say": "一つ目では、none を指定します。",
+          "speech": "一つ目では、ナンを指定します。",
+          "show": ["first", "none"]
+        },
+        {
+          "say": "二つ目は auto にして、先に検索するよう指示する案です。",
+          "speech": "二つ目はオートにして、先に検索するよう指示する案です。",
+          "show": ["second", "auto", "system"]
+        },
+        {
+          "say": "調べてから答えるよう導くには、どちらを選ぶでしょうか。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "question"
+            },
+            {
+              "on": "second",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "museum-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "二つ目の案を選ぶ",
+      "board": "museum-quiz",
+      "beats": [
+        {
+          "say": "答えは、先に検索するよう指示する二つ目の案です。",
+          "mark": [
+            {
+              "on": "first",
+              "kind": "cross"
+            },
+            {
+              "on": "second",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["second"]
+        },
+        {
+          "say": "auto と system の指示を組み合わせます。",
+          "speech": "オートとシステムの指示を組み合わせます。",
+          "pulse": ["auto", "system"]
+        }
+      ]
+    },
+    {
+      "id": "museum-reason",
+      "kind": "board",
+      "role": "explain",
+      "title": "選び方と指示の役割",
+      "board": "museum-reason",
+      "beats": [
+        {
+          "say": "auto では、ツールを使うかどうかを判断できます。",
+          "speech": "オートでは、ツールを使うかどうかを判断できます。",
+          "show": ["auto"]
+        },
+        {
+          "say": "先に検索するよう促すのは、system の指示です。",
+          "speech": "先に検索するよう促すのは、システムの指示です。",
+          "show": ["system"]
+        },
+        {
+          "say": "この二つで、開館時刻を調べるよう導きます。",
+          "show": ["hours"],
+          "pulse": ["auto", "system"]
+        },
+        {
+          "say": "none では、用意した検索ツールを使わせられません。",
+          "speech": "ナンでは、用意した検索ツールを使わせられません。",
+          "show": ["none"],
+          "mark": [
+            {
+              "on": "hours",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["none", "hours"]
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "調べる場面を伝える",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "材料の分量を調べるときは、答える前に検索するよう促します。",
+          "show": ["recipe"]
+        },
+        {
+          "say": "博物館の開館時刻を尋ねる場合も、同じ考え方です。",
+          "show": ["hours"]
+        },
+        {
+          "say": "使う場面は system の指示に書きましょう。",
+          "speech": "使う場面はシステムの指示に書きましょう。",
+          "show": ["system"]
+        },
+        {
+          "say": "ツールチョイスと指示を合わせて、使い方を調整します。",
+          "pulse": ["recipe", "hours", "system"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "8dae94fb1a076e67d142e14dbaf00ea4f6de8fd299613f893653ef793608d552"
+  }
+}

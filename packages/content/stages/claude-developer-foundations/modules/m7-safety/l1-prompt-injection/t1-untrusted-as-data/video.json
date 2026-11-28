@@ -1,0 +1,864 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "ツールで取った外の文章と自分の指示を区別し、外の文章を tool_result の中の JSON に包んで渡す方法を説明できる。",
+    "stuck": "外から取った本文の命令口調を、利用者やアプリが出した指示と同じように扱ってしまう。",
+    "points": ["ツールで取った外の文章は、tool_result の中にデータとして入れて渡します。"],
+    "leaveOut": [
+      "直接の攻撃と間接の攻撃の詳しい分類",
+      "小さいモデルによる入力のふるい分け",
+      "ツールの権限設定と秘密の保管方法",
+      "攻撃の網羅的な試験方法",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "inbound-mail": {
+      "prompt": "An open blue envelope with a white letter partly pulled out. A small magenta paper clip grips one corner of the letter, representing an unexpected instruction inside incoming mail. The paper is white. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "requester": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a blank white request card, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-reader": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white letter at reading distance. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "data-container": {
+      "prompt": "An open light grey document box with blue dividers keeping white sheets together, and a blank white luggage tag tied to the handle. The box and paper are light grey or white, never brown. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-receipt": {
+      "prompt": "A long blank white receipt with a magenta paper clip near its bottom beside a small blue shopping basket, representing a customer note on a shop receipt. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shop-clerk": {
+      "prompt": "A shop clerk wearing a plain blue shirt with simple facial features, holding a blank white receipt in one hand and pointing to it with the other. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "policy-book": {
+      "prompt": "An open white rule book with a violet cover and a blue bookmark, showing entirely blank pages. The book rests directly against the white background without any supporting surface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "lost-umbrella": {
+      "prompt": "A closed blue umbrella with a curved handle beside a white lost-property report clipped to a light grey clipboard. A small violet luggage tag is attached to the umbrella. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "mail-goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "要約の依頼",
+          "art": "requester",
+          "at": [1, 1]
+        },
+        {
+          "id": "mail",
+          "label": "受信メール",
+          "art": "inbound-mail",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [5, 1]
+        },
+        {
+          "id": "data",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "receipt": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "receipt",
+          "label": "店の伝票",
+          "art": "shop-receipt",
+          "at": [1, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "内容の確認",
+          "art": "shop-clerk",
+          "at": [3, 1]
+        },
+        {
+          "id": "rules",
+          "label": "店の決まり",
+          "art": "policy-book",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "receipt",
+          "to": "clerk",
+          "label": "読む"
+        }
+      ]
+    },
+    "attack": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "要約の依頼",
+          "art": "requester",
+          "at": [1, 1]
+        },
+        {
+          "id": "mail",
+          "label": "キーを送れ",
+          "art": "inbound-mail",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "intrude",
+          "from": "mail",
+          "to": "claude",
+          "label": "別の指示"
+        }
+      ]
+    },
+    "separate": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mail",
+          "label": "外の文章",
+          "art": "inbound-mail",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "wrap",
+          "from": "mail",
+          "to": "data",
+          "label": "データ"
+        },
+        {
+          "id": "send",
+          "from": "data",
+          "to": "claude",
+          "label": "渡す"
+        }
+      ]
+    },
+    "mail-code": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mail",
+          "label": "受信メール",
+          "art": "inbound-mail",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "JSON",
+          "art": "data-container",
+          "at": [3, 1]
+        },
+        {
+          "id": "result",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "wrap",
+          "from": "mail",
+          "to": "data"
+        },
+        {
+          "id": "put",
+          "from": "data",
+          "to": "result"
+        }
+      ]
+    },
+    "policy": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "policy",
+          "label": "system",
+          "art": "policy-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [3, 1]
+        },
+        {
+          "id": "own",
+          "label": "user",
+          "art": "requester",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "station-quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "search",
+          "label": "駅の落とし物",
+          "art": "lost-umbrella",
+          "at": [1, 1]
+        },
+        {
+          "id": "found",
+          "label": "検索した記録",
+          "art": "data-container",
+          "at": [3, 1]
+        },
+        {
+          "id": "embedded",
+          "label": "名簿を送れ",
+          "art": "lost-umbrella",
+          "at": [5, 1]
+        },
+        {
+          "id": "mixed",
+          "label": "依頼に混ぜる",
+          "art": "requester",
+          "at": [3, 2]
+        },
+        {
+          "id": "boxed",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "fetch",
+          "from": "search",
+          "to": "found",
+          "label": "検索"
+        }
+      ]
+    },
+    "station-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "傘を探す依頼",
+          "art": "requester",
+          "at": [1, 1]
+        },
+        {
+          "id": "record",
+          "label": "落とし物記録",
+          "art": "lost-umbrella",
+          "at": [3, 1]
+        },
+        {
+          "id": "data",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "contain",
+          "from": "record",
+          "to": "data",
+          "label": "包む"
+        }
+      ]
+    },
+    "mail-usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "mail",
+          "label": "メールの要約",
+          "art": "inbound-mail",
+          "at": [1, 1]
+        },
+        {
+          "id": "data",
+          "label": "ツールの結果",
+          "art": "data-container",
+          "at": [3, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "wrap",
+          "from": "mail",
+          "to": "data",
+          "label": "包む"
+        },
+        {
+          "id": "send",
+          "from": "data",
+          "to": "claude",
+          "label": "渡す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "メールの指示を分ける",
+      "board": "mail-goal",
+      "beats": [
+        {
+          "say": "利用者が、受信メールの要約を頼みました。",
+          "show": ["request"]
+        },
+        {
+          "say": "本文には、秘密のキーを送れという指示が混じっています。",
+          "show": ["mail"],
+          "tag": {
+            "mail": "キーを送れ"
+          }
+        },
+        {
+          "say": "要約する相手は、Claude です。",
+          "speech": "要約する相手は、クロードです。",
+          "show": ["claude"]
+        },
+        {
+          "say": "外の文章は、ツールの結果の中にデータとして入れます。",
+          "show": ["data"],
+          "pulse": ["data"]
+        }
+      ]
+    },
+    {
+      "id": "receipt-example",
+      "kind": "board",
+      "role": "example",
+      "title": "伝票は店の決まりか",
+      "board": "receipt",
+      "beats": [
+        {
+          "say": "店員が、客から受け取った伝票を読む場面です。",
+          "show": ["receipt", "clerk", "read"]
+        },
+        {
+          "say": "余白には、店の決まりを無視しろと書かれていました。",
+          "tag": {
+            "receipt": "決まりを無視"
+          }
+        },
+        {
+          "say": "伝票の書き込みで、店の決まりは変わりません。",
+          "show": ["rules"],
+          "mark": [
+            {
+              "on": "receipt",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "読む材料と、従う指示を分けて考えましょう。",
+          "pulse": ["receipt", "rules"]
+        }
+      ]
+    },
+    {
+      "id": "injected-instruction",
+      "kind": "board",
+      "role": "syntax",
+      "title": "本文に紛れた指示",
+      "board": "attack",
+      "beats": [
+        {
+          "say": "外の文で操る攻撃を、プロンプトインジェクションと呼びます。",
+          "term": {
+            "text": "インジェクション",
+            "note": "外の文に指示を紛れ込ませる"
+          },
+          "show": ["mail"]
+        },
+        {
+          "say": "メールの中の「キーを送れ」が、紛れた指示です。",
+          "show": ["claude", "intrude"],
+          "travel": {
+            "along": ["intrude"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "利用者が頼んだのは、メールの要約でした。",
+          "show": ["request"],
+          "pulse": ["request"]
+        },
+        {
+          "say": "本文の指示に従うと、元の依頼から外れてしまいます。",
+          "pulse": ["mail"],
+          "mark": [
+            {
+              "on": "mail",
+              "kind": "cross"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "untrusted-data",
+      "kind": "board",
+      "role": "syntax",
+      "title": "外の文をデータに分ける",
+      "board": "separate",
+      "beats": [
+        {
+          "say": "外から来た文章は、信頼できない内容として扱います。",
+          "term": {
+            "text": "信頼できない内容",
+            "ruby": "しんらいできないないよう",
+            "note": "従う指示にしない外の文章"
+          },
+          "show": ["mail"]
+        },
+        {
+          "say": "このメール本文も、読むためのデータです。",
+          "pulse": ["mail"],
+          "tag": {
+            "mail": "読む材料"
+          }
+        },
+        {
+          "say": "ツールで取った文は、ツールの結果の中だけに入れましょう。",
+          "show": ["data", "wrap"],
+          "travel": {
+            "along": ["wrap"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "Claude は、この中の指示を疑うよう学習しています。",
+          "speech": "クロードは、この中の指示を疑うよう学習しています。",
+          "show": ["claude", "send"],
+          "pulse": ["data"]
+        }
+      ]
+    },
+    {
+      "id": "result-shape",
+      "kind": "code",
+      "role": "syntax",
+      "title": "結果の中に本文を包む",
+      "code": [
+        "// ツールの結果を作る",
+        "const result = {",
+        "  // 結果の種類と対応する呼び出し",
+        "  type: \"tool_result\", tool_use_id: block.id,",
+        "  // 本文をテキストとして入れる",
+        "  content: [{ type: \"text\",",
+        "    // オブジェクトを JSON の文字列にする",
+        "    text: JSON.stringify({",
+        "      // 受信メールの出どころと送り主と本文",
+        "      source: \"inbound_email\", from, body",
+        "    // 文字列化とテキストのまとまりを閉じる",
+        "    }) }]",
+        "// 結果のまとまりを閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "mail-code"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "まず、種類としてツールの結果を指定します。",
+          "part": {
+            "line": 3,
+            "text": "\"tool_result\"",
+            "note": "ツールの結果"
+          },
+          "figure": {
+            "show": ["mail", "data", "result"],
+            "pulse": ["result"]
+          }
+        },
+        {
+          "say": "content に入れるのは、テキストのまとまりです。",
+          "speech": "コンテントに入れるのは、テキストのまとまりです。",
+          "part": {
+            "line": 5,
+            "text": "content: [{ type: \"text\"",
+            "note": "結果の中身"
+          },
+          "figure": {
+            "pulse": ["data"]
+          }
+        },
+        {
+          "say": "データを表す書式の JSON で、本文を包みましょう。",
+          "speech": "データを表す書式のジェイソンで、本文を包みましょう。",
+          "term": {
+            "text": "JSON",
+            "note": "データを表す書式"
+          },
+          "part": {
+            "line": 7,
+            "text": "JSON.stringify",
+            "note": "文字列にする"
+          }
+        },
+        {
+          "say": "ここでは、出どころと送り主と本文を一緒に包みます。",
+          "part": {
+            "line": 9,
+            "text": "source: \"inbound_email\", from, body"
+          },
+          "figure": {
+            "show": ["wrap"],
+            "travel": {
+              "along": ["wrap"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "その文字列が、ツールの結果の中身になる形です。",
+          "focus": [5, 7, 9, 11],
+          "figure": {
+            "show": ["put"],
+            "travel": {
+              "along": ["put"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrap-email",
+      "kind": "code",
+      "role": "apply",
+      "title": "メールの中身を確かめる",
+      "code": [
+        "// ツールの結果を作る",
+        "const result = {",
+        "  // 結果の種類と対応する呼び出し",
+        "  type: \"tool_result\", tool_use_id: block.id,",
+        "  // 本文をテキストとして入れる",
+        "  content: [{ type: \"text\",",
+        "    // オブジェクトを JSON の文字列にする",
+        "    text: JSON.stringify({",
+        "      // 受信メールの出どころと送り主と本文",
+        "      source: \"inbound_email\", from, body",
+        "    // 文字列化とテキストのまとまりを閉じる",
+        "    }) }]",
+        "// 結果のまとまりを閉じる",
+        "};"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "mail-code"
+      },
+      "beats": [
+        {
+          "say": "source の値で、受信メールだと伝えます。",
+          "speech": "ソースの値で、受信メールだと伝えます。",
+          "part": {
+            "line": 9,
+            "text": "\"inbound_email\"",
+            "note": "受信メール"
+          },
+          "figure": {
+            "tag": {
+              "data": "受信メール"
+            }
+          }
+        },
+        {
+          "say": "from と body は、送り主と本文の値です。",
+          "speech": "フロムとボディーは、送り主と本文の値です。",
+          "part": {
+            "line": 9,
+            "text": "from, body",
+            "note": "送り主と本文"
+          },
+          "figure": {
+            "pulse": ["mail"]
+          }
+        },
+        {
+          "say": "本文に引用符やタグがあっても、データの外へは抜け出せません。",
+          "part": {
+            "line": 7,
+            "text": "JSON.stringify"
+          },
+          "figure": {
+            "pulse": ["data"],
+            "mark": [
+              {
+                "on": "data",
+                "kind": "check"
+              }
+            ]
+          }
+        },
+        {
+          "say": "包んだ本文を、ツールの結果として渡しましょう。",
+          "part": {
+            "line": 3,
+            "text": "\"tool_result\""
+          },
+          "figure": {
+            "pulse": ["result"],
+            "travel": {
+              "along": ["put"],
+              "icon": "file"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "place-instructions",
+      "kind": "board",
+      "role": "apply",
+      "title": "自分の指示を書く場所",
+      "board": "policy",
+      "beats": [
+        {
+          "say": "system には、外の文章を信頼しない方針を書きます。",
+          "speech": "システムには、外の文章を信頼しない方針を書きます。",
+          "show": ["policy"],
+          "tag": {
+            "policy": "外の文は資料"
+          }
+        },
+        {
+          "say": "元の依頼より、外の文章を優先させない方針です。",
+          "pulse": ["policy"]
+        },
+        {
+          "say": "外の本文を、system や user の文には混ぜません。",
+          "speech": "外の本文を、システムやユーザーの文には混ぜません。",
+          "show": ["data", "own"],
+          "pulse": ["data"]
+        },
+        {
+          "say": "自分の指示は、ツールの結果のあとの user の文に書きます。",
+          "speech": "自分の指示は、ツールの結果のあとのユーザーの文に書きます。",
+          "pulse": ["own"],
+          "tag": {
+            "own": "要約を依頼"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "駅の落とし物で考える",
+      "board": "station-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "利用者が、駅でなくした傘を探すよう頼みました。",
+          "show": ["search"]
+        },
+        {
+          "say": "検索ツールで、落とし物の記録を取り出します。",
+          "show": ["found", "fetch"],
+          "travel": {
+            "along": ["fetch"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "記録には、名簿を送れという別の指示もありました。",
+          "show": ["embedded"]
+        },
+        {
+          "say": "記録を user に混ぜるか、ツールの結果に包むかを比べます。",
+          "speech": "記録をユーザーに混ぜるか、ツールの結果に包むかを比べます。",
+          "show": ["mixed", "boxed"]
+        },
+        {
+          "say": "外の文章を、データとして渡すのはどちらでしょうか。",
+          "pulse": ["mixed", "boxed"],
+          "mark": [
+            {
+              "on": "mixed",
+              "kind": "question"
+            },
+            {
+              "on": "boxed",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "記録はツールの結果へ",
+      "board": "station-quiz",
+      "beats": [
+        {
+          "say": "答えは、記録をツールの結果の中に包む方です。",
+          "mark": [
+            {
+              "on": "boxed",
+              "kind": "check"
+            },
+            {
+              "on": "mixed",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["boxed"]
+        },
+        {
+          "say": "出どころを添えた JSON にして渡します。",
+          "speech": "出どころを添えたジェイソンにして渡します。",
+          "tag": {
+            "boxed": "JSON"
+          }
+        }
+      ]
+    },
+    {
+      "id": "why-data",
+      "kind": "board",
+      "role": "explain",
+      "title": "だれの指示かをたどる",
+      "board": "station-reason",
+      "beats": [
+        {
+          "say": "利用者の依頼は、なくした傘を探すことでした。",
+          "show": ["request"]
+        },
+        {
+          "say": "名簿を送れという文は、外の記録の一部です。",
+          "show": ["record"],
+          "tag": {
+            "record": "名簿を送れ"
+          }
+        },
+        {
+          "say": "利用者の依頼として渡すと、指示と資料が混じってしまいます。",
+          "pulse": ["request", "record"],
+          "mark": [
+            {
+              "on": "record",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "外の記録はデータに包み、元の依頼と分けましょう。",
+          "show": ["data", "contain"],
+          "travel": {
+            "along": ["contain"],
+            "icon": "file"
+          },
+          "tag": {
+            "data": "読む材料"
+          }
+        }
+      ]
+    },
+    {
+      "id": "usage",
+      "kind": "board",
+      "role": "usage",
+      "title": "メールを扱う前に確認",
+      "board": "mail-usage",
+      "beats": [
+        {
+          "say": "メールを要約するアプリでは、本文の渡し方を確かめます。",
+          "show": ["mail"]
+        },
+        {
+          "say": "本文の置き場所は、ツールの結果の中です。",
+          "show": ["data", "wrap"],
+          "travel": {
+            "along": ["wrap"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "公開前には、指示を紛れ込ませたメールで試しましょう。",
+          "show": ["claude", "send"],
+          "tag": {
+            "mail": "試験用の本文"
+          }
+        },
+        {
+          "say": "本文の指示に Claude が従わないことを確かめます。",
+          "speech": "本文の指示にクロードが従わないことを確かめます。",
+          "pulse": ["claude"],
+          "mark": [
+            {
+              "on": "claude",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "3bbb829f42abb6f7e1e32c8b2d62ba6ac143a376762248f3c3cab91e70916952"
+  }
+}

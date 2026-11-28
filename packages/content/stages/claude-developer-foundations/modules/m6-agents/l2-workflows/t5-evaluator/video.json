@@ -1,0 +1,812 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "評価の基準が明確な仕事で、生成役が作り、評価役が指摘を返し、生成役が直す流れを説明できる。",
+    "stuck": "評価役自身が答えを書き直すと思い込み、生成役に具体的な指摘を返す流れや、評価の基準が必要な理由を捉えられない。",
+    "points": ["評価の基準がはっきりした仕事は、評価役の指摘で直させます。"],
+    "leaveOut": [
+      "ほかのワークフローの形とその組み合わせ",
+      "呼び出しを実装するコードとプロンプトの細かな書式",
+      "モデルの選び方と料金",
+      "採点方法や終了条件の細かな実装"
+    ]
+  },
+  "art": {
+    "school-draft": {
+      "prompt": "A blank white school activity notice held by a light grey paper clip. The notice has no pictures of supplies and no objects beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-writer": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater, holding a blank white school notice in one hand and revising it with a blue pencil in the other. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-note": {
+      "prompt": "A white school activity notice with small pictorial drawings of a violet pencil and a blue water bottle, held by a light grey paper clip. The paper has no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "human-reviewer": {
+      "prompt": "A friendly young adult reviewer with short dark hair, simple facial features and a plain blue shirt, holding a white notice and pointing at a blank part of the paper with a violet pencil. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "criterion-card": {
+      "prompt": "A light grey clipboard holding a clean white sheet, with a blue pencil resting diagonally alongside it. The sheet is blank and represents criteria used to review a draft. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot-writer": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a violet pencil over a blank white sheet in its other hand. It represents the call that writes and revises a draft. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "robot-reviewer": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blue magnifying glass close to a blank white sheet. It represents the call that reviews a draft against criteria. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-order": {
+      "prompt": "A bouquet of fresh pink and yellow flowers with natural green leaves wrapped in white paper, beside a blank light grey florist order slip attached with a blue clip. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "flower-reply": {
+      "prompt": "An open blue envelope holding a blank white order confirmation letter, with one small pink flower and natural green leaves beside it to identify a florist reply. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repeat-counter": {
+      "prompt": "A blue handheld mechanical tally counter with a white push button, a small rounded handle and a completely blank dark display, representing a limit on repeated review rounds. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "translation-book": {
+      "prompt": "An open literary book with a violet cover and blank white pages, beside a separate blank white translation sheet with a blue pencil. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "school": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "draft",
+          "label": "持ち物の案内",
+          "art": "school-draft",
+          "at": [1, 1]
+        },
+        {
+          "id": "reviewer",
+          "label": "読む担当者",
+          "art": "human-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "writer",
+          "label": "書いた人",
+          "art": "school-writer",
+          "at": [3, 2]
+        },
+        {
+          "id": "revision",
+          "label": "直した案内",
+          "art": "school-note",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "read",
+          "from": "draft",
+          "to": "reviewer",
+          "label": "確かめる"
+        },
+        {
+          "id": "return",
+          "from": "reviewer",
+          "to": "writer",
+          "label": "指摘を返す"
+        },
+        {
+          "id": "revise",
+          "from": "writer",
+          "to": "revision",
+          "label": "指摘を反映"
+        }
+      ]
+    },
+    "review-loop": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "generator",
+          "label": "生成役",
+          "art": "robot-writer",
+          "at": [1, 1]
+        },
+        {
+          "id": "draft",
+          "label": "案内の下書き",
+          "art": "school-draft",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価役",
+          "art": "robot-reviewer",
+          "at": [5, 1]
+        },
+        {
+          "id": "feedback",
+          "label": "指摘",
+          "art": "criterion-card",
+          "at": [5, 2]
+        },
+        {
+          "id": "revision",
+          "label": "生成役が直す",
+          "art": "robot-writer",
+          "at": [3, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "write",
+          "from": "generator",
+          "to": "draft",
+          "label": "作る"
+        },
+        {
+          "id": "review",
+          "from": "draft",
+          "to": "evaluator",
+          "label": "評価する"
+        },
+        {
+          "id": "point-out",
+          "from": "evaluator",
+          "to": "feedback"
+        },
+        {
+          "id": "return",
+          "from": "feedback",
+          "to": "revision",
+          "label": "返す"
+        }
+      ]
+    },
+    "criteria": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "評価の基準",
+          "art": "criterion-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "draft",
+          "label": "持ち物の案内",
+          "art": "school-draft",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価役",
+          "art": "robot-reviewer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "fit": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "person",
+          "label": "人の指摘",
+          "art": "human-reviewer",
+          "at": [1, 1]
+        },
+        {
+          "id": "revision",
+          "label": "直した案内",
+          "art": "school-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価役の指摘",
+          "art": "robot-reviewer",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "limits": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "rule",
+          "label": "評価の基準",
+          "art": "criterion-card",
+          "at": [1, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価の繰り返し",
+          "art": "robot-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "limit",
+          "label": "回数の上限",
+          "art": "repeat-counter",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "flowers": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "order",
+          "label": "花屋の注文",
+          "art": "flower-order",
+          "at": [1, 1]
+        },
+        {
+          "id": "draft",
+          "label": "確認文の下書き",
+          "art": "flower-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価役",
+          "art": "robot-reviewer",
+          "at": [5, 1]
+        },
+        {
+          "id": "feedback",
+          "label": "基準と指摘",
+          "art": "criterion-card",
+          "at": [5, 2]
+        },
+        {
+          "id": "generator",
+          "label": "生成役",
+          "art": "robot-writer",
+          "at": [3, 2]
+        },
+        {
+          "id": "revision",
+          "label": "直した確認文",
+          "art": "flower-reply",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "draft-from",
+          "from": "order",
+          "to": "draft",
+          "label": "文にする"
+        },
+        {
+          "id": "review",
+          "from": "draft",
+          "to": "evaluator",
+          "label": "評価する"
+        },
+        {
+          "id": "point-out",
+          "from": "evaluator",
+          "to": "feedback"
+        },
+        {
+          "id": "return",
+          "from": "feedback",
+          "to": "generator",
+          "label": "指摘を返す"
+        },
+        {
+          "id": "revise",
+          "from": "generator",
+          "to": "revision",
+          "label": "直す"
+        }
+      ]
+    },
+    "translation": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "text",
+          "label": "文学の翻訳",
+          "art": "translation-book",
+          "at": [1, 1]
+        },
+        {
+          "id": "evaluator",
+          "label": "評価役",
+          "art": "robot-reviewer",
+          "at": [3, 1]
+        },
+        {
+          "id": "generator",
+          "label": "生成役",
+          "art": "robot-writer",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "review",
+          "from": "text",
+          "to": "evaluator",
+          "label": "言い回し"
+        },
+        {
+          "id": "revise",
+          "from": "evaluator",
+          "to": "generator",
+          "label": "指摘を返す"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "指摘で案内を直す",
+      "board": "school",
+      "beats": [
+        {
+          "say": "学校で配る、持ち物の案内を書いたとします。",
+          "show": ["draft"]
+        },
+        {
+          "say": "読む担当者が気づいたのは、持ち物の名前がない点です。",
+          "show": ["reviewer"]
+        },
+        {
+          "say": "書いた人は指摘を受け、何を持つかが分かる案内に直しました。",
+          "show": ["writer", "return", "revision", "revise"]
+        },
+        {
+          "say": "評価の基準がはっきりした仕事は、評価役の指摘で直させます。",
+          "show": ["read"],
+          "pulse": ["revision"]
+        }
+      ]
+    },
+    {
+      "id": "school-notice",
+      "kind": "board",
+      "role": "example",
+      "title": "持ち物を名指しする",
+      "board": "school",
+      "reset": true,
+      "beats": [
+        {
+          "say": "最初の案内には、必要な物を持つように書きました。",
+          "show": ["draft"],
+          "tag": {
+            "draft": "必要な物"
+          }
+        },
+        {
+          "say": "これだけでは、読む人は何を準備するか分かりません。",
+          "mark": [
+            {
+              "on": "draft",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "担当者は、持ち物を具体的に書くよう指摘します。",
+          "show": ["reviewer", "read", "writer", "return"],
+          "tag": {
+            "reviewer": "名前を書く"
+          }
+        },
+        {
+          "say": "書いた人が直した案内にあるのは、筆記具と水筒です。",
+          "show": ["revision", "revise"],
+          "tag": {
+            "revision": "筆記具と水筒"
+          }
+        },
+        {
+          "say": "指摘が、どこを直すかの手がかりになりました。",
+          "pulse": ["reviewer", "revision"],
+          "mark": [
+            {
+              "on": "revision",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "two-roles",
+      "kind": "board",
+      "role": "syntax",
+      "title": "作る役と評価する役",
+      "board": "review-loop",
+      "beats": [
+        {
+          "say": "答えを作る呼び出しを、生成役と呼びます。",
+          "term": {
+            "text": "生成役",
+            "ruby": "せいせいやく",
+            "note": "答えを作り、指摘を受けて直す"
+          }
+        },
+        {
+          "say": "案内を書く、この呼び出しが生成役です。",
+          "show": ["generator", "draft", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "基準に沿って答えを評価する呼び出しを、評価役と呼びます。",
+          "term": {
+            "text": "評価役",
+            "ruby": "ひょうかやく",
+            "note": "基準で評価して指摘を返す"
+          }
+        },
+        {
+          "say": "案内を受け取るこちらが、評価役です。",
+          "show": ["evaluator", "review"],
+          "pulse": ["evaluator"]
+        },
+        {
+          "say": "評価役の指摘を受けて、生成役が直す流れを繰り返します。",
+          "show": ["feedback", "revision", "point-out", "return"],
+          "travel": {
+            "along": ["point-out", "return"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "clear-criteria",
+      "kind": "board",
+      "role": "syntax",
+      "title": "何を見て評価するか",
+      "board": "criteria",
+      "beats": [
+        {
+          "say": "答えの良し悪しを判断する目安が、評価の基準です。",
+          "term": {
+            "text": "評価の基準",
+            "ruby": "ひょうかのきじゅん",
+            "note": "答えの良し悪しを判断する目安"
+          }
+        },
+        {
+          "say": "この案内では、持ち物の名前が分かるかを見ます。",
+          "show": ["rule", "draft"],
+          "tag": {
+            "rule": "名前が分かる"
+          }
+        },
+        {
+          "say": "もっと良くしてと言うだけでは、見る点が定まりません。",
+          "show": ["evaluator"],
+          "tag": {
+            "evaluator": "もっと良く"
+          },
+          "mark": [
+            {
+              "on": "evaluator",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "評価役には、何を確かめるのかをはっきり伝えましょう。",
+          "pulse": ["rule", "evaluator"],
+          "untag": ["evaluator"],
+          "unmark": ["evaluator"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "revise-notice",
+      "kind": "board",
+      "role": "apply",
+      "title": "指摘を生成役へ返す",
+      "board": "review-loop",
+      "reset": true,
+      "beats": [
+        {
+          "say": "生成役が、必要な物を持つよう案内を書きます。",
+          "show": ["generator", "draft", "write"],
+          "tag": {
+            "draft": "必要な物"
+          }
+        },
+        {
+          "say": "評価役が見るのは、持ち物の名前が分かるかです。",
+          "show": ["evaluator", "review"],
+          "pulse": ["evaluator"]
+        },
+        {
+          "say": "評価役は、筆記具と水筒を明記するよう指摘しました。",
+          "show": ["feedback", "point-out"],
+          "tag": {
+            "feedback": "名前を明記"
+          }
+        },
+        {
+          "say": "指摘は生成役に返し、案内を書き直させます。",
+          "show": ["revision", "return"],
+          "travel": {
+            "along": ["return"],
+            "icon": "file"
+          },
+          "tag": {
+            "revision": "筆記具と水筒"
+          }
+        },
+        {
+          "say": "直した案内も、同じ基準で確かめましょう。",
+          "tag": {
+            "draft": "筆記具と水筒"
+          },
+          "travel": {
+            "along": ["review"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "when-it-helps",
+      "kind": "board",
+      "role": "apply",
+      "title": "この形が向くか確かめる",
+      "board": "fit",
+      "beats": [
+        {
+          "say": "この形が向くかは、人が指摘したときの変化で確かめます。",
+          "show": ["person"]
+        },
+        {
+          "say": "案内の例では、指摘で持ち物が分かるようになりました。",
+          "show": ["revision"],
+          "tag": {
+            "revision": "筆記具と水筒"
+          },
+          "mark": [
+            {
+              "on": "revision",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "もう一つの目安は、Claude も同様の指摘を出せるかです。",
+          "speech": "もう一つの目安は、クロードも同様の指摘を出せるかです。",
+          "show": ["evaluator"]
+        },
+        {
+          "say": "二つを確かめてから、評価役の指摘で直す形を選びましょう。",
+          "pulse": ["person", "evaluator"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "set-limit",
+      "kind": "board",
+      "role": "note",
+      "title": "繰り返しにも上限を置く",
+      "board": "limits",
+      "beats": [
+        {
+          "say": "基準が曖昧なままでは、繰り返しても良くなりません。",
+          "show": ["rule", "evaluator"],
+          "tag": {
+            "rule": "曖昧な基準"
+          },
+          "mark": [
+            {
+              "on": "rule",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "まず、案内なら持ち物の名前を確かめると決めます。",
+          "tag": {
+            "rule": "名前が分かる"
+          },
+          "unmark": ["rule"],
+          "pulse": ["rule"]
+        },
+        {
+          "say": "そのうえで必要なのが、繰り返す回数の上限です。",
+          "show": ["limit"],
+          "pulse": ["limit"]
+        },
+        {
+          "say": "評価と修正を始める前に、何回まで繰り返すか決めておきましょう。",
+          "tag": {
+            "limit": "先に決める"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "flower-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "花屋の確認文をどう直すか",
+      "board": "flowers",
+      "think": 8,
+      "beats": [
+        {
+          "say": "花屋で、午後三時に受け取る注文の確認文を作ります。",
+          "show": ["order"],
+          "tag": {
+            "order": "午後三時"
+          }
+        },
+        {
+          "say": "生成役が書いたのは、午後に受け取るという文です。",
+          "show": ["draft", "draft-from"],
+          "tag": {
+            "draft": "午後"
+          }
+        },
+        {
+          "say": "評価役には、受け取り時刻を明記する基準を伝えました。",
+          "show": ["evaluator", "feedback", "review", "point-out"],
+          "tag": {
+            "feedback": "時刻を明記"
+          }
+        },
+        {
+          "say": "この基準では、午後という表現だけでは足りません。",
+          "pulse": ["draft"],
+          "mark": [
+            {
+              "on": "draft",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "評価役は何を指摘し、どの役に直させるとよいでしょうか。",
+          "show": ["generator"],
+          "mark": [
+            {
+              "on": "feedback",
+              "kind": "question"
+            },
+            {
+              "on": "generator",
+              "kind": "question"
+            }
+          ],
+          "pulse": []
+        }
+      ]
+    },
+    {
+      "id": "flower-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "時刻の指摘を生成役へ",
+      "board": "flowers",
+      "beats": [
+        {
+          "say": "評価役が返すのは、午後三時と明記してほしいという指摘です。",
+          "tag": {
+            "feedback": "午後三時へ"
+          },
+          "mark": [
+            {
+              "on": "feedback",
+              "kind": "check"
+            }
+          ],
+          "pulse": ["feedback"]
+        },
+        {
+          "say": "その指摘を生成役に渡して、確認文を直させます。",
+          "show": ["return", "revision", "revise"],
+          "travel": {
+            "along": ["return", "revise"],
+            "icon": "file"
+          },
+          "tag": {
+            "revision": "午後三時"
+          },
+          "mark": [
+            {
+              "on": "generator",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-that-feedback",
+      "kind": "board",
+      "role": "explain",
+      "title": "基準から指摘をたどる",
+      "board": "flowers",
+      "beats": [
+        {
+          "say": "注文には、午後三時という具体的な時刻がありました。",
+          "pulse": ["order"]
+        },
+        {
+          "say": "下書きの午後という表現では、受け取り時刻が決まりません。",
+          "pulse": ["draft"]
+        },
+        {
+          "say": "時刻を明記する基準があるので、直す点を指摘できます。",
+          "pulse": ["feedback"],
+          "tag": {
+            "feedback": "時刻を明記"
+          }
+        },
+        {
+          "say": "その指摘を文に反映するのが、生成役の仕事です。",
+          "pulse": ["generator", "revision"],
+          "mark": [
+            {
+              "on": "revision",
+              "kind": "check"
+            }
+          ],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "use-in-translation",
+      "kind": "board",
+      "role": "usage",
+      "title": "細かな言い回しを直す",
+      "board": "translation",
+      "beats": [
+        {
+          "say": "文学の翻訳にも、指摘を受けて言い回しを直す場面があります。",
+          "show": ["text"]
+        },
+        {
+          "say": "人の指摘で、訳文がはっきり良くなる仕事が候補です。",
+          "pulse": ["text"],
+          "tag": {
+            "text": "指摘で改善"
+          }
+        },
+        {
+          "say": "同じような指摘を、評価役も出せるか確かめましょう。",
+          "show": ["evaluator", "review"],
+          "pulse": ["evaluator"]
+        },
+        {
+          "say": "評価の基準がはっきりした仕事は、評価役の指摘で直させます。",
+          "show": ["generator", "revise"],
+          "travel": {
+            "along": ["revise"],
+            "icon": "file"
+          },
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "17389d23259133c3e7e400033bf2967eeb6417e85c41d585ef159e768cd20d7a"
+  }
+}

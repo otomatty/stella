@@ -1,0 +1,813 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "長い応答を途中から読めるように、届いた文字を画面に順に追加する方法を説明できる。",
+    "stuck": "応答が全部できるまで表示を待ち、利用者に何も見えない時間を作ってしまう。",
+    "points": ["長い応答は、ストリーミングで届いた順に表示します。"],
+    "leaveOut": [
+      "差分のイベントの種類と並び",
+      "まとめた応答の受け取り方",
+      "応答の終端と停止理由の判定",
+      "通信の中断と再試行",
+      "バッチの送り方と時間の目安",
+      "画面へ追加する関数の実装"
+    ]
+  },
+  "art": {
+    "school-handout": {
+      "prompt": "A thick open white school orientation booklet with a small blue school building pictogram on its cover, several blank white pages fanned apart. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "waiting-reader": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater looking expectantly at a blank white sheet held in both hands, with simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "page-handover": {
+      "prompt": "A school staff member in a plain blue shirt handing out one white sheet while holding several more white sheets, simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "answer-screen": {
+      "prompt": "An open blue laptop with a completely blank white display, shown from the front. A conceptual object, with no interface controls and no imitation of a real application. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "text-piece": {
+      "prompt": "A single narrow white paper strip held at one end by a blue clip, representing a newly received piece of a written answer. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding an unmarked white sheet. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "vet-reception": {
+      "prompt": "A veterinary receptionist in a plain blue shirt holding a blank white admission leaflet beside a small light grey pet carrier with a simple blue paw pictogram. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "request-note": {
+      "prompt": "A hand holding a violet pen above a blank white request note clipped to a small light grey clipboard. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "学校の案内",
+          "art": "school-handout",
+          "at": [1, 1]
+        },
+        {
+          "id": "reader",
+          "label": "待っている人",
+          "art": "waiting-reader",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "回答の表示",
+          "art": "answer-screen",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "handout": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "staff",
+          "label": "案内を書く係",
+          "art": "page-handover",
+          "at": [1, 1]
+        },
+        {
+          "id": "page",
+          "label": "できたページ",
+          "art": "school-handout",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "案内を読む人",
+          "art": "waiting-reader",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "pass",
+          "from": "staff",
+          "to": "page",
+          "label": "一枚ずつ"
+        },
+        {
+          "id": "read",
+          "from": "page",
+          "to": "reader",
+          "label": "渡す"
+        }
+      ]
+    },
+    "delivery": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [1, 1]
+        },
+        {
+          "id": "piece",
+          "label": "届いた文字",
+          "art": "text-piece",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "回答の表示",
+          "art": "answer-screen",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "receive",
+          "from": "claude",
+          "to": "piece",
+          "label": "届く"
+        },
+        {
+          "id": "append",
+          "from": "piece",
+          "to": "screen",
+          "label": "追加"
+        }
+      ]
+    },
+    "request": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "request",
+          "label": "学校の案内依頼",
+          "art": "request-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "案内を表示",
+          "art": "answer-screen",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "send",
+          "from": "request",
+          "to": "claude",
+          "label": "依頼"
+        },
+        {
+          "id": "show-text",
+          "from": "claude",
+          "to": "screen",
+          "label": "少しずつ"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reception",
+          "label": "動物病院の受付",
+          "art": "vet-reception",
+          "at": [1, 1]
+        },
+        {
+          "id": "wait",
+          "label": "全文を待つ",
+          "art": "answer-screen",
+          "at": [3, 1]
+        },
+        {
+          "id": "each",
+          "label": "届くたび追加",
+          "art": "text-piece",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "reception",
+          "label": "受付の案内文",
+          "art": "vet-reception",
+          "at": [1, 1]
+        },
+        {
+          "id": "piece",
+          "label": "届いた部分",
+          "art": "text-piece",
+          "at": [3, 1]
+        },
+        {
+          "id": "screen",
+          "label": "受付で読む",
+          "art": "answer-screen",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "arrive",
+          "from": "reception",
+          "to": "piece",
+          "label": "届く"
+        },
+        {
+          "id": "display",
+          "from": "piece",
+          "to": "screen",
+          "label": "表示"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "guide",
+          "label": "学校の長い案内",
+          "art": "school-handout",
+          "at": [1, 1]
+        },
+        {
+          "id": "reception",
+          "label": "受付の説明文",
+          "art": "vet-reception",
+          "at": [3, 1]
+        },
+        {
+          "id": "reader",
+          "label": "途中から読む",
+          "art": "waiting-reader",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "長い案内を待つ画面",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "学校の案内を作るアプリを考えます。",
+          "show": ["guide"]
+        },
+        {
+          "say": "読み手は、長い回答を待っているところです。",
+          "show": ["reader"]
+        },
+        {
+          "say": "全部できるまで何も出ないと、動いているか分かりません。",
+          "show": ["screen"],
+          "tag": {
+            "screen": "まだ空白"
+          }
+        },
+        {
+          "say": "長い応答は、ストリーミングで届いた順に表示します。",
+          "pulse": ["screen"],
+          "tag": {
+            "screen": "届いた順"
+          }
+        }
+      ]
+    },
+    {
+      "id": "handout",
+      "kind": "board",
+      "role": "example",
+      "title": "できたページから渡す",
+      "board": "handout",
+      "beats": [
+        {
+          "say": "学校の係が、案内を何ページも書く場面を考えましょう。",
+          "show": ["staff"]
+        },
+        {
+          "say": "全部そろうまで渡さないと、読み手は待つだけです。",
+          "show": ["reader"],
+          "tag": {
+            "reader": "待つ"
+          }
+        },
+        {
+          "say": "そこで係は、できたページから一枚ずつ渡しました。",
+          "show": ["page", "pass", "read"],
+          "travel": {
+            "along": ["pass", "read"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "読み手は、受け取ったところから読み始めます。",
+          "pulse": ["reader"],
+          "tag": {
+            "reader": "読み始める"
+          }
+        },
+        {
+          "say": "まだ届いていないページまで、先に読むことはできません。",
+          "pulse": ["staff"],
+          "tag": {
+            "staff": "続きは作成中"
+          }
+        }
+      ]
+    },
+    {
+      "id": "streaming",
+      "kind": "board",
+      "role": "syntax",
+      "title": "応答を少しずつ受け取る",
+      "board": "delivery",
+      "beats": [
+        {
+          "say": "返ってくる回答を、応答と呼びます。",
+          "term": {
+            "text": "応答",
+            "ruby": "おうとう",
+            "note": "返ってくる回答"
+          }
+        },
+        {
+          "say": "この例では、学校の案内文が応答です。",
+          "show": ["claude", "piece", "receive"],
+          "travel": {
+            "along": ["receive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "少しずつ受け取る方法を、ストリーミングと呼びます。",
+          "term": {
+            "text": "ストリーミング",
+            "note": "応答を少しずつ受け取る"
+          }
+        },
+        {
+          "say": "届いた文字から画面に出せる受け取り方です。",
+          "show": ["screen", "append"],
+          "travel": {
+            "along": ["append"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stream-call",
+      "kind": "code",
+      "role": "syntax",
+      "title": "少しずつ受け取る呼び出し",
+      "code": [
+        "// メッセージの呼び出しを始める",
+        "client.messages",
+        "  // 依頼を渡して少しずつ受け取る",
+        "  .stream(request)",
+        "  // 届いた文字を画面に追加する",
+        "  .on(\"text\", (text) => appendToScreen(text));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "delivery"
+      },
+      "beats": [
+        {
+          "say": "SDK の呼び出しを、コードで確かめます。",
+          "speech": "エスディーケーの呼び出しを、コードで確かめます。",
+          "part": {
+            "line": 1,
+            "text": "client.messages"
+          },
+          "figure": {
+            "pulse": ["claude"]
+          }
+        },
+        {
+          "say": "stream は、少しずつ受け取るための呼び出しです。",
+          "speech": "ストリームは、少しずつ受け取るための呼び出しです。",
+          "term": {
+            "text": "stream",
+            "note": "少しずつ受け取る呼び出し"
+          },
+          "part": {
+            "line": 3,
+            "text": "stream"
+          }
+        },
+        {
+          "say": "図の、文字が届く矢印と対応させてください。",
+          "part": {
+            "line": 3,
+            "text": ".stream(request)"
+          },
+          "figure": {
+            "travel": {
+              "along": ["receive"],
+              "icon": "file"
+            }
+          }
+        },
+        {
+          "say": "request には、用意した依頼を渡します。",
+          "speech": "リクエストには、用意した依頼を渡します。",
+          "part": {
+            "line": 3,
+            "text": "request",
+            "note": "依頼"
+          },
+          "figure": {
+            "pulse": ["claude"]
+          }
+        },
+        {
+          "say": "request は、依頼に付けた名前です。",
+          "speech": "リクエストは、依頼に付けた名前です。",
+          "part": {
+            "line": 3,
+            "text": "request",
+            "note": "自分で付ける名"
+          },
+          "figure": {
+            "tag": {
+              "claude": "案内の依頼"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "text-handler",
+      "kind": "code",
+      "role": "syntax",
+      "title": "届いた文字を表示へ渡す",
+      "code": [
+        "// メッセージの呼び出しを始める",
+        "client.messages",
+        "  // 依頼を渡して少しずつ受け取る",
+        "  .stream(request)",
+        "  // 届いた文字を画面に追加する",
+        "  .on(\"text\", (text) => appendToScreen(text));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "delivery"
+      },
+      "beats": [
+        {
+          "say": "text を指定して、文字が届くたびに処理を呼びます。",
+          "speech": "テキストを指定して、文字が届くたびに処理を呼びます。",
+          "part": {
+            "line": 5,
+            "text": "\"text\"",
+            "note": "文字の受け取り"
+          },
+          "figure": {
+            "pulse": ["piece"]
+          }
+        },
+        {
+          "say": "かっこの中の text は、受け取った文字の名前です。",
+          "speech": "かっこの中のテキストは、受け取った文字の名前です。",
+          "part": {
+            "line": 5,
+            "text": "(text)",
+            "note": "文字"
+          }
+        },
+        {
+          "say": "この名前は、書く人が自分で決めます。",
+          "part": {
+            "line": 5,
+            "text": "(text)",
+            "note": "自分で付ける名"
+          },
+          "figure": {
+            "tag": {
+              "piece": "届いた文字"
+            }
+          }
+        },
+        {
+          "say": "appendToScreen は、画面に追加する関数の名前です。",
+          "speech": "アペンドトゥスクリーンは、画面に追加する関数の名前です。",
+          "part": {
+            "line": 5,
+            "text": "appendToScreen",
+            "note": "画面に追加"
+          },
+          "figure": {
+            "pulse": ["screen"]
+          }
+        },
+        {
+          "say": "これも、自分で用意する関数だと考えましょう。",
+          "part": {
+            "line": 5,
+            "text": "appendToScreen",
+            "note": "自分で用意"
+          },
+          "figure": {
+            "travel": {
+              "along": ["append"],
+              "icon": "write"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-example",
+      "kind": "code",
+      "role": "apply",
+      "title": "学校の案内を順に表示",
+      "code": [
+        "// メッセージの呼び出しを始める",
+        "client.messages",
+        "  // 依頼を渡して少しずつ受け取る",
+        "  .stream(request)",
+        "  // 届いた文字を画面に追加する",
+        "  .on(\"text\", (text) => appendToScreen(text));"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "delivery"
+      },
+      "reset": true,
+      "beats": [
+        {
+          "say": "学校の案内で、文字が届く様子をたどります。",
+          "focus": [3, 5],
+          "figure": {
+            "show": ["claude", "piece", "screen", "receive", "append"]
+          }
+        },
+        {
+          "say": "たとえば最初に届く文字は、「受付」です。",
+          "part": {
+            "line": 5,
+            "text": "(text)",
+            "note": "届いた文字"
+          },
+          "figure": {
+            "tag": {
+              "piece": "受付"
+            }
+          }
+        },
+        {
+          "say": "その文字を渡すと、画面にも「受付」が出ます。",
+          "part": {
+            "line": 5,
+            "text": "appendToScreen(text)"
+          },
+          "figure": {
+            "tag": {
+              "screen": "受付"
+            }
+          }
+        },
+        {
+          "say": "次に届くのは、「は一階」という続きです。",
+          "part": {
+            "line": 5,
+            "text": "(text)",
+            "note": "次の文字"
+          },
+          "figure": {
+            "tag": {
+              "piece": "は一階"
+            }
+          }
+        },
+        {
+          "say": "画面には、続きの文字が後ろに追加されます。",
+          "part": {
+            "line": 5,
+            "text": "appendToScreen(text)"
+          },
+          "figure": {
+            "tag": {
+              "screen": "受付は一階"
+            },
+            "travel": {
+              "along": ["append"],
+              "icon": "write"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-early",
+      "kind": "board",
+      "role": "apply",
+      "title": "残りを待つ間に読む",
+      "board": "request",
+      "beats": [
+        {
+          "say": "今たどったのは、学校の案内を頼んだ例です。",
+          "show": ["request", "claude", "send"],
+          "travel": {
+            "along": ["send"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "案内の最初が届いたら、すぐに表示を始めます。",
+          "show": ["screen", "show-text"],
+          "tag": {
+            "screen": "受付は一階"
+          }
+        },
+        {
+          "say": "案内全体ができるまで、画面を空白にしておく必要はありません。",
+          "pulse": ["screen"],
+          "mark": [
+            {
+              "on": "screen",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "利用者は、続きが届く間にも読み進められます。",
+          "travel": {
+            "along": ["show-text"],
+            "icon": "write"
+          },
+          "tag": {
+            "screen": "続きも追加"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "受付の案内を早く読む",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "動物病院の受付で、長い来院案内を作るアプリを使います。",
+          "show": ["reception"]
+        },
+        {
+          "say": "一つ目は、全文ができるまで何も表示しない方法です。",
+          "show": ["wait"],
+          "tag": {
+            "wait": "まだ空白"
+          }
+        },
+        {
+          "say": "二つ目は、文字が届くたびに画面へ追加します。",
+          "show": ["each"]
+        },
+        {
+          "say": "受付の人が途中から読めるのは、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "wait",
+              "kind": "question"
+            },
+            {
+              "on": "each",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "届くたびに追加する",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、届いた文字を追加する二つ目の方法です。",
+          "mark": [
+            {
+              "on": "each",
+              "kind": "check"
+            },
+            {
+              "on": "wait",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["each"]
+        },
+        {
+          "say": "ストリーミングで受け取り、届いたところから表示します。",
+          "tag": {
+            "each": "届いた順"
+          },
+          "pulse": ["reception", "each"]
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "kind": "board",
+      "role": "explain",
+      "title": "最初の文字から読める理由",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "来院案内が長くても、最初の部分から届きます。",
+          "show": ["reception", "piece", "arrive"],
+          "travel": {
+            "along": ["arrive"],
+            "icon": "file"
+          }
+        },
+        {
+          "say": "すぐ表示すれば、受付の人が読める状態です。",
+          "show": ["screen", "display"],
+          "travel": {
+            "along": ["display"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "全文を待つ方法では、届いた部分も画面に出ません。",
+          "pulse": ["screen"],
+          "tag": {
+            "screen": "まだ空白"
+          }
+        },
+        {
+          "say": "届いた文字と、画面への追加をつなげましょう。",
+          "tag": {
+            "screen": "届くたび追加"
+          },
+          "travel": {
+            "along": ["display"],
+            "icon": "write"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "長い回答を読む画面で使う",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "学校の案内のような長い回答を、届いた順に表示します。",
+          "show": ["guide"]
+        },
+        {
+          "say": "受付の人が読む説明文も、途中から表示したい場面です。",
+          "show": ["reception"]
+        },
+        {
+          "say": "どちらも、読み始めるために全文を待つ必要はありません。",
+          "show": ["reader"]
+        },
+        {
+          "say": "長い応答は、ストリーミングで届いた順に表示します。",
+          "pulse": ["guide", "reception", "reader"]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "0e68c923f5d75d8107a369833f1421d040828066e4710b807b8ab28ae43ac57d"
+  }
+}

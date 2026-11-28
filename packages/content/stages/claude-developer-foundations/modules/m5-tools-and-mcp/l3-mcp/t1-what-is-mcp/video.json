@@ -1,0 +1,701 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "複数の対応アプリで同じ検索を使う場面で、MCP サーバーを共通で使える理由を説明できる。",
+    "stuck": "外のツールを使うには、アプリごとに同じ連携を作り直す必要があると思ってしまう。",
+    "points": ["MCP は、ツールやデータを AI のアプリにつなぐための、公開された共通の規格です。"],
+    "leaveOut": [
+      "API や Agent SDK への接続設定",
+      "認証とツールの許可の設定",
+      "手元のプロセスや HTTP などの動かし方",
+      "tool、resource、prompt の違い",
+      "Skill や組み込みツールとの使い分け"
+    ]
+  },
+  "art": {
+    "task-ledger": {
+      "prompt": "An upright white clipboard holding several light grey task slips with blue tabs and a violet pencil. The slips are blank and represent a team's task records. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "chat-device": {
+      "prompt": "An open blue laptop displaying two large empty speech bubbles on an otherwise blank screen. A conceptual chat application illustration, not a real product interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "editor-device": {
+      "prompt": "An open violet laptop with a dark blank screen and a small blue wrench resting beside it. A conceptual development assistant illustration, not a real product interface. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "shared-server": {
+      "prompt": "A compact light grey computer server tower beside a white folder containing blank sheets with blue tabs, representing a provider of tools and data. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "application-form": {
+      "prompt": "A single white application sheet held by a blue clip, with two large empty light grey fields and a violet pen beside it. No writing or glyphs. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "reception-clerk": {
+      "prompt": "A friendly attendant in a plain blue shirt holding out an open hand to receive a paper form. Simple facial features, upper body only, no counter. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "learner": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater holding a rolled white application sheet. Simple facial features, upper body only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "umbrella-rack": {
+      "prompt": "Three closed blue and violet umbrellas with curved handles standing in a small light grey umbrella holder, beside a blank white borrowing ledger. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tasks",
+          "label": "社内の課題",
+          "art": "task-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "chat",
+          "label": "チャット",
+          "art": "chat-device",
+          "at": [3, 1]
+        },
+        {
+          "id": "editor",
+          "label": "開発の補助",
+          "art": "editor-device",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "forms": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "visitor",
+          "label": "申し込む人",
+          "art": "learner",
+          "at": [1, 1]
+        },
+        {
+          "id": "form",
+          "label": "共通の用紙",
+          "art": "application-form",
+          "at": [3, 1]
+        },
+        {
+          "id": "clerk",
+          "label": "受付の担当者",
+          "art": "reception-clerk",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "fill",
+          "from": "visitor",
+          "to": "form",
+          "label": "記入"
+        },
+        {
+          "id": "hand",
+          "from": "form",
+          "to": "clerk",
+          "label": "提出"
+        }
+      ]
+    },
+    "standard": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "app",
+          "label": "AIのアプリ",
+          "art": "chat-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "ツールとデータ",
+          "art": "shared-server",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "connect",
+          "from": "app",
+          "to": "server",
+          "label": "MCP"
+        }
+      ]
+    },
+    "roles": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "client",
+          "label": "クライアント",
+          "art": "chat-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "MCPサーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "tasks",
+          "label": "課題の情報",
+          "art": "task-ledger",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "use",
+          "from": "client",
+          "to": "server",
+          "label": "やり取り"
+        },
+        {
+          "id": "provide",
+          "from": "tasks",
+          "to": "server",
+          "label": "提供"
+        }
+      ]
+    },
+    "separate": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "チャット",
+          "art": "chat-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "first",
+          "label": "専用のツール",
+          "art": "task-ledger",
+          "at": [3, 1]
+        },
+        {
+          "id": "editor",
+          "label": "開発の補助",
+          "art": "editor-device",
+          "at": [3, 2]
+        },
+        {
+          "id": "second",
+          "label": "別のツール",
+          "art": "task-ledger",
+          "at": [1, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "chat-tool",
+          "from": "chat",
+          "to": "first",
+          "label": "個別に作る"
+        },
+        {
+          "id": "editor-tool",
+          "from": "editor",
+          "to": "second",
+          "label": "個別に作る"
+        }
+      ]
+    },
+    "shared": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "chat",
+          "label": "チャット",
+          "art": "chat-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "MCPサーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "editor",
+          "label": "開発の補助",
+          "art": "editor-device",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "chat-server",
+          "from": "chat",
+          "to": "server",
+          "label": "MCP"
+        },
+        {
+          "id": "editor-server",
+          "from": "editor",
+          "to": "server",
+          "label": "MCP"
+        }
+      ]
+    },
+    "umbrella": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "server",
+          "label": "MCPサーバー",
+          "art": "umbrella-rack",
+          "at": [3, 1]
+        },
+        {
+          "id": "chat",
+          "label": "案内アプリ",
+          "art": "chat-device",
+          "at": [1, 1]
+        },
+        {
+          "id": "staff",
+          "label": "係員のアプリ",
+          "art": "editor-device",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first",
+          "from": "chat",
+          "to": "server",
+          "label": "MCP"
+        },
+        {
+          "id": "second",
+          "from": "staff",
+          "to": "server",
+          "label": "MCP"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "tasks",
+          "label": "課題の検索",
+          "art": "task-ledger",
+          "at": [1, 1]
+        },
+        {
+          "id": "server",
+          "label": "公開サーバー",
+          "art": "shared-server",
+          "at": [3, 1]
+        },
+        {
+          "id": "app",
+          "label": "対応アプリ",
+          "art": "chat-device",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "available",
+          "from": "tasks",
+          "to": "server",
+          "label": "提供"
+        },
+        {
+          "id": "connect",
+          "from": "app",
+          "to": "server",
+          "label": "MCP"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "同じ情報を二つのアプリへ",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "社内の課題を、二つのアプリから調べたいとします。",
+          "show": ["tasks"]
+        },
+        {
+          "say": "一つ目は、質問を書いて使うチャットです。",
+          "show": ["chat"]
+        },
+        {
+          "say": "もう一つは、開発を手伝うアプリを考えましょう。",
+          "show": ["editor"]
+        },
+        {
+          "say": "MCP は、ツールやデータと AI アプリをつなぐ共通規格です。",
+          "speech": "エムシーピーは、ツールやデータとエーアイアプリをつなぐ共通規格です。",
+          "pulse": ["tasks", "chat", "editor"]
+        }
+      ]
+    },
+    {
+      "id": "common-form",
+      "kind": "board",
+      "role": "example",
+      "title": "申込用紙の形をそろえる",
+      "board": "forms",
+      "beats": [
+        {
+          "say": "公民館で、部屋の利用を申し込む場面です。",
+          "show": ["visitor"]
+        },
+        {
+          "say": "受付ごとに用紙が違うと、そのたびに書き直します。",
+          "show": ["clerk"],
+          "mark": [
+            {
+              "on": "visitor",
+              "kind": "redo"
+            }
+          ]
+        },
+        {
+          "say": "そこで、どの受付でも使える共通の用紙を用意しました。",
+          "show": ["form"]
+        },
+        {
+          "say": "同じ形で受け取れるよう、受付側もそろえましょう。",
+          "show": ["fill", "hand"],
+          "travel": {
+            "along": ["fill", "hand"],
+            "icon": "file"
+          },
+          "unmark": ["visitor"]
+        }
+      ]
+    },
+    {
+      "id": "common-standard",
+      "kind": "board",
+      "role": "syntax",
+      "title": "公開された共通規格",
+      "board": "standard",
+      "beats": [
+        {
+          "say": "MCP は、外のツールやデータをつなぐための規格です。",
+          "speech": "エムシーピーは、外のツールやデータをつなぐための規格です。",
+          "term": {
+            "text": "MCP",
+            "note": "外のツールやデータをつなぐ"
+          }
+        },
+        {
+          "say": "AI のアプリと、提供する側を共通の形でつなぎます。",
+          "speech": "エーアイのアプリと、提供する側を共通の形でつなぎます。",
+          "show": ["app", "server", "connect"]
+        },
+        {
+          "say": "この規格は公開されていて、だれでも同じ約束で使える仕組みです。",
+          "pulse": ["connect"],
+          "tag": {
+            "server": "共通の形"
+          }
+        },
+        {
+          "say": "ただし、使うアプリも MCP に対応している必要があります。",
+          "speech": "ただし、使うアプリもエムシーピーに対応している必要があります。",
+          "pulse": ["app"],
+          "tag": {
+            "app": "対応が必要"
+          }
+        },
+        {
+          "say": "先ほどの例では、共通の用紙を受け取れる受付と同じ考え方です。",
+          "pulse": ["server"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "provider-and-client",
+      "kind": "board",
+      "role": "syntax",
+      "title": "提供する側と使う側",
+      "board": "roles",
+      "beats": [
+        {
+          "say": "ツールやデータを提供する側を、MCP サーバーと呼びます。",
+          "speech": "ツールやデータを提供する側を、エムシーピーサーバーと呼びます。",
+          "term": {
+            "text": "MCPサーバー",
+            "note": "ツールやデータを提供する側"
+          }
+        },
+        {
+          "say": "この図では、課題の情報を提供する中央の部分です。",
+          "show": ["server", "tasks", "provide"]
+        },
+        {
+          "say": "サーバーとやり取りする側を、MCP クライアントと呼びます。",
+          "speech": "サーバーとやり取りする側を、エムシーピークライアントと呼びます。",
+          "term": {
+            "text": "MCPクライアント",
+            "note": "サーバーとやり取りする側"
+          }
+        },
+        {
+          "say": "アプリ側のこの部分が、クライアントです。",
+          "show": ["client", "use"],
+          "pulse": ["client"]
+        },
+        {
+          "say": "提供する側と使う側を、矢印の両端で確かめましょう。",
+          "pulse": ["client", "server"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "separate-tools",
+      "kind": "board",
+      "role": "apply",
+      "title": "アプリごとに作る場合",
+      "board": "separate",
+      "beats": [
+        {
+          "say": "社内の課題を調べる、最初の例に戻ります。",
+          "show": ["chat"]
+        },
+        {
+          "say": "チャット用に用意したのは、専用のツールです。",
+          "show": ["first", "chat-tool"]
+        },
+        {
+          "say": "開発を手伝うアプリには、別のツールを作っていました。",
+          "show": ["editor", "second", "editor-tool"]
+        },
+        {
+          "say": "組み合わせごとに作るため、同じ検索でも手間がかかります。",
+          "pulse": ["first", "second"],
+          "mark": [
+            {
+              "on": "second",
+              "kind": "redo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "share-one-server",
+      "kind": "board",
+      "role": "apply",
+      "title": "同じサーバーを使う",
+      "board": "shared",
+      "beats": [
+        {
+          "say": "今度は、課題を調べる MCP サーバーを一度用意します。",
+          "speech": "今度は、課題を調べるエムシーピーサーバーを一度用意します。",
+          "show": ["server"],
+          "tag": {
+            "server": "課題の検索"
+          }
+        },
+        {
+          "say": "チャットは、MCP に対応したアプリです。",
+          "speech": "チャットは、エムシーピーに対応したアプリです。",
+          "show": ["chat"],
+          "tag": {
+            "chat": "対応済み"
+          }
+        },
+        {
+          "say": "このサーバーにつなぐと、課題を調べるツールを使えます。",
+          "show": ["chat-server"],
+          "travel": {
+            "along": ["chat-server"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "開発を手伝うアプリも、MCP に対応しているとしましょう。",
+          "speech": "開発を手伝うアプリも、エムシーピーに対応しているとしましょう。",
+          "show": ["editor"],
+          "tag": {
+            "editor": "対応済み"
+          }
+        },
+        {
+          "say": "こちらも同じサーバーにつなぎ、同じツールを使います。",
+          "show": ["editor-server"],
+          "travel": {
+            "along": ["editor-server"],
+            "icon": "search"
+          },
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "傘の検索を共有するには",
+      "board": "umbrella",
+      "think": 8,
+      "beats": [
+        {
+          "say": "傘の貸し出しで、借りられる傘を調べたい場面です。",
+          "show": ["server"]
+        },
+        {
+          "say": "検索できる MCP サーバーは、すでに用意されています。",
+          "speech": "検索できるエムシーピーサーバーは、すでに用意されています。",
+          "tag": {
+            "server": "傘の検索"
+          }
+        },
+        {
+          "say": "案内と係員のアプリは、どちらも MCP 対応です。",
+          "speech": "案内と係員のアプリは、どちらもエムシーピー対応です。",
+          "show": ["chat", "staff"],
+          "tag": {
+            "chat": "対応済み",
+            "staff": "対応済み"
+          }
+        },
+        {
+          "say": "両方で同じ検索を使うには、どうつなぐか考えましょう。",
+          "pulse": ["chat", "staff"]
+        },
+        {
+          "say": "それぞれ専用に作るか、同じサーバーを使うか、どちらでしょうか。",
+          "mark": [
+            {
+              "on": "server",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["server"]
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "同じサーバーにつなぐ",
+      "board": "umbrella",
+      "beats": [
+        {
+          "say": "答えは、両方のアプリを同じサーバーにつなぐ方法です。",
+          "show": ["first", "second"],
+          "mark": [
+            {
+              "on": "server",
+              "kind": "check"
+            }
+          ]
+        },
+        {
+          "say": "用意されている傘の検索を、両方から使います。",
+          "pulse": ["chat", "staff"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "why-share",
+      "kind": "board",
+      "role": "explain",
+      "title": "共通の形で使える理由",
+      "board": "umbrella",
+      "beats": [
+        {
+          "say": "このサーバーが提供するのは、借りられる傘の検索です。",
+          "pulse": ["server"]
+        },
+        {
+          "say": "案内アプリは、共通の規格に沿って検索を使います。",
+          "pulse": ["chat"],
+          "travel": {
+            "along": ["first"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "係員のアプリも、同じ規格に対応していました。",
+          "pulse": ["staff"]
+        },
+        {
+          "say": "そのため、同じサーバーが提供する検索を使えます。",
+          "travel": {
+            "along": ["second"],
+            "icon": "search"
+          },
+          "pulse": ["server"]
+        },
+        {
+          "say": "両方のアプリが対応している点も、選ぶ理由です。",
+          "pulse": ["chat", "staff"],
+          "mark": [
+            {
+              "on": "chat",
+              "kind": "check"
+            },
+            {
+              "on": "staff",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "外のツールをつなぐとき",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "複数のアプリで同じ課題検索を使いたいときに役立ちます。",
+          "show": ["tasks"]
+        },
+        {
+          "say": "すでに公開されている MCP サーバーも候補です。",
+          "speech": "すでに公開されているエムシーピーサーバーも候補です。",
+          "show": ["server", "available"]
+        },
+        {
+          "say": "接続先の機能と、アプリが対応する機能を確かめましょう。",
+          "show": ["app", "connect"],
+          "pulse": ["app", "server"]
+        },
+        {
+          "say": "MCP は、ツールやデータを AI アプリにつなぐ公開規格です。",
+          "speech": "エムシーピーは、ツールやデータをエーアイアプリにつなぐ公開規格です。",
+          "pulse": ["connect"],
+          "pause": 1
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "b79ac7d1b1ab48b74974e13cd7694dff7158fbde52494eaa02bf0332cdaa8c07"
+  }
+}

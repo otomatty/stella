@@ -1,0 +1,824 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "前の条件が使われなくなったとき、元の会話と送信した履歴で確認する場所を順に説明できる。",
+    "stuck": "前に伝えた条件は残っていると思い、圧縮後の履歴を見ずに出力の上限を増やそうとする。",
+    "points": ["途中の指示が消えたら、圧縮や削除で外れていないかを履歴で確かめます。"],
+    "leaveOut": [
+      "圧縮やコンテキストの編集を設定するコード",
+      "削除の細かい設定値と例外",
+      "出力の途切れや形式の崩れへの対策",
+      "ほかの障害モードの分類",
+      "課題の答えのコード"
+    ]
+  },
+  "art": {
+    "parcel-clock": {
+      "prompt": "A closed light grey cardboard parcel sealed with blue tape beside a blue analog clock with a blank face and simple hands, representing an early parcel reception deadline. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "history-stack": {
+      "prompt": "A thick stack of white conversation notes held by a blue binder clip, with a small violet tab halfway through the stack marking an instruction added during the conversation. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "short-note": {
+      "prompt": "A single white summary slip with a blue paper clip and one violet tab, much thinner than a stack of notes. The slip is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "repair-shoes": {
+      "prompt": "A pair of blue shoes beside a separate light grey insole and a small white repair ticket, representing a request to repair shoes while keeping the original insoles. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-reply": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding a blank white reply card. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "app-folder": {
+      "prompt": "An open laptop with a completely blank blue screen beside an open light grey folder holding white conversation notes, representing the application that assembles the history. No interface controls. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "photo-document": {
+      "prompt": "A white document clipped together with a white photograph sheet bearing a simple pictorial image of a light grey parcel and a blue clock, representing the original reception reference material. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "tool-receipt": {
+      "prompt": "A long white paper receipt curling gently beside a blue document tray, representing an older tool result stored in a conversation. The receipt is entirely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "used-books": {
+      "prompt": "Three worn books with blue and violet covers and slightly bent white pages beside a small white purchase slip, representing a secondhand book buying service. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "goal": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "deadline",
+          "label": "金曜の受付",
+          "art": "parcel-clock",
+          "at": [1, 1]
+        },
+        {
+          "id": "compressed",
+          "label": "圧縮後の要約",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "後の案内",
+          "art": "claude-reply",
+          "at": [5, 1]
+        },
+        {
+          "id": "original",
+          "label": "元の履歴",
+          "art": "history-stack",
+          "at": [5, 2]
+        }
+      ]
+    },
+    "repair": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "shoes",
+          "label": "靴の修理",
+          "art": "repair-shoes",
+          "at": [1, 1]
+        },
+        {
+          "id": "original",
+          "label": "元の依頼票",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "memo",
+          "label": "引継ぎメモ",
+          "art": "short-note",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "summarize",
+          "from": "original",
+          "to": "memo",
+          "label": "書き直す"
+        }
+      ]
+    },
+    "comparison": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "original",
+          "label": "元の履歴",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "app",
+          "label": "実行するアプリ",
+          "art": "app-folder",
+          "at": [3, 1]
+        },
+        {
+          "id": "sent",
+          "label": "送信する履歴",
+          "art": "short-note",
+          "at": [5, 1]
+        },
+        {
+          "id": "reply",
+          "label": "後の応答",
+          "art": "claude-reply",
+          "at": [5, 2]
+        }
+      ],
+      "links": [
+        {
+          "id": "assemble",
+          "from": "app",
+          "to": "sent",
+          "label": "組み立て"
+        },
+        {
+          "id": "send",
+          "from": "sent",
+          "to": "reply",
+          "label": "送る"
+        }
+      ]
+    },
+    "placement": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "block",
+          "label": "圧縮結果",
+          "art": "short-note",
+          "at": [1, 1]
+        },
+        {
+          "id": "later",
+          "label": "続きの発言",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "model",
+          "label": "モデル",
+          "art": "claude-reply",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "first",
+          "from": "block",
+          "to": "later",
+          "label": "先頭に置く"
+        },
+        {
+          "id": "send",
+          "from": "later",
+          "to": "model",
+          "label": "送る"
+        }
+      ]
+    },
+    "materials": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "source",
+          "label": "元の資料",
+          "art": "photo-document",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "圧縮後の要約",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "sent",
+          "label": "送る資料",
+          "art": "photo-document",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "replace",
+          "from": "source",
+          "to": "note",
+          "label": "置き換え"
+        }
+      ]
+    },
+    "condition": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "original",
+          "label": "途中の指示",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "圧縮後の要約",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "restore",
+          "label": "入れ直す指示",
+          "art": "parcel-clock",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "original",
+          "to": "note",
+          "label": "照合"
+        },
+        {
+          "id": "restore-link",
+          "from": "note",
+          "to": "restore",
+          "label": "補う"
+        }
+      ]
+    },
+    "tool": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "result",
+          "label": "古い実行結果",
+          "art": "tool-receipt",
+          "at": [1, 1]
+        },
+        {
+          "id": "sent",
+          "label": "送信する履歴",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "settings",
+          "label": "削除の設定",
+          "art": "app-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "result",
+          "to": "sent",
+          "label": "照合"
+        }
+      ]
+    },
+    "quiz": {
+      "cols": 5,
+      "rows": 2,
+      "nodes": [
+        {
+          "id": "books",
+          "label": "古本の買い取り",
+          "art": "used-books",
+          "at": [1, 1]
+        },
+        {
+          "id": "condition",
+          "label": "途中の条件",
+          "art": "history-stack",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "圧縮後の案内",
+          "art": "claude-reply",
+          "at": [5, 1]
+        },
+        {
+          "id": "history",
+          "label": "履歴の照合",
+          "art": "app-folder",
+          "at": [5, 2]
+        },
+        {
+          "id": "output",
+          "label": "出力量の変更",
+          "at": [3, 2],
+          "icon": "write"
+        }
+      ]
+    },
+    "reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "original",
+          "label": "元の条件",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "note",
+          "label": "送られた要約",
+          "art": "short-note",
+          "at": [3, 1]
+        },
+        {
+          "id": "restore",
+          "label": "再度渡す指示",
+          "art": "used-books",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "original",
+          "to": "note",
+          "label": "比べる"
+        },
+        {
+          "id": "restore-link",
+          "from": "note",
+          "to": "restore",
+          "label": "補う"
+        }
+      ]
+    },
+    "usage": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "before",
+          "label": "前の応答",
+          "art": "history-stack",
+          "at": [1, 1]
+        },
+        {
+          "id": "after",
+          "label": "後の応答",
+          "art": "claude-reply",
+          "at": [3, 1]
+        },
+        {
+          "id": "sent",
+          "label": "実際の送信内容",
+          "art": "app-folder",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "compare",
+          "from": "before",
+          "to": "after",
+          "label": "比べる"
+        },
+        {
+          "id": "inspect",
+          "from": "after",
+          "to": "sent",
+          "label": "調べる"
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "消えた金曜の条件",
+      "board": "goal",
+      "beats": [
+        {
+          "say": "金曜の受付は早く締めると、途中で伝えました。",
+          "show": ["deadline"]
+        },
+        {
+          "say": "長い会話を圧縮したあとの場面です。",
+          "show": ["compressed"]
+        },
+        {
+          "say": "後の案内には、金曜の条件が出てきません。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "条件なし"
+          }
+        },
+        {
+          "say": "途中の指示が消えたら、圧縮や削除で外れていないかを履歴で確かめます。",
+          "show": ["original"],
+          "pulse": ["original", "compressed"]
+        }
+      ]
+    },
+    {
+      "id": "repair-handoff",
+      "kind": "board",
+      "role": "example",
+      "title": "引継ぎで抜けた条件",
+      "board": "repair",
+      "beats": [
+        {
+          "say": "靴の修理を、別の担当者に引き継ぐ場面です。",
+          "show": ["shoes"]
+        },
+        {
+          "say": "お客さんは、中敷きは替えないでほしいと伝えました。",
+          "show": ["original"],
+          "tag": {
+            "original": "中敷きは残す"
+          }
+        },
+        {
+          "say": "短いメモに書き直したら、その条件が抜けています。",
+          "show": ["memo", "summarize"],
+          "tag": {
+            "memo": "条件なし"
+          }
+        },
+        {
+          "say": "元の依頼票と、渡したメモを比べましょう。",
+          "pulse": ["original", "memo"]
+        }
+      ]
+    },
+    {
+      "id": "find-loss",
+      "kind": "board",
+      "role": "syntax",
+      "title": "実際に送る履歴を見る",
+      "board": "comparison",
+      "beats": [
+        {
+          "say": "前の条件が使えなくなることを、コンテキストの喪失と呼びます。",
+          "term": {
+            "text": "コンテキストの喪失",
+            "ruby": "コンテキストのそうしつ",
+            "note": "前に使えた条件や資料が使えない"
+          }
+        },
+        {
+          "say": "金曜の条件も、前の応答では使えていました。",
+          "show": ["original"],
+          "tag": {
+            "original": "金曜は早締め"
+          }
+        },
+        {
+          "say": "後の応答では、その条件が抜けています。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "条件なし"
+          }
+        },
+        {
+          "say": "実行を管理するアプリ側が、ハーネスです。",
+          "term": {
+            "text": "ハーネス",
+            "note": "実行を管理するアプリ側"
+          }
+        },
+        {
+          "say": "まず、ハーネスが送る直前の履歴を見ましょう。",
+          "show": ["app", "sent", "assemble", "send"],
+          "pulse": ["app", "sent"]
+        }
+      ]
+    },
+    {
+      "id": "check-block",
+      "kind": "board",
+      "role": "syntax",
+      "title": "圧縮結果の位置",
+      "board": "placement",
+      "beats": [
+        {
+          "say": "会話を圧縮して返された内容が、圧縮結果です。",
+          "term": {
+            "text": "圧縮結果",
+            "ruby": "あっしゅくけっか",
+            "note": "圧縮して返されたブロック"
+          }
+        },
+        {
+          "say": "返ってきた圧縮結果は、そのまま履歴の先頭に置きます。",
+          "show": ["block", "later", "first"],
+          "tag": {
+            "block": "そのまま先頭"
+          }
+        },
+        {
+          "say": "この圧縮結果が抜けていないか、確認しましょう。",
+          "pulse": ["block"],
+          "mark": [
+            {
+              "on": "block",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "抜けや位置の誤りがあれば、履歴の組み立てを直します。",
+          "show": ["model", "send"],
+          "mark": [
+            {
+              "on": "block",
+              "kind": "check"
+            }
+          ],
+          "travel": {
+            "along": ["first", "send"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-materials",
+      "kind": "board",
+      "role": "apply",
+      "title": "資料が置き換わったか",
+      "board": "materials",
+      "beats": [
+        {
+          "say": "次は、受付の条件を載せた画像や文書を確かめます。",
+          "show": ["source"]
+        },
+        {
+          "say": "比べる相手は、圧縮後にモデルへ渡る内容です。",
+          "show": ["note", "replace"]
+        },
+        {
+          "say": "元の資料が、要約で置き換わっていないかを見ましょう。",
+          "pulse": ["source", "note"],
+          "tag": {
+            "note": "資料は残るか"
+          }
+        },
+        {
+          "say": "後のやり取りでも要る資料なら、再度渡します。",
+          "show": ["sent"],
+          "tag": {
+            "sent": "再度渡す"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-condition",
+      "kind": "board",
+      "role": "apply",
+      "title": "途中の指示が残ったか",
+      "board": "condition",
+      "beats": [
+        {
+          "say": "途中で伝えた金曜の条件を、元の履歴で探します。",
+          "show": ["original"],
+          "tag": {
+            "original": "金曜は早締め"
+          }
+        },
+        {
+          "say": "次に見るのは、圧縮後の要約です。",
+          "show": ["note", "compare"]
+        },
+        {
+          "say": "要約に条件がなければ、必要な指示を改めて入れましょう。",
+          "show": ["restore", "restore-link"],
+          "tag": {
+            "note": "条件なし",
+            "restore": "金曜は早締め"
+          }
+        },
+        {
+          "say": "要約で残す条件を、指定する方法もあります。",
+          "pulse": ["note"],
+          "tag": {
+            "note": "残す条件指定"
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-tool-result",
+      "kind": "board",
+      "role": "apply",
+      "title": "古い結果が削除されたか",
+      "board": "tool",
+      "beats": [
+        {
+          "say": "最後に、古いツール結果が削除されたかを調べます。",
+          "show": ["result"]
+        },
+        {
+          "say": "見るのは、コンテキストの編集による削除です。",
+          "show": ["sent", "compare"],
+          "tag": {
+            "sent": "結果は残るか"
+          }
+        },
+        {
+          "say": "削除の設定や、応答の記録も見てみましょう。",
+          "show": ["settings"],
+          "pulse": ["settings"]
+        },
+        {
+          "say": "必要な結果が外れていたら、残す範囲を調整します。",
+          "pulse": ["result"],
+          "tag": {
+            "result": "残す範囲調整"
+          }
+        }
+      ]
+    },
+    {
+      "id": "book-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "買い取り条件が消えたら",
+      "board": "quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "古本の買い取りを案内する会話で考えます。",
+          "show": ["books"]
+        },
+        {
+          "say": "途中で店員が、水ぬれの本は買わないと伝えました。",
+          "show": ["condition"],
+          "tag": {
+            "condition": "水ぬれ不可"
+          }
+        },
+        {
+          "say": "圧縮後だけ、その条件を無視した案内が出ています。",
+          "show": ["reply"],
+          "tag": {
+            "reply": "条件なし"
+          }
+        },
+        {
+          "say": "候補は、送った履歴の照合と、出力の上限を増やすことです。",
+          "show": ["history", "output"]
+        },
+        {
+          "say": "条件が消えた場所を探すなら、どちらを先に選ぶでしょうか。",
+          "mark": [
+            {
+              "on": "history",
+              "kind": "question"
+            },
+            {
+              "on": "output",
+              "kind": "question"
+            }
+          ],
+          "pulse": ["history", "output"]
+        }
+      ]
+    },
+    {
+      "id": "book-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "送った履歴を照合する",
+      "board": "quiz",
+      "beats": [
+        {
+          "say": "答えは、元の会話と送った履歴の照合です。",
+          "mark": [
+            {
+              "on": "history",
+              "kind": "check"
+            },
+            {
+              "on": "output",
+              "kind": "cross"
+            }
+          ],
+          "pulse": ["history"]
+        },
+        {
+          "say": "水ぬれの条件が、要約にも残っているかを確かめます。",
+          "pulse": ["condition"],
+          "tag": {
+            "condition": "要約と照合"
+          }
+        },
+        {
+          "say": "出力の上限を増やしても、外れた情報は戻りません。",
+          "pulse": ["output"],
+          "tag": {
+            "output": "戻らず"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trace-omission",
+      "kind": "board",
+      "role": "explain",
+      "title": "要約で消えたと分かる例",
+      "board": "reason",
+      "beats": [
+        {
+          "say": "照合すると、元の会話には水ぬれの条件がありました。",
+          "show": ["original"],
+          "tag": {
+            "original": "水ぬれ不可"
+          }
+        },
+        {
+          "say": "一方、送られた要約にはその条件がありません。",
+          "show": ["note", "compare"],
+          "tag": {
+            "note": "条件なし"
+          }
+        },
+        {
+          "say": "この場合、直すのは要約で落ちた指示です。",
+          "pulse": ["original", "note"],
+          "mark": [
+            {
+              "on": "note",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "必要な条件を、改めて指示に入れましょう。",
+          "show": ["restore", "restore-link"],
+          "tag": {
+            "restore": "水ぬれ不可"
+          },
+          "travel": {
+            "along": ["restore-link"],
+            "icon": "file"
+          }
+        }
+      ]
+    },
+    {
+      "id": "use-history",
+      "kind": "board",
+      "role": "usage",
+      "title": "前は使えた条件を調べる",
+      "board": "usage",
+      "beats": [
+        {
+          "say": "長い案内の会話で、前の応答には条件が使われていました。",
+          "show": ["before"],
+          "tag": {
+            "before": "条件あり"
+          }
+        },
+        {
+          "say": "後の応答だけ条件が抜けたら、履歴を調べる場面です。",
+          "show": ["after", "compare"],
+          "tag": {
+            "after": "条件なし"
+          }
+        },
+        {
+          "say": "保存した元の会話と、実際に送った内容を比べましょう。",
+          "show": ["sent", "inspect"],
+          "pulse": ["before", "sent"]
+        },
+        {
+          "say": "圧縮や削除で条件が外れた場所を、履歴から確かめます。",
+          "pulse": ["sent"],
+          "mark": [
+            {
+              "on": "sent",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "85e80be56de0d7d4299109b89ecdc8f4589888c8813b02d30a8002561a60ee05"
+  }
+}

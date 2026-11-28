@@ -1,0 +1,670 @@
+{
+  "schema": 2,
+  "brief": {
+    "goal": "API の動きを確かめる公式ドキュメントの読み方を、該当見出しと条件・制限に触れて説明できる。",
+    "stuck": "記事に機能が使えると書かれていれば、いまの仕様や使える条件まで確認できたと思ってしまう。",
+    "points": ["API の動きは、公式ドキュメントの該当ページで確かめます。"],
+    "leaveOut": [
+      "試験ガイドの出題範囲と配点",
+      "Agent SDK のドキュメントの所在",
+      "学習に使わない問題集の見分け方",
+      "機能ごとの具体的な条件と制限",
+      "API のコードや細かい項目"
+    ]
+  },
+  "art": {
+    "cooker-manual": {
+      "prompt": "An open white instruction booklet with a violet cover, a simple blue rice cooker pictogram on one page and a blank blue bookmark. The rest of the pages are blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "rice-cooker": {
+      "prompt": "A white and blue rice cooker with its lid open and a small white rice measuring cup beside it. The inner pot is empty. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "old-article": {
+      "prompt": "A folded light grey paper leaflet with a gently curled corner, a small blue binder clip, and a violet magnifying glass beside it. The paper is blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "official-manual": {
+      "prompt": "An open white instruction booklet with a blue cover and one violet bookmark marking a page. Both pages are completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "feature-index": {
+      "prompt": "A light grey ring binder opened to white divider pages with three large blue and violet index tabs. The pages and tabs are completely blank. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "claude-robot": {
+      "prompt": "A friendly small robot with a rounded white body, blue accents and a dark screen face with a simple smile, holding one blank white message card. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "message-envelope": {
+      "prompt": "An open blue envelope with one blank white message sheet emerging from it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "condition-notes": {
+      "prompt": "A hand holding a violet pencil over an open small white notebook with two blank pages, with a blue clip attached to the notebook. No writing or marks on the pages. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "dental-booking": {
+      "prompt": "A small white desk calendar with blue binding and completely blank pages beside a white tooth-shaped dental model. Objects only, no calendar grid or symbols. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    }
+  },
+  "boards": {
+    "cooker": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "cooker",
+          "label": "炊飯器",
+          "art": "rice-cooker",
+          "at": [1, 1]
+        },
+        {
+          "id": "article",
+          "label": "古い記事",
+          "art": "old-article",
+          "at": [3, 1]
+        },
+        {
+          "id": "manual",
+          "label": "説明書",
+          "art": "cooker-manual",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "official": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "article",
+          "label": "記事の説明",
+          "art": "old-article",
+          "at": [1, 1]
+        },
+        {
+          "id": "docs",
+          "label": "公式の説明",
+          "art": "official-manual",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "verify",
+          "from": "article",
+          "to": "docs",
+          "label": "確かめる"
+        }
+      ]
+    },
+    "messages": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "send",
+          "label": "送るメッセージ",
+          "art": "message-envelope",
+          "at": [1, 1]
+        },
+        {
+          "id": "claude",
+          "label": "Claude",
+          "art": "claude-robot",
+          "at": [3, 1]
+        },
+        {
+          "id": "reply",
+          "label": "受け取る応答",
+          "art": "message-envelope",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "request",
+          "from": "send",
+          "to": "claude",
+          "label": "送る"
+        },
+        {
+          "id": "response",
+          "from": "claude",
+          "to": "reply",
+          "label": "受け取る"
+        }
+      ]
+    },
+    "find-page": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "index",
+          "label": "機能の一覧",
+          "art": "feature-index",
+          "at": [1, 1]
+        },
+        {
+          "id": "page",
+          "label": "該当ページ",
+          "art": "official-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "heading",
+          "label": "該当の見出し",
+          "art": "official-manual",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "open",
+          "from": "index",
+          "to": "page",
+          "label": "開く"
+        },
+        {
+          "id": "read",
+          "from": "page",
+          "to": "heading",
+          "label": "読む"
+        }
+      ]
+    },
+    "write-notes": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "heading",
+          "label": "該当の見出し",
+          "art": "official-manual",
+          "at": [1, 1]
+        },
+        {
+          "id": "conditions",
+          "label": "使える条件",
+          "art": "condition-notes",
+          "at": [3, 1]
+        },
+        {
+          "id": "limits",
+          "label": "制限",
+          "art": "condition-notes",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "dental-quiz": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "dental",
+          "label": "歯科予約アプリ",
+          "art": "dental-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "article",
+          "label": "紹介記事",
+          "art": "old-article",
+          "at": [3, 1]
+        },
+        {
+          "id": "docs",
+          "label": "該当の見出し",
+          "art": "official-manual",
+          "at": [5, 1]
+        }
+      ]
+    },
+    "dental-reason": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "dental",
+          "label": "歯科予約アプリ",
+          "art": "dental-booking",
+          "at": [1, 1]
+        },
+        {
+          "id": "docs",
+          "label": "該当の見出し",
+          "art": "official-manual",
+          "at": [3, 1]
+        },
+        {
+          "id": "notes",
+          "label": "条件と制限",
+          "art": "condition-notes",
+          "at": [5, 1]
+        }
+      ],
+      "links": [
+        {
+          "id": "check",
+          "from": "dental",
+          "to": "docs",
+          "label": "確認"
+        },
+        {
+          "id": "write",
+          "from": "docs",
+          "to": "notes",
+          "label": "書き出す"
+        }
+      ]
+    },
+    "uses": {
+      "cols": 5,
+      "rows": 1,
+      "nodes": [
+        {
+          "id": "article",
+          "label": "記事で知る",
+          "art": "old-article",
+          "at": [1, 1]
+        },
+        {
+          "id": "index",
+          "label": "機能を探す",
+          "art": "feature-index",
+          "at": [3, 1]
+        },
+        {
+          "id": "docs",
+          "label": "仕様を確かめる",
+          "art": "official-manual",
+          "at": [5, 1]
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "goal",
+      "kind": "board",
+      "role": "goal",
+      "title": "古い説明を使う前に",
+      "board": "cooker",
+      "beats": [
+        {
+          "say": "炊飯器の使い方を、古い記事で調べたとします。",
+          "show": ["cooker"]
+        },
+        {
+          "say": "その記事の説明が、いまも正しいかは分かりません。",
+          "show": ["article"]
+        },
+        {
+          "say": "手元の炊飯器の説明書で、使い方を確かめましょう。",
+          "show": ["manual"]
+        },
+        {
+          "say": "API の動きも、公式の該当ページで確かめます。",
+          "speech": "エーピーアイの動きも、公式の該当ページで確かめます。",
+          "pulse": ["manual"]
+        }
+      ]
+    },
+    {
+      "id": "cooker-example",
+      "kind": "board",
+      "role": "example",
+      "title": "説明書の読む場所",
+      "board": "cooker",
+      "beats": [
+        {
+          "say": "炊飯器の予約機能を使いたい場面です。",
+          "pulse": ["cooker"],
+          "tag": {
+            "cooker": "予約機能"
+          }
+        },
+        {
+          "say": "古い記事では、予約できると紹介されていました。",
+          "pulse": ["article"]
+        },
+        {
+          "say": "使える条件までは、その一文だけでは分かりません。",
+          "mark": [
+            {
+              "on": "article",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "説明書の予約の見出しを読み、条件を確かめます。",
+          "pulse": ["manual"],
+          "tag": {
+            "manual": "予約の見出し"
+          }
+        }
+      ]
+    },
+    {
+      "id": "official-docs",
+      "kind": "board",
+      "role": "syntax",
+      "title": "公式の説明に戻る",
+      "board": "official",
+      "beats": [
+        {
+          "say": "公式ドキュメントは、提供元が公開する仕様の説明です。",
+          "term": {
+            "text": "公式ドキュメント",
+            "ruby": "こうしきドキュメント",
+            "note": "提供元が公開する説明"
+          }
+        },
+        {
+          "say": "Claude API では、Anthropic が公開しています。",
+          "speech": "クロードエーピーアイでは、アンソロピックが公開しています。",
+          "show": ["docs"]
+        },
+        {
+          "say": "機能がどう動くかを決めた内容が、仕様です。",
+          "term": {
+            "text": "仕様",
+            "ruby": "しよう",
+            "note": "機能がどう動くかの決まり"
+          }
+        },
+        {
+          "say": "API には新しい機能が足され、記事と違うことがあります。",
+          "speech": "エーピーアイには新しい機能が足され、記事と違うことがあります。",
+          "show": ["article"],
+          "mark": [
+            {
+              "on": "article",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "記事で知った動きは、公式の説明で確かめましょう。",
+          "show": ["verify"],
+          "travel": {
+            "along": ["verify"],
+            "icon": "search"
+          },
+          "pulse": ["docs"]
+        }
+      ]
+    },
+    {
+      "id": "messages-basics",
+      "kind": "board",
+      "role": "syntax",
+      "title": "送信と応答の基本",
+      "board": "messages",
+      "beats": [
+        {
+          "say": "メッセージを送って応答を受け取るのが、Messages API です。",
+          "speech": "メッセージを送って応答を受け取るのが、メッセージズエーピーアイです。",
+          "term": {
+            "text": "メッセージズAPI",
+            "note": "送信と応答を扱うAPI"
+          }
+        },
+        {
+          "say": "まず、Claude にメッセージを送ります。",
+          "speech": "まず、クロードにメッセージを送ります。",
+          "show": ["send", "claude", "request"],
+          "travel": {
+            "along": ["request"],
+            "icon": "send"
+          }
+        },
+        {
+          "say": "この依頼が、リクエストです。",
+          "pulse": ["send"],
+          "tag": {
+            "send": "リクエスト"
+          }
+        },
+        {
+          "say": "Claude から返る応答を受け取ります。",
+          "speech": "クロードから返る応答を受け取ります。",
+          "show": ["reply", "response"],
+          "travel": {
+            "along": ["response"],
+            "icon": "file"
+          },
+          "pulse": ["reply"]
+        },
+        {
+          "say": "この基本を確かめたいときは、専用の説明ページが入口です。",
+          "pulse": ["send", "reply"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "find-heading",
+      "kind": "board",
+      "role": "apply",
+      "title": "読む見出しまで進む",
+      "board": "find-page",
+      "beats": [
+        {
+          "say": "予約機能を目次で探すように、使いたい機能を探します。",
+          "show": ["index"]
+        },
+        {
+          "say": "入口になるのは、公式ドキュメントの機能の一覧です。",
+          "pulse": ["index"]
+        },
+        {
+          "say": "まず、機能の名前と説明がある場所をつかみましょう。",
+          "tag": {
+            "index": "名前と場所"
+          }
+        },
+        {
+          "say": "一覧から、その機能の該当ページを開きます。",
+          "show": ["page", "open"],
+          "travel": {
+            "along": ["open"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "ページの題名で止まらず、該当の見出しまで読んでください。",
+          "show": ["heading", "read"],
+          "travel": {
+            "along": ["read"],
+            "icon": "read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "record-conditions",
+      "kind": "board",
+      "role": "apply",
+      "title": "条件と制限を書き出す",
+      "board": "write-notes",
+      "beats": [
+        {
+          "say": "説明書と同じように、見出しの下の説明を読みます。",
+          "show": ["heading"]
+        },
+        {
+          "say": "書き出す一つ目は、その機能を使える条件です。",
+          "show": ["conditions"]
+        },
+        {
+          "say": "どんな制限があるかも、自分の言葉で書いてください。",
+          "show": ["limits"]
+        },
+        {
+          "say": "条件と制限まで書くと、読み落としを減らせます。",
+          "pulse": ["conditions", "limits"],
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "id": "dental-quiz",
+      "kind": "board",
+      "role": "quiz",
+      "title": "予約アプリで調べる",
+      "board": "dental-quiz",
+      "think": 8,
+      "beats": [
+        {
+          "say": "歯科の予約を案内するアプリを作る場面です。",
+          "show": ["dental"]
+        },
+        {
+          "say": "API の機能を、紹介記事で見つけたとします。",
+          "speech": "エーピーアイの機能を、紹介記事で見つけたとします。",
+          "show": ["article"]
+        },
+        {
+          "say": "一人目は、記事に使えるとあったので採用しました。",
+          "tag": {
+            "article": "記事だけ"
+          }
+        },
+        {
+          "say": "二人目は、公式の該当見出しで条件と制限を確かめます。",
+          "show": ["docs"],
+          "tag": {
+            "docs": "条件と制限"
+          }
+        },
+        {
+          "say": "いまの仕様を確かめる行動は、どちらでしょうか。",
+          "pulse": ["article", "docs"],
+          "mark": [
+            {
+              "on": "article",
+              "kind": "question"
+            },
+            {
+              "on": "docs",
+              "kind": "question"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dental-answer",
+      "kind": "board",
+      "role": "answer",
+      "title": "該当見出しを読む人",
+      "board": "dental-quiz",
+      "beats": [
+        {
+          "say": "答えは、公式の該当見出しを読んだ二人目です。",
+          "pulse": ["docs"],
+          "mark": [
+            {
+              "on": "docs",
+              "kind": "check"
+            },
+            {
+              "on": "article",
+              "kind": "cross"
+            }
+          ]
+        },
+        {
+          "say": "使える条件と制限も、合わせて確かめています。",
+          "tag": {
+            "docs": "仕様を確認"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dental-explain",
+      "kind": "board",
+      "role": "explain",
+      "title": "記事だけでは足りない理由",
+      "board": "dental-reason",
+      "beats": [
+        {
+          "say": "記事で機能を知っても、いまの仕様と同じとは限りません。",
+          "show": ["dental"],
+          "mark": [
+            {
+              "on": "dental",
+              "kind": "question"
+            }
+          ]
+        },
+        {
+          "say": "確かめる場所は、その機能の公式の該当ページです。",
+          "show": ["docs", "check"],
+          "travel": {
+            "along": ["check"],
+            "icon": "search"
+          }
+        },
+        {
+          "say": "見出しまで読み、使える条件や制限を確かめます。",
+          "pulse": ["docs"],
+          "tag": {
+            "docs": "見出しまで"
+          }
+        },
+        {
+          "say": "読み取った内容は、自分の言葉でメモしましょう。",
+          "show": ["notes", "write"],
+          "travel": {
+            "along": ["write"],
+            "icon": "write"
+          }
+        },
+        {
+          "say": "二人目は、この確認までできています。",
+          "pulse": ["docs", "notes"],
+          "unmark": ["dental"],
+          "mark": [
+            {
+              "on": "notes",
+              "kind": "check"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uses",
+      "kind": "board",
+      "role": "usage",
+      "title": "使う前に仕様を確かめる",
+      "board": "uses",
+      "beats": [
+        {
+          "say": "記事で便利な機能を見つけたら、公式の説明を確かめます。",
+          "show": ["article"]
+        },
+        {
+          "say": "使える機能を探したいときは、機能の一覧が入口です。",
+          "show": ["index"]
+        },
+        {
+          "say": "API を使う前に、該当見出しの条件と制限を読みましょう。",
+          "speech": "エーピーアイを使う前に、該当見出しの条件と制限を読みましょう。",
+          "show": ["docs"]
+        },
+        {
+          "say": "試験の準備でも、いまの仕様で正しい作り方を確かめます。",
+          "pulse": ["docs"],
+          "tag": {
+            "docs": "いまの仕様"
+          }
+        }
+      ]
+    }
+  ],
+  "polish": {
+    "model": "gemini-4-neon",
+    "sayHash": "5732a54d89b194278a6b91b78f922e35d1bf641a7dfa37bfcd63596415b8adec"
+  }
+}
