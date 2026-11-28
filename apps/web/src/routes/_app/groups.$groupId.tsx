@@ -8,6 +8,7 @@ import { RoleGuard } from "@/components/shell/RoleGuard";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiClientError } from "@/lib/api-client";
 import {
   peerHiddenBubble,
@@ -49,13 +50,15 @@ function GroupProgressPage() {
         </header>
         {!unavailable && group ? (
           <div className="space-y-6" key={JSON.stringify([currentUserId, groupId])}>
-            {group.shareProgress && (
+            {group.shareProgress && group.shareActivity ? (
+              <GroupTabs groupId={groupId} />
+            ) : group.shareProgress ? (
               <section className="space-y-3" aria-label="仲間の進捗">
-                {group.shareActivity && <h2 className="text-lg font-semibold">仲間の進捗</h2>}
                 <GroupProgress groupId={groupId} />
               </section>
-            )}
-            {group.shareActivity && <GroupTimeline groupId={groupId} />}
+            ) : group.shareActivity ? (
+              <GroupTimeline groupId={groupId} />
+            ) : null}
           </div>
         ) : !unavailable && myGroups.status === "loading" ? (
           <SkeletonRows />
@@ -68,6 +71,23 @@ function GroupProgressPage() {
         )}
       </div>
     </RoleGuard>
+  );
+}
+
+function GroupTabs({ groupId }: { groupId: string }) {
+  return (
+    <Tabs defaultValue="timeline" className="min-w-0">
+      <TabsList aria-label="グループの共有内容">
+        <TabsTrigger value="timeline">タイムライン</TabsTrigger>
+        <TabsTrigger value="progress">進捗</TabsTrigger>
+      </TabsList>
+      <TabsContent value="timeline" forceMount className="data-[state=inactive]:hidden">
+        <GroupTimeline groupId={groupId} showHeading={false} />
+      </TabsContent>
+      <TabsContent value="progress">
+        <GroupProgress groupId={groupId} />
+      </TabsContent>
+    </Tabs>
   );
 }
 

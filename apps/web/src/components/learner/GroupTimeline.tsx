@@ -13,7 +13,13 @@ import { cn } from "@/lib/utils";
 
 type Reactions = GroupTimelineEvent["reactions"];
 
-export function GroupTimeline({ groupId }: { groupId: string }) {
+export function GroupTimeline({
+  groupId,
+  showHeading = true,
+}: {
+  groupId: string;
+  showHeading?: boolean;
+}) {
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,16 +83,17 @@ export function GroupTimeline({ groupId }: { groupId: string }) {
   }
 
   const now = Date.now();
+  const DateHeading = showHeading ? "h3" : "h2";
   return (
-    <section aria-label="タイムライン" className="min-w-0 space-y-4">
-      <h2 className="text-lg font-semibold">タイムライン</h2>
+    <section aria-label={showHeading ? "タイムライン" : undefined} className="min-w-0 space-y-4">
+      {showHeading && <h2 className="text-lg font-semibold">タイムライン</h2>}
       {timeline?.events.length === 0 && <p className="text-sm text-ink-3">まだ節目はありません</p>}
       <TooltipProvider>
         {groupTimelineByDate(timeline?.events ?? []).map(([date, events]) => (
           <div key={date} className="space-y-2">
-            <h3 className="text-sm font-semibold text-ink-3">
+            <DateHeading className="text-sm font-semibold text-ink-3">
               <time dateTime={date}>{timelineDateHeading(date, now)}</time>
-            </h3>
+            </DateHeading>
             <ul className="space-y-2">
               {events.map((event) => (
                 <TimelineRow
