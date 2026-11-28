@@ -54,6 +54,16 @@ export function toStudyDate(at: Date | number, offsetMin = STUDY_TZ_OFFSET_MIN):
   return formatUtcDate(ms + offsetMin * 60_000);
 }
 
+/** UTC ミリ秒をアプリ基準 TZ の時 (0〜23) に変換する。 */
+export function toStudyHour(ms: number): number {
+  return new Date(ms + STUDY_TZ_OFFSET_MIN * 60_000).getUTCHours();
+}
+
+/** 曜日・時間帯ごとの学習量を、集計した値から求める。 */
+export function studyActivityScore(watchedSec: number, completedLessons: number, events: number) {
+  return Math.ceil(watchedSec / 300) + completedLessons * 2 + events;
+}
+
 /**
  * 次の学習日の境界までのミリ秒。 開きっぱなしの画面が前日の「今日」を持ち続けないよう、
  * ここまでタイマーを張って日付を採り直す (講師のモニタリング画面など)。

@@ -673,6 +673,13 @@
       "when": 1795046400014,
       "tag": "0098_drop_lesson_materials",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "6",
+      "when": 1795046400015,
+      "tag": "0099_study_activity_hours",
+      "breakpoints": true
     }
   ]
 }

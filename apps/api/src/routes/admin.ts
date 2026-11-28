@@ -5,6 +5,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
  * 呼び出し元は admin であることを必須とする。
  *
  *   GET  /api/admin/users          一覧
+ *   GET  /api/admin/users/:userId/activity-hours  学習の曜日・時間帯集計
  *   POST /api/admin/users/invite   招待 (Google ログイン)
  *   POST /api/admin/users/role     ロール変更
  *   POST /api/admin/users/disable  無効化 / 復帰 (getCaller の disabled ゲートで即時有効)
@@ -46,6 +47,7 @@ import {
   STAFF_ROLES,
   type Caller,
 } from "../lib/authz.js";
+import { loadStudyActivityHours } from "../lib/study-activity.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
 const ADMIN_ACCESS_CHANGED =
@@ -124,6 +126,21 @@ adminRoute.get("/api/admin/users", async (c) => {
         created_at: r.createdAt,
       })),
     });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+adminRoute.get("/api/admin/users/:userId/activity-hours", async (c) => {
+  try {
+    const { db } = await requireAdminCtx(c);
+    const weeks = c.req.query("weeks") ?? "12";
+    if (weeks !== "4" && weeks !== "12" && weeks !== "26") {
+      return c.json({ error: "weeks は 4、12、26 のいずれかを指定してください" }, 400);
+    }
+    const userId = c.req.param("userId");
+    await requireTarget(db, userId);
+    return c.json(await loadStudyActivityHours(db, userId, Number(weeks)));
   } catch (err) {
     return errorResponse(c, err);
   }

@@ -5,9 +5,11 @@ import {
   buildStudySeries,
   computeStreaks,
   msUntilNextStudyDay,
+  studyActivityScore,
   studyDateStartMs,
   studyDateWeekday,
   toStudyDate,
+  toStudyHour,
   type StudyActivityDay,
 } from "./activity.js";
 
@@ -30,6 +32,23 @@ describe("toStudyDate", () => {
   it("ミリ秒でも Date でも同じ結果になる", () => {
     const at = new Date("2026-01-01T12:00:00Z");
     expect(toStudyDate(at.getTime())).toBe(toStudyDate(at));
+  });
+});
+
+describe("toStudyHour", () => {
+  it("JST の日付境界で 23 時から 0 時に切り替わる", () => {
+    expect(toStudyHour(Date.parse("2026-08-07T14:59:59.999Z"))).toBe(23);
+    expect(toStudyHour(Date.parse("2026-08-07T15:00:00.000Z"))).toBe(0);
+    expect(toStudyHour(Date.parse("2026-08-07T18:00:00.000Z"))).toBe(3);
+  });
+});
+
+describe("studyActivityScore", () => {
+  it("視聴は 300 秒ごとに切り上げ、完了と出来事を加える", () => {
+    expect(studyActivityScore(0, 0, 0)).toBe(0);
+    expect(studyActivityScore(300, 0, 0)).toBe(1);
+    expect(studyActivityScore(300.1, 2, 3)).toBe(9);
+    expect(studyActivityScore(1200, 2, 3)).toBe(11);
   });
 });
 

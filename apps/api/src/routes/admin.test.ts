@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getDb } from "../db/client.js";
 import type { Env } from "../env.js";
@@ -25,9 +25,142 @@ describe("ユーザー管理", () => {
     env = { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env;
     app = mountTestApp(env, adminRoute).app;
   });
-  afterEach(() => db.sqlite.close());
+  afterEach(() => {
+    vi.useRealTimers();
+    db.sqlite.close();
+  });
 
   const token = () => signAccessToken(SECRET, "admin", "admin@example.test");
+
+  describe("GET /api/admin/users/:userId/activity-hours", () => {
+    const path = "/api/admin/users/taken/activity-hours";
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-27T15:00:00Z"));
+    });
+
+    it("受講者は参照できない", async () => {
+      const studentToken = await signAccessToken(SECRET, "taken", "taken@example.test");
+      const res = await request(app, env, path, { token: studentToken });
+      expect(res.status).toBe(403);
+    });
+
+    it("存在しないユーザーは 404", async () => {
+      const res = await request(app, env, "/api/admin/users/missing/activity-hours", {
+        token: await token(),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it.each(["", "8", "04", "12.0"])("weeks=%s は 400", async (weeks) => {
+      const res = await request(app, env, `${path}?weeks=${weeks}`, { token: await token() });
+      expect(res.status).toBe(400);
+    });
+
+    it.each([
+      [4, "2026-11-01"],
+      [26, "2026-05-31"],
+    ])("weeks=%s の空の集計を返す", async (weeks, from) => {
+      const res = await request(app, env, `${path}?weeks=${weeks}`, { token: await token() });
+      expect(res.status).toBe(200);
+      expect(await json(res)).toEqual({
+        weeks,
+        from,
+        to: "2026-11-28",
+        cells: [],
+        weekday_totals: Array(7).fill(0),
+        hour_totals: Array(24).fill(0),
+        active_days: 0,
+        midnight_days: 0,
+        hours_recorded_since: null,
+      });
+    });
+
+    it("管理者自身の時間帯ログと提出を集計する", async () => {
+      const at = Date.parse("2026-11-23T12:00:00Z");
+      db.sqlite.exec(`
+        insert into study_activity_hours
+          (id, tenant_id, user_id, date, hour, watched_sec, completed_lessons, created_at, updated_at)
+          values ('hour', 'ses', 'admin', '2026-11-23', 21, 300, 1, 1, 1);
+        insert into submissions
+          (id, tenant_id, student_id, stage_title, assignment_title, code, submitted_at)
+          values ('submit', 'ses', 'admin', 'ステージ', '課題', '', ${at});
+      `);
+      const res = await request(app, env, "/api/admin/users/admin/activity-hours", {
+        token: await token(),
+      });
+      expect(res.status).toBe(200);
+      expect(await json(res)).toMatchObject({
+        cells: [
+          { weekday: 0, hour: 21, watched_sec: 300, completed_lessons: 1, events: 1, score: 4 },
+        ],
+        active_days: 1,
+        midnight_days: 0,
+      });
+    });
+
+    it("全ソースを JST の曜日と時で合算し、活動日を重複なしで数える", async () => {
+      const monday = Date.parse("2026-11-22T15:00:00Z");
+      const firstDay = Date.parse("2026-09-05T15:00:00Z");
+      db.sqlite.exec(`
+        insert into stages (id, tenant_id, slug, title, created_at, updated_at)
+          values ('stage', 'ses', 'test-stage', 'ステージ', 1, 1);
+        insert into sections (id, stage_id, title, created_at) values ('unit', 'stage', '単元', 1);
+        insert into lessons (id, section_id, title, type, created_at, updated_at)
+          values ('lesson', 'unit', 'レッスン', 'quiz', 1, 1);
+        insert into quizzes (id, lesson_id, created_at, updated_at) values ('quiz', 'lesson', 1, 1);
+        insert into discovery_materials (id, tenant_id, stage_id, title, created_at)
+          values ('material', 'ses', 'stage', '教材', 1);
+        insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle)
+          values ('task', 'unit', '課題', 'basic', 'p', '{}', 10, 0, 'hash', '{}', '{}');
+        insert into study_activity_hours
+          (id, tenant_id, user_id, date, hour, watched_sec, completed_lessons, created_at, updated_at)
+        values
+          ('a', 'ses', 'taken', '2026-11-23', 0, 100, 1, 1, 1),
+          ('b', 'ses', 'taken', '2026-11-16', 0, 150, 1, 1, 1),
+          ('zero', 'ses', 'taken', '2026-11-17', 1, 0, 0, 1, 1),
+          ('other', 'ses', 'admin', '2026-08-01', 0, 999, 9, 1, 1);
+        insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, submitted_at)
+        values
+          ('monday', 'ses', 'quiz', 'taken', 1, 1, 1, ${monday}),
+          ('first', 'ses', 'quiz', 'taken', 1, 1, 1, ${firstDay}),
+          ('before', 'ses', 'quiz', 'taken', 1, 1, 1, ${firstDay - 1}),
+          ('other', 'ses', 'quiz', 'admin', 1, 1, 1, ${monday});
+        insert into discovery_attempts
+          (id, tenant_id, user_id, material_id, score, max_score, percent, passed, submitted_at)
+          values ('discovery', 'ses', 'taken', 'material', 1, 1, 100, 1, ${monday + 3 * 3_600_000});
+        insert into submissions
+          (id, tenant_id, student_id, stage_title, assignment_title, code, submitted_at, review_source)
+        values
+          ('submit', 'ses', 'taken', 'ステージ', '課題', '', ${Date.parse("2026-11-27T19:00:00Z")}, null),
+          ('after', 'ses', 'taken', 'ステージ', '課題', '', ${Date.parse("2026-11-28T15:00:00Z")}, null),
+          ('manual', 'ses', 'taken', 'ステージ', '課題', '', ${monday}, 'manual');
+        insert into task_help_opens
+          (tenant_id, user_id, task_id, item, level, content_hash, private_hash, opened_at)
+          values ('ses', 'taken', 'task', 'hint', 1, 'hash', 'private', ${monday});
+      `);
+
+      const res = await request(app, env, path, { token: await token() });
+      expect(res.status).toBe(200);
+      expect(await json(res)).toEqual({
+        weeks: 12,
+        from: "2026-09-06",
+        to: "2026-11-28",
+        cells: [
+          { weekday: 0, hour: 0, watched_sec: 250, completed_lessons: 2, events: 2, score: 7 },
+          { weekday: 0, hour: 3, watched_sec: 0, completed_lessons: 0, events: 1, score: 1 },
+          { weekday: 5, hour: 4, watched_sec: 0, completed_lessons: 0, events: 1, score: 1 },
+          { weekday: 6, hour: 0, watched_sec: 0, completed_lessons: 0, events: 1, score: 1 },
+        ],
+        weekday_totals: [8, 0, 0, 0, 0, 1, 1],
+        hour_totals: [8, 0, 0, 1, 1, ...Array(19).fill(0)],
+        active_days: 4,
+        midnight_days: 3,
+        hours_recorded_since: "2026-08-01",
+      });
+    });
+  });
 
   it("招待前にログインした人のGoogle画像をプロフィールに保存し、ユーザー一覧に返す", async () => {
     const image = "https://lh3.googleusercontent.com/a/avatar";
@@ -492,6 +625,12 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
   });
 
   it("受講者を消すと提出・接続・認証が消え、監査の個人情報だけ外れる", async () => {
+    const activityHour = `INSERT INTO study_activity_hours
+      (id, tenant_id, user_id, date, hour, watched_sec, created_at, updated_at)
+      VALUES (?, 'ses', ?, '2026-11-28', 10, 300, 1, 1)`;
+    const countActivityHours = "SELECT count(*) AS n FROM study_activity_hours WHERE user_id = ?";
+    run(activityHour, "hour-learner", LEARNER);
+    run(activityHour, "hour-other", OTHER);
     const res = await remove({
       userId: LEARNER,
       confirmEmail: "  learner@example.com ",
@@ -503,6 +642,8 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     });
 
     expect(countRows("SELECT count(*) AS n FROM profiles WHERE id = ?", LEARNER)).toBe(0);
+    expect(countRows(countActivityHours, LEARNER)).toBe(0);
+    expect(countRows(countActivityHours, OTHER)).toBe(1);
     expect(countRows("SELECT count(*) AS n FROM auth_users WHERE id = ?", LEARNER)).toBe(0);
     expect(countRows("SELECT count(*) AS n FROM auth_sessions WHERE user_id = ?", LEARNER)).toBe(0);
     expect(countRows("SELECT count(*) AS n FROM auth_accounts WHERE user_id = ?", LEARNER)).toBe(0);

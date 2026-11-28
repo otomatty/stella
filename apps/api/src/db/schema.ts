@@ -995,6 +995,36 @@ export const studyActivity = sqliteTable(
   }),
 );
 
+/** 学習ログの時間帯別の増分。日付・時とも Asia/Tokyo。 */
+export const studyActivityHours = sqliteTable(
+  "study_activity_hours",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
+    userId: text("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    hour: integer("hour").notNull(),
+    watchedSec: real("watched_sec").notNull().default(0),
+    completedLessons: integer("completed_lessons").notNull().default(0),
+    createdAt: tsNow("created_at"),
+    updatedAt: tsNowUpd("updated_at"),
+  },
+  (t) => ({
+    userDateHourUnique: uniqueIndex("study_activity_hours_user_date_hour_uq").on(
+      t.userId,
+      t.date,
+      t.hour,
+    ),
+    dateIdx: index("study_activity_hours_date_idx").on(t.date),
+    hourRange: check("study_activity_hours_hour_range", sql`${t.hour} between 0 and 23`),
+  }),
+);
+
 // ---------------------------------------------------------------
 // 学習経路の記録 (スキルツリーの統計 / Phase 1)
 // ---------------------------------------------------------------

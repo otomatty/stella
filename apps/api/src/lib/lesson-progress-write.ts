@@ -2,7 +2,7 @@
  * レッスン進捗の upsert 文を D1 のバインド上限内に分割する。
  *
  * 1 文に 12 行以上を載せると `D1_ERROR: too many SQL variables` で 500 になる
- * (1 行 9 変数、 上限 100)。 日別ログの加算は更新前の `lesson_progress` を読むため、
+ * (1 行 9 変数、 上限 100)。 学習ログの加算は更新前の `lesson_progress` を読むため、
  * 同じチャンクの進捗 upsert より前に置き、 チャンクごとに batch する
  * (途中失敗して再送しても LWW で増分は 0 になる)。
  */
@@ -23,26 +23,18 @@ import {
   countableProblemResults,
   type ProblemHashCache,
 } from "./task-problem-hashes.js";
-import { buildStudyActivityIncrement } from "./study-activity.js";
+import { buildStudyActivityHourIncrement, buildStudyActivityIncrement } from "./study-activity.js";
 
 /** D1 の Worker 1 呼び出しあたりのクエリ上限 (有料プラン)。 batch の各文が 1 カウント。 */
 export const D1_MAX_QUERIES_PER_INVOCATION = 1000;
-/** getCaller など進捗書き込み以外のクエリ。 */
+/** 認証・入力検証などに必要なクエリ枠。 */
 export const PROGRESS_WRITE_QUERY_HEADROOM = 20;
+const STAGE_LOOKUP_ROWS_PER_QUERY = 90;
 /**
- * 受付上限 `MAX_PROGRESS_SYNC_ROWS` (= 600) の根拠。 正本は `@stella/shared` に置く —
- * クライアント (進捗ストアの flush) が同じ値で分割送信するため。
- *
- * 最悪は全行が study_activity 対象。 1 チャンク = 行数ぶんの加算 + upsert 1 文。
- * 進捗 1 行は bind 9 個なので upsert は最大 11 行 (D1_MAX_BOUND_PARAMS=100)。
- *
- * 進捗の書き込み後に **修了条件の自動判定** (`stage-auto-complete.ts`) が同じ呼び出しの
- * 中で走るため、 その分のクエリも収支に入れる: レッスン→ステージ解決 ceil(N/90)、
- * 候補全ステージの達成判定の読み出し ~80、 発行 1 ステージあたりロック取得 (2) +
- * ロック内の再確認 (登録 1 + 再判定 ~5) + batch(2) + 監査 1 + クリア通知 1 + 解放 1
- * ≒ 13 で、 発行数は `MAX_ISSUES_PER_CALL` (15) で頭打ち → 判定側の最悪 ~275。
- * N + ceil(N/11) + ceil(N/90) + 275 + headroom <= 1000 → N <= 638。 余裕を見て 600。
+ * 自動判定には候補ステージの読み出し約 80 文と、発行 1 ステージあたり約 13 文
+ * (ロック取得・再判定・発行・監査・通知・解放) がかかる。発行は最大 15 ステージ。
  */
+const AUTO_COMPLETION_QUERY_BUDGET = 275;
 export { MAX_PROGRESS_SYNC_ROWS };
 
 export function assertProgressSyncSize(count: number): void {
@@ -212,7 +204,11 @@ function buildProgressUpsert(db: Db, values: ProgressValue[]) {
 
 /**
  * 進捗行を D1 上限内の batch に分割する。 各 batch は
- * `[study_activity 加算…, lesson_progress upsert]` の順。
+ * `[日別・時間帯別の加算…, lesson_progress upsert]` の順。
+ *
+ * N = 600 で全行が学習ログ対象でも、日別 N + upsert ceil(N/11) +
+ * ステージ解決 ceil(N/90) + 自動判定 275 + その他 20 = 957 文で収まる。
+ * 時間帯別の加算には必要な文を確保したあとの枠を、対象行の先頭から使う。
  */
 export function planLessonProgressWrites(
   db: Db,
@@ -223,10 +219,25 @@ export function planLessonProgressWrites(
   const perInsert = rowsPerInsert((n) =>
     buildProgressUpsert(db, toValues(userId, rows.slice(0, n))),
   );
-  return chunk([...rows], perInsert).map((rowChunk) => {
+  const chunks = chunk([...rows], perInsert);
+  const dailyQueries = rows.filter((row) => row.countsTowardActivity).length;
+  const requiredQueries =
+    dailyQueries +
+    chunks.length +
+    Math.ceil(rows.length / STAGE_LOOKUP_ROWS_PER_QUERY) +
+    AUTO_COMPLETION_QUERY_BUDGET +
+    PROGRESS_WRITE_QUERY_HEADROOM;
+  let remainingHourlyQueries = D1_MAX_QUERIES_PER_INVOCATION - requiredQueries;
+
+  return chunks.map((rowChunk) => {
     const increments = rowChunk
       .filter((r) => r.countsTowardActivity)
-      .map((r) => buildStudyActivityIncrement(db, userId, r));
+      .flatMap((r) => {
+        const daily = buildStudyActivityIncrement(db, userId, r);
+        if (remainingHourlyQueries <= 0) return [daily];
+        remainingHourlyQueries -= 1;
+        return [daily, buildStudyActivityHourIncrement(db, userId, r)];
+      });
     return [...increments, buildProgressUpsert(db, toValues(userId, rowChunk))];
   });
 }
