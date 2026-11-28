@@ -100,7 +100,10 @@ export const Topbar = ({ actions, notify, onSearchSelect, searchStageIds = null 
       {/* ライト / ダークの切り替え。 未選択のうちは OS 設定に追従し、 押した時点で固定される。 */}
       <button
         type="button"
-        onClick={toggleTheme}
+        onClick={(event) => {
+          const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
+          toggleTheme({ x: left + width / 2, y: top + height / 2 });
+        }}
         className="w-[34px] h-[34px] rounded-full grid place-items-center text-ink-2 hover:bg-sunken border border-transparent hover:border-border"
         title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
         aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}

@@ -281,6 +281,13 @@
   }
 }
 
+/* 既定のクロスフェードを止め、新しいテーマを円形に広げる。 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 /* ============================================================
    Utilities that don't map cleanly to single Tailwind classes
    ============================================================ */
