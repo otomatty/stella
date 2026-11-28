@@ -215,6 +215,7 @@ export async function createTaskSubmission(db: Db, caller: Caller, env: Env, raw
           localResult: input.localResult,
           testHashes: input.protected,
           explanation: input.explanation,
+          shareReflection: input.mode === "submit" && input.shareReflection === true,
           debuggingRecord: input.debuggingRecord ?? null,
           supportLog,
           machineCheck: verified.check,

@@ -57,3 +57,10 @@ export function removeGroupReaction(
     },
   );
 }
+
+export function revokeGroupReflection(groupId: string, key: string): Promise<{ ok: true }> {
+  return apiFetch(`/api/groups/${encodeURIComponent(groupId)}/timeline/reflection`, {
+    method: "DELETE",
+    body: { key },
+  });
+}

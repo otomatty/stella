@@ -46,6 +46,7 @@ import {
   STAFF_ROLES,
   type Caller,
 } from "../lib/authz.js";
+import { hasReflectionText } from "../lib/group-reflections.js";
 
 export const adminRoute = new Hono<{ Bindings: Env }>();
 const ADMIN_ACCESS_CHANGED =
@@ -330,6 +331,41 @@ adminRoute.post("/api/admin/users/delete", async (c) => {
       }),
     ]);
     return c.json({ ok: true, deleted });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+adminRoute.patch("/api/admin/submissions/:id/reflection", async (c) => {
+  try {
+    const { caller, db } = await requireAdminCtx(c);
+    const id = c.req.param("id");
+    const body = await c.req.json<{ hidden?: unknown }>().catch(() => null);
+    const hidden = body?.hidden;
+    if (typeof hidden !== "boolean") throw new ApiError("hidden は真偽値で指定してください", 400);
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        reflectionHiddenAt: hidden ? new Date() : null,
+        reflectionHiddenBy: hidden ? caller.id : null,
+      })
+      .where(
+        and(
+          eq(submissions.id, id),
+          eq(submissions.shareReflection, true),
+          hasReflectionText(sql`${submissions.explanation}`),
+        ),
+      )
+      .returning({ id: submissions.id });
+    if (!updated) throw new ApiError("Not found", 404);
+    await recordAudit(db, caller, {
+      action: hidden ? "reflection_hide" : "reflection_unhide",
+      targetType: "submission",
+      targetId: id,
+      ip: clientIp(c),
+    });
+    return c.json({ ok: true });
   } catch (err) {
     return errorResponse(c, err);
   }

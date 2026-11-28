@@ -13,6 +13,7 @@ import {
 import type { Env } from "../env.js";
 import { clientIp, recordAudit } from "../lib/audit.js";
 import { ApiError, errorResponse, getCaller, requireAdmin, type Caller } from "../lib/authz.js";
+import { loadGroupReflections } from "../lib/group-reflections.js";
 import {
   createOrRenameGroup,
   deleteAdminGroup,
@@ -276,4 +277,10 @@ adminGroupsRoute.get(`${ROOT}/:id/progress`, async (c) => {
       cursor: c.req.query("cursor"),
     }),
   );
+});
+
+adminGroupsRoute.get(`${ROOT}/:id/reflections`, async (c) => {
+  const db = c.get("db");
+  const group = await requireGroup(db, c.req.param("id"));
+  return c.json(await loadGroupReflections(db, group.id, c.req.query("cursor")));
 });

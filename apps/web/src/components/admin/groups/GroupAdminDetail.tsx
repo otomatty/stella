@@ -9,6 +9,7 @@ import { groupRequest, type GroupDetail } from "@/lib/admin-groups-api";
 import { GroupKind } from "./group-display";
 import { GroupMembers } from "./GroupMembers";
 import { GroupOverview } from "./GroupOverview";
+import { GroupReflections } from "./GroupReflections";
 import { GroupProgress } from "./GroupProgress";
 import { GroupStages } from "./GroupStages";
 
@@ -101,6 +102,9 @@ export function GroupAdminDetail({ groupId }: { groupId: string }) {
           <TabsTrigger className="min-h-11" value="progress">
             進捗
           </TabsTrigger>
+          <TabsTrigger className="min-h-11" value="reflections">
+            共有された振り返り
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" forceMount className="data-[state=inactive]:hidden">
           <GroupOverview
@@ -164,6 +168,9 @@ export function GroupAdminDetail({ groupId }: { groupId: string }) {
           {tab === "progress" && (
             <GroupProgress key={progressVersion} stages={stages} request={request} />
           )}
+        </TabsContent>
+        <TabsContent value="reflections" className="min-w-0">
+          {tab === "reflections" && <GroupReflections key={groupId} request={request} />}
         </TabsContent>
       </Tabs>
     </div>

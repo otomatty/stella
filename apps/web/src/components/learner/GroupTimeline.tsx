@@ -1,14 +1,28 @@
 import { GROUP_REACTION_EMOJIS } from "@stella/shared/groups/reactions";
 import type { GroupTimeline as Timeline, GroupTimelineEvent } from "@stella/shared/groups/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ApiClientError } from "@/lib/api-client";
 import { groupTimelineByDate, timelineDateHeading, timelineEventText } from "@/lib/group-timeline";
-import { addGroupReaction, getGroupTimeline, removeGroupReaction } from "@/lib/groups-api";
+import {
+  addGroupReaction,
+  getGroupTimeline,
+  removeGroupReaction,
+  revokeGroupReflection,
+} from "@/lib/groups-api";
 import { cn } from "@/lib/utils";
 
 type Reactions = GroupTimelineEvent["reactions"];
@@ -82,6 +96,18 @@ export function GroupTimeline({
     );
   }
 
+  function clearReflection(key: string) {
+    setTimeline(
+      (previous) =>
+        previous && {
+          ...previous,
+          events: previous.events.map((event) =>
+            event.key === key ? { ...event, reflection: null } : event,
+          ),
+        },
+    );
+  }
+
   const now = Date.now();
   const DateHeading = showHeading ? "h3" : "h2";
   return (
@@ -101,6 +127,7 @@ export function GroupTimeline({
                   groupId={groupId}
                   event={event}
                   onReactions={replaceReactions}
+                  onReflectionRevoked={clearReflection}
                 />
               ))}
             </ul>
@@ -133,10 +160,12 @@ function TimelineRow({
   groupId,
   event,
   onReactions,
+  onReflectionRevoked,
 }: {
   groupId: string;
   event: GroupTimelineEvent;
   onReactions: (key: string, reactions: Reactions) => void;
+  onReflectionRevoked: (key: string) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -167,6 +196,19 @@ function TimelineRow({
   return (
     <li className="rounded-xl border border-border bg-card px-3 py-3">
       <p className="text-sm [overflow-wrap:anywhere]">{timelineEventText(event)}</p>
+      {event.kind === "task_pass" && event.reflection && (
+        <TimelineReflection
+          text={event.reflection}
+          onRevoke={
+            isMe
+              ? async () => {
+                  await revokeGroupReflection(groupId, event.key);
+                  onReflectionRevoked(event.key);
+                }
+              : undefined
+          }
+        />
+      )}
       {(!isMe || event.reactions.length > 0) && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {event.reactions.map((reaction) => (
@@ -217,6 +259,113 @@ function TimelineRow({
         </div>
       )}
     </li>
+  );
+}
+
+function TimelineReflection({ text, onRevoke }: { text: string; onRevoke?: () => Promise<void> }) {
+  const id = useId();
+  const quote = useRef<HTMLQuoteElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [long, setLong] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+
+  useEffect(() => {
+    const element = quote.current;
+    if (!element || !text) return;
+    const measure = () => {
+      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight);
+      setLong(element.scrollHeight > Math.ceil(lineHeight * 6));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [text]);
+
+  async function revoke() {
+    if (!onRevoke || revoking) return;
+    setRevoking(true);
+    try {
+      await onRevoke();
+      setConfirmOpen(false);
+    } catch {
+      toast.error("振り返りの共有を取り消せませんでした");
+    } finally {
+      setRevoking(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <blockquote
+        id={id}
+        ref={quote}
+        className={cn(
+          "border-l-2 border-border pl-3 text-sm leading-6 text-ink-2 whitespace-pre-wrap [overflow-wrap:anywhere]",
+          !expanded && "line-clamp-6",
+        )}
+      >
+        {text}
+      </blockquote>
+      {(long || expanded || onRevoke) && (
+        <div className="flex flex-wrap gap-x-2">
+          {(long || expanded) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-controls={id}
+              aria-expanded={expanded}
+              onClick={() => setExpanded((value) => !value)}
+            >
+              {expanded ? "閉じる" : "続きを読む"}
+            </Button>
+          )}
+          {onRevoke && (
+            <Dialog
+              open={confirmOpen}
+              onOpenChange={(open) => {
+                if (!revoking) setConfirmOpen(open);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="sm">
+                  共有をやめる
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md overflow-y-auto">
+                <DialogHeader className="pr-12">
+                  <DialogTitle>この振り返りをグループに共有するのをやめますか？</DialogTitle>
+                  <DialogDescription>すべてのグループで表示されなくなります</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    className="min-h-11"
+                    variant="outline"
+                    disabled={revoking}
+                    onClick={() => setConfirmOpen(false)}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    type="button"
+                    className="min-h-11"
+                    variant="destructive"
+                    disabled={revoking}
+                    onClick={() => void revoke()}
+                  >
+                    共有をやめる
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

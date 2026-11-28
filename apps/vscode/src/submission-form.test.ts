@@ -1,5 +1,6 @@
 import type * as vscode from "vscode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { apiRequest } from "./api.js";
 const state = vi.hoisted(() => ({
   receive: (_raw: unknown): void => undefined,
   disposeListener: (): void => undefined,
@@ -17,6 +18,7 @@ vi.mock("./auth.js", () => ({
   },
 }));
 vi.mock("./task-panel.js", () => ({ sideColumn: () => 2, trackTaskSidePanel: vi.fn() }));
+vi.mock("./api.js", () => ({ apiRequest: vi.fn() }));
 vi.mock("vscode", () => ({
   Uri: {
     joinPath: (_root: unknown, ...parts: string[]) => ({
@@ -75,10 +77,15 @@ afterEach(() => {
   for (const disposable of subscriptions) disposable.dispose();
   vi.useRealTimers();
 });
-function send(action: string, explanation = "保存したページを確認しました。", token?: string) {
+function send(
+  action: string,
+  explanation = "保存したページを確認しました。",
+  token?: string,
+  shareReflection?: unknown,
+) {
   state.receive({
     action,
-    draft: { explanation },
+    draft: { explanation, shareReflection },
     token: token ?? state.html.match(/data-token="([^"]+)"/)?.[1],
   });
 }
@@ -160,5 +167,98 @@ describe("WebViewでの提出", () => {
     finish();
     await vi.advanceTimersByTimeAsync(0);
     expect(state.closed).toBe(true);
+  });
+});
+
+describe("グループに振り返りを共有する", () => {
+  const sharingInput = { ...input, reflectionSharing: { session: 7 } };
+  const createActions = () => ({
+    save: vi.fn().mockResolvedValue(undefined),
+    submit: vi.fn().mockResolvedValue(undefined),
+  });
+
+  it("フォームを先に開き、公開中のグループが確認できたら共有欄を出す", async () => {
+    let resolveGroups: (value: unknown) => void = () => undefined;
+    vi.mocked(apiRequest).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGroups = resolve;
+      }),
+    );
+    const actions = createActions();
+    showSubmissionForm(sharingInput, actions);
+    expect(apiRequest).toHaveBeenCalledWith("/api/groups/mine", { session: 7 });
+    expect(state.html).toContain("この内容で提出する");
+    send("ready");
+    expect(state.post).not.toHaveBeenCalledWith({ kind: "share-reflection" });
+    send("save", "応答を待つ間の下書き");
+    await vi.waitFor(() => expect(actions.save).toHaveBeenCalled());
+    resolveGroups({ groups: [{ shareActivity: false }, { shareActivity: true }] });
+    await vi.waitFor(() => expect(state.post).toHaveBeenCalledWith({ kind: "share-reflection" }));
+    send("change", "共有したい振り返り", undefined, true);
+    await vi.waitFor(() =>
+      expect(actions.save).toHaveBeenLastCalledWith({
+        explanation: "共有したい振り返り",
+        shareReflection: true,
+      }),
+    );
+    const initial = actions.save.mock.lastCall?.[0];
+    state.disposeListener();
+    state.closed = false;
+    state.post.mockClear();
+    vi.mocked(apiRequest).mockResolvedValueOnce({ groups: [{ shareActivity: true }] });
+    showSubmissionForm({ ...sharingInput, initial }, actions);
+    expect(state.html).toContain('description" checked');
+    send("ready");
+    await vi.waitFor(() => expect(state.post).toHaveBeenCalledWith({ kind: "share-reflection" }));
+    send("submit", "今回は共有しない", undefined, false);
+    await vi.waitFor(() =>
+      expect(actions.submit).toHaveBeenCalledWith({
+        explanation: "今回は共有しない",
+        shareReflection: false,
+      }),
+    );
+  });
+
+  it.each([
+    ["未所属", { groups: [] }],
+    ["公開オフ", { groups: [{ shareActivity: false }] }],
+    ["旧 API", { groups: [{ id: "group" }] }],
+    ["403", new Error("API 403")],
+    ["通信失敗", new TypeError("fetch failed")],
+  ])("%s では欄を出さず入力された共有値も送らない", async (_label, result) => {
+    if (result instanceof Error) vi.mocked(apiRequest).mockRejectedValueOnce(result);
+    else vi.mocked(apiRequest).mockResolvedValueOnce(result);
+    const actions = createActions();
+    showSubmissionForm(sharingInput, actions);
+    send("ready");
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(state.post).not.toHaveBeenCalledWith({ kind: "share-reflection" });
+    send("submit", "振り返り", undefined, true);
+    await vi.waitFor(() =>
+      expect(actions.submit).toHaveBeenCalledWith({ explanation: "振り返り" }),
+    );
+  });
+
+  it("相談ではグループの取得を始めず、保存済みの共有設定も送らない", async () => {
+    const actions = createActions();
+    showSubmissionForm(
+      { ...sharingInput, mode: "consult", initial: { explanation: "記録", shareReflection: true } },
+      actions,
+    );
+    expect(apiRequest).not.toHaveBeenCalled();
+    send("submit", "相談本文", undefined, true);
+    await vi.waitFor(() =>
+      expect(actions.submit).toHaveBeenCalledWith({ explanation: "相談本文" }),
+    );
+  });
+
+  it("グループの応答を待たずに提出できる", async () => {
+    vi.mocked(apiRequest).mockReturnValueOnce(new Promise(() => undefined));
+    const actions = createActions();
+    showSubmissionForm(sharingInput, actions);
+    send("ready");
+    send("submit");
+    await vi.waitFor(() => expect(state.closed).toBe(true));
+    expect(actions.submit).toHaveBeenCalledWith({ explanation: "保存したページを確認しました。" });
   });
 });

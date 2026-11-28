@@ -288,6 +288,19 @@ describe("問題の提出", () => {
     }>(response);
   }
 
+  it("問題つきの課題は全問を提出しても振り返りを共有しない", async () => {
+    for (const problemId of ["q01-add", "q02-sub"]) {
+      const input = await problemInput(CURRENT, PROBLEMS, problemId);
+      input.shareReflection = true;
+      input.explanation = "共有する振り返り";
+      const response = await post(input);
+      expect(response.status, await response.clone().text()).toBe(201);
+    }
+    expect(
+      await db.select({ shareReflection: submissions.shareReflection }).from(submissions),
+    ).toEqual([{ shareReflection: false }]);
+  });
+
   async function manual(
     problemIds?: string[],
     revoke = false,

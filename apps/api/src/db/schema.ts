@@ -1583,68 +1583,85 @@ export const notifications = sqliteTable("notifications", {
 // 課題提出 / 添削
 // ---------------------------------------------------------------
 
-export const submissions = sqliteTable("submissions", {
-  id: uuid(),
-  tenantId: text("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" })
-    .$defaultFn(() => LEGACY_TENANT_ID),
-  studentId: text("student_id"),
-  lessonId: text("lesson_id"),
-  assignmentId: text("assignment_id"),
-  stageTitle: text("stage_title").notNull(),
-  sectionTitle: text("section_title"),
-  assignmentTitle: text("assignment_title").notNull(),
-  code: text("code").notNull(),
-  taskId: text("task_id"),
-  taskContentHash: text("task_content_hash"),
-  /** 提出を受け付けた時点の非公開の素材の版 (`task_private_versions`)。分からなければ null (0048)。 */
-  taskPrivateHash: text("task_private_hash"),
-  /**
-   * 提出を受け付けた時点のコーディング規則の版 (AI に渡す規則の本文のハッシュ)。今の版と違えば
-   * AI は判定せずに人に回す。0048 より前の提出 (規則の正本がまだ無かった) は null (0048)。
-   */
-  ruleSetHash: text("rule_set_hash"),
-  taskKind: text("task_kind"),
-  submissionMode: text("submission_mode"),
-  // 提出ごとの記録は壊れていても行を読めるようにする (`safeJson`)。壊れた記録の列名は
-  // `SUBMISSION_RECORD_COLUMNS` で `json_valid` を確かめて staff に返す。
-  localResult: safeJson<import("@stella/shared/tasks/run-result").RunResult>("local_result"),
-  testHashes: safeJson<import("@stella/shared/tasks/run-result").HashedFile[]>("test_hashes"),
-  explanation: text("explanation"),
-  debuggingRecord:
-    safeJson<import("@stella/shared/tasks/submission").DebuggingRecord>("debugging_record"),
-  supportLog: safeJson<import("@stella/shared/tasks/submission").SupportEvent[]>("support_log"),
-  machineCheck: safeJson<import("@stella/shared/tasks/submission").MachineCheck>("machine_check"),
-  taskSnapshot: safeJson<import("@stella/shared/tasks/catalog").TaskBundle>("task_snapshot"),
-  assessedSkills: json<string[]>("assessed_skills", []),
-  reviewTaskContentHash: text("review_task_content_hash"),
-  /** `tests` は問題のテストが揃った提出。AI の合格 (`ai`) とは別。 */
-  reviewSource: text("review_source", { enum: ["ai", "human", "tests", "manual"] }),
-  /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
-  aiReviewStatus: text("ai_review_status", {
-    enum: ["queued", "confirmed", "escalated", "superseded", "human"],
+export const submissions = sqliteTable(
+  "submissions",
+  {
+    id: uuid(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" })
+      .$defaultFn(() => LEGACY_TENANT_ID),
+    studentId: text("student_id"),
+    lessonId: text("lesson_id"),
+    assignmentId: text("assignment_id"),
+    stageTitle: text("stage_title").notNull(),
+    sectionTitle: text("section_title"),
+    assignmentTitle: text("assignment_title").notNull(),
+    code: text("code").notNull(),
+    taskId: text("task_id"),
+    taskContentHash: text("task_content_hash"),
+    /** 提出を受け付けた時点の非公開の素材の版 (`task_private_versions`)。分からなければ null (0048)。 */
+    taskPrivateHash: text("task_private_hash"),
+    /**
+     * 提出を受け付けた時点のコーディング規則の版 (AI に渡す規則の本文のハッシュ)。今の版と違えば
+     * AI は判定せずに人に回す。0048 より前の提出 (規則の正本がまだ無かった) は null (0048)。
+     */
+    ruleSetHash: text("rule_set_hash"),
+    taskKind: text("task_kind"),
+    submissionMode: text("submission_mode"),
+    // 提出ごとの記録は壊れていても行を読めるようにする (`safeJson`)。壊れた記録の列名は
+    // `SUBMISSION_RECORD_COLUMNS` で `json_valid` を確かめて staff に返す。
+    localResult: safeJson<import("@stella/shared/tasks/run-result").RunResult>("local_result"),
+    testHashes: safeJson<import("@stella/shared/tasks/run-result").HashedFile[]>("test_hashes"),
+    explanation: text("explanation"),
+    shareReflection: integer("share_reflection", { mode: "boolean" }).notNull().default(false),
+    reflectionHiddenAt: ts("reflection_hidden_at"),
+    reflectionHiddenBy: text("reflection_hidden_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    debuggingRecord:
+      safeJson<import("@stella/shared/tasks/submission").DebuggingRecord>("debugging_record"),
+    supportLog: safeJson<import("@stella/shared/tasks/submission").SupportEvent[]>("support_log"),
+    machineCheck: safeJson<import("@stella/shared/tasks/submission").MachineCheck>("machine_check"),
+    taskSnapshot: safeJson<import("@stella/shared/tasks/catalog").TaskBundle>("task_snapshot"),
+    assessedSkills: json<string[]>("assessed_skills", []),
+    reviewTaskContentHash: text("review_task_content_hash"),
+    /** `tests` は問題のテストが揃った提出。AI の合格 (`ai`) とは別。 */
+    reviewSource: text("review_source", { enum: ["ai", "human", "tests", "manual"] }),
+    /** 新形式の提出の AI 一次レビューの状態 (0048)。旧形式の提出は null。 */
+    aiReviewStatus: text("ai_review_status", {
+      enum: ["queued", "confirmed", "escalated", "superseded", "human"],
+    }),
+    status: text("status", {
+      enum: ["pending", "passed", "resubmit", "failed"],
+    })
+      .notNull()
+      .default("pending"),
+    priority: text("priority", { enum: ["high", "normal", "low"] })
+      .notNull()
+      .default("normal"),
+    attempt: integer("attempt").notNull().default(1),
+    aiReady: integer("ai_ready", { mode: "boolean" }).notNull().default(false),
+    aiSuggestions: json<unknown[]>("ai_suggestions", []),
+    rubric: json<unknown[]>("rubric", []),
+    /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ (Issue #9)。 Web 提出は null。 */
+    gradingSummary: safeJson<unknown>("grading_summary"),
+    reviewNotes: text("review_notes").notNull().default(""),
+    verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
+    submittedAt: tsNow("submitted_at"),
+    reviewedAt: ts("reviewed_at"),
+    reviewerId: text("reviewer_id"),
+  },
+  (t) => ({
+    sharedReflectionIndex: index("submissions_shared_reflection_idx")
+      .on(t.studentId, t.taskId, t.submittedAt, t.attempt, t.id)
+      .where(sql`${t.shareReflection} = 1`),
+    shareReflectionCheck: check(
+      "submissions_share_reflection_check",
+      sql`${t.shareReflection} in (0, 1)`,
+    ),
   }),
-  status: text("status", {
-    enum: ["pending", "passed", "resubmit", "failed"],
-  })
-    .notNull()
-    .default("pending"),
-  priority: text("priority", { enum: ["high", "normal", "low"] })
-    .notNull()
-    .default("normal"),
-  attempt: integer("attempt").notNull().default(1),
-  aiReady: integer("ai_ready", { mode: "boolean" }).notNull().default(false),
-  aiSuggestions: json<unknown[]>("ai_suggestions", []),
-  rubric: json<unknown[]>("rubric", []),
-  /** VS Code から引き継がれた提出のみ持つ採点失敗サマリ (Issue #9)。 Web 提出は null。 */
-  gradingSummary: safeJson<unknown>("grading_summary"),
-  reviewNotes: text("review_notes").notNull().default(""),
-  verdict: text("verdict", { enum: ["pass", "resubmit", "fail"] }),
-  submittedAt: tsNow("submitted_at"),
-  reviewedAt: ts("reviewed_at"),
-  reviewerId: text("reviewer_id"),
-});
+);
 
 /** 提出ごとの JSON の記録の列 (壊れていても行は読める。壊れているかは `json_valid` で見る)。 */
 export const SUBMISSION_RECORD_COLUMNS = [

@@ -52,6 +52,8 @@ const LABELS = {
   enrollment_preset_update: "割当プリセットの更新",
   enrollment_preset_delete: "割当プリセットの削除",
   // 課題・提出
+  reflection_hide: "共有された振り返りを隠す",
+  reflection_unhide: "共有された振り返りを表示に戻す",
   task_manual_complete: "課題・問題を手で済みにする",
   task_manual_revoke: "課題・問題の手で済みを取り消す",
   // 修了証 (#26)

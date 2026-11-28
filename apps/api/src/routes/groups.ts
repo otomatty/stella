@@ -13,6 +13,7 @@ import {
   peerStageVisible,
   readTimelineCursor,
   requireTimelineGroup,
+  revokeTimelineReflection,
   updateTimelineReaction,
 } from "../lib/group-timeline.js";
 import { learnerOnly } from "../lib/learner-scope.js";
@@ -318,4 +319,22 @@ groupsRoute.on(["POST", "DELETE"], "/api/groups/:id/timeline/reactions", async (
     remove,
   );
   return c.json({ reactions });
+});
+
+groupsRoute.delete("/api/groups/:id/timeline/reflection", async (c) => {
+  const { caller, db } = await getCaller(c);
+  if (caller.role !== "student") throw new ApiError("権限がありません", 403);
+  const group = await requireTimelineGroup(db, c.req.param("id"), caller.id);
+  const query = c.req.query();
+  const input: unknown = "key" in query ? query : await c.req.json().catch(() => null);
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    !("key" in input) ||
+    typeof input.key !== "string"
+  )
+    throw new ApiError("Not found", 404);
+
+  await revokeTimelineReflection(db, caller, group.id, input.key);
+  return c.json({ ok: true });
 });

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
+import { apiRequest } from "./api.js";
 import { onDidChangeAuthSession } from "./auth.js";
 import { sideColumn, trackTaskSidePanel } from "./task-panel.js";
 import {
@@ -60,6 +61,7 @@ export function showSubmissionForm(
   let closed = false;
   let busy = false;
   let submitted = false;
+  let canShareReflection = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let saves: Promise<void> = Promise.resolve();
   const post = (message: Record<string, unknown>) => {
@@ -70,21 +72,50 @@ export function showSubmissionForm(
     saves = saves.catch(() => undefined).then(() => actions.save(snapshot));
     return saves;
   };
+  const sharing = input.mode === "submit" ? input.reflectionSharing : undefined;
+  const reflectionSharing = sharing
+    ? apiRequest<{ groups?: { shareActivity?: boolean }[] } | null>("/api/groups/mine", {
+        session: sharing.session,
+      })
+        .then(
+          (result) =>
+            Array.isArray(result?.groups) &&
+            result.groups.some((group) => group?.shareActivity === true),
+        )
+        .catch(() => false)
+    : undefined;
   const messages = panel.webview.onDidReceiveMessage((raw: unknown) => {
     if (
       closed ||
-      busy ||
       !raw ||
       typeof raw !== "object" ||
       !("token" in raw) ||
       raw.token !== nonce ||
-      !("action" in raw) ||
-      !["change", "save", "submit"].includes(String(raw.action))
+      !("action" in raw)
     )
+      return;
+    if (raw.action === "ready") {
+      // Webview が読み込まれ直したときも、リスナーの登録を待ってから表示する。
+      void reflectionSharing?.then((allowed) => {
+        if (allowed && !closed) {
+          canShareReflection = true;
+          post({ kind: "share-reflection" });
+        }
+      });
+      return;
+    }
+    if (busy || (raw.action !== "change" && raw.action !== "save" && raw.action !== "submit"))
       return;
     void (async () => {
       try {
-        draft = parseSubmissionDraft("draft" in raw ? raw.draft : undefined, Boolean(input.debug));
+        const { shareReflection, ...fields } = parseSubmissionDraft(
+          "draft" in raw ? raw.draft : undefined,
+          Boolean(input.debug),
+        );
+        const selectedSharing = canShareReflection ? shareReflection : undefined;
+        // 共有欄が出ない場合も、保存済みの選択は次にフォームを開くときのために残す。
+        const savedSharing = selectedSharing ?? draft.shareReflection;
+        draft = savedSharing === undefined ? fields : { ...fields, shareReflection: savedSharing };
         if (timer) clearTimeout(timer);
         if (raw.action === "change") {
           timer = setTimeout(() => {
@@ -109,7 +140,7 @@ export function showSubmissionForm(
         if (closed) return;
         if (raw.action === "save") post({ kind: "saved" });
         else {
-          await actions.submit(draft);
+          await actions.submit(selectedSharing === undefined ? fields : draft);
           submitted = true;
           panel.dispose();
         }

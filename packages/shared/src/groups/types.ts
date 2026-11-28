@@ -35,11 +35,25 @@ export interface GroupTimelineEvent {
   member: { name: string; isMe: boolean };
   stage: { id: string; title: string } | null;
   task: { id: string; title: string } | null;
+  reflection: string | null;
   reactions: { emoji: string; count: number; names: string[]; mine: boolean }[];
 }
 
 export interface GroupTimeline {
   group: Pick<LearnerGroup, "id" | "name">;
   events: GroupTimelineEvent[];
+  nextCursor: string | null;
+}
+
+export interface GroupReflections {
+  reflections: {
+    submissionId: string;
+    name: string;
+    stageTitle: string;
+    taskTitle: string;
+    submittedAt: number;
+    reflection: string;
+    hidden: boolean;
+  }[];
   nextCursor: string | null;
 }

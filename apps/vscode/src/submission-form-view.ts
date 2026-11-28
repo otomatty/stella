@@ -14,6 +14,7 @@ export const DEBUGGING_LABELS: Record<keyof DebuggingRecord, string> = {
 export interface SubmissionDraft {
   explanation: string;
   debuggingRecord?: DebuggingRecord;
+  shareReflection?: boolean;
 }
 
 export interface SubmissionFormInput {
@@ -22,6 +23,7 @@ export interface SubmissionFormInput {
   mode: "submit" | "consult";
   debug?: boolean;
   initial?: SubmissionDraft;
+  reflectionSharing?: { session: number | undefined };
 }
 
 export function initialSubmissionDraft(input: SubmissionFormInput): SubmissionDraft {
@@ -29,6 +31,9 @@ export function initialSubmissionDraft(input: SubmissionFormInput): SubmissionDr
     explanation:
       input.initial?.explanation ||
       (input.mode === "consult" ? CONSULT_TEMPLATE : REFLECTION_TEMPLATE),
+    ...(typeof input.initial?.shareReflection === "boolean"
+      ? { shareReflection: input.initial.shareReflection }
+      : {}),
     ...(input.debug
       ? {
           debuggingRecord: input.initial?.debuggingRecord ?? {
@@ -54,6 +59,8 @@ export function parseSubmissionDraft(raw: unknown, debug: boolean): SubmissionDr
     throw new Error("振り返りは20,000文字以内で記入してください");
   }
   const draft: SubmissionDraft = { explanation: raw.explanation };
+  if ("shareReflection" in raw && typeof raw.shareReflection === "boolean")
+    draft.shareReflection = raw.shareReflection;
   if (debug) {
     const record = "debuggingRecord" in raw ? raw.debuggingRecord : undefined;
     if (!record || typeof record !== "object")
@@ -106,6 +113,10 @@ export function renderSubmissionForm(
 ): string {
   const consulting = input.mode === "consult";
   const title = consulting ? "管理者に相談する" : "課題を提出する";
+  const sharing =
+    !consulting && input.reflectionSharing
+      ? `<div id="reflection-sharing" hidden><label class="checkbox" for="share-reflection"><input type="checkbox" id="share-reflection" name="shareReflection" aria-describedby="share-reflection-description"${draft.shareReflection === true ? " checked" : ""}>この振り返りをグループのタイムラインに共有する</label><p id="share-reflection-description" class="caption">合格すると、同じグループのメンバーがタイムラインで読めます。あとから Web のタイムラインで共有をやめられます。</p></div>`
+      : "";
   const debug = input.debug
     ? `<section aria-labelledby="debug-heading"><h2 id="debug-heading">修正課題の記録</h2><p class="description">${consulting ? "分かっている範囲で記入できます。" : "再現から修正後の確認まで、各項目を記入してください。"}</p>${Object.entries(
         DEBUGGING_LABELS,
@@ -116,5 +127,5 @@ export function renderSubmissionForm(
         )
         .join("")}</section>`
     : "";
-  return `<!doctype html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${escapeHtml(assets.nonce)}';"><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"><title>${title}</title></head><body data-token="${escapeHtml(assets.nonce)}" data-debug="${Boolean(input.debug)}"><main><form id="submission-form"><div class="action-bar"><div id="form-status" role="status" aria-live="polite"></div><div class="action-buttons"><button type="button" class="secondary" id="save-draft">下書きを保存</button><button type="submit" class="primary" id="submit">${consulting ? "相談を送る" : "この内容で提出する"}</button></div></div><header><p class="eyebrow">STELLA · ${consulting ? "相談" : "提出前の振り返り"}</p>${consulting ? "" : '<p class="checks-passed">✓ 確認はすべて通りました</p>'}<h1>${escapeHtml(input.title)}</h1><p class="description">${consulting ? "困っていることと試したことを、下のテンプレートに沿ってまとめましょう。" : "実装や確認を振り返り、下のテンプレートの見出しの下に記入しましょう。"}</p></header><section aria-labelledby="reflection-heading"><h2 id="reflection-heading">${consulting ? "相談の内容" : "今回の振り返り"}</h2><div class="guidance"><p>${consulting ? "何をしようとして、どこで進めなくなったかを書きましょう。" : "取り組んだこと：何を変更し、なぜその方法を選んだか。"}</p><p>${consulting ? "エラーや画面の変化、試した方法も手がかりになります。" : "確認したこと：どんな操作をして、どんな結果になったか。"}</p>${consulting ? "" : "<p>振り返り：分かったこと、つまずいたこと、次に試したいこと。</p>"}</div><label class="sr-only" for="explanation">${consulting ? "相談の内容" : "今回の振り返り"}</label><textarea id="explanation" name="explanation" rows="17" maxlength="20000" required spellcheck="false">${escapeHtml(draft.explanation)}</textarea><p class="caption">見出しは自由に書き換えられます。下書きはこの課題に保存されます。</p></section>${debug}</form></main><script nonce="${escapeHtml(assets.nonce)}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${escapeHtml(assets.cspSource)}; script-src 'nonce-${escapeHtml(assets.nonce)}';"><link rel="stylesheet" href="${escapeHtml(assets.styleUri)}"><title>${title}</title></head><body data-token="${escapeHtml(assets.nonce)}" data-debug="${Boolean(input.debug)}"><main><form id="submission-form"><div class="action-bar"><div id="form-status" role="status" aria-live="polite"></div><div class="action-buttons"><button type="button" class="secondary" id="save-draft">下書きを保存</button><button type="submit" class="primary" id="submit">${consulting ? "相談を送る" : "この内容で提出する"}</button></div></div><header><p class="eyebrow">STELLA · ${consulting ? "相談" : "提出前の振り返り"}</p>${consulting ? "" : '<p class="checks-passed">✓ 確認はすべて通りました</p>'}<h1>${escapeHtml(input.title)}</h1><p class="description">${consulting ? "困っていることと試したことを、下のテンプレートに沿ってまとめましょう。" : "実装や確認を振り返り、下のテンプレートの見出しの下に記入しましょう。"}</p></header><section aria-labelledby="reflection-heading"><h2 id="reflection-heading">${consulting ? "相談の内容" : "今回の振り返り"}</h2><div class="guidance"><p>${consulting ? "何をしようとして、どこで進めなくなったかを書きましょう。" : "取り組んだこと：何を変更し、なぜその方法を選んだか。"}</p><p>${consulting ? "エラーや画面の変化、試した方法も手がかりになります。" : "確認したこと：どんな操作をして、どんな結果になったか。"}</p>${consulting ? "" : "<p>振り返り：分かったこと、つまずいたこと、次に試したいこと。</p>"}</div><label class="sr-only" for="explanation">${consulting ? "相談の内容" : "今回の振り返り"}</label><textarea id="explanation" name="explanation" rows="17" maxlength="20000" required spellcheck="false">${escapeHtml(draft.explanation)}</textarea><p class="caption">見出しは自由に書き換えられます。下書きはこの課題に保存されます。</p>${sharing}</section>${debug}</form></main><script nonce="${escapeHtml(assets.nonce)}" src="${escapeHtml(assets.scriptUri)}"></script></body></html>`;
 }

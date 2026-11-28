@@ -4,7 +4,6 @@ import { canSubmit, type RunResult } from "@stella/shared/tasks/run-result";
 import {
   isRunResult,
   isSupportLog,
-  type DebuggingRecord,
   type SupportEvent,
   type TaskSubmissionInput,
 } from "@stella/shared/tasks/submission";
@@ -18,11 +17,10 @@ import {
   sha256Hex,
 } from "./runner/files.js";
 import { type LoadedTask, loadTask } from "./runner/run-task.js";
+import type { SubmissionDraft } from "./submission-form-view.js";
 import { taskBundleUrl } from "./task-bundle-url.js";
 
-export interface SubmissionNotes {
-  explanation: string;
-  debuggingRecord?: DebuggingRecord;
+export interface SubmissionNotes extends SubmissionDraft {
   support: SupportEvent[];
 }
 async function optionalJson(root: string, file: string): Promise<unknown> {
@@ -80,7 +78,16 @@ export async function prepareTaskSubmission(
   const loaded = await loadTask(root);
   if (!loaded.ok) throw new Error(loaded.errors.join("\n"));
   if (bundle.manifest.id !== loaded.manifest.id) throw new Error("課題の配布データが一致しません");
-  return { ...(await prepareLocalTaskSubmission(loaded, mode, resubmitTaskId)), ...notes };
+  const { shareReflection, ...details } = notes;
+  return {
+    ...(await prepareLocalTaskSubmission(loaded, mode, resubmitTaskId)),
+    ...details,
+    ...(mode === "submit" &&
+    !loaded.manifest.problems?.length &&
+    typeof shareReflection === "boolean"
+      ? { shareReflection }
+      : {}),
+  };
 }
 
 export const SUBMIT_AGAIN = "保存して、もう一度「提出する」を押してください";

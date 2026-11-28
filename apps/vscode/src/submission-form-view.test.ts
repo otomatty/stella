@@ -8,6 +8,12 @@ import {
 } from "./submission-form-view.js";
 
 const input = { key: "task", title: "最初のページを作る", mode: "submit" as const };
+const assets = {
+  nonce: "test",
+  cspSource: "https://local.test",
+  styleUri: "https://local.test/style.css",
+  scriptUri: "https://local.test/script.js",
+};
 describe("提出の振り返りテンプレート", () => {
   it("未記入ならテンプレートを出し、既存の下書きは上書きしない", () => {
     expect(initialSubmissionDraft(input).explanation).toBe(REFLECTION_TEMPLATE);
@@ -50,6 +56,34 @@ describe("提出の振り返りテンプレート", () => {
     expect(() => parseSubmissionDraft({ explanation: "x".repeat(20_001) }, false)).toThrow(
       "20,000",
     );
+  });
+  it.each([true, false, "true", 1, null])("共有の下書きは真偽値だけを残す (%j)", (value) => {
+    const draft = parseSubmissionDraft({ explanation: "振り返り", shareReflection: value }, false);
+    const restored = initialSubmissionDraft({ ...input, initial: draft });
+    if (typeof value === "boolean") expect(restored.shareReflection).toBe(value);
+    else expect(restored).not.toHaveProperty("shareReflection");
+  });
+
+  it("対象の提出に共有欄を用意し、既定はオフで、保存したオンを復元する", () => {
+    const sharingInput = { ...input, reflectionSharing: { session: 7 } };
+    const html = renderSubmissionForm(sharingInput, initialSubmissionDraft(sharingInput), assets);
+    expect(html).toContain('id="reflection-sharing" hidden');
+    expect(html).toContain('type="checkbox" id="share-reflection"');
+    expect(html).toContain("この振り返りをグループのタイムラインに共有する");
+    expect(html).toContain("あとから Web のタイムラインで共有をやめられます。");
+    expect(html).not.toContain('description" checked');
+    expect(
+      renderSubmissionForm(
+        sharingInput,
+        { explanation: "保存済み", shareReflection: true },
+        assets,
+      ),
+    ).toContain('description" checked');
+    for (const formInput of [input, { ...sharingInput, mode: "consult" as const }]) {
+      expect(
+        renderSubmissionForm(formInput, initialSubmissionDraft(formInput), assets),
+      ).not.toContain('id="reflection-sharing"');
+    }
   });
   it("振り返りは文字列として表示し、支援の入力欄を出さない", () => {
     const html = renderSubmissionForm(

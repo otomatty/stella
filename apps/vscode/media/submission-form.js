@@ -2,9 +2,13 @@
   const vscode = acquireVsCodeApi();
   const form = document.getElementById("submission-form");
   const status = document.getElementById("form-status");
+  const sharing = document.getElementById("reflection-sharing");
+  const shareReflection = document.getElementById("share-reflection");
   const debug = document.body.dataset.debug === "true";
   const debugKeys = ["reproduction", "expected", "cause", "fix", "regression"];
   const previous = vscode.getState();
+  if (shareReflection && typeof previous?.shareReflection === "boolean")
+    shareReflection.checked = previous.shareReflection;
   if (typeof previous?.explanation === "string") {
     document.getElementById("explanation").value = previous.explanation;
     if (debug) {
@@ -28,9 +32,16 @@
     };
   }
   function send(action) {
-    const current = draft();
+    const fields = draft();
+    const current = shareReflection
+      ? { ...fields, shareReflection: shareReflection.checked }
+      : fields;
     vscode.setState(current);
-    vscode.postMessage({ token: document.body.dataset.token, action, draft: current });
+    vscode.postMessage({
+      token: document.body.dataset.token,
+      action,
+      draft: sharing?.hidden ? fields : current,
+    });
   }
   form.addEventListener("input", () => {
     status.textContent = "下書きを保存しています…";
@@ -44,8 +55,9 @@
   document.getElementById("save-draft").addEventListener("click", () => send("save"));
   window.addEventListener("message", (event) => {
     const message = event.data;
+    if (message.kind === "share-reflection" && sharing) sharing.hidden = false;
     if (message.kind === "busy" || message.kind === "idle" || message.kind === "error") {
-      for (const control of form.querySelectorAll("button, textarea"))
+      for (const control of form.querySelectorAll("button, textarea, input"))
         control.disabled = message.kind === "busy";
     }
     if (message.kind === "busy") status.textContent = "送信しています…";
@@ -55,4 +67,5 @@
       status.className = "error";
     }
   });
+  if (sharing) vscode.postMessage({ token: document.body.dataset.token, action: "ready" });
 })();

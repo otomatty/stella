@@ -1,5 +1,9 @@
 import { GROUP_REACTION_EMOJIS } from "@stella/shared/groups/reactions";
-import type { GroupTimeline, GroupTimelineEvent } from "@stella/shared/groups/types";
+import type {
+  GroupReflections,
+  GroupTimeline,
+  GroupTimelineEvent,
+} from "@stella/shared/groups/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db/client.js";
 import {
@@ -21,6 +25,7 @@ import { newIntegrationToken } from "../lib/integrations.js";
 import { json, mountTestApp, request, type RouteApp } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { adminGroupsRoute } from "./admin-groups.js";
+import { adminRoute } from "./admin.js";
 import { cmsRoute } from "./cms.js";
 import { enrollmentsRoute } from "./enrollments.js";
 import { groupsRoute } from "./groups.js";
@@ -45,6 +50,7 @@ describe("グループ API (実 SQLite)", () => {
     env = { DB: fixture.binding, AUTH_JWT_SECRET: SECRET } as Env;
     app = mountTestApp(env, groupsRoute).app;
     app.route("/", adminGroupsRoute);
+    app.route("/", adminRoute);
     app.route("/", cmsRoute);
     app.route("/", enrollmentsRoute);
     app.route("/", integrationsRoute);
@@ -580,6 +586,7 @@ describe("グループ API (実 SQLite)", () => {
           ["", "GET"],
           ["/reactions", "POST"],
           ["/reactions", "DELETE"],
+          ["/reflection", "DELETE"],
         ]) {
           const res = await call(
             learner,
@@ -595,6 +602,208 @@ describe("グループ API (実 SQLite)", () => {
       shareTimeline();
       expect((await call(admin, path)).status).toBe(403);
       expect((await call(disabled, path)).status).toBe(403);
+    });
+
+    function insertReflection(id: string, options: Partial<typeof submissions.$inferInsert> = {}) {
+      return getDb(env)
+        .insert(submissions)
+        .values({
+          id,
+          studentId: "profile-me",
+          taskId: "task-one",
+          stageTitle: "Intro",
+          assignmentTitle: "task-one",
+          code: "",
+          explanation: id,
+          shareReflection: true,
+          submittedAt: new Date(100),
+          ...options,
+        });
+    }
+
+    it("合格の節目に最新の共有を添え、空・非共有・非表示と問題つきの課題は除く", async () => {
+      shareTimeline();
+      await seedProgress();
+      fixture.sqlite.exec(`
+        update task_progress set passed_at = 200;
+        update tasks set definition = '{"problems":[{"id":"q01"}]}' where id = 'task-two';
+        update task_progress set status = 'local-passed'
+          where user_id = 'profile-me' and task_id = 'task-one';
+      `);
+      const original = "  1行目\n<em>2行目</em>  ";
+      await insertReflection("older-time", { attempt: 9, submittedAt: new Date(99) });
+      await insertReflection("older", { attempt: 1 });
+      await insertReflection("latest", { attempt: 2, explanation: original });
+      await insertReflection("unshared", { submittedAt: new Date(101), shareReflection: false });
+      await insertReflection("hidden", {
+        submittedAt: new Date(102),
+        reflectionHiddenAt: new Date(103),
+      });
+      await insertReflection("empty", { submittedAt: new Date(104), explanation: " \n\t　" });
+      await insertReflection("problem", { studentId: "profile-peer-a", taskId: "task-two" });
+
+      const before = await readTimeline();
+      expect(before.events.some((event) => event.member.isMe && event.kind === "task_pass")).toBe(
+        false,
+      );
+      expect(before.events.every((event) => event.reflection === null)).toBe(true);
+
+      fixture.sqlite.exec(`
+        update task_progress set status = 'passed'
+          where user_id = 'profile-me' and task_id = 'task-one';
+      `);
+      const after = await readTimeline();
+      expect(after.events.filter((event) => event.reflection !== null)).toMatchObject([
+        {
+          kind: "task_pass",
+          member: { isMe: true },
+          task: { id: "task-one" },
+          reflection: original,
+        },
+      ]);
+    });
+
+    it("本人はすべての提出の共有を取り消せ、ほかのグループからも消える", async () => {
+      shareTimeline();
+      await seedProgress();
+      fixture.sqlite.exec(`
+        update task_progress set passed_at = 200;
+        update groups set share_activity = 1 where id = 'another';
+        insert into group_stages (group_id, stage_id) values ('another', 'stage-a');
+      `);
+      await insertReflection("earlier");
+      await insertReflection("later", { attempt: 2, reflectionHiddenAt: new Date(101) });
+      await insertReflection("peer", { studentId: "profile-peer-a" });
+      const { events } = await readTimeline();
+      const own = events.find((event) => event.reflection === "earlier");
+      const peer = events.find((event) => event.reflection === "peer");
+      if (!own || !peer) throw new Error("共有された節目がありません");
+      const url = `${path}/reflection`;
+      expect((await call(learner, url, "DELETE", { key: peer.key })).status).toBe(404);
+      expect(
+        (await call(learner, url, "DELETE", { key: own.key.replace(/task-one$/, "missing") }))
+          .status,
+      ).toBe(404);
+      expect((await call(admin, url, "DELETE", { key: own.key })).status).toBe(403);
+      const another = `${LEARNER}/another/timeline`;
+      expect(
+        (await json<GroupTimeline>(await call(learner, another))).events.some(
+          (event) => event.reflection === "earlier",
+        ),
+      ).toBe(true);
+
+      const removed = await call(learner, url, "DELETE", { key: own.key });
+      expect(removed.status).toBe(200);
+      expect(await removed.json()).toEqual({ ok: true });
+      expect(
+        (await call(learner, `${url}?${new URLSearchParams({ key: own.key })}`, "DELETE")).status,
+      ).toBe(200);
+      expect(
+        (await readTimeline()).events.find((event) => event.key === own.key)?.reflection,
+      ).toBeNull();
+      expect(
+        (await json<GroupTimeline>(await call(learner, another))).events.every(
+          (event) => event.reflection === null,
+        ),
+      ).toBe(true);
+      expect(
+        fixture.sqlite.prepare("select id, share_reflection from submissions order by id").all(),
+      ).toEqual([
+        { id: "earlier", share_reflection: 0 },
+        { id: "later", share_reflection: 0 },
+        { id: "peer", share_reflection: 1 },
+      ]);
+    });
+
+    it("管理者は公開オフでも参加前の振り返りを含めて一覧し、隠す・戻す操作を監査する", async () => {
+      await seedProgress();
+      fixture.sqlite.exec(`
+        update task_progress set passed_at = 200;
+        update group_members set joined_at = 50 where group_id = 'shared';
+        update group_members set joined_at = 130
+          where group_id = 'shared' and profile_id = 'profile-me';
+      `);
+      await insertReflection("moderate", {
+        submittedAt: new Date(120),
+        explanation: "監査に残さない本文",
+      });
+      await insertReflection("before-joining", {
+        studentId: "profile-peer-a",
+        taskId: "task-two",
+        submittedAt: new Date(49),
+      });
+      await insertReflection("non-member", { studentId: "profile-outside" });
+      await getDb(env)
+        .insert(sections)
+        .values({ id: "unshared-unit", stageId: "stage-basic", title: "Unshared unit" });
+      fixture.sqlite.exec(
+        "update tasks set section_id = 'unshared-unit' where id = 'task-inactive'",
+      );
+      await insertReflection("not-in-group", { taskId: "task-inactive" });
+      await insertReflection("blank", { explanation: "" });
+      await insertReflection("private", { shareReflection: false });
+      for (let i = 0; i < 30; i++) {
+        await insertReflection(`peer-${String(i).padStart(2, "0")}`, {
+          studentId: "profile-peer-a",
+          taskId: "task-two",
+        });
+      }
+      const url = `${ADMIN}/shared/reflections`;
+      const patch = "/api/admin/submissions/moderate/reflection";
+      expect((await call(learner, url)).status).toBe(403);
+      expect((await call(learner, patch, "PATCH", { hidden: true })).status).toBe(403);
+      expect((await call(admin, patch, "PATCH", { hidden: "true" })).status).toBe(400);
+      const result = await call(admin, url);
+      expect(result.status).toBe(200);
+      expect(result.headers.get("cache-control")).toBe("no-store");
+      const first = await json<GroupReflections>(result);
+      expect(first.reflections).toHaveLength(30);
+      expect(first.reflections[0]).toEqual({
+        submissionId: "moderate",
+        name: "Zoe",
+        stageTitle: "Intro",
+        taskTitle: "task-one",
+        submittedAt: 120,
+        reflection: "監査に残さない本文",
+        hidden: false,
+      });
+      expect(first.reflections[1]).toMatchObject({ submissionId: "peer-29", name: "Amy" });
+      expect(first.nextCursor).toBeTruthy();
+      const next = await call(admin, `${url}?cursor=${first.nextCursor}`);
+      expect(await json<GroupReflections>(next)).toMatchObject({
+        reflections: [{ submissionId: "peer-00" }, { submissionId: "before-joining" }],
+        nextCursor: null,
+      });
+
+      shareTimeline();
+      const ownPass = async () =>
+        (await readTimeline()).events.find(
+          (event) => event.member.isMe && event.kind === "task_pass",
+        )?.reflection;
+      expect(await ownPass()).toBe("監査に残さない本文");
+      expect((await call(admin, patch, "PATCH", { hidden: true })).status).toBe(200);
+      expect(await ownPass()).toBeNull();
+      expect((await json<GroupReflections>(await call(admin, url))).reflections[0]?.hidden).toBe(
+        true,
+      );
+      const hidden = fixture.sqlite.prepare(
+        "select reflection_hidden_at, reflection_hidden_by from submissions where id = 'moderate'",
+      );
+      expect(hidden.get()).toEqual({
+        reflection_hidden_at: expect.any(Number),
+        reflection_hidden_by: "profile-admin",
+      });
+      expect((await call(admin, patch, "PATCH", { hidden: false })).status).toBe(200);
+      expect(await ownPass()).toBe("監査に残さない本文");
+      expect(hidden.get()).toEqual({ reflection_hidden_at: null, reflection_hidden_by: null });
+      expect(
+        fixture.sqlite
+          .prepare("select action, target_id, metadata from audit_logs order by rowid")
+          .all(),
+      ).toEqual([
+        { action: "reflection_hide", target_id: "moderate", metadata: "{}" },
+        { action: "reflection_unhide", target_id: "moderate", metadata: "{}" },
+      ]);
     });
 
     it("参加後の通常の節目だけを出し、見えないステージは日本時間の日付ごとにまとめる", async () => {
@@ -686,6 +895,7 @@ describe("グループ API (実 SQLite)", () => {
           member: { name: "Amy", isMe: false },
           stage: null,
           task: null,
+          reflection: null,
           reactions: [],
         })),
       );

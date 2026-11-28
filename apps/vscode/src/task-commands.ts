@@ -822,6 +822,8 @@ async function submitTaskCommand(
         mode,
         debug: manifest.kind === "debug",
         initial: saved,
+        reflectionSharing:
+          mode === "submit" && !manifest.problems?.length ? { session } : undefined,
       },
       {
         save,

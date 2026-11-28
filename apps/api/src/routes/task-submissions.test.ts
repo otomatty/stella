@@ -136,6 +136,28 @@ describe("課題の提出から人の合格まで (実 SQLite / R2)", () => {
     return (await json<{ row: { id: string; attempt: number } }>(response)).row;
   }
 
+  it.each([
+    ["submit", true, true],
+    ["submit", false, false],
+    ["submit", undefined, false],
+    ["consult", true, false],
+  ] as const)(
+    "振り返りの共有を保存する (mode=%s, shareReflection=%s)",
+    async (mode, value, saved) => {
+      fixture.input.mode = mode;
+      fixture.input.shareReflection = value;
+      const { id } = await submit();
+      const [row] = await db.select().from(submissions).where(eq(submissions.id, id));
+      expect(row?.shareReflection).toBe(saved);
+    },
+  );
+
+  it("shareReflection が真偽値以外の提出は拒否する", async () => {
+    Object.assign(fixture.input, { shareReflection: "true" });
+    expect((await post()).status).toBe(400);
+    expect(await db.select({ id: submissions.id }).from(submissions)).toEqual([]);
+  });
+
   it("受講・成績・修了証レポートの明細と合計は講師・管理者を除き、null の提出は残す", async () => {
     await db.insert(profiles).values({ id: "boss", displayName: "管理者", role: "admin" });
     await db.insert(quizzes).values({ id: "quiz", lessonId: "reading" });

@@ -65,6 +65,14 @@ label {
   margin: 15px 0 6px;
   font-weight: 600;
 }
+.checkbox {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.checkbox input {
+  margin: 0;
+}
 textarea {
   display: block;
   resize: vertical;
@@ -124,11 +132,13 @@ button {
   background: var(--vscode-button-secondaryHoverBackground);
 }
 button:focus-visible,
+input:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--vscode-focusBorder);
   outline-offset: 2px;
 }
 button:disabled,
+input:disabled,
 textarea:disabled {
   opacity: 0.6;
   cursor: default;

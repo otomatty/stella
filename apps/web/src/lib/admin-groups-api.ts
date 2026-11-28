@@ -36,3 +36,10 @@ export function groupRequest(id: string): GroupRequest {
   return (suffix = "", options) =>
     apiFetch(`${ADMIN_GROUPS}/${encodeURIComponent(id)}${suffix}`, options);
 }
+
+export function setReflectionHidden(submissionId: string, hidden: boolean): Promise<{ ok: true }> {
+  return apiFetch(`/api/admin/submissions/${encodeURIComponent(submissionId)}/reflection`, {
+    method: "PATCH",
+    body: { hidden },
+  });
+}

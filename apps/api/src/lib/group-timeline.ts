@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { evaluateSkillMapFor } from "../routes/skill-map.js";
 import { ApiError, type Caller } from "./authz.js";
+import { hasReflectionText } from "./group-reflections.js";
 import { learnerOnly } from "./learner-scope.js";
 import { loadSkillMapSource } from "./skill-map-data.js";
 import { hasOnlyManualTaskPass } from "./task-pass-source.js";
@@ -26,6 +27,7 @@ interface EventRow extends EventIdentity {
   stageId: string | null;
   stageTitle: string | null;
   taskTitle: string | null;
+  reflection: string | null;
 }
 
 interface Cursor {
@@ -204,11 +206,23 @@ export async function loadGroupTimeline(
   const ids = await visibleStageIds(db, viewer);
   const rows = await db.all<EventRow>(sql`
     ${timelineEvents(group.id, viewer.id, ids)}
-    select e.*, m.name from visible_events e
-    join members m on m.id = e.profileId
-    ${cursor ? sql`where at <= ${cursor.at}` : sql``}
-    order by at desc, kind, ref, profileId
-    limit ${PAGE_SIZE + 1} offset ${cursor?.count ?? 0}
+    , page as (
+      select e.*, m.name from visible_events e
+      join members m on m.id = e.profileId
+      ${cursor ? sql`where at <= ${cursor.at}` : sql``}
+      order by at desc, kind, ref, profileId
+      limit ${PAGE_SIZE + 1} offset ${cursor?.count ?? 0}
+    )
+    select e.*, case when e.kind = 'task_pass' then (
+      select x.explanation from tasks t
+      join submissions x on x.task_id = t.id and x.student_id = e.profileId
+      where t.id = e.ref and x.share_reflection = 1 and x.reflection_hidden_at is null
+        and ${hasReflectionText(sql`x.explanation`)}
+        and case when json_valid(t.definition)
+          then coalesce(json_array_length(t.definition, '$.problems'), 0) = 0 else 0 end
+      order by x.submitted_at desc, x.attempt desc, x.id desc limit 1
+    ) end reflection
+    from page e order by at desc, kind, ref, profileId
   `);
   const page = rows.slice(0, PAGE_SIZE);
   const last = page.at(-1);
@@ -240,6 +254,7 @@ export async function loadGroupTimeline(
         ? { id: row.stageId, title: row.stageTitle }
         : null,
     task: row.taskTitle === null ? null : { id: row.ref, title: row.taskTitle },
+    reflection: row.reflection,
     reactions: [...(reactions.get(JSON.stringify(eventIdentity(row)))?.values() ?? [])],
   }));
   return { group, events, nextCursor };
@@ -297,4 +312,26 @@ export async function updateTimelineReaction(
   if (!remove && !reactions?.get(emoji)?.mine)
     throw new ApiError("1 つの節目に押せるスタンプは 10 種類までです", 409);
   return [...(reactions?.values() ?? [])];
+}
+
+export async function revokeTimelineReflection(
+  db: Db,
+  viewer: Caller,
+  groupId: string,
+  key: string,
+) {
+  const handle = await memberHandle(groupId, viewer.id);
+  const prefix = `task_pass:${handle}:`;
+  if (!key.startsWith(prefix) || key.length === prefix.length) throw new ApiError("Not found", 404);
+  const taskId = key.slice(prefix.length);
+  const ids = await visibleStageIds(db, viewer);
+  const [event] = await db.all<{ ref: string }>(sql`
+    ${timelineEvents(groupId, viewer.id, ids, viewer.id)}
+    select ref from visible_events where kind = 'task_pass' and ref = ${taskId} limit 1
+  `);
+  if (!event) throw new ApiError("Not found", 404);
+  await db.run(sql`
+    update submissions set share_reflection = 0
+    where student_id = ${viewer.id} and task_id = ${taskId} and share_reflection = 1
+  `);
 }

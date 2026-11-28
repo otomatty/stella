@@ -9,6 +9,7 @@ const event: GroupTimelineEvent = {
   member: { name: "ひかり", isMe: false },
   stage: { id: "stage", title: "HTML の基礎" },
   task: { id: "task", title: "見出しを作る" },
+  reflection: null,
   reactions: [],
 };
 

@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import type { Env } from "../env.js";
 import { getDb } from "./client.js";
-import { stages, sections, tasks, enrollments, submissions, integrationClients } from "./schema.js";
+import { stages, sections, tasks, enrollments, integrationClients } from "./schema.js";
 
 it.each([true, false])(
   "0080 はグループの人だけ過去分を移し、個人の削除時に消す (グループあり: %s)",
@@ -51,6 +51,12 @@ it.each([true, false])(
         definition: "{}",
         bundle: "{}",
       });
+      const insertSubmission = fixture.sqlite.prepare(`
+        insert into submissions
+          (id, tenant_id, student_id, task_id, stage_title, assignment_title, code, review_notes,
+           verdict, review_source, reviewed_at, submitted_at, attempt)
+        values (?, 'ses', ?, 'fixture-task', 'fixture', 'fixture', ?, ?, ?, ?, ?, 1, ?)
+      `);
       for (const userId of ["fixture-user", "outside"]) {
         await db.insert(enrollments).values({
           userId,
@@ -58,17 +64,16 @@ it.each([true, false])(
           enrolledAt: new Date(1000),
           completedAt: new Date(4000),
         });
-        await db.insert(submissions).values({
-          studentId: userId,
-          taskId: "fixture-task",
-          stageTitle: "fixture",
-          assignmentTitle: "fixture",
-          code: "PRIVATE CODE",
-          reviewNotes: "PRIVATE REVIEW",
-          verdict: "pass",
-          reviewSource: "human",
-          reviewedAt: new Date(3000),
-        });
+        insertSubmission.run(
+          `pass-${userId}`,
+          userId,
+          "PRIVATE CODE",
+          "PRIVATE REVIEW",
+          "pass",
+          "human",
+          3000,
+          1,
+        );
         // 0080 適用前の列だけで、当時の問題結果を作る。
         fixture.sqlite
           .prepare(`
@@ -77,16 +82,16 @@ it.each([true, false])(
           values (?, 'fixture-task', 'q1', 'current', 'manual', 'PRIVATE REASON', 'private.ts', 'PRIVATE CODE', 'hash', 2000, 2000)
         `)
           .run(userId);
-        await db.insert(submissions).values({
-          studentId: userId,
-          taskId: "fixture-task",
-          stageTitle: "fixture",
-          assignmentTitle: "fixture",
-          code: "PRIVATE RETURNED",
-          verdict: "resubmit",
-          reviewSource: "human",
-          reviewedAt: new Date(5000),
-        });
+        insertSubmission.run(
+          `return-${userId}`,
+          userId,
+          "PRIVATE RETURNED",
+          "",
+          "resubmit",
+          "human",
+          5000,
+          1,
+        );
       }
       fixture.sqlite.exec(
         readFileSync(new URL("../../drizzle/0080_integration_events.sql", import.meta.url), "utf8"),
@@ -122,18 +127,7 @@ it.each([true, false])(
           )
           .run(userId);
         fixture.sqlite.prepare("delete from task_problem_results where user_id=?").run(userId);
-        await db.insert(submissions).values({
-          id: `delete-${userId}`,
-          studentId: userId,
-          taskId: "fixture-task",
-          stageTitle: "fixture",
-          assignmentTitle: "fixture",
-          code: "PRIVATE",
-          verdict: "pass",
-          reviewSource: "manual",
-          attempt: 2,
-          reviewedAt: new Date(7000),
-        });
+        insertSubmission.run(`delete-${userId}`, userId, "PRIVATE", "", "pass", "manual", 7000, 2);
         fixture.sqlite.prepare("delete from submissions where id=?").run(`delete-${userId}`);
       }
       const revocations = fixture.sqlite

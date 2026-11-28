@@ -46,6 +46,7 @@ export interface TaskSubmissionInput {
   localResult: RunResult;
   protected: HashedFile[];
   explanation: string;
+  shareReflection?: boolean;
   debuggingRecord?: DebuggingRecord;
   support: SupportEvent[];
 }
@@ -160,6 +161,7 @@ export function parseTaskSubmission(v: unknown): TaskSubmissionInput {
     !isSupportLog(v.support) ||
     typeof v.explanation !== "string" ||
     v.explanation.length > 20000 ||
+    (v.shareReflection !== undefined && typeof v.shareReflection !== "boolean") ||
     !Array.isArray(v.files) ||
     v.files.length > SUBMISSION_LIMITS.files ||
     v.files.some((f) => !object(f) || !isSubmissionPath(f.path) || typeof f.content !== "string") ||

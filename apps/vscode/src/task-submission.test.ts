@@ -8,6 +8,7 @@ import { setTaskBundleExtensionVersion } from "./task-bundle-url.js";
 import {
   prepareTaskSubmission,
   readRecordedSupport,
+  readSubmissionNotes,
   sendTaskSubmission,
 } from "./task-submission.js";
 import { apiRequest } from "./api.js";
@@ -126,5 +127,50 @@ describe("確認した課題の提出", () => {
       `/api/tasks/bundle?${new URLSearchParams({ taskId: fixture.input.taskId, extension: extensionVersion })}`,
       { session: 7 },
     ]);
+    expect(vi.mocked(apiRequest).mock.calls[1]?.[1]?.body).not.toHaveProperty("shareReflection");
+  });
+
+  it.each([true, false])("下書きの共有指定 %s を通常提出の本文に入れる", async (value) => {
+    const draft = { ...notes, shareReflection: value };
+    await writeFile(path.join(root, ".stella/submission-notes.json"), JSON.stringify(draft));
+    const saved = await readSubmissionNotes(root);
+    expect(saved).toEqual(draft);
+    if (!saved) throw new Error("下書きを読み出せません");
+    vi.mocked(apiRequest)
+      .mockResolvedValueOnce({ bundle: fixture.bundle })
+      .mockResolvedValueOnce({ row: { id: "submission", attempt: 1 } });
+    await sendTaskSubmission(root, "submit", saved);
+    expect(vi.mocked(apiRequest).mock.calls[1]?.[1]?.body).toHaveProperty("shareReflection", value);
+  });
+
+  it("相談の本文には共有指定を入れない", async () => {
+    fixture.input.localResult.outcome = "failed";
+    await writeFile(
+      path.join(root, ".stella/last-run.json"),
+      JSON.stringify(fixture.input.localResult),
+    );
+    vi.mocked(apiRequest)
+      .mockResolvedValueOnce({ bundle: fixture.bundle })
+      .mockResolvedValueOnce({ row: { id: "consultation", attempt: 1 } });
+    await sendTaskSubmission(root, "consult", { ...notes, shareReflection: true });
+    expect(vi.mocked(apiRequest).mock.calls[1]?.[1]?.body).not.toHaveProperty("shareReflection");
+  });
+
+  it("問題つきの課題の本文には共有指定を入れない", async () => {
+    const problemTask = await submissionFixture({
+      runner: "node-test",
+      static: undefined,
+      problems: [{ id: "q01", title: "問題 1" }],
+    });
+    await writeFile(path.join(root, ".stella/task.json"), problemTask.manifestText);
+    await writeFile(
+      path.join(root, ".stella/last-run.json"),
+      JSON.stringify(problemTask.input.localResult),
+    );
+    vi.mocked(apiRequest)
+      .mockResolvedValueOnce({ bundle: problemTask.bundle })
+      .mockResolvedValueOnce({ row: { id: "submission", attempt: 1 } });
+    await sendTaskSubmission(root, "submit", { ...notes, shareReflection: true });
+    expect(vi.mocked(apiRequest).mock.calls[1]?.[1]?.body).not.toHaveProperty("shareReflection");
   });
 });
