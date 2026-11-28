@@ -375,7 +375,7 @@
           }
         },
         {
-          "say": "分割は、速さと注意の集中のために使う形です。",
+          "say": "分割は、速く進め、仕事に集中するための形です。",
           "pulse": ["write", "check"],
           "pause": 1
         }
@@ -613,7 +613,7 @@
           ]
         },
         {
-          "say": "最後はコードで結果を集めるので、この例も並列化です。",
+          "say": "二つの要約を同時に作るので、この例も並列化です。",
           "show": ["collect", "gather-dates", "gather-rules"],
           "pulse": ["collect"],
           "pause": 1
@@ -655,6 +655,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "ff1ae40cb0ab011e15a397d72d764ffaabc7b2cc3c653c18f5a22d76d4f4015e"
+    "sayHash": "795682838003262cc93f2bf3c48688051e1c175273beeaf491bfd59dd58fb857"
   }
 }

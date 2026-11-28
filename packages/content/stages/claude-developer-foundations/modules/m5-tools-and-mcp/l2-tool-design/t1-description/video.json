@@ -200,7 +200,7 @@
     },
     "quiz": {
       "cols": 5,
-      "rows": 1,
+      "rows": 2,
       "nodes": [
         {
           "id": "car",
@@ -219,6 +219,18 @@
           "label": "詳しい説明",
           "art": "car-key",
           "at": [5, 1]
+        },
+        {
+          "id": "input",
+          "label": "店舗と日付",
+          "art": "calendar",
+          "at": [5, 2]
+        },
+        {
+          "id": "limits",
+          "label": "借りる前に使う",
+          "art": "guide-booklet",
+          "at": [3, 2]
         }
       ]
     },
@@ -511,7 +523,7 @@
           }
         },
         {
-          "say": "一つのツールに、三文から四文以上を目安に書きましょう。",
+          "say": "一つのツールに、三文から四文は書くようにしましょう。",
           "show": ["guide"],
           "tag": {
             "guide": "具体的に書く"
@@ -540,17 +552,18 @@
         },
         {
           "say": "二つ目には、店舗と日付で空車一覧を返すと書きました。",
-          "show": ["detail"],
+          "show": ["detail", "input"],
           "tag": {
             "detail": "空車一覧"
           }
         },
         {
           "say": "借りる前に使い、料金は返さないとも説明しています。",
+          "show": ["limits"],
           "tag": {
-            "detail": "料金は対象外"
+            "limits": "料金は対象外"
           },
-          "pulse": ["detail"]
+          "pulse": ["limits"]
         },
         {
           "say": "使う場面と返す情報が伝わるのは、どちらでしょうか。",
@@ -708,6 +721,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "0427eba9b1af4e823fc087a0a598dd0ca532e3802de641d931c1a47bcab11276"
+    "sayHash": "13b19754db27c53dc1bbcc37a57ae765e0d6e8716fcb254c2e4bc15adcc17626"
   }
 }

@@ -12,6 +12,12 @@
     ]
   },
   "art": {
+    "school-draft": {
+      "prompt": "A blank white school activity notice held by a light grey paper clip. The notice has no pictures of supplies and no objects beside it. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
+    "school-writer": {
+      "prompt": "A young adult with short dark hair and a plain violet sweater, holding a blank white school notice in one hand and revising it with a blue pencil in the other. Simple facial features. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
+    },
     "school-note": {
       "prompt": "A white school activity notice with small pictorial drawings of a violet pencil and a blue water bottle, held by a light grey paper clip. The paper has no writing. Objects only. Flat shapes with solid fills, no gradients, no shading, no shadows. Everything sits directly on the pure white background: no desk or table surface, no floor, no wall, no background panel, no frame. Drawn large and centered. No text, no letters, no digits, no logos."
     },
@@ -43,12 +49,12 @@
   "boards": {
     "school": {
       "cols": 5,
-      "rows": 1,
+      "rows": 2,
       "nodes": [
         {
           "id": "draft",
           "label": "持ち物の案内",
-          "art": "school-note",
+          "art": "school-draft",
           "at": [1, 1]
         },
         {
@@ -58,10 +64,16 @@
           "at": [3, 1]
         },
         {
+          "id": "writer",
+          "label": "書いた人",
+          "art": "school-writer",
+          "at": [3, 2]
+        },
+        {
           "id": "revision",
           "label": "直した案内",
           "art": "school-note",
-          "at": [5, 1]
+          "at": [1, 2]
         }
       ],
       "links": [
@@ -72,8 +84,14 @@
           "label": "確かめる"
         },
         {
-          "id": "revise",
+          "id": "return",
           "from": "reviewer",
+          "to": "writer",
+          "label": "指摘を返す"
+        },
+        {
+          "id": "revise",
+          "from": "writer",
           "to": "revision",
           "label": "指摘を反映"
         }
@@ -92,7 +110,7 @@
         {
           "id": "draft",
           "label": "案内の下書き",
-          "art": "school-note",
+          "art": "school-draft",
           "at": [3, 1]
         },
         {
@@ -153,7 +171,7 @@
         {
           "id": "draft",
           "label": "持ち物の案内",
-          "art": "school-note",
+          "art": "school-draft",
           "at": [3, 1]
         },
         {
@@ -342,11 +360,11 @@
         },
         {
           "say": "書いた人は指摘を受け、何を持つかが分かる案内に直しました。",
-          "show": ["revision"]
+          "show": ["writer", "return", "revision", "revise"]
         },
         {
           "say": "評価の基準がはっきりした仕事は、評価役の指摘で直させます。",
-          "show": ["read", "revise"],
+          "show": ["read"],
           "pulse": ["revision"]
         }
       ]
@@ -377,13 +395,13 @@
         },
         {
           "say": "担当者は、持ち物を具体的に書くよう指摘します。",
-          "show": ["reviewer", "read"],
+          "show": ["reviewer", "read", "writer", "return"],
           "tag": {
             "reviewer": "名前を書く"
           }
         },
         {
-          "say": "書き直した案内にあるのは、筆記具と水筒です。",
+          "say": "書いた人が直した案内にあるのは、筆記具と水筒です。",
           "show": ["revision", "revise"],
           "tag": {
             "revision": "筆記具と水筒"
@@ -555,7 +573,7 @@
           "show": ["person"]
         },
         {
-          "say": "案内の例では、指摘によって持ち物が分かるようになりました。",
+          "say": "案内の例では、指摘で持ち物が分かるようになりました。",
           "show": ["revision"],
           "tag": {
             "revision": "筆記具と水筒"
@@ -685,7 +703,7 @@
       "board": "flowers",
       "beats": [
         {
-          "say": "評価役が返すのは、午後三時と明記するよう求める指摘です。",
+          "say": "評価役が返すのは、午後三時と明記してほしいという指摘です。",
           "tag": {
             "feedback": "午後三時へ"
           },
@@ -789,6 +807,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "f077959387a13ddd1b8607b7cf5f3ef5968f6c4b03cb09685a8e80f683a5ebe9"
+    "sayHash": "17389d23259133c3e7e400033bf2967eeb6417e85c41d585ef159e768cd20d7a"
   }
 }

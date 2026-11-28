@@ -173,7 +173,7 @@
           "id": "use",
           "from": "message",
           "to": "save",
-          "label": "結果を使う"
+          "label": "理由を確認"
         }
       ]
     },
@@ -252,7 +252,7 @@
       "board": "laundry",
       "beats": [
         {
-          "say": "洗濯の店で、服をまとめて受け取る場面です。",
+          "say": "クリーニング店で、服をまとめて受け取る場面です。",
           "show": ["clothes"]
         },
         {
@@ -496,11 +496,12 @@
           }
         },
         {
-          "say": "その結果を、ファイルに保存する処理で使う流れです。",
+          "say": "保存前に停止理由を確かめ、未完了なら確定しない方針です。",
           "show": ["use"],
-          "travel": {
-            "along": ["use"],
-            "icon": "file"
+          "pulse": ["message", "save"],
+          "tag": {
+            "message": "停止理由確認",
+            "save": "通常終了のみ"
           },
           "pause": 1
         }
@@ -541,7 +542,7 @@
           }
         },
         {
-          "say": "組み立てを任せて目的に合うのは、どちらでしょうか。",
+          "say": "組み立てを任せられて目的に合うのは、どちらでしょうか。",
           "mark": [
             {
               "on": "each",
@@ -671,6 +672,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "c4dbb0ba54e5c09c45ca2c4ea9736f21f26134415bdb0429ed76903f2f20da47"
+    "sayHash": "b91da5dd1c1b3870e49cb6d006d13852e76368b1d52945a0debb470de3f0b271"
   }
 }

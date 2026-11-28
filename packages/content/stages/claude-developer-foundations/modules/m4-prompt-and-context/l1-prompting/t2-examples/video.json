@@ -223,54 +223,40 @@
     "quiz": {
       "cols": 5,
       "rows": 2,
-      "zones": [
-        {
-          "id": "first",
-          "label": "一つ目の例の組",
-          "tone": "blue",
-          "cells": [1, 1, 5, 1]
-        },
-        {
-          "id": "second",
-          "label": "二つ目の例の組",
-          "tone": "violet",
-          "cells": [1, 2, 5, 1]
-        }
-      ],
       "nodes": [
         {
           "id": "color-one",
-          "label": "カラー十枚",
+          "label": "①カラー十枚",
           "art": "photo-film",
           "at": [1, 1]
         },
         {
           "id": "color-two",
-          "label": "カラー二十枚",
+          "label": "①カラー二十枚",
           "art": "photo-film",
           "at": [3, 1]
         },
         {
           "id": "color-three",
-          "label": "カラー三十枚",
+          "label": "①カラー三十枚",
           "art": "photo-film",
           "at": [5, 1]
         },
         {
           "id": "missing",
-          "label": "枚数未記入",
+          "label": "②枚数未記入",
           "art": "photo-note",
           "at": [1, 2]
         },
         {
           "id": "mono",
-          "label": "白黒十枚",
+          "label": "②白黒十枚",
           "art": "photo-film",
           "at": [3, 2]
         },
         {
           "id": "color",
-          "label": "カラー十枚",
+          "label": "②カラー十枚",
           "art": "photo-film",
           "at": [5, 2]
         }
@@ -549,29 +535,57 @@
       "beats": [
         {
           "say": "写真の現像注文を、同じ形で記録したい場面です。",
-          "show": ["first", "color-one"]
+          "show": ["color-one"],
+          "tag": {
+            "color-one": "カラー十枚"
+          }
         },
         {
           "say": "一つ目には、枚数だけが違うカラー注文を三つ並べました。",
-          "show": ["color-two", "color-three"]
+          "show": ["color-two", "color-three"],
+          "tag": {
+            "color-two": "カラー二十枚",
+            "color-three": "カラー三十枚"
+          }
         },
         {
           "say": "二つ目には、カラーと白黒と枚数未記入の注文を入れます。",
-          "show": ["second", "color", "mono", "missing"]
+          "show": ["color", "mono", "missing"],
+          "tag": {
+            "color": "カラー十枚",
+            "mono": "白黒十枚",
+            "missing": "カラー未記入"
+          }
         },
         {
-          "say": "どちらも、注文文と期待する記録を組にした例です。",
-          "pulse": ["first", "second"]
+          "say": "札は期待する記録で、どれも種類と枚数の順です。",
+          "pulse": ["color-one", "color-two", "color-three", "color", "mono", "missing"]
         },
         {
           "say": "実際に使う例として、どちらの組を選ぶとよいでしょうか。",
           "mark": [
             {
-              "on": "first",
+              "on": "color-one",
               "kind": "question"
             },
             {
-              "on": "second",
+              "on": "color-two",
+              "kind": "question"
+            },
+            {
+              "on": "color-three",
+              "kind": "question"
+            },
+            {
+              "on": "color",
+              "kind": "question"
+            },
+            {
+              "on": "mono",
+              "kind": "question"
+            },
+            {
+              "on": "missing",
               "kind": "question"
             }
           ],
@@ -590,15 +604,31 @@
           "say": "選ぶのは、種類の違う注文を含む二つ目の組です。",
           "mark": [
             {
-              "on": "second",
+              "on": "color",
               "kind": "check"
             },
             {
-              "on": "first",
+              "on": "mono",
+              "kind": "check"
+            },
+            {
+              "on": "missing",
+              "kind": "check"
+            },
+            {
+              "on": "color-one",
+              "kind": "cross"
+            },
+            {
+              "on": "color-two",
+              "kind": "cross"
+            },
+            {
+              "on": "color-three",
               "kind": "cross"
             }
           ],
-          "pulse": ["second"]
+          "pulse": ["color", "mono", "missing"]
         },
         {
           "say": "枚数の記入がない場合の記録も、例に含めています。",
@@ -615,11 +645,11 @@
       "beats": [
         {
           "say": "一つ目も、例の数は三つで目安に収まっています。",
-          "pulse": ["first"]
+          "pulse": ["color-one", "color-two", "color-three"]
         },
         {
           "say": "ただし、記録する注文はカラーに偏ったままです。",
-          "pulse": ["color-one", "color-two", "color-three"]
+          "pulse": ["color-one"]
         },
         {
           "say": "似た例だけでは、意図しない癖まで真似されるかもしれません。",
@@ -665,7 +695,7 @@
           }
         },
         {
-          "say": "例外の規則を並べ続けるより、代表的な例で示します。",
+          "say": "例外の決まりを並べるより、代表的な例で示します。",
           "pulse": ["type", "count"]
         }
       ]
@@ -701,6 +731,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "590a2fd14ef4f6a5369c42cb54a4c21b31569ec6f4f951ae6ade2c62f341b70b"
+    "sayHash": "af417a9f8d04102fa51694f30e5276dd827b94d8f597d1c59ce09a096c7f2c49"
   }
 }

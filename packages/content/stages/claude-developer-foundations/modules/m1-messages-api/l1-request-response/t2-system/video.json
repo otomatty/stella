@@ -313,7 +313,7 @@
       "id": "request-shape",
       "kind": "code",
       "role": "syntax",
-      "title": "リクエストの外側に置く",
+      "title": "messagesの外側に置く",
       "code": [
         "// 役割と発言をまとめる",
         "const request = {",
@@ -597,7 +597,7 @@
           }
         },
         {
-          "say": "一方、持ち物を教えてほしいという言葉は、今回の発言でした。",
+          "say": "持ち物を教えてほしいという言葉は、今回の発言でした。",
           "pulse": ["question"]
         },
         {
@@ -647,6 +647,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "36164ce56ed323e0bdb82053acd4d0432673c7761a26de695fb6855c663c86e6"
+    "sayHash": "954f46d8b39562a1d5b48973c28571351cdab2021aa65ae908274ac8b0116b98"
   }
 }

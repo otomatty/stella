@@ -366,6 +366,12 @@
           "label": "応答"
         },
         {
+          "id": "try-candidate",
+          "from": "request",
+          "to": "candidate",
+          "route": "under"
+        },
+        {
           "id": "observe",
           "from": "candidate",
           "to": "measure"
@@ -790,7 +796,11 @@
         },
         {
           "say": "候補にも同じ依頼を渡して、並行して動かしましょう。",
-          "show": ["candidate"],
+          "show": ["candidate", "try-candidate"],
+          "travel": {
+            "along": ["try-candidate"],
+            "icon": "send"
+          },
           "tag": {
             "current": "同じ依頼",
             "candidate": "同じ依頼"

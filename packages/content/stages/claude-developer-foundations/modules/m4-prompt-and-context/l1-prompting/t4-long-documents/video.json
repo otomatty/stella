@@ -197,7 +197,7 @@
       "nodes": [
         {
           "id": "question",
-          "label": "始発の時刻は",
+          "label": "市役所行き始発",
           "art": "bus-question",
           "at": [1, 1]
         },
@@ -229,7 +229,7 @@
         },
         {
           "id": "question",
-          "label": "始発の時刻は",
+          "label": "市役所行き始発",
           "art": "bus-question",
           "at": [5, 1]
         }
@@ -509,9 +509,9 @@
           "show": ["question"]
         },
         {
-          "say": "利用者は、駅前から出る始発の時刻を先頭で尋ねました。",
+          "say": "駅前発で市役所行きの始発を、先頭で尋ねました。",
           "tag": {
-            "question": "先頭"
+            "question": "駅前発・先頭"
           }
         },
         {
@@ -563,10 +563,10 @@
           ]
         },
         {
-          "say": "駅前の始発を尋ねる質問は、最後に書きます。",
+          "say": "駅前発で市役所行きの始発を尋ねる質問は、最後に書きます。",
           "show": ["question", "then"],
           "tag": {
-            "question": "最後"
+            "question": "駅前発・最後"
           },
           "mark": [
             {
@@ -600,9 +600,9 @@
           }
         },
         {
-          "say": "最後に尋ねるのが、駅前から出る始発の時刻です。",
+          "say": "最後に尋ねるのは、駅前発で市役所行きの始発です。",
           "tag": {
-            "question": "駅前の始発"
+            "question": "駅前発"
           },
           "pulse": ["question"]
         }
@@ -643,6 +643,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "e05b0b2a973f644ec97b98db324cad2e297ecf1232025848da6301e918f1f4e4"
+    "sayHash": "c44f65bafdef8b8de08b2b8c83f335eb14a3a4e86d161ca33efdb304c0aa9177"
   }
 }

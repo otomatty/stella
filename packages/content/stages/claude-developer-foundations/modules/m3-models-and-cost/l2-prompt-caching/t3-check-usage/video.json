@@ -143,7 +143,7 @@
         },
         {
           "id": "rest",
-          "label": "区切りの後ろ",
+          "label": "キャッシュ外",
           "art": "loose-sheet",
           "at": [5, 1]
         }
@@ -167,7 +167,7 @@
         },
         {
           "id": "rest",
-          "label": "区切りの後ろ",
+          "label": "キャッシュ外",
           "art": "loose-sheet",
           "at": [5, 1]
         },
@@ -227,7 +227,7 @@
         },
         {
           "id": "rest",
-          "label": "区切りの後ろ",
+          "label": "キャッシュ外",
           "art": "loose-sheet",
           "at": [5, 2]
         },
@@ -379,7 +379,7 @@
         "  cache_read_input_tokens,",
         "  // 今回キャッシュに書き込んだ量",
         "  cache_creation_input_tokens,",
-        "  // 最後の区切りより後ろの量",
+        "  // キャッシュに関わらない量",
         "  input_tokens",
         "// 応答の内訳を参照する",
         "} = message.usage;"
@@ -472,7 +472,7 @@
         "  cache_read_input_tokens,",
         "  // 今回キャッシュに書き込んだ量",
         "  cache_creation_input_tokens,",
-        "  // 最後の区切りより後ろの量",
+        "  // キャッシュに関わらない量",
         "  input_tokens",
         "// 応答の内訳を参照する",
         "} = message.usage;"
@@ -484,7 +484,7 @@
       },
       "beats": [
         {
-          "say": "最後の項目は、区切りより後ろのトークン数です。",
+          "say": "最後の項目は、キャッシュに関わらないトークン数です。",
           "part": {
             "line": 7,
             "text": "input_tokens"
@@ -494,11 +494,11 @@
           }
         },
         {
-          "say": "キャッシュに関わらない入力の量を表します。",
+          "say": "この項目は、キャッシュ外の入力を表します。",
           "part": {
             "line": 7,
             "text": "input_tokens",
-            "note": "区切りの後ろ"
+            "note": "キャッシュ外"
           },
           "figure": {
             "tag": {
@@ -548,7 +548,7 @@
           }
         },
         {
-          "say": "区切りより後ろには、六十トークンあります。",
+          "say": "キャッシュに関わらない入力は、六十トークンあります。",
           "show": ["rest"],
           "tag": {
             "rest": "60"
@@ -636,7 +636,7 @@
           }
         },
         {
-          "say": "区切りより後ろは、八十トークンです。",
+          "say": "キャッシュに関わらない入力は、八十トークンです。",
           "show": ["rest"],
           "tag": {
             "rest": "80"
@@ -752,6 +752,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "6dc80f9b22536ae307398cc865e58716e66409c6eec6e599ec1ee8746263a243"
+    "sayHash": "1b2b4d3f459767e218abf833fd4e4c4572786d48c13e9695611317c88d73c838"
   }
 }

@@ -405,7 +405,7 @@
           }
         },
         {
-          "say": "この共通点を、図の線でたどりましょう。",
+          "say": "同じ道具を使っている点を、ここで押さえましょう。",
           "show": ["code", "shared"],
           "travel": {
             "along": ["shared"],
@@ -521,7 +521,7 @@
           "show": ["sdk", "platform"]
         },
         {
-          "say": "そこで見つからないことが、迷うきっかけです。",
+          "say": "見つからずに迷ってしまう場面は、よくあることです。",
           "mark": [
             {
               "on": "platform",
@@ -712,6 +712,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "1a7376589ab460a29e319944deced06a568fa98203b8d39aff9eb1733731399c"
+    "sayHash": "8659414465ae7a8ab0c9ddbba78ddb369b4921d3cf5e7e538346da05f5b74bdb"
   }
 }

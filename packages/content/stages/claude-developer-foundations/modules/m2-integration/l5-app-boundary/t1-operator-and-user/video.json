@@ -89,7 +89,7 @@
           "id": "policy-staff",
           "from": "policy",
           "to": "staff",
-          "label": "従う"
+          "label": "適用"
         }
       ]
     },
@@ -546,8 +546,7 @@
           ]
         },
         {
-          "say": "この場合、Claude は窓口を案内します。",
-          "speech": "この場合、クロードは窓口を案内します。",
+          "say": "方針に沿った応答は、窓口の案内です。",
           "show": ["reply"],
           "pulse": ["reply"]
         }
@@ -718,6 +717,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "292d4b84ca0dbfc213c0f5945f5062a3bb1a849d0dfe421cbbc97f88256a8664"
+    "sayHash": "3b21a8300771e0c4d7f6204e70a9b15b399d9a0b8321ca93dfc74b9bfa97f595"
   }
 }

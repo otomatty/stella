@@ -525,11 +525,11 @@
           }
         },
         {
-          "say": "Files API に上げた資料は、ID で指す形です。",
-          "speech": "ファイルズエーピーアイに上げた資料は、アイディーで指す形です。",
+          "say": "type に file、ファイルIDに返った値を書く形です。",
+          "speech": "タイプにファイル、ファイルアイディーに返った値を書く形です。",
           "show": ["stored"],
           "tag": {
-            "stored": "file_id"
+            "stored": "file"
           }
         },
         {
@@ -603,7 +603,7 @@
           }
         },
         {
-          "say": "画像を先に置くと、よい結果になりやすいとされています。",
+          "say": "画像を先に置くと、よい結果になりやすいです。",
           "part": {
             "line": 3,
             "text": "\"image\""
@@ -781,6 +781,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "298b810f20d522f41d2abf50cdd1e8f6341c96416d2540364f0549ea6f69f74b"
+    "sayHash": "e6e39953f2a162c138981937093efa568cedbc03883ffeb7a2ad758b35dfd53e"
   }
 }

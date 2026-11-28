@@ -157,7 +157,7 @@
       "nodes": [
         {
           "id": "header",
-          "label": "ハイフン表記",
+          "label": "ヘッダーの値",
           "art": "header-slip",
           "at": [1, 1]
         },
@@ -169,7 +169,7 @@
         },
         {
           "id": "body",
-          "label": "下線表記",
+          "label": "本文の値",
           "art": "body-sheet",
           "at": [5, 1]
         }
@@ -827,7 +827,7 @@
           "pulse": ["id"]
         },
         {
-          "say": "サポートにも同じ値を添えるのが、問い合わせの仕方です。",
+          "say": "サポートに問い合わせるときも、同じ値を添えましょう。",
           "show": ["support", "send"],
           "travel": {
             "along": ["send"],
@@ -876,6 +876,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "340f86be956de32c20768a6f13e6562d8ccb504fc0da5c2a7c8b9d971713895d"
+    "sayHash": "a8ea5cb88582f0f808d26695817b534a87fe63f11029c5ad6af519182e6ecda6"
   }
 }

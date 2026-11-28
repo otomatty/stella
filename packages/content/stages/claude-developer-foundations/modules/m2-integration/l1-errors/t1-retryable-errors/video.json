@@ -525,7 +525,14 @@
           "show": ["overload"]
         },
         {
-          "say": "どちらの場合も、時間を置いてから送り直します。",
+          "say": "月の利用額の上限なら、戻るまで再送しても通りません。",
+          "pulse": ["rate"],
+          "tag": {
+            "rate": "利用額は別"
+          }
+        },
+        {
+          "say": "回数や量の制限と混雑なら、待ってから送り直します。",
           "show": ["wait", "resend", "wait-send"],
           "travel": {
             "along": ["wait-send"],
@@ -780,6 +787,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "9925de3caef090b4837caa5e40827578ffb227350491aef1ccf4e3c743ac016e"
+    "sayHash": "f308ea58706c6671f9bb190f4300895d53b12d982b3ee9aa79526407745ace65"
   }
 }

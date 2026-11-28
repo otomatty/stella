@@ -443,8 +443,8 @@
           "show": ["choice"]
         },
         {
-          "say": "既定の値は、auto です。",
-          "speech": "既定の値は、オートです。",
+          "say": "レシピ検索ツールを渡した場合の既定は、auto です。",
+          "speech": "レシピ検索ツールを渡した場合の既定は、オートです。",
           "term": {
             "text": "auto",
             "note": "使うかをClaudeが決める"
@@ -537,7 +537,8 @@
           "pulse": ["question", "lookup"]
         },
         {
-          "say": "答えがまだ会話にないときに、ツールを呼ぶ動きです。",
+          "say": "ここでは、Claude が検索を選んだ場合の動きです。",
+          "speech": "ここでは、クロードが検索を選んだ場合の動きです。",
           "show": ["lookup-call"],
           "travel": {
             "along": ["lookup-call"],
@@ -762,6 +763,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "16910abb73845487daca7e122760f25de49693f9730052848f96fcad0e1129d5"
+    "sayHash": "8dae94fb1a076e67d142e14dbaf00ea4f6de8fd299613f893653ef793608d552"
   }
 }

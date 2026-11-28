@@ -503,11 +503,11 @@
       "board": "division",
       "beats": [
         {
-          "say": "並列化では、仕事の分け方をコードで決めておきます。",
+          "say": "ここでは、分担を固定した並列化と比べます。",
           "term": {
             "text": "並列化",
             "ruby": "へいれつか",
-            "note": "分け方を前もって決める形"
+            "note": "複数の呼び出しを同時に進める"
           }
         },
         {
@@ -757,6 +757,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "e47c6f1ecdc6bd4c2218aaa33b23f118fe9695ffd2fb88bcf2fe8641a635e95b"
+    "sayHash": "a586193be3337168b9a7db3630231ce8d11502ad3decb873a54941e2766c471b"
   }
 }

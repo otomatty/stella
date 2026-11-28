@@ -377,7 +377,8 @@
           "show": ["result"]
         },
         {
-          "say": "読む項目は、図の中央に示したものです。",
+          "say": "読む項目は、図の中央のセッションIDです。",
+          "speech": "読む項目は、図の中央のセッションアイディーです。",
           "show": ["field", "read"],
           "pulse": ["field"]
         },
@@ -698,7 +699,7 @@
           "show": ["files"]
         },
         {
-          "say": "回数の上限で止まった作業も、再開できる対象です。",
+          "say": "回数の上限で止まった作業も、再開の対象です。",
           "show": ["stopped"]
         },
         {
@@ -719,6 +720,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "e529b5477fdfd8f1add449e7f35ecbd46a54fba07c175278096d0064a0e3fd38"
+    "sayHash": "a9b4862cad0c4fa7629ee4b6623924dd6f87e1e2310e6af194a96cdbfd3d4166"
   }
 }

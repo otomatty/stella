@@ -255,7 +255,7 @@
           "show": ["request"]
         },
         {
-          "say": "回答の見本も、一緒に渡すとしましょう。",
+          "say": "回答の見本も、一緒に渡しましょう。",
           "show": ["sample"]
         },
         {
@@ -489,31 +489,62 @@
     },
     {
       "id": "separate-example",
-      "kind": "board",
+      "kind": "code",
       "role": "apply",
       "title": "例も別の範囲にする",
-      "board": "examples",
+      "code": [
+        "// 資料を包む",
+        "const prompt = `<document>${manual}</document>` +",
+        "// 指示の範囲を開く",
+        "  `<instructions>` +",
+        "// 資料だけを根拠にする指示を包む",
+        "  `手引きだけを根拠に答えてください</instructions>` +",
+        "// 見本の範囲を開く",
+        "  `<example>` +",
+        "// 回答の形を示す見本を入れる",
+        "  `申請には本人確認書類が必要です。` +",
+        "// 見本の範囲を閉じる",
+        "  `</example>`;"
+      ],
+      "show": true,
+      "panel": {
+        "kind": "figure",
+        "board": "examples"
+      },
       "beats": [
         {
           "say": "手引きと依頼に、回答の見本も添えてみましょう。",
-          "show": ["manual", "request", "sample"]
-        },
-        {
-          "say": "見本は、答えの形を伝えるための例です。",
-          "pulse": ["sample"],
-          "tag": {
-            "sample": "答えの形"
+          "focus": [1, 3, 5, 7, 9, 11],
+          "figure": {
+            "show": ["manual", "request", "sample"]
           }
         },
         {
-          "say": "例もタグで包み、指示や資料から区切ります。",
-          "tag": {
-            "sample": "タグで包む"
+          "say": "見本は、答えの形を伝えるための例です。",
+          "focus": [9],
+          "figure": {
+            "pulse": ["sample"],
+            "tag": {
+              "sample": "答えの形"
+            }
+          }
+        },
+        {
+          "say": "例は example の開始タグと終了タグで包みます。",
+          "speech": "例はエグザンプルの開始タグと終了タグで包みます。",
+          "focus": [7, 11],
+          "figure": {
+            "tag": {
+              "sample": "タグで包む"
+            }
           }
         },
         {
           "say": "同じ役割のタグ名は、別の依頼でもそろえましょう。",
-          "pulse": ["manual", "request", "sample"]
+          "focus": [1, 3, 5, 7, 11],
+          "figure": {
+            "pulse": ["manual", "request", "sample"]
+          }
         }
       ]
     },
@@ -688,7 +719,7 @@
           "show": ["manual"]
         },
         {
-          "say": "店の受取案内も、資料として包む対象です。",
+          "say": "店の受取案内も、資料として包むものです。",
           "show": ["notice"]
         },
         {
@@ -704,6 +735,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "e1654ccb11882640a3ac6b72b3a596edd5b7a39e377137343e56e0a3ded50dd6"
+    "sayHash": "253a2645cd6bfd601f7324b2e4302d27750b6215df28108cb1f9089ba00c823b"
   }
 }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "claude-developer-foundations/m5-tools-and-mcp@7",
-  "contentHash": "4c90586ddab4eec9a93da9038356d663491915b2690002f4f968aeac3a021de8",
+  "contentHash": "f0d689a6ac1ac91da23f4bf1ae2d6bff9c1729bba3bf0d4f3383388e0757d93b",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.1",
   "unitId": "claude-developer-foundations/m0-exam-and-sources@8",
-  "contentHash": "f5f0babd9a55c85c5fe01a89238e6581b99554115fd72067d8bc07d8c7d11061",
+  "contentHash": "fdac1258b31c71f887af4df28d1c4871958bb8e7db0638c602d05cbffb3b0fa7",
   "environmentRef": "node-test-01@1",
   "uses": [
     {

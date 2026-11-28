@@ -552,8 +552,10 @@
           "say": "Claude は結果を見て、次は発送記録を調べると決めます。",
           "speech": "クロードは結果を見て、次は発送記録を調べると決めます。",
           "show": ["read", "inspect", "repeat"],
+          "hide": ["receive"],
           "tag": {
-            "tool": "発送記録"
+            "tool": "発送記録",
+            "result": "前回在庫あり"
           },
           "travel": {
             "along": ["inspect", "repeat", "use"],
@@ -697,7 +699,7 @@
           }
         },
         {
-          "say": "調べながら必要な手順を決める仕事では、エージェントを考えます。",
+          "say": "調べながら必要な手順を決める仕事には、エージェントを使います。",
           "show": ["agent"],
           "tag": {
             "agent": "結果から判断"
@@ -713,6 +715,6 @@
   ],
   "polish": {
     "model": "gemini-4-neon",
-    "sayHash": "7f3acfe2379f700637f8be58e8050c4c642aee7d215e8e79cd4e5ef20e4f7fab"
+    "sayHash": "208d2e47e6a99594ce8928c4846485961686cc5ba0a05837c7b0f60fc76ac718"
   }
 }
