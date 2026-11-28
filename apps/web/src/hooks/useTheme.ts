@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 export type Theme = "light" | "dark";
 
@@ -37,28 +38,70 @@ function applyTheme(theme: Theme): void {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[theme]);
 }
 
+interface ThemeTransitionOrigin {
+  x: number;
+  y: number;
+}
+
+export function themeTransitionRadius(
+  { x, y }: ThemeTransitionOrigin,
+  width: number,
+  height: number,
+): number {
+  const farthestX = Math.max(Math.abs(x), Math.abs(width - x));
+  const farthestY = Math.max(Math.abs(y), Math.abs(height - y));
+  return Math.hypot(farthestX, farthestY);
+}
+
 interface ThemeApi {
   theme: Theme;
-  toggleTheme: () => void;
+  toggleTheme: (origin?: ThemeTransitionOrigin) => void;
 }
 
 export function useTheme(): ThemeApi {
   const [theme, setTheme] = useState<Theme>(readInitialTheme);
 
-  // 連打時にクロージャ越しの古い `theme` から次状態を計算しないよう関数型更新を使う。
-  // localStorage 書込は「明示選択時のみ」に限定したいので theme を deps にした
-  // 副作用エフェクトでは行わず、ここでまとめて行う (OS pref 由来の変更は永続化しない)。
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next: Theme = prev === "dark" ? "light" : "dark";
+  const toggleTheme = useCallback((origin?: ThemeTransitionOrigin) => {
+    const updateTheme = () => {
+      // 連打しても、切り替える時点の DOM から次のテーマを決める。
+      const next: Theme = readInitialTheme() === "dark" ? "light" : "dark";
+      applyTheme(next);
+      // 明示選択時だけ保存する (OS 設定に追従した変更は保存しない)。
       try {
         localStorage.setItem(THEME_STORAGE_KEY, next);
       } catch (_) {
         // private モード等で書けない場合は黙って諦める
       }
-      applyTheme(next);
-      return next;
+      setTheme(next);
+    };
+
+    if (
+      typeof document.startViewTransition !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      updateTheme();
+      return;
+    }
+
+    const { innerWidth, innerHeight } = window;
+    const center = origin ?? { x: innerWidth / 2, y: innerHeight / 2 };
+    const radius = themeTransitionRadius(center, innerWidth, innerHeight);
+    const position = `${center.x}px ${center.y}px`;
+    const transition = document.startViewTransition(() => {
+      // 新しいテーマのスナップショットにアイコンの更新も含める。
+      flushSync(updateTheme);
     });
+    // 遷移が中断されても更新コールバックは実行される。
+    transition.ready
+      .then(() => {
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${position})`, `circle(${radius}px at ${position})`] },
+          { duration: 400, easing: "ease-in-out", pseudoElement: "::view-transition-new(root)" },
+        );
+      })
+      .catch(() => undefined);
+    transition.updateCallbackDone.catch(() => undefined);
+    transition.finished.catch(() => undefined);
   }, []);
 
   // theme state を DOM (`<html class="dark">`) に同期
@@ -66,7 +109,7 @@ export function useTheme(): ThemeApi {
     applyTheme(theme);
   }, [theme]);
 
-  // Magic UI のトグルなど、DOM class を直接更新する実装にも追従する。
+  // DOM class を直接更新する実装にも追従する。
   useEffect(() => {
     const root = document.documentElement;
     const observer = new MutationObserver(() => setTheme(readInitialTheme()));
