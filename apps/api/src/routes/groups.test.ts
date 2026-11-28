@@ -1,3 +1,5 @@
+import { GROUP_REACTION_EMOJIS } from "@stella/shared/groups/reactions";
+import type { GroupTimeline, GroupTimelineEvent } from "@stella/shared/groups/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "../db/client.js";
 import {
@@ -8,6 +10,7 @@ import {
   sections,
   stageGrants,
   stages,
+  submissions,
   taskProblemResults,
   taskProgress,
   tasks,
@@ -64,7 +67,7 @@ describe("グループ API (実 SQLite)", () => {
         ...stored,
         id: "client",
         name: "Partner",
-        scopes: ["progress:read", "stages:write"],
+        scopes: ["progress:read", "stages:write", "groups:write"],
         allowedStagePrefixes: ["extra-"],
       });
     fixture.sqlite.exec(`
@@ -191,13 +194,33 @@ describe("グループ API (実 SQLite)", () => {
   }
 
   it("公開中の所属グループだけを名前順に返し、有効な受講者だけを数える", async () => {
+    fixture.sqlite.exec("update groups set share_activity = 1 where id in ('private', 'outside')");
     const res = await call(learner, `${LEARNER}/mine`);
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await res.json()).toEqual({
       groups: [
-        { id: "another", name: "Art Group", memberCount: 1 },
-        { id: "shared", name: "Zoo Group", memberCount: 3 },
+        {
+          id: "another",
+          name: "Art Group",
+          memberCount: 1,
+          shareProgress: true,
+          shareActivity: false,
+        },
+        {
+          id: "private",
+          name: "Private Group",
+          memberCount: 1,
+          shareProgress: false,
+          shareActivity: true,
+        },
+        {
+          id: "shared",
+          name: "Zoo Group",
+          memberCount: 3,
+          shareProgress: true,
+          shareActivity: false,
+        },
       ],
     });
   });
@@ -535,6 +558,255 @@ describe("グループ API (実 SQLite)", () => {
     }
   });
 
+  describe("タイムラインとスタンプ", () => {
+    const path = `${LEARNER}/shared/timeline`;
+    const reactionPath = `${path}/reactions`;
+    const readTimeline = async (query = "") => {
+      const res = await call(learner, path + query);
+      expect(res.status).toBe(200);
+      return json<GroupTimeline>(res);
+    };
+    const stamp = (key: string, emoji: string, token = learner) =>
+      call(token, reactionPath, "POST", { key, emoji });
+
+    function shareTimeline() {
+      fixture.sqlite.exec("update groups set share_activity = 1 where id = 'shared'");
+    }
+
+    it("公開オフ・所属外・不存在は同じ 404。有効な受講者だけが使える", async () => {
+      fixture.sqlite.exec("update groups set share_activity = 1 where id = 'outside'");
+      for (const id of ["shared", "outside", "unknown"]) {
+        for (const [suffix, method] of [
+          ["", "GET"],
+          ["/reactions", "POST"],
+          ["/reactions", "DELETE"],
+        ]) {
+          const res = await call(
+            learner,
+            `${LEARNER}/${id}/timeline${suffix}`,
+            method,
+            method === "GET" ? undefined : { key: "invalid", emoji: "👏" },
+          );
+          expect(res.status).toBe(404);
+          expect(res.headers.get("cache-control")).toBe("no-store");
+          expect(await res.json()).toEqual({ error: "Not found" });
+        }
+      }
+      shareTimeline();
+      expect((await call(admin, path)).status).toBe(403);
+      expect((await call(disabled, path)).status).toBe(403);
+    });
+
+    it("参加後の通常の節目だけを出し、見えないステージは日本時間の日付ごとにまとめる", async () => {
+      shareTimeline();
+      await seedProgress();
+      const boundary = Date.parse("2026-11-27T15:00:00Z");
+      const db = getDb(env);
+      fixture.sqlite.exec(`
+        update stages set title = 'Confidential stage' where id = 'stage-b';
+        update profiles set hide_group_activity = 1 where id = 'profile-peer-b';
+        update group_members set joined_at = ${boundary - 10}
+          where group_id = 'shared' and profile_id = 'profile-peer-a';
+        update enrollments set status = 'expired', completed_at = null, enrolled_at = ${boundary}
+          where user_id = 'profile-me';
+        update task_progress set passed_at = ${boundary};
+        update task_progress set status = 'passed'
+          where user_id = 'profile-me' and task_id = 'task-two';
+      `);
+      await db.insert(submissions).values({
+        studentId: "profile-me",
+        taskId: "task-two",
+        stageTitle: "Intro",
+        assignmentTitle: "task-two",
+        code: "",
+        status: "passed",
+        verdict: "pass",
+        reviewSource: "manual",
+      });
+      await db.insert(enrollments).values([
+        {
+          userId: "profile-peer-a",
+          stageId: "stage-a",
+          enrolledAt: new Date(boundary - 11),
+          completedAt: new Date(boundary),
+        },
+        {
+          userId: "profile-peer-a",
+          stageId: "stage-b",
+          enrolledAt: new Date(boundary - 1),
+          completedAt: new Date(boundary + 1),
+        },
+        { userId: "profile-peer-a", stageId: "stage-z", enrolledAt: new Date(boundary) },
+        { userId: "profile-peer-a", stageId: "stage-basic", enrolledAt: new Date(boundary) },
+        { userId: "profile-peer-b", stageId: "stage-a", enrolledAt: new Date(boundary) },
+        { userId: "profile-disabled", stageId: "stage-a", enrolledAt: new Date(boundary) },
+        { userId: "profile-admin", stageId: "stage-a", enrolledAt: new Date(boundary) },
+      ]);
+      await db
+        .insert(sections)
+        .values({ id: "hidden-unit", stageId: "stage-b", title: "Hidden unit" });
+      await db.insert(tasks).values({
+        id: "hidden-task",
+        sectionId: "hidden-unit",
+        title: "Confidential task",
+        kind: "practice",
+        pattern: "example",
+        estimatedMinutes: 5,
+        order: 1,
+        contentHash: "current",
+        definition: "{}",
+        bundle: "{}",
+      });
+      await db.insert(taskProgress).values({
+        userId: "profile-peer-a",
+        taskId: "hidden-task",
+        status: "passed",
+        contentHash: "current",
+        passedAt: new Date(boundary),
+      });
+
+      const { events, nextCursor } = await readTimeline();
+      expect(nextCursor).toBeNull();
+      expect(
+        events.map(({ kind, task, member, date }) => [kind, task?.id, member.name, date]),
+      ).toEqual([
+        ["ahead", undefined, "Amy", "2026-11-28"],
+        ["stage_clear", undefined, "Amy", "2026-11-28"],
+        ["stage_start", undefined, "Zoe", "2026-11-28"],
+        ["task_pass", "task-one", "Zoe", "2026-11-28"],
+        ["task_pass", "task-one", "Amy", "2026-11-28"],
+        ["task_pass", "task-two", "Amy", "2026-11-28"],
+        ["ahead", undefined, "Amy", "2026-11-27"],
+      ]);
+      expect(events.filter((event) => event.kind === "ahead")).toEqual(
+        ["2026-11-28", "2026-11-27"].map((date) => ({
+          key: expect.stringMatching(new RegExp(`^ahead:[a-f0-9]{24}:${date}$`)),
+          kind: "ahead",
+          date,
+          member: { name: "Amy", isMe: false },
+          stage: null,
+          task: null,
+          reactions: [],
+        })),
+      );
+      expect(JSON.stringify(events)).not.toMatch(
+        /profile-|@example\.test|stage-b|hidden-task|Confidential|Hidden draft|task-inactive|task-variant|Secret display name/,
+      );
+    });
+
+    it("同時刻が複数ページをまたいでも、古い節目まで重複や欠落なく返す", async () => {
+      shareTimeline();
+      await seedStages();
+      const at = Date.parse("2026-11-28T00:00:00Z");
+      const older = Date.parse("2001-01-01T00:00:00Z");
+      addRoster();
+      fixture.sqlite.exec(`
+        insert into enrollments (id, tenant_id, user_id, stage_id, enrolled_at)
+        select id, 'ses', id, 'stage-a', case when id = 'roster-061' then ${older} else ${at} end
+        from profiles where id between 'roster-001' and 'roster-061';
+      `);
+      const first = await readTimeline();
+      expect(first.events).toHaveLength(30);
+      expect(first.nextCursor).toMatch(/^[A-Za-z0-9_-]+$/);
+      const second = await readTimeline(`?cursor=${first.nextCursor}`);
+      expect(second.events).toHaveLength(30);
+      const third = await readTimeline(`?cursor=${second.nextCursor}`);
+      expect(third.events).toHaveLength(1);
+      expect(third.events[0]?.date).toBe("2001-01-01");
+      expect(third.nextCursor).toBeNull();
+      const events = [...first.events, ...second.events, ...third.events];
+      expect(new Set(events.map((event) => event.key)).size).toBe(61);
+      expect(events.map((event) => event.member.name)).toEqual(
+        Array.from({ length: 61 }, (_, i) => `Roster ${String(i + 1).padStart(3, "0")}`),
+      );
+      for (const cursor of ["", "%%%INVALID", btoa('{"at":1,"count":0}'), btoa("null")]) {
+        expect((await call(learner, `${path}?cursor=${encodeURIComponent(cursor)}`)).status).toBe(
+          400,
+        );
+      }
+    });
+
+    it("一覧にある他の受講者の節目だけに押せる", async () => {
+      shareTimeline();
+      await seedStages();
+      await getDb(env)
+        .insert(enrollments)
+        .values([
+          { userId: "profile-me", stageId: "stage-a" },
+          { userId: "profile-peer-a", stageId: "stage-b" },
+        ]);
+      const { events } = await readTimeline();
+      const own = events.find((event) => event.member.isMe);
+      const ahead = events.find((event) => event.kind === "ahead");
+      if (!own || !ahead) throw new Error("Expected own start and peer ahead");
+      const handle = ahead.key.split(":")[1];
+      expect((await stamp(ahead.key, "👎")).status).toBe(400);
+      expect((await stamp(own.key, "👏")).status).toBe(400);
+      for (const key of [
+        `stage_start:${handle}:stage-b`,
+        `task_pass:${handle}:missing`,
+        "invalid",
+      ]) {
+        expect((await stamp(key, "👏")).status).toBe(404);
+      }
+      expect((await stamp(ahead.key, "👏")).status).toBe(200);
+      fixture.sqlite.exec(
+        "update profiles set hide_group_activity = 1 where id = 'profile-peer-a'",
+      );
+      expect((await stamp(ahead.key, "👏")).status).toBe(404);
+    });
+
+    it("スタンプの上限・冪等性・集計・取り消しを扱う", async () => {
+      shareTimeline();
+      await seedStages();
+      fixture.sqlite.exec(
+        "update group_members set peer_name = 'Mina' where group_id = 'shared' and profile_id = 'profile-peer-b'",
+      );
+      await getDb(env).insert(enrollments).values({ userId: "profile-peer-a", stageId: "stage-a" });
+      const event = (await readTimeline()).events[0];
+      if (!event) throw new Error("Expected peer start");
+      const readReactions = async (res: Response) => {
+        expect(res.status).toBe(200);
+        return (await json<Pick<GroupTimelineEvent, "reactions">>(res)).reactions;
+      };
+      expect(await readReactions(await stamp(event.key, "👏"))).toEqual([
+        { emoji: "👏", count: 1, names: ["Zoe"], mine: true },
+      ]);
+      expect(await readReactions(await stamp(event.key, "👏"))).toHaveLength(1);
+      const peerToken = await signAccessToken(SECRET, "profile-peer-b", "peer-b@example.test");
+      expect((await stamp(event.key, "👏", peerToken)).status).toBe(200);
+      for (const emoji of GROUP_REACTION_EMOJIS.slice(1, 10)) {
+        expect((await stamp(event.key, emoji)).status).toBe(200);
+      }
+      expect((await stamp(event.key, "👏")).status).toBe(200);
+      expect((await stamp(event.key, GROUP_REACTION_EMOJIS[10])).status).toBe(409);
+      const reactions = (await readTimeline()).events[0]?.reactions;
+      expect(reactions?.map((reaction) => reaction.emoji)).toEqual(
+        GROUP_REACTION_EMOJIS.slice(0, 10),
+      );
+      expect(reactions?.[0]).toEqual({ emoji: "👏", count: 2, names: ["Zoe", "Mina"], mine: true });
+
+      const removed = await readReactions(
+        await call(learner, reactionPath, "DELETE", { key: event.key, emoji: "👏" }),
+      );
+      expect(removed[0]).toEqual({ emoji: "👏", count: 1, names: ["Mina"], mine: false });
+      const query = new URLSearchParams({ key: event.key, emoji: "👏" });
+      expect((await call(peerToken, `${reactionPath}?${query}`, "DELETE")).status).toBe(200);
+      expect((await readTimeline()).events[0]?.reactions).toHaveLength(9);
+      const concurrent = await Promise.all(
+        GROUP_REACTION_EMOJIS.slice(10, 12).map((emoji) => stamp(event.key, emoji)),
+      );
+      expect(concurrent.map((res) => res.status).sort()).toEqual([200, 409]);
+      expect((await stamp(event.key, "👏", peerToken)).status).toBe(200);
+      fixture.sqlite.exec(
+        "delete from group_members where group_id = 'shared' and profile_id = 'profile-peer-b'",
+      );
+      expect(
+        (await readTimeline()).events[0]?.reactions.some((reaction) => reaction.emoji === "👏"),
+      ).toBe(false);
+    });
+  });
+
   it("管理 API の全操作を管理者に限定する", async () => {
     for (const [method, suffix] of [
       ["GET", ""],
@@ -566,6 +838,29 @@ describe("グループ API (実 SQLite)", () => {
       200,
     );
     expect((await call(learner, `${LEARNER}/shared/peers`)).status).toBe(404);
+    expect((await call(admin, `${ADMIN}/shared`, "PATCH", { shareActivity: "true" })).status).toBe(
+      400,
+    );
+    expect((await call(admin, `${ADMIN}/shared`, "PATCH", { shareActivity: true })).status).toBe(
+      200,
+    );
+    expect(await (await call(admin, `${ADMIN}/shared`)).json()).toMatchObject({
+      group: { shareProgress: false, shareActivity: true },
+    });
+    expect((await call(learner, `${LEARNER}/shared/timeline`)).status).toBe(200);
+    expect((await call(learner, `${LEARNER}/shared/peers`)).status).toBe(404);
+    expect(
+      (
+        await call(integration, INTEGRATION, "PUT", {
+          name: "Renamed by partner",
+          shareActivity: false,
+          shareProgress: true,
+        })
+      ).status,
+    ).toBe(200);
+    expect(await (await call(admin, `${ADMIN}/shared`)).json()).toMatchObject({
+      group: { name: "Renamed by partner", shareProgress: false, shareActivity: true },
+    });
     const path = `${ADMIN}/shared/members/profile-me`;
     expect((await call(admin, path, "PATCH", { peerName: " " })).status).toBe(400);
     expect((await call(admin, path, "PATCH", { peerName: "a".repeat(51) })).status).toBe(400);
@@ -590,6 +885,11 @@ describe("グループ API (実 SQLite)", () => {
         .all(),
     );
     expect(audit).toContain("group_update");
+    const updates = fixture.sqlite
+      .prepare("select metadata from audit_logs where action = 'group_update'")
+      .all()
+      .map((row) => JSON.parse(String(row.metadata)));
+    expect(updates).toContainEqual({ renamed: false, shareActivity: true });
     expect(audit).toContain("group_peer_name_update");
     expect(audit).not.toMatch(/Chosen name|@example\.test/);
   });
@@ -620,6 +920,7 @@ describe("グループ API (実 SQLite)", () => {
       memberCount: 4,
       stageCount: 3,
       shareProgress: true,
+      shareActivity: false,
       updatedAt: new Date(1).toISOString(),
     };
     expect(await filtered.json()).toEqual({ groups: [expected] });

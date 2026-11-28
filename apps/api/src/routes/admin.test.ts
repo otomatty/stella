@@ -414,6 +414,19 @@ describe("受講者の削除 (POST /api/admin/users/delete、実 SQLite)", () =>
     expectNotDeleted();
   }
 
+  it("受講者を削除すると本人が押したスタンプと本人宛てのスタンプが消える", async () => {
+    run("insert into groups (id, name, created_at, updated_at) values ('shared', 'Group', 1, 1)");
+    const reaction = `insert into group_activity_reactions
+      (group_id, kind, target_profile_id, ref, from_profile_id, emoji, created_at)
+      values ('shared', 'ahead', ?, '2026-11-28', ?, '👏', 1)`;
+    run(reaction, LEARNER, OTHER);
+    run(reaction, OTHER, LEARNER);
+
+    const res = await remove({ userId: LEARNER, confirmEmail: "learner@example.com" });
+    expect(res.status).toBe(200);
+    expect(countRows("select count(*) as n from group_activity_reactions")).toBe(0);
+  });
+
   it("受講者を消すと動画コメント・メンション・投稿記録と、消えたスレッドや返信の通知が消える", async () => {
     run(`INSERT INTO stages (id, tenant_id, slug, title, status, created_at, updated_at)
       VALUES ('video-stage', 'ses', 'video-stage', '動画ステージ', 'published', 1, 1)`);

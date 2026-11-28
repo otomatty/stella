@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Env } from "../env.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { getDb } from "./client.js";
-import { profiles, sections, stages, tenants } from "./schema.js";
+import { sections, stages, tenants } from "./schema.js";
 
 const TAG = "0060_variant_first_slot_recompute";
 const SQL = readFileSync(
@@ -20,15 +20,14 @@ describe("0060: まだ類題を出していない最初の出題を消し、新�
     await db.batch([
       db.insert(tenants).values({ id: "ses", name: "テスト" }),
       db
-        .insert(profiles)
-        .values({ id: "learner", tenantId: "ses", displayName: "受講者", role: "student" }),
-      db
         .insert(stages)
         .values({ id: "stage", tenantId: "ses", slug: "dev-env-basics", title: "入口", format: 2 }),
       db.insert(sections).values({ id: "unit", stageId: "stage", title: "単元" }),
     ]);
-    // 後の移行で列が増えても壊れないよう、tasks と variant_reviews はこの時点の列だけで入れる。
+    // 後の移行で列が増えても壊れないよう、この時点の列だけで入れる。
     database.sqlite.exec(`
+      insert into profiles (id, tenant_id, display_name, role, created_at)
+        values ('learner', 'ses', '受講者', 'student', 1);
       insert into tasks (id, section_id, title, kind, pattern, skills, estimated_minutes, "order",
         content_hash, definition, bundle, variant_of)
         values ('variant', 'unit', '類題', 'independent', 'p', '{}', 10, 0, 'h', '{}', '{}', 'parent');

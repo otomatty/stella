@@ -43,6 +43,8 @@ export interface ProfileRow {
   learning_start_date?: string | null;
   /** 教材の OS 別ブロックで既定に開く OS。null / 未取得は端末から推定する。 */
   os_preference?: OsName | null;
+  /** グループのタイムラインに自分の節目を出さない。 */
+  hide_group_activity?: boolean;
   id: string;
   role: ProfileRole;
   display_name: string;
@@ -509,7 +511,8 @@ export type NotificationType =
   | "review_comment"
   | "lesson_comment"
   | "lesson_comment_reply"
-  | "lesson_comment_mention";
+  | "lesson_comment_mention"
+  | "group_reactions";
 
 /**
  * ユーザ個人宛のイベント通知。 本人のみ read/既読化できる。

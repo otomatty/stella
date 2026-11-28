@@ -9,7 +9,7 @@
  * 教材の OS 別の手順で既定に開く OS (profiles.os_preference) もここで変える。
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { isOsName, OS_LABELS, OS_NAMES, type OsName } from "@stella/shared/markdown/os-blocks";
@@ -23,8 +23,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { updateMyDisplayName, type Profile } from "@/lib/auth";
+import { updateMyDisplayName, updateMyHideGroupActivity, type Profile } from "@/lib/auth";
 import { detectBrowserOs, setViewOs, updateMyOsPreference } from "@/lib/os-preference";
+import { cn } from "@/lib/utils";
 import type { Role } from "@/data/types";
 
 /** サーバ側 (POST /api/me) と揃える。 */
@@ -60,6 +61,13 @@ export const SettingsPage = ({
       {backendEnabled && profile ? (
         <OsPreferenceCard profile={profile} onProfileUpdated={onProfileUpdated} />
       ) : null}
+      {backendEnabled && profile?.role === "student" ? (
+        <GroupActivityPreferenceCard
+          key={profile.id}
+          hidden={profile.hide_group_activity ?? false}
+          onProfileUpdated={onProfileUpdated}
+        />
+      ) : null}
       {backendEnabled && profile ? (
         <LearningPacePanel key={profile.id} onSaved={onProfileUpdated} />
       ) : null}
@@ -67,6 +75,72 @@ export const SettingsPage = ({
     </div>
   </>
 );
+
+function GroupActivityPreferenceCard({
+  hidden,
+  onProfileUpdated,
+}: {
+  hidden: boolean;
+  onProfileUpdated: () => Promise<void>;
+}) {
+  const id = useId();
+  const [saving, setSaving] = useState(false);
+
+  async function toggle() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await updateMyHideGroupActivity(!hidden);
+      await onProfileUpdated();
+      toast.success("グループの設定を保存しました");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "グループの設定を保存できませんでした");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>グループ</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
+          <Label id={`${id}-label`} htmlFor={id} className="mb-0">
+            グループのタイムラインに自分の節目を出さない
+          </Label>
+          <button
+            id={id}
+            type="button"
+            role="switch"
+            aria-checked={hidden}
+            aria-labelledby={`${id}-label`}
+            aria-describedby={`${id}-description`}
+            disabled={saving}
+            onClick={() => void toggle()}
+            className={cn(
+              "inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors",
+              "focus-visible:outline-2 focus-visible:outline-brand disabled:opacity-40",
+              hidden ? "border-primary bg-primary" : "border-border bg-muted",
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-5 rounded-full bg-card shadow transition-transform",
+                hidden ? "translate-x-5" : "translate-x-1",
+              )}
+            />
+          </button>
+        </div>
+        <p id={`${id}-description`} className="mt-2 text-[12.5px] leading-relaxed text-ink-3">
+          オンにすると、ステージの開始・課題の合格・修了が、どのグループのタイムラインにも出なくなります。
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface AccountCardProps {
   profile: Profile | null;

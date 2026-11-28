@@ -52,6 +52,7 @@ function groupSummaries(db: Db, filter?: SQL) {
         where ${groupMembers.groupId} = ${groups.id} and ${learnerOnly(groupMembers.profileId)})`,
       stageCount: sql<number>`(select count(*) from ${groupStages} where ${groupStages.groupId} = ${groups.id})`,
       shareProgress: groups.shareProgress,
+      shareActivity: groups.shareActivity,
       updatedAt: groups.updatedAt,
     })
     .from(groups)
@@ -138,6 +139,7 @@ adminGroupsRoute.post(ROOT, async (c) => {
         memberCount: 0,
         stageCount: 0,
         shareProgress: saved.shareProgress,
+        shareActivity: saved.shareActivity,
         updatedAt: saved.updatedAt,
       },
     },
@@ -184,22 +186,31 @@ adminGroupsRoute.get(`${ROOT}/:id`, async (c) => {
 adminGroupsRoute.patch(`${ROOT}/:id`, async (c) => {
   const db = c.get("db");
   const group = await requireGroup(db, c.req.param("id"));
-  const { name, shareProgress } = await readBody(c);
+  const { name, shareProgress, shareActivity } = await readBody(c);
   if (name !== undefined) requireAdminOwnedGroup(group);
   if (shareProgress !== undefined && typeof shareProgress !== "boolean")
     throw new ApiError("shareProgress は真偽値で指定してください", 400);
+  if (shareActivity !== undefined && typeof shareActivity !== "boolean")
+    throw new ApiError("shareActivity は真偽値で指定してください", 400);
   if (name !== undefined) {
     await createOrRenameGroup(db, {
       id: group.id,
       name: readName(name, 200, "グループ名"),
       shareProgress,
+      shareActivity,
     });
   } else if (shareProgress !== undefined) {
-    await createOrRenameGroup(db, { id: group.id, shareProgress });
+    await createOrRenameGroup(db, { id: group.id, shareProgress, shareActivity });
+  } else if (shareActivity !== undefined) {
+    await createOrRenameGroup(db, { id: group.id, shareActivity });
   } else {
     throw new ApiError("変更内容を指定してください", 400);
   }
-  await auditGroup(c, "group_update", group.id, { renamed: name !== undefined, shareProgress });
+  await auditGroup(c, "group_update", group.id, {
+    renamed: name !== undefined,
+    shareProgress,
+    shareActivity,
+  });
   return c.json({ ok: true });
 });
 

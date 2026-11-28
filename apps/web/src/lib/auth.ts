@@ -62,4 +62,14 @@ export async function updateMyDisplayName(displayName: string): Promise<Profile>
   return profile;
 }
 
+/** グループのタイムラインに自分の節目を出さない設定を保存する。 */
+export async function updateMyHideGroupActivity(hidden: boolean): Promise<Profile> {
+  const { profile } = await apiFetch<{ profile: Profile }>("/api/me", {
+    method: "POST",
+    body: { hide_group_activity: hidden },
+  });
+  if (!profile) throw new Error("グループの設定を保存できませんでした");
+  return profile;
+}
+
 export { isAuthConfigured, getAccessToken };

@@ -17,10 +17,11 @@ import { learnerOnly } from "./learner-scope.js";
 import { hasNoIslandPrerequisites, parentSlugFromRow } from "./stage-audience.js";
 import { parseGuidance } from "./stage-grant-guidance.js";
 
-type GroupChanges = { name?: string; shareProgress?: boolean };
+type GroupChanges = { name?: string; shareProgress?: boolean; shareActivity?: boolean };
 type GroupNameChange =
   | ({ name: string } & ({ clientId: string; externalKey: string } | { createdBy: string }))
-  | ({ id: string } & ({ name: string; shareProgress?: boolean } | { shareProgress: boolean }));
+  | ({ id: string } & GroupChanges &
+      ({ name: string } | { shareProgress: boolean } | { shareActivity: boolean }));
 
 export async function createOrRenameGroup(db: Db, group: GroupNameChange) {
   const [saved] =
@@ -38,10 +39,14 @@ export async function createOrRenameGroup(db: Db, group: GroupNameChange) {
   return saved;
 }
 
-function updateGroupSettings(db: Db, id: string, { name, shareProgress }: GroupChanges) {
+function updateGroupSettings(
+  db: Db,
+  id: string,
+  { name, shareProgress, shareActivity }: GroupChanges,
+) {
   return db
     .update(groups)
-    .set({ name, shareProgress, updatedAt: new Date() })
+    .set({ name, shareProgress, shareActivity, updatedAt: new Date() })
     .where(and(eq(groups.id, id), name === undefined ? undefined : isNull(groups.clientId)))
     .returning();
 }

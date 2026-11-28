@@ -2,6 +2,8 @@ export interface LearnerGroup {
   id: string;
   name: string;
   memberCount: number;
+  shareProgress: boolean;
+  shareActivity: boolean;
 }
 
 export interface GroupPeerProgress {
@@ -23,4 +25,21 @@ export interface GroupPeerProgress {
     ahead: boolean;
     stages: { id: string; percent: number; cleared: boolean }[];
   }[];
+}
+
+export interface GroupTimelineEvent {
+  key: string;
+  kind: "stage_start" | "stage_clear" | "task_pass" | "ahead";
+  /** 日本時間の日付 (YYYY-MM-DD)。 */
+  date: string;
+  member: { name: string; isMe: boolean };
+  stage: { id: string; title: string } | null;
+  task: { id: string; title: string } | null;
+  reactions: { emoji: string; count: number; names: string[]; mine: boolean }[];
+}
+
+export interface GroupTimeline {
+  group: Pick<LearnerGroup, "id" | "name">;
+  events: GroupTimelineEvent[];
+  nextCursor: string | null;
 }

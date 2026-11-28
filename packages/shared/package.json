@@ -88,6 +88,7 @@
     "./markdown/tutorial-blocks": "./src/markdown/tutorial-blocks.ts",
     "./markdown/os-blocks": "./src/markdown/os-blocks.ts",
     "./mentoring/weekly-memo": "./src/mentoring/weekly-memo.ts",
+    "./groups/reactions": "./src/groups/reactions.ts",
     "./groups/types": "./src/groups/types.ts",
     "./integrations/types": "./src/integrations/types.ts"
   },

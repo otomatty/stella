@@ -10,6 +10,8 @@ import { relativeTime } from "@/lib/relative-time";
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Sticker } from "lucide-react";
 import {
   Bell,
   CheckCheck,
@@ -58,6 +60,7 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; tone: string; lab
   lesson_comment_reply: { icon: MessageCircle, tone: "text-brand", label: "コメントへの返信" },
   lesson_comment_mention: { icon: MessageCircle, tone: "text-brand", label: "メンション" },
   stage_cleared: { icon: Sparkles, tone: "text-success", label: "ステージ完了" },
+  group_reactions: { icon: Sticker, tone: "text-brand", label: "スタンプ" },
 };
 
 export const NotificationCenter = ({
@@ -72,6 +75,7 @@ export const NotificationCenter = ({
   onOpenSubmission,
   onOpenLessonThread,
 }: NotificationCenterProps) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const isStaff = role === "admin";
@@ -170,6 +174,15 @@ export const NotificationCenter = ({
                       key={n.id}
                       onClick={() => {
                         if (!n.read) onMarkRead(n.id);
+                        if (n.type === "group_reactions") {
+                          const groupId = n.payload?.group_id;
+                          void navigate(
+                            typeof groupId === "string" && groupId
+                              ? { to: "/groups/$groupId", params: { groupId } }
+                              : { to: "/groups" },
+                          );
+                          setOpen(false);
+                        }
                         if (
                           (n.type === "lesson_comment" ||
                             n.type === "lesson_comment_reply" ||

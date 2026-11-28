@@ -3,7 +3,9 @@ import { ApiClientError } from "@/lib/api-client";
 import { resolveMyGroups } from "./useMyGroups";
 
 describe("resolveMyGroups", () => {
-  const groups = [{ id: "group", name: "グループ", memberCount: 2 }];
+  const groups = [
+    { id: "group", name: "グループ", memberCount: 2, shareProgress: false, shareActivity: true },
+  ];
   const previous = resolveMyGroups(null, "learner", { groups });
 
   it.each([new TypeError("network"), new ApiClientError("unavailable", 503)])(

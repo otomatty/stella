@@ -213,11 +213,16 @@ export const profiles = sqliteTable(
     disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
     weeklyHours: real("weekly_hours").notNull().default(35),
     learningStartDate: text("learning_start_date"),
+    hideGroupActivity: integer("hide_group_activity", { mode: "boolean" }).notNull().default(false),
     /** 教材の OS 別ブロック (07 §11) で既定に開く OS。null は端末から推定する。 */
     osPreference: text("os_preference", { enum: ["windows", "macos"] }),
     createdAt: tsNow("created_at"),
   },
   (t) => ({
+    hideGroupActivityCheck: check(
+      "profiles_hide_group_activity_check",
+      sql`${t.hideGroupActivity} IN (0, 1)`,
+    ),
     emailUnique: uniqueIndex("profiles_email_uq").on(t.email),
     tenantIdentity: uniqueIndex("profiles_tenant_id_uq").on(t.tenantId, t.id),
   }),
@@ -1564,6 +1569,7 @@ export const notifications = sqliteTable("notifications", {
       "lesson_comment",
       "lesson_comment_reply",
       "lesson_comment_mention",
+      "group_reactions",
     ],
   }).notNull(),
   title: text("title").notNull().default(""),
@@ -2116,6 +2122,7 @@ export const groups = sqliteTable(
     clientId: text("client_id").references(() => integrationClients.id, { onDelete: "cascade" }),
     externalKey: text("external_key"),
     shareProgress: integer("share_progress", { mode: "boolean" }).notNull().default(false),
+    shareActivity: integer("share_activity", { mode: "boolean" }).notNull().default(false),
     createdBy: text("created_by").references(() => profiles.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     createdAt: tsNow("created_at"),
@@ -2132,6 +2139,7 @@ export const groups = sqliteTable(
       sql`length(${t.externalKey}) BETWEEN 1 AND 100 AND ${t.externalKey} NOT GLOB '*[^A-Za-z0-9:_-]*'`,
     ),
     check("groups_share_progress_check", sql`${t.shareProgress} IN (0, 1)`),
+    check("groups_share_activity_check", sql`${t.shareActivity} IN (0, 1)`),
   ],
 );
 export const groupMembers = sqliteTable(
@@ -2171,6 +2179,37 @@ export const groupStages = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.groupId, t.stageId] }),
     check("group_stages_exempt_check", sql`${t.exempt} IN (0, 1)`),
+  ],
+);
+
+export const groupActivityReactions = sqliteTable(
+  "group_activity_reactions",
+  {
+    groupId: text("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["stage_start", "stage_clear", "task_pass", "ahead"] }).notNull(),
+    targetProfileId: text("target_profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    ref: text("ref").notNull(),
+    fromProfileId: text("from_profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+    createdAt: ts("created_at").notNull(),
+  },
+  (t) => [
+    primaryKey({
+      columns: [t.groupId, t.kind, t.targetProfileId, t.ref, t.fromProfileId, t.emoji],
+    }),
+    // プロフィール削除時の CASCADE が target_profile_id で引く。
+    index("group_activity_reactions_target_created").on(t.targetProfileId, t.createdAt),
+    index("group_activity_reactions_created").on(t.createdAt),
+    check(
+      "group_activity_reactions_kind_check",
+      sql`${t.kind} IN ('stage_start', 'stage_clear', 'task_pass', 'ahead')`,
+    ),
   ],
 );
 

@@ -29,6 +29,7 @@ import { onboardingRoute } from "./routes/onboarding.js";
 import { learningPaceRoute } from "./routes/learning-pace.js";
 import { notifyPaceDelays } from "./lib/learning-pace.js";
 import { notifyStumbles } from "./lib/stumble-alerts.js";
+import { notifyGroupReactionDigests } from "./lib/group-reaction-digest.js";
 import { runMentorMemoCron } from "./lib/mentor-memo.js";
 import { mentorMemosRoute } from "./routes/mentor-memos.js";
 import { notificationsRoute } from "./routes/notifications.js";
@@ -136,6 +137,11 @@ export default {
     ctx.waitUntil(
       notifyStumbles(getDb(env)).catch((e) => {
         console.error("[cron] stumble notification failed", e);
+      }),
+    );
+    ctx.waitUntil(
+      notifyGroupReactionDigests(getDb(env)).catch((e) => {
+        console.error("[cron] group reaction digest failed", e);
       }),
     );
     // 週次の育成メモ。前の週のぶんを積み、数件ずつ書く (受講者が待たないので急がない)。

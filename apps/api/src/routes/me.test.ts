@@ -96,3 +96,23 @@ describe("GET /api/me の古いタブ向け", () => {
     expect((await write({ display_name: "書き換え" })).status).toBe(200);
   });
 });
+
+describe("節目の非表示設定 (hide_group_activity)", () => {
+  it("既定はオフで、真偽値で切り替えられる", async () => {
+    expect((await get()).profile.hide_group_activity).toBe(false);
+    const res = await write({ hide_group_activity: true });
+    expect(res.status).toBe(200);
+    expect(
+      (await json<{ profile: Record<string, unknown> }>(res)).profile.hide_group_activity,
+    ).toBe(true);
+    expect((await write({ display_name: "新しい名前" })).status).toBe(200);
+    expect((await get()).profile.hide_group_activity).toBe(true);
+    expect((await write({ hide_group_activity: false })).status).toBe(200);
+    expect((await get()).profile.hide_group_activity).toBe(false);
+  });
+
+  it.each([null, "true", 1])("真偽値でない値 (%j) を拒む", async (value) => {
+    expect((await write({ hide_group_activity: value })).status).toBe(400);
+    expect((await get()).profile.hide_group_activity).toBe(false);
+  });
+});

@@ -1,16 +1,20 @@
+import { isGroupReactionEmoji } from "@stella/shared/groups/reactions";
 import type { GroupPeerProgress, LearnerGroup } from "@stella/shared/groups/types";
 import { stageProgressPercent } from "@stella/shared/progress/stage-progress";
-import {
-  isRevealOneAtATimeIsland,
-  parentSlugOf,
-  type SkillMapStage,
-} from "@stella/shared/skill-map/evaluate";
+import { parentSlugOf, type SkillMapStage } from "@stella/shared/skill-map/evaluate";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Db } from "../db/client.js";
 import type { Env } from "../env.js";
 import { ApiError, errorResponse, getCaller } from "../lib/authz.js";
 import { chunk, D1_MAX_BOUND_PARAMS } from "../lib/enrollment-bulk.js";
+import {
+  loadGroupTimeline,
+  peerStageVisible,
+  readTimelineCursor,
+  requireTimelineGroup,
+  updateTimelineReaction,
+} from "../lib/group-timeline.js";
 import { learnerOnly } from "../lib/learner-scope.js";
 import {
   isProblemTaskOverviewLesson,
@@ -30,18 +34,32 @@ groupsRoute.use("/api/groups/*", async (c, next) => {
 groupsRoute.get("/api/groups/mine", async (c) => {
   const { caller, db } = await getCaller(c);
   if (caller.role !== "student") throw new ApiError("権限がありません", 403);
-  const groups = await db.all<LearnerGroup>(sql`
-    select g.id, g.name, count(p.id) memberCount
+  const rows = await db.all<
+    Omit<LearnerGroup, "shareProgress" | "shareActivity"> & {
+      shareProgress: 0 | 1;
+      shareActivity: 0 | 1;
+    }
+  >(sql`
+    select g.id, g.name, count(p.id) memberCount,
+      g.share_progress shareProgress, g.share_activity shareActivity
     from group_members mine
     join groups g on g.id = mine.group_id
     join group_members m on m.group_id = g.id
     join profiles p on p.id = m.profile_id
-    where mine.profile_id = ${caller.id} and g.share_progress = 1
+    where mine.profile_id = ${caller.id} and (g.share_progress = 1 or g.share_activity = 1)
       and p.disabled = 0 and ${learnerOnly(sql`p.id`)}
     group by g.id
     order by g.name, g.id
   `);
-  return c.json({ groups });
+  return c.json({
+    groups: rows.map(
+      (row): LearnerGroup => ({
+        ...row,
+        shareProgress: row.shareProgress === 1,
+        shareActivity: row.shareActivity === 1,
+      }),
+    ),
+  });
 });
 
 interface PeerProgressRow {
@@ -62,19 +80,6 @@ interface StageActivity {
   percent: number;
   cleared: boolean;
   started: boolean;
-}
-
-/** 修了・受講中・始められる星だけ。段階表示の島はスキルツリーの full に合わせる。 */
-function peerStageVisible(
-  stage: SkillMapStage,
-  evaluated: ReturnType<typeof evaluateSkillMapFor>,
-): boolean {
-  const state = evaluated.states.get(stage.id);
-  if (state !== "cleared" && state !== "active" && state !== "unlocked") return false;
-  if (isRevealOneAtATimeIsland(stage.category)) {
-    return evaluated.visibility.get(stage.id) === "full";
-  }
-  return true;
 }
 
 /** 見えるステージを、親が先・同じ段は題名順に並べる。 */
@@ -277,4 +282,40 @@ groupsRoute.get("/api/groups/:id/peers", async (c) => {
   const visibleIds = new Set(visible.map((stage) => stage.id));
   const hiddenIds = new Set([...publishedIds].filter((id) => !visibleIds.has(id)));
   return c.json(buildPeerProgress(rows, caller.id, visible, hiddenIds) satisfies GroupPeerProgress);
+});
+
+groupsRoute.get("/api/groups/:id/timeline", async (c) => {
+  const { caller, db } = await getCaller(c);
+  if (caller.role !== "student") throw new ApiError("権限がありません", 403);
+  const group = await requireTimelineGroup(db, c.req.param("id"), caller.id);
+  return c.json(
+    await loadGroupTimeline(db, caller, group, readTimelineCursor(c.req.query("cursor"))),
+  );
+});
+
+groupsRoute.on(["POST", "DELETE"], "/api/groups/:id/timeline/reactions", async (c) => {
+  const { caller, db } = await getCaller(c);
+  if (caller.role !== "student") throw new ApiError("権限がありません", 403);
+  const group = await requireTimelineGroup(db, c.req.param("id"), caller.id);
+  const remove = c.req.method === "DELETE";
+  const query = c.req.query();
+  const input: unknown =
+    remove && ("key" in query || "emoji" in query) ? query : await c.req.json().catch(() => null);
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    !("emoji" in input) ||
+    !isGroupReactionEmoji(input.emoji)
+  )
+    throw new ApiError("絵文字を一覧から選んでください", 400);
+  if (!("key" in input) || typeof input.key !== "string") throw new ApiError("Not found", 404);
+  const reactions = await updateTimelineReaction(
+    db,
+    caller,
+    group.id,
+    input.key,
+    input.emoji,
+    remove,
+  );
+  return c.json({ reactions });
 });

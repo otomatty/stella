@@ -41,6 +41,7 @@ const PROFILE_COLS = {
   weekly_hours: profiles.weeklyHours,
   learning_start_date: profiles.learningStartDate,
   os_preference: profiles.osPreference,
+  hide_group_activity: profiles.hideGroupActivity,
 } as const;
 
 meRoute.get("/api/me", async (c) => {
@@ -92,6 +93,11 @@ meRoute.post("/api/me", async (c) => {
         initials: displayName.slice(0, 2).toUpperCase(),
         nameSource: "user",
       });
+    }
+    if ("hide_group_activity" in body) {
+      if (typeof body.hide_group_activity !== "boolean")
+        throw new ApiError("hide_group_activity は真偽値で指定してください", 400);
+      update.hideGroupActivity = body.hide_group_activity;
     }
     if ("os_preference" in body) {
       try {

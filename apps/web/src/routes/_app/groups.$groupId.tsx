@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } fr
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { GroupPeerProgress } from "@stella/shared/groups/types";
 import { AccessDeniedScreen } from "@/components/common/AccessDeniedScreen";
+import { GroupTimeline } from "@/components/learner/GroupTimeline";
 import { useAppShell } from "@/components/shell/app-shell-context";
 import { RoleGuard } from "@/components/shell/RoleGuard";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/api-client";
 import {
   peerHiddenBubble,
@@ -26,43 +27,55 @@ export const Route = createFileRoute("/_app/groups/$groupId")({
 function GroupProgressPage() {
   const { groupId } = Route.useParams();
   const { backendEnabled, currentUserId, myGroups, profileRole } = useAppShell();
-  const unavailable =
-    (myGroups.status === "ready" && !myGroups.groups.some((group) => group.id === groupId)) ||
-    (myGroups.status === "error" && myGroups.accessDenied);
   if (profileRole === "admin") return <AccessDeniedScreen allow={["learner"]} />;
+  const group =
+    myGroups.status === "ready" ? myGroups.groups.find((group) => group.id === groupId) : undefined;
   const showBackLink = !(myGroups.status === "ready" && myGroups.groups.length === 1);
+  const unavailable = !backendEnabled || currentUserId === null || profileRole !== "student";
 
   return (
     <RoleGuard allow={["learner"]}>
-      <GroupProgress
-        key={JSON.stringify([currentUserId, groupId])}
-        groupId={groupId}
-        enabled={
-          backendEnabled && currentUserId !== null && profileRole === "student" && !unavailable
-        }
-        showBackLink={showBackLink}
-      />
+      <div className="mx-auto min-w-0 max-w-6xl space-y-5">
+        {showBackLink && (
+          <Link
+            to="/groups"
+            className="inline-flex min-h-11 items-center text-sm text-brand underline"
+          >
+            グループ一覧に戻る
+          </Link>
+        )}
+        <header>
+          <h1 className="break-words text-2xl font-bold">{group?.name ?? "グループ"}</h1>
+        </header>
+        {!unavailable && group ? (
+          <div className="space-y-6" key={JSON.stringify([currentUserId, groupId])}>
+            {group.shareProgress && (
+              <section className="space-y-3" aria-label="仲間の進捗">
+                {group.shareActivity && <h2 className="text-lg font-semibold">仲間の進捗</h2>}
+                <GroupProgress groupId={groupId} />
+              </section>
+            )}
+            {group.shareActivity && <GroupTimeline groupId={groupId} />}
+          </div>
+        ) : !unavailable && myGroups.status === "loading" ? (
+          <SkeletonRows />
+        ) : (
+          <p role="alert">
+            {!unavailable && myGroups.status === "error" && !myGroups.accessDenied
+              ? "グループを読み込めませんでした"
+              : "このグループは表示できません"}
+          </p>
+        )}
+      </div>
     </RoleGuard>
   );
 }
 
 type PeerResult = { data: GroupPeerProgress } | { error: string };
 
-function GroupProgress({
-  groupId,
-  enabled,
-  showBackLink,
-}: {
-  groupId: string;
-  enabled: boolean;
-  showBackLink: boolean;
-}) {
+function GroupProgress({ groupId }: { groupId: string }) {
   const [result, setResult] = useState<PeerResult | null>(null);
   useEffect(() => {
-    if (!enabled) {
-      setResult(null);
-      return;
-    }
     let request: AbortController | undefined;
     const load = () => {
       request?.abort();
@@ -91,34 +104,11 @@ function GroupProgress({
       window.removeEventListener("focus", load);
       request?.abort();
     };
-  }, [enabled, groupId]);
+  }, [groupId]);
 
-  const progress = enabled && result && "data" in result ? result.data : null;
-  const error = enabled
-    ? result && "error" in result && result.error
-    : "このグループは表示できません";
-  return (
-    <div className="mx-auto min-w-0 max-w-6xl space-y-5">
-      {showBackLink ? (
-        <Link
-          to="/groups"
-          className="inline-flex min-h-11 items-center text-sm text-brand underline"
-        >
-          グループ一覧に戻る
-        </Link>
-      ) : null}
-      <header>
-        <h1 className="break-words text-2xl font-bold">{progress?.group.name ?? "グループ"}</h1>
-      </header>
-      {progress ? (
-        <PeerBands progress={progress} />
-      ) : error ? (
-        <p role="alert">{error}</p>
-      ) : (
-        <PeerBandsSkeleton />
-      )}
-    </div>
-  );
+  if (!result) return <PeerBandsSkeleton />;
+  if ("error" in result) return <p role="alert">{result.error}</p>;
+  return <PeerBands progress={result.data} />;
 }
 
 function PeerBandsSkeleton() {
@@ -222,7 +212,7 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
   const segmentsWidth = 24 * stages.length + (hasHiddenStages ? 16 : 0);
   return (
     <div className="space-y-4">
-      <section aria-label="仲間の進捗" className="overflow-x-auto p-1 [container-type:inline-size]">
+      <div className="overflow-x-auto p-1 [container-type:inline-size]">
         <div
           className="min-w-[calc(var(--band-width)+26px)] space-y-2 [--band-gap:3px] sm:min-w-[calc(var(--band-width)+450px)] sm:[--band-gap:4px]"
           style={
@@ -282,7 +272,7 @@ function PeerBands({ progress }: { progress: GroupPeerProgress }) {
             })}
           </ul>
         </div>
-      </section>
+      </div>
       <PeerLegend hasHiddenStages={hasHiddenStages} />
     </div>
   );

@@ -4,32 +4,21 @@ import { expect, it } from "vitest";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import type { Env } from "../env.js";
 import { getDb } from "./client.js";
-import {
-  profiles,
-  stages,
-  sections,
-  tasks,
-  enrollments,
-  submissions,
-  integrationClients,
-} from "./schema.js";
+import { stages, sections, tasks, enrollments, submissions, integrationClients } from "./schema.js";
 
 it.each([true, false])(
   "0080 はグループの人だけ過去分を移し、個人の削除時に消す (グループあり: %s)",
   async (hasGroup) => {
     const fixture = sqliteD1({ beforeMigration: "0080_integration_events" });
     try {
-      fixture.sqlite.exec(
-        "INSERT INTO tenants(id,name,active_count,active,created_at,updated_at) VALUES ('ses','fixture',0,1,1,1)",
-      );
+      fixture.sqlite.exec(`
+        INSERT INTO tenants (id, name, active_count, active, created_at, updated_at)
+          VALUES ('ses', 'fixture', 0, 1, 1, 1);
+        INSERT INTO profiles (id, tenant_id, email, display_name, created_at)
+          VALUES ('fixture-user', 'ses', 'fixture-user@example.test', 'fixture-user', 1),
+                 ('outside', 'ses', 'outside@example.test', 'outside', 1);
+      `);
       const db = getDb({ DB: fixture.binding } as Env);
-      await db.insert(profiles).values(
-        ["fixture-user", "outside"].map((id) => ({
-          id,
-          email: `${id}@example.test`,
-          displayName: id,
-        })),
-      );
       if (hasGroup) {
         await db.insert(integrationClients).values({
           id: "client",
@@ -224,12 +213,12 @@ it.each([true, false])(
       fixture.sqlite.exec("delete from profiles where id='fixture-user'");
       expect(fixture.sqlite.prepare("select count(*) n from integration_events").get()?.n).toBe(0);
       if (hasGroup) {
-        await db
-          .insert(profiles)
-          .values({ id: "next-user", email: "next@example.test", displayName: "fixture" });
-        fixture.sqlite.exec(
-          "INSERT INTO integration_group_members (group_id, profile_id, joined_at) VALUES ('group', 'next-user', 1)",
-        );
+        fixture.sqlite.exec(`
+          INSERT INTO profiles (id, tenant_id, email, display_name, created_at)
+            VALUES ('next-user', 'ses', 'next@example.test', 'fixture', 1);
+          INSERT INTO integration_group_members (group_id, profile_id, joined_at)
+            VALUES ('group', 'next-user', 1);
+        `);
         await db
           .insert(enrollments)
           .values({ userId: "next-user", stageId: "fixture-stage", enrolledAt: new Date(1000) });

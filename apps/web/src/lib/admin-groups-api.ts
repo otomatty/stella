@@ -11,6 +11,7 @@ export interface GroupSummary {
   memberCount: number;
   stageCount: number;
   shareProgress: boolean;
+  shareActivity: boolean;
   updatedAt: string;
 }
 
