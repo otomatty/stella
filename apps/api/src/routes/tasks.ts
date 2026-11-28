@@ -46,6 +46,7 @@ import { loadStageStepLocks, PROBLEM_STEPS_NOT_READY } from "../lib/task-problem
 import { loadTaskRefs } from "../lib/task-refs.js";
 import { autoCompleteStagesIfMet } from "../lib/stage-auto-complete.js";
 import { clientIp } from "../lib/audit.js";
+import { stageTaskState } from "../lib/task-completion.js";
 import { localRunUpsert } from "../lib/task-support.js";
 
 export const tasksRoute = new Hono<{ Bindings: Env }>();
@@ -111,10 +112,7 @@ async function stageTaskList(
     const result: (TaskSummary & { problems_total?: number; problems_passed?: number })[] =
       rows.map(({ contentHash, ...task }) => {
         const p = progressByTaskId.get(task.id);
-        const status =
-          p && (p.contentHash === contentHash || ["passed", "ai-passed"].includes(p.status))
-            ? p.status
-            : "not-started";
+        const status = stageTaskState(contentHash, p);
         const base = {
           ...task,
           kind: task.kind as TaskKind,

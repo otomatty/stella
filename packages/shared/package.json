@@ -15,6 +15,7 @@
     "./cms/certificate-achievement": "./src/cms/certificate-achievement.ts",
     "./cms/types": "./src/cms/types.ts",
     "./quiz/shuffle": "./src/quiz/shuffle.ts",
+    "./admin/user-status": "./src/admin/user-status.ts",
     "./admin/types": "./src/admin/types.ts",
     "./admin/parse-invite-csv": "./src/admin/parse-invite-csv.ts",
     "./admin/reports": "./src/admin/reports.ts",

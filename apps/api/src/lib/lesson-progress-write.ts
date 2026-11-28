@@ -35,6 +35,12 @@ const STAGE_LOOKUP_ROWS_PER_QUERY = 90;
  * (ロック取得・再判定・発行・監査・通知・解放) がかかる。発行は最大 15 ステージ。
  */
 const AUTO_COMPLETION_QUERY_BUDGET = 275;
+/**
+ * 受付上限は 1 リクエスト 600 行。クライアントの進捗ストアが flush 時に同じ値で
+ * 分割送信するため、正本は `@stella/shared/study/progress-sync` に置く。
+ * 日別ログ・進捗 upsert・ステージ解決・修了の自動判定・認証に必要な文を先に確保する
+ * (`planLessonProgressWrites` のクエリ収支を参照)。
+ */
 export { MAX_PROGRESS_SYNC_ROWS };
 
 export function assertProgressSyncSize(count: number): void {
@@ -98,6 +104,7 @@ export async function loadCompletedProblemSteps(
   const rows = await db.all<{
     userId: string;
     lessonId: string | null;
+    stageId: string | null;
     taskId: string;
     problemId: string;
     contentHash: string;
@@ -108,12 +115,13 @@ export async function loadCompletedProblemSteps(
     path: string;
     code: string;
   }>(sql`
-    select r.user_id userId, p.id lessonId, r.task_id taskId, r.problem_id problemId,
+    select r.user_id userId, p.id lessonId, s.stage_id stageId, r.task_id taskId, r.problem_id problemId,
       r.content_hash contentHash, t.content_hash currentHash, tp.status, r.updated_at updatedAt,
       r.source, r.path, r.code
     from task_problem_results r
     join tasks t on t.id = r.task_id
     left join lessons p on p.problem_task_id = r.task_id and p.problem_id = r.problem_id
+    left join sections s on s.id = p.section_id
     left join task_progress tp on tp.task_id = r.task_id and tp.user_id = r.user_id
     where r.user_id in (select value from json_each(${JSON.stringify(userIds)}))
       and r.task_id in (select scope.problem_task_id from lessons scope

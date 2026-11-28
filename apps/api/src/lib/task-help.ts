@@ -17,7 +17,7 @@
  *   固定した開始点 (`task_fixed_start_uses` → `withRecordedFixedStart`) と同じ形にそろえている。
  */
 
-import { and, asc, count, desc, eq, lte } from "drizzle-orm";
+import { type SQL, and, asc, count, desc, eq, lte } from "drizzle-orm";
 import type { TaskStatus } from "@stella/shared/tasks/catalog";
 import {
   countHelpAttempts,
@@ -57,7 +57,7 @@ import { canAccessTask } from "./task-access.js";
 type Scope = { userId: string; taskId: string };
 
 /** 受講者がこの課題で開いた記録 (本人と課題で絞る)。 */
-export function helpOpensOf(scope: Scope) {
+export function helpOpensOf(scope: { userId: string | SQL; taskId: string | SQL }) {
   return and(eq(taskHelpOpens.userId, scope.userId), eq(taskHelpOpens.taskId, scope.taskId));
 }
 

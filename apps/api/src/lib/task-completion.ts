@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   loadProblemRevisionHashes,
@@ -45,48 +45,59 @@ export async function taskCompletionCounts(db: Db, stageId: string, userIds: str
 }
 
 /**
- * 1 受講者 × 複数ステージの課題の数と合格の数 (進捗の表示用)。
+ * 受講登録、または 1 人分の指定ステージについて、進捗表示の課題総数と合格数を集計する。
  *
- * 数え方は `taskCompletionCounts` (修了の判定) と同じ — 合格 (`passed` / `ai-passed`) だけを数え、
- * 予備の類題は分母にも分子にも入れない。進捗の 100% と星のクリアを食い違わせないため。
- * 課題の無いステージは返さない (呼び出し側は 0 件として扱う)。
+ * 進捗の 100% と星のクリアを食い違わせないよう、修了を判定する `taskCompletionCounts` と
+ * 同じ条件で数える。有効な通常課題だけを分母に入れ、予備の類題 (#39) は分母にも分子にも
+ * 入れない。分子には確定した合格 (`passed` / `ai-passed`) を数え、教材更新後も保持する。
+ * 手元の合格は分子に入れない。課題のない組は返さない (呼び出し側では 0 件として扱う)。
+ */
+export async function taskCountsByUserStage(
+  db: Db,
+  scope: { userIds: readonly string[] } | { userId: string; stageIds: readonly string[] },
+) {
+  const pairs =
+    "userIds" in scope
+      ? sql`select user_id, stage_id from enrollments
+          where user_id in (select value from json_each(${JSON.stringify(scope.userIds)}))
+          and status in ('active', 'completed')`
+      : sql`select ${scope.userId} user_id, value stage_id
+          from json_each(${JSON.stringify([...new Set(scope.stageIds)])})`;
+  return db.all<{ userId: string; stageId: string; total: number; passed: number }>(sql`
+    with user_stages as (${pairs})
+    select us.user_id userId, us.stage_id stageId, count(*) total, count(p.task_id) passed
+    from user_stages us
+    join sections s on s.stage_id = us.stage_id
+    join tasks t on t.section_id = s.id and t.active = 1 and t.variant_of is null
+    left join task_progress p on p.task_id = t.id and p.user_id = us.user_id
+      and p.status in ('passed', 'ai-passed')
+    group by us.user_id, us.stage_id
+  `);
+}
+
+/**
+ * 1 受講者 × 複数ステージの進捗表示に使う課題総数と合格数。
+ * `taskCountsByUserStage` を使い、修了判定に合わせた数をステージ ID ごとに返す。
+ * 課題のないステージは呼び出し側で 0 件として扱う。
  */
 export async function taskCountsForUser(
   db: Db,
   userId: string,
   stageIds: readonly string[],
 ): Promise<Map<string, { total: number; passed: number }>> {
-  const out = new Map<string, { total: number; passed: number }>();
-  for (const ids of chunk([...new Set(stageIds)], 90)) {
-    const totals = await db
-      .select({ stageId: sections.stageId, total: count() })
-      .from(tasks)
-      .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .where(and(inArray(sections.stageId, ids), eq(tasks.active, true), isNull(tasks.variantOf)))
-      .groupBy(sections.stageId);
-    for (const row of totals) out.set(row.stageId, { total: row.total, passed: 0 });
-    if (totals.length === 0) continue;
-    const passed = await db
-      .select({ stageId: sections.stageId, passed: count() })
-      .from(taskProgress)
-      .innerJoin(tasks, eq(tasks.id, taskProgress.taskId))
-      .innerJoin(sections, eq(sections.id, tasks.sectionId))
-      .where(
-        and(
-          eq(taskProgress.userId, userId),
-          inArray(sections.stageId, ids),
-          eq(tasks.active, true),
-          isNull(tasks.variantOf),
-          inArray(taskProgress.status, ["passed", "ai-passed"]),
-        ),
-      )
-      .groupBy(sections.stageId);
-    for (const row of passed) {
-      const entry = out.get(row.stageId);
-      if (entry) entry.passed = row.passed;
-    }
-  }
-  return out;
+  if (stageIds.length === 0) return new Map();
+  const rows = await taskCountsByUserStage(db, { userId, stageIds });
+  return new Map(rows.map(({ stageId, total, passed }) => [stageId, { total, passed }]));
+}
+
+export function stageTaskState(
+  contentHash: string,
+  progress: Pick<typeof taskProgress.$inferSelect, "status" | "contentHash"> | null | undefined,
+) {
+  return progress &&
+    (progress.contentHash === contentHash || ["passed", "ai-passed"].includes(progress.status))
+    ? progress.status
+    : "not-started";
 }
 
 /** 進捗として数えている現行の問題と、残っている手動合格の数。日々の活動とは区別する。 */

@@ -28,6 +28,7 @@ import {
   isDevMode,
   loadFocusCompletions,
   loadSkillProfileCounts,
+  loadSkillProfileCountsByUser,
   isUsableFocus,
   loadClearedStageIds,
   loadClearedStageIdsByUser,
@@ -503,6 +504,18 @@ describe("スキルプロフィールの問題レッスン (実 SQLite)", () => 
         }),
         db.insert(lessonProgress).values({ userId: "learner", lessonId: "video", completed: true }),
       ]);
+      const staff = { ...caller, id: "staff", role: "admin" as const };
+      await db.insert(profiles).values({ id: staff.id, displayName: "管理者", role: staff.role });
+      await db.insert(lessonProgress).values([
+        { userId: staff.id, lessonId: "problem", completed: true },
+        { userId: staff.id, lessonId: "video", completed: true },
+      ]);
+      const counts = await loadSkillProfileCountsByUser(db, [caller.id, staff.id]);
+      expect(counts.get(caller.id)).toEqual(await loadSkillProfileCounts(db, caller));
+      expect(counts.get(staff.id)).toEqual(await loadSkillProfileCounts(db, staff));
+      expect(counts.get(caller.id)?.completedLessons).toBe(2);
+      expect(counts.get(staff.id)?.completedLessons).toBe(1);
+
       const xpOf = async () => {
         const counts = await loadSkillProfileCounts(db, caller);
         return computeXp(counts);

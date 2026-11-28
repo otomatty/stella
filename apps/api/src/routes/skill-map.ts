@@ -58,7 +58,7 @@ import type {
   SkillMapVisibility,
 } from "@stella/shared/skill-map/evaluate";
 import { computeFocusBonus } from "@stella/shared/skill-map/focus";
-import { computeXp, levelProgress } from "@stella/shared/skill-map/xp";
+import { computeXp } from "@stella/shared/skill-map/xp";
 import {
   addStudyDays,
   computeStreaks,
@@ -89,6 +89,7 @@ import {
   wantsDevReveal,
 } from "../lib/skill-map-data.js";
 import type { SkillMapSource, StaffSkillMapStageRow } from "../lib/skill-map-data.js";
+import { skillProfileView, STREAK_LOOKBACK_DAYS } from "../lib/skill-profile.js";
 import { loadStageContentSummaries } from "../lib/stage-content-summary.js";
 import type { StageContentSummary } from "../lib/stage-content-summary.js";
 import type { Env } from "../env.js";
@@ -109,9 +110,6 @@ export function evaluateSkillMapFor(source: SkillMapSource) {
     ...(source.unlockedStageIds ? { unlockedStageIds: source.unlockedStageIds } : {}),
   });
 }
-
-/** ストリーク算出のために遡る日数 (`/api/study-activity/mine` と同じ)。 */
-const STREAK_LOOKBACK_DAYS = 365;
 
 /**
  * 集中ボーナスの連続日数を数えるために遡る日数。
@@ -940,38 +938,13 @@ skillMapRoute.get("/api/skill-profile/mine", async (c) => {
     // 同じ教材を何度合格しても 1 回ぶん。
     const passedDiscoveries = await loadPassedDiscoveryCount(db, caller);
     const xp = computeXp({ ...counts, passedDiscoveries });
-    const progress = levelProgress(xp.total);
 
     const today = toStudyDate(new Date());
     const days = await loadStudyDays(db, caller, addStudyDays(today, -(STREAK_LOOKBACK_DAYS - 1)));
     const streaks = computeStreaks(days, today);
 
     return c.json({
-      skill_profile: {
-        xp: {
-          total: xp.total,
-          completed_lessons: xp.completedLessons,
-          passed_quizzes: xp.passedQuizzes,
-          cleared_stages: xp.clearedStages,
-          passed_discoveries: xp.passedDiscoveries,
-          from_lessons: xp.fromLessons,
-          from_quizzes: xp.fromQuizzes,
-          from_stages: xp.fromStages,
-          from_discoveries: xp.fromDiscoveries,
-        },
-        level: {
-          level: progress.level,
-          xp_into_level: progress.xpIntoLevel,
-          xp_to_next_level: progress.xpToNextLevel,
-          next_level_at: progress.nextLevelAt,
-        },
-        streak: {
-          current: streaks.current,
-          longest: streaks.longest,
-          today,
-        },
-        generated_at: new Date().toISOString(),
-      },
+      skill_profile: skillProfileView(xp, { ...streaks, today }),
     });
   } catch (err) {
     return errorResponse(c, err);

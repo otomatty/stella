@@ -679,40 +679,76 @@ export interface SkillProfileCounts {
 }
 
 /** XP の材料 (完了レッスン数 / 合格クイズ数 / クリアステージ数)。 */
-export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<SkillProfileCounts> {
-  // 問題のレッスンは提出が正本。lesson_progress に写しが残っていても、ここでは数えない。
-  // 通常のレッスンは DB で数え、問題のレッスンは提出から一意な件数だけを足す。
-  const [lessonCount] = await db
-    .select({ n: count() })
-    .from(lessonProgress)
-    .leftJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
-    .where(
-      and(
-        eq(lessonProgress.userId, caller.id),
-        eq(lessonProgress.completed, true),
-        isNull(lessons.problemId),
-        sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
-      ),
-    );
-  const problemLessonIds = new Set(
-    (await loadCompletedProblemSteps(db, [caller.id])).map((step) => step.lessonId),
+export async function loadSkillProfileCountsByUser(
+  db: Db,
+  userIds: readonly string[],
+  completedProblemSteps?: readonly { userId: string; lessonId: string }[],
+): Promise<Map<string, SkillProfileCounts>> {
+  const ids = [...new Set(userIds)];
+  const byUser = new Map<string, SkillProfileCounts>(
+    ids.map((id) => [id, { completedLessons: 0, passedQuizzes: 0, clearedStages: 0 }]),
   );
-  const passedOverviews = await loadPassedOverviewLessons(db, [caller.id], undefined, {
-    excludeManualOnly: true,
-  });
-  const completedLessons =
-    Number(lessonCount?.n ?? 0) + problemLessonIds.size + passedOverviews.length;
-  // クイズは「合格した設問セットの数」。同じクイズに何度合格しても 1 回ぶん。
-  const quizRows = await db
-    .select({ n: countDistinct(quizAttempts.quizId) })
-    .from(quizAttempts)
-    .where(and(eq(quizAttempts.userId, caller.id), eq(quizAttempts.passed, true)));
-  const clearedStageIds = await loadClearedStageIds(db, caller);
-  return {
-    completedLessons,
-    passedQuizzes: Number(quizRows[0]?.n ?? 0),
-    clearedStages: clearedStageIds.size,
-  };
+  if (ids.length === 0) return byUser;
+
+  const [problemSteps, passedOverviews, clearedByUser] = await Promise.all([
+    completedProblemSteps ?? loadCompletedProblemSteps(db, ids),
+    loadPassedOverviewLessons(db, ids, undefined, { excludeManualOnly: true }),
+    loadClearedStageIdsByUser(db, ids),
+  ]);
+  for (const [id, counts] of byUser) counts.clearedStages = clearedByUser.get(id)?.size ?? 0;
+
+  // 問題のレッスンは提出が正本。通常レッスンの集計では写しを除く。
+  const problemLessons = new Map<string, Set<string>>();
+  for (const step of problemSteps) {
+    const lessons = problemLessons.get(step.userId) ?? new Set<string>();
+    lessons.add(step.lessonId);
+    problemLessons.set(step.userId, lessons);
+  }
+  for (const [id, lessons] of problemLessons) {
+    const entry = byUser.get(id);
+    if (entry) entry.completedLessons += lessons.size;
+  }
+  for (const overview of passedOverviews) {
+    const entry = byUser.get(overview.userId);
+    if (entry) entry.completedLessons++;
+  }
+
+  for (const users of chunk(ids, CLEARED_USER_IDS_PER_QUERY)) {
+    const [lessonRows, quizRows] = await Promise.all([
+      db
+        .select({ userId: lessonProgress.userId, n: count() })
+        .from(lessonProgress)
+        .leftJoin(lessons, eq(lessons.id, lessonProgress.lessonId))
+        .where(
+          and(
+            inArray(lessonProgress.userId, users),
+            eq(lessonProgress.completed, true),
+            isNull(lessons.problemId),
+            sql`not ${isProblemTaskOverviewLesson(sql`lesson_progress.lesson_id`)}`,
+          ),
+        )
+        .groupBy(lessonProgress.userId),
+      db
+        .select({ userId: quizAttempts.userId, n: countDistinct(quizAttempts.quizId) })
+        .from(quizAttempts)
+        .where(and(inArray(quizAttempts.userId, users), eq(quizAttempts.passed, true)))
+        .groupBy(quizAttempts.userId),
+    ]);
+    for (const row of lessonRows) {
+      const entry = byUser.get(row.userId);
+      if (entry) entry.completedLessons += row.n;
+    }
+    for (const row of quizRows) {
+      const entry = byUser.get(row.userId);
+      if (entry) entry.passedQuizzes = row.n;
+    }
+  }
+  return byUser;
+}
+
+export async function loadSkillProfileCounts(db: Db, caller: Caller): Promise<SkillProfileCounts> {
+  const byUser = await loadSkillProfileCountsByUser(db, [caller.id]);
+  return byUser.get(caller.id) ?? { completedLessons: 0, passedQuizzes: 0, clearedStages: 0 };
 }
 
 /** ストリーク要約のための日別ログ (既存の `/api/study-activity/mine` と同じ読み方)。 */

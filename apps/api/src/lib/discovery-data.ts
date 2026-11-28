@@ -372,12 +372,26 @@ export async function loadDiscoveryHistory(
 }
 
 /** 合格した教材の **数** (XP の材料)。同じ教材に何度合格しても 1 つ。 */
-export async function loadPassedDiscoveryCount(db: Db, caller: Caller): Promise<number> {
-  const [row] = await db
-    .select({ n: countDistinct(discoveryAttempts.materialId) })
+export async function loadPassedDiscoveryCountsByUser(
+  db: Db,
+  userIds: readonly string[],
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await db
+    .select({ userId: discoveryAttempts.userId, n: countDistinct(discoveryAttempts.materialId) })
     .from(discoveryAttempts)
-    .where(and(eq(discoveryAttempts.userId, caller.id), eq(discoveryAttempts.passed, true)));
-  return Number(row?.n ?? 0);
+    .where(
+      and(
+        sql`${discoveryAttempts.userId} in (select value from json_each(${JSON.stringify(userIds)}))`,
+        eq(discoveryAttempts.passed, true),
+      ),
+    )
+    .groupBy(discoveryAttempts.userId);
+  return new Map(rows.map(({ userId, n }) => [userId, n]));
+}
+
+export async function loadPassedDiscoveryCount(db: Db, caller: Caller): Promise<number> {
+  return (await loadPassedDiscoveryCountsByUser(db, [caller.id])).get(caller.id) ?? 0;
 }
 
 /** 本人 × 複数教材の合格状況 (一覧に「合格済み」の印を出す)。 */

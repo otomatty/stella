@@ -6,7 +6,8 @@
  *   (`task_help_opens`) を課題ごとに束ねて返す。
  */
 
-import { and, desc, eq, exists, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { READABLE_ENROLLMENT_STATUSES } from "@stella/shared/enrollment/access";
 import type { LocalRunReport } from "@stella/shared/tasks/local-report";
 import type { TaskKind } from "@stella/shared/tasks/manifest";
@@ -100,52 +101,68 @@ export function localRunUpsert(
 }
 
 /**
- * 提出の申告 (`support_log`) と相談の提出のほかに、この提出より前に支援を受けていたか。
- * 同じ課題での講師への相談、固定した開始点の受け取り
- * (この課題の開始点と、この課題の実装を含む後の課題の開始点、#31)、ヒント・解答例・解説を
- * 開いた記録 (#36。合格後に開いたものも、その後の提出には数える) を数える。
- * 人のレビューは数えない — 再提出の指摘を受けて直すのは通常の流れで、支援付きにすると
- * 一度で通らなかった提出がすべて支援付きになるため (03 §7 の「講師による実装指示」とは別)。
+ * 提出までにサーバーに記録された支援を照合する SQL 条件。受講者・課題・提出時刻には
+ * 値か、一覧などで照合する提出行の列を渡す。
+ *
+ * 同じ課題で以前に講師に相談した提出、提出時点までに受け取った固定した開始点 (#31)、
+ * ヒント・解答例・解説を開いた記録 (#36) を数える。固定した開始点には、この課題の開始点に
+ * 加えて、この課題の実装を含む後の課題の開始点も含める。合格後に開いた素材も、
+ * その後の提出には数える。
+ *
+ * 人のレビューは数えない。再提出の指摘を受けて直すのは通常の流れで、数えると一度で
+ * 通らなかった提出がすべて支援付きになるため (03 §7 の「講師による実装指示」とは別)。
+ */
+export function recordedSupportCondition(
+  db: Db,
+  scope: { userId: string | SQL; taskId: string | SQL; submittedAt: Date | SQL },
+) {
+  const consult = alias(submissions, "earlier_consult");
+  return or(
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(taskFixedStartUses)
+        .where(and(fixedStartUsesOf(scope), lte(taskFixedStartUses.usedAt, scope.submittedAt))),
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(taskHelpOpens)
+        .where(and(helpOpensOf(scope), lte(taskHelpOpens.openedAt, scope.submittedAt))),
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(consult)
+        .where(
+          and(
+            eq(consult.studentId, scope.userId),
+            eq(consult.taskId, scope.taskId),
+            eq(consult.submissionMode, "consult"),
+            lt(consult.submittedAt, scope.submittedAt),
+          ),
+        ),
+    ),
+  );
+}
+
+/**
+ * 1 件の提出について、提出の申告 (`support_log`) や相談としての提出に加え、
+ * 以前の支援記録があるかを `recordedSupportCondition` で調べる。
+ * この提出自身の申告と提出モードは `isAssistedSubmission` が別に確認する。
  */
 export async function hasRecordedSupport(
   db: Db,
   row: { studentId: string; taskId: string; submittedAt: Date },
 ): Promise<boolean> {
-  const [fixedStart] = await db
-    .select({ one: sql`1` })
-    .from(taskFixedStartUses)
-    .where(
-      and(
-        fixedStartUsesOf({ userId: row.studentId, taskId: row.taskId }),
-        lte(taskFixedStartUses.usedAt, row.submittedAt),
-      ),
-    )
-    .limit(1);
-  if (fixedStart) return true;
-  const [opened] = await db
-    .select({ one: sql`1` })
-    .from(taskHelpOpens)
-    .where(
-      and(
-        helpOpensOf({ userId: row.studentId, taskId: row.taskId }),
-        lte(taskHelpOpens.openedAt, row.submittedAt),
-      ),
-    )
-    .limit(1);
-  if (opened) return true;
-  const [consulted] = await db
-    .select({ one: sql`1` })
-    .from(submissions)
-    .where(
-      and(
-        eq(submissions.studentId, row.studentId),
-        eq(submissions.taskId, row.taskId),
-        eq(submissions.submissionMode, "consult"),
-        lt(submissions.submittedAt, row.submittedAt),
-      ),
-    )
-    .limit(1);
-  return Boolean(consulted);
+  const found = await db.get(
+    sql`select 1 where ${recordedSupportCondition(db, {
+      userId: row.studentId,
+      taskId: row.taskId,
+      submittedAt: row.submittedAt,
+    })}`,
+  );
+  return Boolean(found);
 }
 
 /**

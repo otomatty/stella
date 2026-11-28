@@ -40,7 +40,21 @@ import {
 import { ciCheckStatusFrom } from "@stella/shared/tasks/ci-run";
 import { addStudyDays, studyDateStartMs } from "@stella/shared/study/activity";
 import { TASK_KIND_LABELS, type TaskKind } from "@stella/shared/tasks/manifest";
-import { and, asc, desc, eq, gte, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { Db } from "../db/client.js";
 import {
@@ -491,6 +505,26 @@ export function submittedRouteReasons(input: {
   if (reasons.length === 0 && isAssessmentKind(input.taskKind ?? ""))
     reasons.push("unallowed-support");
   return reasons;
+}
+
+/** レビュー机の人のキューと同じく、旧形式の判定待ちも含める。 */
+export async function loadPendingHumanReviewsByUser(db: Db, userIds: readonly string[]) {
+  const rows = await db
+    .select({ userId: submissions.studentId, count: count() })
+    .from(submissions)
+    .where(
+      and(
+        sql`${submissions.studentId} in (select value from json_each(${JSON.stringify(userIds)}))`,
+        eq(submissions.status, "pending"),
+        isNull(submissions.verdict),
+        or(
+          isNull(submissions.aiReviewStatus),
+          notInArray(submissions.aiReviewStatus, ["queued", "superseded"]),
+        ),
+      ),
+    )
+    .groupBy(submissions.studentId);
+  return new Map(rows.map((row) => [row.userId, row.count]));
 }
 
 /** staff: しきい値の月次見直しに使う数字。直近 `days` 日の提出・判定を数える。 */

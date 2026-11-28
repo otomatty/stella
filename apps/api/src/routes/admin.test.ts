@@ -6,6 +6,8 @@ import { signAccessToken } from "../lib/auth-jwt.js";
 import { json, mountTestApp, request } from "../testing/route-harness.js";
 import { sqliteD1 } from "../testing/sqlite-d1.js";
 import { adminRoute, updateProfileAsAdmin } from "./admin.js";
+import { skillMapRoute } from "./skill-map.js";
+import { tasksRoute } from "./tasks.js";
 
 describe("ユーザー管理", () => {
   const SECRET = "admin-test-secret";
@@ -23,7 +25,7 @@ describe("ユーザー管理", () => {
         ('taken', 'ses', 'student', '別', 'taken@example.test', 0, 'invite', 2);
     `);
     env = { DB: db.binding, AUTH_JWT_SECRET: SECRET } as Env;
-    app = mountTestApp(env, adminRoute).app;
+    app = mountTestApp(env, adminRoute, skillMapRoute, tasksRoute).app;
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -31,6 +33,315 @@ describe("ユーザー管理", () => {
   });
 
   const token = () => signAccessToken(SECRET, "admin", "admin@example.test");
+
+  describe("ユーザーの学習状況", () => {
+    const overview = "/api/admin/users/overview";
+    const detail = "/api/admin/users/taken";
+    const now = Date.parse("2026-11-27T15:00:00Z");
+    const fetchAdmin = async (path: string) => request(app, env, path, { token: await token() });
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(now);
+    });
+
+    it.each([overview, detail])("受講者は %s を参照できない", async (path) => {
+      const studentToken = await signAccessToken(SECRET, "taken", "taken@example.test");
+      expect((await request(app, env, path, { token: studentToken })).status).toBe(403);
+    });
+
+    it("詳細は存在しないユーザーに 404 を返す", async () => {
+      expect((await fetchAdmin("/api/admin/users/missing")).status).toBe(404);
+    });
+
+    it("既存一覧と同じ集合を groupId で絞り、管理者も一覧に含める", async () => {
+      db.sqlite.exec(`
+        insert into groups (id, name, created_at, updated_at) values ('group', '組', 1, 1);
+        insert into group_members (group_id, profile_id, joined_at) values ('group', 'taken', 1);
+      `);
+      const all = await fetchAdmin(overview);
+      expect(all.status).toBe(200);
+      expect(await json(all)).toMatchObject({
+        rows: [
+          {
+            user_id: "admin",
+            level: { level: 1, xp_total: 0, xp_into_level: 0, xp_to_next_level: 100 },
+            current_stage: null,
+            days: [],
+            last_study_date: null,
+            streak_current: 0,
+            pending_reviews: 0,
+            stumble_signals: [],
+            status: { kind: "admin" },
+          },
+          { user_id: "taken", status: { kind: "ok" } },
+        ],
+      });
+      const old = await json<{ rows: { id: string }[] }>(
+        await fetchAdmin("/api/admin/users?groupId=group"),
+      );
+      const filtered = await json<{ rows: { user_id: string }[] }>(
+        await fetchAdmin(`${overview}?groupId=group`),
+      );
+      expect(old.rows.map((row) => row.id)).toEqual(["taken"]);
+      expect(filtered.rows.map((row) => row.user_id)).toEqual(old.rows.map((row) => row.id));
+      expect(await json(await fetchAdmin(`${overview}?groupId=missing`))).toEqual({ rows: [] });
+    });
+
+    it("100 人を超える一覧でもユーザーごとのクエリを発行せず、バインド上限を守る", async () => {
+      db.sqlite.exec(`
+        with recursive ids(n) as (select 1 union all select n + 1 from ids where n < 101)
+        insert into profiles (id, tenant_id, role, display_name, email, disabled, name_source, created_at)
+        select 'student-' || n, 'ses', 'student', '受講者', n || '@example.test', 0, 'invite', n + 2 from ids;
+      `);
+      const prepare = vi.spyOn(db.binding, "prepare");
+      const res = await fetchAdmin(overview);
+      expect(res.status).toBe(200);
+      expect((await json<{ rows: unknown[] }>(res)).rows).toHaveLength(103);
+      expect(prepare.mock.calls.length).toBeLessThan(40);
+    });
+
+    it("受講中のステージに活動がなければ最後に受講登録したものを返す", async () => {
+      db.sqlite.exec(`
+        insert into stages (id, tenant_id, slug, title, created_at, updated_at)
+          values ('older', 'ses', 'older', '先の登録', 1, 1),
+                 ('newer', 'ses', 'newer', '後の登録', 1, 1);
+        insert into enrollments (id, tenant_id, user_id, stage_id, status, enrolled_at)
+          values ('new', 'ses', 'taken', 'newer', 'active', 20),
+                 ('old', 'ses', 'taken', 'older', 'active', 10);
+      `);
+      const list = await fetchAdmin(overview);
+      expect(list.status).toBe(200);
+      expect(await json(list)).toMatchObject({
+        rows: [
+          { user_id: "admin", current_stage: null },
+          { user_id: "taken", current_stage: { stage_id: "newer", title: "後の登録" } },
+        ],
+      });
+      const res = await fetchAdmin(detail);
+      expect(res.status).toBe(200);
+      expect(await json(res)).toMatchObject({ current_stage: "newer" });
+    });
+
+    it("ストリークは今日を含む365日で数え、それより古い最終学習日は表示する", async () => {
+      db.sqlite.exec(`
+        insert into study_activity
+          (id, tenant_id, user_id, date, watched_sec, completed_lessons, created_at, updated_at)
+          values ('old-admin', 'ses', 'admin', '2025-11-28', 10, 0, 1, 1),
+                 ('before', 'ses', 'taken', '2025-11-28', 10, 0, 1, 1),
+                 ('first', 'ses', 'taken', '2025-11-29', 10, 0, 1, 1),
+                 ('second', 'ses', 'taken', '2025-11-30', 10, 0, 1, 1);
+      `);
+      const list = await fetchAdmin(overview);
+      expect(list.status).toBe(200);
+      expect(await json(list)).toMatchObject({
+        rows: [
+          { user_id: "admin", last_study_date: "2025-11-28", days: [], streak_current: 0 },
+          { user_id: "taken", last_study_date: "2025-11-30", days: [], streak_current: 0 },
+        ],
+      });
+      const res = await fetchAdmin(detail);
+      expect(res.status).toBe(200);
+      expect(await json(res)).toMatchObject({ streak: { current: 0, longest: 2 } });
+    });
+
+    it("一覧と詳細で学習状況を共有し、最新の通知と受講・課題の正本を返す", async () => {
+      db.sqlite.exec(`
+        insert into groups (id, name, created_at, updated_at) values ('group', '組', 1, 1);
+        insert into group_members (group_id, profile_id, joined_at) values ('group', 'taken', 1);
+        insert into auth_users (id, name, email, created_at, updated_at)
+          values ('taken', '別', 'taken@example.test', 1, 1);
+        insert into auth_sessions (id, user_id, token, expires_at, created_at, updated_at)
+          values ('session', 'taken', 'private-token', ${now + 1}, 20, 99),
+                 ('old-session', 'taken', 'old-token', ${now + 1}, 10, 100);
+        insert into auth_vscode_links (id, user_id, code_hash, expires_at, used_at, created_at)
+          values ('link', 'taken', 'private-code', ${now}, 30, 10),
+                 ('unused', 'taken', 'unused-code', ${now}, null, 40);
+        insert into stages (id, tenant_id, slug, title, created_at, updated_at)
+          values ('focus', 'ses', 'focus', 'フォーカス', 1, 1),
+                 ('recent', 'ses', 'recent', '直近', 1, 1),
+                 ('done', 'ses', 'done', '修了', 1, 1);
+        insert into enrollments (id, tenant_id, user_id, stage_id, status, enrolled_at)
+          values ('e1', 'ses', 'taken', 'focus', 'active', 10),
+                 ('e2', 'ses', 'taken', 'recent', 'active', 20),
+                 ('e3', 'ses', 'taken', 'done', 'active', 30);
+        insert into certificates
+          (id, tenant_id, user_id, stage_id, cert_code, issued_at, recipient_name, stage_title, tenant_name)
+          values ('cert', 'ses', 'taken', 'done', 'cert-code', 50, '別', '修了', 'STELLA');
+        insert into learner_focus (user_id, tenant_id, active_stage_id, updated_at)
+          values ('taken', 'ses', 'focus', 1);
+        insert into sections (id, stage_id, title, created_at)
+          values ('unit', 'focus', '単元', 1), ('other-unit', 'recent', '別単元', 1);
+        insert into lessons (id, section_id, title, type, created_at, updated_at)
+          values ('lesson', 'unit', 'レッスン', 'text', 1, 1),
+                 ('other-lesson', 'other-unit', '別レッスン', 'text', 1, 1);
+        insert into lesson_progress (id, tenant_id, user_id, lesson_id, completed, updated_at)
+          values ('p1', 'ses', 'taken', 'lesson', 0, 10),
+                 ('p2', 'ses', 'taken', 'other-lesson', 1, 200);
+        insert into quizzes (id, lesson_id, created_at, updated_at)
+          values ('quiz', 'other-lesson', 1, 1);
+        insert into quiz_attempts (id, tenant_id, quiz_id, user_id, score, max_score, passed, submitted_at)
+          values ('q1', 'ses', 'quiz', 'taken', 1, 1, 1, 100),
+                 ('q2', 'ses', 'quiz', 'taken', 1, 1, 1, 150);
+        insert into discovery_materials (id, tenant_id, stage_id, title, created_at)
+          values ('material', 'ses', 'recent', '発見教材', 1);
+        insert into discovery_attempts
+          (id, tenant_id, user_id, material_id, score, max_score, percent, passed, submitted_at)
+          values ('d1', 'ses', 'taken', 'material', 1, 1, 100, 1, 100),
+                 ('d2', 'ses', 'taken', 'material', 1, 1, 100, 1, 150);
+        insert into tasks
+          (id, section_id, title, kind, pattern, skills, estimated_minutes, "order", content_hash, definition, bundle, variant_of)
+          values ('task', 'unit', '課題', 'basic', 'p', '[]', 10, 0, 'new', '{}', '{}', null),
+                 ('variant', 'unit', '類題', 'basic', 'p', '[]', 10, 1, 'new', '{}', '{}', 'task'),
+                 ('stale', 'unit', '古い版', 'basic', 'p', '[]', 10, 2, 'new', '{}', '{}', null);
+        insert into task_progress (user_id, task_id, status, content_hash, updated_at)
+          values ('taken', 'task', 'passed', 'old', 80),
+                 ('taken', 'stale', 'local-passed', 'old', 80);
+        insert into task_local_runs
+          (user_id, task_id, tenant_id, content_hash, failure_streak, last_outcome, first_run_at, last_run_at)
+          values ('taken', 'stale', 'ses', 'new', 3, 'failed', 4, 7);
+        insert into task_help_opens
+          (tenant_id, user_id, task_id, item, level, content_hash, private_hash, opened_at)
+          values ('ses', 'taken', 'task', 'hint', 1, 'old', 'private', 40);
+        insert into study_activity
+          (id, tenant_id, user_id, date, watched_sec, completed_lessons, created_at, updated_at)
+          values ('today', 'ses', 'taken', '2026-11-28', 120, 0, 1, 1),
+                 ('yesterday', 'ses', 'taken', '2026-11-27', 0, 1, 1, 1),
+                 ('first', 'ses', 'taken', '2026-11-01', 10, 0, 1, 1),
+                 ('old', 'ses', 'taken', '2026-10-31', 10, 0, 1, 1),
+                 ('zero', 'ses', 'taken', '2026-11-26', 0, 0, 1, 1),
+                 ('future', 'ses', 'taken', '2026-11-29', 900, 0, 1, 1);
+        insert into submissions
+          (id, tenant_id, student_id, stage_title, assignment_title, code, submitted_at, task_id,
+           task_content_hash, status, verdict, ai_review_status)
+          values ('pass', 'ses', 'taken', 'フォーカス', '課題', 'SECRET_CODE', 50, 'task',
+                    'old', 'passed', 'pass', 'human'),
+                 ('legacy', 'ses', 'taken', '旧ステージ', '旧課題', '', 60, null, null, 'pending', null, null),
+                 ('escalated', 'ses', 'taken', '学習', '課題', '', 61, null, null, 'pending', null, 'escalated'),
+                 ('ai', 'ses', 'taken', '学習', '課題', '', 62, null, null, 'pending', null, 'queued'),
+                 ('replaced', 'ses', 'taken', '学習', '課題', '', 63, null, null, 'pending', null, 'superseded');
+        insert into notifications (id, user_id, tenant_id, type, title, body, payload, created_at)
+          values ('stumble-old', 'admin', 'ses', 'learner_stumble', '古い通知', '以前の本文',
+                    '{"learner_id":"taken","signal":"local-failures"}', ${now - 2}),
+                 ('stumble-latest', 'admin', 'ses', 'learner_stumble', '新しい通知', '最新の本文',
+                    '{"learner_id":"taken","signal":"local-failures"}', ${now - 1}),
+                 ('stumble-duplicate', 'taken', 'ses', 'learner_stumble', '新しい通知', '最新の本文',
+                    '{"learner_id":"taken","signal":"local-failures"}', ${now - 1}),
+                 ('stumble-expired', 'admin', 'ses', 'learner_stumble', '期間外', '期間外',
+                    '{"learner_id":"taken","signal":"idle"}', ${now - 14 * 86_400_000 - 1});
+        insert into mentor_memos
+          (id, tenant_id, learner_id, week_start, state, summary, next_attempt_at, created_at)
+          values ('memo1', 'ses', 'taken', '2026-11-09', 'ready', '前の週', 1, 1),
+                 ('memo2', 'ses', 'taken', '2026-11-16', 'ready', '最新のメモ', 2, 2);
+      `);
+
+      const list = await fetchAdmin(overview);
+      expect(list.status).toBe(200);
+      expect(await json(list)).toMatchObject({
+        rows: [
+          { user_id: "admin", pending_reviews: 0, stumble_signals: [] },
+          {
+            user_id: "taken",
+            level: { level: 3, xp_total: 270, xp_into_level: 20, xp_to_next_level: 200 },
+            current_stage: { stage_id: "focus", title: "フォーカス", progress_percent: 33 },
+            days: [
+              { date: "2026-11-01", watched_sec: 10, completed_lessons: 0 },
+              { date: "2026-11-27", watched_sec: 0, completed_lessons: 1 },
+              { date: "2026-11-28", watched_sec: 120, completed_lessons: 0 },
+            ],
+            last_study_date: "2026-11-28",
+            streak_current: 2,
+            pending_reviews: 2,
+            stumble_signals: ["local-failures"],
+            status: { kind: "stumble" },
+          },
+        ],
+      });
+
+      const res = await fetchAdmin(detail);
+      expect(res.status).toBe(200);
+      const response = await json(res);
+      expect(response).toMatchObject({
+        profile: {
+          id: "taken",
+          display_name: "別",
+          role: "student",
+          groups: [{ id: "group", name: "組" }],
+          vscode_connected_at: new Date(30).toISOString(),
+          last_login_at: new Date(20).toISOString(),
+        },
+        level: {
+          xp: {
+            total: 270,
+            from_lessons: 10,
+            from_stages: 200,
+            from_quizzes: 30,
+            from_discoveries: 30,
+          },
+          level: { level: 3 },
+        },
+        streak: { current: 2, longest: 2 },
+        active_days_28: 3,
+        active_days_84: 4,
+        stages: [
+          { stage_id: "focus", status: "in_progress", progress_percent: 33 },
+          { stage_id: "recent", status: "in_progress", progress_percent: 100 },
+          { stage_id: "done", status: "completed", completed_at: new Date(50).toISOString() },
+        ],
+        current_stage: "focus",
+        current_stage_tasks: [
+          {
+            task_id: "task",
+            unit_title: "単元",
+            state: "passed",
+            assisted: true,
+            local_failure_streak: 0,
+          },
+          { task_id: "stale", state: "not-started", assisted: false, local_failure_streak: 3 },
+        ],
+        concerns: [
+          {
+            signal: "local-failures",
+            title: "新しい通知",
+            body: "最新の本文",
+            created_at: new Date(now - 1).toISOString(),
+          },
+        ],
+        mentor_memo: { id: "memo2", weekStart: "2026-11-16", summary: "最新のメモ" },
+        status: { kind: "stumble" },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/SECRET_CODE|private-token|private-code/);
+
+      db.sqlite.exec("update stages set format = 2, status = 'published' where id = 'focus'");
+      const studentToken = await signAccessToken(SECRET, "taken", "taken@example.test");
+      const mine = await request(app, env, "/api/skill-profile/mine", { token: studentToken });
+      expect(mine.status).toBe(200);
+      const { skill_profile } = await json<{
+        skill_profile: { xp: unknown; level: unknown; generated_at: string };
+      }>(mine);
+      expect(response).toMatchObject({
+        level: {
+          ...skill_profile,
+          streak: { current: 2, longest: 2, today: "2026-11-28" },
+        },
+      });
+
+      const stageTasks = await request(app, env, "/api/tasks/for-stage/focus", {
+        token: studentToken,
+      });
+      expect(stageTasks.status).toBe(200);
+      const { tasks } = await json<{ tasks: { id: string; status: string }[] }>(stageTasks);
+      expect(response).toMatchObject({
+        current_stage_tasks: tasks.map(({ id, status }) => ({ task_id: id, state: status })),
+      });
+
+      db.sqlite.exec("update learner_focus set active_stage_id = 'done' where user_id = 'taken'");
+      expect(await json(await fetchAdmin(detail))).toMatchObject({
+        current_stage: "recent",
+        current_stage_tasks: [],
+      });
+    });
+  });
 
   describe("GET /api/admin/users/:userId/activity-hours", () => {
     const path = "/api/admin/users/taken/activity-hours";

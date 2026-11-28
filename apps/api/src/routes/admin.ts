@@ -1,10 +1,11 @@
-import { integrationGroupFilter } from "../lib/integrations.js";
 /**
  * 管理 API (ユーザー管理)。
  *
  * 呼び出し元は admin であることを必須とする。
  *
  *   GET  /api/admin/users          一覧
+ *   GET  /api/admin/users/overview  学習状況の一覧
+ *   GET  /api/admin/users/:userId   ユーザー詳細
  *   GET  /api/admin/users/:userId/activity-hours  学習の曜日・時間帯集計
  *   POST /api/admin/users/invite   招待 (Google ログイン)
  *   POST /api/admin/users/role     ロール変更
@@ -21,7 +22,7 @@ import { integrationGroupFilter } from "../lib/integrations.js";
 import { isAssignableProfileRole, validateInviteUsersRequest } from "@stella/shared/admin/types";
 import type { AssignableProfileRole, InviteResult } from "@stella/shared/admin/types";
 import { COMMENT_NOTIFICATION_TYPES } from "@stella/shared/lessons/comments";
-import { and, asc, count, eq, exists, inArray, sql } from "drizzle-orm";
+import { and, count, eq, exists, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Hono, type Context } from "hono";
 
@@ -37,6 +38,11 @@ import {
   supportInquiries,
 } from "../db/schema.js";
 import type { Env } from "../env.js";
+import {
+  loadAdminUserDetail,
+  loadAdminUserOverview,
+  loadAdminUserProfiles,
+} from "../lib/admin-users.js";
 import { auditLogInsert, clientIp, recordAudit } from "../lib/audit.js";
 import { googleAvatarUrl, inviteUser } from "../lib/auth-users.js";
 import {
@@ -109,11 +115,7 @@ export async function updateProfileAsAdmin(
 adminRoute.get("/api/admin/users", async (c) => {
   try {
     const { db } = await requireAdminCtx(c);
-    const rows = await db
-      .select()
-      .from(profiles)
-      .where(integrationGroupFilter(profiles.id, c.req.query("groupId")))
-      .orderBy(asc(profiles.createdAt));
+    const rows = await loadAdminUserProfiles(db, c.req.query("groupId"));
     return c.json({
       rows: rows.map((r) => ({
         id: r.id,
@@ -126,6 +128,31 @@ adminRoute.get("/api/admin/users", async (c) => {
         created_at: r.createdAt,
       })),
     });
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+adminRoute.get("/api/admin/users/overview", async (c) => {
+  try {
+    const { db } = await requireAdminCtx(c);
+    const users = await loadAdminUserProfiles(db, c.req.query("groupId"));
+    return c.json(await loadAdminUserOverview(db, users));
+  } catch (err) {
+    return errorResponse(c, err);
+  }
+});
+
+adminRoute.get("/api/admin/users/:userId", async (c) => {
+  try {
+    const { db } = await requireAdminCtx(c);
+    const [user] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, c.req.param("userId")))
+      .limit(1);
+    if (!user) throw new ApiError("対象ユーザーが見つかりません", 404);
+    return c.json(await loadAdminUserDetail(db, user));
   } catch (err) {
     return errorResponse(c, err);
   }

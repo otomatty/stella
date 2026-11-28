@@ -147,6 +147,36 @@ const SIGNAL_ID_SEGMENT: Record<StumbleSignal, string> = {
   "hints-exhausted": "hints-exhausted",
 };
 
+/** 管理者ごとに届く通知から、受講者とシグナルごとに最新の 1 件を採る。 */
+export async function loadRecentStumbleConcerns(db: Db, userIds: readonly string[], now: Date) {
+  const rows = await db.all<{
+    userId: string;
+    signal: string;
+    title: string;
+    body: string;
+    createdAt: number;
+  }>(sql`
+    with recent as (
+      select id, case when json_valid(payload) then json_extract(payload, '$.learner_id') end userId,
+        case when json_valid(payload) then json_extract(payload, '$.signal') end signal,
+        title, body, created_at createdAt
+      from notifications
+      where type = 'learner_stumble' and created_at between ${now.getTime() - 14 * 86_400_000} and ${now.getTime()}
+    ), ranked as (
+      select *, row_number() over (partition by userId, signal order by createdAt desc, id) rank
+      from recent
+      where userId in (select value from json_each(${JSON.stringify(userIds)}))
+        and typeof(signal) = 'text' and signal <> ''
+    )
+    select userId, signal, title, body, createdAt from ranked
+    where rank = 1 order by createdAt desc, signal
+  `);
+  return rows.map(({ createdAt, ...row }) => ({
+    ...row,
+    created_at: new Date(createdAt).toISOString(),
+  }));
+}
+
 /**
  * 受講者 1 人・種類 1 つのつまずきの通知 ID の接頭辞 (`stumble:<種類>:<受講者>:`)。
  * 育成メモの材料もこの接頭辞で引く (作る側と読む側で文字列を書き写さない)。
